@@ -1,0 +1,8 @@
+// Markdownlint config for research content (research/**/*.md)
+{
+  // Allow long lines -- research content can be verbose
+  "MD013": false,
+
+  // Allow inline HTML -- Astro templates may use HTML in markdown
+  "MD033": false
+}
