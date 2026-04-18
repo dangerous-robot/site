@@ -4,4 +4,5 @@ The home of [dangerousrobot.org](https://dangerousrobot.org) and the research th
 
 ## License
 
-Code in this repository is released under the MIT License. See [`LICENSE`](LICENSE).
+- **Code** (scripts, site source, configs) -- MIT License. See [`LICENSE`](LICENSE).
+- **Research content** (`research/`) -- CC-BY-4.0. See [`LICENSE-CONTENT`](LICENSE-CONTENT).
