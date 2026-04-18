@@ -51,11 +51,9 @@ Everything below this line is post-MVP.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 1.1 | Repo hygiene | [repo-hygiene.md](repo-hygiene.md) | not started | LICENSE-CONTENT, CLAUDE.md update, clean up deleted files |
+| 1.1 | Repo hygiene | [repo-hygiene.md](repo-hygiene.md) | done | Committed in `ac247c0` |
 
-**Parallelization**: Single work item. Quick -- most of it is already done (Astro installed, CNAME moved, files deleted in git).
-
-**Done when**: CLAUDE.md is accurate, LICENSE-CONTENT exists, git status is clean.
+**Done.** CLAUDE.md updated, LICENSE-CONTENT created, CONTRIBUTING.md added, all files committed.
 
 ---
 
@@ -65,13 +63,18 @@ Everything below this line is post-MVP.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 2.1 | Research schemas & structure | [research-schemas.md](research-schemas.md) | not started | Category taxonomy, Zod schemas, directory scaffold |
-| 2.2 | Astro site development | [astro-site.md](astro-site.md) | not started | Content collections, layouts, pages, DR visual identity |
-| 2.3 | Content seeding | [content-seeding.md](content-seeding.md) | not started | 2-3 entities, 4-6 sources, 3-5 claims from seed data |
+| 2.1 | Research schemas & structure | [research-schemas.md](research-schemas.md) | done | Zod schemas in `src/content.config.ts`, directory scaffold, QUEUE.md |
+| 2.2 | Astro site development | [astro-site.md](astro-site.md) | done | Base layout, index, claim/source/entity detail pages |
+| 2.3 | Content seeding | [content-seeding.md](content-seeding.md) | done | 3 entities, 5 sources, 3 claims. Build produces 12 pages. |
 
-**Parallelization**: 2.1 and 2.2 should be co-authored (Zod schemas and content collections are the same design decision). 2.3 starts once schemas are stable. All three are tightly coupled -- this is one focused push.
+**Done.** `npm run build` produces 12 pages. `npm run check` passes (build + lint + citations). Deployment blocked by GitHub Pages custom domain issue (see Blockers above) but does not affect development.
 
-**Done when**: `npm run build` produces pages from real research content. Site deploys to GitHub Pages. **This is the MVP.**
+### Next: Expand content
+
+More claims and sources exist in `parallax-ai` that can be structured:
+- Chatbot comparison table (`parallax-ai/frontend/src/app/robot/responsible-ai/page.tsx`)
+- AI Product Card data (`parallax-ai/frontend/src/app/transparency/page.tsx`)
+- 12 URLs in `parallax-ai/docs/dangerous-robot/links-to-add.txt`
 
 ---
 
@@ -81,11 +84,9 @@ Everything below this line is post-MVP.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 3.1 | CI pipeline | [ci-pipeline.md](ci-pipeline.md) | not started | Build check, markdown lint, citation integrity script |
+| 3.1 | CI pipeline | [ci-pipeline.md](ci-pipeline.md) | done | `.github/workflows/ci.yml`, markdownlint, `scripts/check-citations.ts` |
 
-**Parallelization**: Can start as soon as Phase 2 content exists. Astro's Zod validation already catches schema errors at build time -- CI adds markdown lint and referential integrity checks.
-
-**Done when**: PRs run `npm run build` + markdown lint + citation integrity check.
+**Done.** PRs run build + markdown lint + citation integrity check via `npm run check`.
 
 ---
 
