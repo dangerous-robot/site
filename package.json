@@ -7,12 +7,20 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "lint:md": "markdownlint-cli2 'research/**/*.md'",
+    "check:citations": "tsx scripts/check-citations.ts",
+    "check": "npm run build && npm run lint:md && npm run check:citations"
   },
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
     "astro": "^6.1.8"
+  },
+  "devDependencies": {
+    "gray-matter": "^4.0.3",
+    "markdownlint-cli2": "^0.17.2",
+    "tsx": "^4.19.4"
   }
 }
