@@ -1,0 +1,187 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const sources = await getCollection("sources");
+  return sources.map((source) => ({
+    params: { slug: source.id },
+    props: { source },
+  }));
+}
+
+const { source } = Astro.props;
+const { Content } = await render(source);
+
+const kindColors: Record<string, string> = {
+  report: "#4a7a9e",
+  article: "#6a8e4e",
+  documentation: "#8a6e9e",
+  dataset: "#5e8a8a",
+  blog: "#9e7a4a",
+  video: "#9e4a6a",
+  index: "#6a6a8e",
+};
+
+const accessedDate = source.data.accessed_date instanceof Date
+  ? source.data.accessed_date.toISOString().split("T")[0]
+  : String(source.data.accessed_date);
+
+const publishedDate = source.data.published_date instanceof Date
+  ? source.data.published_date.toISOString().split("T")[0]
+  : source.data.published_date
+    ? String(source.data.published_date)
+    : null;
+---
+
+<Base title={source.data.title}>
+  <article class="source-detail">
+    <header>
+      <h1>{source.data.title}</h1>
+
+      <div class="meta">
+        <span
+          class="kind-badge"
+          style={`background: ${kindColors[source.data.kind] || "#777"}`}
+        >
+          {source.data.kind}
+        </span>
+
+        <span class="publisher">{source.data.publisher}</span>
+
+        {source.data.author && (
+          <span class="author">by {source.data.author}</span>
+        )}
+      </div>
+
+      <div class="dates">
+        {publishedDate && <span>Published: {publishedDate}</span>}
+        <span>Accessed: {accessedDate}</span>
+      </div>
+
+      <div class="links">
+        <a href={source.data.url} target="_blank" rel="noopener noreferrer">
+          Original source &#8599;
+        </a>
+        {source.data.archived_url && (
+          <a href={source.data.archived_url} target="_blank" rel="noopener noreferrer">
+            Archived copy &#8599;
+          </a>
+        )}
+      </div>
+    </header>
+
+    <section class="summary">
+      <h2>Summary</h2>
+      <p>{source.data.summary}</p>
+    </section>
+
+    {source.data.key_quotes && source.data.key_quotes.length > 0 && (
+      <section class="key-quotes">
+        <h2>Key quotes</h2>
+        {source.data.key_quotes.map((quote: string) => (
+          <blockquote>{quote}</blockquote>
+        ))}
+      </section>
+    )}
+
+    <section class="body-content">
+      <Content />
+    </section>
+  </article>
+</Base>
+
+<style>
+  .source-detail header {
+    margin-bottom: 2rem;
+  }
+
+  .source-detail h1 {
+    margin-bottom: 1rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .kind-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .publisher {
+    color: #ccc;
+    font-size: 0.9rem;
+  }
+
+  .author {
+    color: #999;
+    font-size: 0.9rem;
+    font-style: italic;
+  }
+
+  .dates {
+    display: flex;
+    gap: 1.5rem;
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .links a {
+    font-size: 0.9rem;
+  }
+
+  .summary {
+    margin-bottom: 2rem;
+  }
+
+  .summary h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .summary p {
+    color: #ccc;
+  }
+
+  .key-quotes {
+    margin-bottom: 2rem;
+  }
+
+  .key-quotes h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+
+  blockquote {
+    border-left: 3px solid #444;
+    margin: 0 0 1rem 0;
+    padding: 0.5rem 1rem;
+    color: #bbb;
+    font-style: italic;
+  }
+
+  .body-content {
+    line-height: 1.7;
+  }
+
+  .body-content :global(h2),
+  .body-content :global(h3) {
+    margin-top: 1.5rem;
+  }
+</style>

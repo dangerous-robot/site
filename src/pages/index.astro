@@ -1,0 +1,109 @@
+---
+import Base from "../layouts/Base.astro";
+import { getCollection } from "astro:content";
+
+const allClaims = await getCollection("claims");
+
+// Group claims by entity slug
+const claimsByEntity = new Map<string, typeof allClaims>();
+for (const claim of allClaims) {
+  const entity = claim.data.entity;
+  if (!claimsByEntity.has(entity)) {
+    claimsByEntity.set(entity, []);
+  }
+  claimsByEntity.get(entity)!.push(claim);
+}
+
+const verdictColors: Record<string, string> = {
+  true: "#2d8a4e",
+  "mostly-true": "#4a9e6b",
+  mixed: "#b8860b",
+  "mostly-false": "#c44e3e",
+  false: "#b22222",
+  unverified: "#777",
+};
+---
+
+<Base title="Home">
+  <h1>Dangerous Robot</h1>
+  <p class="intro">
+    Structured research backing claims about AI products and companies.
+  </p>
+
+  {
+    allClaims.length === 0 ? (
+      <p class="empty">No claims published yet.</p>
+    ) : (
+      Array.from(claimsByEntity.entries()).map(([entity, claims]) => (
+        <section class="entity-group">
+          <h2>
+            <a href={`/entities/${entity}`}>{entity}</a>
+          </h2>
+          <ul class="claim-list">
+            {claims.map((claim) => (
+              <li>
+                <span
+                  class="verdict-badge"
+                  style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+                >
+                  {claim.data.verdict}
+                </span>
+                <a href={`/claims/${claim.id}`}>{claim.data.category}: {claim.id.split("/").pop()}</a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))
+    )
+  }
+</Base>
+
+<style>
+  .intro {
+    color: #999;
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+  }
+
+  .empty {
+    color: #666;
+    font-style: italic;
+  }
+
+  .entity-group {
+    margin-bottom: 2rem;
+  }
+
+  .entity-group h2 {
+    font-size: 1.4rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 0.5rem;
+  }
+
+  .claim-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .claim-list li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .verdict-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    white-space: nowrap;
+    min-width: 5.5rem;
+    text-align: center;
+  }
+</style>
