@@ -1,0 +1,172 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const claims = await getCollection("claims");
+  return claims.map((claim) => ({
+    params: { slug: claim.id },
+    props: { claim },
+  }));
+}
+
+const { claim } = Astro.props;
+const { Content } = await render(claim);
+
+const verdictColors: Record<string, string> = {
+  true: "#2d8a4e",
+  "mostly-true": "#4a9e6b",
+  mixed: "#b8860b",
+  "mostly-false": "#c44e3e",
+  false: "#b22222",
+  unverified: "#777",
+};
+
+const confidenceLabels: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+};
+
+const asOfDate = claim.data.as_of instanceof Date
+  ? claim.data.as_of.toISOString().split("T")[0]
+  : String(claim.data.as_of);
+
+const claimTitle = claim.id.split("/").pop()?.replace(/-/g, " ") || claim.id;
+---
+
+<Base title={claimTitle}>
+  <article class="claim-detail">
+    <header>
+      <h1>{claimTitle}</h1>
+
+      <div class="meta">
+        <span
+          class="verdict-badge"
+          style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+        >
+          {claim.data.verdict}
+        </span>
+
+        <span class="confidence">
+          Confidence: {confidenceLabels[claim.data.confidence] || claim.data.confidence}
+        </span>
+
+        <span class="as-of">
+          As of {asOfDate}
+        </span>
+
+        <span class="category">
+          {claim.data.category}
+        </span>
+      </div>
+
+      <div class="entity-link">
+        Entity: <a href={`/entities/${claim.data.entity}`}>{claim.data.entity}</a>
+      </div>
+    </header>
+
+    <section class="rationale">
+      <Content />
+    </section>
+
+    {claim.data.sources && claim.data.sources.length > 0 && (
+      <section class="sources-section">
+        <h2>Sources</h2>
+        <ul class="source-list">
+          {claim.data.sources.map((sourceRef: string) => (
+            <li>
+              <a href={`/sources/${sourceRef}`}>{sourceRef}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
+
+    <section class="review-info">
+      <h2>Review cadence</h2>
+      <p>This claim is reviewed every {claim.data.review_cadence_days} days.</p>
+    </section>
+  </article>
+</Base>
+
+<style>
+  .claim-detail header {
+    margin-bottom: 2rem;
+  }
+
+  .claim-detail h1 {
+    text-transform: capitalize;
+    margin-bottom: 1rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+
+  .verdict-badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+  }
+
+  .confidence,
+  .as-of,
+  .category {
+    color: #999;
+    font-size: 0.9rem;
+  }
+
+  .entity-link {
+    color: #999;
+    font-size: 0.9rem;
+  }
+
+  .rationale {
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+
+  .rationale :global(h2),
+  .rationale :global(h3) {
+    margin-top: 1.5rem;
+  }
+
+  .sources-section {
+    margin-bottom: 2rem;
+  }
+
+  .source-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .source-list li {
+    padding: 0.4rem 0;
+  }
+
+  .source-list li::before {
+    content: "\2192 ";
+    color: #666;
+  }
+
+  .review-info {
+    border-top: 1px solid #333;
+    padding-top: 1rem;
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  .review-info h2 {
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+</style>

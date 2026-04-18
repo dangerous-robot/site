@@ -1,0 +1,173 @@
+---
+import Base from "../../layouts/Base.astro";
+import { getCollection, render } from "astro:content";
+
+export async function getStaticPaths() {
+  const entities = await getCollection("entities");
+  return entities.map((entity) => ({
+    params: { slug: entity.id },
+    props: { entity },
+  }));
+}
+
+const { entity } = Astro.props;
+const { Content } = await render(entity);
+
+// Find all claims related to this entity
+const allClaims = await getCollection("claims");
+const relatedClaims = allClaims.filter(
+  (claim) => claim.data.entity === entity.id
+);
+
+const verdictColors: Record<string, string> = {
+  true: "#2d8a4e",
+  "mostly-true": "#4a9e6b",
+  mixed: "#b8860b",
+  "mostly-false": "#c44e3e",
+  false: "#b22222",
+  unverified: "#777",
+};
+
+const kindLabels: Record<string, string> = {
+  company: "Company",
+  product: "Product",
+  topic: "Topic",
+};
+---
+
+<Base title={entity.data.name}>
+  <article class="entity-detail">
+    <header>
+      <h1>{entity.data.name}</h1>
+
+      <div class="meta">
+        <span class="kind-label">
+          {kindLabels[entity.data.type] || entity.data.type}
+        </span>
+
+        {entity.data.website && (
+          <a href={entity.data.website} target="_blank" rel="noopener noreferrer" class="website-link">
+            {entity.data.website} &#8599;
+          </a>
+        )}
+      </div>
+
+      <p class="description">{entity.data.description}</p>
+    </header>
+
+    <section class="body-content">
+      <Content />
+    </section>
+
+    <section class="related-claims">
+      <h2>Claims</h2>
+      {relatedClaims.length === 0 ? (
+        <p class="empty">No claims for this entity yet.</p>
+      ) : (
+        <ul class="claim-list">
+          {relatedClaims.map((claim) => (
+            <li>
+              <span
+                class="verdict-badge"
+                style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+              >
+                {claim.data.verdict}
+              </span>
+              <a href={`/claims/${claim.id}`}>
+                {claim.data.category}: {claim.id.split("/").pop()?.replace(/-/g, " ")}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </article>
+</Base>
+
+<style>
+  .entity-detail header {
+    margin-bottom: 2rem;
+  }
+
+  .entity-detail h1 {
+    margin-bottom: 0.75rem;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+
+  .kind-label {
+    background: #333;
+    color: #ccc;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: bold;
+  }
+
+  .website-link {
+    font-size: 0.9rem;
+  }
+
+  .description {
+    color: #bbb;
+    font-size: 1rem;
+  }
+
+  .body-content {
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+
+  .body-content :global(h2),
+  .body-content :global(h3) {
+    margin-top: 1.5rem;
+  }
+
+  .related-claims {
+    border-top: 1px solid #333;
+    padding-top: 1.5rem;
+  }
+
+  .related-claims h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .empty {
+    color: #666;
+    font-style: italic;
+  }
+
+  .claim-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .claim-list li {
+    padding: 0.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .verdict-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: #fff;
+    text-transform: uppercase;
+    white-space: nowrap;
+    min-width: 5.5rem;
+    text-align: center;
+  }
+</style>

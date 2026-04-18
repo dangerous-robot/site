@@ -1,0 +1,136 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "Structured research backing claims about AI products and companies." } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title} - Dangerous Robot</title>
+    <meta name="description" content={description} />
+    <style is:global>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background: #111;
+        color: #eee;
+        line-height: 1.6;
+      }
+
+      h1, h2, h3, h4, h5, h6 {
+        font-family: Georgia, "Times New Roman", Times, serif;
+        line-height: 1.3;
+      }
+
+      a {
+        color: #7cb8f0;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="site-nav">
+      <div class="nav-inner">
+        <a href="/" class="site-name">Dangerous Robot</a>
+        <ul class="nav-links">
+          <li><a href="/">Home</a></li>
+          <li><a href="/claims">Claims</a></li>
+          <li><a href="/sources">Sources</a></li>
+          <li><a href="/about">About</a></li>
+        </ul>
+      </div>
+    </nav>
+
+    <main class="content">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <p>Dangerous Robot is a research project from <a href="https://treadlightly.ai">TreadLightly AI</a></p>
+    </footer>
+
+    <style>
+      .site-nav {
+        border-bottom: 1px solid #333;
+        padding: 1rem 0;
+      }
+
+      .nav-inner {
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .site-name {
+        font-family: Georgia, "Times New Roman", Times, serif;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #eee;
+      }
+
+      .site-name:hover {
+        text-decoration: none;
+        color: #fff;
+      }
+
+      .nav-links {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        gap: 1.5rem;
+      }
+
+      .nav-links a {
+        color: #999;
+        font-size: 0.9rem;
+      }
+
+      .nav-links a:hover {
+        color: #eee;
+      }
+
+      .content {
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 2rem 1.5rem;
+      }
+
+      .site-footer {
+        border-top: 1px solid #333;
+        padding: 2rem 0;
+        text-align: center;
+        color: #666;
+        font-size: 0.85rem;
+      }
+
+      .site-footer a {
+        color: #888;
+      }
+
+      .site-footer a:hover {
+        color: #eee;
+      }
+    </style>
+  </body>
+</html>
