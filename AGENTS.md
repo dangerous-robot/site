@@ -16,6 +16,21 @@ Three entity types under `research/`:
 
 Claims reference source files by ID, never raw URLs.
 
+Schemas are defined in `src/content.config.ts` and enforced at build time by Astro.
+
+## Claim Category Taxonomy
+
+| Slug | Description |
+|------|-------------|
+| `ai-safety` | Independent evaluations of AI company/provider safety |
+| `environmental-impact` | Energy, emissions, water, renewable energy claims |
+| `product-comparison` | Feature/practice comparisons across AI products |
+| `consumer-guide` | How to opt out, disable, limit AI features |
+| `ai-literacy` | Decision frameworks, when/how to use AI thoughtfully |
+| `data-privacy` | What happens to your data across AI services |
+| `industry-analysis` | Corporate structure, business models, ownership |
+| `regulation-policy` | Government oversight, AI policy landscape |
+
 ## Content Rules
 
 - Never edit a claim without citing at least one source
