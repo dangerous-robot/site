@@ -52,4 +52,36 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 - Use lowercase kebab-case slugs: `openai.md`, `training-data-consent.md`
 - Sources go in year directories: `sources/2026/polytechnique-energy.md`
-- Plans are local only (`research/plans/` is gitignored)
+
+## Plans & Backlog
+
+All plans live under `plans/`. Lifecycle determines subdirectory:
+
+| Location | Purpose | Git status |
+|----------|---------|------------|
+| `plans/drafts/` | Work-in-progress plans | Gitignored -- never commit |
+| `plans/` | Active, final plans | Committed |
+| `plans/completed/` | Fully done plans | Committed |
+
+Rules:
+
+1. **Drafts stay local.** Write WIP plans to `plans/drafts/`. Never commit a plan until its design is reviewed and final.
+2. **Final plans are committed** to `plans/` when approved.
+3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `plans/completed/`.
+4. **Keep the backlog current.** Update `plans/BACKLOG.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
+5. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in BACKLOG.md but do not duplicate issue content.
+
+## Architecture Docs
+
+Architectural summaries live in `docs/architecture/`. These are reference documents for humans and agents -- they describe how the system works today, not how it should work (that's what plans are for).
+
+| File | Describes |
+|------|-----------|
+| `docs/architecture/README.md` | Document map -- index of all architecture docs with one-line descriptions |
+| Other files | One doc per major subsystem or concern |
+
+Rules:
+
+1. **Update before writing plans.** Before starting a new plan, read the relevant architecture docs to ensure your baseline understanding is correct.
+2. **Update after completing work.** When finishing implementation work that changes how the system works, update the affected architecture doc(s). If no doc exists for the area you changed, create one.
+3. **Link new docs in the map.** When creating a new architecture doc, add it to `docs/architecture/README.md`.

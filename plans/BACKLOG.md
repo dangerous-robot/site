@@ -1,6 +1,6 @@
 # Backlog: dangerousrobot.org
 
-Last updated: 2026-04-18
+Last updated: 2026-04-18 (session 2)
 
 This file tracks the phased progression for standing up dangerousrobot.org. Each phase lists its work items with links to detailed plan files. Status is tracked here; details live in the individual plans.
 
@@ -25,6 +25,14 @@ Defer big decisions about *what* to research. Focus on documenting the *types* o
 ## Blockers
 
 - **Custom domain in GitHub Pages UI** -- Cannot set `dangerousrobot.org` in Settings > Pages. DNS records are correct. May be a free-tier org limitation. See `TODO.md` for troubleshooting steps. **Does not block development work** -- site builds and deploys; the domain just doesn't resolve yet.
+
+## Approved Issues
+
+Open issues labeled `approved` are part of the backlog. Query them with:
+
+    gh issue list --label approved --state open
+
+When starting work on an approved issue, reference it in the relevant phase table (e.g., "Fixes #42"). Do not copy issue descriptions here -- the issue is the source of truth.
 
 ## Technical Risk to Spike Early
 
@@ -51,7 +59,7 @@ Everything below this line is post-MVP.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 1.1 | Repo hygiene | [repo-hygiene.md](repo-hygiene.md) | done | Committed in `ac247c0` |
+| 1.1 | Repo hygiene | [repo-hygiene.md](completed/repo-hygiene.md) | done | Committed in `ac247c0` |
 
 **Done.** CLAUDE.md updated, LICENSE-CONTENT created, CONTRIBUTING.md added, all files committed.
 
@@ -63,9 +71,9 @@ Everything below this line is post-MVP.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 2.1 | Research schemas & structure | [research-schemas.md](research-schemas.md) | done | Zod schemas in `src/content.config.ts`, directory scaffold, QUEUE.md |
-| 2.2 | Astro site development | [astro-site.md](astro-site.md) | done | Base layout, index, claim/source/entity detail pages |
-| 2.3 | Content seeding | [content-seeding.md](content-seeding.md) | done | 3 entities, 5 sources, 3 claims. Build produces 12 pages. |
+| 2.1 | Research schemas & structure | [research-schemas.md](completed/research-schemas.md) | done | Zod schemas in `src/content.config.ts`, directory scaffold, QUEUE.md |
+| 2.2 | Astro site development | [astro-site.md](completed/astro-site.md) | done | Base layout, index, claim/source/entity detail pages |
+| 2.3 | Content seeding | [content-seeding.md](completed/content-seeding.md) | done | 3 entities, 5 sources, 3 claims. Build produces 12 pages. |
 
 **Done.** `npm run build` produces 12 pages. `npm run check` passes (build + lint + citations). Deployment blocked by GitHub Pages custom domain issue (see Blockers above) but does not affect development.
 
@@ -84,9 +92,24 @@ More claims and sources exist in `parallax-ai` that can be structured:
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 3.1 | CI pipeline | [ci-pipeline.md](ci-pipeline.md) | done | `.github/workflows/ci.yml`, markdownlint, `scripts/check-citations.ts` |
+| 3.1 | CI pipeline | [ci-pipeline.md](completed/ci-pipeline.md) | done | `.github/workflows/ci.yml`, markdownlint, `scripts/check-citations.ts` |
 
 **Done.** PRs run build + markdown lint + citation integrity check via `npm run check`.
+
+---
+
+## Phase 3.5: Repo Governance & Documentation
+
+**Goal**: Plan lifecycle rules, architecture docs, and agent instruction improvements.
+
+| # | Work Item | Status | Notes |
+|---|-----------|--------|-------|
+| 3.5.1 | Plan lifecycle rules in AGENTS.md | done | Draft/final/completed directories, backlog update rules, approved issues integration |
+| 3.5.2 | Architecture docs (`docs/architecture/`) | done | site.md, content-model.md, ci-deploy.md, research-workflow.md + README index |
+| 3.5.3 | Move completed plans to `plans/completed/` | done | 5 plans moved: repo-hygiene, research-schemas, astro-site, content-seeding, ci-pipeline |
+| 3.5.4 | Public feedback plan review | done | Security hardening, UX improvements, open source standards applied to `public-feedback.md` |
+
+**Done.**
 
 ---
 
@@ -119,6 +142,20 @@ More claims and sources exist in `parallax-ai` that can be structured:
 
 ---
 
+## Phase 6: Public Feedback & Contribution Gating
+
+**Goal**: Members of the public can submit feedback on content without a GitHub account. GitHub issue/PR process is gated via templates that redirect content feedback to the site.
+
+| # | Work Item | Plan | Status | Notes |
+|---|-----------|------|--------|-------|
+| 6.1 | GitHub config + feedback form + Cloudflare backend | [public-feedback.md](public-feedback.md) | not started | Issue templates, CODEOWNERS, Astro form, Worker + D1 + Turnstile, `api.dangerousrobot.org` |
+| 6.2 | Admin CLI + GitHub issue promotion | [public-feedback.md](public-feedback.md) | not started | `scripts/feedback-admin.ts`, accept/reject/inquire, Resend email |
+| 6.3 | Admin dashboard (optional) | [public-feedback.md](public-feedback.md) | not started | Web UI for reviewing submissions. Defer unless CLI proves insufficient. |
+
+**Done when**: Public can submit feedback at `dangerousrobot.org/feedback`, admin can review via CLI, approved feedback becomes a GitHub issue.
+
+---
+
 ## Phase Summary
 
 ```
@@ -129,9 +166,13 @@ Phase 2: Schemas + Site + Content  [research-schemas, astro-site, content-seedin
     |
 Phase 3: CI & Quality          [ci-pipeline]
     |
+Phase 3.5: Governance & Docs   [plan lifecycle, architecture docs]
+    |
 Phase 4 (if needed): Agents    [agent-pipeline]
     |
 Phase 5 (if needed): Automation [automation, downstream-sync]
+    |
+Phase 6: Public Feedback        [public-feedback]
 ```
 
-Phases 4 and 5 are speculative. They exist as plans to avoid re-research, but they are not committed work. The MVP is Phase 2.
+Phases 4-6 are not committed work. They exist as plans to avoid re-research. The MVP is Phase 2.

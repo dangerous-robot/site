@@ -19,5 +19,5 @@ dist/
 # Logs
 *.log
 
-# Research working plans (kept local, not committed)
-research/plans/
+# Draft plans (kept local, not committed)
+plans/drafts/
