@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass
-from urllib.parse import parse_qs, urlparse
 
 import httpx
-from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 
@@ -60,58 +59,43 @@ research_agent = Agent(
 async def web_search(ctx: RunContext[ResearchDeps], query: str) -> list[dict]:
     """Search the web and return results with title, url, and snippet."""
     try:
-        results = await _search_duckduckgo(ctx.deps.http_client, query)
-        return results
+        return await _search_brave(ctx.deps.http_client, query)
     except Exception as exc:
         logger.warning("Search failed for '%s': %s", query, exc)
         return [{"error": f"Search failed: {exc}"}]
 
 
-async def _search_duckduckgo(
+async def _search_brave(
     client: httpx.AsyncClient, query: str, max_results: int = 8
 ) -> list[dict]:
-    """Scrape DuckDuckGo HTML search results.
+    """Search using the Brave Web Search API.
 
-    POC implementation -- fragile HTML scraping. Replace with a proper
-    search API (Brave, SerpAPI, etc.) for production use.
+    Requires BRAVE_WEB_SEARCH_API_KEY in the environment.
     """
+    api_key = os.environ.get("BRAVE_WEB_SEARCH_API_KEY")
+    if not api_key:
+        raise RuntimeError("BRAVE_WEB_SEARCH_API_KEY is not set")
+
     resp = await client.get(
-        "https://html.duckduckgo.com/html/",
-        params={"q": query},
-        headers={"User-Agent": "Mozilla/5.0 (dangerousrobot-research/0.1)"},
+        "https://api.search.brave.com/res/v1/web/search",
+        params={"q": query, "count": max_results},
+        headers={
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip",
+            "X-Subscription-Token": api_key,
+        },
         timeout=15.0,
-        follow_redirects=True,
     )
     resp.raise_for_status()
 
-    soup = BeautifulSoup(resp.text, "html.parser")
+    data = resp.json()
     results: list[dict] = []
 
-    for div in soup.select(".result"):
-        link = div.select_one(".result__a")
-        snippet_el = div.select_one(".result__snippet")
-
-        if not link or not link.get("href"):
-            continue
-
-        url = link["href"]
-        # DDG wraps URLs in a redirect; extract the real URL
-        if "uddg=" in url:
-            parsed = urlparse(url)
-            params = parse_qs(parsed.query)
-            if "uddg" in params:
-                url = params["uddg"][0]
-
-        if not url.startswith("http"):
-            continue
-
+    for item in data.get("web", {}).get("results", []):
         results.append({
-            "url": url,
-            "title": link.get_text(strip=True),
-            "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
+            "url": item.get("url", ""),
+            "title": item.get("title", ""),
+            "snippet": item.get("description", ""),
         })
-
-        if len(results) >= max_results:
-            break
 
     return results

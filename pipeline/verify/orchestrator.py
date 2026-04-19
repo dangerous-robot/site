@@ -140,8 +140,10 @@ async def _research(
     prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
 
     try:
-        agent = research_agent.override(model=cfg.model)
-        res = await asyncio.wait_for(agent.run(prompt, deps=deps), timeout=60)
+        with research_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                research_agent.run(prompt, deps=deps), timeout=60
+            )
         urls = res.output.urls[:cfg.max_sources]
         logger.info("Research found %d URLs: %s", len(urls), res.output.reasoning)
         return urls
@@ -173,8 +175,10 @@ async def _ingest_urls(
         )
 
         try:
-            agent = ingestor_agent.override(model=cfg.model)
-            res = await asyncio.wait_for(agent.run(prompt, deps=deps), timeout=90)
+            with ingestor_agent.override(model=cfg.model):
+                res = await asyncio.wait_for(
+                    ingestor_agent.run(prompt, deps=deps), timeout=90
+                )
             results.append((url, res.output))
             logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
         except Exception as exc:
@@ -194,8 +198,10 @@ async def _draft_claim(
     prompt = build_drafter_prompt(entity_name, claim_text, sources)
 
     try:
-        agent = drafter_agent.override(model=cfg.model)
-        res = await asyncio.wait_for(agent.run(prompt, deps=deps), timeout=60)
+        with drafter_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                drafter_agent.run(prompt, deps=deps), timeout=60
+            )
         return res.output
     except Exception as exc:
         logger.error("Drafter failed: %s", exc)
@@ -240,8 +246,10 @@ async def _consistency_check(
     deps = ConsistencyDeps(repo_root=cfg.repo_root)
 
     try:
-        agent = consistency_agent.override(model=cfg.model)
-        res = await asyncio.wait_for(agent.run(prompt, deps=deps), timeout=60)
+        with consistency_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                consistency_agent.run(prompt, deps=deps), timeout=60
+            )
         assessment = res.output
 
         return compare(
