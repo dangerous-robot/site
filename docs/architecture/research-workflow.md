@@ -23,7 +23,7 @@ Today, the workflow is manual. Agent automation is planned (Phase 4) but not yet
 3. **Claim** -- A claim file is created or updated under `research/claims/{entity-slug}/`. The claim links to one or more source slugs, sets a verdict, confidence level, and `as_of` date.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
-6. **Maintain** -- Claims have a `review_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated.
+6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated.
 
 ## Agent Roles
 
@@ -48,7 +48,7 @@ Four rules govern all research content changes. These are documented in `AGENTS.
 
 ## Review Cadence
 
-Claims carry a `review_cadence_days` field (default: 60 days) that signals when the claim should be re-evaluated.
+Claims carry a `recheck_cadence_days` field (default: 60 days) that signals when the claim should be re-evaluated.
 
 | Content type | Cadence | Rationale |
 |-------------|---------|-----------|
@@ -90,8 +90,8 @@ Key fields enforced by Zod at build time:
 | `confidence` | enum | `high`, `medium`, `low` |
 | `as_of` | date | When the verdict was last evaluated |
 | `sources` | string[] | Slugs referencing files under `research/sources/` |
-| `review_cadence_days` | number | Default 60 |
-| `next_review_due` | date | Optional. When this claim should next be reviewed |
+| `recheck_cadence_days` | number | Default 60 |
+| `next_recheck_due` | date | Optional. When this claim should next be reviewed |
 
 ## Licensing
 

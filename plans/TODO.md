@@ -19,7 +19,7 @@ This file tracks blockers, deferred ideas, and improvement opportunities not yet
 - [ ] **Deploy workflow quality checks** -- `deploy.yml` only runs `npm run build`, skipping lint and citation checks. A direct push to `main` bypasses CI. Either add the checks to deploy.yml or require CI status checks via branch protection.
 - [ ] **`verdictColors` deduplication** -- Same color map copy-pasted in `index.astro`, `claims/[...slug].astro`, `entities/[...slug].astro`. Extract to a shared module.
 - [ ] **Homepage entity name resolution** -- Homepage displays raw entity slugs (`companies/anthropic`) instead of human-readable names. Fetch entities collection and resolve names.
-- [ ] **`review_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
+- [ ] **`recheck_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
 - [ ] **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`). Pin by full SHA for supply chain security.
 - [ ] **SEO basics** -- No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.
 - [ ] **Accessibility** -- No skip-to-content link, no `aria-label` on nav, no `<header>` wrapper.
@@ -28,9 +28,9 @@ This file tracks blockers, deferred ideas, and improvement opportunities not yet
 
 - [ ] **Validation gaps** -- The current CI validates schema structure and citation integrity but does not test reasoning quality. Potential additions:
   - Confidence-to-verdict alignment (e.g., flag `confidence: low` paired with `verdict: true`)
-  - Staleness detection using `as_of` + `review_cadence_days`
+  - Staleness detection using `as_of` + `recheck_cadence_days`
   - Source URL liveness checks
   - Archived URL (`archived_url`) population nudges
-  - A test framework (Vitest) for scripted validators
+  - A check framework (Vitest) for scripted validators
 - [ ] **Confidence rubric** -- Define what `high`/`medium`/`low` confidence concretely means (e.g., high = multiple independent sources with direct evidence; medium = single source or self-reported data; low = inference or indirect evidence). Use an LLM to check each claim against the rubric. The GreenPT claim already does this informally in prose -- a rubric would formalize it.
-- [ ] **Claim Updater instruction quality** -- Consider adversarial review (argue the opposite verdict from the same sources), inter-rater consistency testing (same inputs to multiple LLM runs), and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs like `high`/`unverified`). These test the architecture and instructions, not the LLM.
+- [ ] **Claim Updater instruction quality** -- Consider adversarial review (argue the opposite verdict from the same sources), inter-rater consistency validation (same inputs to multiple LLM runs), and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs like `high`/`unverified`). These test the architecture and instructions, not the LLM.

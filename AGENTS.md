@@ -11,7 +11,7 @@ This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot
 Three entity types under `research/`:
 
 - **Entities** (`entities/companies/`, `entities/products/`, `entities/topics/`) -- stable things we make claims about
-- **Claims** (`claims/{entity-slug}/{claim-id}.md`) -- each assertion displayed on a page, with frontmatter carrying `verdict`, `as_of`, `sources`, `confidence`, `review_cadence_days`
+- **Claims** (`claims/{entity-slug}/{claim-id}.md`) -- each assertion displayed on a page, with frontmatter carrying `verdict`, `as_of`, `sources`, `confidence`, `recheck_cadence_days`
 - **Sources** (`sources/{yyyy}/{slug}.md`) -- cite-once, reference-many pool with `url`, `archived_url`, `publisher`, `kind`, `summary`, `key_quotes`
 
 Claims reference source files by ID, never raw URLs.

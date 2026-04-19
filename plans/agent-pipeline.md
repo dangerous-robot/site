@@ -32,7 +32,7 @@ Automate source ingestion using PydanticAI (Python). Start with the Ingestor age
 ### Setup
 - [ ] Add Python project structure:
   ```
-  agents/
+  pipeline/
     ingestor.py
     common/           # frontmatter parser, file writer
     pyproject.toml    # using uv or pip
@@ -42,7 +42,7 @@ Automate source ingestion using PydanticAI (Python). Start with the Ingestor age
 - [ ] Create shared frontmatter reader/writer utilities
 
 ### Ingestor Agent
-- [ ] CLI invocation: `python -m agents.ingestor https://example.com/report`
+- [ ] CLI invocation: `python -m pipeline.ingestor https://example.com/report`
 - [ ] Fetch page content, extract title/publisher/date
 - [ ] Check Wayback Machine `save/` endpoint for archived URL
 - [ ] LLM-generate summary (max 30 words per AGENTS.md rule)

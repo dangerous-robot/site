@@ -60,8 +60,8 @@ The Markdown body provides extended context about the entity.
 | `confidence` | enum | yes | `high`, `medium`, `low` |
 | `as_of` | date | yes | Date the verdict was last evaluated |
 | `sources` | string[] | yes | List of source IDs (e.g. `2025/fli-safety-index`) |
-| `review_cadence_days` | number | no | Days between reviews; defaults to 60 |
-| `next_review_due` | date | no | When this claim should next be reviewed |
+| `recheck_cadence_days` | number | no | Days between reviews; defaults to 60 |
+| `next_recheck_due` | date | no | When this claim should next be reviewed |
 
 The Markdown body contains the claim narrative -- the human-readable explanation of the verdict and evidence.
 

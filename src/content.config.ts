@@ -50,8 +50,8 @@ const claims = defineCollection({
     confidence: z.enum(['high', 'medium', 'low']),
     as_of: z.coerce.date(),
     sources: z.array(z.string()),
-    review_cadence_days: z.number().default(60),
-    next_review_due: z.coerce.date().optional(),
+    recheck_cadence_days: z.number().default(60),
+    next_recheck_due: z.coerce.date().optional(),
   }),
 });
 

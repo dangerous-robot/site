@@ -99,7 +99,7 @@ Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan m
 
 **Goal**: PydanticAI agents automate source ingestion and provide LLM-assisted content validation.
 
-**Prerequisites before starting**: Promote draft plans from `plans/drafts/` to `plans/`. Reconcile shared infrastructure (`agents/common/`) between 4.1 and 4.2 directory structures.
+**Prerequisites before starting**: Promote draft plans from `plans/drafts/` to `plans/`. Reconcile shared infrastructure (`pipeline/common/`) between 4.1 and 4.2 directory structures.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
