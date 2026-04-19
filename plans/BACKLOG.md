@@ -56,16 +56,11 @@ Phases 1-4 constitute the MVP: a deployed site with structured research content,
 4. Deploy via existing `deploy.yml` -- done
 5. CI pipeline with build, lint, and citation checks -- done
 6. Plan lifecycle rules, architecture docs, repo governance -- done
-7. PydanticAI agent pipeline for source ingestion and verdict consistency checks -- not started
+7. PydanticAI agent pipeline for source ingestion and verdict consistency checks -- done
 
-### Remaining MVP work
+### MVP complete
 
-Phase 4 is the only remaining MVP phase. Two work items:
-
-- **4.1 Ingestor agent**: Takes a URL and produces a valid source file. Plans: [agent-pipeline.md](agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) (detailed).
-- **4.2 Narrative-verdict consistency check**: LLM-assisted validation comparing independent assessment against claim verdicts. Plan: [narrative-verdict-consistency.md](narrative-verdict-consistency.md). Depends on 4.1 shared infrastructure.
-
-**Done when**: Ingestor agent produces a valid source file from a URL, AND consistency checker runs against all claims and produces a classified report.
+All MVP phases (1-4) are implemented. The `pipeline/` package has 120 passing tests across shared infrastructure, ingestor agent, consistency check agent, and a proof-of-concept end-to-end verification orchestrator.
 
 ---
 
@@ -95,20 +90,11 @@ Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan m
 
 ---
 
-## Phase 4: Agent Pipeline
+## Phase 4: Agent Pipeline (done)
 
-**Goal**: PydanticAI agents automate source ingestion and provide LLM-assisted content validation.
+PydanticAI agents for source ingestion and LLM-assisted content validation. Shared infrastructure in `pipeline/common/`, ingestor in `pipeline/ingestor/`, consistency check in `pipeline/consistency/`. 120 tests passing. See [agent-pipeline.md](agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) (4.1), [narrative-verdict-consistency.md](narrative-verdict-consistency.md) (4.2).
 
-**Prerequisites before starting**: Reconcile shared infrastructure (`pipeline/common/`) between 4.1 and 4.2 directory structures. Plans promoted.
-
-| # | Work Item | Plan | Status | Notes |
-|---|-----------|------|--------|-------|
-| 4.1 | Ingestor agent | [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) | not started | PydanticAI setup, Ingestor agent. Parent: [agent-pipeline.md](agent-pipeline.md). |
-| 4.2 | Narrative-verdict consistency check | [narrative-verdict-consistency.md](narrative-verdict-consistency.md) | not started | Depends on 4.1 shared infra. |
-
-**Done when**:
-- 4.1: Ingestor agent takes a URL and produces a source file that passes `npm run build` validation. Test suite passes.
-- 4.2: Consistency checker runs against all claims and produces a classified text/JSON report. Test suite passes.
+Also includes a POC end-to-end verification orchestrator (`pipeline/verify/`) that chains research, ingest, draft, and consistency check agents. Plan in `plans/drafts/verify-claim-poc.md` (local only).
 
 ---
 
