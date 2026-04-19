@@ -42,7 +42,7 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 | Role | Scope | Input | Output |
 |------|-------|-------|--------|
-| Research Lead | Orchestrator, never edits claims directly | `QUEUE.md` | Sub-tasks, plans |
+| Research Lead | Orchestrator, never edits claims directly | `research/QUEUE.md` | Sub-tasks, plans |
 | Ingestor | One URL in, one source file out | URL from queue | `sources/{yyyy}/{slug}.md` |
 | Claim Updater | Proposes verdict changes with rationale | Claim + source files | Updated claim file |
 | Citation Auditor | Finds claims with 0 sources, stale `as_of`, broken URLs | All claims | Audit report |

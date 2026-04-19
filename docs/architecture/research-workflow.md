@@ -91,6 +91,7 @@ Key fields enforced by Zod at build time:
 | `as_of` | date | When the verdict was last evaluated |
 | `sources` | string[] | Slugs referencing files under `research/sources/` |
 | `review_cadence_days` | number | Default 60 |
+| `next_review_due` | date | Optional. When this claim should next be reviewed |
 
 ## Licensing
 

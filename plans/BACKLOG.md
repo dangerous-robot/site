@@ -8,6 +8,18 @@ This file tracks the phased progression for standing up dangerousrobot.org. Each
 
 Defer big decisions about *what* to research. Focus on documenting the *types* of things that could be researched, and implement a small set to prove out the architecture end-to-end.
 
+## Pruning
+
+Prune this file regularly to keep it scannable. When a phase is fully done, collapse it to a short summary block:
+
+```
+## Phase N: Title (done)
+
+One-to-two line description of what was delivered and when. Link to completed plan(s) if they exist in `plans/completed/`.
+```
+
+Remove the work-item table, status notes, and any "Next" subsections. The completed plans and git history are the detailed record.
+
 ## Decisions Log
 
 | Decision | Choice | Date | Notes |
@@ -34,97 +46,69 @@ Open issues labeled `approved` are part of the backlog. Query them with:
 
 When starting work on an approved issue, reference it in the relevant phase table (e.g., "Fixes #42"). Do not copy issue descriptions here -- the issue is the source of truth.
 
-## Technical Risk to Spike Early
-
-**Astro Content Collections outside `src/`**: The plan assumes Astro can load collections from `research/` (outside `src/`). Astro v5+ supports this via `base` in `defineCollection`, but it should be verified before building the schema layer. Run a quick spike: one collection pointing at `research/test.md`, confirm `npm run build` succeeds. If it fails, fallback options: symlinks, content under `src/content/`, or a copy step.
-
----
-
 ## MVP Milestone
 
-The minimum viable path from placeholder to "site renders structured research content":
+Phases 1-4 constitute the MVP: a deployed site with structured research content, CI quality gates, governance docs, and agent-assisted content ingestion.
 
-1. Define schemas (Zod in `src/content.config.ts`)
-2. Create 2-3 real content files in `research/`
-3. Add Astro page templates for claims, sources, entities
-4. Deploy via existing `deploy.yml`
+1. Define schemas (Zod in `src/content.config.ts`) -- done
+2. Create 2-3 real content files in `research/` -- done
+3. Add Astro page templates for claims, sources, entities -- done
+4. Deploy via existing `deploy.yml` -- done
+5. CI pipeline with build, lint, and citation checks -- done
+6. Plan lifecycle rules, architecture docs, repo governance -- done
+7. PydanticAI agent pipeline for source ingestion and verdict consistency checks -- not started
 
-Everything below this line is post-MVP.
+### Remaining MVP work
+
+Phase 4 is the only remaining MVP phase. Two work items:
+
+- **4.1 Ingestor agent**: Takes a URL and produces a valid source file. Committed plan: `plans/agent-pipeline.md`. Detailed draft: `plans/drafts/agent-pipeline-ingestor.md` (promote before implementation).
+- **4.2 Narrative-verdict consistency check**: LLM-assisted validation comparing independent assessment against claim verdicts. Detailed draft: `plans/drafts/narrative-verdict-consistency.md` (promote before implementation). Depends on 4.1 shared infrastructure.
+
+**Done when**: Ingestor agent produces a valid source file from a URL, AND consistency checker runs against all claims and produces a classified report.
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Foundation (done)
 
-**Goal**: Repo documentation and licensing are accurate.
+Repo hygiene: CLAUDE.md, LICENSE-CONTENT, CONTRIBUTING.md. See [repo-hygiene.md](completed/repo-hygiene.md).
+
+---
+
+## Phase 2: Schemas, Content & Site (done)
+
+Zod schemas in `src/content.config.ts`, 3 entities, 5 sources, 3 claims. Build produces 12 pages. See [research-schemas.md](completed/research-schemas.md), [astro-site.md](completed/astro-site.md), [content-seeding.md](completed/content-seeding.md).
+
+Content expansion opportunity: chatbot comparison table, AI Product Card data, and 12 URLs exist in `parallax-ai` that can be structured. See TODO.md "Deferred Content."
+
+---
+
+## Phase 3: CI & Quality (done)
+
+CI pipeline: build + markdownlint + citation integrity check. See [ci-pipeline.md](completed/ci-pipeline.md).
+
+---
+
+## Phase 3.5: Repo Governance & Documentation (done)
+
+Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan migration, public feedback plan review. See [initial-setup-workflow.md](completed/initial-setup-workflow.md) for historical context.
+
+---
+
+## Phase 4: Agent Pipeline
+
+**Goal**: PydanticAI agents automate source ingestion and provide LLM-assisted content validation.
+
+**Prerequisites before starting**: Promote draft plans from `plans/drafts/` to `plans/`. Reconcile shared infrastructure (`agents/common/`) between 4.1 and 4.2 directory structures.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 1.1 | Repo hygiene | [repo-hygiene.md](completed/repo-hygiene.md) | done | Committed in `ac247c0` |
+| 4.1 | Ingestor agent | [agent-pipeline.md](agent-pipeline.md) | not started | PydanticAI setup, Ingestor agent. Detailed draft: `plans/drafts/agent-pipeline-ingestor.md`. |
+| 4.2 | Narrative-verdict consistency check | -- | not started | Depends on 4.1 shared infra. Detailed draft: `plans/drafts/narrative-verdict-consistency.md`. |
 
-**Done.** CLAUDE.md updated, LICENSE-CONTENT created, CONTRIBUTING.md added, all files committed.
-
----
-
-## Phase 2: Schemas, Content & Site (MVP)
-
-**Goal**: Zod schemas defined, proof-of-concept content created, Astro renders it, site deploys.
-
-| # | Work Item | Plan | Status | Notes |
-|---|-----------|------|--------|-------|
-| 2.1 | Research schemas & structure | [research-schemas.md](completed/research-schemas.md) | done | Zod schemas in `src/content.config.ts`, directory scaffold, QUEUE.md |
-| 2.2 | Astro site development | [astro-site.md](completed/astro-site.md) | done | Base layout, index, claim/source/entity detail pages |
-| 2.3 | Content seeding | [content-seeding.md](completed/content-seeding.md) | done | 3 entities, 5 sources, 3 claims. Build produces 12 pages. |
-
-**Done.** `npm run build` produces 12 pages. `npm run check` passes (build + lint + citations). Deployment blocked by GitHub Pages custom domain issue (see Blockers above) but does not affect development.
-
-### Next: Expand content
-
-More claims and sources exist in `parallax-ai` that can be structured:
-- Chatbot comparison table (`parallax-ai/frontend/src/app/robot/responsible-ai/page.tsx`)
-- AI Product Card data (`parallax-ai/frontend/src/app/transparency/page.tsx`)
-- 12 URLs in `parallax-ai/docs/dangerous-robot/links-to-add.txt`
-
----
-
-## Phase 3: CI & Quality (post-MVP)
-
-**Goal**: PRs get automated feedback on content quality.
-
-| # | Work Item | Plan | Status | Notes |
-|---|-----------|------|--------|-------|
-| 3.1 | CI pipeline | [ci-pipeline.md](completed/ci-pipeline.md) | done | `.github/workflows/ci.yml`, markdownlint, `scripts/check-citations.ts` |
-
-**Done.** PRs run build + markdown lint + citation integrity check via `npm run check`.
-
----
-
-## Phase 3.5: Repo Governance & Documentation
-
-**Goal**: Plan lifecycle rules, architecture docs, and agent instruction improvements.
-
-| # | Work Item | Status | Notes |
-|---|-----------|--------|-------|
-| 3.5.1 | Plan lifecycle rules in AGENTS.md | done | Draft/final/completed directories, backlog update rules, approved issues integration |
-| 3.5.2 | Architecture docs (`docs/architecture/`) | done | site.md, content-model.md, ci-deploy.md, research-workflow.md + README index |
-| 3.5.3 | Move completed plans to `plans/completed/` | done | 5 plans moved: repo-hygiene, research-schemas, astro-site, content-seeding, ci-pipeline |
-| 3.5.4 | Public feedback plan review | done | Security hardening, UX improvements, open source standards applied to `public-feedback.md` |
-
-**Done.**
-
----
-
-## Phase 4 (if needed): Agent Pipeline
-
-**Goal**: PydanticAI agents automate source ingestion and citation auditing.
-
-**Trigger**: Phase 2 content workflow proves too slow or error-prone for manual work. If manual works fine for the current scale, defer indefinitely.
-
-| # | Work Item | Plan | Status | Notes |
-|---|-----------|------|--------|-------|
-| 4.1 | Agent pipeline | [agent-pipeline.md](agent-pipeline.md) | not started | PydanticAI setup, Ingestor agent. Citation auditor is a deterministic script (see 3.1). |
-| 4.2 | Narrative-verdict consistency check | -- | not started | LLM-assisted validation: feed claim body + sources (without frontmatter) to an LLM, compare its independent verdict/confidence assessment against the actual values. Disagreements surface claims for human review. |
-
-**Done when**: Ingestor agent takes a URL and produces a valid source file.
+**Done when**:
+- 4.1: Ingestor agent takes a URL and produces a source file that passes `npm run build` validation. Test suite passes.
+- 4.2: Consistency checker runs against all claims and produces a classified text/JSON report. Test suite passes.
 
 ---
 
@@ -163,17 +147,17 @@ More claims and sources exist in `parallax-ai` that can be structured:
 Phase 1: Foundation             [repo-hygiene]
     |
 Phase 2: Schemas + Site + Content  [research-schemas, astro-site, content-seeding]
-    |                               ^^^ MVP milestone ^^^
     |
 Phase 3: CI & Quality          [ci-pipeline]
     |
 Phase 3.5: Governance & Docs   [plan lifecycle, architecture docs]
     |
-Phase 4 (if needed): Agents    [agent-pipeline]
+Phase 4: Agents                [agent-pipeline]
+    |                               ^^^ MVP milestone ^^^
     |
 Phase 5 (if needed): Automation [automation, downstream-sync]
     |
 Phase 6: Public Feedback        [public-feedback]
 ```
 
-Phases 4-6 are not committed work. They exist as plans to avoid re-research. The MVP is Phase 2.
+Phases 5-6 are not committed work. They exist as plans to avoid re-research.

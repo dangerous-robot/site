@@ -45,9 +45,9 @@ This is the same sequence CI runs. You can run it locally before pushing.
 
 ### Stage 2: Markdown Lint
 
-`markdownlint-cli2 'research/**/*.md' '!research/plans/**'`
+`markdownlint-cli2 'research/**/*.md'`
 
-Lints all Markdown under `research/` except `research/plans/`. See [Markdown Linting](#markdown-linting) below.
+Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-linting) below.
 
 ### Stage 3: Citation Integrity
 
@@ -82,7 +82,7 @@ BROKEN: research/claims/water-usage.md references "missing-source" but research/
 
 Config file: `.markdownlint.jsonc`
 
-The linter runs on `research/**/*.md` (excluding `research/plans/**`). Three rules are disabled:
+The linter runs on `research/**/*.md`. Three rules are disabled:
 
 | Rule  | Name                 | Why disabled                                          |
 |-------|----------------------|-------------------------------------------------------|
@@ -100,6 +100,6 @@ All other `markdownlint` defaults are enforced.
 | `build`            | `astro build`                                        | Build site to `dist/`                            |
 | `preview`          | `astro preview`                                      | Preview production build locally                 |
 | `astro`            | `astro`                                              | Run Astro CLI directly                           |
-| `lint:md`          | `markdownlint-cli2 'research/**/*.md' '!research/plans/**'` | Lint research Markdown files             |
+| `lint:md`          | `markdownlint-cli2 'research/**/*.md'`                       | Lint research Markdown files             |
 | `check:citations`  | `tsx scripts/check-citations.ts`                     | Validate claim-to-source references              |
 | `check`            | `npm run build && npm run lint:md && npm run check:citations` | Run full quality gate (same as CI)      |

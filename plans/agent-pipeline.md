@@ -1,9 +1,8 @@
 # Work Item: Agent Pipeline (PydanticAI)
 
-**Phase**: 4 (if needed)
+**Phase**: 4
 **Status**: not started
-**Trigger**: Phase 2 content workflow proves too slow or error-prone for manual work
-**Depends on**: Phase 2 (schemas and content exist)
+**Depends on**: Phases 1-3.5 (all done)
 
 ## Goal
 

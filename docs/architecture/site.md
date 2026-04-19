@@ -22,7 +22,7 @@ Three collections are defined:
 
 | Collection | Loader base          | Schema highlights                                        |
 |------------|----------------------|----------------------------------------------------------|
-| `claims`   | `research/claims`    | entity, category, verdict, confidence, as_of, sources    |
+| `claims`   | `research/claims`    | title, entity, category, verdict, confidence, as_of, sources |
 | `sources`  | `research/sources`   | url, title, publisher, kind, summary, key_quotes         |
 | `entities` | `research/entities`  | name, type (company/product/topic), website, description |
 
@@ -94,7 +94,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 <html>
   <head>       -- charset, viewport, title, description, global styles
   <body>
-    <nav>      -- site name + links (Home, Claims, Sources, About)
+    <nav>      -- site name + Home link (list pages to be added later)
     <main>     -- <slot /> receives page content
     <footer>   -- TreadLightly AI attribution
 ```
@@ -122,7 +122,7 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 |---------------------|-----------------------------------------------------------|------------------------------------------|
 | `npm run dev`       | `astro dev`                                               | Local dev server                         |
 | `npm run preview`   | `astro preview`                                           | Preview the built site                   |
-| `npm run lint:md`   | `markdownlint-cli2 'research/**/*.md' '!research/plans/**'` | Lint research Markdown files          |
+| `npm run lint:md`   | `markdownlint-cli2 'research/**/*.md'`                   | Lint research Markdown files             |
 | `npm run check:citations` | `tsx scripts/check-citations.ts`                   | Validate source references in claims     |
 | `npm run check`     | `build + lint:md + check:citations`                       | Full CI check                            |
 
