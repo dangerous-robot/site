@@ -62,8 +62,8 @@ Phases 1-4 constitute the MVP: a deployed site with structured research content,
 
 Phase 4 is the only remaining MVP phase. Two work items:
 
-- **4.1 Ingestor agent**: Takes a URL and produces a valid source file. Committed plan: `plans/agent-pipeline.md`. Detailed draft: `plans/drafts/agent-pipeline-ingestor.md` (promote before implementation).
-- **4.2 Narrative-verdict consistency check**: LLM-assisted validation comparing independent assessment against claim verdicts. Detailed draft: `plans/drafts/narrative-verdict-consistency.md` (promote before implementation). Depends on 4.1 shared infrastructure.
+- **4.1 Ingestor agent**: Takes a URL and produces a valid source file. Plans: [agent-pipeline.md](agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) (detailed).
+- **4.2 Narrative-verdict consistency check**: LLM-assisted validation comparing independent assessment against claim verdicts. Plan: [narrative-verdict-consistency.md](narrative-verdict-consistency.md). Depends on 4.1 shared infrastructure.
 
 **Done when**: Ingestor agent produces a valid source file from a URL, AND consistency checker runs against all claims and produces a classified report.
 
@@ -99,12 +99,12 @@ Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan m
 
 **Goal**: PydanticAI agents automate source ingestion and provide LLM-assisted content validation.
 
-**Prerequisites before starting**: Promote draft plans from `plans/drafts/` to `plans/`. Reconcile shared infrastructure (`pipeline/common/`) between 4.1 and 4.2 directory structures.
+**Prerequisites before starting**: Reconcile shared infrastructure (`pipeline/common/`) between 4.1 and 4.2 directory structures. Plans promoted.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 4.1 | Ingestor agent | [agent-pipeline.md](agent-pipeline.md) | not started | PydanticAI setup, Ingestor agent. Detailed draft: `plans/drafts/agent-pipeline-ingestor.md`. |
-| 4.2 | Narrative-verdict consistency check | -- | not started | Depends on 4.1 shared infra. Detailed draft: `plans/drafts/narrative-verdict-consistency.md`. |
+| 4.1 | Ingestor agent | [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) | not started | PydanticAI setup, Ingestor agent. Parent: [agent-pipeline.md](agent-pipeline.md). |
+| 4.2 | Narrative-verdict consistency check | [narrative-verdict-consistency.md](narrative-verdict-consistency.md) | not started | Depends on 4.1 shared infra. |
 
 **Done when**:
 - 4.1: Ingestor agent takes a URL and produces a source file that passes `npm run build` validation. Test suite passes.
