@@ -83,6 +83,7 @@ Key fields enforced by Zod at build time:
 
 | Field | Type | Notes |
 |-------|------|-------|
+| `title` | string | Human-readable claim statement |
 | `entity` | string | Path like `companies/anthropic` |
 | `category` | enum | One of 8 categories (see `AGENTS.md`) |
 | `verdict` | enum | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified` |

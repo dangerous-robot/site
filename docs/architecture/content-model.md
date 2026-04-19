@@ -53,6 +53,7 @@ The Markdown body provides extended context about the entity.
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
+| `title` | string | yes | Human-readable claim statement |
 | `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
 | `category` | enum | yes | One of the taxonomy slugs (see below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified` |
@@ -122,6 +123,7 @@ description: AI safety company and developer of the Claude family of large langu
 
 ```yaml
 ---
+title: No AI company scores above D on existential safety
 entity: companies/anthropic
 category: ai-safety
 verdict: "true"
