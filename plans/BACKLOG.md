@@ -122,6 +122,7 @@ More claims and sources exist in `parallax-ai` that can be structured:
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
 | 4.1 | Agent pipeline | [agent-pipeline.md](agent-pipeline.md) | not started | PydanticAI setup, Ingestor agent. Citation auditor is a deterministic script (see 3.1). |
+| 4.2 | Narrative-verdict consistency check | -- | not started | LLM-assisted validation: feed claim body + sources (without frontmatter) to an LLM, compare its independent verdict/confidence assessment against the actual values. Disagreements surface claims for human review. |
 
 **Done when**: Ingestor agent takes a URL and produces a valid source file.
 
