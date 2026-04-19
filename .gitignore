@@ -21,3 +21,9 @@ dist/
 
 # Draft plans (kept local, not committed)
 plans/drafts/
+
+# Python / Pipeline
+pipeline/.venv/
+pipeline/__pycache__/
+__pycache__/
+*.pyc
