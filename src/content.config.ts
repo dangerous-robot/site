@@ -27,6 +27,7 @@ const sources = defineCollection({
 const claims = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/claims' }),
   schema: z.object({
+    title: z.string(),
     entity: z.string(),
     category: z.enum([
       'ai-safety',

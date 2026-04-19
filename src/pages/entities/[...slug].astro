@@ -74,7 +74,7 @@ const kindLabels: Record<string, string> = {
                 {claim.data.verdict}
               </span>
               <a href={`/claims/${claim.id}`}>
-                {claim.data.category}: {claim.id.split("/").pop()?.replace(/-/g, " ")}
+                {claim.data.title}
               </a>
             </li>
           ))}

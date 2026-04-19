@@ -1,4 +1,5 @@
 ---
+title: No AI company scores above D on existential safety
 entity: companies/anthropic
 category: ai-safety
 verdict: "true"

@@ -1,4 +1,5 @@
 ---
+title: GreenPT inference runs on 100% renewable energy via Infomaniak
 entity: companies/greenpt
 category: environmental-impact
 verdict: "true"

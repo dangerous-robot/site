@@ -48,7 +48,7 @@ const verdictColors: Record<string, string> = {
                 >
                   {claim.data.verdict}
                 </span>
-                <a href={`/claims/${claim.id}`}>{claim.data.category}: {claim.id.split("/").pop()}</a>
+                <a href={`/claims/${claim.id}`}>{claim.data.title}</a>
               </li>
             ))}
           </ul>

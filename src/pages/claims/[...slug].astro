@@ -32,13 +32,12 @@ const asOfDate = claim.data.as_of instanceof Date
   ? claim.data.as_of.toISOString().split("T")[0]
   : String(claim.data.as_of);
 
-const claimTitle = claim.id.split("/").pop()?.replace(/-/g, " ") || claim.id;
 ---
 
-<Base title={claimTitle}>
+<Base title={claim.data.title}>
   <article class="claim-detail">
     <header>
-      <h1>{claimTitle}</h1>
+      <h1>{claim.data.title}</h1>
 
       <div class="meta">
         <span
@@ -96,7 +95,6 @@ const claimTitle = claim.id.split("/").pop()?.replace(/-/g, " ") || claim.id;
   }
 
   .claim-detail h1 {
-    text-transform: capitalize;
     margin-bottom: 1rem;
   }
 
