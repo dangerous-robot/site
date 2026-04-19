@@ -48,10 +48,6 @@ const publishedDate = source.data.published_date instanceof Date
         </span>
 
         <span class="publisher">{source.data.publisher}</span>
-
-        {source.data.author && (
-          <span class="author">by {source.data.author}</span>
-        )}
       </div>
 
       <div class="dates">
@@ -121,12 +117,6 @@ const publishedDate = source.data.published_date instanceof Date
   .publisher {
     color: #ccc;
     font-size: 0.9rem;
-  }
-
-  .author {
-    color: #999;
-    font-size: 0.9rem;
-    font-style: italic;
   }
 
   .dates {

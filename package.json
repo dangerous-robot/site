@@ -8,7 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "lint:md": "markdownlint-cli2 'research/**/*.md' '!research/plans/**'",
+    "lint:md": "markdownlint-cli2 'research/**/*.md'",
     "check:citations": "tsx scripts/check-citations.ts",
     "check": "npm run build && npm run lint:md && npm run check:citations"
   },

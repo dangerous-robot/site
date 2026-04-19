@@ -1,6 +1,6 @@
 ---
 url: https://futureoflife.org/ai-safety-index-winter-2025/
-archived_url: https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf
+archived_url: https://web.archive.org/web/2026/https://futureoflife.org/ai-safety-index-winter-2025/
 title: AI Safety Index, Winter 2025
 publisher: Future of Life Institute
 published_date: 2025-12-13
