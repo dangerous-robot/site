@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
+from auditor.compare import compare
+from auditor.models import IndependentAssessment
 from common.models import Confidence, Verdict, VerdictSeverity
-
-from consistency.compare import compare
-from consistency.models import IndependentAssessment
 
 
 def _make_assessment(
@@ -67,7 +66,6 @@ class TestAdjacentSameConfidence:
 
 class TestAdjacentConfidenceGap:
     def test_adjacent_verdict_big_confidence_gap_triggers_review(self) -> None:
-        """Adjacent verdict + 2-step confidence gap -> needs review."""
         result = compare(
             Verdict.TRUE, Confidence.HIGH,
             _make_assessment(Verdict.MOSTLY_TRUE, Confidence.LOW),
@@ -78,7 +76,6 @@ class TestAdjacentConfidenceGap:
         assert result.needs_review is True
 
     def test_adjacent_verdict_small_confidence_gap_no_review(self) -> None:
-        """Adjacent verdict + 1-step confidence gap -> no review."""
         result = compare(
             Verdict.TRUE, Confidence.HIGH,
             _make_assessment(Verdict.MOSTLY_TRUE, Confidence.MEDIUM),
@@ -159,7 +156,6 @@ class TestUnverified:
 
 class TestEvidenceGapsTriggerReview:
     def test_match_with_many_gaps_triggers_review(self) -> None:
-        """Even with matching verdict, >1 evidence gap triggers review."""
         result = compare(
             Verdict.TRUE, Confidence.HIGH,
             _make_assessment(Verdict.TRUE, Confidence.HIGH, gaps=[
@@ -173,7 +169,6 @@ class TestEvidenceGapsTriggerReview:
         assert result.needs_review is True
 
     def test_match_with_one_gap_no_review(self) -> None:
-        """Matching verdict with exactly one gap does not trigger review."""
         result = compare(
             Verdict.TRUE, Confidence.HIGH,
             _make_assessment(Verdict.TRUE, Confidence.HIGH, gaps=["Minor gap"]),

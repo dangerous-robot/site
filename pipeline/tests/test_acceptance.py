@@ -14,7 +14,7 @@ import pytest
 from dotenv import load_dotenv
 
 from common.models import Verdict
-from verify.orchestrator import VerifyConfig, verify_claim
+from orchestrator.pipeline import VerifyConfig, verify_claim
 
 load_dotenv()
 
@@ -36,6 +36,8 @@ class TestLiveVerification:
         renewable energy -- no major LLM provider makes that guarantee.
         The pipeline should research this and reach that conclusion.
         """
+        from orchestrator.checkpoints import AutoApproveCheckpointHandler
+
         result = await verify_claim(
             entity_name="TreadLightly AI",
             claim_text=(
@@ -43,6 +45,7 @@ class TestLiveVerification:
                 "on 100% renewable energy"
             ),
             config=VerifyConfig(max_sources=3),
+            checkpoint=AutoApproveCheckpointHandler(),
         )
 
         # Pipeline should complete without fatal errors
@@ -54,17 +57,17 @@ class TestLiveVerification:
         # At least one source should ingest successfully
         assert len(result.urls_ingested) > 0, "No sources ingested"
 
-        # Drafter should produce a verdict
-        assert result.draft is not None, "No draft produced"
-        assert result.draft.verdict in (
+        # Analyst should produce a verdict
+        assert result.analyst_output is not None, "No analyst output produced"
+        assert result.analyst_output.verdict.verdict in (
             Verdict.FALSE,
             Verdict.MOSTLY_FALSE,
             Verdict.MIXED,
             Verdict.UNVERIFIED,
-        ), f"Expected false-ish or unverified verdict, got: {result.draft.verdict}"
+        ), f"Expected false-ish or unverified verdict, got: {result.analyst_output.verdict.verdict}"
 
         # The claim should NOT be rated as true
-        assert result.draft.verdict not in (
+        assert result.analyst_output.verdict.verdict not in (
             Verdict.TRUE,
             Verdict.MOSTLY_TRUE,
-        ), f"False claim rated as true: {result.draft.verdict}"
+        ), f"False claim rated as true: {result.analyst_output.verdict.verdict}"

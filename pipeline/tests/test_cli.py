@@ -1,33 +1,29 @@
-"""Tests for the ingestor CLI."""
+"""Tests for the dr ingest subcommand CLI."""
 
 from __future__ import annotations
 
 from click.testing import CliRunner
 
-from ingestor.cli import main
+from orchestrator.cli import main
 
 
-class TestCli:
+class TestIngestCli:
     def test_invalid_url(self):
         runner = CliRunner()
-        result = runner.invoke(main, ["not-a-url"])
+        result = runner.invoke(main, ["ingest", "not-a-url"])
         assert result.exit_code != 0
-        assert "invalid URL" in result.output.lower() or "invalid url" in (
-            result.output + (result.stderr if hasattr(result, "stderr") else "")
-        ).lower()
+        assert "invalid url" in (result.output + (result.stderr if hasattr(result, "stderr") else "")).lower()
 
     def test_missing_url_shows_help(self):
         runner = CliRunner()
-        result = runner.invoke(main, [])
+        result = runner.invoke(main, ["ingest"])
         assert result.exit_code != 0
-        # Click shows "Missing argument" for required args
         assert "url" in result.output.lower() or "missing" in result.output.lower()
 
     def test_help_flag(self):
         runner = CliRunner()
-        result = runner.invoke(main, ["--help"])
+        result = runner.invoke(main, ["ingest", "--help"])
         assert result.exit_code == 0
         assert "Ingest a URL" in result.output
         assert "--dry-run" in result.output
-        assert "--model" in result.output
         assert "--skip-wayback" in result.output
