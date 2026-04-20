@@ -6,9 +6,18 @@ import datetime
 import logging
 from pathlib import Path
 
+from common.frontmatter import serialize_frontmatter
+from common.models import Category, Confidence, EntityType, Verdict
+from common.utils import slugify
 from ingestor.models import SourceFile
 
 logger = logging.getLogger(__name__)
+
+_ENTITY_TYPE_DIR = {
+    EntityType.COMPANY: "companies",
+    EntityType.PRODUCT: "products",
+    EntityType.TOPIC: "topics",
+}
 
 
 def _write_source_files(
@@ -16,8 +25,6 @@ def _write_source_files(
     repo_root: Path,
 ) -> list[str]:
     """Write ingested source files to disk. Returns list of source IDs."""
-    from common.frontmatter import serialize_frontmatter
-
     source_ids: list[str] = []
 
     for _url, sf in source_files:
@@ -28,11 +35,12 @@ def _write_source_files(
         fm_dict = sf.frontmatter.model_dump(mode="python")
         markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
-        if target_path.exists():
-            logger.info("Source already exists, skipping: %s", target_path)
-        else:
-            target_path.write_text(markdown, encoding="utf-8")
+        try:
+            with target_path.open("x", encoding="utf-8") as f:
+                f.write(markdown)
             logger.info("Wrote source: %s", target_path)
+        except FileExistsError:
+            logger.info("Source already exists, skipping: %s", target_path)
 
         source_ids.append(f"{sf.year}/{sf.slug}")
 
@@ -41,18 +49,13 @@ def _write_source_files(
 
 def _write_entity_file(
     entity_name: str,
-    entity_type: str,
+    entity_type: EntityType,
     entity_description: str,
     repo_root: Path,
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
-    from analyst.agent import slugify
-    from common.frontmatter import serialize_frontmatter
-
     entity_slug = slugify(entity_name)
-    entity_type_norm = entity_type.rstrip("s")  # normalize "companies" -> "company"
-    type_plural = {"company": "companies", "product": "products", "topic": "topics"}
-    type_dir = type_plural.get(entity_type_norm, f"{entity_type_norm}s")
+    type_dir = _ENTITY_TYPE_DIR.get(entity_type, f"{entity_type.value}s")
 
     entity_dir = repo_root / "research" / "entities" / type_dir
     entity_dir.mkdir(parents=True, exist_ok=True)
@@ -65,7 +68,7 @@ def _write_entity_file(
 
     fm = {
         "name": entity_name,
-        "type": entity_type_norm,
+        "type": entity_type,
         "description": entity_description,
     }
     body = f"{entity_description}\n"
@@ -78,18 +81,15 @@ def _write_claim_file(
     title: str,
     entity_name: str,
     entity_ref: str,
-    category,
-    verdict,
-    confidence: str,
+    category: Category,
+    verdict: Verdict,
+    confidence: Confidence,
     narrative: str,
     claim_slug: str,
     source_ids: list[str],
     repo_root: Path,
 ) -> Path:
     """Write the claim file to disk. Returns the file path."""
-    from analyst.agent import slugify
-    from common.frontmatter import serialize_frontmatter
-
     entity_slug = slugify(entity_name)
     claim_slug_clean = slugify(claim_slug)
 
@@ -100,9 +100,9 @@ def _write_claim_file(
     fm = {
         "title": title,
         "entity": entity_ref,
-        "category": category.value if hasattr(category, "value") else category,
-        "verdict": verdict.value if hasattr(verdict, "value") else verdict,
-        "confidence": confidence.value if hasattr(confidence, "value") else confidence,
+        "category": category,
+        "verdict": verdict,
+        "confidence": confidence,
         "as_of": datetime.date.today(),
         "sources": source_ids,
     }

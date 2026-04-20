@@ -11,8 +11,9 @@ from pathlib import Path
 import httpx
 from pydantic import BaseModel, ConfigDict
 
-from analyst.agent import AnalystDeps, AnalystOutput, analyst_agent, build_analyst_prompt, slugify
-from auditor.agent import AuditorDeps, auditor_agent, build_auditor_prompt
+from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
+from auditor.agent import auditor_agent, build_auditor_prompt
+from common.utils import slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
@@ -95,17 +96,10 @@ async def verify_claim(
 
         for url, sf in source_files:
             result.urls_ingested.append(url)
-            result.sources.append({
-                "title": sf.frontmatter.title,
-                "publisher": sf.frontmatter.publisher,
-                "summary": sf.frontmatter.summary,
-                "key_quotes": sf.frontmatter.key_quotes or [],
-                "body": sf.body,
-                "slug": sf.slug,
-                "url": sf.frontmatter.url,
-            })
+            result.sources.append(_build_source_dict(sf))
 
-        result.urls_failed = [u for u in urls if u not in result.urls_ingested]
+        ingested_set = set(result.urls_ingested)
+        result.urls_failed = [u for u in urls if u not in ingested_set]
         all_errors = research_errors + ingest_errors
 
         # Checkpoint: review sources
@@ -175,45 +169,65 @@ async def _research(
         return [], [err]
 
 
+async def _ingest_one(
+    client: httpx.AsyncClient,
+    url: str,
+    cfg: VerifyConfig,
+    today: datetime.date,
+) -> tuple[str, SourceFile] | StepError:
+    """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError."""
+    deps = IngestorDeps(
+        http_client=client,
+        repo_root=cfg.repo_root,
+        skip_wayback=cfg.skip_wayback,
+        today=today,
+    )
+    prompt = (
+        f"Ingest this URL and produce a SourceFile:\n\n"
+        f"URL: {url}\n"
+        f"Today's date: {today.isoformat()}\n"
+    )
+    try:
+        with ingestor_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                ingestor_agent.run(prompt, deps=deps), timeout=90
+            )
+        logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
+        return (url, res.output)
+    except asyncio.TimeoutError:
+        logger.warning("Ingest timed out: %s", url)
+        return StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out")
+    except Exception as exc:
+        error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
+        logger.warning("Failed to ingest %s: %s", url, exc)
+        return StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
+
+
 async def _ingest_urls(
     client: httpx.AsyncClient,
     urls: list[str],
     cfg: VerifyConfig,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
-    """Run the ingestor agent on each URL. Returns (successes, errors)."""
-    results: list[tuple[str, SourceFile]] = []
-    errors: list[StepError] = []
+    """Run the ingestor agent on all URLs concurrently. Returns (successes, errors)."""
     today = datetime.date.today()
-
-    for url in urls:
-        deps = IngestorDeps(
-            http_client=client,
-            repo_root=cfg.repo_root,
-            skip_wayback=cfg.skip_wayback,
-            today=today,
-        )
-        prompt = (
-            f"Ingest this URL and produce a SourceFile:\n\n"
-            f"URL: {url}\n"
-            f"Today's date: {today.isoformat()}\n"
-        )
-
-        try:
-            with ingestor_agent.override(model=cfg.model):
-                res = await asyncio.wait_for(
-                    ingestor_agent.run(prompt, deps=deps), timeout=90
-                )
-            results.append((url, res.output))
-            logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
-        except asyncio.TimeoutError:
-            errors.append(StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out"))
-            logger.warning("Ingest timed out: %s", url)
-        except Exception as exc:
-            error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
-            errors.append(StepError(step="ingest", url=url, error_type=error_type, message=str(exc)))
-            logger.warning("Failed to ingest %s: %s", url, exc)
-
+    outcomes = await asyncio.gather(
+        *[_ingest_one(client, url, cfg, today) for url in urls]
+    )
+    results = [o for o in outcomes if isinstance(o, tuple)]
+    errors = [o for o in outcomes if isinstance(o, StepError)]
     return results, errors
+
+
+def _build_source_dict(sf: SourceFile) -> dict:
+    return {
+        "title": sf.frontmatter.title,
+        "publisher": sf.frontmatter.publisher,
+        "summary": sf.frontmatter.summary,
+        "key_quotes": sf.frontmatter.key_quotes or [],
+        "body": sf.body,
+        "slug": sf.slug,
+        "url": sf.frontmatter.url,
+    }
 
 
 async def _analyse_claim(
@@ -222,13 +236,12 @@ async def _analyse_claim(
     sources: list[dict],
     cfg: VerifyConfig,
 ) -> AnalystOutput | None:
-    deps = AnalystDeps()
     prompt = build_analyst_prompt(entity_name, claim_text, sources)
 
     try:
         with analyst_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                analyst_agent.run(prompt, deps=deps), timeout=60
+                analyst_agent.run(prompt), timeout=60
             )
         return res.output
     except Exception as exc:
@@ -253,12 +266,11 @@ async def _audit_claim(
     )
 
     prompt = build_auditor_prompt(bundle)
-    deps = AuditorDeps()
 
     try:
         with auditor_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                auditor_agent.run(prompt, deps=deps), timeout=60
+                auditor_agent.run(prompt), timeout=60
             )
         assessment = res.output
 
@@ -323,17 +335,10 @@ async def research_claim(
 
         for url, sf in source_files:
             result.urls_ingested.append(url)
-            result.sources.append({
-                "title": sf.frontmatter.title,
-                "publisher": sf.frontmatter.publisher,
-                "summary": sf.frontmatter.summary,
-                "key_quotes": sf.frontmatter.key_quotes or [],
-                "body": sf.body,
-                "slug": sf.slug,
-                "url": sf.frontmatter.url,
-            })
+            result.sources.append(_build_source_dict(sf))
 
-        result.urls_failed = [u for u in urls if u not in result.urls_ingested]
+        ingested_set = set(result.urls_ingested)
+        result.urls_failed = [u for u in urls if u not in ingested_set]
         all_errors = research_errors + ingest_errors
 
         # Checkpoint: review sources

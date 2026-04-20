@@ -214,7 +214,7 @@ def audit(
     from common.content_loader import list_claims, load_entity, load_source, resolve_repo_root
     from common.frontmatter import parse_frontmatter
     from common.models import Category, Confidence, Verdict
-    from auditor.agent import AuditorDeps, auditor_agent, build_auditor_prompt
+    from auditor.agent import auditor_agent, build_auditor_prompt
     from auditor.compare import compare
     from auditor.models import ClaimBundle, EntityContext, SourceContext
     from auditor.report import format_json_report, format_text_report
@@ -286,9 +286,8 @@ def audit(
 
             click.echo(f"Checking: {claim_id} ...", err=True)
             prompt = build_auditor_prompt(bundle)
-            deps = AuditorDeps()
             with auditor_agent.override(model=model):
-                res = await auditor_agent.run(prompt, deps=deps)
+                res = await auditor_agent.run(prompt)
             result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
 
             if verbose_output or result.needs_review:
