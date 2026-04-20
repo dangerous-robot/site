@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from common.models import Category
+from common.utils import slugify
 
 from .models import ClaimBundle, EntityContext, SourceContext
 
@@ -38,7 +39,7 @@ def build_bundle(
     ]
 
     return ClaimBundle(
-        claim_id=f"verify/{entity_name.lower().replace(' ', '-')}",
+        claim_id=f"verify/{slugify(entity_name)}",
         entity=entity,
         category=category,
         narrative=narrative,
