@@ -415,7 +415,9 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 
 @main.command()
 @click.argument("entity_name")
+@click.argument("homepage_url", required=False, default=None)
 @click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product"]), help="Entity type")
+@click.option("--verbose", is_flag=True, help="Enable verbose logging")
 @click.option("--max-sources", default=4, type=int, help="Max sources to ingest per template")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
@@ -424,7 +426,9 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 def onboard(
     ctx: click.Context,
     entity_name: str,
+    homepage_url: str | None,
     entity_type: str,
+    verbose: bool,
     max_sources: int,
     skip_wayback: bool,
     repo_root: str | None,
@@ -432,10 +436,15 @@ def onboard(
 ) -> None:
     """Onboard an entity using claim templates.
 
+    HOMEPAGE_URL is optional. If provided, it is used directly for entity
+    light research instead of searching for the homepage.
+
     Example:
         dr onboard "Ecosia AI" --type product
-        dr onboard "Anthropic" --type company --interactive
+        dr onboard "TreadLightlyAI" treadlightly.ai --type company --interactive
     """
+    if verbose:
+        logging.getLogger().setLevel(logging.INFO)
     if not os.environ.get("ANTHROPIC_API_KEY"):
         click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
         sys.exit(2)
@@ -452,7 +461,7 @@ def onboard(
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
-    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint))
+    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url))
 
     click.echo("=" * 60)
     click.echo("Onboard Report")

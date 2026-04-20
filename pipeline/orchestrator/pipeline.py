@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
+import click
 import httpx
 from pydantic import BaseModel, ConfigDict
 
@@ -440,6 +441,7 @@ async def onboard_entity(
     entity_type: str,
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
+    seed_url: str | None = None,
 ) -> OnboardResult:
     """Onboard an entity by running claim templates through the research pipeline.
 
@@ -475,18 +477,22 @@ async def onboard_entity(
 
     # Step 1: Light research for entity context
     logger.info("Onboard step 1: light research for %s", entity_name)
-    entity_description = entity_name
+    entity_description = ""
     try:
         async with httpx.AsyncClient() as client:
-            query = f"{entity_name} official website"
-            urls, _ = await _research(client, entity_name, query, cfg)
-            if urls:
-                source_files, _ = await _ingest_urls(client, urls[:1], cfg)
-                if source_files:
-                    _url, sf = source_files[0]
-                    entity_description = sf.frontmatter.summary or entity_name
+            if seed_url:
+                _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
+                logger.info("Onboard step 1: ingesting seed URL %s", _url)
+                source_files, _ = await _ingest_urls(client, [_url], cfg)
+            else:
+                query = f"{entity_name} official website"
+                urls, _ = await _research(client, entity_name, query, cfg)
+                source_files, _ = await _ingest_urls(client, urls[:1], cfg) if urls else ([], [])
+            if source_files:
+                _u, sf = source_files[0]
+                entity_description = sf.frontmatter.summary or ""
     except Exception as exc:
-        logger.warning("Light research failed, using entity name as description: %s", exc)
+        logger.warning("Light research failed: %s", exc)
 
     # Step 2: Template screening
     logger.info("Onboard step 2: screening templates")
@@ -504,7 +510,8 @@ async def onboard_entity(
     # Step 3: Checkpoint
     logger.info("Onboard step 3: checkpoint review")
     decision = await gate.review_onboard(
-        entity_name, entity_type, applicable_slugs, excluded
+        entity_name, entity_type, applicable_slugs, excluded,
+        entity_description=entity_description,
     )
 
     if decision == "reject":
@@ -532,10 +539,13 @@ async def onboard_entity(
     )
     result.entity_ref = entity_ref
 
-    # Step 5: Per-template research pipeline (sequential)
-    for slug in applicable_slugs:
+    # Step 5: Per-template research pipeline (sequential; parallelism TBD per orchestrator config)
+    total = len(applicable_slugs)
+    for idx, slug in enumerate(applicable_slugs, 1):
+        click.echo(f"[{idx}/{total}] Researching: {slug} ...", err=True)
         template = get_template(all_templates, slug)
         if not template:
+            click.echo(f"[{idx}/{total}] ERROR: template not found: {slug}", err=True)
             result.errors.append(f"Template not found: {slug}")
             result.claims_failed.append(slug)
             continue
@@ -577,7 +587,9 @@ async def onboard_entity(
                 repo_root=repo_root,
             )
             result.claims_created.append(str(claim_path.relative_to(repo_root)))
+            click.echo(f"[{idx}/{total}] Done: {slug}", err=True)
         except Exception as exc:
+            click.echo(f"[{idx}/{total}] FAILED: {slug}: {exc}", err=True)
             logger.error("Template %s failed: %s", slug, exc)
             result.errors.append(f"Template {slug}: {exc}")
             result.claims_failed.append(slug)

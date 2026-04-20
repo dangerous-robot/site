@@ -167,7 +167,8 @@ class TestOnboardEntityRejection:
 
         class RejectHandler(AutoApproveCheckpointHandler):
             async def review_onboard(self, entity_name, entity_type,
-                                     applicable_templates, excluded_templates):
+                                     applicable_templates, excluded_templates,
+                                     entity_description=""):
                 self.calls.append("review_onboard")
                 return "reject"
 

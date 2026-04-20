@@ -55,6 +55,7 @@ class CheckpointHandler(Protocol):
         entity_type: str,
         applicable_templates: list[str],
         excluded_templates: list[tuple[str, str]],
+        entity_description: str = "",
     ) -> Literal["accept", "reject"] | list[str]:
         """Return 'accept', 'reject', or an edited list of template slugs."""
         ...
@@ -96,8 +97,11 @@ class CLICheckpointHandler:
         entity_type: str,
         applicable_templates: list[str],
         excluded_templates: list[tuple[str, str]],
+        entity_description: str = "",
     ) -> Literal["accept", "reject"] | list[str]:
         click.echo(f"\nOnboard: {entity_name} ({entity_type})")
+        if entity_description:
+            click.echo(f"Description: {entity_description}")
         click.echo(f"Applicable templates ({len(applicable_templates)}):")
         for slug in applicable_templates:
             click.echo(f"  + {slug}")
@@ -145,6 +149,7 @@ class AutoApproveCheckpointHandler:
         entity_type: str,
         applicable_templates: list[str],
         excluded_templates: list[tuple[str, str]],
+        entity_description: str = "",
     ) -> Literal["accept", "reject"] | list[str]:
         self.calls.append("review_onboard")
         return "accept"
