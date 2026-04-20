@@ -48,6 +48,56 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 | Citation Auditor | Finds claims with 0 sources, stale `as_of`, broken URLs | All claims | Audit report |
 | Page Builder | Generates TS data files for TreadLightly | All claims | TS data files |
 
+## Pipeline Agents (pipeline/)
+
+The `pipeline/` directory contains PydanticAI agents that automate claim research and verification.
+
+| Agent | Package | Input | Output |
+|-------|---------|-------|--------|
+| **Researcher** | `researcher/` | Claim text | URLs + reasoning (`web_search` tool) |
+| **Ingestor** | `ingestor/` | URL | `SourceFile` (frontmatter + body) (`web_fetch`, `wayback_check` tools) |
+| **Analyst** | `analyst/` | Sources + claim | `AnalystOutput` (entity + verdict + narrative) |
+| **Auditor** | `auditor/` | Sources + claim (no verdict) | Independent `IndependentAssessment` |
+
+Pipeline routing and persistence live in `orchestrator/`.
+
+### Directory layout
+
+```
+pipeline/
+  common/          # Shared models, frontmatter, content_loader, instructions loader
+  ingestor/        # Agent: URL -> SourceFile
+  researcher/      # Agent: claim -> relevant URLs
+  analyst/         # Agent: sources + claim -> verdict + narrative
+  auditor/         # Agent: independent second opinion
+  orchestrator/    # Routing logic, checkpoints, persistence, dr CLI
+  tests/
+```
+
+### Instruction files
+
+Each agent package contains an `instructions.md` file that is loaded at import time via `common/instructions.py`. Edit `instructions.md` to change agent behavior without touching Python code.
+
+### Checkpoint behavior
+
+The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` protocol:
+
+- `review_sources` -- fires after ingest; allows halting before analysis when sources are poor
+- `review_disagreement` -- fires when analyst and auditor verdicts conflict
+
+Pass `--interactive` to `dr verify` or `dr research` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
+
+### dr CLI
+
+Single entry point: `uv run dr --help`
+
+```
+dr verify "Entity" "claim text"
+dr research "claim text"
+dr audit --entity ecosia
+dr ingest https://example.com/article
+```
+
 ## File Naming
 
 - Use lowercase kebab-case slugs: `openai.md`, `training-data-consent.md`
@@ -55,20 +105,20 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 ## Plans & Backlog
 
-All plans live under `plans/`. Lifecycle determines subdirectory:
+All plans live under `docs/plans/`. Lifecycle determines subdirectory:
 
 | Location | Purpose | Git status |
 |----------|---------|------------|
-| `plans/drafts/` | Work-in-progress plans | Gitignored -- never commit |
-| `plans/` | Active, final plans | Committed |
-| `plans/completed/` | Fully done plans | Committed |
+| `docs/plans/drafts/` | Work-in-progress plans | Gitignored -- never commit |
+| `docs/plans/` | Active, final plans | Committed |
+| `docs/plans/completed/` | Fully done plans | Committed |
 
 Rules:
 
-1. **Drafts stay local.** Write WIP plans to `plans/drafts/`. Never commit a plan until its design is reviewed and final.
-2. **Final plans are committed** to `plans/` when approved.
-3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `plans/completed/`.
-4. **Keep the backlog current.** Update `plans/BACKLOG.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
+1. **Drafts stay local.** Write WIP plans to `docs/plans/drafts/`. Never commit a plan until its design is reviewed and final.
+2. **Final plans are committed** to `docs/plans/` when approved.
+3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `docs/plans/completed/`.
+4. **Keep the backlog current.** Update `docs/BACKLOG.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
 5. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in BACKLOG.md but do not duplicate issue content.
 
 ## Architecture Docs
