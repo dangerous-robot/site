@@ -58,7 +58,7 @@ The pipeline implements roles as runnable code. Lives in `pipeline/`.
 |---|---|
 | **Content rules** | Constraints on research objects (e.g., summary word limits, citation requirements) |
 | **Schema authority** | Zod in `content.config.ts` is the single source of truth for field shapes |
-| **Plan lifecycle** | `drafts/` -> `plans/` -> `completed/` |
+| **Plan lifecycle** | `docs/plans/drafts/` -> `docs/plans/` -> `docs/plans/completed/` |
 | **AGENTS.md** | Defines roles, content rules, and schema authority |
 
 ## Vocabulary Layers

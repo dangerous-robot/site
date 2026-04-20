@@ -20,7 +20,10 @@ dist/
 *.log
 
 # Draft plans (kept local, not committed)
-plans/drafts/
+docs/plans/drafts/
+
+# Claude Code local settings and worktrees
+.claude/
 
 # Python / Pipeline
 pipeline/.venv/

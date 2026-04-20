@@ -1,7 +1,7 @@
 # Phase 4: Agent Pipeline (PydanticAI)
 
 **Phase**: 4
-**Status**: not started
+**Status**: done
 **Depends on**: Phases 1-3.5 (all done)
 **Prerequisites**: Naming conventions applied (`pipeline/` directory, `recheck_cadence_days` field rename)
 

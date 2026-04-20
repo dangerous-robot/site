@@ -1,6 +1,6 @@
 # Naming Conventions & Project Vocabulary
 
-**Status**: active
+**Status**: done
 **Depends on**: None (applies across all phases)
 
 ## Goal
@@ -124,7 +124,7 @@ Constraints and policies that govern content and process.
 |---|---|
 | **Content rules** | Constraints on research objects (e.g., summary word limits, citation requirements) |
 | **Schema authority** | Zod in `content.config.ts` is the single source of truth for field shapes |
-| **Plan lifecycle** | `drafts/` -> `plans/` -> `completed/` |
+| **Plan lifecycle** | `docs/plans/drafts/` -> `docs/plans/` -> `docs/plans/completed/` |
 | **AGENTS.md** | Defines roles, content rules, and schema authority |
 
 ### Tests & Checks
@@ -190,17 +190,17 @@ Documentation:
 - `AGENTS.md:14`
 - `docs/architecture/research-workflow.md:26,51,93` (3 occurrences)
 - `docs/architecture/content-model.md:63`
-- `plans/TODO.md:22,31` (2 occurrences)
+- `docs/TODO.md:22,31` (2 occurrences)
 
 Auto-generated (no manual edit): `.astro/collections/claims.schema.json` rebuilds on `astro build`.
 
 ### Step 2: Use `pipeline/` instead of `agents/` in Phase 4 plans
 
 The directory does not exist yet. Updates are plan-level only:
-- `plans/agent-pipeline.md:35` (1 reference)
-- `plans/BACKLOG.md:102` (1 reference)
-- `plans/drafts/agent-pipeline-ingestor.md` (11 references)
-- `plans/drafts/narrative-verdict-consistency.md` (6 references)
+- `docs/plans/completed/agent-pipeline.md:35` (1 reference)
+- `docs/BACKLOG.md:102` (1 reference)
+- `docs/plans/drafts/agent-pipeline-ingestor.md` (11 references)
+- `docs/plans/drafts/narrative-verdict-consistency.md` (6 references)
 
 Also consider: rename Python package from `dangerous-robot-agents` to `dangerous-robot-pipeline` in draft pyproject.toml examples.
 
@@ -213,8 +213,8 @@ Extract the glossary (Section 2 of this plan) once promoted.
 ### Step 4: Apply "tests" vs "checks" language consistently
 
 The repo is mostly consistent already. Two spots need clarification:
-- `plans/TODO.md:34` -- "A test framework (Vitest) for scripted validators" should say "check framework" (content verification, not code testing)
-- `plans/TODO.md:36` -- "inter-rater consistency testing" should say "validation" (verifying reasoning quality, not testing code)
+- `docs/TODO.md:34` -- "A test framework (Vitest) for scripted validators" should say "check framework" (content verification, not code testing)
+- `docs/TODO.md:36` -- "inter-rater consistency testing" should say "validation" (verifying reasoning quality, not testing code)
 
 CI workflows, npm scripts, and architecture docs already use "checks" correctly.
 

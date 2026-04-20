@@ -1,7 +1,7 @@
 # Phase 4.2: Narrative-Verdict Consistency Check -- Implementation Plan
 
 **Phase**: 4.2
-**Status**: not started
+**Status**: done
 **Depends on**: Phase 4.1 (shared `pipeline/` infrastructure)
 **Parent plan**: [agent-pipeline.md](agent-pipeline.md)
 
@@ -484,7 +484,7 @@ This is viable because 4.2 is read-only and needs no file writing. The ingestor 
 ## Critical Files
 
 - `src/content.config.ts` -- Zod schemas (verdict/confidence enums must match)
-- `plans/agent-pipeline.md` -- Parent plan
+- `docs/plans/completed/agent-pipeline.md` -- Parent plan
 - `research/claims/` -- Existing claims (structure to parse and split)
 - `scripts/check-citations.ts` -- Existing validation pattern (frontmatter parsing, exit codes)
 - `docs/architecture/research-workflow.md` -- Documents quality gate gaps this plan addresses

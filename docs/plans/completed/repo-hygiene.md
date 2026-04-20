@@ -22,7 +22,7 @@ Bring repo documentation and licensing up to date with decisions made. Most of P
 ## Remaining Tasks
 
 - [ ] Update `CLAUDE.md` Project Status to reflect Astro setup, deploy workflow, and current state
-- [ ] Update `CLAUDE.md` to remove stale CNAME migration guidance and point plan reference to `plans/BACKLOG.md`
+- [ ] Update `CLAUDE.md` to remove stale CNAME migration guidance and point plan reference to `docs/BACKLOG.md`
 - [ ] Create `LICENSE-CONTENT` with CC-BY-4.0 text
 - [ ] Add dual-license note to `README.md`
 - [ ] Create `CONTRIBUTING.md` with setup instructions (`npm install`, `npm run dev`) and PR conventions

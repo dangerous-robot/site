@@ -1,6 +1,6 @@
 # Backlog: dangerousrobot.org
 
-Last updated: 2026-04-18 (session 2)
+Last updated: 2026-04-19
 
 This file tracks the phased progression for standing up dangerousrobot.org. Each phase lists its work items with links to detailed plan files. Status is tracked here; details live in the individual plans.
 
@@ -60,19 +60,19 @@ Phases 1-4 constitute the MVP: a deployed site with structured research content,
 
 ### MVP complete
 
-All MVP phases (1-4) are implemented. The `pipeline/` package has 120 passing tests across shared infrastructure, ingestor agent, consistency check agent, and a proof-of-concept end-to-end verification orchestrator.
+All MVP phases (1-4) are implemented. The `pipeline/` package has 122 passing tests across shared infrastructure, ingestor agent, consistency check agent, and a proof-of-concept end-to-end verification orchestrator.
 
 ---
 
 ## Phase 1: Foundation (done)
 
-Repo hygiene: CLAUDE.md, LICENSE-CONTENT, CONTRIBUTING.md. See [repo-hygiene.md](completed/repo-hygiene.md).
+Repo hygiene: CLAUDE.md, LICENSE-CONTENT, CONTRIBUTING.md. See [repo-hygiene.md](plans/completed/repo-hygiene.md).
 
 ---
 
 ## Phase 2: Schemas, Content & Site (done)
 
-Zod schemas in `src/content.config.ts`, 3 entities, 5 sources, 3 claims. Build produces 12 pages. See [research-schemas.md](completed/research-schemas.md), [astro-site.md](completed/astro-site.md), [content-seeding.md](completed/content-seeding.md).
+Zod schemas in `src/content.config.ts`, 5 entities, 9 sources, 4 claims. See [research-schemas.md](plans/completed/research-schemas.md), [astro-site.md](plans/completed/astro-site.md), [content-seeding.md](plans/completed/content-seeding.md).
 
 Content expansion opportunity: chatbot comparison table, AI Product Card data, and 12 URLs exist in `parallax-ai` that can be structured. See TODO.md "Deferred Content."
 
@@ -80,36 +80,41 @@ Content expansion opportunity: chatbot comparison table, AI Product Card data, a
 
 ## Phase 3: CI & Quality (done)
 
-CI pipeline: build + markdownlint + citation integrity check. See [ci-pipeline.md](completed/ci-pipeline.md).
+CI pipeline: build + markdownlint + citation integrity check. See [ci-pipeline.md](plans/completed/ci-pipeline.md).
 
 ---
 
 ## Phase 3.5: Repo Governance & Documentation (done)
 
-Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan migration, public feedback plan review. See [initial-setup-workflow.md](completed/initial-setup-workflow.md) for historical context.
+Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan migration, public feedback plan review. See [initial-setup-workflow.md](plans/completed/initial-setup-workflow.md) for historical context.
+
+---
+
+## Cross-cutting: Naming Conventions (done)
+
+Consistent vocabulary across the project: `recheck_cadence_days` field rename, `agents/` to `pipeline/` directory rename. See [naming-conventions.md](plans/completed/naming-conventions.md).
 
 ---
 
 ## Phase 4: Agent Pipeline (done)
 
-PydanticAI agents for source ingestion and LLM-assisted content validation. Shared infrastructure in `pipeline/common/`, ingestor in `pipeline/ingestor/`, consistency check in `pipeline/consistency/`. 120 tests passing. See [agent-pipeline.md](agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](agent-pipeline-ingestor.md) (4.1), [narrative-verdict-consistency.md](narrative-verdict-consistency.md) (4.2).
+PydanticAI agents for source ingestion and LLM-assisted content validation. Shared infrastructure in `pipeline/common/`, ingestor in `pipeline/ingestor/`, consistency check in `pipeline/consistency/`. 122 tests passing. See [agent-pipeline.md](plans/completed/agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](plans/completed/agent-pipeline-ingestor.md) (4.1), [narrative-verdict-consistency.md](plans/completed/narrative-verdict-consistency.md) (4.2).
 
-Also includes a POC end-to-end verification orchestrator (`pipeline/verify/`) that chains research, ingest, draft, and consistency check agents. Plan in `plans/drafts/verify-claim-poc.md` (local only).
+Also includes a POC end-to-end verification orchestrator (`pipeline/verify/`) that chains research, ingest, draft, and consistency check agents. See [verify-claim-poc.md](plans/completed/verify-claim-poc.md).
 
 ---
 
-## Phase 5 (if needed): Automation & Integration
+## Phase 5 (if needed): Automation
 
-**Goal**: Recurring audits, queue-based intake, downstream data sync to parallax-ai.
+**Goal**: Recurring audits, queue-based intake.
 
-**Trigger**: Enough content exists that manual auditing is burdensome, and parallax-ai is ready to consume structured data.
+**Trigger**: Enough content exists that manual auditing is burdensome.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 5.1 | Automation & scheduling | [automation.md](automation.md) | not started | Scheduled workflows, QUEUE.md intake |
-| 5.2 | Downstream sync | [downstream-sync.md](downstream-sync.md) | not started | TS data generation, parallax-ai integration. Needs discovery spike first. |
+| 5.1 | Automation & scheduling | [automation.md](plans/automation.md) | not started | Scheduled workflows, QUEUE.md intake |
 
-**Parallelization**: 5.1 and 5.2 can run in parallel. 5.2 requires understanding parallax-ai's build process (open question).
+Downstream sync to parallax-ai moved to [future/downstream-sync.md](plans/future/downstream-sync.md) -- good idea, not needed now.
 
 ---
 
@@ -119,9 +124,9 @@ Also includes a POC end-to-end verification orchestrator (`pipeline/verify/`) th
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 6.1 | GitHub config + feedback form + Cloudflare backend | [public-feedback.md](public-feedback.md) | not started | Issue templates, CODEOWNERS, Astro form, Worker + D1 + Turnstile, `api.dangerousrobot.org` |
-| 6.2 | Admin CLI + GitHub issue promotion | [public-feedback.md](public-feedback.md) | not started | `scripts/feedback-admin.ts`, accept/reject/inquire, Resend email |
-| 6.3 | Admin dashboard (optional) | [public-feedback.md](public-feedback.md) | not started | Web UI for reviewing submissions. Defer unless CLI proves insufficient. |
+| 6.1 | GitHub config + feedback form + Cloudflare backend | [public-feedback.md](plans/public-feedback.md) | not started | Issue templates, CODEOWNERS, Astro form, Worker + D1 + Turnstile, `api.dangerousrobot.org` |
+| 6.2 | Admin CLI + GitHub issue promotion | [public-feedback.md](plans/public-feedback.md) | not started | `scripts/feedback-admin.ts`, accept/reject/inquire, Resend email |
+| 6.3 | Admin dashboard (optional) | [public-feedback.md](plans/public-feedback.md) | not started | Web UI for reviewing submissions. Defer unless CLI proves insufficient. |
 
 **Done when**: Public can submit feedback at `dangerousrobot.org/feedback`, admin can review via CLI, approved feedback becomes a GitHub issue.
 

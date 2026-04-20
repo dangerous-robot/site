@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-Astro 6.x site with GitHub Actions deploy workflow. Phase tracking is in `plans/BACKLOG.md`. Architecture docs are in `docs/architecture/`. See AGENTS.md for plan lifecycle and architecture doc rules.
+Astro 6.x site with GitHub Actions deploy workflow. Phase tracking is in `docs/BACKLOG.md`. Architecture docs are in `docs/architecture/`. See AGENTS.md for plan lifecycle and architecture doc rules.
 
 ## Custom Domain
 

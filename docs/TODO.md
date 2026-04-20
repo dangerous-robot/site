@@ -1,6 +1,6 @@
 # TODO
 
-This file tracks blockers, deferred ideas, and improvement opportunities not yet associated with a backlog phase. Phased work items are tracked in `BACKLOG.md`.
+This file tracks blockers, deferred ideas, and improvement opportunities not yet associated with a backlog phase. Phased work items are tracked in `docs/BACKLOG.md`.
 
 ## Blocked
 

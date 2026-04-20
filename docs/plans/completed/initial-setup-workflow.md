@@ -2,7 +2,7 @@
 
 Status: **superseded** | Created: 2026-04-18
 
-> **This plan is historical context.** It was the original planning document. Decisions and work items have been absorbed into phase-specific plans. For current architecture, see `docs/architecture/`. For current status, see `plans/BACKLOG.md`.
+> **This plan is historical context.** It was the original planning document. Decisions and work items have been absorbed into phase-specific plans. For current architecture, see `docs/architecture/`. For current status, see `docs/BACKLOG.md`.
 
 This plan covers three workstreams for standing up dangerousrobot.org: the website (GitHub Pages + custom domain), the multi-agent research pipeline, and open-source repo best practices.
 

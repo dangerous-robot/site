@@ -107,4 +107,4 @@ Contributors agree to these terms. See `CONTRIBUTING.md`.
 - CI workflow: `.github/workflows/ci.yml`
 - Citation checker: `scripts/check-citations.ts`
 - Research queue: `research/QUEUE.md`
-- Phase tracking: `plans/BACKLOG.md`
+- Phase tracking: `docs/BACKLOG.md`

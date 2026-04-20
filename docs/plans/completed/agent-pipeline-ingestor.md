@@ -1,7 +1,7 @@
 # Phase 4.1: Ingestor Agent -- Implementation Plan
 
 **Phase**: 4.1
-**Status**: not started
+**Status**: done
 **Depends on**: Phase 2 (schemas and content exist)
 **Parent plan**: [agent-pipeline.md](agent-pipeline.md)
 
@@ -13,7 +13,7 @@ Build a PydanticAI-based Ingestor agent that takes a URL and produces a valid so
 
 ## 1. Python Project Structure
 
-The `pipeline/` directory lives at the repo root, sibling to `src/`, `research/`, `scripts/`, and `plans/`. It is an independent Python package managed by `uv`. Flat layout (no `src/` intermediary) -- simpler for a CLI tool in a monorepo.
+The `pipeline/` directory lives at the repo root, sibling to `src/`, `research/`, `scripts/`, and `docs/`. It is an independent Python package managed by `uv`. Flat layout (no `src/` intermediary) -- simpler for a CLI tool in a monorepo.
 
 ```
 pipeline/
@@ -391,4 +391,4 @@ Exit codes: `0` success, `1` recoverable error, `2` configuration error.
 - `src/content.config.ts` -- Zod schemas (source of truth for Pydantic models)
 - `research/sources/2025/fli-safety-index.md` -- Reference for output format
 - `AGENTS.md` -- Content rules encoded in system prompt and validators
-- `plans/agent-pipeline.md` -- Parent plan to update as work progresses
+- `docs/plans/completed/agent-pipeline.md` -- Parent plan to update as work progresses
