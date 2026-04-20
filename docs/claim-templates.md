@@ -1,6 +1,6 @@
 # Standardized Claim Templates
 
-**Status**: Design proposal. Templates are defined; the onboarding flow and `dr onboard` CLI depend on the [pipeline agent refactor](plans/pipeline-agent-refactor.md) which is not yet implemented.
+**Status**: Implemented. `research/templates.yaml` defines all 19 templates. `dr onboard "Entity" --type company|product` runs the full onboarding flow. Pass a seed URL as a second positional arg to skip the homepage search step: `dr onboard "Corp" example.com --type company`.
 
 Templates define repeatable research questions that can be evaluated across multiple entities. Each template produces one claim file per entity, with the verdict scale (true through unverified) encoding degree and nuance in the narrative.
 
@@ -116,7 +116,7 @@ This definition is a moving target. When evaluating claims, the narrative should
 
 ## Entity onboarding
 
-**Status**: Design proposal. Depends on the [pipeline agent refactor](plans/pipeline-agent-refactor.md) -- specifically the `dr` CLI, checkpoint protocol, and ingestor expansion.
+**Status**: Implemented. See `pipeline/orchestrator/pipeline.py:onboard_entity` and `pipeline/orchestrator/cli.py`.
 
 When a new entity enters the system, the **ingestor** handles onboarding. The ingestor's role is "intake" for anything entering the research archive -- URLs become source files, entities become entity files with screened template lists.
 

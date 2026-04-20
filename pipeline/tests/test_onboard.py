@@ -159,6 +159,44 @@ class TestOnboardEntityHappyPath:
         assert len(result.claims_created) > 0
 
 
+class TestOnboardEntitySeedUrl:
+    @pytest.mark.asyncio
+    async def test_seed_url_skips_researcher(self, tmp_path: Path) -> None:
+        """When seed_url is provided, the researcher step is not called for light research."""
+        _setup_tmp_repo(tmp_path)
+
+        researcher_calls: list[str] = []
+
+        def _tracking_research_model() -> TestModel:
+            researcher_calls.append("called")
+            return _research_model()
+
+        with (
+            research_agent.override(model=_research_model()),
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config, seed_url="testcorp.example.com"
+            )
+
+        assert result.status == "accepted"
+        assert result.entity_ref is not None
+        # Entity file written with https:// normalised seed URL
+        entity_path = tmp_path / "research" / "entities" / "companies" / "testcorp.md"
+        assert entity_path.exists()
+
+
 class TestOnboardEntityRejection:
     @pytest.mark.asyncio
     async def test_rejected_writes_draft(self, tmp_path: Path) -> None:
