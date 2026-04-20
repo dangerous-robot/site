@@ -107,20 +107,18 @@ uv run dr ingest https://example.com/article
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 
-**`inv`** wraps repo-wide tasks and delegates pipeline operations to `dr`:
+**`inv`** wraps repo-wide tasks:
 
 ```
-inv setup          # install all dependencies (npm + uv)
-inv test           # run pipeline unit tests
-inv test.all       # run all tests including acceptance
-inv build          # build Astro site
-inv verify "Ecosia" "claim text"   # delegates to dr verify
-inv research "claim text"          # delegates to dr research
-inv audit --entity ecosia          # delegates to dr audit
-inv ingest https://example.com     # delegates to dr ingest
+inv setup      # install all dependencies (npm + uv)
+inv test       # run pipeline unit tests
+inv test.all   # run all tests including acceptance
+inv build      # build Astro site
+inv check      # build + lint + test (pre-push gate)
+inv clean      # remove build artifacts
 ```
 
-`inv` requires a one-time global install: `uv tool install invoke`. It is optional -- all pipeline commands work directly via `dr`.
+`inv` requires a one-time global install: `uv tool install invoke`. For pipeline operations, use `dr` directly.
 
 ## File Naming
 
