@@ -8,17 +8,9 @@ import shlex
 
 from invoke import Collection, task
 
-PIPELINE = "pipeline"
-
-
-def _uv_pipeline(cmd):
-    """Build a uv command targeting the pipeline project."""
-    return f"uv run --directory {PIPELINE} {cmd}"
-
-
 def _dr(subcmd):
-    """Build a dr CLI command targeting the pipeline project."""
-    return _uv_pipeline(f"dr {subcmd}")
+    """Build a dr CLI command via uv run."""
+    return f"uv run dr {subcmd}"
 
 
 # --- Root tasks ---
@@ -28,7 +20,7 @@ def _dr(subcmd):
 def setup(ctx):
     """Install Node and Python dependencies."""
     ctx.run("npm ci")
-    ctx.run(f"uv sync --directory {PIPELINE} --dev")
+    ctx.run("uv sync --dev")
 
 
 @task
@@ -74,13 +66,15 @@ def clean(ctx):
 @task
 def _test_unit(ctx):
     """Run pipeline unit tests (excludes acceptance)."""
-    ctx.run(_uv_pipeline("python -m pytest -m 'not acceptance'"), pty=True)
+    with ctx.cd("pipeline"):
+        ctx.run("uv run python -m pytest -m 'not acceptance'", pty=True)
 
 
 @task
 def _test_all(ctx):
     """Run all pipeline tests including acceptance (needs ANTHROPIC_API_KEY)."""
-    ctx.run(_uv_pipeline("python -m pytest"), pty=True)
+    with ctx.cd("pipeline"):
+        ctx.run("uv run python -m pytest", pty=True)
 
 
 test_ns = Collection("test")

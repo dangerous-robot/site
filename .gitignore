@@ -26,7 +26,8 @@ docs/plans/drafts/
 .claude/
 
 # Python / Pipeline
-pipeline/.venv/
+.venv/
 pipeline/__pycache__/
 __pycache__/
 *.pyc
+uv.lock

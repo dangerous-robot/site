@@ -17,7 +17,7 @@ def test_dr_cli_help(subcommand):
         cmd,
         capture_output=True,
         text=True,
-        cwd="/Users/brandon/dev/ai/dangerous-robot/site/pipeline",
+        cwd="/Users/brandon/dev/ai/dangerous-robot/site",
     )
     assert result.returncode == 0, f"dr {subcommand} --help failed: {result.stderr}"
     assert "Usage" in result.stdout
