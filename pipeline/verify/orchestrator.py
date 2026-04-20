@@ -5,7 +5,9 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import re
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import httpx
 from pydantic import BaseModel, ConfigDict
@@ -262,3 +264,197 @@ async def _consistency_check(
     except Exception as exc:
         logger.error("Consistency check failed: %s", exc)
         return None
+
+
+# --- File writing for research_claim ---
+
+
+def _slugify(text: str) -> str:
+    """Convert text to a kebab-case slug."""
+    text = text.lower().strip()
+    text = re.sub(r"[^a-z0-9\s-]", "", text)
+    text = re.sub(r"[\s-]+", "-", text)
+    return text.strip("-")
+
+
+def _write_source_files(
+    source_files: list[tuple[str, SourceFile]],
+    repo_root: Path,
+) -> list[str]:
+    """Write ingested source files to disk. Returns list of source IDs."""
+    from common.frontmatter import serialize_frontmatter
+
+    source_ids: list[str] = []
+
+    for _url, sf in source_files:
+        target_dir = repo_root / "research" / "sources" / str(sf.year)
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / f"{sf.slug}.md"
+
+        fm_dict = sf.frontmatter.model_dump(mode="python")
+        markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
+
+        if target_path.exists():
+            logger.info("Source already exists, skipping: %s", target_path)
+        else:
+            target_path.write_text(markdown, encoding="utf-8")
+            logger.info("Wrote source: %s", target_path)
+
+        source_ids.append(f"{sf.year}/{sf.slug}")
+
+    return source_ids
+
+
+def _write_entity_file(
+    draft: "ClaimDraft",
+    repo_root: Path,
+) -> str:
+    """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
+    from common.frontmatter import serialize_frontmatter
+
+    entity_slug = _slugify(draft.entity_name)
+    entity_type = draft.entity_type.rstrip("s")  # normalize "companies" -> "company"
+    type_plural = {"company": "companies", "product": "products", "topic": "topics"}
+    type_dir = type_plural.get(entity_type, f"{entity_type}s")
+
+    entity_dir = repo_root / "research" / "entities" / type_dir
+    entity_dir.mkdir(parents=True, exist_ok=True)
+    entity_path = entity_dir / f"{entity_slug}.md"
+    entity_ref = f"{type_dir}/{entity_slug}"
+
+    if entity_path.exists():
+        logger.info("Entity already exists: %s", entity_path)
+        return entity_ref
+
+    fm = {
+        "name": draft.entity_name,
+        "type": entity_type,
+        "description": draft.entity_description,
+    }
+    body = f"{draft.entity_description}\n"
+    entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+    logger.info("Wrote entity: %s", entity_path)
+    return entity_ref
+
+
+def _write_claim_file(
+    draft: "ClaimDraft",
+    entity_ref: str,
+    source_ids: list[str],
+    repo_root: Path,
+) -> Path:
+    """Write the claim file to disk. Returns the file path."""
+    from common.frontmatter import serialize_frontmatter
+
+    entity_slug = _slugify(draft.entity_name)
+    claim_slug = _slugify(draft.claim_slug)
+
+    claim_dir = repo_root / "research" / "claims" / entity_slug
+    claim_dir.mkdir(parents=True, exist_ok=True)
+    claim_path = claim_dir / f"{claim_slug}.md"
+
+    fm = {
+        "title": draft.title,
+        "entity": entity_ref,
+        "category": draft.category.value,
+        "verdict": draft.verdict.value,
+        "confidence": draft.confidence.value,
+        "as_of": datetime.date.today(),
+        "sources": source_ids,
+    }
+    claim_path.write_text(
+        serialize_frontmatter(fm, draft.narrative.rstrip() + "\n"),
+        encoding="utf-8",
+    )
+    logger.info("Wrote claim: %s", claim_path)
+    return claim_path
+
+
+async def research_claim(
+    claim_text: str,
+    config: VerifyConfig | None = None,
+) -> VerificationResult:
+    """Research a claim, persist sources/entity/claim to disk, and run consistency check.
+
+    Unlike verify_claim, this function:
+    - Does not require an entity name (the drafter identifies it)
+    - Writes source files to research/sources/
+    - Creates entity file in research/entities/ if needed
+    - Writes the claim file to research/claims/
+    """
+    cfg = config or VerifyConfig()
+    if not cfg.repo_root:
+        from common.content_loader import resolve_repo_root
+        cfg.repo_root = str(resolve_repo_root())
+
+    repo_root = Path(cfg.repo_root)
+
+    result = VerificationResult(
+        entity="(pending)",
+        claim_text=claim_text,
+        urls_found=[],
+        urls_ingested=[],
+        urls_failed=[],
+        sources=[],
+        errors=[],
+    )
+
+    async with httpx.AsyncClient() as client:
+        # Step 1: Research
+        logger.info("Step 1/5: Searching for sources...")
+        urls = await _research(client, "", claim_text, cfg)
+        result.urls_found = urls
+
+        if not urls:
+            result.errors.append("Research agent found no relevant URLs")
+            return result
+
+        # Step 2: Ingest
+        logger.info("Step 2/5: Ingesting %d sources...", len(urls))
+        source_files = await _ingest_urls(client, urls, cfg)
+
+        for url, sf in source_files:
+            result.urls_ingested.append(url)
+            result.sources.append({
+                "title": sf.frontmatter.title,
+                "publisher": sf.frontmatter.publisher,
+                "summary": sf.frontmatter.summary,
+                "key_quotes": sf.frontmatter.key_quotes or [],
+                "body": sf.body,
+                "slug": sf.slug,
+                "url": sf.frontmatter.url,
+            })
+
+        result.urls_failed = [u for u in urls if u not in result.urls_ingested]
+
+        if not result.sources:
+            result.errors.append("All source URLs failed to ingest")
+            return result
+
+        # Step 3: Write sources to disk
+        logger.info("Step 3/5: Writing %d source files...", len(source_files))
+        source_ids = _write_source_files(source_files, repo_root)
+
+        # Step 4: Draft claim (drafter identifies entity)
+        logger.info("Step 4/5: Drafting claim...")
+        draft = await _draft_claim(None, claim_text, result.sources, cfg)
+        result.draft = draft
+
+        if not draft:
+            result.errors.append("Claim drafter failed to produce a draft")
+            return result
+
+        result.entity = draft.entity_name
+
+        # Write entity and claim to disk
+        entity_ref = _write_entity_file(draft, repo_root)
+        claim_path = _write_claim_file(draft, entity_ref, source_ids, repo_root)
+
+        # Step 5: Consistency check
+        logger.info("Step 5/5: Running consistency check...")
+        consistency = await _consistency_check(
+            draft.entity_name, claim_text, draft, result.sources, cfg
+        )
+        result.consistency = consistency
+
+    return result

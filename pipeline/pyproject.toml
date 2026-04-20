@@ -24,6 +24,7 @@ dev = [
 ingest = "ingestor.cli:main"
 consistency-check = "consistency.cli:main"
 verify-claim = "verify.cli:main"
+research = "verify.research_cli:main"
 
 [build-system]
 requires = ["hatchling"]

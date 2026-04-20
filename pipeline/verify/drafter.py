@@ -11,24 +11,42 @@ from common.models import Category, Confidence, Verdict
 
 
 class ClaimDraft(BaseModel):
-    """A draft claim ready for human review."""
+    """A draft claim produced by the drafter agent."""
 
     title: str = Field(description="Concise claim title (e.g. 'Ecosia runs AI chat on non-renewable infrastructure')")
     category: Category
     verdict: Verdict
     confidence: Confidence
     narrative: str = Field(description="2-5 sentence assessment. Cite sources by title. Factual, not evaluative.")
+    entity_name: str = Field(description="Primary entity name (e.g. 'Apple', 'OpenAI')")
+    entity_type: str = Field(description="One of: company, product, topic")
+    entity_description: str = Field(description="One-sentence description of the entity")
+    claim_slug: str = Field(description="Kebab-case filename slug for the claim (e.g. 'neural-link-support')")
 
 
 SYSTEM_PROMPT = """\
 You are a claim drafter for dangerousrobot.org, a research site that evaluates
 claims about AI companies and products with structured, citable evidence.
 
-Given an entity, a claim to evaluate, and source materials, your job is to:
+Given a claim to evaluate and source materials, your job is to:
 
-1. Assess whether the evidence supports, refutes, or is mixed on the claim
-2. Choose the appropriate verdict and confidence level
-3. Write a factual narrative citing the sources
+1. Identify the primary entity the claim is about
+2. Assess whether the evidence supports, refutes, or is mixed on the claim
+3. Choose the appropriate verdict and confidence level
+4. Write a factual narrative citing the sources
+
+ENTITY IDENTIFICATION:
+- entity_name: The primary company, product, or topic (e.g. "Apple", "ChatGPT")
+- entity_type: One of "company", "product", or "topic"
+- entity_description: One sentence describing the entity
+- If the claim mentions a product, the entity is usually the product.
+  If it mentions a company without a specific product, the entity is the company.
+  If it is about a general topic (e.g. "AI regulation"), the entity is a topic.
+
+CLAIM SLUG:
+- Generate a short kebab-case slug for the claim filename
+- Derived from the core assertion, not the entity (e.g. "neural-link-support",
+  "renewable-energy-hosting", "training-data-consent")
 
 VERDICT SCALE:
 - true: Well-supported by the cited evidence
@@ -72,15 +90,16 @@ drafter_agent = Agent(
 
 
 def build_drafter_prompt(
-    entity_name: str,
+    entity_name: str | None,
     claim_text: str,
     sources: list[dict],
 ) -> str:
     """Build the user prompt for the drafter agent."""
     parts: list[str] = []
 
-    parts.append(f"## Entity: {entity_name}")
-    parts.append("")
+    if entity_name:
+        parts.append(f"## Entity: {entity_name}")
+        parts.append("")
     parts.append(f"## Claim to evaluate: {claim_text}")
     parts.append("")
 

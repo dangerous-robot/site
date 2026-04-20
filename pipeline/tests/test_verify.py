@@ -54,6 +54,10 @@ class TestDrafterAgent:
                     "verdict": "mixed",
                     "confidence": "medium",
                     "narrative": "The evidence is mixed on this claim.",
+                    "entity_name": "TestCorp",
+                    "entity_type": "company",
+                    "entity_description": "A test company",
+                    "claim_slug": "renewable-energy-use",
                 },
             )
         ):
