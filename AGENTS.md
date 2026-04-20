@@ -87,16 +87,40 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 
 Pass `--interactive` to `dr verify` or `dr research` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
 
-### dr CLI
+### Tooling: dr vs inv
 
-Single entry point: `uv run dr --help`
+Two CLIs exist with different scopes:
+
+| Tool | What it is | Use for |
+|------|-----------|---------|
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, research, audit, ingest |
+| `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
+
+**`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
 
 ```
-dr verify "Entity" "claim text"
-dr research "claim text"
-dr audit --entity ecosia
-dr ingest https://example.com/article
+uv run dr verify "Entity" "claim text"
+uv run dr research "claim text"
+uv run dr audit --entity ecosia
+uv run dr ingest https://example.com/article
 ```
+
+With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
+
+**`inv`** wraps repo-wide tasks and delegates pipeline operations to `dr`:
+
+```
+inv setup          # install all dependencies (npm + uv)
+inv test           # run pipeline unit tests
+inv test.all       # run all tests including acceptance
+inv build          # build Astro site
+inv verify "Ecosia" "claim text"   # delegates to dr verify
+inv research "claim text"          # delegates to dr research
+inv audit --entity ecosia          # delegates to dr audit
+inv ingest https://example.com     # delegates to dr ingest
+```
+
+`inv` requires a one-time global install: `uv tool install invoke`. It is optional -- all pipeline commands work directly via `dr`.
 
 ## File Naming
 
