@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import runtime_checkable, Protocol
+from typing import Literal, runtime_checkable, Protocol
 
 import click
 
@@ -49,6 +49,16 @@ class CheckpointHandler(Protocol):
         """Return True to accept result, False to flag for human review."""
         ...
 
+    async def review_onboard(
+        self,
+        entity_name: str,
+        entity_type: str,
+        applicable_templates: list[str],
+        excluded_templates: list[tuple[str, str]],
+    ) -> Literal["accept", "reject"] | list[str]:
+        """Return 'accept', 'reject', or an edited list of template slugs."""
+        ...
+
 
 class CLICheckpointHandler:
     """Interactive CLI checkpoints via click.confirm()."""
@@ -80,6 +90,29 @@ class CLICheckpointHandler:
         click.echo(f"Severity: {comparison.verdict_severity.value}")
         return click.confirm("Accept this result?", default=False)
 
+    async def review_onboard(
+        self,
+        entity_name: str,
+        entity_type: str,
+        applicable_templates: list[str],
+        excluded_templates: list[tuple[str, str]],
+    ) -> Literal["accept", "reject"] | list[str]:
+        click.echo(f"\nOnboard: {entity_name} ({entity_type})")
+        click.echo(f"Applicable templates ({len(applicable_templates)}):")
+        for slug in applicable_templates:
+            click.echo(f"  + {slug}")
+        if excluded_templates:
+            click.echo(f"Excluded templates ({len(excluded_templates)}):")
+            for slug, reason in excluded_templates:
+                click.echo(f"  - {slug}: {reason}")
+        choice = click.prompt(
+            "Action", type=click.Choice(["accept", "reject", "edit"]), default="accept"
+        )
+        if choice == "edit":
+            raw = click.prompt("Comma-separated slugs to keep")
+            return [s.strip() for s in raw.split(",") if s.strip()]
+        return choice
+
 
 class AutoApproveCheckpointHandler:
     """Auto-approves all checkpoints. For tests and CI.
@@ -105,3 +138,13 @@ class AutoApproveCheckpointHandler:
     ) -> bool:
         self.calls.append("review_disagreement")
         return True
+
+    async def review_onboard(
+        self,
+        entity_name: str,
+        entity_type: str,
+        applicable_templates: list[str],
+        excluded_templates: list[tuple[str, str]],
+    ) -> Literal["accept", "reject"] | list[str]:
+        self.calls.append("review_onboard")
+        return "accept"

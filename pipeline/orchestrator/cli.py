@@ -409,5 +409,97 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
         sys.exit(exit_code)
 
 
+# --------------------------------------------------------------------------- #
+# dr onboard                                                                    #
+# --------------------------------------------------------------------------- #
+
+@main.command()
+@click.argument("entity_name")
+@click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product"]), help="Entity type")
+@click.option("--max-sources", default=4, type=int, help="Max sources to ingest per template")
+@click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
+@click.pass_context
+def onboard(
+    ctx: click.Context,
+    entity_name: str,
+    entity_type: str,
+    max_sources: int,
+    skip_wayback: bool,
+    repo_root: str | None,
+    interactive: bool,
+) -> None:
+    """Onboard an entity using claim templates.
+
+    Example:
+        dr onboard "Ecosia AI" --type product
+        dr onboard "Anthropic" --type company --interactive
+    """
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
+        sys.exit(2)
+
+    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
+    from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
+
+    model = ctx.obj["model"]
+    config = VerifyConfig(
+        model=model,
+        max_sources=max_sources,
+        skip_wayback=skip_wayback,
+        repo_root=repo_root or "",
+    )
+    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
+
+    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint))
+
+    click.echo("=" * 60)
+    click.echo("Onboard Report")
+    click.echo("=" * 60)
+    click.echo(f"Entity:  {result.entity_name} ({result.entity_type})")
+    click.echo(f"Status:  {result.status}")
+
+    if result.entity_ref:
+        click.echo(f"Ref:     {result.entity_ref}")
+
+    if result.status == "rejected":
+        click.echo("")
+        click.echo("Onboarding rejected.")
+        if result.entity_ref and "drafts/" in result.entity_ref:
+            click.echo(f"Draft entity file: research/entities/{result.entity_ref}.md")
+    else:
+        click.echo("")
+        click.echo(f"Templates applied: {len(result.templates_applied)}")
+        click.echo(f"Claims created:    {len(result.claims_created)}")
+        click.echo(f"Claims failed:     {len(result.claims_failed)}")
+
+        if result.claims_created:
+            click.echo("")
+            click.echo("Created:")
+            for path in result.claims_created:
+                click.echo(f"  + {path}")
+
+        if result.claims_failed:
+            click.echo("")
+            click.echo("Failed:")
+            for slug in result.claims_failed:
+                click.echo(f"  ! {slug}")
+
+    if result.templates_excluded:
+        click.echo("")
+        click.echo("Excluded templates:")
+        for slug, reason in result.templates_excluded:
+            click.echo(f"  - {slug}: {reason}")
+
+    if result.errors:
+        click.echo("")
+        click.echo("Errors:")
+        for err in result.errors:
+            click.echo(f"  ! {err}")
+
+    click.echo("=" * 60)
+
+
 if __name__ == "__main__":
     main()

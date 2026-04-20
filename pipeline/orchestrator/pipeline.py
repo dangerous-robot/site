@@ -7,12 +7,15 @@ import datetime
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 import httpx
 from pydantic import BaseModel, ConfigDict
 
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
+from common.models import EntityType
+from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.utils import slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
@@ -403,5 +406,180 @@ async def research_claim(
             accept = await gate.review_disagreement(comparison)
             if not accept:
                 result.errors.append("Flagged for human review: analyst/auditor disagree")
+
+    return result
+
+
+@dataclass
+class OnboardResult:
+    """Summary of an entity onboarding run."""
+
+    entity_name: str
+    entity_type: str
+    status: Literal["accepted", "rejected"]
+    entity_ref: str | None
+    claims_created: list[str] = field(default_factory=list)
+    claims_failed: list[str] = field(default_factory=list)
+    templates_applied: list[str] = field(default_factory=list)
+    templates_excluded: list[tuple[str, str]] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+
+
+def _screen_templates(
+    entity_description: str,
+    templates: list,
+) -> tuple[list[str], list[tuple[str, str]]]:
+    """Screen templates for applicability. MVP: all core templates pass."""
+    applicable = [t.slug for t in templates]
+    excluded: list[tuple[str, str]] = []
+    return applicable, excluded
+
+
+async def onboard_entity(
+    entity_name: str,
+    entity_type: str,
+    config: VerifyConfig | None = None,
+    checkpoint: CheckpointHandler | None = None,
+) -> OnboardResult:
+    """Onboard an entity by running claim templates through the research pipeline.
+
+    1. Light research to gather entity context
+    2. Screen templates (deterministic MVP, LLM screening TBD)
+    3. Checkpoint for operator review
+    4. Per-template research pipeline (sequential; parallelism TBD per orchestrator config)
+    5. Write entity file
+    6. Return OnboardResult summary
+    """
+    from orchestrator.persistence import (
+        _write_claim_file,
+        _write_draft_entity_file,
+        _write_entity_file,
+        _write_source_files,
+    )
+
+    cfg = config or VerifyConfig()
+    if not cfg.repo_root:
+        from common.content_loader import resolve_repo_root
+        cfg.repo_root = str(resolve_repo_root())
+
+    gate = checkpoint or AutoApproveCheckpointHandler()
+    repo_root = Path(cfg.repo_root)
+    et = EntityType(entity_type)
+
+    result = OnboardResult(
+        entity_name=entity_name,
+        entity_type=entity_type,
+        status="accepted",
+        entity_ref=None,
+    )
+
+    # Step 1: Light research for entity context
+    logger.info("Onboard step 1: light research for %s", entity_name)
+    entity_description = entity_name
+    try:
+        async with httpx.AsyncClient() as client:
+            query = f"{entity_name} official website"
+            urls, _ = await _research(client, entity_name, query, cfg)
+            if urls:
+                source_files, _ = await _ingest_urls(client, urls[:1], cfg)
+                if source_files:
+                    _url, sf = source_files[0]
+                    entity_description = sf.frontmatter.summary or entity_name
+    except Exception as exc:
+        logger.warning("Light research failed, using entity name as description: %s", exc)
+
+    # Step 2: Template screening
+    logger.info("Onboard step 2: screening templates")
+    all_templates = load_templates(repo_root)
+    typed_templates = templates_for_entity_type(all_templates, entity_type)
+
+    if not typed_templates:
+        result.errors.append(f"No core templates found for entity_type={entity_type}")
+        result.status = "rejected"
+        return result
+
+    applicable_slugs, excluded = _screen_templates(entity_description, typed_templates)
+    result.templates_excluded = excluded
+
+    # Step 3: Checkpoint
+    logger.info("Onboard step 3: checkpoint review")
+    decision = await gate.review_onboard(
+        entity_name, entity_type, applicable_slugs, excluded
+    )
+
+    if decision == "reject":
+        result.status = "rejected"
+        draft_ref = _write_draft_entity_file(
+            entity_name=entity_name,
+            entity_type=et,
+            entity_description=entity_description,
+            repo_root=repo_root,
+        )
+        result.entity_ref = draft_ref
+        return result
+
+    if isinstance(decision, list):
+        applicable_slugs = decision
+
+    result.templates_applied = applicable_slugs
+
+    # Step 4: Write entity file
+    entity_ref = _write_entity_file(
+        entity_name=entity_name,
+        entity_type=et,
+        entity_description=entity_description,
+        repo_root=repo_root,
+    )
+    result.entity_ref = entity_ref
+
+    # Step 5: Per-template research pipeline (sequential)
+    for slug in applicable_slugs:
+        template = get_template(all_templates, slug)
+        if not template:
+            result.errors.append(f"Template not found: {slug}")
+            result.claims_failed.append(slug)
+            continue
+
+        claim_text = render_claim_text(template, entity_name)
+        logger.info("Onboard: researching template %s -> %s", slug, claim_text)
+
+        try:
+            vr = await verify_claim(entity_name, claim_text, cfg, gate)
+
+            if vr.errors:
+                result.errors.extend(vr.errors)
+
+            if not vr.analyst_output:
+                result.claims_failed.append(slug)
+                continue
+
+            # Write sources
+            source_tuples = []
+            async with httpx.AsyncClient() as client:
+                urls, _ = await _research(client, entity_name, claim_text, cfg)
+                if urls:
+                    source_tuples, _ = await _ingest_urls(client, urls, cfg)
+
+            source_ids = _write_source_files(source_tuples, repo_root) if source_tuples else []
+
+            # Write claim file
+            ao = vr.analyst_output
+            claim_path = _write_claim_file(
+                title=ao.verdict.title,
+                entity_name=entity_name,
+                entity_ref=entity_ref,
+                category=ao.verdict.category,
+                verdict=ao.verdict.verdict,
+                confidence=ao.verdict.confidence,
+                narrative=ao.verdict.narrative,
+                claim_slug=slug,
+                source_ids=source_ids,
+                repo_root=repo_root,
+            )
+            result.claims_created.append(str(claim_path.relative_to(repo_root)))
+        except Exception as exc:
+            logger.error("Template %s failed: %s", slug, exc)
+            result.errors.append(f"Template {slug}: {exc}")
+            result.claims_failed.append(slug)
 
     return result

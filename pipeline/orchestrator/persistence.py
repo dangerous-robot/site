@@ -112,3 +112,30 @@ def _write_claim_file(
     )
     logger.info("Wrote claim: %s", claim_path)
     return claim_path
+
+
+def _write_draft_entity_file(
+    entity_name: str,
+    entity_type: EntityType,
+    entity_description: str,
+    repo_root: Path,
+) -> str:
+    """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
+    entity_slug = slugify(entity_name)
+    type_dir = _ENTITY_TYPE_DIR.get(entity_type, f"{entity_type.value}s")
+
+    draft_dir = repo_root / "research" / "entities" / "drafts" / type_dir
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    draft_path = draft_dir / f"{entity_slug}.md"
+    entity_ref = f"drafts/{type_dir}/{entity_slug}"
+
+    fm = {
+        "name": entity_name,
+        "type": entity_type,
+        "description": entity_description,
+        "status": "draft",
+    }
+    body = f"{entity_description}\n"
+    draft_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+    logger.info("Wrote draft entity: %s", draft_path)
+    return entity_ref
