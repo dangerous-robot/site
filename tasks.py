@@ -135,8 +135,23 @@ def consistency(ctx, claim=None, entity=None, fmt="text", dry_run=False):
     },
 )
 def verify(ctx, entity, claim_text, max_sources=4):
-    """Verify a claim about an entity via web research."""
+    """Verify a claim about an entity via web research (in-memory only)."""
     cmd = f"verify-claim {shlex.quote(entity)} {shlex.quote(claim_text)}"
+    if int(max_sources) != 4:
+        cmd += f" --max-sources {int(max_sources)}"
+    ctx.run(_uv_pipeline(cmd), pty=True)
+
+
+@task(
+    positional=["claim_text"],
+    help={
+        "claim_text": "Claim to research (e.g. 'iPhone 20 will support Neuralink')",
+        "max_sources": "Max sources to ingest (default 4)",
+    },
+)
+def research(ctx, claim_text, max_sources=4):
+    """Research a claim: find sources, evaluate verdict, write to disk."""
+    cmd = f"research {shlex.quote(claim_text)}"
     if int(max_sources) != 4:
         cmd += f" --max-sources {int(max_sources)}"
     ctx.run(_uv_pipeline(cmd), pty=True)
@@ -154,4 +169,5 @@ ns.add_task(clean)
 ns.add_task(ingest)
 ns.add_task(consistency)
 ns.add_task(verify)
+ns.add_task(research)
 ns.add_collection(test_ns)
