@@ -1,0 +1,402 @@
+"""Pipeline: chains researcher -> ingestor -> analyst -> auditor."""
+
+from __future__ import annotations
+
+import asyncio
+import datetime
+import logging
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import httpx
+from pydantic import BaseModel, ConfigDict
+
+from analyst.agent import AnalystDeps, AnalystOutput, analyst_agent, build_analyst_prompt, slugify
+from auditor.agent import AuditorDeps, auditor_agent, build_auditor_prompt
+from auditor.bundle import build_bundle
+from auditor.compare import compare
+from auditor.models import ComparisonResult
+from common.models import DEFAULT_MODEL
+from ingestor.agent import IngestorDeps, ingestor_agent
+from ingestor.models import SourceFile
+from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
+from researcher.agent import ResearchDeps, research_agent
+
+logger = logging.getLogger(__name__)
+
+
+class VerificationResult(BaseModel):
+    """Full output of an end-to-end claim verification."""
+
+    entity: str
+    claim_text: str
+    urls_found: list[str]
+    urls_ingested: list[str]
+    urls_failed: list[str]
+    sources: list[dict]
+    analyst_output: AnalystOutput | None = None
+    consistency: ComparisonResult | None = None
+    errors: list[str] = field(default_factory=list)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+@dataclass
+class VerifyConfig:
+    model: str = DEFAULT_MODEL
+    max_sources: int = 4
+    skip_wayback: bool = True  # default True for faster POC runs
+    repo_root: str = ""
+
+
+async def verify_claim(
+    entity_name: str,
+    claim_text: str,
+    config: VerifyConfig | None = None,
+    checkpoint: CheckpointHandler | None = None,
+) -> VerificationResult:
+    """Run the full verification pipeline.
+
+    1. Researcher: search for relevant sources
+    2. Ingestor: fetch and structure each source
+    3. [Checkpoint] Review sources before analysis
+    4. Analyst: synthesize sources into a claim with verdict
+    5. Auditor: independently assess the claim
+    6. [Checkpoint on disagreement] Review conflict
+
+    Returns a VerificationResult with all intermediate outputs.
+    """
+    cfg = config or VerifyConfig()
+    gate = checkpoint or AutoApproveCheckpointHandler()
+
+    result = VerificationResult(
+        entity=entity_name,
+        claim_text=claim_text,
+        urls_found=[],
+        urls_ingested=[],
+        urls_failed=[],
+        sources=[],
+        errors=[],
+    )
+
+    async with httpx.AsyncClient() as client:
+        # Step 1: Research
+        logger.info("Step 1/4: Searching for sources...")
+        urls, research_errors = await _research(client, entity_name, claim_text, cfg)
+        result.urls_found = urls
+
+        if not urls:
+            result.errors.append("Researcher agent found no relevant URLs")
+            return result
+
+        # Step 2: Ingest
+        logger.info("Step 2/4: Ingesting %d sources...", len(urls))
+        source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+
+        for url, sf in source_files:
+            result.urls_ingested.append(url)
+            result.sources.append({
+                "title": sf.frontmatter.title,
+                "publisher": sf.frontmatter.publisher,
+                "summary": sf.frontmatter.summary,
+                "key_quotes": sf.frontmatter.key_quotes or [],
+                "body": sf.body,
+                "slug": sf.slug,
+                "url": sf.frontmatter.url,
+            })
+
+        result.urls_failed = [u for u in urls if u not in result.urls_ingested]
+        all_errors = research_errors + ingest_errors
+
+        # Checkpoint: review sources
+        proceed = await gate.review_sources(
+            urls_found=len(result.urls_found),
+            urls_ingested=len(result.urls_ingested),
+            errors=all_errors,
+        )
+        if not proceed:
+            result.errors.append("Halted at source review checkpoint")
+            return result
+
+        if not result.sources:
+            result.errors.append("All source URLs failed to ingest")
+            return result
+
+        # Step 3: Analyst
+        logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+        analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg)
+        result.analyst_output = analyst_out
+
+        if not analyst_out:
+            result.errors.append("Analyst failed to produce an assessment")
+            return result
+
+        # Step 4: Auditor
+        logger.info("Step 4/4: Running auditor check...")
+        comparison = await _audit_claim(
+            entity_name, claim_text, analyst_out, result.sources, cfg
+        )
+        result.consistency = comparison
+
+        # Checkpoint: review disagreement
+        if comparison and comparison.needs_review:
+            accept = await gate.review_disagreement(comparison)
+            if not accept:
+                result.errors.append("Flagged for human review: analyst/auditor disagree")
+
+    return result
+
+
+async def _research(
+    client: httpx.AsyncClient,
+    entity_name: str,
+    claim_text: str,
+    cfg: VerifyConfig,
+) -> tuple[list[str], list[StepError]]:
+    deps = ResearchDeps(http_client=client)
+    prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
+
+    try:
+        with research_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                research_agent.run(prompt, deps=deps), timeout=60
+            )
+        urls = res.output.urls[:cfg.max_sources]
+        logger.info("Research found %d URLs: %s", len(urls), res.output.reasoning)
+        return urls, []
+    except asyncio.TimeoutError:
+        err = StepError(step="research", error_type="timeout", message="Research timed out")
+        logger.error("Researcher timed out")
+        return [], [err]
+    except Exception as exc:
+        error_type = "api_key_missing" if "API key" in str(exc) else "model_error"
+        err = StepError(step="research", error_type=error_type, message=str(exc))
+        logger.error("Researcher agent failed: %s", exc)
+        return [], [err]
+
+
+async def _ingest_urls(
+    client: httpx.AsyncClient,
+    urls: list[str],
+    cfg: VerifyConfig,
+) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
+    """Run the ingestor agent on each URL. Returns (successes, errors)."""
+    results: list[tuple[str, SourceFile]] = []
+    errors: list[StepError] = []
+    today = datetime.date.today()
+
+    for url in urls:
+        deps = IngestorDeps(
+            http_client=client,
+            repo_root=cfg.repo_root,
+            skip_wayback=cfg.skip_wayback,
+            today=today,
+        )
+        prompt = (
+            f"Ingest this URL and produce a SourceFile:\n\n"
+            f"URL: {url}\n"
+            f"Today's date: {today.isoformat()}\n"
+        )
+
+        try:
+            with ingestor_agent.override(model=cfg.model):
+                res = await asyncio.wait_for(
+                    ingestor_agent.run(prompt, deps=deps), timeout=90
+                )
+            results.append((url, res.output))
+            logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
+        except asyncio.TimeoutError:
+            errors.append(StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out"))
+            logger.warning("Ingest timed out: %s", url)
+        except Exception as exc:
+            error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
+            errors.append(StepError(step="ingest", url=url, error_type=error_type, message=str(exc)))
+            logger.warning("Failed to ingest %s: %s", url, exc)
+
+    return results, errors
+
+
+async def _analyse_claim(
+    entity_name: str,
+    claim_text: str,
+    sources: list[dict],
+    cfg: VerifyConfig,
+) -> AnalystOutput | None:
+    deps = AnalystDeps()
+    prompt = build_analyst_prompt(entity_name, claim_text, sources)
+
+    try:
+        with analyst_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                analyst_agent.run(prompt, deps=deps), timeout=60
+            )
+        return res.output
+    except Exception as exc:
+        logger.error("Analyst failed: %s", exc)
+        return None
+
+
+async def _audit_claim(
+    entity_name: str,
+    claim_text: str,
+    analyst_out: AnalystOutput,
+    sources: list[dict],
+    cfg: VerifyConfig,
+) -> ComparisonResult | None:
+    bundle = build_bundle(
+        entity_name=analyst_out.entity.entity_name,
+        entity_type=analyst_out.entity.entity_type,
+        description=analyst_out.entity.entity_description,
+        category=analyst_out.verdict.category,
+        narrative=analyst_out.verdict.narrative,
+        sources=sources,
+    )
+
+    prompt = build_auditor_prompt(bundle)
+    deps = AuditorDeps()
+
+    try:
+        with auditor_agent.override(model=cfg.model):
+            res = await asyncio.wait_for(
+                auditor_agent.run(prompt, deps=deps), timeout=60
+            )
+        assessment = res.output
+
+        return compare(
+            analyst_out.verdict.verdict,
+            analyst_out.verdict.confidence,
+            assessment,
+            bundle.claim_id,
+            "(draft -- not yet saved)",
+        )
+    except Exception as exc:
+        logger.error("Auditor check failed: %s", exc)
+        return None
+
+
+async def research_claim(
+    claim_text: str,
+    config: VerifyConfig | None = None,
+    checkpoint: CheckpointHandler | None = None,
+) -> VerificationResult:
+    """Research a claim, persist sources/entity/claim to disk, and run auditor.
+
+    Unlike verify_claim, this function:
+    - Does not require an entity name (the analyst identifies it)
+    - Writes source files to research/sources/
+    - Creates entity file in research/entities/ if needed
+    - Writes the claim file to research/claims/
+    """
+    from orchestrator.persistence import _write_claim_file, _write_entity_file, _write_source_files
+
+    cfg = config or VerifyConfig()
+    if not cfg.repo_root:
+        from common.content_loader import resolve_repo_root
+        cfg.repo_root = str(resolve_repo_root())
+
+    gate = checkpoint or AutoApproveCheckpointHandler()
+    repo_root = Path(cfg.repo_root)
+
+    result = VerificationResult(
+        entity="(pending)",
+        claim_text=claim_text,
+        urls_found=[],
+        urls_ingested=[],
+        urls_failed=[],
+        sources=[],
+        errors=[],
+    )
+
+    async with httpx.AsyncClient() as client:
+        # Step 1: Research
+        logger.info("Step 1/5: Searching for sources...")
+        urls, research_errors = await _research(client, "", claim_text, cfg)
+        result.urls_found = urls
+
+        if not urls:
+            result.errors.append("Researcher agent found no relevant URLs")
+            return result
+
+        # Step 2: Ingest
+        logger.info("Step 2/5: Ingesting %d sources...", len(urls))
+        source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+
+        for url, sf in source_files:
+            result.urls_ingested.append(url)
+            result.sources.append({
+                "title": sf.frontmatter.title,
+                "publisher": sf.frontmatter.publisher,
+                "summary": sf.frontmatter.summary,
+                "key_quotes": sf.frontmatter.key_quotes or [],
+                "body": sf.body,
+                "slug": sf.slug,
+                "url": sf.frontmatter.url,
+            })
+
+        result.urls_failed = [u for u in urls if u not in result.urls_ingested]
+        all_errors = research_errors + ingest_errors
+
+        # Checkpoint: review sources
+        proceed = await gate.review_sources(
+            urls_found=len(result.urls_found),
+            urls_ingested=len(result.urls_ingested),
+            errors=all_errors,
+        )
+        if not proceed:
+            result.errors.append("Halted at source review checkpoint")
+            return result
+
+        if not result.sources:
+            result.errors.append("All source URLs failed to ingest")
+            return result
+
+        # Step 3: Write sources to disk
+        logger.info("Step 3/5: Writing %d source files...", len(source_files))
+        source_ids = _write_source_files(source_files, repo_root)
+
+        # Step 4: Analyse claim (analyst identifies entity)
+        logger.info("Step 4/5: Analysing claim...")
+        analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg)
+        result.analyst_output = analyst_out
+
+        if not analyst_out:
+            result.errors.append("Analyst failed to produce an assessment")
+            return result
+
+        result.entity = analyst_out.entity.entity_name
+
+        # Write entity and claim to disk
+        entity_ref = _write_entity_file(
+            entity_name=analyst_out.entity.entity_name,
+            entity_type=analyst_out.entity.entity_type,
+            entity_description=analyst_out.entity.entity_description,
+            repo_root=repo_root,
+        )
+        claim_slug = slugify(analyst_out.verdict.title)
+        _write_claim_file(
+            title=analyst_out.verdict.title,
+            entity_name=analyst_out.entity.entity_name,
+            entity_ref=entity_ref,
+            category=analyst_out.verdict.category,
+            verdict=analyst_out.verdict.verdict,
+            confidence=analyst_out.verdict.confidence,
+            narrative=analyst_out.verdict.narrative,
+            claim_slug=claim_slug,
+            source_ids=source_ids,
+            repo_root=repo_root,
+        )
+
+        # Step 5: Auditor check
+        logger.info("Step 5/5: Running auditor check...")
+        comparison = await _audit_claim(
+            analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
+        )
+        result.consistency = comparison
+
+        # Checkpoint: review disagreement
+        if comparison and comparison.needs_review:
+            accept = await gate.review_disagreement(comparison)
+            if not accept:
+                result.errors.append("Flagged for human review: analyst/auditor disagree")
+
+    return result
