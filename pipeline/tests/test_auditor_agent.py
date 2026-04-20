@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from auditor.agent import AuditorDeps, auditor_agent, build_auditor_prompt
+from auditor.agent import auditor_agent, build_auditor_prompt
 from auditor.models import ClaimBundle, EntityContext, IndependentAssessment, SourceContext
 from common.models import Category, Confidence, Verdict
 
@@ -38,10 +38,9 @@ class TestAgentRoundTrip:
     async def test_produces_valid_assessment(self) -> None:
         bundle = _sample_bundle()
         prompt = build_auditor_prompt(bundle)
-        deps = AuditorDeps()
 
         with auditor_agent.override(model=TestModel()):
-            result = await auditor_agent.run(prompt, deps=deps)
+            result = await auditor_agent.run(prompt)
 
         assessment = result.output
         assert isinstance(assessment, IndependentAssessment)

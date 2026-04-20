@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from analyst.agent import AnalystDeps, AnalystOutput, analyst_agent, build_analyst_prompt
+from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from common.models import Category, Confidence, Verdict
 
 
@@ -34,9 +34,8 @@ class TestAnalystAgent:
                 },
             )
         ):
-            deps = AnalystDeps()
             prompt = build_analyst_prompt("TestCorp", "TestCorp uses renewables", [])
-            result = await analyst_agent.run(prompt, deps=deps)
+            result = await analyst_agent.run(prompt)
 
             out = result.output
             assert isinstance(out, AnalystOutput)

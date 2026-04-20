@@ -2,22 +2,21 @@
 
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from common.instructions import load_instructions
-from common.models import Category, Confidence, Verdict
+from common.models import Category, Confidence, EntityType, Verdict
+from common.utils import slugify
 
 
 class EntityResolution(BaseModel):
     """Entity identified from the claim context."""
 
     entity_name: str = Field(description="Primary entity name (e.g. 'Apple', 'OpenAI')")
-    entity_type: str = Field(description="One of: company, product, topic")
+    entity_type: EntityType = Field(description="One of: company, product, topic")
     entity_description: str = Field(description="One-sentence description of the entity")
 
 
@@ -38,28 +37,14 @@ class AnalystOutput(BaseModel):
     verdict: VerdictAssessment
 
 
-@dataclass
-class AnalystDeps:
-    pass
-
-
 _INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent)
 
 analyst_agent = Agent(
     "test",
     output_type=AnalystOutput,
-    deps_type=AnalystDeps,
     system_prompt=_INSTRUCTIONS,
     retries=2,
 )
-
-
-def slugify(text: str) -> str:
-    """Convert text to a kebab-case slug (deterministic, no LLM)."""
-    text = text.lower().strip()
-    text = re.sub(r"[^a-z0-9\s-]", "", text)
-    text = re.sub(r"[\s-]+", "-", text)
-    return text.strip("-")
 
 
 def build_analyst_prompt(

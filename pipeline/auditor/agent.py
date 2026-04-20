@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from pydantic_ai import Agent
@@ -11,19 +10,12 @@ from common.instructions import load_instructions
 from .models import ClaimBundle, IndependentAssessment
 
 
-@dataclass
-class AuditorDeps:
-    """Dependencies injected into the agent at runtime."""
-    pass
-
-
 _INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent)
 
 auditor_agent = Agent(
     "test",
     system_prompt=_INSTRUCTIONS,
     output_type=IndependentAssessment,
-    deps_type=AuditorDeps,
     retries=2,
 )
 
