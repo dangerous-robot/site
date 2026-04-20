@@ -16,6 +16,11 @@ def _uv_pipeline(cmd):
     return f"uv run --directory {PIPELINE} {cmd}"
 
 
+def _dr(subcmd):
+    """Build a dr CLI command targeting the pipeline project."""
+    return _uv_pipeline(f"dr {subcmd}")
+
+
 # --- Root tasks ---
 
 
@@ -69,13 +74,13 @@ def clean(ctx):
 @task
 def _test_unit(ctx):
     """Run pipeline unit tests (excludes acceptance)."""
-    ctx.run(_uv_pipeline("pytest -m 'not acceptance'"), pty=True)
+    ctx.run(_uv_pipeline("python -m pytest -m 'not acceptance'"), pty=True)
 
 
 @task
 def _test_all(ctx):
     """Run all pipeline tests including acceptance (needs ANTHROPIC_API_KEY)."""
-    ctx.run(_uv_pipeline("pytest"), pty=True)
+    ctx.run(_uv_pipeline("python -m pytest"), pty=True)
 
 
 test_ns = Collection("test")
@@ -83,7 +88,7 @@ test_ns.add_task(_test_unit, name="unit", default=True)
 test_ns.add_task(_test_all, name="all")
 
 
-# --- Pipeline CLI wrappers ---
+# --- Pipeline CLI wrappers (delegate to dr) ---
 
 
 @task(
@@ -101,7 +106,7 @@ def ingest(ctx, url, dry_run=False, skip_wayback=False):
         cmd += " --dry-run"
     if skip_wayback:
         cmd += " --skip-wayback"
-    ctx.run(_uv_pipeline(cmd), pty=True)
+    ctx.run(_dr(cmd), pty=True)
 
 
 @task(
@@ -112,9 +117,9 @@ def ingest(ctx, url, dry_run=False, skip_wayback=False):
         "dry_run": "List claims without calling the LLM",
     },
 )
-def consistency(ctx, claim=None, entity=None, fmt="text", dry_run=False):
-    """Run narrative-verdict consistency check on claims."""
-    cmd = "consistency-check"
+def audit(ctx, claim=None, entity=None, fmt="text", dry_run=False):
+    """Run auditor checks on research claims."""
+    cmd = "audit"
     if claim:
         cmd += f" --claim {shlex.quote(claim)}"
     if entity:
@@ -123,7 +128,7 @@ def consistency(ctx, claim=None, entity=None, fmt="text", dry_run=False):
         cmd += f" --format {shlex.quote(fmt)}"
     if dry_run:
         cmd += " --dry-run"
-    ctx.run(_uv_pipeline(cmd), pty=True)
+    ctx.run(_dr(cmd), pty=True)
 
 
 @task(
@@ -132,14 +137,17 @@ def consistency(ctx, claim=None, entity=None, fmt="text", dry_run=False):
         "entity": "Entity name, e.g. 'Ecosia'",
         "claim_text": "Claim statement to verify",
         "max_sources": "Max sources to ingest (default 4)",
+        "interactive": "Enable human-in-the-loop checkpoints",
     },
 )
-def verify(ctx, entity, claim_text, max_sources=4):
+def verify(ctx, entity, claim_text, max_sources=4, interactive=False):
     """Verify a claim about an entity via web research (in-memory only)."""
-    cmd = f"verify-claim {shlex.quote(entity)} {shlex.quote(claim_text)}"
+    cmd = f"verify {shlex.quote(entity)} {shlex.quote(claim_text)}"
     if int(max_sources) != 4:
         cmd += f" --max-sources {int(max_sources)}"
-    ctx.run(_uv_pipeline(cmd), pty=True)
+    if interactive:
+        cmd += " --interactive"
+    ctx.run(_dr(cmd), pty=True)
 
 
 @task(
@@ -147,14 +155,17 @@ def verify(ctx, entity, claim_text, max_sources=4):
     help={
         "claim_text": "Claim to research (e.g. 'iPhone 20 will support Neuralink')",
         "max_sources": "Max sources to ingest (default 4)",
+        "interactive": "Enable human-in-the-loop checkpoints",
     },
 )
-def research(ctx, claim_text, max_sources=4):
+def research(ctx, claim_text, max_sources=4, interactive=False):
     """Research a claim: find sources, evaluate verdict, write to disk."""
     cmd = f"research {shlex.quote(claim_text)}"
     if int(max_sources) != 4:
         cmd += f" --max-sources {int(max_sources)}"
-    ctx.run(_uv_pipeline(cmd), pty=True)
+    if interactive:
+        cmd += " --interactive"
+    ctx.run(_dr(cmd), pty=True)
 
 
 # --- Namespace assembly ---
@@ -167,7 +178,7 @@ ns.add_task(lint)
 ns.add_task(check)
 ns.add_task(clean)
 ns.add_task(ingest)
-ns.add_task(consistency)
+ns.add_task(audit)
 ns.add_task(verify)
 ns.add_task(research)
 ns.add_collection(test_ns)
