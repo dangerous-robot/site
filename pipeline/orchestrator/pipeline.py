@@ -15,6 +15,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
+from common.blocklist import filter_urls, load_blocklist
+from common.content_loader import resolve_repo_root
 from common.models import EntityType
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.utils import slugify
@@ -162,9 +164,42 @@ async def _research(
             res = await asyncio.wait_for(
                 research_agent.run(prompt, deps=deps), timeout=60
             )
-        urls = res.output.urls[:cfg.max_sources]
-        logger.info("Research found %d URLs: %s", len(urls), res.output.reasoning)
-        return urls, []
+        raw_urls = res.output.urls
+
+        repo_root_str = cfg.repo_root or str(resolve_repo_root())
+        entries = load_blocklist(Path(repo_root_str))
+        kept, dropped = filter_urls(raw_urls, entries)
+        urls = kept[:cfg.max_sources]
+
+        errors: list[StepError] = []
+        for d in dropped:
+            errors.append(
+                StepError(
+                    step="research",
+                    url=d.url,
+                    error_type="blocked_host",
+                    message=f"Dropped by blocklist (host={d.host}): {d.reason}",
+                    retryable=False,
+                )
+            )
+        if not urls and dropped:
+            errors.insert(
+                0,
+                StepError(
+                    step="research",
+                    error_type="all_blocked",
+                    message=f"All {len(dropped)} researcher URLs matched blocklist; returning empty.",
+                ),
+            )
+        logger.info(
+            "Research: %d raw, %d blocked, %d kept (cap=%d). Reasoning: %s",
+            len(raw_urls),
+            len(dropped),
+            len(urls),
+            cfg.max_sources,
+            res.output.reasoning,
+        )
+        return urls, errors
     except asyncio.TimeoutError:
         err = StepError(step="research", error_type="timeout", message="Research timed out")
         logger.error("Researcher timed out")
@@ -319,7 +354,6 @@ async def research_claim(
 
     cfg = config or VerifyConfig()
     if not cfg.repo_root:
-        from common.content_loader import resolve_repo_root
         cfg.repo_root = str(resolve_repo_root())
 
     gate = checkpoint or AutoApproveCheckpointHandler()
@@ -476,7 +510,6 @@ async def onboard_entity(
 
     cfg = config or VerifyConfig()
     if not cfg.repo_root:
-        from common.content_loader import resolve_repo_root
         cfg.repo_root = str(resolve_repo_root())
 
     gate = checkpoint or AutoApproveCheckpointHandler()

@@ -1,0 +1,22 @@
+# research/blocklist.yaml
+# Hosts whose URLs are dropped from researcher output before ingestion.
+# Matching is suffix-based on a dot boundary after stripping leading "www."
+# (so linkedin.com matches www.linkedin.com AND uk.linkedin.com, but NOT notlinkedin.com).
+# Hosts are lowercased. Operators can edit this file freely; a missing file
+# is treated as an empty blocklist.
+hosts:
+  - host: linkedin.com
+    reason: "403s on anonymous fetch"
+  - host: wsj.com
+    reason: "paywall"
+  - host: ft.com
+    reason: "paywall"
+  - host: bloomberg.com
+    reason: "paywall / bot wall"
+  - host: nytimes.com
+    reason: "metered paywall"
+  - host: economist.com
+    reason: "paywall"
+  - host: hbr.org
+    reason: "Harvard Business Review paywall"
+  # Candidates to review later: medium.com (intermittent), reuters.com (geo-gated)
