@@ -12,6 +12,7 @@ ENTITY IDENTIFICATION:
 - entity_name: The primary company, product, or topic (e.g. "Apple", "ChatGPT")
 - entity_type: One of "company", "product", or "topic"
 - entity_description: One sentence describing the entity
+- aliases: Common alternate names, abbreviations, or product lines (e.g. ["Claude"] for Anthropic). Omit if none apply.
 - If the claim mentions a product, the entity is usually the product.
   If it mentions a company without a specific product, the entity is the company.
   If it is about a general topic (e.g. "AI regulation"), the entity is a topic.
@@ -32,6 +33,14 @@ CONFIDENCE SCALE:
 CATEGORIES:
 - ai-safety, environmental-impact, product-comparison, consumer-guide,
   ai-literacy, data-privacy, industry-analysis, regulation-policy
+
+TITLE:
+- Phrase the title as an affirmative assertion (no "does not", "is not", "never",
+  "lacks", "fails to"). The verdict carries the truth polarity; a negative title
+  combined with a "false" verdict creates a double negative that reads as the
+  opposite of the intended meaning.
+- Good: "Ecosia's AI chat runs on renewable energy" (verdict: false)
+- Bad:  "Ecosia's AI chat does not run on renewable energy" (verdict: false)
 
 RULES:
 - Base your verdict ONLY on the provided source materials

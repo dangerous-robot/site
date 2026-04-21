@@ -1,5 +1,5 @@
 ---
-title: Ecosia's renewable energy claim does not cover its AI chat backend
+title: Ecosia's renewable energy claim covers its AI chat backend
 entity: companies/ecosia
 category: environmental-impact
 verdict: "false"
