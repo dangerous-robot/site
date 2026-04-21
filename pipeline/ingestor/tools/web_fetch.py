@@ -12,6 +12,33 @@ logger = logging.getLogger(__name__)
 _STRIP_TAGS = {"nav", "footer", "script", "style", "header", "aside"}
 _MAX_TEXT_LENGTH = 50_000
 
+# HTTP status codes that indicate a permanent/terminal fetch failure.
+# Retrying, following redirects, or checking Wayback will not help:
+# - 401: auth required (origin wants credentials)
+# - 402: payment required (paywall)
+# - 403: forbidden (bot block / geo / Cloudflare)
+# - 451: legally unavailable
+TERMINAL_STATUS_CODES = frozenset({401, 402, 403, 451})
+
+
+class TerminalFetchError(Exception):
+    """Raised when a fetch hits a terminal HTTP status (no point retrying).
+
+    Not an httpx.HTTPError subclass on purpose: the ingestor agent's
+    ``except httpx.HTTPError`` branch must NOT swallow this. It is allowed
+    to propagate out of the agent run so the orchestrator can record a
+    skipped source and move on without burning the agent retry budget
+    or calling ``wayback_check``.
+    """
+
+    def __init__(self, url: str, status_code: int, reason: str) -> None:
+        self.url = url
+        self.status_code = status_code
+        self.reason = reason
+        super().__init__(
+            f"Terminal fetch failure: {status_code} {reason} for {url}"
+        )
+
 
 def extract_page_data(html: str, url: str) -> dict[str, Any]:
     """Parse HTML and extract title, meta, and text content.

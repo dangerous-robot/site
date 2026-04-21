@@ -24,6 +24,7 @@ from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
+from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from researcher.agent import ResearchDeps, research_agent
 
@@ -203,6 +204,15 @@ async def _ingest_one(
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
         return StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out")
+    except TerminalFetchError as exc:
+        logger.info("Skipped terminal fetch (%d): %s", exc.status_code, url)
+        return StepError(
+            step="ingest",
+            url=url,
+            error_type=f"http_{exc.status_code}",
+            message=exc.reason,
+            retryable=False,
+        )
     except Exception as exc:
         error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
         logger.warning("Failed to ingest %s: %s", url, exc)

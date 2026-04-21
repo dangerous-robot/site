@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
 from dataclasses import dataclass, field
@@ -13,7 +14,11 @@ from pydantic_ai import Agent, RunContext
 from common.instructions import load_instructions
 from ingestor.models import SourceFile
 from ingestor.tools.wayback import check_wayback, save_to_wayback
-from ingestor.tools.web_fetch import extract_page_data
+from ingestor.tools.web_fetch import (
+    TERMINAL_STATUS_CODES,
+    TerminalFetchError,
+    extract_page_data,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +43,43 @@ ingestor_agent = Agent(
 )
 
 
+_RATE_LIMIT_RETRY_DELAY_SECONDS = 2.0
+
+
+def _raise_if_terminal(resp: httpx.Response, url: str) -> None:
+    if resp.status_code in TERMINAL_STATUS_CODES:
+        raise TerminalFetchError(url, resp.status_code, resp.reason_phrase)
+
+
 @ingestor_agent.tool
 async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
-    """Fetch a web page and extract its title, metadata, and text content."""
+    """Fetch a web page and extract its title, metadata, and text content.
+
+    Terminal statuses (401/402/403/451) raise ``TerminalFetchError`` so the
+    agent run short-circuits without calling ``wayback_check`` or consuming
+    the agent retry budget. 429 gets one in-tool retry after a short sleep;
+    still-429 also raises. All other HTTP errors fall through to the
+    existing error-dict behavior so the LLM can try ``wayback_check``.
+    """
     try:
-        resp = await ctx.deps.http_client.get(url, timeout=30.0, follow_redirects=True)
+        resp = await ctx.deps.http_client.get(
+            url, timeout=30.0, follow_redirects=True
+        )
+        _raise_if_terminal(resp, url)
+
+        if resp.status_code == 429:
+            logger.info(
+                "429 from %s; sleeping %.1fs and retrying once",
+                url, _RATE_LIMIT_RETRY_DELAY_SECONDS,
+            )
+            await asyncio.sleep(_RATE_LIMIT_RETRY_DELAY_SECONDS)
+            resp = await ctx.deps.http_client.get(
+                url, timeout=30.0, follow_redirects=True
+            )
+            if resp.status_code == 429:
+                raise TerminalFetchError(url, 429, resp.reason_phrase)
+            _raise_if_terminal(resp, url)
+
         resp.raise_for_status()
         return extract_page_data(resp.text, url)
     except httpx.HTTPError as exc:

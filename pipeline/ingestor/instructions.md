@@ -35,3 +35,9 @@ You must return a SourceFile with these fields:
 - Do not make claims or verdicts about the source content.
 - Do not invent quotes. If you cannot find notable quotes, omit key_quotes.
 - Do not include the site name in the title.
+
+## Terminal fetch failures:
+If `web_fetch` raises or returns an error indicating an auth wall or paywall
+(HTTP 401, 402, 403, or 451), do NOT call `wayback_check` -- these pages are
+not archived. Abort the ingestion. The orchestrator will record this as a
+skipped source.
