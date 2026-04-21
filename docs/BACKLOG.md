@@ -1,6 +1,6 @@
 # Backlog: dangerousrobot.org
 
-Last updated: 2026-04-19
+Last updated: 2026-04-20
 
 This file tracks the phased progression for standing up dangerousrobot.org. Each phase lists its work items with links to detailed plan files. Status is tracked here; details live in the individual plans.
 
@@ -60,7 +60,7 @@ Phases 1-4 constitute the MVP: a deployed site with structured research content,
 
 ### MVP complete
 
-All MVP phases (1-4) are implemented. The `pipeline/` package has 122 passing tests across shared infrastructure, ingestor agent, consistency check agent, and a proof-of-concept end-to-end verification orchestrator.
+All MVP phases (1-4) are implemented and extended. The `pipeline/` package has 171 passing unit tests across shared infrastructure, ingestor, researcher, analyst, auditor, orchestrator, and entity onboarding. Single `dr` CLI entry point.
 
 ---
 
@@ -98,9 +98,29 @@ Consistent vocabulary across the project: `recheck_cadence_days` field rename, `
 
 ## Phase 4: Agent Pipeline (done)
 
-PydanticAI agents for source ingestion and LLM-assisted content validation. Shared infrastructure in `pipeline/common/`, ingestor in `pipeline/ingestor/`, consistency check in `pipeline/consistency/`. 122 tests passing. See [agent-pipeline.md](plans/completed/agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](plans/completed/agent-pipeline-ingestor.md) (4.1), [narrative-verdict-consistency.md](plans/completed/narrative-verdict-consistency.md) (4.2).
+PydanticAI agents for source ingestion and LLM-assisted content validation. See [agent-pipeline.md](plans/completed/agent-pipeline.md) (parent), [agent-pipeline-ingestor.md](plans/completed/agent-pipeline-ingestor.md) (4.1), [narrative-verdict-consistency.md](plans/completed/narrative-verdict-consistency.md) (4.2), [verify-claim-poc.md](plans/completed/verify-claim-poc.md) (POC orchestrator).
 
-Also includes a POC end-to-end verification orchestrator (`pipeline/verify/`) that chains research, ingest, draft, and consistency check agents. See [verify-claim-poc.md](plans/completed/verify-claim-poc.md).
+**Phase 4.5: Pipeline Refactor + Entity Onboarding (done)**
+
+Full pipeline refactor: agents promoted to top-level packages (`researcher/`, `ingestor/`, `analyst/`, `auditor/`), instruction files extracted to `instructions.md`, human-in-the-loop checkpoints added, four CLIs consolidated into a single `dr` command. See [pipeline-agent-refactor.md](plans/completed/pipeline-agent-refactor.md).
+
+Added entity onboarding pipeline (`dr onboard`): standardized claim templates data layer, `onboard_entity()` orchestrator that runs all applicable templates through the research pipeline, writes entity + claim files, and supports interactive operator approval. 171 unit tests passing.
+
+---
+
+## Phase 4.6: Pipeline performance & hardening
+
+**Goal**: Reduce onboarding wall time and wasted API calls. Observed during live `dr onboard` runs that terminal output crawled while 30s+ fetches piled up on known-403 domains, and the per-template loop was serial. Cross-reviewed plans cover the top five wins.
+
+| # | Work Item | Plan | Status | Notes |
+|---|-----------|------|--------|-------|
+| 4.6.1 | Reuse verify_claim sources in onboard | [onboard-reuse-verify-sources.md](plans/onboard-reuse-verify-sources.md) | not started | Eliminates duplicate research+ingest per template (~2x per-template speedup) |
+| 4.6.2 | Ingestor fail-fast on 401/403/451 | [ingestor-fail-fast-403.md](plans/ingestor-fail-fast-403.md) | not started | Terminal exception short-circuits PydanticAI agent run; no wayback escalation |
+| 4.6.3 | Researcher host blocklist | [researcher-host-blocklist.md](plans/researcher-host-blocklist.md) | not started | `research/blocklist.yaml` filters LinkedIn/WSJ/FT/etc before ingest |
+| 4.6.4 | Tighten ingestor timeouts | [ingestor-tighten-timeouts.md](plans/ingestor-tighten-timeouts.md) | not started | `httpx.Timeout(connect=5, read=15, …)`; agent wrapper 90s → 60s |
+| 4.6.5 | Parallelize onboard templates | [onboard-parallelize-templates.md](plans/onboard-parallelize-templates.md) | not started | `asyncio.Semaphore(3)`-guarded gather; interactive mode clamps to 1 |
+
+Recommended implementation order: 4.6.1 → 4.6.2 → 4.6.3 → 4.6.4 → 4.6.5 (the parallelism plan benefits most from the others landing first).
 
 ---
 
