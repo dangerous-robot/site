@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import datetime
 from pathlib import Path
 
 import httpx
 import pytest
 import respx
+from pydantic_ai import RunContext
+from pydantic_ai.models.test import TestModel
+from pydantic_ai.usage import RunUsage
 
+from ingestor.agent import IngestorDeps, web_fetch
 from ingestor.tools.wayback import check_wayback, save_to_wayback
 from ingestor.tools.web_fetch import extract_page_data
 
@@ -170,3 +175,46 @@ class TestSaveToWayback:
             async with httpx.AsyncClient() as client:
                 result = await save_to_wayback(client, "https://example.com")
             assert result is None
+
+
+def _make_ingest_ctx(client: httpx.AsyncClient) -> RunContext[IngestorDeps]:
+    deps = IngestorDeps(
+        http_client=client,
+        repo_root="/tmp",
+        skip_wayback=True,
+        today=datetime.date(2026, 4, 19),
+    )
+    return RunContext(deps=deps, model=TestModel(), usage=RunUsage())
+
+
+class TestWebFetchTimeouts:
+    """Verify the tightened httpx.Timeout honours connect/read budgets."""
+
+    @pytest.mark.asyncio
+    async def test_web_fetch_read_timeout_within_window(self) -> None:
+        """A simulated ReadTimeout surfaces as an error dict without hanging.
+
+        ``respx`` raises synchronously, so this exercises the error-handling
+        branch without spending real wall time. The tightened ``httpx.Timeout``
+        is what would enforce the 15s cap in a live run.
+        """
+        url = "https://slow.example.com/slow"
+        with respx.mock:
+            respx.get(url).mock(side_effect=httpx.ReadTimeout("read timeout"))
+            async with httpx.AsyncClient() as client:
+                ctx = _make_ingest_ctx(client)
+                result = await web_fetch(ctx, url)
+        assert "error" in result
+        assert result["url"] == url
+
+    @pytest.mark.asyncio
+    async def test_web_fetch_connect_timeout_fast_fail(self) -> None:
+        """A ConnectTimeout fails fast and returns an error dict (no real network)."""
+        url = "https://blackhole.example.com/"
+        with respx.mock:
+            respx.get(url).mock(side_effect=httpx.ConnectTimeout("connect timeout"))
+            async with httpx.AsyncClient() as client:
+                ctx = _make_ingest_ctx(client)
+                result = await web_fetch(ctx, url)
+        assert "error" in result
+        assert result["url"] == url

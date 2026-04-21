@@ -7,6 +7,8 @@ from typing import Any
 
 import httpx
 
+from common.timeouts import WAYBACK_CHECK_S, WAYBACK_SAVE_S
+
 logger = logging.getLogger(__name__)
 
 _AVAILABILITY_URL = "https://archive.org/wayback/available"
@@ -22,7 +24,7 @@ async def check_wayback(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
         resp = await client.get(
             _AVAILABILITY_URL,
             params={"url": url},
-            timeout=15.0,
+            timeout=WAYBACK_CHECK_S,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -46,7 +48,7 @@ async def save_to_wayback(client: httpx.AsyncClient, url: str) -> str | None:
     try:
         resp = await client.post(
             f"{_SAVE_URL}{url}",
-            timeout=30.0,
+            timeout=WAYBACK_SAVE_S,
             follow_redirects=True,
         )
         if resp.status_code in (200, 302):

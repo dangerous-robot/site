@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 from contextlib import contextmanager
 from unittest.mock import patch
@@ -12,9 +13,11 @@ from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
 from ingestor.models import SourceFile, SourceFrontmatter
+from orchestrator.checkpoints import StepError
 from orchestrator.pipeline import (
     VerificationResult,
     VerifyConfig,
+    _ingest_one,
     _research,
 )
 from researcher.agent import research_agent
@@ -187,3 +190,57 @@ class TestResearchBlocklist:
 
         assert urls == ["https://linkedin.com/a", "https://example.com/b"]
         assert errors == []
+
+
+class TestVerifyConfigTimeouts:
+    def test_verify_config_defaults(self) -> None:
+        """Default VerifyConfig exposes the four timeout knobs at 60s."""
+        cfg = VerifyConfig()
+        assert cfg.ingest_timeout_s == 60.0
+        assert cfg.research_timeout_s == 60.0
+        assert cfg.analyst_timeout_s == 60.0
+        assert cfg.auditor_timeout_s == 60.0
+
+    def test_verify_config_autobumps_ingest_when_wayback_enabled(self) -> None:
+        """With skip_wayback=False and no explicit ingest_timeout_s, auto-bump to >=85s.
+
+        Review Notes (2026-04-20) follow-up: asserts the timeout chain invariant
+        actually holds when wayback is enabled.
+        """
+        cfg = VerifyConfig(skip_wayback=False)
+        assert cfg.ingest_timeout_s >= 85
+
+    def test_verify_config_explicit_ingest_timeout_wins(self) -> None:
+        """Caller-supplied ingest_timeout_s overrides the skip_wayback auto-bump."""
+        cfg = VerifyConfig(skip_wayback=False, ingest_timeout_s=45.0)
+        assert cfg.ingest_timeout_s == 45.0
+
+    @pytest.mark.asyncio
+    async def test_ingest_one_returns_step_error_on_agent_timeout(self) -> None:
+        """With a tiny ingest_timeout_s and a slow agent, _ingest_one returns a timeout StepError."""
+        url = "https://example.com/slow-agent"
+        cfg = VerifyConfig(
+            model="test",
+            repo_root="/tmp",
+            skip_wayback=True,
+            ingest_timeout_s=0.05,
+        )
+
+        async def _slow_run(*args, **kwargs):
+            await asyncio.sleep(5.0)
+
+        async with httpx.AsyncClient() as client:
+            with (
+                patch("orchestrator.pipeline.ingestor_agent.run", side_effect=_slow_run),
+                patch.object(
+                    Agent, "override", side_effect=lambda **kw: _noop(**kw)
+                ),
+            ):
+                outcome = await _ingest_one(
+                    client, url, cfg, datetime.date(2026, 4, 19)
+                )
+
+        assert isinstance(outcome, StepError)
+        assert outcome.step == "ingest"
+        assert outcome.error_type == "timeout"
+        assert outcome.url == url

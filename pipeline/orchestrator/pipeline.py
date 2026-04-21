@@ -19,6 +19,7 @@ from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
 from common.models import EntityType
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
+from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
@@ -50,12 +51,30 @@ class VerificationResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
+# Timeout chain invariant: the ingestor agent wrapper (``ingest_timeout_s``)
+# must cover HTTP fetch + optional 429 retry + optional wayback endpoints +
+# LLM tool-dispatch turns. With ``skip_wayback=False`` the budget is derived
+# from ``common.timeouts.ingest_budget_with_wayback_s`` so tuning the
+# HTTP/wayback constants flows through automatically.
 @dataclass
 class VerifyConfig:
     model: str = DEFAULT_MODEL
     max_sources: int = 4
     skip_wayback: bool = True  # default True for faster POC runs
     repo_root: str = ""
+    # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
+    # ``__post_init__`` can pick a default based on ``skip_wayback``. Callers
+    # that pass any float (including 60.0) keep that value verbatim.
+    ingest_timeout_s: float | None = None
+    research_timeout_s: float = 60.0
+    analyst_timeout_s: float = 60.0
+    auditor_timeout_s: float = 60.0
+
+    def __post_init__(self) -> None:
+        if self.ingest_timeout_s is None:
+            self.ingest_timeout_s = (
+                ingest_budget_with_wayback_s() if not self.skip_wayback else 60.0
+            )
 
 
 async def verify_claim(
@@ -162,7 +181,7 @@ async def _research(
     try:
         with research_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                research_agent.run(prompt, deps=deps), timeout=60
+                research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
             )
         raw_urls = res.output.urls
 
@@ -232,7 +251,7 @@ async def _ingest_one(
     try:
         with ingestor_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                ingestor_agent.run(prompt, deps=deps), timeout=90
+                ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
             )
         logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
         return (url, res.output)
@@ -292,7 +311,7 @@ async def _analyse_claim(
     try:
         with analyst_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                analyst_agent.run(prompt), timeout=60
+                analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
             )
         return res.output
     except Exception as exc:
@@ -321,7 +340,7 @@ async def _audit_claim(
     try:
         with auditor_agent.override(model=cfg.model):
             res = await asyncio.wait_for(
-                auditor_agent.run(prompt), timeout=60
+                auditor_agent.run(prompt), timeout=cfg.auditor_timeout_s
             )
         assessment = res.output
 

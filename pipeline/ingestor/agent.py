@@ -12,6 +12,7 @@ import httpx
 from pydantic_ai import Agent, RunContext
 
 from common.instructions import load_instructions
+from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
 from ingestor.tools.wayback import check_wayback, save_to_wayback
 from ingestor.tools.web_fetch import (
@@ -43,9 +44,6 @@ ingestor_agent = Agent(
 )
 
 
-_RATE_LIMIT_RETRY_DELAY_SECONDS = 2.0
-
-
 def _raise_if_terminal(resp: httpx.Response, url: str) -> None:
     if resp.status_code in TERMINAL_STATUS_CODES:
         raise TerminalFetchError(url, resp.status_code, resp.reason_phrase)
@@ -63,18 +61,17 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """
     try:
         resp = await ctx.deps.http_client.get(
-            url, timeout=30.0, follow_redirects=True
+            url, timeout=default_httpx_timeout(), follow_redirects=True
         )
         _raise_if_terminal(resp, url)
 
         if resp.status_code == 429:
             logger.info(
-                "429 from %s; sleeping %.1fs and retrying once",
-                url, _RATE_LIMIT_RETRY_DELAY_SECONDS,
+                "429 from %s; sleeping %.1fs and retrying once", url, RATE_LIMIT_RETRY_S
             )
-            await asyncio.sleep(_RATE_LIMIT_RETRY_DELAY_SECONDS)
+            await asyncio.sleep(RATE_LIMIT_RETRY_S)
             resp = await ctx.deps.http_client.get(
-                url, timeout=30.0, follow_redirects=True
+                url, timeout=default_httpx_timeout(), follow_redirects=True
             )
             if resp.status_code == 429:
                 raise TerminalFetchError(url, 429, resp.reason_phrase)
