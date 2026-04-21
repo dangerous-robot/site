@@ -95,7 +95,7 @@ class TestRenderClaimText:
         result = render_claim_text(template, "Anthropic")
         assert result == "Anthropic publishes a sustainability or ESG report"
 
-    def test_replaces_company_in_structure_template(self) -> None:
+    def test_expands_vocabulary_placeholder(self) -> None:
         template = TemplateRecord(
             slug="corporate-structure",
             text="COMPANY has STRUCTURE corporate structure",
@@ -103,9 +103,55 @@ class TestRenderClaimText:
             category="industry-analysis",
             core=True,
             notes="test",
+            vocabulary={"STRUCTURE": ["publicly-traded", "non-profit", "B-corp"]},
         )
         result = render_claim_text(template, "OpenAI")
-        assert result == "OpenAI has STRUCTURE corporate structure"
+        assert result == (
+            "OpenAI has one of (publicly-traded, non-profit, B-corp) corporate structure"
+        )
+
+    def test_expands_multiple_vocabulary_slots(self) -> None:
+        template = TemplateRecord(
+            slug="multi",
+            text="PRODUCT stores data in JURISDICTION under STRUCTURE control",
+            entity_type="product",
+            category="data-privacy",
+            core=True,
+            notes="test",
+            vocabulary={
+                "JURISDICTION": ["EU", "US"],
+                "STRUCTURE": ["non-profit", "B-corp"],
+            },
+        )
+        result = render_claim_text(template, "Ecosia")
+        assert result == (
+            "Ecosia stores data in one of (EU, US) under one of (non-profit, B-corp) control"
+        )
+
+    def test_vocabulary_defaults_to_empty(self) -> None:
+        template = TemplateRecord(
+            slug="renewable-energy-hosting",
+            text="PRODUCT is hosted on renewable energy",
+            entity_type="product",
+            category="environmental-impact",
+            core=True,
+            notes="test",
+        )
+        assert template.vocabulary == {}
+
+    def test_corporate_structure_template_has_vocabulary(self, repo_root: Path) -> None:
+        templates = load_templates(repo_root)
+        t = get_template(templates, "corporate-structure")
+        assert t is not None
+        assert "STRUCTURE" in t.vocabulary
+        assert "B-corp" in t.vocabulary["STRUCTURE"]
+
+    def test_data_jurisdiction_template_has_vocabulary(self, repo_root: Path) -> None:
+        templates = load_templates(repo_root)
+        t = get_template(templates, "data-jurisdiction")
+        assert t is not None
+        assert "JURISDICTION" in t.vocabulary
+        assert "EU" in t.vocabulary["JURISDICTION"]
 
     def test_template_is_frozen(self) -> None:
         template = TemplateRecord(

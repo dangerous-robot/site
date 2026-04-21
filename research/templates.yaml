@@ -51,6 +51,16 @@ templates:
     category: data-privacy
     core: true
     notes: "Controlled vocabulary; assess data protection strength"
+    vocabulary:
+      JURISDICTION:
+        - EU
+        - Switzerland
+        - US
+        - US-California
+        - UK
+        - Canada
+        - Australia
+        - multiple
 
   - slug: user-data-deletion
     text: "PRODUCT allows users to delete their data"
@@ -111,6 +121,15 @@ templates:
     category: industry-analysis
     core: true
     notes: "Controlled vocabulary; ownership determines incentives"
+    vocabulary:
+      STRUCTURE:
+        - publicly-traded
+        - privately-held
+        - non-profit
+        - B-corp
+        - employee-owned
+        - steward-ownership
+        - cooperative
 
   # --- Model Selection ---
 
