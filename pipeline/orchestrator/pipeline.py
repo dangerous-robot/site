@@ -380,6 +380,7 @@ async def research_claim(
             entity_type=analyst_out.entity.entity_type,
             entity_description=analyst_out.entity.entity_description,
             repo_root=repo_root,
+            aliases=analyst_out.entity.aliases or None,
         )
         claim_slug = slugify(analyst_out.verdict.title)
         _write_claim_file(
@@ -442,6 +443,7 @@ async def onboard_entity(
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
     seed_url: str | None = None,
+    only: list[str] | None = None,
 ) -> OnboardResult:
     """Onboard an entity by running claim templates through the research pipeline.
 
@@ -478,15 +480,19 @@ async def onboard_entity(
     # Step 1: Light research for entity context
     logger.info("Onboard step 1: light research for %s", entity_name)
     entity_description = ""
+    entity_website: str | None = None
     try:
         async with httpx.AsyncClient() as client:
             if seed_url:
                 _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
+                entity_website = _url
                 logger.info("Onboard step 1: ingesting seed URL %s", _url)
                 source_files, _ = await _ingest_urls(client, [_url], cfg)
             else:
                 query = f"{entity_name} official website"
                 urls, _ = await _research(client, entity_name, query, cfg)
+                if urls:
+                    entity_website = urls[0]
                 source_files, _ = await _ingest_urls(client, urls[:1], cfg) if urls else ([], [])
             if source_files:
                 _u, sf = source_files[0]
@@ -505,6 +511,17 @@ async def onboard_entity(
         return result
 
     applicable_slugs, excluded = _screen_templates(entity_description, typed_templates)
+
+    if only:
+        unknown = [s for s in only if s not in {t.slug for t in typed_templates}]
+        if unknown:
+            result.errors.append(
+                f"Unknown template slug(s) for entity_type={entity_type}: {', '.join(unknown)}"
+            )
+            result.status = "rejected"
+            return result
+        applicable_slugs = [s for s in applicable_slugs if s in set(only)]
+
     result.templates_excluded = excluded
 
     # Step 3: Checkpoint
@@ -521,6 +538,7 @@ async def onboard_entity(
             entity_type=et,
             entity_description=entity_description,
             repo_root=repo_root,
+            website=entity_website,
         )
         result.entity_ref = draft_ref
         return result
@@ -536,6 +554,7 @@ async def onboard_entity(
         entity_type=et,
         entity_description=entity_description,
         repo_root=repo_root,
+        website=entity_website,
     )
     result.entity_ref = entity_ref
 

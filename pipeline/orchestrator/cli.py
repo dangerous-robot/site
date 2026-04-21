@@ -422,6 +422,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
+@click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
 @click.pass_context
 def onboard(
     ctx: click.Context,
@@ -433,6 +434,7 @@ def onboard(
     skip_wayback: bool,
     repo_root: str | None,
     interactive: bool,
+    only: str | None,
 ) -> None:
     """Onboard an entity using claim templates.
 
@@ -461,7 +463,8 @@ def onboard(
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
-    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url))
+    only_slugs = [s.strip() for s in only.split(",") if s.strip()] if only else None
+    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url, only=only_slugs))
 
     click.echo("=" * 60)
     click.echo("Onboard Report")
