@@ -159,6 +159,64 @@ class TestOnboardEntityHappyPath:
         assert len(result.claims_created) > 0
 
 
+class TestOnboardEntityNoDoubleIngest:
+    @pytest.mark.asyncio
+    async def test_single_research_and_ingest_per_template(self, tmp_path: Path) -> None:
+        """Onboard should run one _research + _ingest_urls pair per template plus one for light research.
+
+        Regression canary: pre-refactor onboard called verify_claim (which runs research+ingest)
+        and then re-ran _research + _ingest_urls purely to recover SourceFile tuples. That
+        doubled LLM/network calls per template. With verify_claim surfacing source_files
+        directly, the extra pair disappears.
+        """
+        _setup_tmp_repo(tmp_path)
+
+        from orchestrator import pipeline as pipeline_mod
+
+        real_research = pipeline_mod._research
+        real_ingest = pipeline_mod._ingest_urls
+
+        research_calls = 0
+        ingest_calls = 0
+
+        async def spy_research(*args, **kwargs):
+            nonlocal research_calls
+            research_calls += 1
+            return await real_research(*args, **kwargs)
+
+        async def spy_ingest(*args, **kwargs):
+            nonlocal ingest_calls
+            ingest_calls += 1
+            return await real_ingest(*args, **kwargs)
+
+        with (
+            research_agent.override(model=_research_model()),
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+            patch.object(pipeline_mod, "_research", side_effect=spy_research),
+            patch.object(pipeline_mod, "_ingest_urls", side_effect=spy_ingest),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config
+            )
+
+        assert result.status == "accepted"
+        # 6 company templates + 1 light-research pass = 7 ingest + 7 research calls.
+        # Pre-refactor was 1 + 6*2 = 13. Cap at 7 to lock in the single-pair invariant.
+        assert ingest_calls == 7, f"expected 7 ingest calls, got {ingest_calls}"
+        assert research_calls <= 7, f"expected <=7 research calls, got {research_calls}"
+
+
 class TestOnboardEntitySeedUrl:
     @pytest.mark.asyncio
     async def test_seed_url_skips_researcher(self, tmp_path: Path) -> None:

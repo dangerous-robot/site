@@ -11,7 +11,7 @@ from typing import Literal
 
 import click
 import httpx
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
@@ -42,6 +42,7 @@ class VerificationResult(BaseModel):
     analyst_output: AnalystOutput | None = None
     consistency: ComparisonResult | None = None
     errors: list[str] = field(default_factory=list)
+    source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -101,6 +102,7 @@ async def verify_claim(
         for url, sf in source_files:
             result.urls_ingested.append(url)
             result.sources.append(_build_source_dict(sf))
+            result.source_files.append((url, sf))
 
         ingested_set = set(result.urls_ingested)
         result.urls_failed = [u for u in urls if u not in ingested_set]
@@ -340,6 +342,7 @@ async def research_claim(
         for url, sf in source_files:
             result.urls_ingested.append(url)
             result.sources.append(_build_source_dict(sf))
+            result.source_files.append((url, sf))
 
         ingested_set = set(result.urls_ingested)
         result.urls_failed = [u for u in urls if u not in ingested_set]
@@ -582,14 +585,8 @@ async def onboard_entity(
                 result.claims_failed.append(slug)
                 continue
 
-            # Write sources
-            source_tuples = []
-            async with httpx.AsyncClient() as client:
-                urls, _ = await _research(client, entity_name, claim_text, cfg)
-                if urls:
-                    source_tuples, _ = await _ingest_urls(client, urls, cfg)
-
-            source_ids = _write_source_files(source_tuples, repo_root) if source_tuples else []
+            # Write sources (reuse verify_claim's already-ingested sources)
+            source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
 
             # Write claim file
             ao = vr.analyst_output
