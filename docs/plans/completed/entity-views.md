@@ -245,3 +245,9 @@ Single senior web-dev agent. Order:
 5. Build list pages, then enrich detail pages.
 6. Run `inv build` and fix any type / schema errors.
 7. Report data-quality warnings surfaced and any subtask that hit unexpected complexity.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |

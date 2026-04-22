@@ -84,3 +84,9 @@ The pre-paint inline script in `Base.astro` and the client script in `A11yContro
 **Safe to change**:
 - Nav content and structure in `Base.astro`.
 - `<A11yControl />` is nav-independent.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |
