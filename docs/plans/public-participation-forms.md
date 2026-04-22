@@ -365,3 +365,11 @@ These features extend Phase 6 as items 6.4, 6.5, and 6.6. No new phase number is
 | 6.6 | Standard proposal form + Worker endpoint | This plan | not started |
 
 Dependency: 6.1 (Cloudflare Worker + D1 initial setup) must land before or alongside these.
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No top-level status label present; plan extends `public-feedback.md` Phase 6 infrastructure — depends on that plan's Phase 1 (Worker + D1 setup). Content is fully specified with D1 schema amendments, Worker routes, form UX, and acceptance criteria. Not a stub. Related: `public-feedback.md` provides the shared backend — overlap is intentional by design, not a duplicate. Name clarity note: `public-feedback.md` and `public-participation-forms.md` are easy to confuse; suggested renames: `public-feedback-infra.md` and `public-participation-extensions.md`. |

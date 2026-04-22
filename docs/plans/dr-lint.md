@@ -279,3 +279,4 @@ A multi-agent loop running on a GitHub Actions cron schedule:
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-04-22 | agent (claude-sonnet-4-6) | deep — CLI patterns, schema accuracy, CI workflow, check completeness | Fixed inverted `standard_slug`/`criteria_slug` direction throughout; corrected Phase 3 queue file from `QUEUE.md` to `ONBOARD_QUEUE.md`; rewrote Phase 2 CI snippet to match Node-only existing workflow and proposed parallel job; documented year-prefix source ID format for `broken-source-ref`; added `entity-type-dir-mismatch` and `future-as-of` checks; expanded `unknown-frontmatter-key` with canonical field lists (including `aliases`); added `LintIssue` line-number deferral note |
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | Status accurate (per-phase table present). Not a stub. No duplicates with other active plans. Suggested rename: `dr-lint.md` is clear. |

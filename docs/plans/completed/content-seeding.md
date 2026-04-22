@@ -67,3 +67,9 @@ From the responsible-ai comparison table -- claims TL already makes publicly:
 ## Estimated Scope
 
 Medium. ~10 files to create. Each source requires reading the material and writing structured frontmatter.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; status is "not started" but file is in completed/; all tasks remain unchecked (6 items) |

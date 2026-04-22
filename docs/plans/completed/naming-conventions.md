@@ -225,3 +225,9 @@ CI workflows, npm scripts, and architecture docs already use "checks" correctly.
 1. **Glossary location**: `docs/architecture/glossary.md`
 2. **Research repo separation**: No impact on naming decisions now. Future concern only.
 3. **`agent-pipeline.md` name**: Keep as-is. It describes the pipeline for executing agent roles -- the name is accurate.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |

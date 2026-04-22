@@ -725,3 +725,11 @@ IP-based rate limiting (5/hour via KV) is trivially bypassed with proxies. This 
 1. **Turnstile keys**: Site key hardcoded in form page. Secret key as a Worker secret (`wrangler secret put TURNSTILE_SECRET`).
 2. **Admin notifications**: Email per submission (not a digest). Low volume expected initially.
 3. **CONTRIBUTING.md AI disclosure**: Added in Phase 1 alongside the GitHub config work.
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No top-level status label present; content is fully specified with phase breakdown, architecture, D1 schema, API spec, and security hardening — reads as ready to implement Phase 1. Not a stub. Related: `public-participation-forms.md` extends this plan's Cloudflare backend (Phase 6 infrastructure) — overlap is intentional by design, not a duplicate. Name clarity note: `public-feedback.md` vs `public-participation-forms.md` are easy to confuse; suggested renames: `public-feedback-infra.md` and `public-participation-extensions.md`. |

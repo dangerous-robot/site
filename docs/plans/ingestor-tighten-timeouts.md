@@ -107,6 +107,13 @@ All tests must be deterministic (no real network) and run under 5s wall time.
 - `pipeline/tests/test_tools.py`
 - `pipeline/tests/test_orchestrator.py`
 
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-20 | agent (cross-review) | code verification | Verified timeout values and call sites against actual code; promoted to ready with follow-ups (see review notes below). |
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No top-level status label present; cross-review notes from 2026-04-20 indicate "Promoting" (i.e., ready). Not a stub. Part of a complementary triad with `ingestor-fail-fast-403.md` and `researcher-host-blocklist.md`; not duplicates. Added this table; preserved original review notes below. |
+
 ## Review Notes (2026-04-20)
 
 Cross-review verified against code. Promoting with minor follow-ups the implementer should address.

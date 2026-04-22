@@ -62,3 +62,9 @@ Build Astro pages that render research content (claims, sources, entities) using
 ## Estimated Scope
 
 Medium. Template work + content collection configuration. Co-author schemas with research-schemas.md to avoid designing the same thing twice.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; status is "not started" but file is in completed/; all tasks remain unchecked (8 items) |

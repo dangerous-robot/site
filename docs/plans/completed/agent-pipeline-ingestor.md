@@ -392,3 +392,9 @@ Exit codes: `0` success, `1` recoverable error, `2` configuration error.
 - `research/sources/2025/fli-safety-index.md` -- Reference for output format
 - `AGENTS.md` -- Content rules encoded in system prompt and validators
 - `docs/plans/completed/agent-pipeline.md` -- Parent plan to update as work progresses
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |

@@ -429,3 +429,11 @@ Recommended order:
 1. **`dr review` reviewer default**: **Decision: fall back to `git config user.email`, fail explicitly if that also returns empty.** The command runs `git config user.email`; if non-empty, use it as the reviewer default. If `--reviewer` is not passed and `git config` returns empty, the command exits with an error rather than writing `reviewer: null`. This prevents silent null writes while avoiding a mandatory flag for operators who have git configured.
 
 2. **Loader path configurability for research repo split**: `docs/BACKLOG.md:29` notes a possible future research repo split. When that happens, the loader's `research/claims` base path must become configurable rather than hardcoded. Defer until the split is actively planned, but note the coupling point.
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | Status "ready" is accurate: Phase 4.7 (entity-views IA) confirmed done per `docs/HISTORY.md`. Not a stub — fully specified with schema, pipeline changes, CLI command, Astro loader, UI, and acceptance criteria. No content duplicates with other active plans. Name clarity note: `feature-10-audit-trail.md` prefix references a BACKLOG item number; suggested rename for clarity: `audit-trail-sidecars.md`. |

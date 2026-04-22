@@ -488,3 +488,9 @@ This is viable because 4.2 is read-only and needs no file writing. The ingestor 
 - `research/claims/` -- Existing claims (structure to parse and split)
 - `scripts/check-citations.ts` -- Existing validation pattern (frontmatter parsing, exit codes)
 - `docs/architecture/research-workflow.md` -- Documents quality gate gaps this plan addresses
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |

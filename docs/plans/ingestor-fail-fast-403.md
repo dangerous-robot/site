@@ -102,3 +102,11 @@ Using `pytest` + `httpx.MockTransport` or `respx`:
 - `pipeline/orchestrator/pipeline.py`
 - `pipeline/ingestor/instructions.md`
 - `pipeline/orchestrator/checkpoints.py`
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No explicit status label present; content reads as ready to implement. Not a stub. Part of a complementary triad with `researcher-host-blocklist.md` and `ingestor-tighten-timeouts.md` — each plan cross-references the others; not duplicates. These three are independent and can land in any order. |

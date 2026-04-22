@@ -77,3 +77,11 @@ Alternative (if needed later): add an `asyncio.Lock` attribute on `CLICheckpoint
 - `pipeline/orchestrator/checkpoints.py` -- lock on `CLICheckpointHandler` (if lock approach chosen), optional `context` kwarg on Protocol.
 - `pipeline/orchestrator/cli.py` -- `--concurrency` option, interactive clamp warning.
 - `pipeline/tests/test_onboard.py` -- new parallelism + interactive tests.
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No explicit status label present; content reads as ready to implement. Not a stub. Related plan: `onboard-reuse-verify-sources.md` also modifies the per-template loop and should land first (it eliminates the duplicate `_research`+`_ingest_urls` call referenced in section 5 of this plan). The plan already cross-references `onboard-reuse-verify-sources.md` at the rate-limits section. |

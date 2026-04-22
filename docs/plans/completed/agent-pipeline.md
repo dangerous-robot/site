@@ -116,3 +116,9 @@ Task-level detail lives in the sub-plans. High-level sequence:
 ## Estimated Scope
 
 Medium. Ingestor is ~200-300 lines, consistency check is ~300-400 lines, shared infrastructure ~150 lines. The PydanticAI scaffolding is the learning curve.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |

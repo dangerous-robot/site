@@ -408,3 +408,9 @@ All resolved as of 2026-04-18.
 | `sources/` visibility | **Public pages** | Transparency aligns with TreadLightly ethos; near-free given Astro Content Collections. |
 | Review cadence default | **60 days, per-claim override** | Pricing claims get 14–30; policy claims get 90–180. |
 | Content license | **CC-BY-4.0** | Less restrictive; avoids SA complications for downstream reuse. |
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; status is "superseded" -- historical context document, no actionable items |

@@ -37,3 +37,9 @@ Bring repo documentation and licensing up to date with decisions made. Most of P
 ## Estimated Scope
 
 Small. ~30 minutes of writing and one commit.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; status is "not started" but file is in completed/; 6 tasks remain unchecked |

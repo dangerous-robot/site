@@ -90,3 +90,11 @@ Target file: `pipeline/tests/test_onboard.py`.
 - `pipeline/tests/test_onboard.py`
 - `pipeline/tests/test_orchestrator.py`
 - `pipeline/ingestor/models.py`
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No explicit status label present; content reads as ready to implement (concrete code changes, test plan, risks documented). Not a stub. Related plan: `onboard-parallelize-templates.md` also modifies the per-template loop — this plan should land first (reuse eliminates the duplicate `_research`+`_ingest_urls` call that parallelize assumes is gone). Cross-reference noted in both plans' review rows. |

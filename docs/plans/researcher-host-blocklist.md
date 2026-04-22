@@ -211,3 +211,11 @@ This distinguishes "researcher returned nothing" from "researcher returned only 
 - `research/blocklist.yaml` (new)
 - `pipeline/tests/test_blocklist.py` (new)
 - `pipeline/orchestrator/checkpoints.py`
+
+---
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | No explicit status label present; content reads as ready to implement. Not a stub. Part of a complementary triad with `ingestor-fail-fast-403.md` and `ingestor-tighten-timeouts.md` — each cross-references the others; not duplicates. These three are independent and can land in any order. |

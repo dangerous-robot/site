@@ -109,3 +109,9 @@ For each: does the drafter reach a similar verdict? Does the consistency check f
 3. **Entity resolution** -- look up existing entity files, create stubs for new entities
 4. **Cost tracking** -- log token usage per agent per run
 5. **Batch mode** -- verify multiple claims from a file or QUEUE.md
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; post-POC next steps noted but explicitly "not committed" -- not unfinished work |

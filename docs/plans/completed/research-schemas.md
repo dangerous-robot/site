@@ -121,3 +121,9 @@ Body content: prose rationale for claims, extended notes for sources, background
 ## Estimated Scope
 
 Medium. Schema design requires thought; directory creation is mechanical. Co-author with astro-site.md to avoid drift.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; status is "not started" but file is in completed/; all tasks remain unchecked (4 items) |

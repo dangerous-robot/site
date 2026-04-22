@@ -325,3 +325,9 @@ Document new agent roles, directory layout, instruction file convention, checkpo
 6. Checkpoints prompt during `verify` and `research` flows
 7. `research_claim` integration test writes valid artifacts to disk
 8. Acceptance test asserts checkpoint handler was reached (spy attribute)
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-04-22 | agent (cursory review) | completed-check | Added review history section; no unfinished work found |
