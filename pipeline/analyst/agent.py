@@ -18,6 +18,10 @@ class EntityResolution(BaseModel):
     entity_name: str = Field(description="Primary entity name (e.g. 'Apple', 'OpenAI')")
     entity_type: EntityType = Field(description="One of: company, product, topic")
     entity_description: str = Field(description="One-sentence description of the entity")
+    aliases: list[str] = Field(
+        default_factory=list,
+        description="Common alternate names, abbreviations, or product lines (e.g. ['Claude'] for Anthropic). Omit if none apply.",
+    )
 
 
 class VerdictAssessment(BaseModel):

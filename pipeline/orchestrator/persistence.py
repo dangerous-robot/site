@@ -20,6 +20,24 @@ _ENTITY_TYPE_DIR = {
 }
 
 
+def _entity_frontmatter(
+    entity_name: str,
+    entity_type: EntityType,
+    entity_description: str,
+    website: str | None = None,
+    aliases: list[str] | None = None,
+    status: str | None = None,
+) -> dict:
+    return {
+        "name": entity_name,
+        "type": entity_type,
+        "website": website,
+        "aliases": aliases or None,
+        "description": entity_description,
+        "status": status,
+    }
+
+
 def _write_source_files(
     source_files: list[tuple[str, SourceFile]],
     repo_root: Path,
@@ -52,6 +70,8 @@ def _write_entity_file(
     entity_type: EntityType,
     entity_description: str,
     repo_root: Path,
+    website: str | None = None,
+    aliases: list[str] | None = None,
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
     entity_slug = slugify(entity_name)
@@ -66,13 +86,8 @@ def _write_entity_file(
         logger.info("Entity already exists: %s", entity_path)
         return entity_ref
 
-    fm = {
-        "name": entity_name,
-        "type": entity_type,
-        "description": entity_description,
-    }
-    body = f"{entity_description}\n"
-    entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+    fm = _entity_frontmatter(entity_name, entity_type, entity_description, website, aliases)
+    entity_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote entity: %s", entity_path)
     return entity_ref
 
@@ -119,6 +134,8 @@ def _write_draft_entity_file(
     entity_type: EntityType,
     entity_description: str,
     repo_root: Path,
+    website: str | None = None,
+    aliases: list[str] | None = None,
 ) -> str:
     """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
     entity_slug = slugify(entity_name)
@@ -129,13 +146,9 @@ def _write_draft_entity_file(
     draft_path = draft_dir / f"{entity_slug}.md"
     entity_ref = f"drafts/{type_dir}/{entity_slug}"
 
-    fm = {
-        "name": entity_name,
-        "type": entity_type,
-        "description": entity_description,
-        "status": "draft",
-    }
-    body = f"{entity_description}\n"
-    draft_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+    fm = _entity_frontmatter(
+        entity_name, entity_type, entity_description, website, aliases, status="draft"
+    )
+    draft_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote draft entity: %s", draft_path)
     return entity_ref
