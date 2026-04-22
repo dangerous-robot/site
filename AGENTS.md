@@ -170,6 +170,39 @@ Scope definitions:
 
 The review record lives in the plan file itself, not in a separate file.
 
+## Release planning
+
+Three mutually exclusive work states:
+
+| State | Location | Meaning |
+|---|---|---|
+| Unscheduled | `docs/UNSCHEDULED.md` | Known work not yet assigned to a release. May or may not have a plan file. Default holding area. |
+| Scheduled | A release doc (`docs/plans/v*.*.*.md`) | Committed to a specific release. When an item enters a release doc, remove it from UNSCHEDULED.md. |
+| Plan-only | `docs/plans/drafts/` (draft) or `docs/plans/` (reviewed) | A plan exists for exploratory/future work not yet prioritized into a release or unscheduled. |
+
+**Plan lifecycle** (within plan-only state):
+1. New/speculative plan → `docs/plans/drafts/` (gitignored, WIP)
+2. Design reviewed → `docs/plans/` (committed)
+3. Fully implemented → `docs/plans/completed/`
+
+**Transition rules:**
+- When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
+- When assigned to a release: add to release doc, remove from UNSCHEDULED.md
+- When a release ships: move its release doc to `docs/plans/completed/`
+
+**Plan filename suffix convention** — append to base name when it adds signal:
+
+| Suffix | Meaning |
+|---|---|
+| `_stub` | Scaffolded from a description; not yet fully implementable |
+| `_completed` | Fully implemented; use in `completed/` to distinguish from abandoned/superseded |
+
+No suffix = plan is complete and reviewable. Keep the set small.
+
+**Release doc naming:** `docs/plans/v{semver}.md`. `VERSION.md` declares the current working version.
+
+**Note on `future/` directory:** `docs/plans/future/` is undocumented. Dissolve it: move contents to `docs/plans/drafts/` and delete the directory.
+
 ## Architecture Docs
 
 Architectural summaries live in `docs/architecture/`. These are reference documents for humans and agents -- they describe how the system works today, not how it should work (that's what plans are for).
