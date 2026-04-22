@@ -124,6 +124,17 @@ Recommended implementation order: 4.6.1 → 4.6.2 → 4.6.3 → 4.6.4 → 4.6.5 
 
 ---
 
+## Phase 4.7: Site IA, detail views, and tokenized CSS
+
+**Goal**: Turn the site from a flat claim list into a browsable research hub (companies, products, claims, standards, topics) and land a tokenized CSS + a11y control foundation so light/dark/high-contrast, font scaling, and mobile patterns are all handled at the token layer.
+
+| # | Work Item | Plan | Status | Notes |
+|---|-----------|------|--------|-------|
+| 4.7.1 | Entity list + detail views, standards matrix, topic/category views, filter bar | [entity-views.md](plans/entity-views.md) | not started | Adds optional `standard_slug` field to the claim schema; nav trimmed to 5 items; Sources demoted to footer |
+| 4.7.2 | Tokenized CSS + a11y control (light/dark/high-contrast, S/M/L font scale, FAB) | docs/plans/drafts/a11y-tokens.md | landed (uncommitted) | CSS and components implemented; plan doc still in drafts until promoted |
+
+---
+
 ## Phase 5 (if needed): Automation
 
 **Goal**: Recurring audits, queue-based intake.
