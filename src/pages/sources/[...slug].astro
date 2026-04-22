@@ -13,14 +13,14 @@ export async function getStaticPaths() {
 const { source } = Astro.props;
 const { Content } = await render(source);
 
-const kindColors: Record<string, string> = {
-  report: "#4a7a9e",
-  article: "#6a8e4e",
-  documentation: "#8a6e9e",
-  dataset: "#5e8a8a",
-  blog: "#9e7a4a",
-  video: "#9e4a6a",
-  index: "#6a6a8e",
+const kindCssVar: Record<string, string> = {
+  report: "var(--color-kind-report)",
+  article: "var(--color-kind-article)",
+  documentation: "var(--color-kind-documentation)",
+  dataset: "var(--color-kind-dataset)",
+  blog: "var(--color-kind-blog)",
+  video: "var(--color-kind-video)",
+  index: "var(--color-kind-index)",
 };
 
 const accessedDate = source.data.accessed_date instanceof Date
@@ -42,7 +42,7 @@ const publishedDate = source.data.published_date instanceof Date
       <div class="meta">
         <span
           class="kind-badge"
-          style={`background: ${kindColors[source.data.kind] || "#777"}`}
+          style={`background: ${kindCssVar[source.data.kind] || "var(--color-text-faint)"}`}
         >
           {source.data.kind}
         </span>
@@ -89,68 +89,69 @@ const publishedDate = source.data.published_date instanceof Date
 
 <style>
   .source-detail header {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .source-detail h1 {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
   }
 
   .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: var(--space-md);
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm);
   }
 
   .kind-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
     font-weight: bold;
-    color: #fff;
+    color: var(--color-on-badge);
     text-transform: uppercase;
   }
 
   .publisher {
-    color: #ccc;
-    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
   }
 
   .dates {
     display: flex;
-    gap: 1.5rem;
-    color: #888;
+    gap: var(--space-lg);
+    color: var(--color-text-muted);
     font-size: 0.85rem;
     margin-bottom: 0.75rem;
   }
 
   .links {
     display: flex;
-    gap: 1.5rem;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
   }
 
   .links a {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }
 
   .summary {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .summary h2 {
     font-size: 1.1rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-sm);
   }
 
   .summary p {
-    color: #ccc;
+    color: var(--color-text-muted);
   }
 
   .key-quotes {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .key-quotes h2 {
@@ -158,13 +159,7 @@ const publishedDate = source.data.published_date instanceof Date
     margin-bottom: 0.75rem;
   }
 
-  blockquote {
-    border-left: 3px solid #444;
-    margin: 0 0 1rem 0;
-    padding: 0.5rem 1rem;
-    color: #bbb;
-    font-style: italic;
-  }
+  /* blockquote uses global.css token styles */
 
   .body-content {
     line-height: 1.7;
@@ -172,6 +167,6 @@ const publishedDate = source.data.published_date instanceof Date
 
   .body-content :global(h2),
   .body-content :global(h3) {
-    margin-top: 1.5rem;
+    margin-top: var(--space-lg);
   }
 </style>

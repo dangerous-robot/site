@@ -1,0 +1,228 @@
+/* tokens.css — Dangerous Robot design tokens.
+   Sections: base → dark (default) → light → high-contrast → verdict/kind. */
+
+/* Base tokens (theme-invariant) */
+:root {
+  /* Layout */
+  --content-max-width: 48rem;
+
+  /* Typography */
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: Georgia, "Times New Roman", Times, serif;
+  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+
+  --line-height-body: 1.65;
+  --line-height-heading: 1.25;
+
+  --font-size-base: 1rem;
+  --font-size-sm: 0.9rem;
+  --font-size-xs: 0.8rem;
+  --font-size-2xs: 0.75rem;
+
+  /* Spacing */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
+  --space-2xl: 3rem;
+
+  /* Border radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-full: 9999px;
+
+  /* Badge text color (always white — overridden in high-contrast) */
+  --color-on-badge: #fff;
+}
+
+/* Dark theme (default, :root) */
+:root,
+[data-theme="dark"] {
+  --color-bg: #111112;
+  --color-surface: #1a1b1e;
+  --color-text: #e8e8ea;
+  --color-text-muted: #9a9aa8;
+  --color-text-faint: #5e5e6e;
+
+  --color-accent: #5bbdb5;
+
+  --color-border: #2c2c36;
+
+  --color-site-name: #e8e8ea;
+  --color-nav-link: #7a7a8e;
+  --color-nav-link-hover: #c8c8d2;
+
+  --color-footer-text: #5e5e6e;
+  --color-footer-link: #7a7a8e;
+  --color-footer-link-hover: #c8c8d2;
+
+  --color-code-bg: #22232a;
+
+  /* FAB / popover */
+  --shadow-fab: 0 2px 12px rgba(0, 0, 0, 0.6);
+  --shadow-popover: 0 4px 24px rgba(0, 0, 0, 0.5);
+  --color-fab-bg: #1a1b1e;
+  --color-fab-icon: #9a9aa8;
+  --color-fab-icon-hover: #e8e8ea;
+  --color-popover-bg: #1a1b1e;
+  --color-popover-border: #2c2c36;
+  --color-radio-selected-bg: #252630;
+  --color-radio-selected-border: #444454;
+  --color-radio-text: #9a9aa8;
+  --color-radio-text-selected: #e8e8ea;
+  --color-section-label: #5e5e6e;
+  --color-backdrop: rgba(0, 0, 0, 0.5);
+}
+
+/* Light theme */
+[data-theme="light"] {
+  --color-bg: #f8f7f4;
+  --color-surface: #ffffff;
+  --color-text: #18181c;
+  --color-text-muted: #5c5c6e;
+  --color-text-faint: #9090a0;
+
+  --color-accent: #287870;
+
+  --color-border: #e0dfd8;
+
+  --color-site-name: #18181c;
+  --color-nav-link: #6c6c80;
+  --color-nav-link-hover: #18181c;
+
+  --color-footer-text: #9090a0;
+  --color-footer-link: #6c6c80;
+  --color-footer-link-hover: #18181c;
+
+  --color-code-bg: #efeee8;
+
+  /* FAB / popover */
+  --shadow-fab: 0 2px 12px rgba(0, 0, 0, 0.15);
+  --shadow-popover: 0 4px 24px rgba(0, 0, 0, 0.12);
+  --color-fab-bg: #ffffff;
+  --color-fab-icon: #6c6c80;
+  --color-fab-icon-hover: #18181c;
+  --color-popover-bg: #ffffff;
+  --color-popover-border: #e0dfd8;
+  --color-radio-selected-bg: #f0eeea;
+  --color-radio-selected-border: #b8b8c4;
+  --color-radio-text: #6c6c80;
+  --color-radio-text-selected: #18181c;
+  --color-section-label: #9090a0;
+  --color-backdrop: rgba(0, 0, 0, 0.25);
+}
+
+/* High-contrast — dark base */
+[data-contrast="high"] {
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-text: #ffffff;
+  --color-text-muted: #cccccc;
+  --color-text-faint: #999999;
+
+  --color-accent: #7be0d6;
+
+  --color-border: #666666;
+
+  --color-site-name: #ffffff;
+  --color-nav-link: #cccccc;
+  --color-nav-link-hover: #ffffff;
+
+  --color-footer-text: #999999;
+  --color-footer-link: #cccccc;
+  --color-footer-link-hover: #ffffff;
+
+  --color-code-bg: #111111;
+
+  --color-radio-selected-bg: #222222;
+  --color-radio-selected-border: #888888;
+  --color-radio-text: #cccccc;
+  --color-radio-text-selected: #ffffff;
+  --color-section-label: #999999;
+}
+
+/* High-contrast — light base */
+[data-theme="light"][data-contrast="high"] {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #000000;
+  --color-text-muted: #333333;
+  --color-text-faint: #555555;
+
+  --color-accent: #005a54;
+
+  --color-border: #333333;
+
+  --color-site-name: #000000;
+  --color-nav-link: #333333;
+  --color-nav-link-hover: #000000;
+
+  --color-footer-text: #555555;
+  --color-footer-link: #333333;
+  --color-footer-link-hover: #000000;
+
+  --color-code-bg: #f0f0f0;
+
+  --color-radio-selected-bg: #e8e8e8;
+  --color-radio-selected-border: #333333;
+  --color-radio-text: #333333;
+  --color-radio-text-selected: #000000;
+  --color-section-label: #555555;
+}
+
+/* Verdict + source-kind semantic colors.
+   Hue carries meaning; per-theme variants adjust saturation/lightness for
+   legibility. Kind colors don't vary by contrast mode. */
+:root,
+[data-theme="dark"] {
+  --color-verdict-true: #2d8a4e;
+  --color-verdict-mostly-true: #4a9e6b;
+  --color-verdict-mixed: #b8860b;
+  --color-verdict-mostly-false: #c44e3e;
+  --color-verdict-false: #b22222;
+  --color-verdict-unverified: #666677;
+
+  --color-kind-report: #4a7a9e;
+  --color-kind-article: #6a8e4e;
+  --color-kind-documentation: #8a6e9e;
+  --color-kind-dataset: #5e8a8a;
+  --color-kind-blog: #9e7a4a;
+  --color-kind-video: #9e4a6a;
+  --color-kind-index: #6a6a8e;
+}
+
+[data-theme="light"] {
+  --color-verdict-true: #1e6b3a;
+  --color-verdict-mostly-true: #357a52;
+  --color-verdict-mixed: #8a6200;
+  --color-verdict-mostly-false: #a83428;
+  --color-verdict-false: #8b0000;
+  --color-verdict-unverified: #555566;
+
+  --color-kind-report: #2e5a7e;
+  --color-kind-article: #4a6e2e;
+  --color-kind-documentation: #6a4e7e;
+  --color-kind-dataset: #3e6a6a;
+  --color-kind-blog: #7e5a2a;
+  --color-kind-video: #7e2a4a;
+  --color-kind-index: #4a4a6e;
+}
+
+[data-contrast="high"] {
+  --color-verdict-true: #00cc55;
+  --color-verdict-mostly-true: #44dd88;
+  --color-verdict-mixed: #ffcc00;
+  --color-verdict-mostly-false: #ff7744;
+  --color-verdict-false: #ff3333;
+  --color-verdict-unverified: #aaaaaa;
+}
+
+[data-theme="light"][data-contrast="high"] {
+  --color-verdict-true: #005522;
+  --color-verdict-mostly-true: #226633;
+  --color-verdict-mixed: #664400;
+  --color-verdict-mostly-false: #882200;
+  --color-verdict-false: #660000;
+  --color-verdict-unverified: #444444;
+}

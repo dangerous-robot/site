@@ -19,13 +19,13 @@ const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
 
-const verdictColors: Record<string, string> = {
-  true: "#2d8a4e",
-  "mostly-true": "#4a9e6b",
-  mixed: "#b8860b",
-  "mostly-false": "#c44e3e",
-  false: "#b22222",
-  unverified: "#777",
+const verdictCssVar: Record<string, string> = {
+  true: "var(--color-verdict-true)",
+  "mostly-true": "var(--color-verdict-mostly-true)",
+  mixed: "var(--color-verdict-mixed)",
+  "mostly-false": "var(--color-verdict-mostly-false)",
+  false: "var(--color-verdict-false)",
+  unverified: "var(--color-verdict-unverified)",
 };
 
 const kindLabels: Record<string, string> = {
@@ -69,7 +69,7 @@ const kindLabels: Record<string, string> = {
             <li>
               <span
                 class="verdict-badge"
-                style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+                style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
               >
                 {claim.data.verdict}
               </span>
@@ -86,7 +86,7 @@ const kindLabels: Record<string, string> = {
 
 <style>
   .entity-detail header {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .entity-detail h1 {
@@ -96,52 +96,53 @@ const kindLabels: Record<string, string> = {
   .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: var(--space-md);
     align-items: center;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
   }
 
   .kind-label {
-    background: #333;
-    color: #ccc;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
     padding: 0.15rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     text-transform: uppercase;
     font-weight: bold;
   }
 
   .website-link {
-    font-size: 0.9rem;
+    font-size: var(--font-size-sm);
   }
 
   .description {
-    color: #bbb;
-    font-size: 1rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-base);
   }
 
   .body-content {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
     line-height: 1.7;
   }
 
   .body-content :global(h2),
   .body-content :global(h3) {
-    margin-top: 1.5rem;
+    margin-top: var(--space-lg);
   }
 
   .related-claims {
-    border-top: 1px solid #333;
-    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
   }
 
   .related-claims h2 {
     font-size: 1.2rem;
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
   }
 
   .empty {
-    color: #666;
+    color: var(--color-text-faint);
     font-style: italic;
   }
 
@@ -152,7 +153,7 @@ const kindLabels: Record<string, string> = {
   }
 
   .claim-list li {
-    padding: 0.5rem 0;
+    padding: var(--space-sm) 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -161,10 +162,10 @@ const kindLabels: Record<string, string> = {
   .verdict-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
     font-weight: bold;
-    color: #fff;
+    color: var(--color-on-badge);
     text-transform: uppercase;
     white-space: nowrap;
     min-width: 5.5rem;

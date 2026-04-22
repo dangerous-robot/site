@@ -14,13 +14,13 @@ for (const claim of allClaims) {
   claimsByEntity.get(entity)!.push(claim);
 }
 
-const verdictColors: Record<string, string> = {
-  true: "#2d8a4e",
-  "mostly-true": "#4a9e6b",
-  mixed: "#b8860b",
-  "mostly-false": "#c44e3e",
-  false: "#b22222",
-  unverified: "#777",
+const verdictCssVar: Record<string, string> = {
+  true: "var(--color-verdict-true)",
+  "mostly-true": "var(--color-verdict-mostly-true)",
+  mixed: "var(--color-verdict-mixed)",
+  "mostly-false": "var(--color-verdict-mostly-false)",
+  false: "var(--color-verdict-false)",
+  unverified: "var(--color-verdict-unverified)",
 };
 ---
 
@@ -44,7 +44,7 @@ const verdictColors: Record<string, string> = {
               <li>
                 <span
                   class="verdict-badge"
-                  style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+                  style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
                 >
                   {claim.data.verdict}
                 </span>
@@ -60,25 +60,25 @@ const verdictColors: Record<string, string> = {
 
 <style>
   .intro {
-    color: #999;
+    color: var(--color-text-muted);
     font-size: 1.1rem;
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .empty {
-    color: #666;
+    color: var(--color-text-faint);
     font-style: italic;
   }
 
   .entity-group {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .entity-group h2 {
     font-size: 1.4rem;
     margin-bottom: 0.75rem;
-    border-bottom: 1px solid #333;
-    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-sm);
   }
 
   .claim-list {
@@ -88,7 +88,7 @@ const verdictColors: Record<string, string> = {
   }
 
   .claim-list li {
-    padding: 0.5rem 0;
+    padding: var(--space-sm) 0;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -97,10 +97,10 @@ const verdictColors: Record<string, string> = {
   .verdict-badge {
     display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
     font-weight: bold;
-    color: #fff;
+    color: var(--color-on-badge);
     text-transform: uppercase;
     white-space: nowrap;
     min-width: 5.5rem;

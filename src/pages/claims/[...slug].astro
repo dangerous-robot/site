@@ -13,13 +13,13 @@ export async function getStaticPaths() {
 const { claim } = Astro.props;
 const { Content } = await render(claim);
 
-const verdictColors: Record<string, string> = {
-  true: "#2d8a4e",
-  "mostly-true": "#4a9e6b",
-  mixed: "#b8860b",
-  "mostly-false": "#c44e3e",
-  false: "#b22222",
-  unverified: "#777",
+const verdictCssVar: Record<string, string> = {
+  true: "var(--color-verdict-true)",
+  "mostly-true": "var(--color-verdict-mostly-true)",
+  mixed: "var(--color-verdict-mixed)",
+  "mostly-false": "var(--color-verdict-mostly-false)",
+  false: "var(--color-verdict-false)",
+  unverified: "var(--color-verdict-unverified)",
 };
 
 const confidenceLabels: Record<string, string> = {
@@ -42,7 +42,7 @@ const asOfDate = claim.data.as_of instanceof Date
       <div class="meta">
         <span
           class="verdict-badge"
-          style={`background: ${verdictColors[claim.data.verdict] || "#777"}`}
+          style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
         >
           {claim.data.verdict}
         </span>
@@ -91,17 +91,17 @@ const asOfDate = claim.data.as_of instanceof Date
 
 <style>
   .claim-detail header {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .claim-detail h1 {
-    margin-bottom: 1rem;
+    margin-bottom: var(--space-md);
   }
 
   .meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: var(--space-md);
     align-items: center;
     margin-bottom: 0.75rem;
   }
@@ -109,37 +109,37 @@ const asOfDate = claim.data.as_of instanceof Date
   .verdict-badge {
     display: inline-block;
     padding: 0.2rem 0.6rem;
-    border-radius: 3px;
-    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
     font-weight: bold;
-    color: #fff;
+    color: var(--color-on-badge);
     text-transform: uppercase;
   }
 
   .confidence,
   .as-of,
   .category {
-    color: #999;
-    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
   }
 
   .entity-link {
-    color: #999;
-    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
   }
 
   .rationale {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
     line-height: 1.7;
   }
 
   .rationale :global(h2),
   .rationale :global(h3) {
-    margin-top: 1.5rem;
+    margin-top: var(--space-lg);
   }
 
   .sources-section {
-    margin-bottom: 2rem;
+    margin-bottom: var(--space-xl);
   }
 
   .source-list {
@@ -153,18 +153,18 @@ const asOfDate = claim.data.as_of instanceof Date
 
   .source-list li::before {
     content: "\2192 ";
-    color: #666;
+    color: var(--color-text-faint);
   }
 
   .review-info {
-    border-top: 1px solid #333;
-    padding-top: 1rem;
-    color: #888;
-    font-size: 0.9rem;
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
   }
 
   .review-info h2 {
-    font-size: 1rem;
-    margin-bottom: 0.25rem;
+    font-size: var(--font-size-base);
+    margin-bottom: var(--space-xs);
   }
 </style>

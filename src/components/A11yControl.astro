@@ -1,0 +1,467 @@
+---
+import AccessibilityIcon from "./AccessibilityIcon.astro";
+---
+
+<div class="a11y-root" id="a11y-root">
+  <div class="a11y-backdrop" id="a11y-backdrop" aria-hidden="true"></div>
+
+  <button
+    class="a11y-fab"
+    id="a11y-fab"
+    aria-label="Accessibility settings"
+    aria-expanded="false"
+    aria-controls="a11y-popover"
+    type="button"
+  >
+    <AccessibilityIcon size={24} />
+  </button>
+
+  <div
+    class="a11y-popover"
+    id="a11y-popover"
+    role="dialog"
+    aria-label="Accessibility settings"
+    aria-modal="true"
+    hidden
+  >
+    <div class="a11y-section">
+      <span class="a11y-label" id="a11y-label-contrast">Contrast</span>
+      <div class="a11y-group" role="radiogroup" aria-labelledby="a11y-label-contrast">
+        <button class="a11y-radio" role="radio" data-group="contrast" data-value="normal" aria-checked="true" type="button">
+          Normal
+        </button>
+        <button class="a11y-radio" role="radio" data-group="contrast" data-value="high" aria-checked="false" type="button">
+          High
+        </button>
+      </div>
+    </div>
+
+    <div class="a11y-section">
+      <span class="a11y-label" id="a11y-label-theme">Theme</span>
+      <div class="a11y-group" role="radiogroup" aria-labelledby="a11y-label-theme">
+        <button class="a11y-radio" role="radio" data-group="theme" data-value="light" aria-checked="false" type="button">
+          Light
+        </button>
+        <button class="a11y-radio" role="radio" data-group="theme" data-value="dark" aria-checked="false" type="button">
+          Dark
+        </button>
+        <button class="a11y-radio" role="radio" data-group="theme" data-value="system" aria-checked="false" type="button">
+          System
+        </button>
+      </div>
+    </div>
+
+    <div class="a11y-section a11y-section--last">
+      <span class="a11y-label" id="a11y-label-size">Text size</span>
+      <div class="a11y-group" role="radiogroup" aria-labelledby="a11y-label-size">
+        <button class="a11y-radio" role="radio" data-group="font-size" data-value="small" aria-checked="false" type="button" title="Small (16px)">
+          S
+        </button>
+        <button class="a11y-radio" role="radio" data-group="font-size" data-value="medium" aria-checked="true" type="button" title="Medium (18px)">
+          M
+        </button>
+        <button class="a11y-radio" role="radio" data-group="font-size" data-value="large" aria-checked="false" type="button" title="Large (20px)">
+          L
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ----- FAB ----- */
+  .a11y-root {
+    position: fixed;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+    left: 1rem;
+    z-index: 200;
+  }
+
+  .a11y-fab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border);
+    background: var(--color-fab-bg);
+    color: var(--color-fab-icon);
+    cursor: pointer;
+    box-shadow: var(--shadow-fab);
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+    padding: 0;
+  }
+
+  .a11y-fab:hover {
+    color: var(--color-fab-icon-hover);
+  }
+
+  .a11y-fab:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .a11y-fab {
+      transition: none;
+    }
+  }
+
+  /* ----- Backdrop (mobile only) ----- */
+  .a11y-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--color-backdrop);
+    z-index: 199;
+    opacity: 0;
+  }
+
+  @media (max-width: 639px) {
+    .a11y-backdrop.is-open {
+      display: block;
+      opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .a11y-backdrop {
+        transition: opacity 0.2s ease;
+      }
+      .a11y-backdrop.is-open {
+        opacity: 1;
+      }
+    }
+  }
+
+  /* ----- Popover (desktop) ----- */
+  .a11y-popover {
+    position: absolute;
+    bottom: calc(100% + 0.5rem);
+    left: 0;
+    width: 240px;
+    background: var(--color-popover-bg);
+    border: 1px solid var(--color-popover-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    overflow: hidden;
+  }
+
+  .a11y-popover[hidden] {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .a11y-popover:not([hidden]) {
+      animation: popover-in 0.15s ease;
+    }
+
+    @keyframes popover-in {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
+  /* ----- Bottom sheet (mobile) ----- */
+  @media (max-width: 639px) {
+    .a11y-root {
+      /* Reset to full-width footer anchor */
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      z-index: 200;
+    }
+
+    .a11y-fab {
+      position: absolute;
+      bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+      left: 1rem;
+    }
+
+    .a11y-popover {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+      border-bottom: none;
+      /* Ensure sheet is above backdrop */
+      z-index: 201;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .a11y-popover:not([hidden]) {
+        animation: sheet-in 0.2s ease;
+      }
+
+      @keyframes sheet-in {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+    }
+  }
+
+  /* ----- Sections ----- */
+  .a11y-section {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-popover-border);
+  }
+
+  .a11y-section--last {
+    border-bottom: none;
+  }
+
+  .a11y-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-section-label);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-body);
+  }
+
+  /* ----- Radio group ----- */
+  .a11y-group {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .a11y-radio {
+    flex: 1;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--color-radio-text);
+    cursor: pointer;
+    transition: background-color 0.1s ease, color 0.1s ease, border-color 0.1s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .a11y-radio {
+      transition: none;
+    }
+  }
+
+  .a11y-radio:hover {
+    background: var(--color-radio-selected-bg);
+    color: var(--color-radio-text-selected);
+  }
+
+  .a11y-radio[aria-checked="true"] {
+    background: var(--color-radio-selected-bg);
+    border-color: var(--color-radio-selected-border);
+    color: var(--color-radio-text-selected);
+  }
+
+  .a11y-radio:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+
+  /* Mobile: larger touch targets */
+  @media (max-width: 639px) {
+    .a11y-radio {
+      min-height: 44px;
+    }
+
+    .a11y-section {
+      padding: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // Storage keys and font-size values are mirrored in the pre-paint inline
+  // script in Base.astro <head>. Keep them in sync if changed here.
+  (function () {
+    const STORAGE = {
+      theme: "dr-theme",
+      contrast: "dr-contrast",
+      fontSize: "dr-font-size",
+    };
+
+    const FONT_SIZE_PX: Record<string, string> = {
+      small: "16px",
+      medium: "18px",
+      large: "20px",
+    };
+
+    const html = document.documentElement;
+    const fab = document.getElementById("a11y-fab") as HTMLButtonElement | null;
+    const popover = document.getElementById("a11y-popover") as HTMLElement | null;
+    const backdrop = document.getElementById("a11y-backdrop") as HTMLElement | null;
+
+    if (!fab || !popover || !backdrop) return;
+
+    function read(key: string): string | null {
+      try { return localStorage.getItem(key); } catch { return null; }
+    }
+
+    function write(key: string, value: string) {
+      try { localStorage.setItem(key, value); } catch { /* private mode: ignore */ }
+    }
+
+    function setGroupChecked(group: string, value: string) {
+      popover!
+        .querySelectorAll<HTMLButtonElement>(`[data-group="${group}"]`)
+        .forEach((btn) => {
+          btn.setAttribute("aria-checked", btn.dataset.value === value ? "true" : "false");
+        });
+    }
+
+    function applyFontSize(size: string) {
+      html.style.fontSize = FONT_SIZE_PX[size] || "18px";
+      html.dataset.fontSize = size;
+    }
+
+    function applyTheme(theme: string) {
+      if (theme === "system") {
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        html.dataset.theme = prefersDark ? "dark" : "light";
+      } else {
+        html.dataset.theme = theme;
+      }
+      html.dataset.themeChoice = theme;
+    }
+
+    function applyContrast(contrast: string) {
+      html.dataset.contrast = contrast;
+    }
+
+    function currentValue(group: string): string {
+      if (group === "theme") return html.dataset.themeChoice || "system";
+      if (group === "contrast") return html.dataset.contrast || "normal";
+      return html.dataset.fontSize || "medium";
+    }
+
+    function handleRadio(btn: HTMLButtonElement) {
+      const group = btn.dataset.group!;
+      const value = btn.dataset.value!;
+      if (currentValue(group) === value) return;
+
+      setGroupChecked(group, value);
+      if (group === "theme") { applyTheme(value); write(STORAGE.theme, value); }
+      else if (group === "contrast") { applyContrast(value); write(STORAGE.contrast, value); }
+      else if (group === "font-size") { applyFontSize(value); write(STORAGE.fontSize, value); }
+    }
+
+    let previouslyFocused: HTMLElement | null = null;
+    let focusable: HTMLElement[] = [];
+
+    function isOpen(): boolean {
+      return !popover!.hasAttribute("hidden");
+    }
+
+    function open() {
+      previouslyFocused = document.activeElement as HTMLElement;
+      popover!.removeAttribute("hidden");
+      fab!.setAttribute("aria-expanded", "true");
+      backdrop!.classList.add("is-open");
+      focusable = Array.from(
+        popover!.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute("disabled"));
+      const firstRadio = popover!.querySelector<HTMLButtonElement>(".a11y-radio");
+      if (firstRadio) firstRadio.focus();
+    }
+
+    function close() {
+      popover!.setAttribute("hidden", "");
+      fab!.setAttribute("aria-expanded", "false");
+      backdrop!.classList.remove("is-open");
+      focusable = [];
+      if (previouslyFocused && previouslyFocused !== fab) {
+        fab!.focus();
+      }
+    }
+
+    function toggle() {
+      if (isOpen()) close();
+      else open();
+    }
+
+    fab.addEventListener("click", toggle);
+    backdrop.addEventListener("click", close);
+
+    popover.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        return;
+      }
+
+      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        const active = document.activeElement as HTMLButtonElement;
+        if (!active || !active.dataset.group) return;
+        const buttons = Array.from(
+          popover!.querySelectorAll<HTMLButtonElement>(`[data-group="${active.dataset.group}"]`)
+        );
+        const idx = buttons.indexOf(active);
+        const isForward = e.key === "ArrowRight" || e.key === "ArrowDown";
+        const next = isForward
+          ? buttons[(idx + 1) % buttons.length]
+          : buttons[(idx - 1 + buttons.length) % buttons.length];
+        e.preventDefault();
+        next.focus();
+        handleRadio(next);
+        return;
+      }
+
+      if (e.key === "Tab" && focusable.length > 0) {
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+      // Enter / Space on role="radio" buttons fire native click → handleRadio.
+    });
+
+    popover.addEventListener("click", (e: MouseEvent) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>("[role='radio']");
+      if (btn) handleRadio(btn);
+    });
+
+    window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+      if ((html.dataset.themeChoice || "system") === "system") {
+        applyTheme("system");
+        setGroupChecked("theme", "system");
+      }
+    });
+
+    // Reflect pre-paint state on the radios. themeChoice holds the user's
+    // preference ("system"/"light"/"dark") rather than the resolved theme.
+    const savedTheme = read(STORAGE.theme) || "system";
+    html.dataset.themeChoice = savedTheme;
+    setGroupChecked("theme", savedTheme);
+    setGroupChecked("contrast", html.dataset.contrast || "normal");
+    setGroupChecked("font-size", html.dataset.fontSize || "medium");
+  })();
+</script>

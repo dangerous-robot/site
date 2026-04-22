@@ -130,8 +130,8 @@ Recommended implementation order: 4.6.1 → 4.6.2 → 4.6.3 → 4.6.4 → 4.6.5 
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 4.7.1 | Entity list + detail views, standards matrix, topic/category views, filter bar | [entity-views.md](plans/entity-views.md) | not started | Adds optional `standard_slug` field to the claim schema; nav trimmed to 5 items; Sources demoted to footer |
-| 4.7.2 | Tokenized CSS + a11y control (light/dark/high-contrast, S/M/L font scale, FAB) | docs/plans/drafts/a11y-tokens.md | landed (uncommitted) | CSS and components implemented; plan doc still in drafts until promoted |
+| 4.7.1 | Entity list + detail views, standards matrix, topic/category views, filter bar | [entity-views.md](plans/entity-views.md) | not started | Adds optional `standard_slug` field to the claim schema; nav trimmed to 5 items; Sources demoted to footer. Depends on 4.7.2 for tokens. |
+| 4.7.2 | Tokenized CSS + a11y control (light/dark/high-contrast, S/M/L font scale, FAB) | [a11y-tokens.md](plans/a11y-tokens.md) | done | Tokens, FAB, bottom-sheet, pre-paint script, colour sweep across pages |
 
 ---
 
