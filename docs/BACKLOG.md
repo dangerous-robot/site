@@ -1,6 +1,6 @@
 # Backlog: dangerousrobot.org
 
-Last updated: 2026-04-20
+Last updated: 2026-04-22
 
 This file tracks the phased progression for standing up dangerousrobot.org. Each phase lists its work items with links to detailed plan files. Status is tracked here; details live in the individual plans.
 
@@ -33,6 +33,14 @@ Remove the work-item table, status notes, and any "Next" subsections. The comple
 | Sources visibility | Public pages | 2026-04-18 | Transparency aligns with TreadLightly ethos |
 | Review cadence | 60 days default | 2026-04-18 | Pricing claims: 14-30 days. Policy claims: 90-180 days. |
 | Content license | CC-BY-4.0 | 2026-04-18 | Code stays MIT |
+
+## Follow-up: session 2026-04-22
+
+Four features implemented (methodology page, confidence explainer, source type indicators + 146-file backfill, scope page). Two plans written (public participation forms, audit trail). All need browser testing and content review before being considered done. Scheduling decisions needed for Phase 4.6 vs 4.8 ordering and Phase 6 bundling.
+
+**See [`docs/follow-up-2026-04-22.md`](follow-up-2026-04-22.md) for the full checklist.**
+
+---
 
 ## Blockers
 
@@ -124,14 +132,20 @@ Recommended implementation order: 4.6.1 → 4.6.2 → 4.6.3 → 4.6.4 → 4.6.5 
 
 ---
 
-## Phase 4.7: Site IA, detail views, and tokenized CSS
+## Phase 4.7: Site IA, detail views, and tokenized CSS (done)
 
-**Goal**: Turn the site from a flat claim list into a browsable research hub (companies, products, claims, standards, topics) and land a tokenized CSS + a11y control foundation so light/dark/high-contrast, font scaling, and mobile patterns are all handled at the token layer.
+Browsable research hub: companies, products, claims, standards, topics list/detail pages with filter bars, standards matrix, cross-links, and tokenized CSS + a11y control (light/dark/high-contrast, font scale, FAB). See [entity-views.md](plans/entity-views.md) and [a11y-tokens.md](plans/a11y-tokens.md).
+
+---
+
+## Ops Runbook
+
+**Goal**: A single reference doc (`docs/RUNBOOK.md`) covering the dev loop, pipeline operations, deploy process, and content schema changes. Currently undocumented — operators must piece this together from CLAUDE.md and code.
 
 | # | Work Item | Plan | Status | Notes |
 |---|-----------|------|--------|-------|
-| 4.7.1 | Entity list + detail views, standards matrix, topic/category views, filter bar | [entity-views.md](plans/entity-views.md) | not started | Adds optional `standard_slug` field to the claim schema; nav trimmed to 5 items; Sources demoted to footer. Depends on 4.7.2 for tokens. |
-| 4.7.2 | Tokenized CSS + a11y control (light/dark/high-contrast, S/M/L font scale, FAB) | [a11y-tokens.md](plans/a11y-tokens.md) | done | Tokens, FAB, bottom-sheet, pre-paint script, colour sweep across pages |
+| — | Write RUNBOOK.md | — | not started | Dev loop (HMR, restart triggers), `dr` CLI reference, deploy steps, schema change checklist |
+| — | Expand source `kind` enum | — | not started | Add `statement` (social posts, press releases, direct submissions) and `filing` (company invoices, certificates, contracts) as self-reported unverified evidence types. Both get `source_type: primary`. Schema change touches `content.config.ts`, pipeline `SourceFrontmatter`, and `_classify_source_type`. |
 
 ---
 
@@ -149,6 +163,20 @@ Downstream sync to parallax-ai moved to [future/downstream-sync.md](plans/future
 
 ---
 
+## Phase 4.8: AI Research Audit Trail
+
+**Goal**: On each `/claims/[slug]` page, show a collapsible section with which agent ran the research, what sources were consulted, when a human reviewed it, and whether the verdict changed from draft. Builds reader trust by making the AI+human process visible.
+
+Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline after the auditor runs, consumed by a custom Astro loader. Full 3-stage architectural review completed.
+
+| # | Work Item | Plan | Status | Notes |
+|---|-----------|------|--------|-------|
+| 4.8.1 | Sidecar format + pipeline write + Astro loader + UI (Phase 1) | [feature-10-audit-trail.md](plans/feature-10-audit-trail.md) | not started | `_write_audit_sidecar` in persistence.py; `dr review --claim` CLI; collapsible UI |
+| 4.8.2 | Extended audit fields + staleness check + orphan CI gate (Phase 2) | [feature-10-audit-trail.md](plans/feature-10-audit-trail.md) | not started | Requires: no stale sidecars, orphan check CI, backfill script |
+| 4.8.3 | Append-only history (Phase 3) | [feature-10-audit-trail.md](plans/feature-10-audit-trail.md) | not started | Full recheck history per claim |
+
+---
+
 ## Phase 6: Public Feedback & Contribution Gating
 
 **Goal**: Members of the public can submit feedback on content without a GitHub account. GitHub issue/PR process is gated via templates that redirect content feedback to the site.
@@ -158,6 +186,9 @@ Downstream sync to parallax-ai moved to [future/downstream-sync.md](plans/future
 | 6.1 | GitHub config + feedback form + Cloudflare backend | [public-feedback.md](plans/public-feedback.md) | not started | Issue templates, CODEOWNERS, Astro form, Worker + D1 + Turnstile, `api.dangerousrobot.org` |
 | 6.2 | Admin CLI + GitHub issue promotion | [public-feedback.md](plans/public-feedback.md) | not started | `scripts/feedback-admin.ts`, accept/reject/inquire, Resend email |
 | 6.3 | Admin dashboard (optional) | [public-feedback.md](plans/public-feedback.md) | not started | Web UI for reviewing submissions. Defer unless CLI proves insufficient. |
+| 6.4 | Claim challenge form | [public-participation-forms.md](plans/public-participation-forms.md) | not started | Per-claim refutation form; extends 6.1 D1 schema + Worker |
+| 6.5 | Request a claim form | [public-participation-forms.md](plans/public-participation-forms.md) | not started | Sitewide research request form |
+| 6.6 | Propose a standard form | [public-participation-forms.md](plans/public-participation-forms.md) | not started | `/standards` form for new claim templates |
 
 **Done when**: Public can submit feedback at `dangerousrobot.org/feedback`, admin can review via CLI, approved feedback becomes a GitHub issue.
 

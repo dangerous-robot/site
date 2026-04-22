@@ -143,6 +143,33 @@ Rules:
 4. **Keep the backlog current.** Update `docs/BACKLOG.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
 5. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in BACKLOG.md but do not duplicate issue content.
 
+### Plan review records
+
+Every plan in `docs/plans/` (not drafts) must have a `## Review history` section at the bottom of the file.
+
+Each review appends a row to the table -- never overwrites previous rows.
+
+```markdown
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| YYYY-MM-DD | agent (model-id) or human (name) | basic / deep / security / implementation / iterated | brief summary or "no changes" |
+```
+
+Scope definitions:
+
+- `basic` -- skimmed for obvious issues; no deep verification
+- `implementation` -- verified against actual code; checked file paths, function names, patterns
+- `deep` -- full review: implementation accuracy, edge cases, design tradeoffs
+- `security` -- focused on security implications
+- Scopes can be combined: `deep, implementation`
+- `iterated` -- plan was revised during this review; use alongside a scope level
+
+**Promotion rule:** A draft without a review record must not be promoted from `docs/plans/drafts/` to `docs/plans/`. Add the first review row before or during promotion.
+
+The review record lives in the plan file itself, not in a separate file.
+
 ## Architecture Docs
 
 Architectural summaries live in `docs/architecture/`. These are reference documents for humans and agents -- they describe how the system works today, not how it should work (that's what plans are for).
