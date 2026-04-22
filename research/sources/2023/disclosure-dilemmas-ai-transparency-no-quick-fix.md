@@ -5,6 +5,7 @@ publisher: Harvard Kennedy School Ash Center
 published_date: '2023-08-15'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Mary Graham argues that AI transparency measures can help reduce risks but
   require sustained long-term engagement, not quick fixes.
 key_quotes:

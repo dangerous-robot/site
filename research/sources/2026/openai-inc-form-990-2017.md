@@ -4,6 +4,7 @@ title: Openai Inc, Full Filing - Nonprofit Explorer
 publisher: ProPublica
 accessed_date: '2026-04-21'
 kind: dataset
+source_type: secondary
 summary: OpenAI Inc's full Form 990 nonprofit tax filing for fiscal year 2017, showing
   financial data and organizational information from IRS records.
 key_quotes:

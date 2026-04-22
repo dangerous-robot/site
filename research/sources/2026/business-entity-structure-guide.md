@@ -4,6 +4,7 @@ title: What is an entity structure? Tips to choose the right one
 publisher: Diligent Corporation
 accessed_date: '2026-04-20'
 kind: article
+source_type: tertiary
 summary: Comprehensive guide explaining business entity structures including sole
   proprietorships, partnerships, LLCs and corporations with guidance on selection
   factors

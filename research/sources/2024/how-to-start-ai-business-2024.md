@@ -5,6 +5,7 @@ publisher: Wolters Kluwer
 published_date: '2024-06-26'
 accessed_date: '2026-04-20'
 kind: article
+source_type: tertiary
 summary: Guide covering legal and business considerations for starting an AI company
   including business structure selection, intellectual property protection, and compliance.
 key_quotes:

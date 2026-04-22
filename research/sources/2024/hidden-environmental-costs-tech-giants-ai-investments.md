@@ -5,6 +5,7 @@ publisher: CFA Institute
 published_date: '2024-10-31'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: secondary
 summary: Examines AI's environmental impact from tech giants' investments, focusing
   on GHG emissions reporting challenges and sustainable investment considerations.
 key_quotes:

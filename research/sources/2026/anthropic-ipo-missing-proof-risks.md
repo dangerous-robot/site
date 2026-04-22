@@ -4,6 +4,7 @@ title: 'Anthropic''s IPO Move: Why Missing Proof Could Hurt Investors'
 publisher: Sequenxa
 accessed_date: '2026-04-20'
 kind: blog
+source_type: tertiary
 summary: Analysis arguing Anthropic's potential 2026 IPO at $300 billion valuation
   faces risks from lack of audited financials, unverified revenue claims, and regulatory
   challenges.

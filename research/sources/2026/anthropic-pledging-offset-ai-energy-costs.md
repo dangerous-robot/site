@@ -4,6 +4,7 @@ title: Why Anthropic Pledging Offset AI Energy Costs
 publisher: Sustainability Mag
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Article about Anthropic's commitment to offset AI energy consumption costs.
   Content unavailable due to access restrictions.
 ---

@@ -4,6 +4,7 @@ title: GreenPT Documentation
 publisher: GreenPT
 accessed_date: 2026-04-18
 kind: documentation
+source_type: primary
 summary: Official documentation covering GreenPT's hosting, energy methodology, and privacy practices.
 key_quotes:
   - "100% renewable energy."

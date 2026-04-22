@@ -4,6 +4,7 @@ title: "The True Price of Every ChatGPT Prompt"
 publisher: Earth Day
 accessed_date: 2026-04-18
 kind: article
+source_type: tertiary
 summary: Analysis of environmental costs per AI query, covering energy, water, and carbon emissions.
 ---
 

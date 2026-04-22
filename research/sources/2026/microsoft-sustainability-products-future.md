@@ -4,6 +4,7 @@ title: Microsoft Sustainability - Products for a Sustainable Future
 publisher: Microsoft
 accessed_date: '2026-04-21'
 kind: documentation
+source_type: primary
 summary: Microsoft's sustainability product page showcasing data and AI solutions
   for ESG reporting, emissions tracking, and environmental impact management.
 key_quotes:

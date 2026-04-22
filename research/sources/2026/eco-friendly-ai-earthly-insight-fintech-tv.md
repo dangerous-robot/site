@@ -5,6 +5,7 @@ publisher: FinTech.TV
 published_date: '2026-03-11'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Interview with Matthew Plotkin about Earthly Insight, an eco-friendly AI
   alternative to ChatGPT that donates revenue to environmental causes and reduces
   energy consumption.

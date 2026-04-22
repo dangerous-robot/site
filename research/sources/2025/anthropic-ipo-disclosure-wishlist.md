@@ -5,6 +5,7 @@ publisher: Asimov's Addendum
 published_date: '2025-12-09'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: tertiary
 summary: Analysis of disclosure requirements Anthropic should meet if going public
   in 2026, covering financial data, partnerships, training data costs, and algorithmic
   optimization.

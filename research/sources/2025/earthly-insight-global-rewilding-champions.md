@@ -5,6 +5,7 @@ publisher: Global Rewilding Alliance
 published_date: '2025-08-27'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Global Rewilding Alliance announces partnership with Earthly Insight, an
   eco-conscious AI company donating 33% of subscription revenue to rewilding efforts
   worldwide.

@@ -6,6 +6,7 @@ publisher: Tech.eu
 published_date: '2025-05-15'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Ecosia launches new climate impact tracking features for its 20 million users
   to visualize their environmental contributions beyond tree planting.
 key_quotes:

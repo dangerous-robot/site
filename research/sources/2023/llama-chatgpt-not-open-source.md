@@ -5,6 +5,7 @@ publisher: IEEE Spectrum
 published_date: '2023-07-27'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Researchers assess 15 LLMs on openness criteria, finding ChatGPT and Llama
   2 score poorly despite open-source claims.
 key_quotes:

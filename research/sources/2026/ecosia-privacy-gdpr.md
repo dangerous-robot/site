@@ -4,6 +4,7 @@ title: Privacy and GDPR
 publisher: Ecosia GmbH
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Explains Ecosia's GDPR compliance, user data rights, processing activities,
   and procedures for submitting data protection requests.
 key_quotes:

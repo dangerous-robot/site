@@ -5,6 +5,7 @@ publisher: Orr Group
 published_date: '2025-09-23'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Provides context on AI's environmental footprint for nonprofits and offers
   four steps to reduce digital carbon footprint while using AI responsibly.
 key_quotes:

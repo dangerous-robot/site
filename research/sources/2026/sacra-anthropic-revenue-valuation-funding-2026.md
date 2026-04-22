@@ -4,6 +4,7 @@ title: Anthropic revenue, valuation & funding
 publisher: Sacra
 accessed_date: '2026-04-20'
 kind: report
+source_type: secondary
 summary: Financial analysis of Anthropic covering revenue estimates, valuations, funding
   rounds, product offerings, business model and market competition.
 key_quotes:

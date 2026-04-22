@@ -4,6 +4,7 @@ title: Recognize Potential Harms and Risks - AI Accountability Policy Report
 publisher: National Telecommunications and Information Administration
 accessed_date: '2026-04-21'
 kind: report
+source_type: secondary
 summary: NTIA policy report section on recognizing potential AI harms and risks as
   part of AI accountability requisites.
 ---

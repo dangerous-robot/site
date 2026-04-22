@@ -4,6 +4,7 @@ title: Voluntary Commitments
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Documentation of Anthropic's voluntary commitments on AI safety including
   risk assessment, cybersecurity, public awareness, societal impact measures and system
   safeguards.

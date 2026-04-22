@@ -4,6 +4,7 @@ title: Types of Business Entities
 publisher: NerdWallet
 accessed_date: '2026-04-20'
 kind: article
+source_type: tertiary
 summary: Guide to business entity types including sole proprietorships, partnerships,
   corporations, and LLCs with pros, cons, and selection criteria.
 key_quotes:

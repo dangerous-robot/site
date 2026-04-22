@@ -4,6 +4,7 @@ title: 'Growing a Movement: Our Key Milestones'
 publisher: Ecosia
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Ecosia's company history from 2009 founding through key milestones including
   B Corp certification, solar plants, steward ownership, and 160+ million trees planted.
 key_quotes:

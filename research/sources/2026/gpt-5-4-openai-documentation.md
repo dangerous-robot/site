@@ -4,6 +4,7 @@ title: Using GPT-5.4
 publisher: OpenAI
 accessed_date: '2026-04-21'
 kind: documentation
+source_type: primary
 summary: Technical documentation for OpenAI's GPT-5.4 model, covering features, tools,
   migration guidance, and API usage.
 key_quotes:

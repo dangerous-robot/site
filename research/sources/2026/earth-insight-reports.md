@@ -4,6 +4,7 @@ title: Reports
 publisher: Earth Insight
 accessed_date: '2026-04-21'
 kind: index
+source_type: primary
 summary: Index page listing Earth Insight's reports on fossil fuel, mining, and industrial
   threats to tropical forests, marine ecosystems, and Indigenous territories.
 key_quotes:

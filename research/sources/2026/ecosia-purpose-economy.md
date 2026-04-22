@@ -4,6 +4,7 @@ title: Ecosia
 publisher: Purpose Economy
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Case study of Ecosia's transition to steward-ownership model to protect mission
   and prevent sale while maintaining entrepreneurial freedom.
 key_quotes:

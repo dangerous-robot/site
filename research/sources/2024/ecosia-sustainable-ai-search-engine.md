@@ -5,6 +5,7 @@ publisher: Forbes
 published_date: '2024-11-26'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Interview with Ecosia CEO Christian Kroll about balancing AI integration
   with environmental sustainability in search engines and building European digital
   autonomy.

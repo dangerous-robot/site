@@ -4,6 +4,7 @@ title: Ecosia
 publisher: Purpose
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Case study of Ecosia's transition to steward-ownership model to protect its
   tree-planting mission from potential sale.
 key_quotes:

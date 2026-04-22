@@ -4,6 +4,7 @@ title: Donate to support AI Safety
 publisher: Center for AI Safety
 accessed_date: '2026-04-21'
 kind: index
+source_type: tertiary
 summary: Donation page for CAIS, a 501(c)(3) nonprofit focused on AI safety research,
   field-building, and advocacy efforts.
 key_quotes:

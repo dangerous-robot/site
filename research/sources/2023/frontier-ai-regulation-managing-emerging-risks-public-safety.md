@@ -5,6 +5,7 @@ publisher: arXiv
 published_date: '2023-07-06'
 accessed_date: '2026-04-21'
 kind: report
+source_type: secondary
 summary: Academic paper analyzing regulation frameworks for highly capable foundation
   AI models that could pose severe public safety risks.
 key_quotes:

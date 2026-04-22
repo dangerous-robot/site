@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2025-08-04'
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: 'Framework outlining five principles for responsible AI agent development:
   human control, transparency, value alignment, privacy protection, and security.'
 key_quotes:

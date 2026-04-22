@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2023-03-08'
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Anthropic explains its views on rapid AI progress predictions, safety risks,
   and empirical research approaches including mechanistic interpretability.
 key_quotes:

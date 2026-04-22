@@ -5,6 +5,7 @@ publisher: CarbonCredits.com
 published_date: '2025-08-06'
 accessed_date: '2026-04-21'
 kind: article
+source_type: tertiary
 summary: Examines ChatGPT's growth to 700 million weekly users and analyzes environmental
   impact including carbon emissions, energy consumption, and water usage.
 key_quotes:

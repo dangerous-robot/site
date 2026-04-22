@@ -4,6 +4,7 @@ title: Earthly Insight
 publisher: Google Play Store
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: App store listing for Earthly Insight, an AI chat assistant that donates
   33% of premium subscription revenue to rewilding projects.
 key_quotes:

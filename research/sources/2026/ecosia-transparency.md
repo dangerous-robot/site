@@ -4,6 +4,7 @@ title: Transparency at Ecosia
 publisher: Ecosia GmbH
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Help center documentation explaining Ecosia's transparency practices including
   monthly financial reports, annual regeneration reports, and compliance with UK and
   EU regulations.

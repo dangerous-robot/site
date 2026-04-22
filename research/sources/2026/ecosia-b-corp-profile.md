@@ -4,6 +4,7 @@ title: Ecosia GmbH - Certified B Corporation
 publisher: B Lab Global
 accessed_date: '2026-04-20'
 kind: index
+source_type: secondary
 summary: B Corp certification profile for Ecosia GmbH, showing B Impact score of 106.9
   and company details
 key_quotes:

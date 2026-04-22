@@ -4,6 +4,7 @@ title: Access Restricted - ScienceDirect Article
 publisher: Elsevier
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: ScienceDirect article with identifier S0950584923000514, access restricted
   due to 403 Forbidden error.
 ---

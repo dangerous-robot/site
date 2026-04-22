@@ -4,6 +4,7 @@ title: AI Overviews (beta)
 publisher: Ecosia
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Help documentation explaining Ecosia's AI Overviews feature, which summarizes
   search results using generative AI.
 key_quotes:

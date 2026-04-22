@@ -4,6 +4,7 @@ title: o1 System Card
 publisher: OpenAI
 accessed_date: '2026-04-21'
 kind: report
+source_type: primary
 summary: Technical system card documenting OpenAI's o1 reasoning model, including
   safety evaluations, limitations, and deployment considerations.
 ---

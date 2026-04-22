@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2025-08-12'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Ecosia explains their approach to AI development focused on efficiency, renewable
   energy, privacy protection, and climate intelligence features.
 key_quotes:

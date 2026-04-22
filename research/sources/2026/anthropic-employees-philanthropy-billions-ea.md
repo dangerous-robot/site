@@ -5,6 +5,7 @@ publisher: Transformer News
 published_date: '2026-03-12'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Reports Anthropic employees' pledges to donate billions from company's potential
   IPO, analyzing where effective altruism-aligned philanthropic capital might flow.
 key_quotes:

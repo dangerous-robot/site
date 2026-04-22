@@ -4,6 +4,7 @@ title: API Platform Documentation
 publisher: OpenAI
 accessed_date: '2026-04-21'
 kind: documentation
+source_type: primary
 summary: OpenAI API documentation covering models, endpoints, SDKs, best practices,
   and guides for building applications with GPT models and other AI tools.
 key_quotes:

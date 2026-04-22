@@ -4,6 +4,7 @@ title: 'Introducing Earthly Insight: A More Conscious AI'
 publisher: Morningstar (via AccessWire)
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Article appears to be about a new AI system called Earthly Insight, but content
   could not be retrieved.
 ---

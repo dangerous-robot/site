@@ -4,6 +4,7 @@ title: Transparency at Ecosia
 publisher: Ecosia GmbH
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Ecosia publishes monthly financial reports, annual regeneration reports,
   and compliance statements for transparency and regulatory requirements.
 key_quotes:

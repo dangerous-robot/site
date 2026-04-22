@@ -4,6 +4,7 @@ title: Ecosia AI Overview Features Privacy Search Engine
 publisher: Factually
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Factually article examining features and privacy aspects of Ecosia search
   engine including AI overview functionality.
 ---

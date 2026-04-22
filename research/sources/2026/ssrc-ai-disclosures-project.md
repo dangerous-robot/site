@@ -4,6 +4,7 @@ title: AI Disclosures Project
 publisher: Social Science Research Council
 accessed_date: '2026-04-21'
 kind: index
+source_type: secondary
 summary: Research project focused on creating open protocols and mechanisms for fair,
   participatory AI markets through disclosure systems.
 key_quotes:

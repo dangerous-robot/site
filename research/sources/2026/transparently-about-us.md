@@ -4,6 +4,7 @@ title: About Us
 publisher: Transparently
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Company overview of Transparently, an AI-powered financial transparency platform
   that detects accounting fraud and manipulation to help businesses and investors
   make informed decisions.

@@ -5,6 +5,7 @@ title: '$21 billion+ new pledge: Anthropic''s seven cofounders commit 80% of the
 publisher: Lifestyles Magazine
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Anthropic's seven cofounders pledge 80% of personal wealth to address AI's
   societal risks and economic inequality.
 key_quotes:

@@ -5,6 +5,7 @@ publisher: OpenAI Academy
 published_date: '2025-08-22'
 accessed_date: '2026-04-21'
 kind: article
+source_type: primary
 summary: OpenAI Academy article addressing misconceptions about AI energy consumption
   and detailing efficiency improvements
 key_quotes:

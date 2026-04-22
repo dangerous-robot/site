@@ -5,6 +5,7 @@ publisher: ZDNet
 published_date: '2023-03-16'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: OpenAI's formal GPT-4 paper breaks with the AI practice of disclosing a program's
   technical details.
 key_quotes:

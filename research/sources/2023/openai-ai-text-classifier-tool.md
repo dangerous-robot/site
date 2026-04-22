@@ -5,6 +5,7 @@ publisher: TechCrunch
 published_date: '2023-01-31'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: OpenAI launches classifier tool to distinguish human-written from AI-generated
   text with 26% success rate.
 key_quotes:

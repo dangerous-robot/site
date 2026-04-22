@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2021-05-14'
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Ecosia's privacy statement outlining their data protection policies, use
   of Ghost blogging platform, and commitment to not creating personal user profiles.
 key_quotes:

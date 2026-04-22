@@ -4,6 +4,7 @@ title: Model selection
 publisher: OpenAI
 accessed_date: '2026-04-21'
 kind: documentation
+source_type: primary
 summary: Guide explaining how to choose the right model by balancing accuracy, latency,
   and cost for optimal performance.
 key_quotes:

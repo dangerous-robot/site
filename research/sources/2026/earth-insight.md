@@ -4,6 +4,7 @@ title: Earth Insight
 publisher: Earth Insight
 accessed_date: '2026-04-21'
 kind: index
+source_type: primary
 summary: Environmental organization building transparency tools and momentum for restricting
   fossil fuel, mining, and industrial expansion threats to ecosystems and Indigenous
   communities.

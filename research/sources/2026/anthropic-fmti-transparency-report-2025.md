@@ -4,6 +4,7 @@ title: Anthropic Transparency Report
 publisher: Stanford Center for Research on Foundation Models
 accessed_date: '2026-04-20'
 kind: report
+source_type: secondary
 summary: Stanford FMTI evaluation of Anthropic's disclosure practices for Claude 4
   models across data sources, training methods, and transparency metrics.
 key_quotes:

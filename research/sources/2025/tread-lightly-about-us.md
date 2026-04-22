@@ -5,6 +5,7 @@ publisher: Tread Lightly!
 published_date: '2025-07-18'
 accessed_date: '2026-04-21'
 kind: article
+source_type: primary
 summary: Non-profit organization promoting responsible motorized vehicle use during
   outdoor recreation through education, training, and trail stewardship programs.
 key_quotes:

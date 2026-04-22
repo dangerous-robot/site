@@ -4,6 +4,7 @@ title: Earth Insight Foundation Incorporated
 publisher: ProPublica
 accessed_date: '2026-04-21'
 kind: dataset
+source_type: secondary
 summary: IRS tax filing data for Earth Insight Foundation Incorporated from 2012-2019,
   including revenue, expenses and financial documents.
 key_quotes:

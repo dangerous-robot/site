@@ -4,6 +4,7 @@ title: Generative AI on Ecosia Search
 publisher: Ecosia
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Documentation on Ecosia's AI Overviews and AI Chat features, covering availability,
   privacy, environmental impact, and user controls.
 key_quotes:

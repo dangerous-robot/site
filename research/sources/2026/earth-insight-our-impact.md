@@ -4,6 +4,7 @@ title: Our Impact
 publisher: Earth Insight
 accessed_date: '2026-04-21'
 kind: index
+source_type: primary
 summary: Earth Insight's accomplishments include threat assessments for tropical forests,
   policy advocacy, research partnerships, and generating news coverage.
 key_quotes:

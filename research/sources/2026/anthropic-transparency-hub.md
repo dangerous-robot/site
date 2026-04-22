@@ -4,6 +4,7 @@ title: Transparency Hub
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Anthropic's comprehensive transparency documentation detailing model capabilities,
   safety evaluations, and deployment standards for Claude AI systems.
 key_quotes:

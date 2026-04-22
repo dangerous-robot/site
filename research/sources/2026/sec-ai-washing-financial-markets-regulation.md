@@ -6,6 +6,7 @@ publisher: New York State Bar Association
 published_date: '2026-01-08'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Analysis of AI-washing in financial services and SEC enforcement framework
   to address misleading AI claims through existing anti-fraud statutes.
 key_quotes:

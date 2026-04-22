@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2014-04-15'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Ecosia announces its certification as a B Corporation by B Lab, joining companies
   like Ben & Jerry's and Patagonia in using business to solve social and environmental
   problems.

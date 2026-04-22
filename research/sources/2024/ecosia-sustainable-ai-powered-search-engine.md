@@ -5,6 +5,7 @@ publisher: Forbes
 published_date: '2024-11-26'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Interview with Ecosia CEO Christian Kroll discussing how the eco-friendly
   search engine balances AI integration with environmental responsibility and sustainability.
 key_quotes:

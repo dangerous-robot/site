@@ -5,6 +5,7 @@ publisher: WIRED
 published_date: '2024-06-17'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Two Sam Altman-linked nonprofits, OpenResearch and UBI Charitable, withdrew
   promises to disclose financial statements and governance policies upon request.
 key_quotes:

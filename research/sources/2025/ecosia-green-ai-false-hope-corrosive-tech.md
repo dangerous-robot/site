@@ -5,6 +5,7 @@ publisher: Ketan Joshi
 published_date: '2025-12-14'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: tertiary
 summary: Analysis of Ecosia search engine's adoption of AI text generation, criticizing
   their greenwashing claims and impact on open web.
 key_quotes:

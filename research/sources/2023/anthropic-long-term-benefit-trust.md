@@ -5,6 +5,7 @@ publisher: Harvard Law School Forum on Corporate Governance
 published_date: '2023-10-28'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Article about Anthropic's long-term benefit trust governance structure published
   on Harvard Law School's corporate governance forum.
 ---

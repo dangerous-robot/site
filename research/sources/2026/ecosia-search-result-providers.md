@@ -4,6 +4,7 @@ title: Search Result Providers
 publisher: Ecosia
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Explains how Ecosia sources search results from Microsoft Bing, Google, and
   EUSP, detailing provider selection factors and ranking algorithms.
 key_quotes:

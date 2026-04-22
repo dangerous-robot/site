@@ -4,6 +4,7 @@ title: Does ChatGPT use a watermark
 publisher: BytePlus
 accessed_date: '2026-04-21'
 kind: article
+source_type: tertiary
 summary: Page asking whether ChatGPT uses watermarks but displays minimal content
   indicating JavaScript is required to run.
 ---

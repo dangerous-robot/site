@@ -4,6 +4,7 @@ title: Ecosia Financial Data & Historical Tree Planting Report
 publisher: Idle Forest
 accessed_date: '2026-04-20'
 kind: report
+source_type: tertiary
 summary: Financial dashboard analyzing Ecosia's revenue, expenses, and tree planting
   investments using official financial reports and transparency data.
 key_quotes:

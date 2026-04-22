@@ -6,6 +6,7 @@ publisher: Future of Life Institute
 published_date: 2025-12-13
 accessed_date: 2026-04-18
 kind: index
+source_type: tertiary
 summary: Independent safety assessment grading 8 AI companies across 6 domains. Best overall grade is C+.
 key_quotes:
   - "No company scored above D on existential safety."

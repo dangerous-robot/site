@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2025-07-07'
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Proposes targeted transparency framework for largest AI developers including
   Secure Development Frameworks and system cards to ensure safety accountability.
 key_quotes:

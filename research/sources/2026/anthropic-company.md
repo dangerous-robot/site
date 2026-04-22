@@ -4,6 +4,7 @@ title: Company
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Anthropic company overview outlining mission to build reliable, interpretable
   AI systems and promote AI safety through interdisciplinary research and collaboration.
 key_quotes:

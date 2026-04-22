@@ -6,6 +6,7 @@ publisher: Frontiers in Digital Health
 published_date: '2024-02-20'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Study evaluates transparency of 14 CE-certified medical AI radiology products,
   finding transparency scores ranging from 6.4% to 60.9%.
 key_quotes:

@@ -6,6 +6,7 @@ publisher: Business Insider
 published_date: '2023-05-17'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: OpenAI is reportedly preparing to release an open-source AI model, according
   to The Information, amid pressure from open-source alternatives.
 key_quotes:

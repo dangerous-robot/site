@@ -4,6 +4,7 @@ title: Our Mission
 publisher: Earthly Insight LLC
 accessed_date: '2026-04-21'
 kind: article
+source_type: primary
 summary: AI company's mission to donate 33% of revenue to rewilding projects, linking
   productivity tools to environmental restoration through ecological partnerships.
 key_quotes:

@@ -5,6 +5,7 @@ publisher: IdleForest
 published_date: '2025-05-01'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: tertiary
 summary: Analysis of Ecosia Chat, an AI-powered chatbot from the tree-planting search
   engine, covering user concerns and environmental impact.
 key_quotes:

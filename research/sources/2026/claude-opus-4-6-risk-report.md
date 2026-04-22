@@ -4,6 +4,7 @@ title: Claude Opus 4.6 Risk Report
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: report
+source_type: primary
 summary: Risk assessment report for Anthropic's Claude Opus 4.6 AI model presented
   in PDF format.
 ---

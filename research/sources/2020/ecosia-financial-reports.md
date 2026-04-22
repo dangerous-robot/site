@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2020-05-22'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Monthly financial reports showing Ecosia's revenue and tree-planting expenditures
   with transparency focus
 key_quotes:

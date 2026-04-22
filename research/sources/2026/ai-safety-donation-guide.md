@@ -4,6 +4,7 @@ title: Donation guide
 publisher: AISafety.com
 accessed_date: '2026-04-21'
 kind: documentation
+source_type: tertiary
 summary: Guide for effectively donating to AI safety work, organized by donation amount
   from $1-1,000 to $100,000+.
 key_quotes:

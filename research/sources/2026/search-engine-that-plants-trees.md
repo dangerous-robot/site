@@ -4,6 +4,7 @@ title: Search Engine That Plants Trees
 publisher: UNFCCC
 accessed_date: '2026-04-20'
 kind: index
+source_type: secondary
 summary: UNFCCC database entry for climate action initiative involving search engine
   tree planting program.
 ---

@@ -4,6 +4,7 @@ title: Infomaniak Inaugurates a Revolutionary Data Center
 publisher: Infomaniak
 accessed_date: 2026-04-18
 kind: article
+source_type: primary
 summary: Infomaniak's Geneva data center achieves 100% waste heat recovery and a PUE of 1.06.
 key_quotes:
   - "100% energy heat recovery."

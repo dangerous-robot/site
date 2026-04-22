@@ -4,6 +4,7 @@ title: Entity Type Definition
 publisher: ZenBusiness
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: tertiary
 summary: Defines entity type as legal business structure and explains common types
   including sole proprietorship, partnership, LLC, and corporation with their characteristics.
 key_quotes:

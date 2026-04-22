@@ -5,6 +5,7 @@ publisher: Ketan Joshi
 published_date: '2025-12-14'
 accessed_date: '2026-04-20'
 kind: article
+source_type: tertiary
 summary: Critique of Ecosia's implementation of AI-generated search summaries, arguing
   it contradicts their environmental mission through greenwashing and harming web
   creators.

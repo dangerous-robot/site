@@ -4,6 +4,7 @@ title: TrackLight AI-powered fraud detection platform
 publisher: TrackLight
 accessed_date: '2026-04-20'
 kind: index
+source_type: primary
 summary: AI-powered fraud detection platform for government agencies offering verification,
   detection, and investigation assistance services.
 key_quotes:

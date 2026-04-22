@@ -4,6 +4,7 @@ title: Ecosia Measure and Publish Carbon Footprint of AI Features
 publisher: Factually
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Fact-check article about Ecosia's efforts to measure and publish the carbon
   footprint of their AI search features.
 ---

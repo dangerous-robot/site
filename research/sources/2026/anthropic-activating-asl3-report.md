@@ -4,6 +4,7 @@ title: Activating ASL-3 Report
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: report
+source_type: primary
 summary: Technical report on Anthropic's implementation and activation of AI Safety
   Level 3 protocols for advanced AI systems.
 ---

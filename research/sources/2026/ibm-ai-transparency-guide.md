@@ -4,6 +4,7 @@ title: What Is AI Transparency?
 publisher: IBM
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Explains AI transparency concepts, importance for high-stakes decisions,
   regulatory frameworks, and implementation strategies for organizations.
 key_quotes:

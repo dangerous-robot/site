@@ -5,6 +5,7 @@ publisher: The Verge
 published_date: '2023-01-31'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: OpenAI released a free AI text classifier tool to distinguish between human
   and AI-written text, with significant limitations and reliability issues.
 key_quotes:

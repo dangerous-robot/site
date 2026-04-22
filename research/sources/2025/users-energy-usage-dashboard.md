@@ -5,6 +5,7 @@ publisher: OpenAI Developer Community
 published_date: '2025-05-07'
 accessed_date: '2026-04-21'
 kind: blog
+source_type: primary
 summary: Feature request for energy usage dashboard in ChatGPT showing environmental
   impact of queries and real-time energy consumption tracking.
 key_quotes:

@@ -4,6 +4,7 @@ title: Ecosia GmbH - Certified B Corporation
 publisher: B Lab Global
 accessed_date: '2026-04-20'
 kind: index
+source_type: secondary
 summary: B Corporation directory entry for Ecosia GmbH, the search engine company
   that plants trees and achieved a B Impact Score of 106.9.
 key_quotes:

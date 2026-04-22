@@ -4,6 +4,7 @@ title: How much energy does ChatGPT use?
 publisher: Epoch AI
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Analysis challenging common claim that ChatGPT uses 3 watt-hours per query,
   finding GPT-4o uses approximately 0.3 watt-hours with updated methodology.
 key_quotes:

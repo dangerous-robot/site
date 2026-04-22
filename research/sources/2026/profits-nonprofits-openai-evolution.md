@@ -5,6 +5,7 @@ publisher: Capital Research Center
 published_date: '2026-02-10'
 accessed_date: '2026-04-21'
 kind: article
+source_type: tertiary
 summary: Analysis of OpenAI's complex corporate structure evolution from 501(c)(3)
   nonprofit to public benefit corporation and its expanding grantmaking activities.
 key_quotes:

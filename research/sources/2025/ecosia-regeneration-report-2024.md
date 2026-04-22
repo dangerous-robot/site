@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2025-06-05'
 accessed_date: '2026-04-20'
 kind: report
+source_type: primary
 summary: Ecosia's 2024 impact report showing 100% profits to climate action, 200%
   renewable energy production, and 18 million trees planted and protected.
 key_quotes:

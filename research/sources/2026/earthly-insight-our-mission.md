@@ -4,6 +4,7 @@ title: Our Mission
 publisher: Earthly Insight
 accessed_date: '2026-04-21'
 kind: article
+source_type: primary
 summary: AI company commits to donating 33% of revenue to rewilding projects, connecting
   user creativity to environmental restoration.
 key_quotes:

@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2024-10-15'
 accessed_date: '2026-04-20'
 kind: report
+source_type: primary
 summary: Policy framework defining AI safety evaluation criteria and deployment safeguards
   based on capability level assessment.
 ---

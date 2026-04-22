@@ -5,6 +5,7 @@ publisher: The Guardian
 published_date: '2025-08-09'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Experts estimate GPT-5 may consume up to 40 watt-hours per response, significantly
   more than previous models.
 key_quotes:

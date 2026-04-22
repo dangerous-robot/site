@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2023-12-28'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Ecosia lists ten climate action projects they support beyond reforestation,
   including solar systems, regenerative agriculture, and venture capital investments.
 key_quotes:

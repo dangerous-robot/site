@@ -6,6 +6,7 @@ publisher: UNESCO
 published_date: '2026-04-13'
 accessed_date: '2026-04-21'
 kind: report
+source_type: secondary
 summary: Report analyzing corporate responsible AI practices using Thomson Reuters
   Foundation's AI Company Data Initiative dataset and emerging regulatory landscape.
 key_quotes:

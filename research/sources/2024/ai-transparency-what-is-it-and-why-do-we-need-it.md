@@ -5,6 +5,7 @@ publisher: TechTarget
 published_date: '2024-09-10'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Explains AI transparency as the ability to understand how AI systems work,
   covering concepts like explainability, governance and accountability, and discussing
   implementation challenges.

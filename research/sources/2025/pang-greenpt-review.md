@@ -4,6 +4,7 @@ title: "My Experience with GreenPT"
 publisher: Substack (Dr Camilla Pang)
 accessed_date: 2026-04-18
 kind: blog
+source_type: tertiary
 summary: Dr Camilla Pang's first-hand review of GreenPT as a renewable-energy AI chatbot.
 ---
 

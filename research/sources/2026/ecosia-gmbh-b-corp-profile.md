@@ -4,6 +4,7 @@ title: Ecosia GmbH
 publisher: B Lab Global
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: B Corporation certification profile for Ecosia GmbH, displaying impact scores
   and company details
 key_quotes:

@@ -4,6 +4,7 @@ title: Frontier Safety Roadmap
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: documentation
+source_type: primary
 summary: Anthropic's public roadmap outlining goals for AI safety across security,
   safeguards, alignment, and policy through 2027.
 key_quotes:

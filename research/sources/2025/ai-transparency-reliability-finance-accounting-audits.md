@@ -6,6 +6,7 @@ publisher: Deloitte
 published_date: '2025-06-04'
 accessed_date: '2026-04-21'
 kind: blog
+source_type: secondary
 summary: Explores AI governance and controls needed for financial audits, including
   human oversight, data quality practices, testing and monitoring requirements, and
   practical implementation strategies.

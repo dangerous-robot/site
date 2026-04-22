@@ -5,6 +5,7 @@ publisher: Google
 published_date: '2025-02-01'
 accessed_date: '2026-04-21'
 kind: report
+source_type: primary
 summary: Google's update on responsible AI development practices and governance frameworks
   published February 2025.
 ---

@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2025-08-12'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Ecosia explains their approach to integrating AI into their search platform
   while maintaining their climate mission and privacy commitments.
 key_quotes:

@@ -4,6 +4,7 @@ title: Anthropic Organization Profile
 publisher: DitchCarbon
 accessed_date: '2026-04-20'
 kind: index
+source_type: secondary
 summary: Organization profile page for Anthropic on DitchCarbon platform, currently
   inaccessible due to access restrictions.
 ---

@@ -4,6 +4,7 @@ title: Nick Joseph on Anthropic's safety approach and responsible scaling
 publisher: 80,000 Hours
 accessed_date: '2026-04-20'
 kind: video
+source_type: secondary
 summary: Podcast episode featuring Nick Joseph discussing Anthropic's AI safety approach
   and responsible scaling policies.
 ---

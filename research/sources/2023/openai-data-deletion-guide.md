@@ -6,6 +6,7 @@ publisher: TechCrunch
 published_date: '2023-05-02'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Guide explaining how EU users can request deletion of personal data from
   OpenAI and opt out of AI training data usage through web forms.
 key_quotes:

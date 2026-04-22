@@ -4,6 +4,7 @@ title: GPT-5 System Card
 publisher: OpenAI
 accessed_date: '2026-04-21'
 kind: report
+source_type: primary
 summary: Technical documentation detailing GPT-5's capabilities, safety measures,
   limitations, and deployment considerations.
 ---

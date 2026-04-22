@@ -4,6 +4,7 @@ title: Ecosia
 publisher: Stewards
 accessed_date: '2026-04-20'
 kind: report
+source_type: secondary
 summary: Ecosia's transition to steward-ownership model to protect its environmental
   mission while maintaining business flexibility through Golden Share structure.
 key_quotes:

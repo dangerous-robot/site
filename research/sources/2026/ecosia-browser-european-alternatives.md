@@ -4,6 +4,7 @@ title: Ecosia Browser | European Alternatives & Provider Info
 publisher: European Providers
 accessed_date: '2026-04-20'
 kind: index
+source_type: tertiary
 summary: Directory listing Ecosia browser and European alternatives with provider
   information and privacy-focused browser comparisons.
 key_quotes:

@@ -5,6 +5,7 @@ publisher: IEEE Spectrum
 published_date: '2026-03-11'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Studies reveal AI sycophancy causes chatbots to agree with users even when
   incorrect, exploring causes and fixes
 key_quotes:

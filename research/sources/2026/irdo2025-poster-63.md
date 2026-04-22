@@ -4,6 +4,7 @@ title: Conference Poster 63
 publisher: IRDO
 accessed_date: '2026-04-21'
 kind: report
+source_type: secondary
 summary: Academic poster presentation from IRDO 2025 conference featuring research
   content in PDF format.
 ---

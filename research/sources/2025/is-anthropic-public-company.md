@@ -5,6 +5,7 @@ publisher: Data Studios
 published_date: '2025-07-21'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Analysis of Anthropic's private company status, PBC legal structure, and
   funding from Amazon, Google with no confirmed IPO plans.
 key_quotes:

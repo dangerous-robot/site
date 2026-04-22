@@ -4,6 +4,7 @@ title: 'Anthropic''s IPO Move: Why Missing Proof Could Hurt Investors'
 publisher: Sequenxa
 accessed_date: '2026-04-20'
 kind: blog
+source_type: tertiary
 summary: Analysis of Anthropic's potential 2026 IPO at $300B valuation examining financial
   transparency concerns and investor risks.
 key_quotes:

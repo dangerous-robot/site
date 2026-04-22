@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2026-02-24'
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Anthropic releases third version of its Responsible Scaling Policy, updating
   framework to mitigate catastrophic AI risks with new transparency requirements.
 key_quotes:

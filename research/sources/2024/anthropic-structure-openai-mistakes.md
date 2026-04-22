@@ -5,6 +5,7 @@ publisher: Time
 published_date: '2024-05-30'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Analysis of Anthropic's unique corporate structure, designed to avoid OpenAI's
   governance issues through public benefit corporation status.
 key_quotes:

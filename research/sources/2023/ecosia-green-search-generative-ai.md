@@ -5,6 +5,7 @@ publisher: WIRED
 published_date: '2023-10-16'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Berlin-based Ecosia switched from Bing to Google for search results and explores
   how AI could help users reduce carbon emissions.
 key_quotes:

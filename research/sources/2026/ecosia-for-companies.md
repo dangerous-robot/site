@@ -4,6 +4,7 @@ title: Ecosia for Companies
 publisher: Ecosia
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Information page for companies to switch their default search engine to Ecosia,
   which dedicates 100% of profits to climate action and tree planting.
 key_quotes:

@@ -5,6 +5,7 @@ publisher: Anthropic
 published_date: '2025-02-27'
 accessed_date: '2026-04-20'
 kind: article
+source_type: primary
 summary: Announces launch of Anthropic's Transparency Hub providing detailed overview
   of safety measures, platform abuse enforcement, governance policies, and security
   safeguards.

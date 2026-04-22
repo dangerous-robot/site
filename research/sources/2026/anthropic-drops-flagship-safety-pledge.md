@@ -5,6 +5,7 @@ publisher: TIME
 published_date: '2026-02-24'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Anthropic abandons central promise to never train AI systems without guaranteed
   safety measures, citing competition and regulatory failure.
 key_quotes:

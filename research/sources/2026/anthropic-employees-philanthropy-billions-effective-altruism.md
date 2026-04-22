@@ -5,6 +5,7 @@ publisher: Transformer News
 published_date: '2026-03-12'
 accessed_date: '2026-04-20'
 kind: article
+source_type: secondary
 summary: Analysis of potential philanthropic donations from Anthropic employees, examining
   where billions could flow and concerns about effective altruism influence.
 key_quotes:

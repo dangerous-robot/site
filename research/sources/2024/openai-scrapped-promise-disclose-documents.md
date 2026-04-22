@@ -5,6 +5,7 @@ publisher: WIRED
 published_date: '2024-01-24'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: OpenAI reversed its 7-year policy of making governing documents publicly
   available, declining WIRED's request for transparency documents after boardroom
   crisis.

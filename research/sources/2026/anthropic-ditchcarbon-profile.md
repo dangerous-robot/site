@@ -4,6 +4,7 @@ title: Anthropic Organization Profile
 publisher: Ditch Carbon
 accessed_date: '2026-04-20'
 kind: index
+source_type: secondary
 summary: Organization profile page for Anthropic on Ditch Carbon platform - content
   inaccessible due to 403 Forbidden error
 ---

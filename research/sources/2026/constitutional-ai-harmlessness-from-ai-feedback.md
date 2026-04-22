@@ -4,6 +4,7 @@ title: 'Constitutional AI: Harmlessness from AI Feedback'
 publisher: Anthropic
 accessed_date: '2026-04-20'
 kind: report
+source_type: primary
 summary: Technical paper describing Constitutional AI method for training helpful,
   harmless AI assistants using AI feedback and constitutional principles.
 key_quotes:

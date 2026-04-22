@@ -5,6 +5,7 @@ publisher: Ecosia
 published_date: '2025-12-02'
 accessed_date: '2026-04-20'
 kind: blog
+source_type: primary
 summary: Ecosia announces AI-powered search features including Overviews and AI Search,
   using renewable energy and privacy-focused models.
 key_quotes:

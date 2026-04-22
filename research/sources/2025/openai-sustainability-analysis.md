@@ -5,6 +5,7 @@ publisher: The Sustainable Innovation
 published_date: '2025-04-02'
 accessed_date: '2026-04-21'
 kind: article
+source_type: secondary
 summary: Comprehensive analysis of OpenAI's environmental practices, finding limited
   transparency with DitchCarbon score of 23/100 and no published sustainability report
 key_quotes:
