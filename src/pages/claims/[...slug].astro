@@ -34,6 +34,12 @@ const confidenceLabels: Record<string, string> = {
   low: "Low",
 };
 
+const confidenceExplanations: Record<string, string> = {
+  high: "Multiple independent primary sources confirm this verdict. The evidence is direct and specific to this claim.",
+  medium: "Evidence is present but incomplete — sources may be secondary, partially relevant, or not fully corroborating. The verdict reflects the best available information.",
+  low: "Limited sources, conflicting evidence, or significant uncertainty. Treat this verdict as a working hypothesis subject to revision.",
+};
+
 const asOfDate = claim.data.as_of instanceof Date
   ? claim.data.as_of.toISOString().split("T")[0]
   : String(claim.data.as_of);
@@ -57,9 +63,14 @@ const asOfDate = claim.data.as_of instanceof Date
           {claim.data.verdict}
         </span>
 
-        <span class="confidence">
-          Confidence: {confidenceLabels[claim.data.confidence] || claim.data.confidence}
-        </span>
+        <details class="confidence-details">
+          <summary class="confidence">
+            Confidence: {confidenceLabels[claim.data.confidence] || claim.data.confidence}
+          </summary>
+          <p class="confidence-explanation">
+            {confidenceExplanations[claim.data.confidence]}
+          </p>
+        </details>
 
         <span class="as-of">
           As of {asOfDate}
@@ -148,6 +159,28 @@ const asOfDate = claim.data.as_of instanceof Date
   .category {
     color: var(--color-text-muted);
     font-size: var(--font-size-sm);
+  }
+
+  .confidence-details {
+    font-size: var(--font-size-sm);
+  }
+
+  .confidence-details summary {
+    list-style: none;
+    cursor: pointer;
+  }
+
+  .confidence-details summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .confidence-explanation {
+    margin: var(--space-xs) 0 0;
+    padding: var(--space-xs) var(--space-sm);
+    border-left: 2px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
   }
 
   .entity-link {

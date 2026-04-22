@@ -50,15 +50,31 @@ const { title, description = "Structured research backing claims about AI produc
     <nav class="site-nav">
       <div class="nav-inner">
         <a href="/" class="site-name">Dangerous Robot</a>
-        <ul class="nav-links">
+        <ul class="nav-links" id="nav-links">
           <li><a href="/companies">Companies</a></li>
           <li><a href="/products">Products</a></li>
           <li><a href="/claims">Claims</a></li>
           <li><a href="/standards">Standards</a></li>
           <li><a href="/topics">Topics</a></li>
+          <li><a href="/faq">FAQ</a></li>
         </ul>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+          <span aria-hidden="true">&#9776;</span>
+        </button>
       </div>
     </nav>
+    <script is:inline>
+      (function () {
+        var toggle = document.getElementById('nav-toggle');
+        var links = document.getElementById('nav-links');
+        if (toggle && links) {
+          toggle.addEventListener('click', function () {
+            var open = links.classList.toggle('nav-open');
+            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+          });
+        }
+      })();
+    </script>
 
     <main class={`content content--${layout}`}>
       <slot />
@@ -158,8 +174,59 @@ const { title, description = "Structured research backing claims about AI produc
         color: var(--color-footer-link-hover);
       }
 
-      /* Prevent horizontal scroll at narrow viewports */
-      @media (max-width: 400px) {
+      .nav-toggle {
+        display: none;
+        background: none;
+        border: none;
+        color: var(--color-nav-link);
+        font-size: 1.4rem;
+        line-height: 1;
+        padding: var(--space-xs) var(--space-sm);
+        cursor: pointer;
+      }
+
+      .nav-toggle:hover {
+        color: var(--color-nav-link-hover);
+      }
+
+      @media (max-width: 640px) {
+        .site-nav {
+          position: relative;
+        }
+
+        .nav-toggle {
+          display: flex;
+          align-items: center;
+        }
+
+        .nav-links {
+          display: none;
+          flex-direction: column;
+          gap: 0;
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: var(--color-surface);
+          border-bottom: 1px solid var(--color-border);
+          padding: var(--space-sm) var(--space-lg) var(--space-md);
+          z-index: 100;
+        }
+
+        .nav-links.nav-open {
+          display: flex;
+        }
+
+        .nav-links li {
+          border-top: 1px solid var(--color-border);
+        }
+
+        .nav-links a {
+          display: block;
+          padding: var(--space-sm) 0;
+          font-size: var(--font-size-base);
+        }
+
         .nav-inner,
         .content {
           padding-left: var(--space-md);

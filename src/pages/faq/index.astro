@@ -1,0 +1,274 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+<Base title="FAQ" layout="reading">
+  <article class="reading">
+    <h1>FAQ</h1>
+
+    <details>
+      <summary>What is this site?</summary>
+      <div class="answer">
+        <p>
+          Dangerous Robot is a structured research project. It starts with a human question —
+          <em>is this claim true?</em> — and routes it through a Python pipeline that uses
+          LLM agents to find sources, fetch content, evaluate evidence, and draft a verdict.
+          Every published claim aspires to be reviewed and approved by a human operator before
+          it appears on the site.
+        </p>
+        <p>
+          The goal is to make it easier to verify what AI companies and products actually do,
+          especially around environmental impact, safety practices, and transparency.
+        </p>
+      </div>
+    </details>
+
+    <details>
+      <summary>What topics are covered?</summary>
+      <div class="answer">
+        <p>Research on this site focuses on:</p>
+        <ul>
+          <li>
+            Claims made by or about AI companies and AI products regarding environmental
+            impact, energy use, carbon footprint, sustainability practices, safety claims,
+            transparency disclosures, and responsible AI practices.
+          </li>
+          <li>
+            Any AI company or product where a verifiable claim can be evaluated — including
+            new and smaller players. No minimum size or prominence required.
+          </li>
+          <li>Claims that can be evaluated against sources that are publicly accessible.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>What is not covered?</summary>
+      <div class="answer">
+        <ul>
+          <li>Financial or investment advice about AI companies.</li>
+          <li>Legal or regulatory interpretation.</li>
+          <li>Non-AI technology companies. Coverage is limited to the AI sector.</li>
+          <li>Claims about individuals rather than organizations.</li>
+          <li>
+            Claims that rely solely on non-public or paywalled sources with no accessible
+            backup.
+          </li>
+          <li>
+            General technology product reviews unrelated to environmental impact, energy use,
+            sustainability, safety, or responsible AI practices.
+          </li>
+          <li>Medical or health claims unrelated to AI environmental or AI safety practices.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>What methodology is used for research?</summary>
+      <div class="answer">
+        <h3>How a claim is published</h3>
+        <p>Claims move through a pipeline before they appear on the site:</p>
+        <ol>
+          <li>
+            <strong>Research.</strong> An AI agent searches for sources relevant to the claim.
+            A second agent fetches and stores those sources.
+          </li>
+          <li>
+            <strong>Analysis.</strong> An analyst agent evaluates the evidence and drafts a
+            verdict with supporting reasoning. An auditor agent checks the draft for consistency
+            with the sources.
+          </li>
+          <li>
+            <strong>Human review.</strong> An operator reviews the draft via the
+            <code>dr</code> CLI and either approves it, rejects it, or requests a revision.
+            Nothing is published without human sign-off.
+          </li>
+          <li>
+            <strong>Schema validation.</strong> All claims, sources, and entity data are
+            validated by Zod schemas at build time. A claim that fails validation cannot be
+            built into the site.
+          </li>
+        </ol>
+
+        <h3>Verdicts</h3>
+        <ul>
+          <li><strong>True</strong> — accurate and well-supported by evidence.</li>
+          <li><strong>Mostly true</strong> — substantially accurate but with minor inaccuracies, missing context, or outdated details.</li>
+          <li><strong>Mixed</strong> — partially accurate; evidence supports some aspects but contradicts or fails to support others.</li>
+          <li><strong>Mostly false</strong> — contains a kernel of truth but is misleading in its overall characterization.</li>
+          <li><strong>False</strong> — contradicted by available evidence.</li>
+          <li><strong>Unverified</strong> — insufficient publicly available evidence to reach a verdict.</li>
+        </ul>
+
+        <h3>Confidence levels</h3>
+        <ul>
+          <li>
+            <strong>High</strong> — multiple independent primary sources confirm the verdict.
+            Evidence is consistent with little meaningful uncertainty.
+          </li>
+          <li>
+            <strong>Medium</strong> — evidence is present but incomplete. Sources may be
+            partially secondary, limited in scope, or not fully consistent. Reasonable but
+            not definitive.
+          </li>
+          <li>
+            <strong>Low</strong> — sources are limited, conflicting, or carry significant
+            uncertainty. Best available assessment; treat with caution.
+          </li>
+        </ul>
+
+        <h3>Rechecks and "as of" dates</h3>
+        <p>
+          Each claim has a recheck cadence — typically 60 days (pricing: 14–30 days; policy:
+          90–180 days). When due, the pipeline re-researches and the operator reviews again
+          before any change publishes. The "as of" date shows when evidence was last reviewed.
+        </p>
+
+        <h3>Limits</h3>
+        <ul>
+          <li>
+            <strong>Point-in-time.</strong> Verdicts do not update automatically. Check the
+            "as of" date.
+          </li>
+          <li>
+            <strong>AI-assisted, human-reviewed.</strong> Agents do the initial work.
+            Operators approve. Human reviewers can be wrong.
+          </li>
+          <li>
+            <strong>Coverage is not comprehensive.</strong> Gaps exist and are expected.
+          </li>
+          <li>
+            <strong>No paid research.</strong> No commissions, no sponsored verdicts.
+          </li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>What types of sources are used?</summary>
+      <div class="answer">
+        <p>Sources are classified into three tiers:</p>
+        <ul>
+          <li>
+            <strong>Primary</strong> — the organization's own output: company disclosures,
+            official documentation, sustainability reports, regulatory filings.
+          </li>
+          <li>
+            <strong>Secondary</strong> — independent reporting or research: journalism,
+            academic papers, analyst reports, third-party certification records.
+          </li>
+          <li>
+            <strong>Tertiary</strong> — advocacy, opinion, consumer guides, review aggregators.
+          </li>
+        </ul>
+        <p>
+          Every source is linked and accessible from the claim page that cites it. Sources
+          marked with an archived copy include a cached version in case the original is removed.
+        </p>
+      </div>
+    </details>
+
+    <details>
+      <summary>What is the content license?</summary>
+      <div class="answer">
+        <p>
+          Research content is published under
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>.
+          Site code is MIT licensed. Sources are cited inline on each claim page.
+        </p>
+      </div>
+    </details>
+
+  </article>
+</Base>
+
+<style>
+  .reading {
+    padding-top: var(--space-xl);
+  }
+
+  .reading h1 {
+    margin-bottom: var(--space-lg);
+  }
+
+  details {
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-sm) 0;
+  }
+
+  details:last-of-type {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  summary {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: var(--space-sm) 0;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary::after {
+    content: '+';
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--color-text-faint);
+    flex-shrink: 0;
+    margin-left: var(--space-md);
+  }
+
+  details[open] summary::after {
+    content: '−';
+  }
+
+  .answer {
+    padding: var(--space-sm) 0 var(--space-md);
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .answer p,
+  .answer ul,
+  .answer ol {
+    margin-bottom: var(--space-md);
+  }
+
+  .answer h3 {
+    font-size: var(--font-size-base);
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: var(--font-body);
+  }
+
+  .answer h3:first-child {
+    margin-top: var(--space-sm);
+  }
+
+  .answer ul,
+  .answer ol {
+    padding-left: var(--space-xl);
+  }
+
+  .answer li {
+    margin-bottom: var(--space-sm);
+  }
+
+  .answer code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    background: var(--color-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+  }
+</style>

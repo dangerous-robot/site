@@ -30,6 +30,18 @@ const kindCssVar: Record<string, string> = {
   index: "var(--color-kind-index)",
 };
 
+const sourceTypeLabel: Record<string, string> = {
+  primary: "Primary",
+  secondary: "Secondary",
+  tertiary: "Tertiary",
+};
+
+const sourceTypeTooltip: Record<string, string> = {
+  primary: "Company disclosures, official documentation, regulatory filings",
+  secondary: "Journalism, independent research, academic papers",
+  tertiary: "Advocacy organizations, opinion pieces, review aggregators",
+};
+
 const accessedDate = source.data.accessed_date instanceof Date
   ? source.data.accessed_date.toISOString().split("T")[0]
   : String(source.data.accessed_date);
@@ -47,6 +59,15 @@ const publishedDate = source.data.published_date instanceof Date
       <h1>{source.data.title}</h1>
 
       <div class="meta">
+        {source.data.source_type && (
+          <span
+            class={`source-type-badge source-type-${source.data.source_type}`}
+            title={sourceTypeTooltip[source.data.source_type]}
+          >
+            {sourceTypeLabel[source.data.source_type]}
+          </span>
+        )}
+
         <span
           class="kind-badge"
           style={`background: ${kindCssVar[source.data.kind] || "var(--color-text-faint)"}`}
@@ -126,6 +147,29 @@ const publishedDate = source.data.published_date instanceof Date
     gap: var(--space-md);
     align-items: center;
     margin-bottom: var(--space-sm);
+  }
+
+  .source-type-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
+    font-weight: bold;
+    color: var(--color-on-badge);
+    text-transform: uppercase;
+    cursor: default;
+  }
+
+  .source-type-primary {
+    background: hsl(210 55% 32%);
+  }
+
+  .source-type-secondary {
+    background: hsl(220 18% 36%);
+  }
+
+  .source-type-tertiary {
+    background: hsl(220 10% 28%);
   }
 
   .kind-badge {

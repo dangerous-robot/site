@@ -20,6 +20,7 @@ const sources = defineCollection({
       'video',
       'index',
     ]),
+    source_type: z.enum(['primary', 'secondary', 'tertiary']).optional(),
     summary: z.string().max(200),
     key_quotes: z.array(z.string()).optional(),
   }),
