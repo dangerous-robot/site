@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import EntityCard from '../../components/EntityCard.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import EmptyState from '../../components/EmptyState.astro';
+
+const entities = await getCollection('entities', e => e.data.type === 'product');
+const claims = await getCollection('claims');
+
+const cards = entities.map(entity => {
+  const entityClaims = claims.filter(c => c.data.entity === entity.id);
+  return {
+    id: entity.id,
+    name: entity.data.name,
+    slug: entity.id.split('/').pop()!,
+    description: entity.data.description,
+    verdicts: entityClaims.map(c => c.data.verdict),
+    claimCount: entityClaims.length,
+  };
+}).sort((a, b) => a.name.localeCompare(b.name));
+---
+<Base title="Products" layout="wide">
+  <h1>Products</h1>
+  <FilterBar
+    total={cards.length}
+    searchPlaceholder="Search products…"
+    searchDataAttr="data-name"
+    facets={[{ id: 'has-claims', label: 'Claims', values: [{ value: 'true', label: 'Has claims' }] }]}
+  />
+  <div class="entity-grid" id="entity-grid">
+    {cards.map(card => (
+      <div
+        data-filterable
+        data-name={card.name.toLowerCase()}
+        data-has-claims={card.claimCount > 0 ? 'true' : 'false'}
+      >
+        <EntityCard
+          name={card.name}
+          slug={card.slug}
+          entityType="product"
+          description={card.description}
+          verdicts={card.verdicts}
+          claimCount={card.claimCount}
+        />
+      </div>
+    ))}
+  </div>
+  <div id="filter-empty" hidden>
+    <EmptyState message="No products match this filter." />
+  </div>
+</Base>
+<style>
+.entity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+</style>

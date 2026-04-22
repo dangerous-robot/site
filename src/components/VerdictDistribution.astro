@@ -1,0 +1,32 @@
+---
+import { VERDICT_ORDER, VERDICT_LABELS, verdictCounts } from '../lib/verdict';
+interface Props { verdicts: string[]; }
+const { verdicts } = Astro.props;
+const counts = verdictCounts(verdicts as any);
+const buckets = VERDICT_ORDER.filter(v => counts[v] > 0);
+---
+{buckets.length > 0 && (
+  <div class="vd-strip" aria-label="Verdict distribution">
+    {buckets.map(v => (
+      <span class:list={['vd-pill', `verdict-${v}`]} title={VERDICT_LABELS[v]}>
+        {counts[v]}
+      </span>
+    ))}
+  </div>
+)}
+<style>
+.vd-strip { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+.vd-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.5rem; height: 1.5rem;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-2xs); font-weight: 700;
+  color: var(--color-on-badge);
+}
+.verdict-true       { background: var(--color-verdict-true); }
+.verdict-mostly-true { background: var(--color-verdict-mostly-true); }
+.verdict-mixed      { background: var(--color-verdict-mixed); }
+.verdict-mostly-false { background: var(--color-verdict-mostly-false); }
+.verdict-false      { background: var(--color-verdict-false); }
+.verdict-unverified { background: var(--color-verdict-unverified); }
+</style>

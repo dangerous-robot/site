@@ -1,6 +1,10 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
+import { buildStandardsIndex } from "../../lib/standards";
+import { CATEGORY_LABELS } from "../../lib/research";
+import VerdictBadge from "../../components/VerdictBadge.astro";
+import NotAssessedCell from "../../components/NotAssessedCell.astro";
 
 export async function getStaticPaths() {
   const entities = await getCollection("entities");
@@ -13,20 +17,37 @@ export async function getStaticPaths() {
 const { entity } = Astro.props;
 const { Content } = await render(entity);
 
-// Find all claims related to this entity
 const allClaims = await getCollection("claims");
 const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
 
-const verdictCssVar: Record<string, string> = {
-  true: "var(--color-verdict-true)",
-  "mostly-true": "var(--color-verdict-mostly-true)",
-  mixed: "var(--color-verdict-mixed)",
-  "mostly-false": "var(--color-verdict-mostly-false)",
-  false: "var(--color-verdict-false)",
-  unverified: "var(--color-verdict-unverified)",
-};
+// Group claims by category
+const claimsByCategory = new Map<string, typeof relatedClaims>();
+for (const claim of relatedClaims) {
+  const cat = claim.data.category;
+  if (!claimsByCategory.has(cat)) claimsByCategory.set(cat, []);
+  claimsByCategory.get(cat)!.push(claim);
+}
+const categoriesWithClaims = [...claimsByCategory.keys()].sort();
+
+// Standards-applied section
+const standards = await getCollection("standards");
+const standardsIndex = buildStandardsIndex(allClaims);
+
+// Filter standards matching this entity's type
+const applicableStandards = standards.filter(
+  std => std.data.entity_type === entity.data.type
+);
+
+// Group applicable standards by category
+const stdsByCategory = new Map<string, typeof applicableStandards>();
+for (const std of applicableStandards) {
+  const cat = std.data.category;
+  if (!stdsByCategory.has(cat)) stdsByCategory.set(cat, []);
+  stdsByCategory.get(cat)!.push(std);
+}
+const stdCategoriesSorted = [...stdsByCategory.keys()].sort();
 
 const kindLabels: Record<string, string> = {
   company: "Company",
@@ -64,23 +85,57 @@ const kindLabels: Record<string, string> = {
       {relatedClaims.length === 0 ? (
         <p class="empty">No claims for this entity yet.</p>
       ) : (
-        <ul class="claim-list">
-          {relatedClaims.map((claim) => (
-            <li>
-              <span
-                class="verdict-badge"
-                style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
-              >
-                {claim.data.verdict}
-              </span>
-              <a href={`/claims/${claim.id}`}>
-                {claim.data.title}
-              </a>
-            </li>
-          ))}
-        </ul>
+        categoriesWithClaims.map(cat => (
+          <div class="category-group">
+            <h3 class="category-heading">
+              {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}
+            </h3>
+            <ul class="claim-list">
+              {claimsByCategory.get(cat)!.map((claim) => (
+                <li>
+                  <VerdictBadge verdict={claim.data.verdict} size="sm" />
+                  <a href={`/claims/${claim.id}`}>
+                    {claim.data.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
       )}
     </section>
+
+    {applicableStandards.length > 0 && (
+      <section class="standards-applied">
+        <h2>Standards</h2>
+        <p class="standards-note">How this {entity.data.type} fares against applicable claim templates.</p>
+        {stdCategoriesSorted.map(cat => (
+          <div class="std-category-group">
+            <h3 class="std-category-heading">
+              {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}
+            </h3>
+            <div class="std-rows">
+              {stdsByCategory.get(cat)!.map(std => {
+                const byEntity = standardsIndex.get(std.id) ?? new Map();
+                const entityClaims = byEntity.get(entity.id) ?? [];
+                const topClaim = entityClaims[0];
+                return (
+                  <div class="std-row">
+                    <a href={`/standards/${std.id}`} class="std-text">{std.data.text}</a>
+                    <div class="std-verdict">
+                      {topClaim
+                        ? <VerdictBadge verdict={topClaim.verdict} size="sm" />
+                        : <NotAssessedCell />
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </section>
+    )}
   </article>
 </Base>
 
@@ -134,11 +189,25 @@ const kindLabels: Record<string, string> = {
   .related-claims {
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-lg);
+    margin-bottom: var(--space-xl);
   }
 
   .related-claims h2 {
     font-size: 1.2rem;
     margin-bottom: var(--space-md);
+  }
+
+  .category-group {
+    margin-bottom: var(--space-lg);
+  }
+
+  .category-heading {
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-sm);
+    font-weight: 600;
   }
 
   .empty {
@@ -157,18 +226,74 @@ const kindLabels: Record<string, string> = {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
   }
 
-  .verdict-badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-2xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
+  .claim-list li:last-child {
+    border-bottom: none;
+  }
+
+  /* Standards applied section */
+  .standards-applied {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+  }
+
+  .standards-applied h2 {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-xs);
+  }
+
+  .standards-note {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  .std-category-group {
+    margin-bottom: var(--space-lg);
+  }
+
+  .std-category-heading {
+    font-size: var(--font-size-sm);
     text-transform: uppercase;
-    white-space: nowrap;
-    min-width: 5.5rem;
-    text-align: center;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-sm);
+    font-weight: 600;
+  }
+
+  .std-rows {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .std-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-md);
+    padding: var(--space-sm) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .std-row:last-child {
+    border-bottom: none;
+  }
+
+  .std-text {
+    flex: 1;
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  .std-text:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+
+  .std-verdict {
+    flex-shrink: 0;
   }
 </style>

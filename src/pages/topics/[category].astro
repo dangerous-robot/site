@@ -1,0 +1,86 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
+import VerdictDistribution from '../../components/VerdictDistribution.astro';
+import ClaimRow from '../../components/ClaimRow.astro';
+import EmptyState from '../../components/EmptyState.astro';
+
+export async function getStaticPaths() {
+  return CATEGORIES.map(category => ({ params: { category } }));
+}
+
+const { category } = Astro.params;
+const label = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category;
+
+const allClaims = await getCollection('claims');
+const claims = allClaims.filter(c => c.data.category === category);
+const entities = await getCollection('entities');
+
+// Group by entity
+const byEntity = new Map<string, typeof claims>();
+for (const c of claims) {
+  if (!byEntity.has(c.data.entity)) byEntity.set(c.data.entity, []);
+  byEntity.get(c.data.entity)!.push(c);
+}
+
+const entityGroups = [...byEntity.entries()].map(([entityId, entityClaims]) => {
+  const entity = entities.find(e => e.id === entityId);
+  return {
+    entityId,
+    entityName: entity?.data.name ?? entityId,
+    verdicts: entityClaims.map(c => c.data.verdict),
+    claims: entityClaims,
+  };
+}).sort((a, b) => a.entityName.localeCompare(b.entityName));
+
+const allVerdicts = claims.map(c => c.data.verdict);
+---
+<Base title={label} layout="wide">
+  <header class="topic-header">
+    <p class="breadcrumb"><a href="/topics">Topics</a></p>
+    <h1>{label}</h1>
+    <p class="total-count">{claims.length} claim{claims.length !== 1 ? 's' : ''} across {entityGroups.length} entit{entityGroups.length !== 1 ? 'ies' : 'y'}</p>
+    <div class="overall-distribution">
+      <span class="dist-label">Overall</span>
+      <VerdictDistribution verdicts={allVerdicts} />
+    </div>
+  </header>
+
+  {entityGroups.length === 0
+    ? <EmptyState message="No claims in this category yet." />
+    : entityGroups.map(group => (
+      <section class="entity-group">
+        <div class="entity-group-header">
+          <a href={`/entities/${group.entityId}`} class="entity-link">{group.entityName}</a>
+          <VerdictDistribution verdicts={group.verdicts} />
+        </div>
+        {group.claims.map(c => (
+          <ClaimRow
+            id={c.id}
+            title={c.data.title}
+            verdict={c.data.verdict}
+            entity={c.data.entity}
+            category={c.data.category}
+            asOf={c.data.as_of instanceof Date ? c.data.as_of.toISOString().split('T')[0] : String(c.data.as_of)}
+          />
+        ))}
+      </section>
+    ))}
+</Base>
+<style>
+.topic-header { margin-bottom: var(--space-xl); }
+.breadcrumb { font-size: var(--font-size-xs); color: var(--color-text-muted); margin-bottom: var(--space-xs); }
+.breadcrumb a { color: var(--color-accent); text-decoration: none; }
+.total-count { color: var(--color-text-muted); font-size: var(--font-size-sm); margin-bottom: var(--space-md); }
+.overall-distribution { display: flex; align-items: center; gap: var(--space-md); }
+.dist-label { font-size: var(--font-size-xs); color: var(--color-text-faint); }
+.entity-group { margin-bottom: var(--space-xl); }
+.entity-group-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-sm) 0;
+  border-bottom: 2px solid var(--color-border);
+  margin-bottom: var(--space-xs);
+}
+.entity-link { font-weight: 700; color: var(--color-accent); text-decoration: none; }
+</style>

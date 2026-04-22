@@ -1,0 +1,47 @@
+---
+import VerdictDistribution from './VerdictDistribution.astro';
+interface Props {
+  name: string;
+  slug: string;
+  entityType: 'company' | 'product';
+  description?: string;
+  verdicts: string[];
+  claimCount: number;
+}
+const { name, slug, entityType, description, verdicts, claimCount } = Astro.props;
+const href = `/entities/${entityType === 'company' ? 'companies' : 'products'}/${slug}`;
+---
+<a href={href} class="entity-card">
+  <div class="card-header">
+    <span class="entity-name">{name}</span>
+    <span class="entity-type">{entityType}</span>
+  </div>
+  {description && <p class="entity-desc">{description}</p>}
+  <div class="card-footer">
+    <VerdictDistribution verdicts={verdicts} />
+    <span class="claim-count">{claimCount} claim{claimCount !== 1 ? 's' : ''}</span>
+  </div>
+</a>
+<style>
+.entity-card {
+  display: flex; flex-direction: column; gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+.entity-card:hover { border-color: var(--color-accent); }
+.card-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+.entity-name { font-weight: 700; font-size: 1.05rem; color: var(--color-text); }
+.entity-type {
+  font-size: var(--font-size-2xs); text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--color-text-faint); padding: 2px var(--space-xs);
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+}
+.entity-desc { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-muted); flex: 1; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-top: auto; }
+.claim-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
+</style>

@@ -13,6 +13,12 @@ export async function getStaticPaths() {
 const { claim } = Astro.props;
 const { Content } = await render(claim);
 
+// Resolve matching standard
+const standards = await getCollection("standards");
+const stem = claim.id.split("/").pop() ?? claim.id;
+const standardSlug = claim.data.standard_slug ?? stem;
+const matchedStandard = standards.find(s => s.id === standardSlug);
+
 const verdictCssVar: Record<string, string> = {
   true: "var(--color-verdict-true)",
   "mostly-true": "var(--color-verdict-mostly-true)",
@@ -31,12 +37,16 @@ const confidenceLabels: Record<string, string> = {
 const asOfDate = claim.data.as_of instanceof Date
   ? claim.data.as_of.toISOString().split("T")[0]
   : String(claim.data.as_of);
-
 ---
 
 <Base title={claim.data.title}>
   <article class="claim-detail">
     <header>
+      {matchedStandard && (
+        <p class="standard-ref">
+          Standard: <a href={`/standards/${matchedStandard.id}`}>{matchedStandard.data.text}</a>
+        </p>
+      )}
       <h1>{claim.data.title}</h1>
 
       <div class="meta">
@@ -92,6 +102,23 @@ const asOfDate = claim.data.as_of instanceof Date
 <style>
   .claim-detail header {
     margin-bottom: var(--space-xl);
+  }
+
+  .standard-ref {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-sm);
+  }
+
+  .standard-ref a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .standard-ref a:hover {
+    text-decoration: underline;
   }
 
   .claim-detail h1 {

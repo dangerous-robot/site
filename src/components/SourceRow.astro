@@ -1,0 +1,59 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  publisher: string;
+  kind: string;
+  year?: number;
+  citationCount?: number;
+}
+const { id, title, publisher, kind, year, citationCount } = Astro.props;
+---
+<a href={`/sources/${id}`} class="source-row" data-kind={kind}>
+  <span class:list={['kind-badge', `kind-${kind}`]}>{kind}</span>
+  <span class="source-info">
+    <span class="publisher">{publisher}</span>
+    <span class="source-title">{title}</span>
+  </span>
+  <span class="source-meta">
+    {year && <span>{year}</span>}
+    {citationCount != null && <span>{citationCount} citation{citationCount !== 1 ? 's' : ''}</span>}
+  </span>
+</a>
+<style>
+.source-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  align-items: start;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+}
+.source-row:hover { background: var(--color-surface); }
+.kind-badge {
+  display: inline-block;
+  padding: 2px var(--space-xs);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-2xs); font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--color-on-badge);
+}
+.kind-report      { background: var(--color-kind-report); }
+.kind-article     { background: var(--color-kind-article); }
+.kind-documentation { background: var(--color-kind-documentation); }
+.kind-dataset     { background: var(--color-kind-dataset); }
+.kind-blog        { background: var(--color-kind-blog); }
+.kind-video       { background: var(--color-kind-video); }
+.kind-index       { background: var(--color-kind-index); }
+.source-info { display: flex; flex-direction: column; gap: 2px; }
+.publisher { font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.source-title { font-weight: 500; color: var(--color-text); }
+.source-meta {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
+  font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap;
+}
+@media (max-width: 600px) {
+  .source-row { grid-template-columns: 1fr; }
+}
+</style>

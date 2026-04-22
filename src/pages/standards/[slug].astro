@@ -1,0 +1,82 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { buildStandardsIndex, logDerivationMisses } from '../../lib/standards';
+import type { StandardsMiss } from '../../lib/standards';
+import StandardsMatrix from '../../components/StandardsMatrix.astro';
+
+export async function getStaticPaths() {
+  const standards = await getCollection('standards');
+  return standards.map(std => ({ params: { slug: std.id }, props: { std } }));
+}
+
+const { std } = Astro.props;
+const claims = await getCollection('claims');
+const entities = await getCollection('entities');
+
+const standardsIndex = buildStandardsIndex(claims);
+const byEntity = standardsIndex.get(std.id) ?? new Map();
+
+const misses: StandardsMiss[] = [];
+
+// All entities matching this standard's entity_type
+const matchingEntities = entities.filter(e => e.data.type === std.data.entity_type);
+
+const rows = matchingEntities.map(entity => {
+  const entityClaims = byEntity.get(entity.id) ?? [];
+  const topClaim = entityClaims[0];
+  return {
+    id: entity.id,
+    name: entity.data.name,
+    entityType: entity.data.type as string,
+    verdict: topClaim?.verdict,
+    claimId: topClaim?.id,
+  };
+});
+
+// Entities with claims but mismatched entity_type
+const alsoReferenced = [...byEntity.entries()]
+  .filter(([entityId]) => !matchingEntities.find(e => e.id === entityId))
+  .map(([entityId, entityClaims]) => {
+    const entity = entities.find(e => e.id === entityId);
+    const topClaim = entityClaims[0];
+    if (!entity) {
+      misses.push({ claimId: topClaim?.id ?? entityId, reason: 'entity not found' });
+      return null;
+    }
+    return {
+      id: entity.id,
+      name: entity.data.name,
+      entityType: entity.data.type as string,
+      verdict: topClaim?.verdict,
+      claimId: topClaim?.id,
+    };
+  })
+  .filter((r): r is NonNullable<typeof r> => r !== null);
+
+logDerivationMisses(misses);
+---
+<Base title={std.data.text} layout="wide">
+  <header class="std-header">
+    <p class="std-category">{std.data.category.replace(/-/g, ' ')}</p>
+    <h1>{std.data.text}</h1>
+    {std.data.notes && <p class="std-notes">{std.data.notes}</p>}
+  </header>
+  <section>
+    <StandardsMatrix rows={rows} />
+  </section>
+  {alsoReferenced.length > 0 && (
+    <section class="also-ref">
+      <h2>Also referenced</h2>
+      <p class="muted">These entities have claims referencing this standard but don't match its entity type.</p>
+      <StandardsMatrix rows={alsoReferenced} />
+    </section>
+  )}
+</Base>
+<style>
+.std-header { margin-bottom: var(--space-xl); }
+.std-category { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-faint); margin-bottom: var(--space-xs); }
+.std-notes { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.also-ref { margin-top: var(--space-2xl, 4rem); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); }
+.muted { font-size: var(--font-size-sm); color: var(--color-text-muted); margin-bottom: var(--space-md); }
+</style>

@@ -4,6 +4,7 @@ entity: companies/greenpt
 category: environmental-impact
 verdict: "true"
 confidence: medium
+standard_slug: renewable-energy-hosting
 as_of: 2026-04-18
 sources:
   - 2025/greenpt-docs

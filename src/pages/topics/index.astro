@@ -1,0 +1,60 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
+import VerdictDistribution from '../../components/VerdictDistribution.astro';
+
+const claims = await getCollection('claims');
+
+const categoryStats = CATEGORIES.map(cat => {
+  const catClaims = claims.filter(c => c.data.category === cat);
+  const verdicts = catClaims.map(c => c.data.verdict);
+  return {
+    category: cat,
+    label: CATEGORY_LABELS[cat],
+    count: catClaims.length,
+    verdicts,
+    sample: catClaims.slice(0, 3).map(c => c.data.title),
+  };
+});
+---
+<Base title="Topics" layout="wide">
+  <h1>Topics</h1>
+  <div class="topics-grid">
+    {categoryStats.map(stat => (
+      <a href={`/topics/${stat.category}`} class="topic-card">
+        <div class="topic-header">
+          <span class="topic-label">{stat.label}</span>
+          <span class="topic-count">{stat.count} claims</span>
+        </div>
+        <VerdictDistribution verdicts={stat.verdicts} />
+        {stat.sample.length > 0 && (
+          <ul class="sample-list">
+            {stat.sample.map(title => <li>{title}</li>)}
+          </ul>
+        )}
+      </a>
+    ))}
+  </div>
+</Base>
+<style>
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-lg);
+}
+.topic-card {
+  display: flex; flex-direction: column; gap: var(--space-sm);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none; color: inherit;
+}
+.topic-card:hover { border-color: var(--color-accent); }
+.topic-header { display: flex; justify-content: space-between; align-items: baseline; }
+.topic-label { font-weight: 700; color: var(--color-text); }
+.topic-count { font-size: var(--font-size-xs); color: var(--color-text-faint); }
+.sample-list { margin: 0; padding-left: var(--space-md); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.sample-list li { margin-bottom: 2px; }
+</style>

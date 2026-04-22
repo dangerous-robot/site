@@ -1,0 +1,69 @@
+---
+import SearchInput from './SearchInput.astro';
+import FacetBar from './FacetBar.astro';
+interface FacetValue { value: string; label: string; }
+interface Facet { id: string; label: string; values: FacetValue[]; }
+interface Props {
+  total: number;
+  searchPlaceholder?: string;
+  facets?: Facet[];
+  searchDataAttr?: string;
+}
+const { total, searchPlaceholder, facets = [], searchDataAttr = 'data-title' } = Astro.props;
+---
+<div class="filter-bar">
+  <div class="filter-top">
+    <SearchInput placeholder={searchPlaceholder} />
+    <span class="showing-count" id="showing-count">Showing {total} of {total}</span>
+  </div>
+  {facets.length > 0 && <FacetBar facets={facets} />}
+</div>
+<style>
+.filter-bar { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.filter-top { display: flex; align-items: center; gap: var(--space-md); }
+.showing-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
+</style>
+<script define:vars={{ total, searchDataAttr }}>
+  let textQuery = '';
+  let facetFilters = {};
+
+  function applyFilters() {
+    const rows = document.querySelectorAll('[data-filterable]');
+    let shown = 0;
+    rows.forEach(row => {
+      const el = row;
+      const searchTarget = (el.getAttribute(searchDataAttr) || el.textContent || '').toLowerCase();
+      const textMatch = !textQuery || searchTarget.includes(textQuery);
+
+      const facetMatch = Object.entries(facetFilters).every(([facetId, values]) => {
+        const set = values;
+        if (set.size === 0) return true;
+        const attrVal = el.getAttribute(`data-${facetId}`);
+        return set.has(attrVal);
+      });
+
+      const visible = textMatch && facetMatch;
+      el.hidden = !visible;
+      if (visible) shown++;
+    });
+
+    const countEl = document.getElementById('showing-count');
+    if (countEl) countEl.textContent = `Showing ${shown} of ${total}`;
+
+    const emptyEl = document.getElementById('filter-empty');
+    if (emptyEl) emptyEl.hidden = shown > 0;
+  }
+
+  const searchInput = document.querySelector('.search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', e => {
+      textQuery = e.target.value.toLowerCase().trim();
+      applyFilters();
+    });
+  }
+
+  document.addEventListener('facet-change', e => {
+    facetFilters = e.detail;
+    applyFilters();
+  });
+</script>

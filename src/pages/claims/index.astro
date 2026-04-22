@@ -1,0 +1,61 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import ClaimRow from '../../components/ClaimRow.astro';
+import FilterBar from '../../components/FilterBar.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import { VERDICT_ORDER, VERDICT_LABELS } from '../../lib/verdict';
+import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
+
+const claims = await getCollection('claims');
+const sorted = [...claims].sort((a, b) =>
+  (b.data.as_of instanceof Date ? b.data.as_of.toISOString() : String(b.data.as_of)).localeCompare(
+    a.data.as_of instanceof Date ? a.data.as_of.toISOString() : String(a.data.as_of)
+  )
+);
+
+const verdictFacet = {
+  id: 'verdict',
+  label: 'Verdict',
+  values: VERDICT_ORDER.map(v => ({ value: v, label: VERDICT_LABELS[v] })),
+};
+const categoryFacet = {
+  id: 'category',
+  label: 'Category',
+  values: CATEGORIES.map(c => ({ value: c, label: CATEGORY_LABELS[c] })),
+};
+const confidenceFacet = {
+  id: 'confidence',
+  label: 'Confidence',
+  values: [
+    { value: 'high', label: 'High' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'low', label: 'Low' },
+  ],
+};
+---
+<Base title="Claims" layout="wide">
+  <h1>Claims</h1>
+  <FilterBar
+    total={sorted.length}
+    searchPlaceholder="Search claims…"
+    searchDataAttr="data-title"
+    facets={[verdictFacet, categoryFacet, confidenceFacet]}
+  />
+  <div class="claims-list">
+    {sorted.map(claim => (
+      <ClaimRow
+        id={claim.id}
+        title={claim.data.title}
+        verdict={claim.data.verdict}
+        entity={claim.data.entity}
+        category={claim.data.category}
+        asOf={claim.data.as_of instanceof Date ? claim.data.as_of.toISOString().split('T')[0] : String(claim.data.as_of)}
+        confidence={claim.data.confidence}
+      />
+    ))}
+  </div>
+  <div id="filter-empty" hidden>
+    <EmptyState message="No claims match this filter." />
+  </div>
+</Base>

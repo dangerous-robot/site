@@ -1,0 +1,84 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import { buildStandardsIndex } from '../../lib/standards';
+import { CATEGORY_LABELS } from '../../lib/research';
+import EmptyState from '../../components/EmptyState.astro';
+import FilterBar from '../../components/FilterBar.astro';
+
+const standards = await getCollection('standards');
+const claims = await getCollection('claims');
+const standardsIndex = buildStandardsIndex(claims);
+
+const rows = standards.map(std => {
+  const byEntity = standardsIndex.get(std.id) ?? new Map();
+  const coverageCount = byEntity.size;
+  const totalClaims = [...byEntity.values()].flat().length;
+  return {
+    id: std.id,
+    slug: std.id,
+    text: std.data.text,
+    category: std.data.category,
+    entityType: std.data.entity_type,
+    core: std.data.core,
+    coverageCount,
+    totalClaims,
+  };
+}).sort((a, b) => a.text.localeCompare(b.text));
+
+const categoryFacet = {
+  id: 'category',
+  label: 'Category',
+  values: Object.entries(CATEGORY_LABELS).map(([v, label]) => ({ value: v, label })),
+};
+const coreFacet = {
+  id: 'core',
+  label: 'Core',
+  values: [{ value: 'true', label: 'Core only' }],
+};
+---
+<Base title="Standards" layout="wide">
+  <p class="disclaimer">Standards are claim templates defined in this project — not ISO/NIST-style external standards.</p>
+  <h1>Standards</h1>
+  <FilterBar
+    total={rows.length}
+    searchPlaceholder="Search standards…"
+    searchDataAttr="data-text"
+    facets={[categoryFacet, coreFacet]}
+  />
+  <div class="standards-list">
+    {rows.map(row => (
+      <a
+        href={`/standards/${row.slug}`}
+        class="standard-row"
+        data-filterable
+        data-text={row.text.toLowerCase()}
+        data-category={row.category}
+        data-core={row.core ? 'true' : 'false'}
+      >
+        <span class="std-text">{row.text}</span>
+        <span class="std-meta">
+          <span class="category-label">{CATEGORY_LABELS[row.category as keyof typeof CATEGORY_LABELS] ?? row.category}</span>
+          <span class="coverage">{row.coverageCount} assessed · {row.totalClaims} claims</span>
+        </span>
+      </a>
+    ))}
+  </div>
+  <div id="filter-empty" hidden>
+    <EmptyState message="No standards match this filter." />
+  </div>
+</Base>
+<style>
+.disclaimer { font-size: var(--font-size-xs); color: var(--color-text-faint); margin-bottom: var(--space-md); }
+.standards-list { display: flex; flex-direction: column; }
+.standard-row {
+  display: flex; flex-direction: column; gap: var(--space-xs);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none; color: inherit;
+}
+.standard-row:hover { background: var(--color-surface); }
+.std-text { font-weight: 500; color: var(--color-text); }
+.std-meta { display: flex; gap: var(--space-md); font-size: var(--font-size-xs); color: var(--color-text-muted); }
+.coverage { color: var(--color-text-faint); }
+</style>

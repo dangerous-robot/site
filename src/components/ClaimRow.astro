@@ -1,0 +1,56 @@
+---
+import VerdictBadge from './VerdictBadge.astro';
+import { CATEGORY_LABELS } from '../lib/research';
+interface Props {
+  id: string;
+  title: string;
+  verdict: string;
+  entity: string;
+  category: string;
+  asOf?: string;
+  confidence?: string;
+}
+const { id, title, verdict, entity, category, asOf, confidence } = Astro.props;
+const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category;
+---
+<a
+  href={`/claims/${id}`}
+  class="claim-row"
+  data-verdict={verdict}
+  data-category={category}
+  data-confidence={confidence}
+>
+  <span class="badge-col"><VerdictBadge verdict={verdict} size="sm" /></span>
+  <span class="title-col">{title}</span>
+  <span class="meta-col">
+    <span class="entity">{entity}</span>
+    <span class="sep">·</span>
+    <span class="category">{categoryLabel}</span>
+    {asOf && <><span class="sep">·</span><span class="as-of">{asOf}</span></>}
+  </span>
+</a>
+<style>
+.claim-row {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  align-items: start;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  text-decoration: none;
+  color: inherit;
+}
+.claim-row:hover { background: var(--color-surface); }
+.badge-col { padding-top: 2px; }
+.title-col { font-weight: 500; color: var(--color-text); line-height: 1.4; }
+.meta-col {
+  display: flex; flex-wrap: wrap; gap: var(--space-xs);
+  font-size: var(--font-size-xs); color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.sep { color: var(--color-border); }
+@media (max-width: 600px) {
+  .claim-row { grid-template-columns: 1fr; gap: var(--space-xs); }
+  .badge-col { order: -1; }
+}
+</style>

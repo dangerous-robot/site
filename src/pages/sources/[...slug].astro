@@ -1,6 +1,8 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
+import { buildCitationIndex } from "../../lib/citations";
+import ClaimRow from "../../components/ClaimRow.astro";
 
 export async function getStaticPaths() {
   const sources = await getCollection("sources");
@@ -12,6 +14,11 @@ export async function getStaticPaths() {
 
 const { source } = Astro.props;
 const { Content } = await render(source);
+
+// Reverse citation lookup
+const allClaims = await getCollection("claims");
+const citationIndex = buildCitationIndex(allClaims);
+const citingClaims = citationIndex.get(source.id) ?? [];
 
 const kindCssVar: Record<string, string> = {
   report: "var(--color-kind-report)",
@@ -78,6 +85,23 @@ const publishedDate = source.data.published_date instanceof Date
         {source.data.key_quotes.map((quote: string) => (
           <blockquote>{quote}</blockquote>
         ))}
+      </section>
+    )}
+
+    {citingClaims.length > 0 && (
+      <section class="citing-claims">
+        <h2>Claims using this source</h2>
+        <div class="claims-list">
+          {citingClaims.map(entry => (
+            <ClaimRow
+              id={entry.id}
+              title={entry.title}
+              verdict={entry.verdict}
+              entity={entry.entity}
+              category={entry.category}
+            />
+          ))}
+        </div>
       </section>
     )}
 
@@ -160,6 +184,17 @@ const publishedDate = source.data.published_date instanceof Date
   }
 
   /* blockquote uses global.css token styles */
+
+  .citing-claims {
+    margin-bottom: var(--space-xl);
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-lg);
+  }
+
+  .citing-claims h2 {
+    font-size: 1.1rem;
+    margin-bottom: var(--space-md);
+  }
 
   .body-content {
     line-height: 1.7;

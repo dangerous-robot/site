@@ -4,6 +4,7 @@ entity: companies/ecosia
 category: environmental-impact
 verdict: "false"
 confidence: medium
+standard_slug: renewable-energy-hosting
 as_of: 2026-04-18
 sources:
   - 2025/earthday-chatgpt-prompt-cost

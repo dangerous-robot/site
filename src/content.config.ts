@@ -1,5 +1,6 @@
 import { defineCollection, z } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { glob, file } from 'astro/loaders';
+import yaml from 'js-yaml';
 
 const sources = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/sources' }),
@@ -48,6 +49,7 @@ const claims = defineCollection({
       'unverified',
     ]),
     confidence: z.enum(['high', 'medium', 'low']),
+    standard_slug: z.string().optional(),
     as_of: z.coerce.date(),
     sources: z.array(z.string()),
     recheck_cadence_days: z.number().default(60),
@@ -66,4 +68,31 @@ const entities = defineCollection({
   }),
 });
 
-export const collections = { sources, claims, entities };
+const standards = defineCollection({
+  loader: file('research/templates.yaml', {
+    parser: (text) => {
+      const data = yaml.load(text) as { templates: unknown[] };
+      return data.templates;
+    },
+  }),
+  schema: z.object({
+    slug: z.string(),
+    text: z.string(),
+    entity_type: z.enum(['company', 'product']),
+    category: z.enum([
+      'ai-safety',
+      'environmental-impact',
+      'product-comparison',
+      'consumer-guide',
+      'ai-literacy',
+      'data-privacy',
+      'industry-analysis',
+      'regulation-policy',
+    ]),
+    core: z.boolean().default(false),
+    notes: z.string().optional(),
+    vocabulary: z.record(z.string(), z.array(z.string())).optional(),
+  }),
+});
+
+export const collections = { sources, claims, entities, standards };

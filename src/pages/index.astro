@@ -1,109 +1,76 @@
 ---
-import Base from "../layouts/Base.astro";
-import { getCollection } from "astro:content";
+import Base from '../layouts/Base.astro';
+import { getCollection } from 'astro:content';
 
-const allClaims = await getCollection("claims");
+const entities = await getCollection('entities');
+const claims = await getCollection('claims');
+const sources = await getCollection('sources');
+const standards = await getCollection('standards');
 
-// Group claims by entity slug
-const claimsByEntity = new Map<string, typeof allClaims>();
-for (const claim of allClaims) {
-  const entity = claim.data.entity;
-  if (!claimsByEntity.has(entity)) {
-    claimsByEntity.set(entity, []);
-  }
-  claimsByEntity.get(entity)!.push(claim);
-}
-
-const verdictCssVar: Record<string, string> = {
-  true: "var(--color-verdict-true)",
-  "mostly-true": "var(--color-verdict-mostly-true)",
-  mixed: "var(--color-verdict-mixed)",
-  "mostly-false": "var(--color-verdict-mostly-false)",
-  false: "var(--color-verdict-false)",
-  unverified: "var(--color-verdict-unverified)",
-};
+const companies = entities.filter(e => e.data.type === 'company');
+const products = entities.filter(e => e.data.type === 'product');
 ---
-
-<Base title="Home">
-  <h1>Dangerous Robot</h1>
-  <p class="intro">
-    Structured research backing claims about AI products and companies.
-  </p>
-
-  {
-    allClaims.length === 0 ? (
-      <p class="empty">No claims published yet.</p>
-    ) : (
-      Array.from(claimsByEntity.entries()).map(([entity, claims]) => (
-        <section class="entity-group">
-          <h2>
-            <a href={`/entities/${entity}`}>{entity}</a>
-          </h2>
-          <ul class="claim-list">
-            {claims.map((claim) => (
-              <li>
-                <span
-                  class="verdict-badge"
-                  style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
-                >
-                  {claim.data.verdict}
-                </span>
-                <a href={`/claims/${claim.id}`}>{claim.data.title}</a>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))
-    )
-  }
+<Base title="Dangerous Robot — AI transparency research">
+  <div class="home-lead">
+    <h1>Dangerous Robot</h1>
+    <p class="tagline">Structured research connecting AI product claims to verifiable sources.</p>
+  </div>
+  <div class="count-strip">
+    <span><strong>{companies.length}</strong> companies</span>
+    <span class="sep">·</span>
+    <span><strong>{products.length}</strong> products</span>
+    <span class="sep">·</span>
+    <span><strong>{claims.length}</strong> claims</span>
+    <span class="sep">·</span>
+    <span><strong>{standards.length}</strong> standards</span>
+  </div>
+  <nav class="section-cards" aria-label="Browse sections">
+    <a href="/companies" class="section-card">
+      <strong>Companies</strong>
+      <span>{companies.length} tracked</span>
+    </a>
+    <a href="/products" class="section-card">
+      <strong>Products</strong>
+      <span>{products.length} tracked</span>
+    </a>
+    <a href="/claims" class="section-card">
+      <strong>Claims</strong>
+      <span>{claims.length} assessed</span>
+    </a>
+    <a href="/standards" class="section-card">
+      <strong>Standards</strong>
+      <span>{standards.length} templates</span>
+    </a>
+  </nav>
 </Base>
-
 <style>
-  .intro {
-    color: var(--color-text-muted);
-    font-size: 1.1rem;
-    margin-bottom: var(--space-xl);
-  }
-
-  .empty {
-    color: var(--color-text-faint);
-    font-style: italic;
-  }
-
-  .entity-group {
-    margin-bottom: var(--space-xl);
-  }
-
-  .entity-group h2 {
-    font-size: 1.4rem;
-    margin-bottom: 0.75rem;
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-sm);
-  }
-
-  .claim-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-
-  .claim-list li {
-    padding: var(--space-sm) 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .verdict-badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-2xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
-    text-transform: uppercase;
-    white-space: nowrap;
-    min-width: 5.5rem;
-    text-align: center;
-  }
+.home-lead { margin-bottom: var(--space-xl); }
+.home-lead h1 { margin-bottom: var(--space-xs); }
+.tagline { color: var(--color-text-muted); font-size: 1.05rem; }
+.count-strip {
+  display: flex; flex-wrap: wrap; gap: var(--space-sm);
+  padding: var(--space-md) 0;
+  font-size: var(--font-size-sm); color: var(--color-text-muted);
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-xl);
+}
+.count-strip strong { color: var(--color-text); }
+.count-strip .sep { color: var(--color-border); }
+.section-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-md);
+}
+.section-card {
+  display: flex; flex-direction: column; gap: var(--space-xs);
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-decoration: none; color: inherit;
+}
+.section-card:hover { border-color: var(--color-accent); }
+.section-card strong { font-size: 1.05rem; color: var(--color-text); }
+.section-card span { font-size: var(--font-size-xs); color: var(--color-text-faint); }
 </style>

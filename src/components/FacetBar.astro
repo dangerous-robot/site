@@ -1,0 +1,90 @@
+---
+interface FacetValue { value: string; label: string; }
+interface Facet { id: string; label: string; values: FacetValue[]; }
+interface Props { facets: Facet[]; }
+const { facets } = Astro.props;
+---
+<div class="facet-bar" id="facet-bar">
+  <details class="facet-mobile-toggle" id="facet-details">
+    <summary class="facet-toggle-btn">
+      Filter <span class="active-count" id="active-count" hidden>(0)</span>
+    </summary>
+    <div class="facet-inner" id="facet-inner">
+      {facets.map(facet => (
+        <div class="facet-group">
+          <span class="facet-label">{facet.label}</span>
+          <div class="facet-chips">
+            {facet.values.map(v => (
+              <button
+                type="button"
+                class="facet-chip"
+                data-facet={facet.id}
+                data-value={v.value}
+                aria-pressed="false"
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </details>
+</div>
+<style>
+.facet-bar { width: 100%; }
+.facet-mobile-toggle > summary {
+  list-style: none; cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  font-size: var(--font-size-sm); color: var(--color-text-muted);
+  display: inline-flex; align-items: center; gap: var(--space-xs);
+}
+.facet-mobile-toggle > summary::-webkit-details-marker { display: none; }
+@media (min-width: 640px) {
+  .facet-mobile-toggle > summary { display: none; }
+  .facet-inner { display: flex !important; flex-wrap: wrap; gap: var(--space-md); padding: 0; }
+}
+.facet-inner { padding-top: var(--space-sm); }
+.facet-group { display: flex; flex-direction: column; gap: var(--space-xs); }
+.facet-label { font-size: var(--font-size-xs); color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.facet-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.facet-chip {
+  padding: 3px var(--space-sm);
+  border: 1px solid var(--color-border); border-radius: var(--radius-full);
+  background: transparent; color: var(--color-text-muted);
+  font-size: var(--font-size-xs); cursor: pointer;
+  transition: all 0.1s;
+}
+.facet-chip:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.facet-chip[aria-pressed="true"] {
+  background: var(--color-accent); border-color: var(--color-accent); color: var(--color-on-badge);
+}
+.active-count { font-variant-numeric: tabular-nums; }
+</style>
+<script>
+  const chips = document.querySelectorAll<HTMLButtonElement>('.facet-chip');
+  const activeCountEl = document.getElementById('active-count');
+  const activeFilters: Record<string, Set<string>> = {};
+
+  function updateCount() {
+    const n = Object.values(activeFilters).reduce((sum, s) => sum + s.size, 0);
+    if (activeCountEl) {
+      activeCountEl.textContent = `(${n})`;
+      activeCountEl.hidden = n === 0;
+    }
+  }
+
+  chips.forEach(chip => {
+    const facetId = chip.dataset.facet!;
+    const value = chip.dataset.value!;
+    chip.addEventListener('click', () => {
+      if (!activeFilters[facetId]) activeFilters[facetId] = new Set();
+      const set = activeFilters[facetId];
+      if (set.has(value)) { set.delete(value); chip.setAttribute('aria-pressed', 'false'); }
+      else { set.add(value); chip.setAttribute('aria-pressed', 'true'); }
+      updateCount();
+      document.dispatchEvent(new CustomEvent('facet-change', { detail: activeFilters }));
+    });
+  });
+</script>

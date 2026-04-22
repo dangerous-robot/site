@@ -1,0 +1,32 @@
+---
+import { VERDICT_LABELS, VERDICT_TOOLTIP } from '../lib/verdict';
+interface Props {
+  verdict: string;
+  size?: 'sm' | 'md';
+}
+const { verdict, size = 'md' } = Astro.props;
+const label = VERDICT_LABELS[verdict as keyof typeof VERDICT_LABELS] ?? verdict;
+const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
+---
+<span class:list={['verdict-badge', `verdict-${verdict}`, size]} title={tooltip}>
+  {label}
+</span>
+<style>
+.verdict-badge {
+  display: inline-block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-on-badge);
+  white-space: nowrap;
+}
+.verdict-badge.sm { font-size: var(--font-size-2xs); padding: 2px var(--space-xs); }
+.verdict-true       { background: var(--color-verdict-true); }
+.verdict-mostly-true { background: var(--color-verdict-mostly-true); }
+.verdict-mixed      { background: var(--color-verdict-mixed); }
+.verdict-mostly-false { background: var(--color-verdict-mostly-false); }
+.verdict-false      { background: var(--color-verdict-false); }
+.verdict-unverified { background: var(--color-verdict-unverified); }
+</style>

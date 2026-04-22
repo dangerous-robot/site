@@ -1,0 +1,84 @@
+---
+import VerdictBadge from './VerdictBadge.astro';
+import NotAssessedCell from './NotAssessedCell.astro';
+interface EntityRow {
+  id: string;
+  name: string;
+  entityType: string;
+  verdict?: string;
+  claimId?: string;
+}
+interface Props {
+  rows: EntityRow[];
+}
+const { rows } = Astro.props;
+const assessed = rows.filter(r => r.verdict);
+const notAssessed = rows.filter(r => !r.verdict);
+---
+<div class="standards-matrix">
+  <table class="matrix-table">
+    <thead>
+      <tr>
+        <th>Entity</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      {assessed.map(row => (
+        <tr>
+          <td>
+            {row.claimId
+              ? <a href={`/claims/${row.claimId}`}>{row.name}</a>
+              : row.name}
+          </td>
+          <td><VerdictBadge verdict={row.verdict!} /></td>
+        </tr>
+      ))}
+      {notAssessed.map(row => (
+        <tr class="not-assessed-row">
+          <td>{row.name}</td>
+          <td><NotAssessedCell /></td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <div class="matrix-accordion">
+    {rows.map(row => (
+      <details class="matrix-item">
+        <summary class="matrix-summary">
+          <span class="summary-name">{row.name}</span>
+          {row.verdict
+            ? <VerdictBadge verdict={row.verdict} size="sm" />
+            : <NotAssessedCell />}
+        </summary>
+        <div class="matrix-detail">
+          {row.claimId
+            ? <a href={`/claims/${row.claimId}`}>View claim →</a>
+            : <span class="muted">No claim on file</span>}
+        </div>
+      </details>
+    ))}
+  </div>
+</div>
+<style>
+.matrix-table { width: 100%; border-collapse: collapse; }
+.matrix-table th { text-align: left; padding: var(--space-sm) var(--space-md); font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-faint); border-bottom: 2px solid var(--color-border); }
+.matrix-table td { padding: var(--space-sm) var(--space-md); border-bottom: 1px solid var(--color-border); color: var(--color-text); }
+.matrix-table a { color: var(--color-accent); }
+.not-assessed-row td { color: var(--color-text-faint); }
+.matrix-accordion { display: none; }
+@media (max-width: 639px) {
+  .matrix-table { display: none; }
+  .matrix-accordion { display: block; }
+}
+.matrix-item { border-bottom: 1px solid var(--color-border); }
+.matrix-summary {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--space-sm) 0; cursor: pointer; list-style: none;
+}
+.matrix-summary::-webkit-details-marker { display: none; }
+.summary-name { font-weight: 500; }
+.matrix-detail { padding: var(--space-sm) 0 var(--space-md); font-size: var(--font-size-sm); color: var(--color-text-muted); }
+.matrix-detail a { color: var(--color-accent); }
+.muted { color: var(--color-text-faint); }
+</style>

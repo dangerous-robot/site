@@ -6,9 +6,11 @@ import A11yControl from "../components/A11yControl.astro";
 interface Props {
   title: string;
   description?: string;
+  /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. */
+  layout?: 'reading' | 'wide';
 }
 
-const { title, description = "Structured research backing claims about AI products and companies." } = Astro.props;
+const { title, description = "Structured research backing claims about AI products and companies.", layout = 'reading' } = Astro.props;
 ---
 
 <!doctype html>
@@ -49,17 +51,27 @@ const { title, description = "Structured research backing claims about AI produc
       <div class="nav-inner">
         <a href="/" class="site-name">Dangerous Robot</a>
         <ul class="nav-links">
-          <li><a href="/">Home</a></li>
+          <li><a href="/companies">Companies</a></li>
+          <li><a href="/products">Products</a></li>
+          <li><a href="/claims">Claims</a></li>
+          <li><a href="/standards">Standards</a></li>
+          <li><a href="/topics">Topics</a></li>
         </ul>
       </div>
     </nav>
 
-    <main class="content">
+    <main class={`content content--${layout}`}>
       <slot />
     </main>
 
     <footer class="site-footer">
-      <p>Dangerous Robot is a research project from <a href="https://treadlightly.ai">TreadLightly AI</a></p>
+      <p>
+        Dangerous Robot is a research project from <a href="https://treadlightly.ai">TreadLightly AI</a>
+        &nbsp;·&nbsp;
+        <a href="/sources">Sources</a>
+        &nbsp;·&nbsp;
+        <a href="https://github.com/bfaloona/dangerous-robot" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </p>
     </footer>
 
     <A11yControl />
@@ -119,6 +131,14 @@ const { title, description = "Structured research backing claims about AI produc
         max-width: var(--content-max-width);
         margin: 0 auto;
         padding: var(--space-xl) var(--space-lg);
+      }
+
+      .content--wide {
+        max-width: var(--content-max-width-wide, 72rem);
+      }
+
+      .content--reading {
+        max-width: var(--content-max-width-reading, var(--content-max-width));
       }
 
       .site-footer {
