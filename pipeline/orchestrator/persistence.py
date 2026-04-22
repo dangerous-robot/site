@@ -13,6 +13,99 @@ from ingestor.models import SourceFile
 
 logger = logging.getLogger(__name__)
 
+# Publisher substrings (lowercase) that identify primary sources.
+# Matched against publisher.lower() — order doesn't matter here.
+_PRIMARY_PUBLISHERS: frozenset[str] = frozenset(
+    {
+        "anthropic",
+        "openai",
+        "google",
+        "microsoft",
+        "meta",
+        "ecosia",
+        "greenpt",
+        "chattree",
+        "infomaniak",
+        "tracklight",
+        "transparently",
+        "edgar",
+    }
+)
+
+# Publisher substrings (lowercase) that strongly imply secondary sources.
+_SECONDARY_PUBLISHERS: frozenset[str] = frozenset(
+    {
+        "arxiv",
+        "ieee",
+        "university",
+        "journal",
+        "b lab",
+        "b corp",
+        "ditchcarbon",
+        "sacra",
+        "crunchbase",
+        "unesco",
+        "ntia",
+        "unfccc",
+        "oecd",
+    }
+)
+
+# Publisher substrings (lowercase) that imply tertiary sources.
+_TERTIARY_PUBLISHERS: frozenset[str] = frozenset(
+    {
+        "future of life",
+        "earth day",
+        "center for ai safety",
+        "nerdwallet",
+        "zenbusiness",
+        "substack",
+    }
+)
+
+# SourceKind values that are intrinsically tertiary when publisher is unknown.
+_TERTIARY_KINDS: frozenset[str] = frozenset({"blog"})
+
+
+def _classify_source_type(publisher: str, kind: str) -> str:
+    """Return 'primary', 'secondary', or 'tertiary' for a source.
+
+    Rules (evaluated in order — first match wins):
+    1. publisher matches a known AI-company or regulatory-filing term → primary
+    2. kind is 'documentation' → primary (company docs are first-party)
+    3. publisher matches a known secondary-source term → secondary
+    4. publisher matches a known tertiary-source term → tertiary
+    5. kind is 'blog' → tertiary
+    6. everything else → secondary (safer default)
+    """
+    pub_lower = publisher.lower()
+    kind_lower = kind.lower()
+
+    # 1. Primary: known company / government-filing publisher
+    # Use sec.gov substring to avoid matching "section", "secretary", etc.
+    if "sec.gov" in pub_lower or any(term in pub_lower for term in _PRIMARY_PUBLISHERS):
+        return "primary"
+
+    # 2. Primary: company's own documentation (kind == "documentation")
+    if kind_lower == "documentation":
+        return "primary"
+
+    # 3. Secondary: known research / journalism / certification publisher
+    if any(term in pub_lower for term in _SECONDARY_PUBLISHERS):
+        return "secondary"
+
+    # 4. Tertiary: known advocacy / opinion publisher
+    if any(term in pub_lower for term in _TERTIARY_PUBLISHERS):
+        return "tertiary"
+
+    # 5. Tertiary: blog kind (unless already caught as primary above)
+    if kind_lower in _TERTIARY_KINDS:
+        return "tertiary"
+
+    # 6. Default
+    return "secondary"
+
+
 _ENTITY_TYPE_DIR = {
     EntityType.COMPANY: "companies",
     EntityType.PRODUCT: "products",
@@ -51,6 +144,9 @@ def _write_source_files(
         target_path = target_dir / f"{sf.slug}.md"
 
         fm_dict = sf.frontmatter.model_dump(mode="python")
+        fm_dict["source_type"] = _classify_source_type(
+            sf.frontmatter.publisher, sf.frontmatter.kind.value
+        )
         markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
         try:
