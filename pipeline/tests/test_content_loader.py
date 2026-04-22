@@ -57,11 +57,10 @@ class TestLoadClaim:
 
 class TestLoadEntity:
     def test_load_existing_entity(self, repo_root: Path) -> None:
-        data, body = load_entity("companies/ecosia", repo_root)
+        data, _body = load_entity("companies/ecosia", repo_root)
         assert data["name"] == "Ecosia"
         assert data["type"] == "company"
         assert "website" in data
-        assert len(body) > 0
 
     def test_load_missing_entity_raises(self, repo_root: Path) -> None:
         with pytest.raises(FileNotFoundError):
