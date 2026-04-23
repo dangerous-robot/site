@@ -135,8 +135,9 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
+@click.option("--force", is_flag=True, help="Overwrite existing claim file if present")
 @click.pass_context
-def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool) -> None:
+def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool) -> None:
     """Research a claim: find sources, evaluate verdict, write everything to disk.
 
     Example:
@@ -159,6 +160,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
         max_sources=max_sources,
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
+        force_overwrite=force,
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
@@ -429,6 +431,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
+@click.option("--force", is_flag=True, help="Overwrite existing claim files if present")
 @click.pass_context
 def onboard(
     ctx: click.Context,
@@ -441,6 +444,7 @@ def onboard(
     repo_root: str | None,
     interactive: bool,
     only: str | None,
+    force: bool,
 ) -> None:
     """Onboard an entity using claim templates.
 
@@ -466,6 +470,7 @@ def onboard(
         max_sources=max_sources,
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
+        force_overwrite=force,
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
