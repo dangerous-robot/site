@@ -39,21 +39,22 @@
 /* Dark theme (default, :root) */
 :root,
 [data-theme="dark"] {
-  --color-bg: #111112;
-  --color-surface: #1a1b1e;
-  --color-text: #e8e8ea;
+  --color-bg: #19191b;
+  --color-surface: #212226;
+  --color-text: #dcdde0;
+  --color-text-heading: #d0d7c7;
   --color-text-muted: #9a9aa8;
-  --color-text-faint: #5e5e6e;
+  --color-text-faint: #707083;
 
-  --color-accent: #5bbdb5;
+  --color-accent: #42958b;
 
   --color-border: #2c2c36;
 
-  --color-site-name: #e8e8ea;
+  --color-site-name: #d0d7c7;
   --color-nav-link: #7a7a8e;
   --color-nav-link-hover: #c8c8d2;
 
-  --color-footer-text: #5e5e6e;
+  --color-footer-text: #707083;
   --color-footer-link: #7a7a8e;
   --color-footer-link-hover: #c8c8d2;
 
@@ -80,6 +81,7 @@
   --color-bg: #f8f7f4;
   --color-surface: #ffffff;
   --color-text: #18181c;
+  --color-text-heading: #18181c;
   --color-text-muted: #5c5c6e;
   --color-text-faint: #9090a0;
 
@@ -118,6 +120,7 @@
   --color-bg: #000000;
   --color-surface: #0a0a0a;
   --color-text: #ffffff;
+  --color-text-heading: #ffffff;
   --color-text-muted: #cccccc;
   --color-text-faint: #999999;
 
@@ -147,6 +150,7 @@
   --color-bg: #ffffff;
   --color-surface: #ffffff;
   --color-text: #000000;
+  --color-text-heading: #000000;
   --color-text-muted: #333333;
   --color-text-faint: #555555;
 
