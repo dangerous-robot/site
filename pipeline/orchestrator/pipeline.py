@@ -69,6 +69,7 @@ class VerifyConfig:
     research_timeout_s: float = 60.0
     analyst_timeout_s: float = 60.0
     auditor_timeout_s: float = 60.0
+    force_overwrite: bool = False
 
     def __post_init__(self) -> None:
         if self.ingest_timeout_s is None:
@@ -466,6 +467,7 @@ async def research_claim(
             claim_slug=claim_slug,
             source_ids=source_ids,
             repo_root=repo_root,
+            force=cfg.force_overwrite,
         )
 
         # Step 5: Auditor check
@@ -682,6 +684,7 @@ async def onboard_entity(
                 claim_slug=slug,
                 source_ids=source_ids,
                 repo_root=repo_root,
+                force=cfg.force_overwrite,
             )
             result.claims_created.append(str(claim_path.relative_to(repo_root)))
 

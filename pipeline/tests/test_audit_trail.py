@@ -18,7 +18,12 @@ from common.models import Confidence, Verdict, VerdictSeverity
 from ingestor.models import SourceFile, SourceFrontmatter
 from common.models import SourceKind
 from orchestrator.cli import main
-from orchestrator.persistence import _build_sources_consulted, _write_audit_sidecar
+from common.models import Category
+from orchestrator.persistence import (
+    _build_sources_consulted,
+    _write_audit_sidecar,
+    _write_claim_file,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -226,6 +231,88 @@ class TestWriteAuditSidecar:
         else:
             # Stored as string — verify it starts with the expected prefix
             assert str(stored).startswith("2026-04-22")
+
+    def test_preserves_human_review_on_rerun(self, tmp_path):
+        # An operator-reviewed sidecar must survive a pipeline rerun. The
+        # pipeline_run and audit blocks refresh; human_review carries forward.
+        claim_path = tmp_path / "reviewed-claim.md"
+        claim_path.touch()
+        sidecar_path = tmp_path / "reviewed-claim.audit.yaml"
+        existing = {
+            "schema_version": 1,
+            "pipeline_run": {"ran_at": "2026-04-01T00:00:00+00:00", "model": "old", "agents": []},
+            "sources_consulted": [],
+            "audit": None,
+            "human_review": {
+                "reviewed_at": "2026-04-15",
+                "reviewer": "reviewer@example.com",
+                "notes": "approved",
+                "pr_url": "https://github.com/org/repo/pull/42",
+            },
+        }
+        sidecar_path.write_text(yaml.safe_dump(existing, sort_keys=False), encoding="utf-8")
+
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=_make_comparison(),
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["human_review"]["reviewed_at"] == "2026-04-15"
+        assert data["human_review"]["reviewer"] == "reviewer@example.com"
+        assert data["human_review"]["notes"] == "approved"
+        assert data["human_review"]["pr_url"] == "https://github.com/org/repo/pull/42"
+        # pipeline_run refreshed
+        assert data["pipeline_run"]["model"] == "claude-haiku-4-5"
+
+
+# ---------------------------------------------------------------------------
+# _write_claim_file — overwrite protection
+# ---------------------------------------------------------------------------
+
+
+class TestWriteClaimFile:
+    def _call(self, repo_root: Path, force: bool = False, narrative: str = "initial narrative"):
+        return _write_claim_file(
+            title="Test Claim",
+            entity_name="Test Entity",
+            entity_ref="companies/test-entity",
+            category=Category.ENVIRONMENTAL_IMPACT,
+            verdict=Verdict.TRUE,
+            confidence=Confidence.HIGH,
+            narrative=narrative,
+            claim_slug="test-claim",
+            source_ids=[],
+            repo_root=repo_root,
+            force=force,
+        )
+
+    def test_writes_new_file(self, tmp_path):
+        path = self._call(tmp_path)
+        assert path.exists()
+        assert "initial narrative" in path.read_text(encoding="utf-8")
+
+    def test_refuses_overwrite_without_force(self, tmp_path):
+        self._call(tmp_path, narrative="original")
+        with pytest.raises(FileExistsError, match="force=True"):
+            self._call(tmp_path, narrative="replacement")
+
+        # Original content must remain intact.
+        path = tmp_path / "research" / "claims" / "test-entity" / "test-claim.md"
+        assert "original" in path.read_text(encoding="utf-8")
+        assert "replacement" not in path.read_text(encoding="utf-8")
+
+    def test_overwrites_with_force(self, tmp_path):
+        self._call(tmp_path, narrative="original")
+        self._call(tmp_path, force=True, narrative="replacement")
+
+        path = tmp_path / "research" / "claims" / "test-entity" / "test-claim.md"
+        assert "replacement" in path.read_text(encoding="utf-8")
+        assert "original" not in path.read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------

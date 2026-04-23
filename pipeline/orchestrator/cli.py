@@ -25,6 +25,7 @@ def main(ctx: click.Context, verbose: bool, model: str) -> None:
     """dr -- dangerousrobot.org research pipeline."""
     ctx.ensure_object(dict)
     ctx.obj["model"] = model
+    ctx.obj["verbose"] = verbose
     logging.basicConfig(
         level=logging.INFO if verbose else logging.WARNING,
         format="%(levelname)s: %(message)s",
@@ -193,7 +194,6 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
 @click.option("--category", default=None, help="Check all claims in a category")
 @click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
 @click.option("--dry-run", is_flag=True, help="Show what would be checked without calling LLM")
-@click.option("--verbose-output", is_flag=True, help="Show full reasoning for all claims")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
 def reassess(
@@ -203,7 +203,6 @@ def reassess(
     category: str | None,
     output_format: str,
     dry_run: bool,
-    verbose_output: bool,
     repo_root: str | None,
 ) -> None:
     """Run auditor checks on research claims.
@@ -221,12 +220,14 @@ def reassess(
     from auditor.report import format_json_report, format_text_report
 
     model = ctx.obj["model"]
+    verbose = ctx.obj.get("verbose", False)
     root = Path(repo_root) if repo_root else resolve_repo_root()
 
     if claim:
-        path = Path(claim)
+        slug = claim if claim.endswith(".md") else f"{claim}.md"
+        path = Path(slug)
         if not path.is_absolute():
-            path = root / "research" / "claims" / claim
+            path = root / "research" / "claims" / slug
         if not path.exists():
             click.echo(f"Error: claim file not found: {path}", err=True)
             sys.exit(1)
@@ -291,7 +292,7 @@ def reassess(
                 res = await auditor_agent.run(prompt)
             result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
 
-            if verbose_output or result.needs_review:
+            if verbose or result.needs_review:
                 click.echo(
                     f"  {result.claim_id}: {result.primary_verdict.value} vs "
                     f"{result.assessed_verdict.value} ({result.verdict_severity.value})",

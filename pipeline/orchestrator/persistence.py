@@ -112,14 +112,25 @@ def _write_claim_file(
     claim_slug: str,
     source_ids: list[str],
     repo_root: Path,
+    force: bool = False,
 ) -> Path:
-    """Write the claim file to disk. Returns the file path."""
+    """Write the claim file to disk. Returns the file path.
+
+    Refuses to overwrite an existing claim file unless ``force=True``.
+    Overwriting silently would clobber operator edits and any
+    ``status: published`` flip made by ``dr review --approve``.
+    """
     entity_slug = slugify(entity_name)
     claim_slug_clean = slugify(claim_slug)
 
     claim_dir = repo_root / "research" / "claims" / entity_slug
     claim_dir.mkdir(parents=True, exist_ok=True)
     claim_path = claim_dir / f"{claim_slug_clean}.md"
+
+    if claim_path.exists() and not force:
+        raise FileExistsError(
+            f"claim file already exists: {claim_path} (pass force=True to overwrite)"
+        )
 
     fm = {
         "title": title,
@@ -193,6 +204,27 @@ def _write_audit_sidecar(
     else:
         audit_block = None
 
+    # Preserve human_review across reruns. The pipeline re-runs analyst/auditor
+    # but must not wipe an operator's review decision. Staleness between the new
+    # audit block and the preserved review is surfaced by the build-time staleness
+    # check (see docs/plans/audit-trail.md), not by clobbering here.
+    human_review = {
+        "reviewed_at": None,
+        "reviewer": None,
+        "notes": None,
+        "pr_url": None,
+    }
+    if sidecar_path.exists():
+        try:
+            existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
+            existing_review = existing.get("human_review")
+            if isinstance(existing_review, dict):
+                for key in human_review:
+                    if key in existing_review:
+                        human_review[key] = existing_review[key]
+        except yaml.YAMLError as exc:
+            logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
+
     sidecar_data = {
         "schema_version": 1,
         "pipeline_run": {
@@ -202,12 +234,7 @@ def _write_audit_sidecar(
         },
         "sources_consulted": sources_consulted,
         "audit": audit_block,
-        "human_review": {
-            "reviewed_at": None,
-            "reviewer": None,
-            "notes": None,
-            "pr_url": None,
-        },
+        "human_review": human_review,
     }
 
     sidecar_path.write_text(
