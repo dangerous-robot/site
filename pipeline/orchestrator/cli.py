@@ -569,7 +569,8 @@ def review(
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
 
-    claim_path = root / "research" / "claims" / f"{claim}.md"
+    slug = claim if claim.endswith(".md") else f"{claim}.md"
+    claim_path = root / "research" / "claims" / slug
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
 
     if not sidecar_path.exists():
