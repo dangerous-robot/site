@@ -6,11 +6,18 @@ import A11yControl from "../components/A11yControl.astro";
 interface Props {
   title: string;
   description?: string;
-  /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. */
-  layout?: 'reading' | 'wide';
+  /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. 'bare': no constraints, for bespoke layouts. */
+  layout?: 'reading' | 'wide' | 'bare';
+  /** 'standard' (default): render the top site-nav. 'minimal': page provides its own chrome. */
+  chrome?: 'standard' | 'minimal';
 }
 
-const { title, description = "Structured research backing claims about AI products and companies.", layout = 'reading' } = Astro.props;
+const {
+  title,
+  description = "Structured research backing claims about AI products and companies.",
+  layout = 'reading',
+  chrome = 'standard',
+} = Astro.props;
 ---
 
 <!doctype html>
@@ -50,37 +57,39 @@ const { title, description = "Structured research backing claims about AI produc
     </script>
   </head>
   <body>
-    <nav class="site-nav">
-      <div class="nav-inner">
-        <a href="/" class="site-name">
-          <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
-          Dangerous Robot
-        </a>
-        <ul class="nav-links" id="nav-links">
-          <li><a href="/companies">Companies</a></li>
-          <li><a href="/products">Products</a></li>
-          <li><a href="/claims">Claims</a></li>
-          <li><a href="/criteria">Criteria</a></li>
-          <li><a href="/topics">Topics</a></li>
-          <li><a href="/faq">FAQ</a></li>
-        </ul>
-        <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
-          <span aria-hidden="true">&#9776;</span>
-        </button>
-      </div>
-    </nav>
-    <script is:inline>
-      (function () {
-        var toggle = document.getElementById('nav-toggle');
-        var links = document.getElementById('nav-links');
-        if (toggle && links) {
-          toggle.addEventListener('click', function () {
-            var open = links.classList.toggle('nav-open');
-            toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
-          });
-        }
-      })();
-    </script>
+    {chrome === 'standard' && (
+      <nav class="site-nav">
+        <div class="nav-inner">
+          <a href="/" class="site-name">
+            <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
+            Dangerous Robot
+          </a>
+          <ul class="nav-links" id="nav-links">
+            <li><a href="/companies">Companies</a></li>
+            <li><a href="/products">Products</a></li>
+            <li><a href="/claims">Claims</a></li>
+            <li><a href="/criteria">Criteria</a></li>
+            <li><a href="/topics">Topics</a></li>
+            <li><a href="/faq">FAQ</a></li>
+          </ul>
+          <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
+            <span aria-hidden="true">&#9776;</span>
+          </button>
+        </div>
+      </nav>
+      <script is:inline>
+        (function () {
+          var toggle = document.getElementById('nav-toggle');
+          var links = document.getElementById('nav-links');
+          if (toggle && links) {
+            toggle.addEventListener('click', function () {
+              var open = links.classList.toggle('nav-open');
+              toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            });
+          }
+        })();
+      </script>
+    )}
 
     <main class={`content content--${layout}`}>
       <slot />
@@ -184,12 +193,20 @@ const { title, description = "Structured research backing claims about AI produc
         max-width: var(--content-max-width-reading, var(--content-max-width));
       }
 
+      .content--bare {
+        max-width: none;
+        padding: 0;
+      }
+
       .site-footer {
         border-top: 1px solid var(--color-border);
         padding: var(--space-xl) 0;
         text-align: center;
         color: var(--color-footer-text);
-        font-size: 0.85rem;
+        font-family: var(--font-mono);
+        font-size: var(--font-size-2xs);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
       }
 
       .site-footer a {
