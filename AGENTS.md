@@ -6,6 +6,10 @@ Instructions for AI coding agents (Claude Code, Cursor, Copilot, etc.) working i
 
 This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot.org), backing claims made on the TreadLightly AI site with structured, citable evidence. Research content is Markdown with YAML frontmatter, organized for agent parsing and downstream consumption.
 
+## Writing conventions
+
+- Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
+
 ## Research Content Structure
 
 Three entity types under `research/`:
