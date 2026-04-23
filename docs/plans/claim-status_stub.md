@@ -21,6 +21,8 @@ A `status` field needs to be added to the claims schema to support a draft/publi
 
 **Decision (2026-04-22)**: `not-applicable` is added to `VERDICT_ORDER`. It is a genuine verdict value (the criterion exists but does not apply to this entity), distinct from `NotAssessedCell` (no claim has been assessed yet). It will appear in the claims list filter bar and in `VerdictDistribution` counts.
 
+**Filing rule**: Only file a `verdict: not-applicable` claim for an entity of the correct type where the criterion genuinely doesn't apply for a non-type reason. Cross-type mismatches (product entity against a company-only criterion) should have no claim filed — absence is sufficient. This prevents confusing N/A entries appearing in the criteria coverage matrix for the wrong entity type.
+
 ---
 
 ## Implementation
@@ -69,7 +71,7 @@ Commit this change alone, before any schema change lands.
 
 ### Step 2 -- Schema change: `src/content.config.ts`
 
-**Depends on**: Step 1 committed.
+**Depends on**: Step 1 committed AND criteria rename (item 1) merged. If applying this step after the rename, use `criteria_slug` — not `standard_slug` — in the After block below.
 
 **File**: `src/content.config.ts`, claims collection. The current block from `verdict` through `next_recheck_due`:
 
@@ -90,7 +92,7 @@ recheck_cadence_days: z.number().default(60),
 next_recheck_due: z.coerce.date().optional(),
 ```
 
-Replace with:
+Replace with (assuming criteria rename has landed):
 
 ```ts
 verdict: z.enum([
@@ -103,7 +105,7 @@ verdict: z.enum([
   'not-applicable',
 ]),
 confidence: z.enum(['high', 'medium', 'low']),
-standard_slug: z.string().optional(),
+criteria_slug: z.string().optional(),
 status: z.enum(['draft', 'published', 'archived']).default('draft'),
 as_of: z.coerce.date(),
 sources: z.array(z.string()),
@@ -111,7 +113,7 @@ recheck_cadence_days: z.number().default(60),
 next_recheck_due: z.coerce.date().optional(),
 ```
 
-`status` is placed after `standard_slug` and before `as_of`.
+`status` is placed after `criteria_slug` and before `as_of`.
 
 ### Step 3 -- Filter all public-facing `getCollection('claims')` calls
 
@@ -137,8 +139,8 @@ Files requiring the filter:
 | `src/pages/products/index.astro` | `claims` | Verdict distributions only count published |
 | `src/pages/topics/index.astro` | `claims` | Category stats and sample titles only show published |
 | `src/pages/topics/[category].astro` | `allClaims` | Filters to category after collection fetch |
-| `src/pages/standards/index.astro` | `claims` | Coverage counts only count published |
-| `src/pages/standards/[slug].astro` | `claims` | Standards matrix only shows published |
+| `src/pages/criteria/index.astro` | `claims` | Coverage counts only count published |
+| `src/pages/criteria/[slug].astro` | `claims` | Criteria matrix only shows published |
 | `src/pages/sources/[...slug].astro` | `allClaims` | Citation index only shows published |
 | `src/pages/index.astro` | `claims` | Home page claim count only reflects published |
 
@@ -292,7 +294,7 @@ fm = {
 }
 ```
 
-`status` is placed after `confidence` and before `as_of`. The pipeline dict does not include `standard_slug` (set manually in claim files), so no ordering gap exists.
+`status` is placed after `confidence` and before `as_of`. The pipeline dict does not include `criteria_slug` (set manually in claim files), so no ordering gap exists.
 
 ### Step 12 -- `dr review` (deferred)
 
