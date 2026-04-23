@@ -1,4 +1,5 @@
 ---
+status: published
 title: Gemini discloses which models it uses
 entity: products/gemini
 category: ai-literacy

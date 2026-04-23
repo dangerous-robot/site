@@ -1,4 +1,5 @@
 ---
+status: published
 title: OpenAI donates to AI safety or environmental causes
 entity: companies/openai
 category: industry-analysis

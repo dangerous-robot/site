@@ -1,4 +1,5 @@
 ---
+status: published
 title: Claude is hosted on renewable energy
 entity: products/claude
 category: environmental-impact

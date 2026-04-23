@@ -1,4 +1,5 @@
 ---
+status: published
 title: Gemini uses user data for training
 entity: products/gemini
 category: data-privacy

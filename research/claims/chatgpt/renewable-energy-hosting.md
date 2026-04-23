@@ -1,4 +1,5 @@
 ---
+status: published
 title: ChatGPT is hosted on renewable energy
 entity: products/chatgpt
 category: environmental-impact

@@ -1,4 +1,5 @@
 ---
+status: published
 title: Claude discloses which models it uses
 entity: products/claude
 category: ai-literacy

@@ -1,4 +1,5 @@
 ---
+status: published
 title: Gemini is hosted on renewable energy
 entity: products/gemini
 category: environmental-impact

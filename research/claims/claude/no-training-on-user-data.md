@@ -1,4 +1,5 @@
 ---
+status: published
 title: Claude uses user data for training
 entity: products/claude
 category: data-privacy

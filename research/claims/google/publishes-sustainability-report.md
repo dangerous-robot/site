@@ -1,4 +1,5 @@
 ---
+status: published
 title: Google publishes a sustainability or ESG report
 entity: companies/google
 category: environmental-impact

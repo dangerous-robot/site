@@ -1,4 +1,5 @@
 ---
+status: published
 title: Google has a publicly-traded corporate structure
 entity: companies/google
 category: industry-analysis

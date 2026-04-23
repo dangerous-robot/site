@@ -1,4 +1,5 @@
 ---
+status: published
 title: Anthropic operates as a privately-held public benefit corporation
 entity: companies/anthropic
 category: industry-analysis

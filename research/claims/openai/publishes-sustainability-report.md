@@ -1,4 +1,5 @@
 ---
+status: published
 title: OpenAI publishes a sustainability or ESG report
 entity: companies/openai
 category: environmental-impact

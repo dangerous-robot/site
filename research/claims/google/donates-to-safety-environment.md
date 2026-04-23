@@ -1,4 +1,5 @@
 ---
+status: published
 title: Google donates to AI safety and environmental causes
 entity: companies/google
 category: industry-analysis

@@ -1,4 +1,5 @@
 ---
+status: published
 title: OpenAI operates as a for-profit public benefit corporation
 entity: companies/openai
 category: industry-analysis

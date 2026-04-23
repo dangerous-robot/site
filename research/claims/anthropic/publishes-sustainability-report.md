@@ -1,4 +1,5 @@
 ---
+status: published
 title: Anthropic publishes a sustainability or ESG report
 entity: companies/anthropic
 category: industry-analysis

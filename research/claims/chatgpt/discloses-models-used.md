@@ -1,4 +1,5 @@
 ---
+status: published
 title: ChatGPT discloses which models it uses
 entity: products/chatgpt
 category: data-privacy

@@ -1,4 +1,5 @@
 ---
+status: published
 title: Anthropic donates to AI safety or environmental causes
 entity: companies/anthropic
 category: ai-safety
