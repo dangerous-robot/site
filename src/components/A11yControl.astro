@@ -407,6 +407,20 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
     fab.addEventListener("click", toggle);
     backdrop.addEventListener("click", close);
 
+    // Dismiss on click outside (modeless popover best practice).
+    document.addEventListener("pointerdown", (e: PointerEvent) => {
+      if (!isOpen()) return;
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (fab!.contains(target) || popover!.contains(target)) return;
+      close();
+    });
+
+    // Global Escape fallback — in case focus has left the popover.
+    document.addEventListener("keydown", (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen()) close();
+    });
+
     popover.addEventListener("keydown", (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         close();
