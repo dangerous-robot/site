@@ -13,11 +13,11 @@ export async function getStaticPaths() {
 const { claim } = Astro.props;
 const { Content } = await render(claim);
 
-// Resolve matching standard
-const standards = await getCollection("standards");
+// Resolve matching criterion
+const criteria = await getCollection("criteria");
 const stem = claim.id.split("/").pop() ?? claim.id;
-const standardSlug = claim.data.standard_slug ?? stem;
-const matchedStandard = standards.find(s => s.id === standardSlug);
+const criteriaSlug = claim.data.criteria_slug ?? stem;
+const matchedCriteria = criteria.find(s => s.id === criteriaSlug);
 
 const verdictCssVar: Record<string, string> = {
   true: "var(--color-verdict-true)",
@@ -48,14 +48,24 @@ const asOfDate = claim.data.as_of instanceof Date
 const isDraft = claim.data.status === 'draft';
 const isArchived = claim.data.status === 'archived';
 const showNotice = isDraft || isArchived;
+
+const isoDate = (d: Date | string | null | undefined): string | null => {
+  if (!d) return null;
+  if (d instanceof Date) return d.toISOString().split('T')[0];
+  return String(d);
+};
+
+const audit = claim.data.audit ?? null;
+const ranAt = audit ? isoDate(audit.pipeline_run.ran_at) : null;
+const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 ---
 
 <Base title={claim.data.title}>
   <article class="claim-detail">
     <header>
-      {matchedStandard && (
-        <p class="standard-ref">
-          Standard: <a href={`/standards/${matchedStandard.id}`}>{matchedStandard.data.text}</a>
+      {matchedCriteria && (
+        <p class="criterion-ref">
+          Criterion: <a href={`/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
         </p>
       )}
       {showNotice && (
@@ -113,6 +123,56 @@ const showNotice = isDraft || isArchived;
       </section>
     )}
 
+    {audit && (
+      <details class="audit-trail">
+        <summary>Research process: {ranAt}, {audit.pipeline_run.model}</summary>
+
+        <div class="audit-content">
+          <section class="audit-section">
+            <h3>Sources consulted</h3>
+            <ul class="audit-source-list">
+              {audit.sources_consulted.map((src) => (
+                <li>
+                  <a href={src.url}>{src.title}</a>
+                  {' '}
+                  <span class={src.ingested ? 'ingested-yes' : 'ingested-no'}>
+                    {src.ingested ? 'ingested' : 'not ingested'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          <section class="audit-section">
+            <h3>Verdict check</h3>
+            {audit.audit === null ? (
+              <p class="audit-muted">Auditor check unavailable.</p>
+            ) : (
+              <div>
+                <p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>
+                <p>Auditor: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
+                <p class={audit.audit.verdict_agrees ? 'audit-agrees' : 'audit-disagrees'}>
+                  {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
+                </p>
+                {audit.audit.needs_review && (
+                  <p class="audit-muted">Flagged for human review</p>
+                )}
+              </div>
+            )}
+          </section>
+
+          <section class="audit-section">
+            <h3>Human review</h3>
+            {reviewedAt ? (
+              <p>Reviewed {reviewedAt}{audit.human_review.reviewer ? ` by ${audit.human_review.reviewer}` : ''}</p>
+            ) : (
+              <p class="audit-muted">Pending human review</p>
+            )}
+          </section>
+        </div>
+      </details>
+    )}
+
     <section class="review-info">
       <h2>Review cadence</h2>
       <p>This claim is reviewed every {claim.data.recheck_cadence_days} days.</p>
@@ -135,7 +195,7 @@ const showNotice = isDraft || isArchived;
     margin-bottom: var(--space-md);
   }
 
-  .standard-ref {
+  .criterion-ref {
     font-size: var(--font-size-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -143,12 +203,12 @@ const showNotice = isDraft || isArchived;
     margin-bottom: var(--space-sm);
   }
 
-  .standard-ref a {
+  .criterion-ref a {
     color: var(--color-accent);
     text-decoration: none;
   }
 
-  .standard-ref a:hover {
+  .criterion-ref a:hover {
     text-decoration: underline;
   }
 
@@ -246,5 +306,83 @@ const showNotice = isDraft || isArchived;
   .review-info h2 {
     font-size: var(--font-size-base);
     margin-bottom: var(--space-xs);
+  }
+
+  .audit-trail {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-xl);
+    border-left: 2px solid var(--color-border);
+    padding-left: var(--space-sm);
+  }
+
+  .audit-trail summary {
+    list-style: none;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    padding: var(--space-xs) 0;
+  }
+
+  .audit-trail summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .audit-trail summary::before {
+    content: '+ ';
+    color: var(--color-text-faint);
+  }
+
+  .audit-trail[open] summary::before {
+    content: '- ';
+  }
+
+  .audit-content {
+    padding-top: var(--space-sm);
+  }
+
+  .audit-section {
+    margin-bottom: var(--space-md);
+  }
+
+  .audit-section h3 {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .audit-source-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .audit-source-list li {
+    padding: 0.2rem 0;
+  }
+
+  .ingested-yes {
+    color: var(--color-text-faint);
+    font-size: var(--font-size-xs);
+  }
+
+  .ingested-no {
+    color: var(--color-text-faint);
+    font-size: var(--font-size-xs);
+    font-style: italic;
+  }
+
+  .audit-agrees {
+    color: var(--color-verdict-true, green);
+  }
+
+  .audit-disagrees {
+    color: var(--color-verdict-mixed, orange);
+  }
+
+  .audit-muted {
+    color: var(--color-text-faint);
+    font-style: italic;
   }
 </style>

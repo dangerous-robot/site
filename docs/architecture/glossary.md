@@ -6,20 +6,22 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 
 | Term | What it is | Lives at |
 |---|---|---|
-| **Entity** | A stable subject (company, product, or topic) that claims are about | `research/entities/{type}/{slug}.md` |
+| **Entity** | A stable subject (company, product, sector, or topic) that claims are about | `research/entities/{type}/{slug}.md` |
 | **Claim** | A single factual assertion with a verdict, confidence, evidence links, and recheck schedule | `research/claims/{entity-slug}/{claim-id}.md` |
 | **Source** | A citable reference -- "cite once, reference many" | `research/sources/{yyyy}/{slug}.md` |
+| **Criterion** | A reusable claim template applied uniformly across entities | `research/templates.yaml` |
 
 ## Research Object Fields
 
 | Term | On | Meaning |
 |---|---|---|
-| **Verdict** | Claim | Assessment: true, mostly-true, mixed, mostly-false, false, unverified |
+| **Verdict** | Claim | Assessment: true, mostly-true, mixed, mostly-false, false, unverified, not-applicable |
 | **Confidence** | Claim | Certainty level: high, medium, low |
 | **Category** | Claim | Taxonomy: ai-safety, environmental-impact, product-comparison, etc. (8 total) |
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index |
 | **as_of** | Claim | Date when verdict was last evaluated |
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
+| **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion template it was generated from |
 
 ## Roles
 
@@ -28,8 +30,10 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | Role | Responsibility |
 |---|---|
 | **Research Lead** | Orchestrator; assigns tasks, never edits claims directly |
+| **Researcher** | Finds relevant URLs for a given claim topic |
 | **Ingestor** | Converts a URL into a source file |
-| **Claim Updater** | Proposes verdict changes with rationale |
+| **Analyst** | Proposes verdict and narrative given a claim and its sources |
+| **Auditor** | Provides an independent second opinion on the analyst's output |
 | **Citation Auditor** | Finds claims with zero sources, stale dates, broken references |
 | **Page Builder** | Generates TypeScript data files for downstream consumption |
 
@@ -39,9 +43,12 @@ The pipeline implements roles as runnable code. Lives in `pipeline/`.
 
 | Term | Meaning |
 |---|---|
-| **Runner/Worker** | A Python script or PydanticAI agent that implements a role |
-| **Ingestor runner** | PydanticAI implementation of the Ingestor role |
-| **Pipeline** | The collective automation: runners + CLI + shared utilities |
+| **Researcher agent** | Takes claim text, returns relevant URLs (`pipeline/researcher/`) |
+| **Ingestor agent** | Takes a URL, produces a source file (`pipeline/ingestor/`) |
+| **Analyst agent** | Takes sources + claim, produces verdict + narrative (`pipeline/analyst/`) |
+| **Auditor agent** | Independent second-opinion assessment (`pipeline/auditor/`) |
+| **Orchestrator** | Routes claim work through the four agents (`pipeline/orchestrator/`) |
+| **Pipeline** | The collective automation: agents + CLI + shared utilities |
 
 ## Lifecycle
 
@@ -50,7 +57,7 @@ The pipeline implements roles as runnable code. Lives in `pipeline/`.
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
 | **Ingest** | Fetching a URL, archiving it, producing a source file |
 | **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` |
-| **Submitted claim** | A claim proposed through public feedback (Phase 6), pending review |
+| **Submitted claim** | A claim proposed through public feedback (planned feature, pending public-participation work), pending review |
 
 ## Governance Rules
 
@@ -67,7 +74,7 @@ The pipeline implements roles as runnable code. Lives in `pipeline/`.
 |---|---|---|
 | Content | "research objects" | entity, claim, source |
 | People/AI doing work | "roles" (defined in AGENTS.md) | Research Lead, Ingestor |
-| Python automation | "pipeline" (code in `pipeline/`) | ingestor runner, consistency checker |
+| Python automation | "pipeline" (code in `pipeline/`) | researcher agent, ingestor agent, analyst agent, auditor agent |
 | Constraints/policies | "governance rules" | content rules, schema authority, plan lifecycle |
 | Verification | "tests" (code) / "checks" (CI/content) | unit tests, citation check, build validation |
 

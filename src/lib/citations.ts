@@ -1,5 +1,5 @@
 import type { CollectionEntry } from 'astro:content';
-import type { ClaimEntry } from './standards';
+import type { ClaimEntry } from './criteria';
 
 /** Build a map: sourceId → ClaimEntry[] */
 export function buildCitationIndex(
@@ -18,7 +18,7 @@ export function buildCitationIndex(
         verdict: claim.data.verdict,
         entity: claim.data.entity,
         category: claim.data.category,
-        standard_slug: claim.data.standard_slug,
+        criteria_slug: claim.data.criteria_slug,
       });
     }
   }

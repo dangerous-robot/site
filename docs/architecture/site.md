@@ -16,17 +16,22 @@ There are no runtime dependencies beyond Astro itself. Dev dependencies are limi
 
 ## Content Collections
 
-Research content lives outside `src/` in the `research/` directory. Astro's content layer loads it via `glob()` loaders defined in `src/content.config.ts`.
+Research content lives outside `src/` in the `research/` directory. Astro's content layer loads it via loaders defined in `src/content.config.ts`.
 
-Three collections are defined:
+Four collections are defined:
 
-| Collection | Loader base          | Schema highlights                                        |
-|------------|----------------------|----------------------------------------------------------|
-| `claims`   | `research/claims`    | title, entity, category, verdict, confidence, as_of, sources |
-| `sources`  | `research/sources`   | url, title, publisher, kind, summary, key_quotes         |
-| `entities` | `research/entities`  | name, type (company/product/topic), website, description |
+| Collection  | Loader / source                        | Schema highlights                                        |
+|-------------|----------------------------------------|----------------------------------------------------------|
+| `claims`    | custom `claims-with-audit` loader      | title, entity, category, verdict, confidence, as_of, sources, audit (sidecar) |
+| `sources`   | `glob()` from `research/sources`       | url, title, publisher, kind, summary, key_quotes         |
+| `entities`  | `glob()` from `research/entities`      | name, type (company/product/sector/topic), website, description |
+| `criteria` | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, category, core, notes |
 
-Each collection entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
+The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
+
+The `claims` collection uses a custom loader (`claims-with-audit`) that reads each claim's `.md` file and, if a paired `.audit.yaml` sidecar exists, merges it into the claim's `audit` field. See [content-model.md](content-model.md) for the audit sidecar schema.
+
+The `criteria` collection uses a `file()` loader, loading all entries from a single YAML file rather than individual Markdown files.
 
 ### Content directory structure
 
@@ -40,26 +45,41 @@ research/
     companies/anthropic.md
     companies/ecosia.md
     companies/greenpt.md
+    products/...
+    sectors/...
+    topics/...
   sources/
     2025/earthday-chatgpt-prompt-cost.md
     2025/fli-safety-index.md
     ...
+  templates.yaml
 ```
 
-Subdirectory structure within each collection is flexible -- the `glob` loader picks up all `**/*.md` files under the base path. The full relative path (minus extension) becomes the entry's `id`, which drives URL slugs.
+Subdirectory structure within each `glob`-loaded collection is flexible -- the loader picks up all `**/*.md` files under the base path. The full relative path (minus extension) becomes the entry's `id`, which drives URL slugs.
 
 ## Page Routing
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-| Route pattern                | File                                | Data source           |
-|------------------------------|-------------------------------------|-----------------------|
-| `/`                          | `src/pages/index.astro`             | `claims` collection   |
-| `/claims/[...slug]`          | `src/pages/claims/[...slug].astro`  | `claims` collection   |
-| `/sources/[...slug]`         | `src/pages/sources/[...slug].astro` | `sources` collection  |
-| `/entities/[...slug]`        | `src/pages/entities/[...slug].astro`| `entities` collection |
+| Route pattern          | File                                    | Data source                                |
+|------------------------|-----------------------------------------|--------------------------------------------|
+| `/`                    | `src/pages/index.astro`                 | `claims` collection                        |
+| `/claims`              | `src/pages/claims/index.astro`          | `claims` collection                        |
+| `/claims/[...slug]`    | `src/pages/claims/[...slug].astro`      | `claims` collection                        |
+| `/sources/[...slug]`   | `src/pages/sources/[...slug].astro`     | `sources` collection                       |
+| `/entities/[...slug]`  | `src/pages/entities/[...slug].astro`    | `entities` collection                      |
+| `/companies`           | `src/pages/companies/index.astro`       | `entities` collection (company type)       |
+| `/products`            | `src/pages/products/index.astro`        | `entities` collection (product type)       |
+| `/topics`              | `src/pages/topics/index.astro`          | `entities` collection (topic type)         |
+| `/topics/[category]`   | `src/pages/topics/[category].astro`     | `claims` collection (filtered by category) |
+| `/criteria`            | `src/pages/criteria/index.astro`        | `criteria` collection                      |
+| `/criteria/[slug]`     | `src/pages/criteria/[slug].astro`       | `criteria` collection                      |
+| `/faq`                 | `src/pages/faq/index.astro`             | Static content                             |
+| `/credits`             | `src/pages/credits.astro`               | Static content                             |
 
 The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/claims/anthropic/existential-safety-score`).
+
+Entities of type `sector` do not have a dedicated index route. They appear via `/entities/[...slug]` detail pages only.
 
 ### How dynamic routes work
 
@@ -94,7 +114,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 <html>
   <head>       -- charset, viewport, title, description, global styles
   <body>
-    <nav>      -- site name + Home link (list pages to be added later)
+    <nav>      -- site name + nav links to list pages
     <main>     -- <slot /> receives page content
     <footer>   -- TreadLightly AI attribution
 ```

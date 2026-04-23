@@ -5,7 +5,7 @@ import { getCollection } from 'astro:content';
 const entities = await getCollection('entities');
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const sources = await getCollection('sources');
-const standards = await getCollection('standards');
+const criteria = await getCollection('criteria');
 
 const companies = entities.filter(e => e.data.type === 'company');
 const products = entities.filter(e => e.data.type === 'product');
@@ -22,7 +22,7 @@ const products = entities.filter(e => e.data.type === 'product');
     <span class="sep">·</span>
     <span><strong>{claims.length}</strong> claims</span>
     <span class="sep">·</span>
-    <span><strong>{standards.length}</strong> standards</span>
+    <span><strong>{criteria.length}</strong> criteria</span>
   </div>
   <nav class="section-cards" aria-label="Browse sections">
     <a href="/companies" class="section-card">
@@ -37,9 +37,9 @@ const products = entities.filter(e => e.data.type === 'product');
       <strong>Claims</strong>
       <span>{claims.length} assessed</span>
     </a>
-    <a href="/standards" class="section-card">
-      <strong>Standards</strong>
-      <span>{standards.length} templates</span>
+    <a href="/criteria" class="section-card">
+      <strong>Criteria</strong>
+      <span>{criteria.length} templates</span>
     </a>
   </nav>
 </Base>

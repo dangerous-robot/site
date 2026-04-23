@@ -1,25 +1,25 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { buildStandardsIndex, logDerivationMisses } from '../../lib/standards';
-import type { StandardsMiss } from '../../lib/standards';
-import StandardsMatrix from '../../components/StandardsMatrix.astro';
+import { buildCriteriaIndex, logDerivationMisses } from '../../lib/criteria';
+import type { CriteriaMiss } from '../../lib/criteria';
+import CriteriaMatrix from '../../components/CriteriaMatrix.astro';
 
 export async function getStaticPaths() {
-  const standards = await getCollection('standards');
-  return standards.map(std => ({ params: { slug: std.id }, props: { std } }));
+  const criteria = await getCollection('criteria');
+  return criteria.map(std => ({ params: { slug: std.id }, props: { std } }));
 }
 
 const { std } = Astro.props;
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const entities = await getCollection('entities');
 
-const standardsIndex = buildStandardsIndex(claims);
-const byEntity = standardsIndex.get(std.id) ?? new Map();
+const criteriaIndex = buildCriteriaIndex(claims);
+const byEntity = criteriaIndex.get(std.id) ?? new Map();
 
-const misses: StandardsMiss[] = [];
+const misses: CriteriaMiss[] = [];
 
-// All entities matching this standard's entity_type
+// All entities matching this criterion's entity_type
 const matchingEntities = entities.filter(e => e.data.type === std.data.entity_type);
 
 const rows = matchingEntities.map(entity => {
@@ -63,13 +63,13 @@ logDerivationMisses(misses);
     {std.data.notes && <p class="std-notes">{std.data.notes}</p>}
   </header>
   <section>
-    <StandardsMatrix rows={rows} />
+    <CriteriaMatrix rows={rows} />
   </section>
   {alsoReferenced.length > 0 && (
     <section class="also-ref">
       <h2>Also referenced</h2>
-      <p class="muted">These entities have claims referencing this standard but don't match its entity type.</p>
-      <StandardsMatrix rows={alsoReferenced} />
+      <p class="muted">These entities have claims referencing this criterion but don't match its entity type.</p>
+      <CriteriaMatrix rows={alsoReferenced} />
     </section>
   )}
 </Base>

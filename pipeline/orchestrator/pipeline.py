@@ -369,7 +369,13 @@ async def research_claim(
     - Creates entity file in research/entities/ if needed
     - Writes the claim file to research/claims/
     """
-    from orchestrator.persistence import _write_claim_file, _write_entity_file, _write_source_files
+    from orchestrator.persistence import (
+        _build_sources_consulted,
+        _write_audit_sidecar,
+        _write_claim_file,
+        _write_entity_file,
+        _write_source_files,
+    )
 
     cfg = config or VerifyConfig()
     if not cfg.repo_root:
@@ -449,7 +455,7 @@ async def research_claim(
             aliases=analyst_out.entity.aliases or None,
         )
         claim_slug = slugify(analyst_out.verdict.title)
-        _write_claim_file(
+        claim_path = _write_claim_file(
             title=analyst_out.verdict.title,
             entity_name=analyst_out.entity.entity_name,
             entity_ref=entity_ref,
@@ -468,6 +474,17 @@ async def research_claim(
             analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
         )
         result.consistency = comparison
+
+        # Write audit sidecar after auditor step
+        sidecar_sources = _build_sources_consulted(result.source_files)
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=comparison,
+            model=cfg.model,
+            ran_at=datetime.datetime.now(datetime.timezone.utc),
+            sources_consulted=sidecar_sources,
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+        )
 
         # Checkpoint: review disagreement
         if comparison and comparison.needs_review:
@@ -521,6 +538,8 @@ async def onboard_entity(
     6. Return OnboardResult summary
     """
     from orchestrator.persistence import (
+        _build_sources_consulted,
+        _write_audit_sidecar,
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
@@ -665,6 +684,18 @@ async def onboard_entity(
                 repo_root=repo_root,
             )
             result.claims_created.append(str(claim_path.relative_to(repo_root)))
+
+            # Write audit sidecar after auditor step
+            sidecar_sources = _build_sources_consulted(vr.source_files)
+            _write_audit_sidecar(
+                claim_path=claim_path,
+                comparison=vr.consistency,
+                model=cfg.model,
+                ran_at=datetime.datetime.now(datetime.timezone.utc),
+                sources_consulted=sidecar_sources,
+                agents_run=["researcher", "ingestor", "analyst", "auditor"],
+            )
+
             click.echo(f"[{idx}/{total}] Done: {slug}", err=True)
         except Exception as exc:
             click.echo(f"[{idx}/{total}] FAILED: {slug}: {exc}", err=True)

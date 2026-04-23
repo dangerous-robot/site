@@ -1,17 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { buildStandardsIndex } from '../../lib/standards';
+import { buildCriteriaIndex } from '../../lib/criteria';
 import { CATEGORY_LABELS } from '../../lib/research';
 import EmptyState from '../../components/EmptyState.astro';
 import FilterBar from '../../components/FilterBar.astro';
 
-const standards = await getCollection('standards');
+const criteria = await getCollection('criteria');
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
-const standardsIndex = buildStandardsIndex(claims);
+const criteriaIndex = buildCriteriaIndex(claims);
 
-const rows = standards.map(std => {
-  const byEntity = standardsIndex.get(std.id) ?? new Map();
+const rows = criteria.map(std => {
+  const byEntity = criteriaIndex.get(std.id) ?? new Map();
   const coverageCount = byEntity.size;
   const totalClaims = [...byEntity.values()].flat().length;
   return {
@@ -37,20 +37,20 @@ const coreFacet = {
   values: [{ value: 'true', label: 'Core only' }],
 };
 ---
-<Base title="Standards" layout="wide">
-  <p class="disclaimer">Standards are claim templates defined in this project — not ISO/NIST-style external standards.</p>
-  <h1>Standards</h1>
+<Base title="Criteria" layout="wide">
+  <h1>Criteria</h1>
+  <p class="disclaimer">Criteria are the questions we ask of every company and product. Each criterion links to the claims filed against it across all entities.</p>
   <FilterBar
     total={rows.length}
-    searchPlaceholder="Search standards…"
+    searchPlaceholder="Search criteria…"
     searchDataAttr="data-text"
     facets={[categoryFacet, coreFacet]}
   />
-  <div class="standards-list">
+  <div class="criteria-list">
     {rows.map(row => (
       <a
-        href={`/standards/${row.slug}`}
-        class="standard-row"
+        href={`/criteria/${row.slug}`}
+        class="criteria-row"
         data-filterable
         data-text={row.text.toLowerCase()}
         data-category={row.category}
@@ -65,19 +65,19 @@ const coreFacet = {
     ))}
   </div>
   <div id="filter-empty" hidden>
-    <EmptyState message="No standards match this filter." />
+    <EmptyState message="No criteria match this filter." />
   </div>
 </Base>
 <style>
 .disclaimer { font-size: var(--font-size-xs); color: var(--color-text-faint); margin-bottom: var(--space-md); }
-.standards-list { display: flex; flex-direction: column; }
-.standard-row {
+.criteria-list { display: flex; flex-direction: column; }
+.criteria-row {
   display: flex; flex-direction: column; gap: var(--space-xs);
   padding: var(--space-md);
   border-bottom: 1px solid var(--color-border);
   text-decoration: none; color: inherit;
 }
-.standard-row:hover { background: var(--color-surface); }
+.criteria-row:hover { background: var(--color-surface); }
 .std-text { font-weight: 500; color: var(--color-text); }
 .std-meta { display: flex; gap: var(--space-md); font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .coverage { color: var(--color-text-faint); }

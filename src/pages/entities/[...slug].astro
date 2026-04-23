@@ -1,7 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
-import { buildStandardsIndex } from "../../lib/standards";
+import { buildCriteriaIndex } from "../../lib/criteria";
 import { CATEGORY_LABELS } from "../../lib/research";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
@@ -31,23 +31,23 @@ for (const claim of relatedClaims) {
 }
 const categoriesWithClaims = [...claimsByCategory.keys()].sort();
 
-// Standards-applied section
-const standards = await getCollection("standards");
-const standardsIndex = buildStandardsIndex(allClaims);
+// Criteria-applied section
+const criteria = await getCollection("criteria");
+const criteriaIndex = buildCriteriaIndex(allClaims);
 
-// Filter standards matching this entity's type
-const applicableStandards = standards.filter(
+// Filter criteria matching this entity's type
+const applicableCriteria = criteria.filter(
   std => std.data.entity_type === entity.data.type
 );
 
-// Group applicable standards by category
-const stdsByCategory = new Map<string, typeof applicableStandards>();
-for (const std of applicableStandards) {
+// Group applicable criteria by category
+const critByCategory = new Map<string, typeof applicableCriteria>();
+for (const std of applicableCriteria) {
   const cat = std.data.category;
-  if (!stdsByCategory.has(cat)) stdsByCategory.set(cat, []);
-  stdsByCategory.get(cat)!.push(std);
+  if (!critByCategory.has(cat)) critByCategory.set(cat, []);
+  critByCategory.get(cat)!.push(std);
 }
-const stdCategoriesSorted = [...stdsByCategory.keys()].sort();
+const critCategoriesSorted = [...critByCategory.keys()].sort();
 
 const kindLabels: Record<string, string> = {
   company: "Company",
@@ -105,23 +105,23 @@ const kindLabels: Record<string, string> = {
       )}
     </section>
 
-    {applicableStandards.length > 0 && (
-      <section class="standards-applied">
-        <h2>Standards</h2>
-        <p class="standards-note">How this {entity.data.type} fares against applicable claim templates.</p>
-        {stdCategoriesSorted.map(cat => (
+    {applicableCriteria.length > 0 && (
+      <section class="criteria-applied">
+        <h2>Criteria</h2>
+        <p class="criteria-note">How this {entity.data.type} fares against applicable claim templates.</p>
+        {critCategoriesSorted.map(cat => (
           <div class="std-category-group">
             <h3 class="std-category-heading">
               {CATEGORY_LABELS[cat as keyof typeof CATEGORY_LABELS] ?? cat}
             </h3>
             <div class="std-rows">
-              {stdsByCategory.get(cat)!.map(std => {
-                const byEntity = standardsIndex.get(std.id) ?? new Map();
+              {critByCategory.get(cat)!.map(std => {
+                const byEntity = criteriaIndex.get(std.id) ?? new Map();
                 const entityClaims = byEntity.get(entity.id) ?? [];
                 const topClaim = entityClaims[0];
                 return (
                   <div class="std-row">
-                    <a href={`/standards/${std.id}`} class="std-text">{std.data.text}</a>
+                    <a href={`/criteria/${std.id}`} class="std-text">{std.data.text}</a>
                     <div class="std-verdict">
                       {topClaim
                         ? <VerdictBadge verdict={topClaim.verdict} size="sm" />
@@ -233,18 +233,18 @@ const kindLabels: Record<string, string> = {
     border-bottom: none;
   }
 
-  /* Standards applied section */
-  .standards-applied {
+  /* Criteria applied section */
+  .criteria-applied {
     border-top: 1px solid var(--color-border);
     padding-top: var(--space-lg);
   }
 
-  .standards-applied h2 {
+  .criteria-applied h2 {
     font-size: 1.2rem;
     margin-bottom: var(--space-xs);
   }
 
-  .standards-note {
+  .criteria-note {
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     margin-bottom: var(--space-lg);

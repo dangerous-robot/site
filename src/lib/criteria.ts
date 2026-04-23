@@ -7,28 +7,28 @@ export interface ClaimEntry {
   verdict: string;
   entity: string;
   category: string;
-  standard_slug?: string;
+  criteria_slug?: string;
 }
 
-export interface StandardsMiss {
+export interface CriteriaMiss {
   claimId: string;
   reason: string;
 }
 
-/** Build a map: standardSlug → entityId → ClaimEntry[] */
-export function buildStandardsIndex(
+/** Build a map: criteriaSlug → entityId → ClaimEntry[] */
+export function buildCriteriaIndex(
   claims: CollectionEntry<'claims'>[],
 ): Map<string, Map<string, ClaimEntry[]>> {
   const index = new Map<string, Map<string, ClaimEntry[]>>();
 
   for (const claim of claims) {
-    const standardSlug =
-      claim.data.standard_slug ?? stemFromId(claim.id);
-    if (!standardSlug) continue;
+    const criteriaSlug =
+      claim.data.criteria_slug ?? stemFromId(claim.id);
+    if (!criteriaSlug) continue;
 
     const entityId = claim.data.entity;
-    if (!index.has(standardSlug)) index.set(standardSlug, new Map());
-    const byEntity = index.get(standardSlug)!;
+    if (!index.has(criteriaSlug)) index.set(criteriaSlug, new Map());
+    const byEntity = index.get(criteriaSlug)!;
     if (!byEntity.has(entityId)) byEntity.set(entityId, []);
     byEntity.get(entityId)!.push({
       id: claim.id,
@@ -37,7 +37,7 @@ export function buildStandardsIndex(
       verdict: claim.data.verdict,
       entity: claim.data.entity,
       category: claim.data.category,
-      standard_slug: claim.data.standard_slug,
+      criteria_slug: claim.data.criteria_slug,
     });
   }
 
@@ -49,8 +49,8 @@ function stemFromId(id: string): string {
   return id.split('/').pop() ?? id;
 }
 
-export function logDerivationMisses(misses: StandardsMiss[]): void {
+export function logDerivationMisses(misses: CriteriaMiss[]): void {
   for (const miss of misses) {
-    console.warn(`[standards] ${miss.claimId}: ${miss.reason}`);
+    console.warn(`[criteria] ${miss.claimId}: ${miss.reason}`);
   }
 }

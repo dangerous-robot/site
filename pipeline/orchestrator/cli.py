@@ -513,5 +513,110 @@ def onboard(
     click.echo("=" * 60)
 
 
+# --------------------------------------------------------------------------- #
+# dr review                                                                     #
+# --------------------------------------------------------------------------- #
+
+@main.command()
+@click.option("--claim", required=True, help="Claim identifier: <entity-slug>/<claim-slug>")
+@click.option("--reviewer", default=None, help="Reviewer name or email (defaults to git config user.email)")
+@click.option("--notes", default=None, help="Optional review notes")
+@click.option("--pr-url", default=None, help="Optional GitHub PR URL")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def review(
+    ctx: click.Context,
+    claim: str,
+    reviewer: str | None,
+    notes: str | None,
+    pr_url: str | None,
+    repo_root: str | None,
+) -> None:
+    """Mark a claim as human-reviewed in its audit sidecar.
+
+    Example:
+        dr review --claim ecosia/renewable-energy-hosting --reviewer brandon@faloona.net
+    """
+    import datetime
+    import subprocess
+
+    import yaml
+    from common.content_loader import resolve_repo_root
+
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+
+    claim_path = root / "research" / "claims" / f"{claim}.md"
+    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+
+    if not sidecar_path.exists():
+        click.echo("No audit sidecar found. Run the pipeline first.", err=True)
+        sys.exit(1)
+
+    # Resolve reviewer
+    effective_reviewer = reviewer
+    if not effective_reviewer:
+        proc = subprocess.run(
+            ["git", "config", "user.email"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        git_email = proc.stdout.strip()
+        if git_email:
+            effective_reviewer = git_email
+        else:
+            click.echo(
+                "Error: --reviewer not provided and git config user.email is empty.",
+                err=True,
+            )
+            sys.exit(1)
+
+    sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    sidecar_data["human_review"]["reviewed_at"] = datetime.date.today().isoformat()
+    sidecar_data["human_review"]["reviewer"] = effective_reviewer
+    sidecar_data["human_review"]["notes"] = notes
+    sidecar_data["human_review"]["pr_url"] = pr_url
+
+    sidecar_path.write_text(
+        yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
+
+
+@main.command()
+@click.option("--entity", default=None, help="Lint only claims for this entity slug")
+@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
+@click.option("--severity", default="info", type=click.Choice(["error", "warning", "info"]), help="Minimum severity to report")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def lint(ctx: click.Context, entity: str | None, output_format: str, severity: str, repo_root: str | None) -> None:
+    """Run static content checks — no LLM, no network.
+
+    Exits 1 if any errors are found.
+
+    \b
+    Examples:
+      dr lint
+      dr lint --entity ecosia
+      dr lint --format json --severity error
+    """
+    from linter.runner import run_all_checks
+    from linter.report import format_text_report, format_json_report
+    from common.content_loader import resolve_repo_root as _resolve_root
+
+    resolved_root = Path(repo_root) if repo_root else _resolve_root()
+    issues = run_all_checks(repo_root=resolved_root, entity_filter=entity)
+
+    if output_format == "json":
+        click.echo(format_json_report(issues, min_severity=severity))
+    else:
+        click.echo(format_text_report(issues, min_severity=severity))
+
+    errors = [i for i in issues if i.severity == "error"]
+    if errors:
+        sys.exit(1)
+
+
 if __name__ == "__main__":
     main()

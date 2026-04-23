@@ -1,0 +1,325 @@
+"""Pure check functions. No disk I/O — all indexes are pre-built by runner.py."""
+from __future__ import annotations
+
+import datetime
+from pathlib import Path
+from typing import Any
+from urllib.parse import urlparse
+
+from .models import LintIssue
+
+REQUIRED_CLAIM_FIELDS = {"title", "entity", "category", "verdict", "confidence", "as_of", "sources"}
+CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description"}
+CANONICAL_CLAIM_KEYS = {
+    "title", "entity", "category", "verdict", "confidence",
+    "criteria_slug", "status", "as_of", "sources",
+    "recheck_cadence_days", "next_recheck_due",
+}
+PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
+PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
+ENTITY_DIR_TO_TYPE = {
+    "companies": "company",
+    "products": "product",
+    "topics": "topic",
+    "sectors": "sector",
+}
+
+
+def check_orphaned_claims(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    entity_index: set[str],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        entity_ref = fm.get("entity", "")
+        if entity_ref and entity_ref not in entity_index:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="orphaned-claim",
+                severity="error",
+                message=f'entity "{entity_ref}" has no matching file in research/entities/',
+                hint=(
+                    f'if the entity is missing, run `dr onboard "{entity_ref}" --type <type>`; '
+                    f'if it exists under a different path, correct the `entity:` field'
+                ),
+            ))
+    return issues
+
+
+def check_missing_required_fields(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        for field in sorted(REQUIRED_CLAIM_FIELDS):
+            if field not in fm:
+                issues.append(LintIssue(
+                    path=str(path),
+                    check_id="missing-required-field",
+                    severity="error",
+                    message=f'required field "{field}" is absent',
+                    hint=f'add `{field}:` to the claim frontmatter',
+                ))
+    return issues
+
+
+def check_empty_required_strings(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    entity_files: list[Path],
+    entity_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    string_fields = {"title", "entity", "category", "verdict", "confidence"}
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        for field in string_fields:
+            val = fm.get(field)
+            if isinstance(val, str) and not val.strip():
+                issues.append(LintIssue(
+                    path=str(path),
+                    check_id="empty-required-string",
+                    severity="error",
+                    message=f'required string field "{field}" is empty or whitespace',
+                ))
+    for path in entity_files:
+        fm = entity_frontmatters.get(str(path), {})
+        for field in ("name", "description"):
+            val = fm.get(field)
+            if isinstance(val, str) and not val.strip():
+                issues.append(LintIssue(
+                    path=str(path),
+                    check_id="empty-required-string",
+                    severity="error",
+                    message=f'required string field "{field}" is empty or whitespace',
+                ))
+    return issues
+
+
+def check_broken_criteria_slug(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    template_slugs: set[str],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        slug = fm.get("criteria_slug")
+        if slug and slug not in template_slugs:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="broken-criteria-slug",
+                severity="error",
+                message=f'criteria_slug "{slug}" not found in research/templates.yaml',
+                hint='check the slug spelling or add the template to templates.yaml',
+            ))
+    return issues
+
+
+def check_broken_source_refs(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    source_ids: set[str],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        sources = fm.get("sources") or []
+        if not isinstance(sources, list):
+            continue
+        for src_id in sources:
+            if isinstance(src_id, str) and src_id not in source_ids:
+                issues.append(LintIssue(
+                    path=str(path),
+                    check_id="broken-source-ref",
+                    severity="error",
+                    message=f'source id "{src_id}" has no matching file in research/sources/',
+                    hint=f'expected file at research/sources/{src_id}.md',
+                ))
+    return issues
+
+
+def check_duplicate_entity_slugs(
+    entity_files: list[Path],
+) -> list[LintIssue]:
+    seen: dict[str, str] = {}
+    issues = []
+    for path in entity_files:
+        slug = path.stem
+        if slug in seen:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="duplicate-entity-slug",
+                severity="error",
+                message=f'slug "{slug}" duplicates {seen[slug]}',
+                hint='rename one of the entity files to resolve the conflict',
+            ))
+        else:
+            seen[slug] = str(path)
+    return issues
+
+
+def check_placeholder_website(
+    entity_files: list[Path],
+    entity_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in entity_files:
+        fm = entity_frontmatters.get(str(path), {})
+        website = fm.get("website", "")
+        if not isinstance(website, str) or not website:
+            continue
+        parsed = urlparse(website)
+        is_placeholder = (
+            parsed.netloc in PLACEHOLDER_DOMAINS
+            or (not parsed.netloc and parsed.path.rstrip("/") in PLACEHOLDER_PATHS)
+            or any(parsed.path.startswith(p) for p in PLACEHOLDER_PATHS)
+        )
+        if is_placeholder:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="placeholder-website",
+                severity="warning",
+                message=f'website "{website}" looks like a placeholder or login page',
+                hint='update to the product or company homepage',
+            ))
+    return issues
+
+
+def check_legacy_field_name(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Flag standard_slug as legacy after the Standards→Criteria rename."""
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if "standard_slug" in fm:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="legacy-field-name",
+                severity="warning",
+                message='field "standard_slug" is the pre-rename name; use "criteria_slug"',
+                hint='rename `standard_slug:` to `criteria_slug:` in this file',
+            ))
+    return issues
+
+
+def check_unknown_frontmatter_keys(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    entity_files: list[Path],
+    entity_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        unknown = set(fm.keys()) - CANONICAL_CLAIM_KEYS
+        for key in sorted(unknown):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="unknown-frontmatter-key",
+                severity="warning",
+                message=f'unrecognized claim field "{key}"',
+            ))
+    for path in entity_files:
+        fm = entity_frontmatters.get(str(path), {})
+        unknown = set(fm.keys()) - CANONICAL_ENTITY_KEYS
+        for key in sorted(unknown):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="unknown-frontmatter-key",
+                severity="warning",
+                message=f'unrecognized entity field "{key}"',
+            ))
+    return issues
+
+
+def check_missing_criteria_slug(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if not fm.get("criteria_slug"):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="missing-criteria-slug",
+                severity="info",
+                message='no criteria_slug set — claim is matched by filename stem only',
+                hint='add `criteria_slug:` to improve traceability',
+            ))
+    return issues
+
+
+def check_stale_recheck(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    today: datetime.date,
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        due = fm.get("next_recheck_due")
+        if due is None:
+            continue
+        if isinstance(due, datetime.datetime):
+            due = due.date()
+        if isinstance(due, datetime.date) and due < today:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="stale-recheck",
+                severity="info",
+                message=f'next_recheck_due {due} is in the past',
+                hint='run the pipeline to recheck this claim',
+            ))
+    return issues
+
+
+def check_future_as_of(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    today: datetime.date,
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        as_of = fm.get("as_of")
+        if as_of is None:
+            continue
+        if isinstance(as_of, datetime.datetime):
+            as_of = as_of.date()
+        if isinstance(as_of, datetime.date) and as_of > today:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="future-as-of",
+                severity="info",
+                message=f'as_of date {as_of} is in the future — likely a paste error',
+            ))
+    return issues
+
+
+def check_entity_type_dir_mismatch(
+    entity_files: list[Path],
+    entity_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in entity_files:
+        fm = entity_frontmatters.get(str(path), {})
+        declared_type = fm.get("type", "")
+        dir_name = path.parent.name
+        expected = ENTITY_DIR_TO_TYPE.get(dir_name)
+        if expected and declared_type and declared_type != expected:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="entity-type-dir-mismatch",
+                severity="warning",
+                message=f'entity type "{declared_type}" is in directory "{dir_name}/"',
+                hint=f'move file to research/entities/{declared_type}s/ or correct the type field',
+            ))
+    return issues
