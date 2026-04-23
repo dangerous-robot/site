@@ -20,6 +20,9 @@ const { title, description = "Structured research backing claims about AI produc
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} - Dangerous Robot</title>
     <meta name="description" content={description} />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
          Storage keys and font-size values mirror A11yControl.astro. -->
@@ -49,7 +52,10 @@ const { title, description = "Structured research backing claims about AI produc
   <body>
     <nav class="site-nav">
       <div class="nav-inner">
-        <a href="/" class="site-name">Dangerous Robot</a>
+        <a href="/" class="site-name">
+          <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
+          Dangerous Robot
+        </a>
         <ul class="nav-links" id="nav-links">
           <li><a href="/companies">Companies</a></li>
           <li><a href="/products">Products</a></li>
@@ -87,6 +93,8 @@ const { title, description = "Structured research backing claims about AI produc
         <a href="/sources">Sources</a>
         &nbsp;·&nbsp;
         <a href="https://github.com/bfaloona/dangerous-robot" target="_blank" rel="noopener noreferrer">GitHub</a>
+        &nbsp;·&nbsp;
+        <a href="/credits">Credits</a>
       </p>
     </footer>
 
@@ -114,9 +122,22 @@ const { title, description = "Structured research backing claims about AI produc
         font-weight: bold;
         color: var(--color-site-name);
         text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         /* Flair: 2px accent bar on left edge of site name */
         border-left: 2px solid var(--color-accent);
         padding-left: 0.5rem;
+      }
+
+      .site-logo {
+        height: 34px;
+        width: 34px;
+        object-fit: contain;
+      }
+
+      :global([data-theme="dark"]) .site-logo {
+        filter: invert(1) brightness(0.85);
       }
 
       .site-name:hover {
