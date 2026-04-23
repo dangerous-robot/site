@@ -62,7 +62,7 @@ const entities = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/entities' }),
   schema: z.object({
     name: z.string(),
-    type: z.enum(['company', 'product', 'topic']),
+    type: z.enum(['company', 'product', 'topic', 'sector']),
     website: z.string().url().optional(),
     aliases: z.array(z.string()).optional(),
     description: z.string(),
