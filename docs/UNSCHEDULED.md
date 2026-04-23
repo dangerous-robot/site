@@ -20,6 +20,17 @@ Recommended implementation order: reuse sources → fail-fast → blocklist → 
 
 ---
 
+## PDF attachment as alternate source content surface
+
+Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/451 origins) as a content surface for both the ingestion agent and the human reviewer. Pairs with the fail-fast plan — when the ingestor can't fetch, a pre-attached PDF is the fallback.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| PDF attachment core (ingestion + model) | [source-pdf-attachment.md](plans/source-pdf-attachment.md) | `pdfs:` frontmatter block, `_attachments.yaml` manifest, `pdf_read` tool, `dr attach-pdf` CLI, sha256 integrity lint |
+| PDF attachment publish surface | [source-pdf-publish.md](plans/drafts/source-pdf-publish.md) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing |
+
+---
+
 ## AI Research Audit Trail
 
 Goal: On each `/claims/[slug]` page, show a collapsible section with which agent ran the research, what sources were consulted, when a human reviewed it, and whether the verdict changed from draft. Builds reader trust by making the AI+human process visible.
