@@ -1,0 +1,142 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import FilterBar from '../../components/FilterBar.astro';
+import EmptyState from '../../components/EmptyState.astro';
+
+const sources = await getCollection('sources');
+
+const rows = sources
+  .map((s) => {
+    const accessed = s.data.accessed_date instanceof Date
+      ? s.data.accessed_date.toISOString().split('T')[0]
+      : String(s.data.accessed_date);
+    const published = s.data.published_date instanceof Date
+      ? s.data.published_date.toISOString().split('T')[0]
+      : s.data.published_date
+        ? String(s.data.published_date)
+        : null;
+    return {
+      id: s.id,
+      title: s.data.title,
+      publisher: s.data.publisher,
+      kind: s.data.kind,
+      sourceType: s.data.source_type ?? null,
+      published,
+      accessed,
+    };
+  })
+  .sort((a, b) => {
+    const ak = a.published ?? a.accessed;
+    const bk = b.published ?? b.accessed;
+    return bk.localeCompare(ak);
+  });
+
+const KIND_LABELS: Record<string, string> = {
+  report: 'Report',
+  article: 'Article',
+  documentation: 'Documentation',
+  dataset: 'Dataset',
+  blog: 'Blog',
+  video: 'Video',
+  index: 'Index',
+};
+
+const kindFacet = {
+  id: 'kind',
+  label: 'Kind',
+  values: Object.entries(KIND_LABELS).map(([value, label]) => ({ value, label })),
+};
+
+const sourceTypeFacet = {
+  id: 'source-type',
+  label: 'Source type',
+  values: [
+    { value: 'primary', label: 'Primary' },
+    { value: 'secondary', label: 'Secondary' },
+    { value: 'tertiary', label: 'Tertiary' },
+  ],
+};
+
+const kindCssVar: Record<string, string> = {
+  report: 'var(--color-kind-report)',
+  article: 'var(--color-kind-article)',
+  documentation: 'var(--color-kind-documentation)',
+  dataset: 'var(--color-kind-dataset)',
+  blog: 'var(--color-kind-blog)',
+  video: 'var(--color-kind-video)',
+  index: 'var(--color-kind-index)',
+};
+---
+<Base title="Sources" layout="wide">
+  <h1>Sources</h1>
+  <p class="disclaimer">Every source cited across Dangerous Robot research. Each entry links to a detail page with summary, key quotes, and the claims that reference it.</p>
+  <FilterBar
+    total={rows.length}
+    searchPlaceholder="Search sources…"
+    searchDataAttr="data-title"
+    facets={[kindFacet, sourceTypeFacet]}
+  />
+  <div class="sources-list">
+    {rows.map((row) => (
+      <a
+        href={`/sources/${row.id}`}
+        class="source-row"
+        data-filterable
+        data-title={row.title.toLowerCase()}
+        data-kind={row.kind}
+        data-source-type={row.sourceType ?? ''}
+      >
+        <span class="source-title">{row.title}</span>
+        <span class="source-meta">
+          <span class="kind-badge" style={`background: ${kindCssVar[row.kind] ?? 'var(--color-text-faint)'}`}>
+            {KIND_LABELS[row.kind] ?? row.kind}
+          </span>
+          <span class="publisher">{row.publisher}</span>
+          <span class="date">{row.published ?? `accessed ${row.accessed}`}</span>
+        </span>
+      </a>
+    ))}
+  </div>
+  <div id="filter-empty" hidden>
+    <EmptyState message="No sources match this filter." />
+  </div>
+</Base>
+<style>
+  .disclaimer {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-md);
+  }
+  .sources-list { display: flex; flex-direction: column; }
+  .source-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--color-border);
+    text-decoration: none;
+    color: inherit;
+  }
+  .source-row:hover { background: var(--color-surface); }
+  .source-title { font-weight: 500; color: var(--color-text); }
+  .source-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    align-items: center;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .kind-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
+    font-weight: bold;
+    color: var(--color-on-badge);
+    text-transform: uppercase;
+  }
+  .publisher { color: var(--color-text-muted); }
+  .date { color: var(--color-text-faint); }
+</style>
