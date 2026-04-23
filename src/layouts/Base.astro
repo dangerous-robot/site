@@ -112,8 +112,8 @@ const { title, description = "Structured research backing claims about AI produc
         margin: 0 auto;
         padding: 0 var(--space-lg);
         display: flex;
-        justify-content: space-between;
         align-items: center;
+        gap: var(--space-md);
       }
 
       .site-name {
@@ -124,16 +124,21 @@ const { title, description = "Structured research backing claims about AI produc
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        white-space: nowrap;
         /* Flair: 2px accent bar on left edge of site name */
         border-left: 2px solid var(--color-accent);
         padding-left: 0.5rem;
+        margin-right: auto;
       }
 
       .site-logo {
         height: 34px;
         width: 34px;
         object-fit: contain;
+        /* Visual size +44% (1.2 × 1.2), layout box unchanged */
+        transform: scale(1.44);
+        transform-origin: center;
+        margin: 0 1em;
       }
 
       :global([data-theme="dark"]) .site-logo {
@@ -151,6 +156,7 @@ const { title, description = "Structured research backing claims about AI produc
         padding: 0;
         display: flex;
         gap: var(--space-lg);
+        margin-left: auto;
       }
 
       .nav-links a {
@@ -210,7 +216,7 @@ const { title, description = "Structured research backing claims about AI produc
         color: var(--color-nav-link-hover);
       }
 
-      @media (max-width: 640px) {
+      @media (max-width: 768px) {
         .site-nav {
           position: relative;
         }
@@ -218,6 +224,10 @@ const { title, description = "Structured research backing claims about AI produc
         .nav-toggle {
           display: flex;
           align-items: center;
+        }
+
+        .site-logo {
+          margin: 0 var(--space-sm);
         }
 
         .nav-links {
