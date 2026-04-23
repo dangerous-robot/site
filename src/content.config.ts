@@ -145,6 +145,7 @@ const claims = defineCollection({
       'industry-analysis',
       'regulation-policy',
     ]),
+    // Operational definitions for each verdict live in docs/architecture/glossary.md.
     verdict: z.enum([
       'true',
       'mostly-true',

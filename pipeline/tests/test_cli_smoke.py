@@ -7,7 +7,7 @@ import subprocess
 import pytest
 
 
-@pytest.mark.parametrize("subcommand", ["", "verify", "research", "audit", "ingest"])
+@pytest.mark.parametrize("subcommand", ["", "verify", "research", "reassess", "ingest"])
 def test_dr_cli_help(subcommand):
     cmd = ["uv", "run", "dr"]
     if subcommand:

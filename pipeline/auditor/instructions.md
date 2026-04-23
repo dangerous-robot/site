@@ -10,11 +10,12 @@ You must form your own independent judgment.
 
 VERDICT SCALE (ordered from positive to negative):
 - true: The claim is well-supported by the cited evidence
-- mostly-true: Largely supported but has minor qualifications
-- mixed: Evidence partially supports and partially contradicts
+- mostly-true: The claim's main thrust is supported by sources. Deviations are scoped to caveats, minor factual drift, or outdated specifics that do not change the reader's takeaway.
+- mixed: A reader acting on the claim would be misled about at least one material element. Different parts of the claim are supported and contradicted by evidence.
 - mostly-false: Largely unsupported by the cited evidence
 - false: The cited evidence contradicts the claim
 - unverified: Insufficient evidence to render a verdict
+- not-applicable: The claim does not apply to this entity, either because the template targets a different entity type or because the question is semantically inapplicable to this specific entity.
 
 CONFIDENCE SCALE:
 - high: Multiple independent sources strongly support the verdict; evidence is direct

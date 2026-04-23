@@ -59,6 +59,34 @@ def _make_source_file(slug: str = "test-source", year: int = 2026, title: str = 
     return SourceFile(frontmatter=fm, body="Body text.", slug=slug, year=year)
 
 
+def _write_minimal_sidecar(path: Path) -> None:
+    data = {
+        "schema_version": 1,
+        "pipeline_run": {
+            "ran_at": "2026-04-22T14:32:00+00:00",
+            "model": "claude-haiku-4-5",
+            "agents": ["researcher", "ingestor", "analyst", "auditor"],
+        },
+        "sources_consulted": [],
+        "audit": {
+            "analyst_verdict": "true",
+            "auditor_verdict": "true",
+            "analyst_confidence": "high",
+            "auditor_confidence": "high",
+            "verdict_agrees": True,
+            "confidence_agrees": True,
+            "needs_review": False,
+        },
+        "human_review": {
+            "reviewed_at": None,
+            "reviewer": None,
+            "notes": None,
+            "pr_url": None,
+        },
+    }
+    path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+
 FIXED_TS = datetime.datetime(2026, 4, 22, 14, 32, 0, tzinfo=datetime.timezone.utc)
 
 
@@ -205,33 +233,6 @@ class TestWriteAuditSidecar:
 # ---------------------------------------------------------------------------
 
 class TestDrReviewCli:
-    def _write_minimal_sidecar(self, path: Path) -> None:
-        data = {
-            "schema_version": 1,
-            "pipeline_run": {
-                "ran_at": "2026-04-22T14:32:00+00:00",
-                "model": "claude-haiku-4-5",
-                "agents": ["researcher", "ingestor", "analyst", "auditor"],
-            },
-            "sources_consulted": [],
-            "audit": {
-                "analyst_verdict": "true",
-                "auditor_verdict": "true",
-                "analyst_confidence": "high",
-                "auditor_confidence": "high",
-                "verdict_agrees": True,
-                "confidence_agrees": True,
-                "needs_review": False,
-            },
-            "human_review": {
-                "reviewed_at": None,
-                "reviewer": None,
-                "notes": None,
-                "pr_url": None,
-            },
-        }
-        path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-
     def test_sets_reviewed_at_to_today(self, tmp_path):
         # Set up a fake claims directory
         entity_dir = tmp_path / "research" / "claims" / "test-entity"
@@ -239,7 +240,7 @@ class TestDrReviewCli:
         claim_md = entity_dir / "test-claim.md"
         claim_md.write_text("---\ntitle: Test\n---\n", encoding="utf-8")
         sidecar = entity_dir / "test-claim.audit.yaml"
-        self._write_minimal_sidecar(sidecar)
+        _write_minimal_sidecar(sidecar)
 
         runner = CliRunner()
         result = runner.invoke(main, [
@@ -262,7 +263,7 @@ class TestDrReviewCli:
         claim_md = entity_dir / "test-claim.md"
         claim_md.write_text("---\ntitle: Test\n---\n", encoding="utf-8")
         sidecar = entity_dir / "test-claim.audit.yaml"
-        self._write_minimal_sidecar(sidecar)
+        _write_minimal_sidecar(sidecar)
 
         runner = CliRunner()
         runner.invoke(main, [
@@ -300,3 +301,229 @@ class TestDrReviewCli:
 
         assert result.exit_code != 0
         assert "No audit sidecar found" in (result.output + result.stderr if hasattr(result, 'stderr') else result.output)
+
+
+# ---------------------------------------------------------------------------
+# dr review --approve / --archive (claim promotion)
+# ---------------------------------------------------------------------------
+
+class TestDrReviewPromotion:
+    def _setup_claim(
+        self,
+        tmp_path: Path,
+        *,
+        status: str | None = "draft",
+        slug: str = "test-claim",
+        entity: str = "test-entity",
+        include_sidecar: bool = True,
+    ) -> tuple[Path, Path]:
+        entity_dir = tmp_path / "research" / "claims" / entity
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        claim_md = entity_dir / f"{slug}.md"
+        if status is None:
+            claim_md.write_text("---\ntitle: Test\n---\nBody.\n", encoding="utf-8")
+        else:
+            claim_md.write_text(
+                f"---\ntitle: Test\nstatus: {status}\n---\nBody.\n",
+                encoding="utf-8",
+            )
+        sidecar = entity_dir / f"{slug}.audit.yaml"
+        if include_sidecar:
+            _write_minimal_sidecar(sidecar)
+        return claim_md, sidecar
+
+    def test_approve_flips_draft_to_published(self, tmp_path):
+        claim_md, sidecar = self._setup_claim(tmp_path, status="draft")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        fm_text = claim_md.read_text(encoding="utf-8")
+        assert "status: published" in fm_text
+        sidecar_data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert sidecar_data["human_review"]["reviewed_at"] == datetime.date.today().isoformat()
+        assert "Marked reviewed and published" in result.output
+
+    def test_approve_on_published_claim_fails_and_leaves_files_unchanged(self, tmp_path):
+        claim_md, sidecar = self._setup_claim(tmp_path, status="published")
+        md_before = claim_md.read_bytes()
+        sidecar_before = sidecar.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_approve_on_claim_without_status_field_succeeds(self, tmp_path):
+        claim_md, _ = self._setup_claim(tmp_path, status=None)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        fm_text = claim_md.read_text(encoding="utf-8")
+        assert "status: published" in fm_text
+
+    def test_archive_flips_published_to_archived(self, tmp_path):
+        claim_md, _ = self._setup_claim(tmp_path, status="published")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--archive",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        fm_text = claim_md.read_text(encoding="utf-8")
+        assert "status: archived" in fm_text
+
+    def test_archive_on_draft_claim_fails(self, tmp_path):
+        claim_md, sidecar = self._setup_claim(tmp_path, status="draft")
+        md_before = claim_md.read_bytes()
+        sidecar_before = sidecar.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--archive",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_archive_on_claim_without_status_field_fails(self, tmp_path):
+        claim_md, _ = self._setup_claim(tmp_path, status=None)
+        md_before = claim_md.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--archive",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert claim_md.read_bytes() == md_before
+
+    def test_bare_review_does_not_touch_md(self, tmp_path):
+        claim_md, _ = self._setup_claim(tmp_path, status="draft")
+        md_before = claim_md.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert claim_md.read_bytes() == md_before
+
+    def test_malformed_frontmatter_aborts_before_writes(self, tmp_path):
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True)
+        claim_md = entity_dir / "test-claim.md"
+        claim_md.write_text("no frontmatter here at all\n", encoding="utf-8")
+        sidecar = entity_dir / "test-claim.audit.yaml"
+        _write_minimal_sidecar(sidecar)
+
+        md_before = claim_md.read_bytes()
+        sidecar_before = sidecar.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_approve_and_archive_together_exits_nonzero_before_any_write(self, tmp_path):
+        claim_md, sidecar = self._setup_claim(tmp_path, status="draft")
+        md_before = claim_md.read_bytes()
+        sidecar_before = sidecar.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--archive",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_atomicity_md_write_failure_leaves_sidecar_updated(self, tmp_path, monkeypatch):
+        """Sidecar is the commit point.
+
+        If the ``.md`` write step raises mid-flight, the sidecar remains in
+        its updated state. Operator guidance: rerun ``dr review --approve``,
+        which re-detects the still-``draft`` status and completes the flip.
+        """
+        claim_md, sidecar = self._setup_claim(tmp_path, status="draft")
+        sidecar_before_bytes = sidecar.read_bytes()
+
+        def _boom(*args, **kwargs):
+            raise OSError("simulated disk failure mid-flight")
+
+        # Patch at the cli import site: `set_claim_status` is imported at
+        # module top, so the cli function looks it up in its own module.
+        import orchestrator.cli as cli_mod
+        monkeypatch.setattr(cli_mod, "set_claim_status", _boom)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        # Sidecar was updated before the failure.
+        sidecar_data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert sidecar_data["human_review"]["reviewed_at"] == datetime.date.today().isoformat()
+        assert sidecar.read_bytes() != sidecar_before_bytes
+        # .md was not modified (status still draft).
+        assert "status: draft" in claim_md.read_text(encoding="utf-8")

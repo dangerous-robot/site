@@ -176,22 +176,29 @@ Takes `list[tuple[str, SourceFile]] | None`, returns `list[dict]`. Each dict: `{
 Add a `review` subcommand to `pipeline/orchestrator/cli.py`:
 
 ```
-dr review --claim <entity-slug>/<claim-slug> [--reviewer <name>] [--notes <text>]
+dr review --claim <entity-slug>/<claim-slug> [--reviewer <name>] [--notes <text>] [--approve | --archive]
 ```
 
-Behavior:
+Behavior (no flag; default):
 1. Resolves claim path: `research/claims/<entity-slug>/<claim-slug>.md`
 2. Resolves sidecar path: same stem with `.audit.yaml`
 3. If sidecar does not exist, exits with error: "No audit sidecar found. Run the pipeline first."
 4. Reads the sidecar, sets `human_review.reviewed_at = today` (ISO 8601 date, not datetime), `human_review.reviewer = <value from --reviewer or git config user.email>`, `human_review.notes = <value from --notes or null>`.
-5. Writes the updated sidecar back to disk (full overwrite of the file, preserving all other fields).
+5. Writes the updated sidecar back to disk (full overwrite of the file, preserving all other fields). The `.md` file is not touched.
 6. Prints: `Marked reviewed: research/claims/<entity-slug>/<claim-slug>.audit.yaml`
 
-The `review` command reads and writes only the `.audit.yaml` file. It does not touch the `.md` file. The sidecar is written using `yaml.safe_load` / `yaml.safe_dump` — YAML comments and custom key ordering are not preserved. Sidecar files are machine-written and not intended for hand-editing; `dr review` is the only supported path for setting `human_review` fields.
+Behavior (`--approve` or `--archive`):
+1. Pre-flight: parses the `.md` frontmatter, verifies the current `status` matches the expected source state (`draft` for `--approve`, `published` for `--archive`). Missing `status` key is treated as `draft` for `--approve` and is an error for `--archive`. Malformed frontmatter aborts with a clear error before any file is touched.
+2. Writes the sidecar first (same fields as the no-flag path; `--archive` defaults `human_review.notes` to `"archived"` if none is supplied).
+3. Flips the `.md` `status` second (via `_set_claim_status` in `persistence.py`). Ordering is a correctness requirement: sidecar-first means a mid-flight `.md` failure leaves the claim in a "reviewed but not promoted" state, recoverable by rerunning. Reverse order would create "published but unreviewed", which is exactly the state the `human_review.reviewed_at` CI gate exists to prevent.
+4. `--approve` and `--archive` together exits non-zero before any write.
+5. Prints: `Marked reviewed and published: research/claims/<slug>.md (+ .audit.yaml)` (or `... and archived: ...`).
+
+The sidecar is written using `yaml.safe_load` / `yaml.safe_dump` -- YAML comments and custom key ordering are not preserved. Sidecar files are machine-written and not intended for hand-editing; `dr review` is the only supported path for setting `human_review` fields.
 
 Example:
 ```
-dr review --claim ecosia/renewable-energy-hosting --reviewer brandon@faloona.net
+dr review --claim ecosia/renewable-energy-hosting --approve
 ```
 
 ### Astro loader changes
@@ -279,6 +286,8 @@ Style using existing CSS variables and the `.confidence-details` pattern already
 - [ ] Sidecar path is `{claim_stem}.audit.yaml` in the same directory as the claim.
 - [ ] If `comparison is None`, sidecar is still written with `audit: null`.
 - [ ] `dr review --claim ecosia/renewable-energy-hosting` sets `human_review.reviewed_at` to today's date and writes the sidecar without touching the `.md` file.
+- [ ] `dr review --approve` flips `status: draft` to `status: published` in the `.md` after writing the sidecar; rejects non-draft input.
+- [ ] `dr review --archive` flips `status: published` to `status: archived`; rejects non-published input; `--approve` and `--archive` together exit non-zero before any write.
 - [ ] `dr review` with no existing sidecar exits non-zero with a clear error.
 - [ ] `npm run build` succeeds with a mix of claims that have sidecars and claims that do not.
 - [ ] A YAML parse error in any single sidecar emits `console.warn` and does not break the build.
@@ -287,7 +296,7 @@ Style using existing CSS variables and the `.confidence-details` pattern already
 - [ ] When `human_review.reviewed_at` is set, the UI shows the date and reviewer.
 - [ ] When `human_review.reviewed_at` is null, the UI shows "Pending human review."
 - [ ] Tests for `_write_audit_sidecar`: one test with a valid `ComparisonResult` (assert all fields written, assert sidecar path derived correctly), one with `comparison=None` (assert `audit: null` written), one with a fixed injected `ran_at` timestamp (assert round-trips).
-- [ ] Tests for `dr review`: sets `reviewed_at` to today, preserves all existing fields, exits non-zero with error on missing sidecar.
+- [ ] Tests for `dr review`: sets `reviewed_at` to today, preserves all existing fields, exits non-zero with error on missing sidecar. For `--approve` / `--archive`: flips the `.md` status on the happy path, rejects mismatched status, handles missing-status claim (treat as draft for approve, error for archive), rejects `--approve --archive` together, aborts on malformed frontmatter, and leaves the sidecar in its updated state when the `.md` flip fails mid-flight (sidecar is the commit point).
 - [ ] Astro loader test fixtures (required before shipping, not just before Phase 2):
   - Fixture with a valid sidecar: assert `claim.data.audit` is defined and `schema_version` is correct.
   - Fixture with no sidecar: assert `claim.data.audit === undefined` and build succeeds.

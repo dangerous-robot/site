@@ -164,6 +164,12 @@ Four features were implemented and the build passes. Each needs a browser walkth
 - [ ] Add `/methodology` and `/scope` to the footer alongside the TreadLightly and license links
 - [ ] Confirm the cross-links between the two pages are in place
 
+### Claim re-label candidates under sharpened verdict definitions
+
+Plan 2 (`claim-promotion-audit-rename-verdicts`) sharpened the `mostly-true` vs `mixed` split to hinge on "main thrust vs. material element." The following claim surfaced during a spot-check as a potential re-label (currently `mostly-true`, borderline `mixed` under the new framing):
+
+- `research/claims/gemini/discloses-models-used.md` -- FMTI low-score finding and the TechCrunch "very sparse" criticism of the Gemini 2.5 Pro technical report read as material elements about transparency depth, not caveats. A reader taking `mostly-true` as endorsement of Gemini's disclosure would be misled about those elements.
+
 ### Source type classification -- edge cases to revisit
 
 - **SEC EDGAR filings** -- classified as `primary`; verify this is correct.

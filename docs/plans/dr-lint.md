@@ -260,7 +260,7 @@ The bash runner skips `#`-prefixed lines, so commented-out entries (manual revie
 
 A multi-agent loop running on a GitHub Actions cron schedule:
 
-1. **Surface agent** — runs `dr lint` + `dr audit` (LLM verdicts), collects issues, produces a structured triage report
+1. **Surface agent** — runs `dr lint` + `dr reassess` (LLM verdicts), collects issues, produces a structured triage report
 2. **Triage agent** — classifies issues by severity, assigns to appropriate action (re-onboard, human review, auto-fix)
 3. **Fix agent** — for high-confidence fixable issues (orphaned entity with a known homepage, stale entity with a `website` to re-scrape), opens a draft PR with the proposed fix
 4. **Human approval** — PR review gates any write action to `research/`
