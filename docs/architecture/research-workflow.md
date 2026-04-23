@@ -2,6 +2,10 @@
 
 How research content moves from idea to published claim on dangerousrobot.org.
 
+## What this is
+
+dangerousrobot.org is a research hub that publishes structured, citable fact-checks about AI companies, products, and sectors. Each claim carries a verdict, a confidence level, source references, and a recheck date, all captured as Markdown with YAML frontmatter. Two audiences consume the published content: humans reading the site directly, and the upstream TreadLightly AI site, which ingests the same files as structured data. The workflow below exists to keep claims auditable (every assertion traces to cited sources), agent-processable (the schema is stable enough for pipeline automation), and decoupled from the rendered site (content lives in `research/` and can move to its own repo later without breaking consumers).
+
 ## Content Model
 
 Three entity types live under `research/`, each defined as a Zod schema in `src/content.config.ts` and enforced at build time by Astro Content Collections.
@@ -23,7 +27,7 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 3. **Claim** -- The Analyst and Auditor agents propose or update a claim file under `research/claims/{entity-slug}/`.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
-6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual.
+6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
 
 ## Agent Roles
 
@@ -36,8 +40,20 @@ Seven roles are defined in `AGENTS.md`. Several are now automated via PydanticAI
 | **Ingestor** | Takes a URL, produces a source file. One URL in, one `sources/{yyyy}/{slug}.md` out. | Automated -- PydanticAI agent in `pipeline/ingestor/` |
 | **Analyst** | Proposes verdict changes with rationale, given a claim and its source files. | Automated -- PydanticAI agent in `pipeline/analyst/` |
 | **Auditor** | Reviews and refines analyst output before the claim file is written. | Automated -- PydanticAI agent in `pipeline/auditor/` |
-| **Citation Auditor** | Finds claims with zero sources, stale `as_of` dates, or broken URLs. Produces audit reports. | Partially automated via `scripts/check-citations.ts` (checks broken refs only). Full auditing is a backlog item (see `docs/UNSCHEDULED.md`). |
+| **Citation Auditor** | Finds claims with zero sources, stale `as_of` dates, or broken URLs. Produces audit reports. | Partially automated, split across three tools (see below). Full auditing is a backlog item (see `docs/UNSCHEDULED.md`). |
 | **Page Builder** | Generates TS data files for downstream consumption by the TreadLightly site. | Not yet implemented. No LLM needed -- plain data transformation. Backlog item (see `docs/UNSCHEDULED.md`). |
+
+### Citation Auditor tools
+
+The Citation Auditor responsibility is covered by three separate tools:
+
+| Tool | Scope |
+|------|-------|
+| `scripts/check-citations.ts` | Broken source refs (claim `sources` slugs that do not resolve to a file). Runs in CI. |
+| `dr lint` | Missing required fields, orphaned claims, stale `next_recheck_due` dates. No LLM, no network. |
+| `dr reassess` | Verdict re-evaluation: re-runs the Auditor agent against current sources to flag claims whose published verdict may no longer hold. |
+
+Note: `dr reassess` was previously named `dr audit`; it was renamed because its scope (verdict re-evaluation) differs from the broader Citation Auditor role.
 
 ## Content Rules
 

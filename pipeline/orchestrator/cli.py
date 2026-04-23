@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from common.models import DEFAULT_MODEL
+from orchestrator.persistence import set_claim_status
 
 
 @click.group()
@@ -183,7 +184,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
 
 
 # --------------------------------------------------------------------------- #
-# dr audit                                                                      #
+# dr reassess                                                                   #
 # --------------------------------------------------------------------------- #
 
 @main.command()
@@ -195,7 +196,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
 @click.option("--verbose-output", is_flag=True, help="Show full reasoning for all claims")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
-def audit(
+def reassess(
     ctx: click.Context,
     claim: str | None,
     entity: str | None,
@@ -208,8 +209,8 @@ def audit(
     """Run auditor checks on research claims.
 
     Example:
-        dr audit --entity ecosia
-        dr audit --claim ecosia/renewable-energy-hosting
+        dr reassess --entity ecosia
+        dr reassess --claim ecosia/renewable-energy-hosting
     """
     from common.content_loader import list_claims, load_entity, load_source, resolve_repo_root
     from common.frontmatter import parse_frontmatter
@@ -335,6 +336,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
     import httpx
     from common.content_loader import resolve_repo_root
     from common.frontmatter import serialize_frontmatter
+    from common.source_classification import classify_source_type
     from ingestor.agent import IngestorDeps, ingestor_agent
     from ingestor.validation import validate_source_file
 
@@ -384,6 +386,9 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
                 return 1
 
             fm_dict = sf.frontmatter.model_dump(mode="python")
+            fm_dict["source_type"] = classify_source_type(
+                sf.frontmatter.publisher, sf.frontmatter.kind.value
+            )
             markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
             if dry_run:
@@ -416,7 +421,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @main.command()
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
-@click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product"]), help="Entity type")
+@click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product", "sector"]), help="Entity type")
 @click.option("--verbose", is_flag=True, help="Enable verbose logging")
 @click.option("--max-sources", default=4, type=int, help="Max sources to ingest per template")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
@@ -522,6 +527,8 @@ def onboard(
 @click.option("--reviewer", default=None, help="Reviewer name or email (defaults to git config user.email)")
 @click.option("--notes", default=None, help="Optional review notes")
 @click.option("--pr-url", default=None, help="Optional GitHub PR URL")
+@click.option("--approve", is_flag=True, default=False, help="Flip status from draft to published after sidecar write")
+@click.option("--archive", is_flag=True, default=False, help="Flip status from published to archived after sidecar write")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
 def review(
@@ -530,18 +537,29 @@ def review(
     reviewer: str | None,
     notes: str | None,
     pr_url: str | None,
+    approve: bool,
+    archive: bool,
     repo_root: str | None,
 ) -> None:
     """Mark a claim as human-reviewed in its audit sidecar.
 
+    With no flag, writes only the sidecar. With ``--approve`` flips
+    ``status: draft`` to ``status: published``; with ``--archive`` flips
+    ``status: published`` to ``status: archived`` (sidecar written first
+    in either case).
+
     Example:
-        dr review --claim ecosia/renewable-energy-hosting --reviewer brandon@faloona.net
+        dr review --claim ecosia/renewable-energy-hosting --approve
     """
     import datetime
     import subprocess
 
     import yaml
     from common.content_loader import resolve_repo_root
+    from common.frontmatter import parse_frontmatter
+
+    if approve and archive:
+        raise click.ClickException("--approve and --archive are mutually exclusive")
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
 
@@ -551,6 +569,44 @@ def review(
     if not sidecar_path.exists():
         click.echo("No audit sidecar found. Run the pipeline first.", err=True)
         sys.exit(1)
+
+    # Pre-flight runs before any write so a bad state aborts cleanly,
+    # leaving both files untouched.
+    expected_current: str | None = None
+    new_status: str | None = None
+    if approve or archive:
+        try:
+            fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        except FileNotFoundError as exc:
+            raise click.ClickException(f"claim file not found: {claim_path}") from exc
+        except ValueError as exc:
+            raise click.ClickException(
+                f"malformed frontmatter in {claim_path}: {exc}"
+            ) from exc
+
+        current_status = fm.get("status")
+        if approve:
+            # Missing status field is treated as draft (older pre-stub claims).
+            effective_current = current_status if current_status is not None else "draft"
+            if effective_current == "archived":
+                raise click.ClickException("cannot approve an archived claim")
+            if effective_current != "draft":
+                raise click.ClickException(
+                    f"claim already {effective_current}; use --archive to retire"
+                )
+            expected_current = current_status  # may be None (key absent)
+            new_status = "published"
+        else:  # archive
+            if current_status is None:
+                raise click.ClickException(
+                    "cannot archive: claim has no status field; publish first or edit the file manually"
+                )
+            if current_status != "published":
+                raise click.ClickException(
+                    f"cannot archive a claim with status {current_status!r}; only published claims can be archived"
+                )
+            expected_current = "published"
+            new_status = "archived"
 
     # Resolve reviewer
     effective_reviewer = reviewer
@@ -574,14 +630,36 @@ def review(
     sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
     sidecar_data["human_review"]["reviewed_at"] = datetime.date.today().isoformat()
     sidecar_data["human_review"]["reviewer"] = effective_reviewer
-    sidecar_data["human_review"]["notes"] = notes
+    effective_notes = notes
+    if archive and not effective_notes:
+        effective_notes = "archived"
+    sidecar_data["human_review"]["notes"] = effective_notes
     sidecar_data["human_review"]["pr_url"] = pr_url
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
     )
-    click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
+
+    # Sidecar is the commit point: if the .md flip raises, the sidecar is
+    # already updated and rerunning the same flag re-detects the pre-flip
+    # status to complete the transition.
+    if new_status is not None:
+        try:
+            set_claim_status(claim_path, new_status, expected_current)
+        except ValueError as exc:
+            raise click.ClickException(str(exc)) from exc
+
+    if approve:
+        click.echo(
+            f"Marked reviewed and published: research/claims/{claim}.md (+ .audit.yaml)"
+        )
+    elif archive:
+        click.echo(
+            f"Marked reviewed and archived: research/claims/{claim}.md (+ .audit.yaml)"
+        )
+    else:
+        click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
 
 
 @main.command()

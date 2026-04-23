@@ -23,6 +23,20 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
 | **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion template it was generated from |
 
+## Verdict definitions
+
+Operational rules for picking a verdict. Values match the enum in `src/content.config.ts`.
+
+| Verdict | When to pick it |
+|---|---|
+| **true** | Cited sources support the claim in full; no material caveats or contradicting evidence. |
+| **mostly-true** | The claim's main thrust is supported by sources. Deviations are scoped to caveats, minor factual drift, or outdated specifics that do not change the reader's takeaway. |
+| **mixed** | A reader acting on the claim would be misled about at least one material element. Different parts of the claim are supported and contradicted by evidence. |
+| **mostly-false** | The claim is misleading or wrong in its main thrust, though some narrow element is accurate. |
+| **false** | Cited sources directly contradict the claim; no supporting evidence found. |
+| **unverified** | Sources were sought but none are sufficient to judge the claim in either direction. Distinct from "no sources cited," which is a lint error rather than a verdict. |
+| **not-applicable** | The claim does not apply to this entity, either because the template targets a different entity type or because the question is semantically inapplicable to this specific entity. |
+
 ## Roles
 
 Roles describe *what* should happen. They can be filled by humans or automation. Defined in [AGENTS.md](../../AGENTS.md).

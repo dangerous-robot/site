@@ -28,7 +28,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["common", "ingestor", "consistency", "verify", "researcher", "analyst", "auditor", "orchestrator"]
+packages = ["common", "ingestor", "researcher", "analyst", "auditor", "orchestrator"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

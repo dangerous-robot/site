@@ -9,110 +9,20 @@ from pathlib import Path
 import yaml
 
 from auditor.models import ComparisonResult
-from common.frontmatter import serialize_frontmatter
+from common.frontmatter import parse_frontmatter, serialize_frontmatter
 from common.models import Category, Confidence, EntityType, Verdict
+from common.source_classification import classify_source_type
 from common.utils import slugify
 from ingestor.models import SourceFile
 
 logger = logging.getLogger(__name__)
-
-# Publisher substrings (lowercase) that identify primary sources.
-# Matched against publisher.lower() — order doesn't matter here.
-_PRIMARY_PUBLISHERS: frozenset[str] = frozenset(
-    {
-        "anthropic",
-        "openai",
-        "google",
-        "microsoft",
-        "meta",
-        "ecosia",
-        "greenpt",
-        "chattree",
-        "infomaniak",
-        "tracklight",
-        "transparently",
-        "edgar",
-    }
-)
-
-# Publisher substrings (lowercase) that strongly imply secondary sources.
-_SECONDARY_PUBLISHERS: frozenset[str] = frozenset(
-    {
-        "arxiv",
-        "ieee",
-        "university",
-        "journal",
-        "b lab",
-        "b corp",
-        "ditchcarbon",
-        "sacra",
-        "crunchbase",
-        "unesco",
-        "ntia",
-        "unfccc",
-        "oecd",
-    }
-)
-
-# Publisher substrings (lowercase) that imply tertiary sources.
-_TERTIARY_PUBLISHERS: frozenset[str] = frozenset(
-    {
-        "future of life",
-        "earth day",
-        "center for ai safety",
-        "nerdwallet",
-        "zenbusiness",
-        "substack",
-    }
-)
-
-# SourceKind values that are intrinsically tertiary when publisher is unknown.
-_TERTIARY_KINDS: frozenset[str] = frozenset({"blog"})
-
-
-def _classify_source_type(publisher: str, kind: str) -> str:
-    """Return 'primary', 'secondary', or 'tertiary' for a source.
-
-    Rules (evaluated in order — first match wins):
-    1. publisher matches a known AI-company or regulatory-filing term → primary
-    2. kind is 'documentation' → primary (company docs are first-party)
-    3. publisher matches a known secondary-source term → secondary
-    4. publisher matches a known tertiary-source term → tertiary
-    5. kind is 'blog' → tertiary
-    6. everything else → secondary (safer default)
-    """
-    pub_lower = publisher.lower()
-    kind_lower = kind.lower()
-
-    # 1. Primary: known company / government-filing publisher
-    # Use sec.gov substring to avoid matching "section", "secretary", etc.
-    if "sec.gov" in pub_lower or any(term in pub_lower for term in _PRIMARY_PUBLISHERS):
-        return "primary"
-
-    # 2. Primary: company's own documentation (kind == "documentation")
-    if kind_lower == "documentation":
-        return "primary"
-
-    # 3. Secondary: known research / journalism / certification publisher
-    if any(term in pub_lower for term in _SECONDARY_PUBLISHERS):
-        return "secondary"
-
-    # 4. Tertiary: known advocacy / opinion publisher
-    if any(term in pub_lower for term in _TERTIARY_PUBLISHERS):
-        return "tertiary"
-
-    # 5. Tertiary: blog kind (unless already caught as primary above)
-    if kind_lower in _TERTIARY_KINDS:
-        return "tertiary"
-
-    # 6. Default
-    return "secondary"
 
 
 _ENTITY_TYPE_DIR = {
     EntityType.COMPANY: "companies",
     EntityType.PRODUCT: "products",
     EntityType.TOPIC: "topics",
+    EntityType.SECTOR: "sectors",
 }
 
 
@@ -147,7 +57,7 @@ def _write_source_files(
         target_path = target_dir / f"{sf.slug}.md"
 
         fm_dict = sf.frontmatter.model_dump(mode="python")
-        fm_dict["source_type"] = _classify_source_type(
+        fm_dict["source_type"] = classify_source_type(
             sf.frontmatter.publisher, sf.frontmatter.kind.value
         )
         markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
@@ -306,6 +216,36 @@ def _write_audit_sidecar(
     )
     logger.info("Wrote audit sidecar: %s", sidecar_path)
     return sidecar_path
+
+
+def set_claim_status(
+    claim_path: Path,
+    new_status: str,
+    expected_current: str | None,
+) -> None:
+    """Flip the ``status`` field in a claim's frontmatter.
+
+    Parses the claim file, verifies the current status matches
+    ``expected_current`` (if provided), and writes the file back with the
+    new status. Passing ``expected_current=None`` skips the status check.
+
+    Raises:
+        ValueError: If current status does not match ``expected_current``,
+            or if frontmatter cannot be parsed.
+    """
+    text = claim_path.read_text(encoding="utf-8")
+    fm, body = parse_frontmatter(text)
+
+    if expected_current is not None:
+        current = fm.get("status")
+        if current != expected_current:
+            raise ValueError(
+                f"status mismatch: expected {expected_current!r}, "
+                f"got {current!r} in {claim_path}"
+            )
+
+    fm["status"] = new_status
+    claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 
 def _write_draft_entity_file(

@@ -44,26 +44,17 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 ## Agent Roles
 
-| Role | Scope | Input | Output |
-|------|-------|-------|--------|
-| Research Lead | Orchestrator, never edits claims directly | `research/QUEUE.md` | Sub-tasks, plans |
-| Ingestor | One URL in, one source file out | URL from queue | `sources/{yyyy}/{slug}.md` |
-| Claim Updater | Proposes verdict changes with rationale | Claim + source files | Updated claim file |
-| Citation Auditor | Finds claims with 0 sources, stale `as_of`, broken URLs | All claims | Audit report |
-| Page Builder | Generates TS data files for TreadLightly | All claims | TS data files |
+Seven roles, several automated via PydanticAI agents in `pipeline/`. Pipeline routing and persistence live in `orchestrator/`.
 
-## Pipeline Agents (pipeline/)
-
-The `pipeline/` directory contains PydanticAI agents that automate claim research and verification.
-
-| Agent | Package | Input | Output |
-|-------|---------|-------|--------|
-| **Researcher** | `researcher/` | Claim text | URLs + reasoning (`web_search` tool) |
-| **Ingestor** | `ingestor/` | URL | `SourceFile` (frontmatter + body) (`web_fetch`, `wayback_check` tools) |
-| **Analyst** | `analyst/` | Sources + claim | `AnalystOutput` (entity + verdict + narrative) |
-| **Auditor** | `auditor/` | Sources + claim (no verdict) | Independent `IndependentAssessment` |
-
-Pipeline routing and persistence live in `orchestrator/`.
+| Role | What it does | Status | Package |
+|------|-------------|--------|---------|
+| **Research Lead** | Orchestrates work from `QUEUE.md`; creates sub-tasks and plans; never edits claims directly | Manual | (none) |
+| **Researcher** | Takes claim text, returns relevant URLs for ingestion (`web_search` tool) | Automated | `researcher/` |
+| **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
+| **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
+| **Auditor** | Independent second opinion on analyst output, produces `IndependentAssessment` | Automated | `auditor/` |
+| **Citation Auditor** | Finds claims with zero sources, stale `as_of`, or broken URLs; produces audit reports | Partial (`scripts/check-citations.ts` covers broken refs; full auditing is backlog) | (none) |
+| **Page Builder** | Generates TS data files for downstream consumption by TreadLightly | Not yet implemented (no LLM needed; backlog) | (none) |
 
 ### Directory layout
 
@@ -88,8 +79,9 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 
 - `review_sources` -- fires after ingest; allows halting before analysis when sources are poor
 - `review_disagreement` -- fires when analyst and auditor verdicts conflict
+- `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 
-Pass `--interactive` to `dr verify` or `dr research` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
+Pass `--interactive` to `dr verify`, `dr research`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
 
 ### Tooling: dr vs inv
 
@@ -105,9 +97,22 @@ Two CLIs exist with different scopes:
 ```
 uv run dr verify "Entity" "claim text"
 uv run dr research "claim text"
-uv run dr audit --entity ecosia
+uv run dr reassess --entity ecosia
 uv run dr ingest https://example.com/article
+uv run dr onboard "Ecosia AI" --type product
+uv run dr lint --entity ecosia
+uv run dr review --claim ecosia/renewable-energy-hosting
 ```
+
+Commands:
+
+- `dr verify` -- Verify a claim about an entity using web research
+- `dr research` -- Research a claim: find sources, evaluate verdict, write everything to disk
+- `dr reassess` -- Run auditor checks on research claims
+- `dr ingest` -- Ingest a URL and produce a source file
+- `dr onboard` -- Onboard an entity using claim templates
+- `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
+- `dr review` -- Mark a claim as human-reviewed in its audit sidecar
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 

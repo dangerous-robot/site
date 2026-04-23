@@ -1,10 +1,10 @@
-"""Unit tests for _classify_source_type in orchestrator.persistence."""
+"""Unit tests for classify_source_type in common.source_classification."""
 
 from __future__ import annotations
 
 import pytest
 
-from orchestrator.persistence import _classify_source_type
+from common.source_classification import classify_source_type as _classify_source_type
 
 
 class TestPrimary:

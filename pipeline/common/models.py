@@ -44,6 +44,7 @@ class EntityType(str, Enum):
     COMPANY = "company"
     PRODUCT = "product"
     TOPIC = "topic"
+    SECTOR = "sector"
 
 
 class VerdictSeverity(str, Enum):
