@@ -1,13 +1,12 @@
 ---
-status: published
 title: ChatGPT discloses which models it uses
 entity: products/chatgpt
-category: data-privacy
-verdict: mixed
+category: product-comparison
+verdict: mostly-true
 confidence: medium
-as_of: '2026-04-22'
+status: draft
+as_of: '2026-04-23'
 sources:
-- 2026/openai-api-models-documentation
-- 2023/gpt-4-openai-secrecy-versus-disclosure
+- 2026/openai-overhauls-chatgpts-model-selection
 ---
-OpenAI provides some model disclosure through developer documentation that lists available models like GPT-5.4 and describes their capabilities, as shown in the "Models" documentation. However, OpenAI has significantly reduced technical disclosure practices, particularly with GPT-4, withholding key details about "architecture (including model size), hardware, training compute, dataset construction, training method" according to ZDNET's analysis. While users can see which model names are available, the underlying technical specifications that would constitute full model disclosure are largely kept secret for competitive and safety reasons.
+ChatGPT provides access to specific model information, though the disclosure mechanism has evolved. According to 'OpenAI overhauls ChatGPT's model selection,' the platform recently redesigned its interface to move away from displaying individual model names by default, instead presenting tiered options (Instant, Thinking, Pro) at first glance. However, the source confirms that users can access specific model versions through dropdown menus. This represents a shift toward less prominent disclosure of model names in the primary interface, though the capability to identify which models are available remains present. The change was implemented to address 'user frustration with the routing system's opacity,' suggesting that complete model transparency had been a previous point of concern.

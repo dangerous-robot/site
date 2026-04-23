@@ -1,15 +1,13 @@
 ---
-status: published
-title: Anthropic donates to AI safety or environmental causes
+title: Anthropic cofounders pledge donations to AI safety and inequality-related causes
 entity: companies/anthropic
-category: ai-safety
+category: industry-analysis
 verdict: mostly-true
 confidence: high
-as_of: '2026-04-22'
+status: draft
+as_of: '2026-04-23'
 sources:
-- 2026/anthropic-donates-public-first-action
-- 2026/anthropic-fellows-program-2026
-- 2026/anthropic-external-researcher-access-program
-- 2025/anthropic-investing-energy-ai-future
+- 2026/anthropic-cofounders-80-percent-wealth-pledge
+- 2026/anthropic-employees-philanthropy-billions-donations
 ---
-Anthropic has made substantial donations to AI safety causes but no documented environmental donations in the provided sources. The company donated $20 million to Public First Action for AI policy transparency and governance according to "Anthropic is donating $20 million to Public First Action." Additionally, Anthropic contributed $2 million to Carnegie Mellon University for AI-powered energy solutions and cybersecurity workforce development as reported in "Investing in energy to secure America's AI future." The company also funds AI safety research through its Fellows Program and External Researcher Access Program, providing stipends and free API credits to safety researchers per "Anthropic Fellows Program for AI safety research" and "What is the External Researcher Access Program?"
+According to Fortune and Transformer, Anthropic's seven cofounders, including CEO Dario Amodei and COO Daniela Amodei, have pledged to donate 80% of their wealth. The cofounders hold approximately $3.7 billion in estimated net worth each, with the potential to generate $37.8 billion in donations following an anticipated IPO. Dario Amodei explicitly frames these donations as addressing AI-driven wealth concentration and inequality. Transformer documents that Anthropic employees are heavily represented in effective altruism (EA) circles, with nearly 30 employees registered for an EA conference, suggesting donations will likely flow to EA-aligned nonprofits focused on AI safety. However, the sources document concerns that not all funds may reach organizations like PauseAI, Evitable, and MIRI, and note potential conflicts of interest in how donations are directed. The pledge itself is verified and the AI safety focus is evident, though the specific allocation and impact remain uncertain.
