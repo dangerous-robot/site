@@ -27,10 +27,17 @@ templates:
         - steward-ownership
         - cooperative
 
-  - slug: donates-to-safety-environment
-    text: "COMPANY donates to AI safety or environmental causes"
+  - slug: donates-to-ai-safety
+    text: "COMPANY donates to AI safety causes"
     entity_type: company
     category: ai-safety
+    core: true
+    notes: "Verifiable from financial disclosures or public commitments"
+
+  - slug: donates-to-environmental-causes
+    text: "COMPANY donates to environmental causes"
+    entity_type: company
+    category: environmental-impact
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
@@ -57,15 +64,6 @@ templates:
     core: true
     notes: "Some products don't say what's running behind the API"
 
-
-# Deferred: post-v0.1.0
-# To reactivate, move entries back into `templates` above.
-# Neither the Python pipeline nor the Astro loader reads this key.
-
-inactive_templates:
-
-  # --- Environmental Impact (Product) ---
-
   - slug: discloses-energy-sourcing
     text: "PRODUCT discloses its energy sourcing"
     entity_type: product
@@ -86,6 +84,22 @@ inactive_templates:
     category: environmental-impact
     core: true
     notes: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"
+
+  - slug: excludes-frontier-models
+    text: "PRODUCT excludes frontier-scale models"
+    entity_type: product
+    category: ai-safety
+    core: true
+    notes: "See controlled vocabulary for frontier-scale definition"
+
+
+# Deferred: post-v0.1.0
+# To reactivate, move entries back into `templates` above.
+# Neither the Python pipeline nor the Astro loader reads this key.
+
+inactive_templates:
+
+  # --- Environmental Impact (Product) ---
 
   # --- Data Privacy (Product) ---
 
@@ -153,13 +167,6 @@ inactive_templates:
     notes: "Willingness to recommend not using your own product"
 
   # --- Model Selection (Product) ---
-
-  - slug: excludes-frontier-models
-    text: "PRODUCT excludes frontier-scale models"
-    entity_type: product
-    category: ai-safety
-    core: true
-    notes: "See controlled vocabulary for frontier-scale definition"
 
   - slug: open-source-models-only
     text: "PRODUCT uses only open-source models"
