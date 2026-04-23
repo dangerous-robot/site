@@ -91,6 +91,7 @@ human_review:
   reviewed_at: null                 # null until dr review runs; ISO 8601 date string when set
   reviewer: null                    # email or name of reviewer
   notes: null                       # optional free text
+  pr_url: null                      # optional GitHub PR URL; set via --pr-url flag on dr review
 ```
 
 If `comparison` is `None` (auditor step failed or was skipped), write `audit: null`. The UI shows "Auditor check unavailable" rather than omitting the section entirely, since the pipeline run and sources are still recorded.
@@ -238,6 +239,7 @@ const auditSchema = z.object({
     reviewed_at: z.coerce.date().nullable(),
     reviewer: z.string().nullable(),
     notes: z.string().nullable(),
+    pr_url: z.string().url().nullable(),
   }),
 });
 ```
@@ -430,10 +432,14 @@ Recommended order:
 
 2. **Loader path configurability for research repo split**: `docs/BACKLOG.md:29` notes a possible future research repo split. When that happens, the loader's `research/claims` base path must become configurable rather than hardcoded. Defer until the split is actively planned, but note the coupling point.
 
+3. **`pr_url` field in Phase 1 sidecar schema**: **Decision (2026-04-22): include `pr_url` in Phase 1.** Add `pr_url: string | null` to `human_review` in the sidecar schema. `dr review` accepts an optional `--pr-url` flag. Retrofitting after Phase 1 ships requires a sidecar migration — locking it in now avoids that cost. Default is `null`; set explicitly when reviewing via a GitHub PR.
+
+4. **`reviewed_at` non-null CI enforcement**: **Decision (2026-04-22): use a CI check, not branch protection.** A CI step (or `scripts/check-audit-pairs.ts` extension) must verify that every `status: published` claim with a sidecar has `human_review.reviewed_at` set. Branch protection alone is not sufficient — it depends on operator discipline. This gate is a v0.1.0 blocker.
+
 ---
 
 ## Review history
 
 | Date | Reviewer | Scope | Changes |
 |---|---|---|---|
-| 2026-04-22 | agent (active review) | status + stub + duplicate check | Status "ready" is accurate: Phase 4.7 (entity-views IA) confirmed done per `docs/HISTORY.md`. Not a stub — fully specified with schema, pipeline changes, CLI command, Astro loader, UI, and acceptance criteria. No content duplicates with other active plans. Name clarity note: `feature-10-audit-trail.md` prefix references a BACKLOG item number; suggested rename for clarity: `audit-trail-sidecars.md`. |
+| 2026-04-22 | agent (active review) | status + stub + duplicate check | Status "ready" is accurate: Phase 4.7 (entity-views IA) confirmed done per `docs/HISTORY.md`. Not a stub — fully specified with schema, pipeline changes, CLI command, Astro loader, UI, and acceptance criteria. No content duplicates with other active plans. Renamed from `feature-10-audit-trail.md` to `audit-trail.md`. |
