@@ -1,7 +1,7 @@
-export type Verdict = 'true' | 'mostly-true' | 'mixed' | 'mostly-false' | 'false' | 'unverified';
+export type Verdict = 'true' | 'mostly-true' | 'mixed' | 'mostly-false' | 'false' | 'unverified' | 'not-applicable';
 
 export const VERDICT_ORDER: Verdict[] = [
-  'true', 'mostly-true', 'mixed', 'mostly-false', 'false', 'unverified',
+  'true', 'mostly-true', 'mixed', 'mostly-false', 'false', 'unverified', 'not-applicable',
 ];
 
 export const VERDICT_LABELS: Record<Verdict, string> = {
@@ -11,6 +11,7 @@ export const VERDICT_LABELS: Record<Verdict, string> = {
   'mostly-false': 'Mostly false',
   'false': 'False',
   'unverified': 'Unverified',
+  'not-applicable': 'N/A',
 };
 
 export const VERDICT_TOOLTIP: Record<Verdict, string> = {
@@ -20,6 +21,7 @@ export const VERDICT_TOOLTIP: Record<Verdict, string> = {
   'mostly-false': 'Claim is largely inaccurate with some basis in fact',
   'false': 'Claim is inaccurate',
   'unverified': 'Insufficient evidence to assess this claim',
+  'not-applicable': 'This criterion does not apply to this entity',
 };
 
 /** CSS class suffix matching --color-verdict-* tokens */
@@ -30,6 +32,7 @@ export const VERDICT_KIND: Record<Verdict, string> = {
   'mostly-false': 'mostly-false',
   'false': 'false',
   'unverified': 'unverified',
+  'not-applicable': 'not-applicable',
 };
 
 export function sortByVerdict<T>(items: T[], getVerdict: (item: T) => Verdict): T[] {

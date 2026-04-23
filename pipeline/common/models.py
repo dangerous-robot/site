@@ -10,6 +10,7 @@ class Verdict(str, Enum):
     MOSTLY_FALSE = "mostly-false"
     FALSE = "false"
     UNVERIFIED = "unverified"
+    NOT_APPLICABLE = "not-applicable"
 
 
 class Confidence(str, Enum):

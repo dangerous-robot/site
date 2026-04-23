@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 }
 
 const { std } = Astro.props;
-const claims = await getCollection('claims');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const entities = await getCollection('entities');
 
 const standardsIndex = buildStandardsIndex(claims);

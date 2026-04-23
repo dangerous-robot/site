@@ -6,6 +6,9 @@ import datetime
 import logging
 from pathlib import Path
 
+import yaml
+
+from auditor.models import ComparisonResult
 from common.frontmatter import serialize_frontmatter
 from common.models import Category, Confidence, EntityType, Verdict
 from common.utils import slugify
@@ -214,6 +217,7 @@ def _write_claim_file(
         "category": category,
         "verdict": verdict,
         "confidence": confidence,
+        "status": "draft",
         "as_of": datetime.date.today(),
         "sources": source_ids,
     }
@@ -223,6 +227,85 @@ def _write_claim_file(
     )
     logger.info("Wrote claim: %s", claim_path)
     return claim_path
+
+
+def _build_sources_consulted(
+    source_files: list[tuple[str, SourceFile]] | None,
+) -> list[dict]:
+    """Build the sources_consulted list for an audit sidecar.
+
+    Takes the raw (url, SourceFile) pairs from a verification run and returns
+    a flat list of dicts suitable for YAML serialisation.  Returns an empty
+    list if the input is None or empty.
+    """
+    if not source_files:
+        return []
+    result = []
+    for url, sf in source_files:
+        result.append(
+            {
+                "id": f"{sf.year}/{sf.slug}",
+                "url": url,
+                "title": sf.frontmatter.title,
+                "ingested": True,
+            }
+        )
+    return result
+
+
+def _write_audit_sidecar(
+    claim_path: Path,
+    comparison: ComparisonResult | None,
+    model: str,
+    ran_at: datetime.datetime,
+    sources_consulted: list[dict],
+    agents_run: list[str],
+) -> Path:
+    """Write the .audit.yaml sidecar alongside a claim file.
+
+    ``ran_at`` is passed in by the caller (not computed here) so that tests can
+    inject a fixed timestamp for reproducible assertions.
+
+    Returns the sidecar path.
+    """
+    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+
+    if comparison is not None:
+        audit_block = {
+            "analyst_verdict": comparison.primary_verdict.value,
+            "auditor_verdict": comparison.assessed_verdict.value,
+            "analyst_confidence": comparison.primary_confidence.value,
+            "auditor_confidence": comparison.assessed_confidence.value,
+            "verdict_agrees": comparison.verdict_agrees,
+            "confidence_agrees": comparison.confidence_agrees,
+            "needs_review": comparison.needs_review,
+        }
+    else:
+        audit_block = None
+
+    sidecar_data = {
+        "schema_version": 1,
+        "pipeline_run": {
+            "ran_at": ran_at.isoformat(),
+            "model": model,
+            "agents": agents_run,
+        },
+        "sources_consulted": sources_consulted,
+        "audit": audit_block,
+        "human_review": {
+            "reviewed_at": None,
+            "reviewer": None,
+            "notes": None,
+            "pr_url": None,
+        },
+    }
+
+    sidecar_path.write_text(
+        yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    logger.info("Wrote audit sidecar: %s", sidecar_path)
+    return sidecar_path
 
 
 def _write_draft_entity_file(

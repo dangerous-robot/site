@@ -13,7 +13,7 @@ export async function getStaticPaths() {
 const { category } = Astro.params;
 const label = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category;
 
-const allClaims = await getCollection('claims');
+const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
 const claims = allClaims.filter(c => c.data.category === category);
 const entities = await getCollection('entities');
 

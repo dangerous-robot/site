@@ -16,7 +16,7 @@ const { source } = Astro.props;
 const { Content } = await render(source);
 
 // Reverse citation lookup
-const allClaims = await getCollection("claims");
+const allClaims = await getCollection("claims", ({ data }) => data.status === "published");
 const citationIndex = buildCitationIndex(allClaims);
 const citingClaims = citationIndex.get(source.id) ?? [];
 

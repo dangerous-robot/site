@@ -4,7 +4,7 @@ import { getCollection } from 'astro:content';
 import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
 import VerdictDistribution from '../../components/VerdictDistribution.astro';
 
-const claims = await getCollection('claims');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
 const categoryStats = CATEGORIES.map(cat => {
   const catClaims = claims.filter(c => c.data.category === cat);

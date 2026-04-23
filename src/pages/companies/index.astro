@@ -6,7 +6,7 @@ import FilterBar from '../../components/FilterBar.astro';
 import EmptyState from '../../components/EmptyState.astro';
 
 const entities = await getCollection('entities', e => e.data.type === 'company');
-const claims = await getCollection('claims');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
 const cards = entities.map(entity => {
   const entityClaims = claims.filter(c => c.data.entity === entity.id);

@@ -26,6 +26,7 @@ const verdictCssVar: Record<string, string> = {
   "mostly-false": "var(--color-verdict-mostly-false)",
   false: "var(--color-verdict-false)",
   unverified: "var(--color-verdict-unverified)",
+  "not-applicable": "var(--color-verdict-not-applicable)",
 };
 
 const confidenceLabels: Record<string, string> = {
@@ -43,6 +44,10 @@ const confidenceExplanations: Record<string, string> = {
 const asOfDate = claim.data.as_of instanceof Date
   ? claim.data.as_of.toISOString().split("T")[0]
   : String(claim.data.as_of);
+
+const isDraft = claim.data.status === 'draft';
+const isArchived = claim.data.status === 'archived';
+const showNotice = isDraft || isArchived;
 ---
 
 <Base title={claim.data.title}>
@@ -51,6 +56,11 @@ const asOfDate = claim.data.as_of instanceof Date
       {matchedStandard && (
         <p class="standard-ref">
           Standard: <a href={`/standards/${matchedStandard.id}`}>{matchedStandard.data.text}</a>
+        </p>
+      )}
+      {showNotice && (
+        <p class="status-notice">
+          {isDraft ? 'This claim is a draft and has not been published.' : 'This claim is archived and may be outdated.'}
         </p>
       )}
       <h1>{claim.data.title}</h1>
@@ -113,6 +123,16 @@ const asOfDate = claim.data.as_of instanceof Date
 <style>
   .claim-detail header {
     margin-bottom: var(--space-xl);
+  }
+
+  .status-notice {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-text-muted);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    padding: var(--space-xs) var(--space-sm);
+    margin-bottom: var(--space-md);
   }
 
   .standard-ref {

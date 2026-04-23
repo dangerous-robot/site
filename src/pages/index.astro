@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 
 const entities = await getCollection('entities');
-const claims = await getCollection('claims');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const sources = await getCollection('sources');
 const standards = await getCollection('standards');
 

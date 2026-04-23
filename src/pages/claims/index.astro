@@ -7,7 +7,7 @@ import EmptyState from '../../components/EmptyState.astro';
 import { VERDICT_ORDER, VERDICT_LABELS } from '../../lib/verdict';
 import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
 
-const claims = await getCollection('claims');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const sorted = [...claims].sort((a, b) =>
   (b.data.as_of instanceof Date ? b.data.as_of.toISOString() : String(b.data.as_of)).localeCompare(
     a.data.as_of instanceof Date ? a.data.as_of.toISOString() : String(a.data.as_of)

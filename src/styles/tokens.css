@@ -182,6 +182,7 @@
   --color-verdict-mostly-false: #c44e3e;
   --color-verdict-false: #b22222;
   --color-verdict-unverified: #666677;
+  --color-verdict-not-applicable: #888899;
 
   --color-kind-report: #4a7a9e;
   --color-kind-article: #6a8e4e;
@@ -199,6 +200,7 @@
   --color-verdict-mostly-false: #a83428;
   --color-verdict-false: #8b0000;
   --color-verdict-unverified: #555566;
+  --color-verdict-not-applicable: #777788;
 
   --color-kind-report: #2e5a7e;
   --color-kind-article: #4a6e2e;
@@ -216,6 +218,7 @@
   --color-verdict-mostly-false: #ff7744;
   --color-verdict-false: #ff3333;
   --color-verdict-unverified: #aaaaaa;
+  --color-verdict-not-applicable: #bbbbcc;
 }
 
 [data-theme="light"][data-contrast="high"] {
@@ -225,4 +228,5 @@
   --color-verdict-mostly-false: #882200;
   --color-verdict-false: #660000;
   --color-verdict-unverified: #444444;
+  --color-verdict-not-applicable: #333344;
 }
