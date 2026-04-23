@@ -52,4 +52,4 @@ class VerdictSeverity(str, Enum):
     OPPOSITE = "opposite"
 
 
-DEFAULT_MODEL = "anthropic:claude-sonnet-4-20250514"
+DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
