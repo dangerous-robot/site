@@ -1,15 +1,15 @@
 ---
 title: Claude includes frontier-scale models
 entity: products/claude
-category: product-comparison
-verdict: 'false'
+category: ai-literacy
+verdict: mostly-true
 confidence: high
 status: draft
-as_of: '2026-04-23'
+as_of: '2026-04-24'
 sources:
-- 2026/claude-models-overview
-- 2026/claude-opus-4-7
-- 2026/claude-opus-4-6
-- 2026/claude-mythos-preview
+- 2026/anthropic-responsible-scaling-policy
+- 2026/claude-mythos-project-glasswing
+- 2026/claude-anthropic-bedrock
+- 2025/claude-models-microsoft-foundry
 ---
-The claim states that Claude excludes frontier-scale models, but the evidence contradicts this. According to the source 'Claude Mythos Preview: Anthropic's Frontier Model,' Claude Mythos Preview is explicitly described as 'Anthropic's most capable model, sitting a full capability tier above Opus 4.7' and represents a frontier-class model with advanced capabilities in cybersecurity and other domains. While Mythos Preview is currently restricted to Project Glasswing partners and has not received a broad public release, it is nonetheless part of the Claude product family. The sources also note that 'Opus 4.7 [serves as] the live test vehicle for new cybersecurity measures' that will 'eventually support a broad release of Mythos-class models,' indicating Anthropic's intent to eventually offer frontier models within the Claude lineup. Therefore, Claude does include frontier-scale models.
+Anthropic's Claude product line includes frontier-scale models. AWS documentation refers to Claude as 'Anthropic's frontier, state-of-the-art large language models,' and Microsoft Azure describes Claude models as 'frontier models' available on its platform. However, the sources indicate that Anthropic maintains an internal frontier model called Claude Mythos that exceeds public deployment thresholds. According to 'What Is Claude Mythos?', Mythos 'triggers thresholds that push it into ASL-3 territory or beyond' and is not released publicly because 'the potential for misuse is high enough that Anthropic won't release it under current safety standards.' The claim that Claude 'excludes' frontier-scale models is therefore inaccurate—Claude's public offerings are frontier models, but Anthropic does restrict deployment of its most advanced frontier systems through the Project Glasswing framework described in the Responsible Scaling Policy.

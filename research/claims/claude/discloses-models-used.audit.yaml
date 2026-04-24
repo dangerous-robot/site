@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T05:56:38.694852+00:00'
+  ran_at: '2026-04-24T12:55:55.002759+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -10,15 +10,15 @@ pipeline_run:
 sources_consulted:
 - id: 2026/claude-models-overview
   url: https://platform.claude.com/docs/en/about-claude/models/overview
-  title: Models overview
+  title: Models Overview
   ingested: true
-- id: 2026/anthropic-transparency-hub
-  url: https://www.anthropic.com/transparency
-  title: Transparency Hub
+- id: 2026/anthropic-claude-model-report
+  url: https://www.anthropic.com/transparency/model-report
+  title: Model Report
   ingested: true
-- id: 2024/claude-3-family-announcement
-  url: https://www.anthropic.com/news/claude-3-family
-  title: Introducing the next generation of Claude
+- id: 2025/anthropic-transparency-report-fmti-2025
+  url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Anthropic_FinalReport_FMTI2025.html
+  title: Anthropic Transparency Report
   ingested: true
 audit:
   analyst_verdict: 'true'

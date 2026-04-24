@@ -2,14 +2,14 @@
 title: Claude displays real-time energy usage
 entity: products/claude
 category: product-comparison
-verdict: mostly-false
-confidence: medium
+verdict: 'false'
+confidence: high
 status: draft
-as_of: '2026-04-23'
+as_of: '2026-04-24'
 sources:
 - 2026/anthropic-claude-ai-energy-consumption
-- 2025/how-hungry-is-ai-llm-inference-environmental-footprint
-- 2026/ai-cost-usage-tracker-extension
-- 2025/monitor-claude-usage-anthropic-grafana-integration
+- 2026/monitoring-usage-claude-code
+- 2026/claude-code-usage-analytics
+- 2025/anthropic-integration-grafana-cloud
 ---
-Claude itself does not display real-time energy usage to end users. Source 1 (energycosts.co.uk) notes that 'Anthropic does not publicly publish a single, definitive energy per prompt figure,' and energy consumption must be estimated using external benchmarks. However, third-party tools enable real-time tracking: the 'AI Cost & Usage Tracker' browser extension tracks Claude energy and carbon emissions locally, and the Grafana Cloud integration leverages Anthropic's Usage and Cost API to provide 'real-time insights' into costs and performance metrics. These are derived from usage data (tokens, API calls) rather than direct energy measurements from Claude's infrastructure. The claim conflates Claude's native functionality with downstream monitoring capabilities provided by external platforms.
+The claim that Claude displays real-time energy usage is not supported by the provided sources. Source 1 (Energy Costs) explicitly notes that 'Anthropic does not publicly disclose definitive per-request energy or water figures,' emphasizing the lack of transparent energy consumption reporting. While Source 4 (Grafana Labs) describes a Grafana Cloud integration that provides 'real-time insights into costs and performance,' this monitors usage data and costs through the Usage and Cost API—not energy consumption. Sources 2 and 3 document Claude Code telemetry and usage analytics features, but these track organizational metrics (tokens, costs, code acceptance rates), not energy usage. None of the sources indicate that Claude or Anthropic provides real-time energy usage visibility to users or organizations.

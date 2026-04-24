@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T05:56:08.627310+00:00'
+  ran_at: '2026-04-24T12:55:14.934907+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -12,7 +12,7 @@ sources_consulted:
   url: https://privacy.claude.com/en/articles/10023580-is-my-data-used-for-model-training
   title: Is my data used for model training?
   ingested: true
-- id: 2025/anthropic-consumer-terms-update
+- id: 2025/updates-to-consumer-terms-privacy-policy
   url: https://www.anthropic.com/news/updates-to-our-consumer-terms
   title: Updates to Consumer Terms and Privacy Policy
   ingested: true
@@ -20,18 +20,18 @@ sources_consulted:
   url: https://www.wired.com/story/anthropic-using-claude-chats-for-training-how-to-opt-out/
   title: Anthropic Will Use Claude Chats for Training Data. Here's How to Opt Out
   ingested: true
-- id: 2025/anthropic-claude-chat-training
-  url: https://www.macrumors.com/2025/08/28/anthropic-claude-chat-training/
-  title: Anthropic Will Now Train Claude on Your Chats, Here's How to Opt Out
+- id: 2026/anthropic-protect-claude-user-personal-data
+  url: https://privacy.claude.com/en/articles/10458704-how-does-anthropic-protect-the-personal-data-of-claude-users
+  title: How does Anthropic protect the personal data of Claude users?
   ingested: true
 audit:
   analyst_verdict: mostly-true
-  auditor_verdict: mixed
+  auditor_verdict: 'true'
   analyst_confidence: high
-  auditor_confidence: medium
+  auditor_confidence: high
   verdict_agrees: false
-  confidence_agrees: false
-  needs_review: true
+  confidence_agrees: true
+  needs_review: false
 human_review:
   reviewed_at: null
   reviewer: null

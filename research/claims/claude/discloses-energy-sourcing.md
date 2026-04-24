@@ -2,13 +2,13 @@
 title: Claude discloses its energy sourcing
 entity: products/claude
 category: environmental-impact
-verdict: mostly-false
-confidence: high
+verdict: unverified
+confidence: medium
 status: draft
-as_of: '2026-04-23'
+as_of: '2026-04-24'
 sources:
-- 2026/anthropic-claude-energy-consumption
-- 2026/anthropic-claude-risk-profile
-- 2025/ai-energy-footprint-mit-analysis
+- 2026/anthropic-voluntary-commitments
+- 2024/anthropic-claude-3-transparency
+- 2026/claude-ai-introduce-itself-sophisticated-pattern-matchers
 ---
-The sources provide strong evidence that Claude does not adequately disclose energy sourcing information. MIT Technology Review explicitly states that 'the closed AI model providers are serving up a total black box' regarding energy transparency, identifying Anthropic among providers lacking disclosure. EnergyCosts.co.uk estimates Claude's energy consumption based on 'published benchmarks' but emphasizes that 'what's missing most today is consistent disclosure: without standard reporting, the public ends up comparing apples to oranges.' The analysis indicates that third-party researchers must infer energy usage rather than relying on official Anthropic disclosures, and no source identifies publicly available energy sourcing statements from Anthropic about Claude. While EnergyCosts.co.uk and other sources attempt to quantify energy consumption, this represents independent estimation rather than vendor disclosure.
+The provided sources do not contain specific information about Claude's energy sourcing disclosures. Source 1 (Voluntary Commitments) discusses Anthropic's safety and security frameworks but does not address energy sourcing. Source 2 (Foundation Model Transparency Index) mentions that Claude 3 models were trained using hardware from AWS and GCP, but does not specify energy sourcing details or renewable energy commitments. Source 3 is an interview where Claude discusses AI energy sustainability as a topic but does not document what disclosures Claude or Anthropic actually make about their energy sourcing. To verify this claim, direct evidence from Anthropic's official sustainability reports, environmental impact disclosures, or energy sourcing documentation would be needed.

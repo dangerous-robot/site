@@ -1,14 +1,15 @@
 ---
-title: Claude excludes image generation
+title: Claude has native image generation capabilities
 entity: products/claude
 category: product-comparison
-verdict: mostly-true
+verdict: mostly-false
 confidence: high
 status: draft
-as_of: '2026-04-23'
+as_of: '2026-04-24'
 sources:
 - 2026/can-claude-produce-images
-- 2026/claude-vision-documentation
+- 2024/claude-3-5-sonnet
+- 2026/anthropic-claude-charts-diagrams
 - 2025/generate-images-claude-hugging-face
 ---
-Claude's core product does not natively generate images. According to Anthropic's official documentation in 'Can Claude produce images?', Claude does not generate photos or illustrations like dedicated image-generation tools, though it can create diagrams and charts using HTML and SVG. However, the sources reveal a more nuanced picture: Hugging Face's 'Generate Images with Claude and Hugging Face' demonstrates that Claude can be extended to generate images through Model Context Protocol (MCP) servers that connect it to external image generation models like FLUX.1 Krea. This means while image generation is not a native Claude feature, it can be enabled through third-party integrations. The claim is mostly accurate regarding Claude's base capabilities, but users can now access image generation functionality through additional setup.
+Claude's core product does not natively generate images. According to Anthropic's official documentation ('Can Claude produce images?'), 'Claude doesn't generate photos or illustrations the way image-generation tools do.' Instead, Claude can create diagrams, charts, and interactive visualizations using code (HTML and SVG). While Anthropic later enabled Claude to automatically generate custom charts and diagrams within conversations ('Anthropic's Claude AI can respond with charts, diagrams, and other visuals now'), these are code-based visualizations rather than image generation. Third-party integration with external image generation models via Hugging Face is possible ('Generate Images with Claude and Hugging Face'), but this represents external tool use, not native Claude capability. The claim that Claude 'excludes image generation' is substantially accurate regarding its built-in feature set.

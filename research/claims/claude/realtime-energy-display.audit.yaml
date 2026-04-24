@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T05:57:36.830817+00:00'
+  ran_at: '2026-04-24T12:57:06.515061+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -12,27 +12,26 @@ sources_consulted:
   url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
   title: How Much Energy Does Anthropic's Claude AI Consume?
   ingested: true
-- id: 2025/how-hungry-is-ai-llm-inference-environmental-footprint
-  url: https://arxiv.org/html/2505.09598v1
-  title: How Hungry is AI? Benchmarking Energy, Water, and Carbon Footprint of LLM
-    Inference
+- id: 2026/monitoring-usage-claude-code
+  url: https://code.claude.com/docs/en/monitoring-usage
+  title: Monitoring
   ingested: true
-- id: 2026/ai-cost-usage-tracker-extension
-  url: https://github.com/argmin-com/extension
-  title: AI Cost & Usage Tracker
+- id: 2026/claude-code-usage-analytics
+  url: https://support.claude.com/en/articles/12157520-claude-code-usage-analytics
+  title: Claude Code usage analytics
   ingested: true
-- id: 2025/monitor-claude-usage-anthropic-grafana-integration
+- id: 2025/anthropic-integration-grafana-cloud
   url: https://grafana.com/blog/how-to-monitor-claude-usage-and-costs-introducing-the-anthropic-integration-for-grafana-cloud/
   title: 'How to monitor Claude usage and costs: introducing the Anthropic integration
     for Grafana Cloud'
   ingested: true
 audit:
-  analyst_verdict: mostly-false
-  auditor_verdict: mostly-true
-  analyst_confidence: medium
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
+  analyst_confidence: high
   auditor_confidence: high
   verdict_agrees: false
-  confidence_agrees: false
+  confidence_agrees: true
   needs_review: true
 human_review:
   reviewed_at: null

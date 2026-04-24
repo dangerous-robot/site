@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T05:57:07.450759+00:00'
+  ran_at: '2026-04-24T12:56:32.589653+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,25 +8,25 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/anthropic-claude-energy-consumption
-  url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
-  title: How Much Energy Does Anthropic's Claude AI Consume?
+- id: 2026/anthropic-voluntary-commitments
+  url: https://www.anthropic.com/transparency/voluntary-commitments
+  title: Voluntary Commitments
   ingested: true
-- id: 2026/anthropic-claude-risk-profile
-  url: https://www.credo.ai/ai-vendor-directory/anthropic-claude
-  title: Anthropic Claude - AI Vendor Risk Profile
+- id: 2024/anthropic-claude-3-transparency
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
   ingested: true
-- id: 2025/ai-energy-footprint-mit-analysis
-  url: https://www.technologyreview.com/2025/05/20/1116327/ai-energy-usage-climate-footprint-big-tech/
-  title: We did the math on AI's energy footprint. Here's the story you haven't heard.
+- id: 2026/claude-ai-introduce-itself-sophisticated-pattern-matchers
+  url: https://dwaves.de/2026/04/12/letting-claude.ai-introduce-itself-llm-sophisticated-pattern-matchers/
+  title: 'Letting claude.ai Introduce Itself: LLM "Sophisticated Pattern Matchers"'
   ingested: true
 audit:
-  analyst_verdict: mostly-false
-  auditor_verdict: mostly-true
-  analyst_confidence: high
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: medium
   auditor_confidence: high
-  verdict_agrees: false
-  confidence_agrees: true
+  verdict_agrees: true
+  confidence_agrees: false
   needs_review: true
 human_review:
   reviewed_at: null

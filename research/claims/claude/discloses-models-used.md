@@ -5,10 +5,10 @@ category: ai-literacy
 verdict: 'true'
 confidence: high
 status: draft
-as_of: '2026-04-23'
+as_of: '2026-04-24'
 sources:
 - 2026/claude-models-overview
-- 2026/anthropic-transparency-hub
-- 2024/claude-3-family-announcement
+- 2026/anthropic-claude-model-report
+- 2025/anthropic-transparency-report-fmti-2025
 ---
-Anthropic provides comprehensive public disclosure of Claude's model lineup across multiple official channels. The 'Models overview' documentation explicitly names and describes current models including Claude Opus 4.7, Sonnet 4.6, and Haiku 4.5, with specifications including API IDs, pricing, and capabilities. The Transparency Hub documents Claude model variants (Opus 4.6, Sonnet 4.6, Haiku 4.5) with detailed capability benchmarks and safety evaluations. Historical announcements such as 'Introducing the next generation of Claude' disclosed the Claude 3 family structure with three capability tiers (Haiku, Sonnet, Opus). These sources demonstrate that Anthropic regularly discloses available Claude models through official documentation and announcements.
+Anthropic provides detailed public disclosure of Claude model variants and their specifications. The 'Models Overview' documentation explicitly names and compares three current models (Opus 4.7, Sonnet 4.6, and Haiku 4.5), including their capabilities, pricing, context windows, and knowledge cutoff dates. The 'Model Report' further identifies specific model versions (Claude Opus 4.6, Claude Sonnet 4.6, Claude Sonnet 4.5, Claude Opus 4.5) and provides safety assessments for each. The Stanford CRFM Transparency Report confirms training data sourcing details for 'Claude Opus 4 and Claude Sonnet 4.' This multi-source documentation demonstrates that Anthropic proactively discloses which Claude models are available to users.
