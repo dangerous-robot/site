@@ -15,10 +15,11 @@ const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
 .verdict-badge {
   display: inline-block;
   padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--color-on-badge);
   white-space: nowrap;
 }
