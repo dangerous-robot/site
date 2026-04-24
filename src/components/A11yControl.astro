@@ -51,6 +51,18 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
       </div>
     </div>
 
+    <div class="a11y-section">
+      <span class="a11y-label" id="a11y-label-motion">Motion</span>
+      <div class="a11y-group" role="radiogroup" aria-labelledby="a11y-label-motion">
+        <button class="a11y-radio" role="radio" data-group="motion" data-value="on" aria-checked="true" type="button">
+          On
+        </button>
+        <button class="a11y-radio" role="radio" data-group="motion" data-value="reduce" aria-checked="false" type="button">
+          Reduce
+        </button>
+      </div>
+    </div>
+
     <div class="a11y-section a11y-section--last">
       <span class="a11y-label" id="a11y-label-size">Text size</span>
       <div class="a11y-group" role="radiogroup" aria-labelledby="a11y-label-size">
@@ -291,6 +303,12 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
       padding: 1rem;
     }
   }
+
+  /* Site-level motion preference — mirrors prefers-reduced-motion: reduce */
+  :root[data-motion="reduce"] .a11y-fab { transition: none; }
+  :root[data-motion="reduce"] .a11y-radio { transition: none; }
+  :root[data-motion="reduce"] .a11y-popover:not([hidden]) { animation: none; }
+  :root[data-motion="reduce"] .a11y-backdrop { transition: none !important; }
 </style>
 
 <script>
@@ -301,6 +319,7 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
       theme: "dr-theme",
       contrast: "dr-contrast",
       fontSize: "dr-font-size",
+      motion: "dr-motion",
     };
 
     const FONT_SIZE_PX: Record<string, string> = {
@@ -351,9 +370,14 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
       html.dataset.contrast = contrast;
     }
 
+    function applyMotion(value: string) {
+      html.dataset.motion = value;
+    }
+
     function currentValue(group: string): string {
       if (group === "theme") return html.dataset.themeChoice || "system";
       if (group === "contrast") return html.dataset.contrast || "normal";
+      if (group === "motion") return html.dataset.motion || "on";
       return html.dataset.fontSize || "medium";
     }
 
@@ -366,6 +390,7 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
       if (group === "theme") { applyTheme(value); write(STORAGE.theme, value); }
       else if (group === "contrast") { applyContrast(value); write(STORAGE.contrast, value); }
       else if (group === "font-size") { applyFontSize(value); write(STORAGE.fontSize, value); }
+      else if (group === "motion") { applyMotion(value); write(STORAGE.motion, value); }
     }
 
     let previouslyFocused: HTMLElement | null = null;
@@ -477,5 +502,12 @@ import AccessibilityIcon from "./AccessibilityIcon.astro";
     setGroupChecked("theme", savedTheme);
     setGroupChecked("contrast", html.dataset.contrast || "normal");
     setGroupChecked("font-size", html.dataset.fontSize || "medium");
+
+    // OR system + stored preference — user can only add restriction, not remove OS-level reduce.
+    const systemPrefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const storedMotion = read(STORAGE.motion) || "on";
+    const effectiveMotion = (systemPrefersReduced || storedMotion === "reduce") ? "reduce" : "on";
+    applyMotion(effectiveMotion);
+    setGroupChecked("motion", effectiveMotion);
   })();
 </script>

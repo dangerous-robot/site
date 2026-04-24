@@ -679,7 +679,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     80% { transform: translate(0.5px, 0); text-shadow: none; }
   }
 
-  /* -------- reduced motion -------- */
+  /* -------- reduced motion (OS preference) -------- */
   @media (prefers-reduced-motion: reduce) {
     .hero-logo-wrap.is-glitching .hero-logo--ghost,
     .hero-logo-wrap.is-glitching .hero-logo--base,
@@ -691,6 +691,23 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     .hero-nav li a, .hero-nav__arrow, .hero-title__word {
       transition: none !important;
     }
+  }
+
+  /* -------- reduced motion (site preference) -------- */
+  :root[data-motion="reduce"] .hero-logo,
+  :root[data-motion="reduce"] .hero-title__word,
+  :root[data-motion="reduce"] .hero-burger,
+  :root[data-motion="reduce"] .hero-burger__icon,
+  :root[data-motion="reduce"] .nav-card,
+  :root[data-motion="reduce"] .nav-card__arrow,
+  :root[data-motion="reduce"] .nav-card__label,
+  :root[data-motion="reduce"] .nav-card__num,
+  :root[data-motion="reduce"] .nav-card::before,
+  :root[data-motion="reduce"] .hero-nav li a,
+  :root[data-motion="reduce"] .hero-nav__arrow,
+  :root[data-motion="reduce"] .hero-nav {
+    transition: none !important;
+    animation: none;
   }
 
   /* Single-column stack only at phone widths where cards beside the
@@ -748,11 +765,14 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     .hero-title__letter.is-glitching { animation: none; }
     .hero-title__letter { transition: none !important; }
   }
+  :root[data-motion="reduce"] .hero-title__letter.is-glitching { animation: none; }
+  :root[data-motion="reduce"] .hero-title__letter { transition: none !important; }
 </style>
 
 <script is:inline>
   (function () {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      || document.documentElement.dataset.motion === 'reduce';
 
     const burger = document.getElementById('hero-burger');
     const overlay = document.getElementById('hero-nav');

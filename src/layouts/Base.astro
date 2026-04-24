@@ -56,6 +56,8 @@ const {
         html.style.fontSize = storedSize === "small" ? "16px"
           : storedSize === "large" ? "20px"
           : "18px";
+
+        html.dataset.motion = read("dr-motion") || "on";
       })();
     </script>
   </head>

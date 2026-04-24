@@ -45,6 +45,7 @@ body {
     transition: none;
   }
 }
+:root[data-motion="reduce"] body { transition: none; }
 
 /* ---------------------------------------------------------
    Headings
@@ -206,3 +207,4 @@ th {
     scroll-behavior: smooth;
   }
 }
+:root[data-motion="reduce"] { scroll-behavior: auto; }
