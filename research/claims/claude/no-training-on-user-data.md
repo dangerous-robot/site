@@ -1,15 +1,15 @@
 ---
-status: published
 title: Claude uses user data for training
 entity: products/claude
 category: data-privacy
-verdict: 'false'
+verdict: mostly-true
 confidence: high
-as_of: '2026-04-22'
+status: draft
+as_of: '2026-04-23'
 sources:
-- 2026/claude-data-model-training-privacy
-- 2025/anthropic-consumer-terms-privacy-policy-updates
-- 2026/claude-code-data-usage
-- 2026/anthropic-claude-data-retention-policy
+- 2026/claude-data-model-training
+- 2025/anthropic-consumer-terms-update
+- 2025/anthropic-claude-training-opt-out
+- 2025/anthropic-claude-chat-training
 ---
-According to Anthropic's privacy documentation, Claude does use user data for training under specific conditions. As stated in "Updates to Consumer Terms and Privacy Policy," users can now "allow their data to be used to improve Claude," and "Is my data used for model training?" confirms that Anthropic "will use your chats and coding sessions (including to improve our models) if: You choose to allow us to use your chats and coding sessions to improve Claude." However, this usage requires explicit user consent and applies only to consumer plans (Free, Pro, Max), not commercial services. Users retain control over this setting, and incognito chats are never used for training regardless of privacy settings.
+As of October 2025, Anthropic updated Claude's policy to use user chat and coding data for model training on an opt-in basis by default, reversing its prior approach. According to Anthropic's official documentation, "We will use your chats and coding sessions (including to improve our models) if: You choose to allow us to use your chats and coding sessions to improve Claude." WIRED reports that "Prior to Anthropic updating its privacy policy, Claude was one of the only major chatbots not to use conversations for LLM training automatically," and MacRumors notes that "Prior to today, Anthropic did not use conversations and data from users to train or improve Claude, unless users submitted feedback." The policy applies to Claude Free, Pro, and Max consumer plans but excludes commercial services, incognito chats, and users who opt out. Users retain control: deleted conversations are not used for training, and data retention defaults to 30 days for non-participating users.

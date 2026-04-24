@@ -1,0 +1,35 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T05:56:38.694852+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/claude-models-overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
+  ingested: true
+- id: 2026/anthropic-transparency-hub
+  url: https://www.anthropic.com/transparency
+  title: Transparency Hub
+  ingested: true
+- id: 2024/claude-3-family-announcement
+  url: https://www.anthropic.com/news/claude-3-family
+  title: Introducing the next generation of Claude
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mixed
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

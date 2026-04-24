@@ -1,0 +1,39 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T05:55:38.245458+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/anthropic-claude-risk-profile
+  url: https://www.credo.ai/ai-vendor-directory/anthropic-claude
+  title: Anthropic Claude - AI Vendor Risk Profile
+  ingested: true
+- id: 2026/covering-electricity-price-increases
+  url: https://www.anthropic.com/news/covering-electricity-price-increases
+  title: Covering electricity price increases from our data centers
+  ingested: true
+- id: 2026/claude-ai-introduce-itself-llm-pattern-matchers
+  url: https://dwaves.de/2026/04/12/letting-claude-ai-introduce-itself-llm-sophisticated-pattern-matchers/
+  title: 'Letting Claude AI Introduce Itself: LLM Sophisticated Pattern Matchers'
+  ingested: true
+- id: 2025/anthropic-build-ai-america-energy-report
+  url: https://www.anthropic.com/news/build-ai-in-america
+  title: 'Build AI in America: Anthropic Energy Report'
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: low
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
