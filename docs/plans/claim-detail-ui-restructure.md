@@ -1,24 +1,48 @@
-# Claim Detail Page: Review Status Promotion + Site-wide Breadcrumbs
+# Plan: Claim detail page review status and site-wide breadcrumbs
+
+**Status**: ready
+**Created**: 2026-04-24
 
 ## Context
 
-The claim detail page buries critical provenance information: human review status is hidden inside a collapsed `<details>` at the bottom, and the confidence explanation requires a click to reveal (non-obvious UX). Readers cannot answer at a glance: *when was this verdict reached, was it reviewed by a person, what process was followed?* The entity link is raw text rather than navigational context.
+The claim detail page currently hides human review status in a collapsed `<details>` at the bottom and surfaces the confidence explanation only on click. Readers cannot answer at a glance whether a verdict was reviewed by a person. The entity is rendered as raw text rather than navigation.
 
-This plan promotes review status into the header meta row, fixes confidence UX, adds a site-wide Breadcrumb component, enriches audit trail source display with collection metadata, and moves the criterion reference to the bottom of the page.
+This plan promotes review status into the header meta row, simplifies confidence display, adds a site-wide `Breadcrumb` component, enriches the audit trail with source collection metadata, and moves the criterion reference to the bottom of the page.
 
-Future improvements (verdict history, multi-reviewer) are appended to `docs/UNSCHEDULED.md`.
+## Non-goals
+
+Tracked in `docs/UNSCHEDULED.md`, out of scope here:
+
+| Deferred | Notes |
+|----------|-------|
+| Verdict change history | Append-only `history` array in `.audit.yaml`; site renders a timeline. Requires pipeline changes. |
+| Multi-reviewer tracking | `human_review` becomes an array. Site shows `✓ N reviewers`. Schema version bump and backfill. |
+| Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity claim lists. |
 
 ---
 
 ## Changes
 
-### 1. New: `src/components/Breadcrumb.astro`
+### 1. New: `src/lib/entityTypes.ts`
 
-Props: `crumbs: { label: string; href?: string }[]`
+Single source of truth for entity-type to parent-page mapping. Used by both claim and entity pages so the map is not duplicated.
 
-- Callers pass `{ label: "Home", href: "/" }` as first crumb explicitly — no auto-injection
-- Last crumb has no `href`; gets `aria-current="page"`
-- `<nav aria-label="Breadcrumb"><ol>` structure; CSS `::after` separator `/` — no JS
+```typescript
+export const ENTITY_TYPE_PARENTS = {
+  company: { label: "Companies", href: "/companies" },
+  product: { label: "Products",  href: "/products"  },
+  topic:   { label: "Topics",    href: "/topics"    },
+  sector:  { label: "Sectors",   href: "/sectors"   },
+} as const;
+
+export type EntityType = keyof typeof ENTITY_TYPE_PARENTS;
+```
+
+The schema (`src/content.config.ts`) defines `entity.type` as `z.enum(['company', 'product', 'topic', 'sector'])`, so all four are covered. Verify each parent index page exists before merging; if any is missing, omit that crumb rather than ship a 404.
+
+### 2. New: `src/components/Breadcrumb.astro`
+
+Props: `crumbs: { label: string; href?: string }[]`. Callers pass `Home` explicitly as the first crumb (no auto-injection). The last crumb has no `href` and gets `aria-current="page"`. Separator via CSS `::after`. CSS-generated content is implicitly `aria-hidden`, but verify with VoiceOver during the verification pass.
 
 ```astro
 ---
@@ -50,51 +74,35 @@ const { crumbs } = Astro.props;
 </style>
 ```
 
----
+### 3. Modify: `src/pages/claims/[...slug].astro`
 
-### 2. Modify: `src/pages/claims/[...slug].astro`
+**Imports**: add `Breadcrumb`, `VerdictBadge`, and `ENTITY_TYPE_PARENTS`.
 
-**New imports:**
+**Frontmatter additions** (entity lookup for breadcrumb, source map for audit trail, review state):
+
 ```typescript
-import Breadcrumb from "../../components/Breadcrumb.astro";
-import VerdictBadge from "../../components/VerdictBadge.astro";
-```
-
-**New data fetching (after existing frontmatter, before closing `---`):**
-```typescript
-// Entity lookup for breadcrumb
 const entities = await getCollection("entities");
 const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
-
-const typeParentMap: Record<string, { label: string; href: string }> = {
-  company: { label: "Companies", href: "/companies" },
-  product: { label: "Products",  href: "/products" },
-  topic:   { label: "Topics",    href: "/topics" },
-};
-const typeParent = entityEntry ? (typeParentMap[entityEntry.data.type] ?? null) : null;
+const typeParent = entityEntry ? (ENTITY_TYPE_PARENTS[entityEntry.data.type] ?? null) : null;
 const entityLabel = entityEntry?.data.name ?? claim.data.entity;
 
 const claimCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),
   { label: entityLabel, href: `/entities/${claim.data.entity}` },
-  { label: claim.data.title },  // current page — no href
+  { label: claim.data.title },
 ];
 
-// Source metadata lookup for audit trail
 const allSources = await getCollection("sources");
 const sourceMap = new Map(allSources.map(s => [s.id, s]));
 
-// Reviewer status
-const hasReviewer = !!(audit?.human_review.reviewer);
-const reviewerCount = hasReviewer ? 1 : 0;  // single-reviewer schema today
+const isReviewed = !!(audit?.human_review.reviewer);
 ```
 
-**Remove from frontmatter:**
-- `verdictCssVar` map — replaced by `VerdictBadge`
-- Keep `confidenceLabels` and `confidenceExplanations` — used for `title` tooltip
+**Frontmatter removals**: the `verdictCssVar` map (replaced by `VerdictBadge`) and `confidenceExplanations` (no longer needed; see meta row decision below). Keep `confidenceLabels`.
 
-**Restructured header** (replace current header block):
+**Header markup** (replace current header block):
+
 ```astro
 <Breadcrumb crumbs={claimCrumbs} />
 
@@ -104,31 +112,36 @@ const reviewerCount = hasReviewer ? 1 : 0;  // single-reviewer schema today
 
   <div class="meta">
     <VerdictBadge verdict={claim.data.verdict} />
-
-    <span class="confidence" title={confidenceExplanations[claim.data.confidence]}>
-      {confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence
-    </span>
-
+    <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
     <span class="as-of">{asOfDate}</span>
-
-    <span class="reviewer-status"
-      aria-label={hasReviewer ? `${reviewerCount} reviewer` : 'Pending review'}>
-      {hasReviewer ? `✓ ${reviewerCount} reviewer` : 'Pending review'}
+    <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
+      {isReviewed ? "✓ Reviewed" : "Unreviewed"}
     </span>
   </div>
 </header>
 ```
 
-Remove `<details class="confidence-details">` (replaced by `<span title>`).  
-Remove `<div class="entity-link">` (replaced by `<Breadcrumb>`).  
-Remove `<p class="criterion-ref">` from header (moves to bottom — see below).
+Decisions:
 
-**Audit trail `<details>` summary** — update to show agents, not model:
+- **Confidence** is a plain label. The previous dotted-underline + `title=` tooltip pattern was invisible on touch and the H/M/L label already carries the signal. The longer explanation, if needed, can live on a dedicated `/about/confidence` page (out of scope here).
+- **Review state** shows status only, not count. With the single-reviewer schema today the count is always 0 or 1 and `✓ 1 reviewer` reads oddly. Reintroduce `✓ N reviewers` when multi-reviewer lands.
+- The phrase **"Unreviewed"** (factual) replaces "Pending review" (sounds like the verdict itself is provisional).
+- Reviewer name, date, notes, and PR link remain in the research details section (kept, unchanged structurally).
+
+**Remove from page markup**:
+
+- `<details class="confidence-details">` block.
+- `<div class="entity-link">` (replaced by breadcrumb).
+- `<p class="criterion-ref">` from the header (moved to bottom).
+
+**Audit trail summary** (currently shows `model`):
+
 ```astro
 <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
 ```
 
-**Sources display in audit trail** — replace `ingested` span:
+**Sources display** in audit trail. The schema includes `{ id, url, title, ingested }`. The new UI uses presence in the sources collection (internal vs external link) as the trust signal and drops the separate "ingested" badge.
+
 ```astro
 {audit.sources_consulted.map((src) => {
   const meta = sourceMap.get(src.id);
@@ -146,27 +159,9 @@ Remove `<p class="criterion-ref">` from header (moves to bottom — see below).
   );
 })}
 ```
-- Source in collection → internal link to `/sources/{id}` + `kind · source_type · publisher`
-- Source not in collection → external link, no metadata, no "ingested" label
 
-**Human review subsection in research details** — keep and update to expose reviewer name (meta row shows count only; name lives here):
-```astro
-<section class="audit-section">
-  <h3>Human review</h3>
-  {reviewedAt ? (
-    <div>
-      <p>Reviewed {reviewedAt}{audit.human_review.reviewer ? ` by ${audit.human_review.reviewer}` : ''}</p>
-      {audit.human_review.notes && <p class="audit-muted">{audit.human_review.notes}</p>}
-      {audit.human_review.pr_url && <p><a href={audit.human_review.pr_url}>Review PR</a></p>}
-    </div>
-  ) : (
-    <p class="audit-muted">Pending human review</p>
-  )}
-</section>
-```
-The `.reviewer-status` span in the meta row shows count (`✓ 1 reviewer`). The reviewer name, date, notes, and PR link are only visible when the research details section is expanded.
+**Criterion ref at bottom** (insert before `<section class="review-info">`):
 
-**Criterion ref at bottom** — insert before `<section class="review-info">`:
 ```astro
 {matchedCriteria && (
   <p class="criterion-ref">
@@ -175,123 +170,69 @@ The `.reviewer-status` span in the meta row shows count (`✓ 1 reviewer`). The 
 )}
 ```
 
-**CSS — remove:**
-- `.verdict-badge` (local, replaced by component)
-- `.confidence-details`, `.confidence-details summary`, `.confidence-explanation`
-- `.entity-link`
-- `.ingested-yes`, `.ingested-no`
-- Split combined `.confidence, .as-of, .category` rule
+**CSS removals**: `.verdict-badge`, `.confidence-details` (and children), `.entity-link`, `.ingested-yes`, `.ingested-no`. Split the combined `.confidence, .as-of, .category` rule (the dotted-underline styling on `.confidence` goes away with the tooltip).
 
-**CSS — add:**
+**CSS additions**:
+
 ```css
-.confidence {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-sm);
-  text-decoration: underline dotted;
-  text-decoration-color: var(--color-text-faint);
-  text-underline-offset: 2px;
-  cursor: default;
-  /* title tooltip not visible on touch — acceptable; label is self-explanatory */
+.confidence, .as-of { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+.review-state { font-size: var(--font-size-sm); }
+.review-state.reviewed { color: var(--color-text-muted); }
+.review-state.unreviewed {
+  color: var(--color-text);
+  border: 1px solid var(--color-text-faint);
+  border-radius: 999px;
+  padding: 0.1em 0.6em;
 }
-.reviewer-status { color: var(--color-text-muted); font-size: var(--font-size-sm); }
 .source-meta { color: var(--color-text-faint); font-size: var(--font-size-xs); margin-left: 0.4em; }
 ```
 
----
+The unreviewed state gets an outlined chip so it reads as a distinct status rather than muted footnote text. No fill color: that would compete with the verdict badge.
 
-### 3. Modify: `src/pages/entities/[...slug].astro`
+### 4. Modify: `src/pages/entities/[...slug].astro`
 
-**Import:** `import Breadcrumb from "../../components/Breadcrumb.astro";`
+Import `Breadcrumb` and `ENTITY_TYPE_PARENTS`. Build `entityCrumbs` from the shared map. Insert `<Breadcrumb crumbs={entityCrumbs} />` before the `<header>` at line 61 (inside the existing `<article class="entity-detail">`).
 
-**Add breadcrumb data (before closing `---`):**
-```typescript
-const typeParentMap = {
-  company: { label:"Companies", href:"/companies" },
-  product: { label:"Products",  href:"/products" },
-  topic:   { label:"Topics",    href:"/topics" },
-};
-const entityTypeParent = typeParentMap[entity.data.type as keyof typeof typeParentMap] ?? null;
-const entityCrumbs = [
-  { label:"Home", href:"/" },
-  ...(entityTypeParent ? [entityTypeParent] : []),
-  { label: entity.data.name },
-];
-```
+### 5. Modify: `src/pages/sources/[...slug].astro`
 
-**In markup** — insert before `<header>` (line 61):
-```astro
-<article class="entity-detail">
-  <Breadcrumb crumbs={entityCrumbs} />
-  <header>
-```
+Import `Breadcrumb`. Build `sourceCrumbs = [{ label: "Home", href: "/" }, { label: "Sources", href: "/sources" }, { label: source.data.title }]`. Insert before `<header>` at line 58.
+
+### 6. Modify: `src/pages/criteria/[slug].astro`
+
+Import `Breadcrumb`. Build `criteriaCrumbs = [{ label: "Home", href: "/" }, { label: "Criteria", href: "/criteria" }, { label: std.data.text }]`. Insert before `<header class="std-header">` at line 60.
+
+### 7. Update `docs/UNSCHEDULED.md`
+
+Append a "Claim detail page, deferred improvements" section with the table from Non-goals above.
 
 ---
 
-### 4. Modify: `src/pages/sources/[...slug].astro`
+## Rollout
 
-**Import:** `import Breadcrumb from "../../components/Breadcrumb.astro";`
+Two commits, in order, each independently reviewable and revertible:
 
-**Add:** `const sourceCrumbs = [{ label:"Home", href:"/" }, { label:"Sources", href:"/sources" }, { label: source.data.title }];`
+1. **Breadcrumb landing**: `src/lib/entityTypes.ts`, `src/components/Breadcrumb.astro`, applied to claim, entity, source, and criterion pages. Verify all four parent index pages exist; omit any that do not.
+2. **Claim header restructure**: meta-row review state, confidence simplification, audit summary agent names, source metadata enrichment, criterion to bottom, CSS deltas.
 
-**In markup** — insert before `<header>` (line 58):
-```astro
-<article class="source-detail">
-  <Breadcrumb crumbs={sourceCrumbs} />
-  <header>
-```
+`docs/UNSCHEDULED.md` edits land with whichever commit goes first.
 
----
+## Edge cases
 
-### 5. Modify: `src/pages/criteria/[slug].astro`
+- **Entity lookup miss**: claim's `entity` value not found in collection. Breadcrumb falls back to raw entity ID as a non-linked label. No crash.
+- **Source not in collection**: audit-trail item renders an external link with no metadata badge.
+- **Missing parent index**: if `/companies`, `/products`, `/topics`, or `/sectors` does not exist, omit that crumb rather than 404.
 
-**Import:** `import Breadcrumb from "../../components/Breadcrumb.astro";`
+## Acceptance
 
-**Add:** `const criteriaCrumbs = [{ label:"Home", href:"/" }, { label:"Criteria", href:"/criteria" }, { label: std.data.text }];`
-
-**In markup** — insert before `<header class="std-header">` (line 60, no `<article>` wrapper):
-```astro
-<Base title={std.data.text} layout="wide">
-  <Breadcrumb crumbs={criteriaCrumbs} />
-  <header class="std-header">
-```
-
----
-
-### 6. Update `docs/UNSCHEDULED.md`
-
-Append section **"Claim detail page — deferred improvements"**:
-
-| Work Item | Notes |
-|-----------|-------|
-| Verdict change history | Append-only `history` array in `.audit.yaml`; site renders a timeline. Requires pipeline changes. |
-| Multi-reviewer tracking | `human_review` becomes array. Site shows `✓ N reviewers`. Schema version bump + backfill script. |
-| Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity claim lists as trust signal. |
-
----
-
-## Implementation notes
-
-**`getCollection` cache:** Astro caches collection data per build pass, so adding `getCollection("entities")` and `getCollection("sources")` to the claim page adds no meaningful I/O cost.
-
-**Entity lookup failure:** If `entityEntry` is null (typo in `entity` frontmatter), breadcrumb falls back to raw entity ID as a non-linked crumb. No crash.
-
-**Source map miss:** If a sidecar source ID has no matching collection entry, the audit trail shows an external link with no metadata badges — clean degradation, no "ingested" label.
-
-**Touch devices:** `title` tooltip is not visible on touch. The confidence label (`High confidence`, `Medium confidence`, `Low confidence`) is self-explanatory without the tooltip. `VerdictBadge` uses the same `title` pattern.
-
----
-
-## Verification
-
-1. `inv dev`
-2. Open `/claims/anthropic/publishes-sustainability-report`
-   - Breadcrumb: `Home / Companies / Anthropic / [claim title]`
-   - Meta row: `[UNVERIFIED]  High confidence  2026-04-24  ✓ 1 reviewer`
-   - Hovering "High confidence" shows tooltip (dotted underline visible)
-   - No criterion in header; criterion appears at bottom before review cadence
-   - Audit summary shows agent names
-   - Sources show `kind · source_type · publisher` with internal links
-3. Open `/entities/companies/anthropic` — breadcrumb: `Home / Companies / Anthropic`
-4. Open a source detail page — breadcrumb: `Home / Sources / [title]`
-5. Open a criterion detail page — breadcrumb: `Home / Criteria / [text]`
-6. `npm run build` — no type errors
+- [ ] `inv dev` serves with no console errors.
+- [ ] `npm run build` passes type-check and content-collection validation.
+- [ ] `/claims/anthropic/publishes-sustainability-report` shows breadcrumb `Home / Companies / Anthropic / [title]`; meta row shows verdict badge, confidence label, date, and either "✓ Reviewed" or an outlined "Unreviewed" chip; criterion appears at bottom; audit summary shows agent names; sources show internal links with `kind · source_type · publisher`.
+- [ ] A claim with `audit.human_review.reviewer === null` renders the outlined "Unreviewed" chip.
+- [ ] A claim whose `entity` frontmatter does not match any entity falls back to a non-linked crumb without crashing.
+- [ ] An audit `sources_consulted` entry whose `id` is not in the sources collection renders an external link with no metadata.
+- [ ] A sector-typed entity page renders `Home / Sectors / [name]`.
+- [ ] Source detail page renders `Home / Sources / [title]`.
+- [ ] Criterion detail page renders `Home / Criteria / [text]`.
+- [ ] Keyboard tab order through breadcrumb links matches DOM order; focus ring visible.
+- [ ] Mobile viewport (<380px): meta row wraps cleanly, outlined chip does not overflow.
+- [ ] VoiceOver pass on the claim page: breadcrumb `/` separators are not announced as "slash"; the unreviewed chip is read as its label only.
