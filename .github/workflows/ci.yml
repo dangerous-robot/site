@@ -16,3 +16,50 @@ jobs:
       - run: npm run build
       - run: npm run lint:md
       - run: npm run check:citations
+
+  lint-content:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync pipeline dependencies
+        run: uv sync
+        working-directory: pipeline
+
+      - name: Run dr lint
+        id: dr_lint
+        run: |
+          set +e
+          uv run dr lint --format json --severity error > lint-report.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+        working-directory: pipeline
+
+      - name: Annotate errors
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'pipeline/lint-report.json';
+            if (!fs.existsSync(path)) return;
+            const raw = fs.readFileSync(path, 'utf8').trim();
+            if (!raw) return;
+            const issues = JSON.parse(raw);
+            for (const issue of issues) {
+              if (issue.severity !== 'error') continue;
+              core.error(issue.message, { file: issue.path, title: issue.check_id });
+            }
+
+      - name: Fail on lint errors
+        if: steps.dr_lint.outputs.exit_code != '0'
+        run: |
+          echo "dr lint reported errors; see annotations above."
+          exit 1
