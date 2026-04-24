@@ -89,6 +89,16 @@ Scheduling note: challenge/request/propose forms (last three items) require the 
 
 ---
 
+## Style guide page (`/styles`)
+
+Goal: A living style reference page at `/styles` (converted from `public/font-preview.html`) that renders inside the site layout with the full a11y controller, showing all typography, colors, verdict badges, spacing tokens, and component states. Lets designers and contributors verify visual changes in context.
+
+| Work Item | Notes |
+|-----------|-------|
+| Convert `public/font-preview.html` → `src/pages/styles/index.astro` | Move into site layout, wire up `<A11yControl>`, cover all design tokens and component variants |
+
+---
+
 ## Site gaps and deferred content
 
 From architectural review (2026-04-18) and TODO.md:
