@@ -32,7 +32,7 @@ const {
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet" />
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
          Storage keys and font-size values mirror A11yControl.astro. -->
@@ -121,8 +121,6 @@ const {
       }
 
       .nav-inner {
-        max-width: var(--content-max-width);
-        margin: 0 auto;
         padding: 0 var(--space-lg);
         display: flex;
         align-items: center;
@@ -132,7 +130,8 @@ const {
       .site-name {
         font-family: var(--font-wordmark);
         font-size: 1.15rem;
-        font-weight: bold;
+        font-weight: 700;
+        letter-spacing: 0.03em;
         color: var(--color-site-name);
         text-decoration: none;
         display: flex;
@@ -152,10 +151,12 @@ const {
         transform: scale(1.44);
         transform-origin: center;
         margin: 0 1em;
+        opacity: 0.72;
       }
 
       :global([data-theme="dark"]) .site-logo {
         filter: invert(1) brightness(0.85);
+        opacity: 0.72;
       }
 
       .site-name:hover {
