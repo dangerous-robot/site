@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wordmark Exploration — Dangerous Robot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Courier+Prime:ital,wght@0,400;0,700;1,400;1,700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600;1,700&family=Orbitron:wght@400;600;700;800;900&family=Oswald:wght@300;600;700&family=Share+Tech+Mono&family=Silkscreen:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&family=VT323&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #19191b;
+      --surface:      #212226;
+      --surface-2:    #27282e;
+      --text:         #dcdde0;
+      --text-heading: #d0d7c7;
+      --text-muted:   #9a9aa8;
+      --text-faint:   #707083;
+      --accent:       #42958b;
+      --border:       #2c2c36;
+      --mono:         "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      padding: 3rem 3.5rem 6rem;
+      min-height: 100vh;
+    }
+
+    /* ---- page header ---- */
+    .page-header {
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 0.5rem;
+    }
+    .page-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    .page-note {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      max-width: 70ch;
+    }
+    .page-note strong { color: var(--text); }
+
+    /* ---- grid ---- */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    @media (max-width: 1200px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 700px)  { .grid { grid-template-columns: 1fr; } }
+
+    /* ---- card ---- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card.is-current {
+      border-color: var(--text-faint);
+      opacity: 0.55;
+    }
+
+    .card-wordmark {
+      padding: 2rem 2rem 1.5rem;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    /* shared wordmark structure */
+    .wm { line-height: 1.05; }
+    .wm .w1, .wm .w2 { display: block; font-weight: 700; font-size: clamp(2.4rem, 4.5vw, 3.6rem); }
+    .wm .w2 { font-style: italic; padding-left: 0.55em; position: relative; }
+    .wm .w2::after {
+      content: '';
+      position: absolute;
+      left: 0.7em;
+      bottom: 0;
+      width: 0.52em;
+      height: 0.06em;
+      background: var(--accent);
+    }
+
+    .card-meta {
+      padding: 0 2rem 1.25rem;
+    }
+    .font-name {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .font-desc {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .font-tag {
+      display: inline-block;
+      margin-top: 0.5rem;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid var(--border);
+      color: var(--text-faint);
+    }
+    .font-tag.has-italic { border-color: var(--accent); color: var(--accent); }
+
+    /* secondary-use panel */
+    .card-secondary {
+      background: var(--surface-2);
+      border-top: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .use-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 0.15rem;
+    }
+    .nav-sample {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-heading);
+      line-height: 1;
+    }
+    .h1-sample {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-heading);
+      line-height: 1;
+    }
+
+    /* ---- per-font rules ---- */
+
+    /* A — Oswald (current) */
+    .f-oswald .wm .w1,
+    .f-oswald .wm .w2,
+    .f-oswald .nav-sample,
+    .f-oswald .h1-sample {
+      font-family: 'Oswald', sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    /* B — IBM Plex Mono, weight contrast */
+    .f-ibm-contrast .wm .w1 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 300;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      font-size: clamp(1.8rem, 3.3vw, 2.7rem);
+    }
+    .f-ibm-contrast .wm .w2 {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-size: clamp(2.4rem, 4.5vw, 3.6rem);
+    }
+    .f-ibm-contrast .nav-sample,
+    .f-ibm-contrast .h1-sample {
+      font-family: 'IBM Plex Mono', monospace;
+      letter-spacing: 0.02em;
+    }
+    .f-ibm-contrast .nav-sample { font-weight: 700; }
+    .f-ibm-contrast .h1-sample  { font-weight: 600; }
+
+    /* C — IBM Plex Mono, all-caps with weight differential */
+    .f-ibm-caps .wm .w1,
+    .f-ibm-caps .wm .w2 {
+      font-family: 'IBM Plex Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: -0.03em;
+      font-size: clamp(1.9rem, 3.5vw, 2.9rem);
+    }
+    .f-ibm-caps .wm .w1 { font-weight: 400; color: var(--text-muted); }
+    .f-ibm-caps .wm .w2 { font-weight: 700; }
+    .f-ibm-caps .nav-sample,
+    .f-ibm-caps .h1-sample {
+      font-family: 'IBM Plex Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+    }
+
+    /* D — Space Mono, accent on second word */
+    .f-space .wm .w1,
+    .f-space .wm .w2 {
+      font-family: 'Space Mono', monospace;
+      letter-spacing: -0.04em;
+      font-size: clamp(2rem, 3.8vw, 3rem);
+    }
+    .f-space .wm .w2 { color: var(--accent); }
+    .f-space .nav-sample,
+    .f-space .h1-sample {
+      font-family: 'Space Mono', monospace;
+      letter-spacing: -0.03em;
+    }
+
+    /* E — Orbitron, geometric display */
+    .f-orbitron .wm .w1,
+    .f-orbitron .wm .w2 {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+    }
+    .f-orbitron .wm .w2::after { display: none; }
+    .f-orbitron .nav-sample,
+    .f-orbitron .h1-sample {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* F — Share Tech Mono, all-caps terminal */
+    .f-share .wm .w1,
+    .f-share .wm .w2 {
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: clamp(2rem, 3.8vw, 3rem);
+    }
+    .f-share .wm .w2 { padding-left: 0; }
+    .f-share .nav-sample,
+    .f-share .h1-sample {
+      font-family: 'Share Tech Mono', monospace;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* G — VT323, CRT pixel */
+    .f-vt .wm .w1,
+    .f-vt .wm .w2 {
+      font-family: 'VT323', monospace;
+      font-weight: 400;
+      font-size: clamp(3.5rem, 6.5vw, 5.5rem);
+      letter-spacing: 0.02em;
+      line-height: 0.9;
+    }
+    .f-vt .wm .w2::after { display: none; }
+    .f-vt .nav-sample,
+    .f-vt .h1-sample {
+      font-family: 'VT323', monospace;
+      font-weight: 400;
+    }
+    .f-vt .nav-sample { font-size: 1.5rem; }
+    .f-vt .h1-sample  { font-size: 3rem; }
+
+    /* H — Courier Prime */
+    .f-courier .wm .w1,
+    .f-courier .wm .w2 {
+      font-family: 'Courier Prime', monospace;
+      letter-spacing: -0.01em;
+      font-size: clamp(2.2rem, 4vw, 3.2rem);
+    }
+    .f-courier .nav-sample,
+    .f-courier .h1-sample {
+      font-family: 'Courier Prime', monospace;
+    }
+
+    /* I — Chakra Petch, cyberpunk angular */
+    .f-chakra .wm .w1,
+    .f-chakra .wm .w2 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: clamp(2.1rem, 3.9vw, 3.2rem);
+      letter-spacing: 0.03em;
+    }
+    .f-chakra .wm .w1 { font-weight: 400; color: var(--text-muted); }
+    .f-chakra .wm .w2 { font-weight: 600; }
+    .f-chakra .nav-sample,
+    .f-chakra .h1-sample {
+      font-family: 'Chakra Petch', sans-serif;
+      letter-spacing: 0.03em;
+      font-weight: 600;
+    }
+
+    /* J — Silkscreen, pixel bitmap */
+    .f-silk .wm .w1,
+    .f-silk .wm .w2 {
+      font-family: 'Silkscreen', monospace;
+      font-weight: 700;
+      font-size: clamp(1.5rem, 2.8vw, 2.2rem);
+      line-height: 1.2;
+      letter-spacing: 0.05em;
+      font-style: normal;
+    }
+    .f-silk .wm .w2::after { display: none; }
+    .f-silk .nav-sample,
+    .f-silk .h1-sample {
+      font-family: 'Silkscreen', monospace;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+<header class="page-header">
+  <p class="page-eyebrow">DR · Font Exploration · 2026</p>
+  <h1 class="page-title">Wordmark Treatments</h1>
+  <p class="page-note">
+    9 options for the homepage wordmark. Each card also previews the font at
+    <strong>nav-header</strong> scale ("Dangerous Robot") and
+    <strong>page-h1</strong> scale ("Products") — the two secondary use cases you're considering.
+    <br>Tags: <strong style="color:var(--accent)">italic: native</strong> = font has true italic;
+    italic: synthetic = browser-slanted.
+    View at <code>localhost:4321/font-preview.html</code>.
+  </p>
+</header>
+
+<div class="grid">
+
+  <!-- A: CURRENT REFERENCE -->
+  <div class="card is-current f-oswald">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">A — Oswald</p>
+      <p class="font-desc">Current. Condensed grotesque. Synthesized italic on "Robot".</p>
+      <span class="font-tag">current</span>
+      <span class="font-tag">italic: synthetic</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample f-oswald">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample f-oswald">Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- B: IBM PLEX MONO — weight contrast -->
+  <div class="card f-ibm-contrast">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">B — IBM Plex Mono · weight contrast</p>
+      <p class="font-desc">Light "Dangerous" vs bold "Robot". Monospace grid. Authoritative and technical.</p>
+      <span class="font-tag has-italic">italic: native</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- C: IBM PLEX MONO — all-caps -->
+  <div class="card f-ibm-caps">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">C — IBM Plex Mono · all-caps</p>
+      <p class="font-desc">Compressed uppercase. Regular "DANGEROUS" (400) vs bold "ROBOT" (700).</p>
+      <span class="font-tag has-italic">italic: native</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">DANGEROUS ROBOT</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">PRODUCTS</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- D: SPACE MONO — accent split -->
+  <div class="card f-space">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">D — Space Mono · accent split</p>
+      <p class="font-desc">"Robot" in teal accent. Very strong mono personality. Designed for code but looks editorial at display scale.</p>
+      <span class="font-tag has-italic">italic: native</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- E: ORBITRON -->
+  <div class="card f-orbitron">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2" style="padding-left:0.55em">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">E — Orbitron · geometric display</p>
+      <p class="font-desc">Geometric, engineered, sci-fi. Feels built rather than designed. Multiple weights (400–900).</p>
+      <span class="font-tag">italic: synthetic</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">DANGEROUS ROBOT</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">PRODUCTS</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- F: SHARE TECH MONO — terminal -->
+  <div class="card f-share">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">F — Share Tech Mono · terminal</p>
+      <p class="font-desc">Single weight. Terminal / surveillance aesthetic. Clean uppercase readability.</p>
+      <span class="font-tag">italic: synthetic</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">DANGEROUS ROBOT</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">PRODUCTS</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- G: VT323 — CRT pixel -->
+  <div class="card f-vt">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">G — VT323 · CRT pixel</p>
+      <p class="font-desc">Emulates a CRT terminal at 70s–80s computing scale. Retro surveillance. Pixel grid visible at display size.</p>
+      <span class="font-tag">italic: synthetic</span>
+      <span class="font-tag">wordmark / large h1 only</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- H: COURIER PRIME — typewriter -->
+  <div class="card f-courier">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">H — Courier Prime · typewriter</p>
+      <p class="font-desc">Investigative journalism / document aesthetic. Familiar but serious. Strong at all sizes.</p>
+      <span class="font-tag has-italic">italic: native</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">Products</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- I: CHAKRA PETCH — angular / cyberpunk -->
+  <div class="card f-chakra">
+    <div class="card-wordmark">
+      <div class="wm">
+        <span class="w1">Dangerous</span>
+        <span class="w2">Robot</span>
+      </div>
+    </div>
+    <div class="card-meta">
+      <p class="font-name">I — Chakra Petch · angular</p>
+      <p class="font-desc">Thai-influenced condensed with diagonal strokes. Regular "Dangerous" (400) vs semibold "Robot" (600).</p>
+      <span class="font-tag has-italic">italic: native</span>
+      <span class="font-tag">nav + h1 ready</span>
+    </div>
+    <div class="card-secondary">
+      <div>
+        <p class="use-label">nav header</p>
+        <p class="nav-sample">Dangerous Robot</p>
+      </div>
+      <div>
+        <p class="use-label">page h1</p>
+        <p class="h1-sample">Products</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .grid -->
+
+</body>
+</html>
