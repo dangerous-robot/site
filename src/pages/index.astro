@@ -1,9 +1,11 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
+import { CATEGORIES } from '../lib/research';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
+const allSources = await getCollection('sources');
 
 const companies = entities.filter((e) => e.data.type === 'company');
 const products = entities.filter((e) => e.data.type === 'product');
@@ -11,17 +13,19 @@ const products = entities.filter((e) => e.data.type === 'product');
 const sections = [
   { n: '01', label: 'Companies', meta: `${companies.length} tracked`, href: '/companies' },
   { n: '02', label: 'Products', meta: `${products.length} tracked`, href: '/products' },
-  { n: '03', label: 'Claims', meta: `${allClaims.length} assessed`, href: '/claims' },
+  { n: '03', label: 'Topics', meta: `${CATEGORIES.length} areas`, href: '/topics' },
+  { n: '04', label: 'Claims', meta: `${allClaims.length} assessed`, href: '/claims' },
+  { n: '05', label: 'Sources', meta: `${allSources.length} indexed`, href: '/sources' },
 ];
 
 const navLinks = [
   { href: '/companies', label: 'Companies' },
   { href: '/products', label: 'Products' },
-  { href: '/claims', label: 'Claims' },
-  { href: '/criteria', label: 'Criteria' },
   { href: '/topics', label: 'Topics' },
-  { href: '/faq', label: 'FAQ' },
+  { href: '/claims', label: 'Claims' },
   { href: '/sources', label: 'Sources' },
+  { href: '/criteria', label: 'Criteria' },
+  { href: '/faq', label: 'FAQ' },
 ];
 
 // Archive log construction — we render two lines that look like we caught
@@ -56,7 +60,7 @@ const claimC = src[2];
 const claimD = src[3];
 
 const frag1 = tail(src[4]?.title ?? 'on verifiable sources', 4);
-const frag2 = tail(src[5]?.title ?? 'across multiple filings', 4);
+const frag2 = tail(src[5]?.title ?? 'training', 1);
 
 const line1 = { fragment: frag1, items: [manualClaim, claimA] };
 const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
@@ -107,7 +111,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
         </h1>
 
         <p class="hero-tag">
-          A public research archive at the intersection of AI companies, Ethics, Data Centers, and the Environment.
+          Open, accountable research on AI companies — built by people, powered by AI.
         </p>
       </header>
 
@@ -181,6 +185,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     min-height: 100vh;
     overflow: hidden;
     padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
+    padding-top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px);
     padding-bottom: clamp(var(--space-xl), 6vh, var(--space-2xl));
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -195,13 +200,21 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-logo-wrap {
     position: absolute;
     left: -18vh;
-    bottom: -20vh;
+    bottom: calc(-25vh - 0.4em);
     width: 125vh;
     height: 125vh;
     pointer-events: none;
     z-index: 0;
     transform: rotate(-8deg);
     transform-origin: 50% 50%;
+  }
+  @media (max-width: 680px) {
+    .hero-logo-wrap {
+      left: 0;
+      width: min(125vh, 100vw);
+      height: min(125vh, 100vw);
+      bottom: 20vh;
+    }
   }
   .hero-logo {
     position: absolute;
@@ -222,8 +235,8 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
      its flash never reads as a stark black-or-white shape. */
   :global([data-theme="light"]) .hero-logo--base { filter: none; opacity: 0.18; }
   :global([data-theme="dark"])  .hero-logo--base { filter: invert(1) brightness(0.92); }
-  :global([data-theme="light"]) .hero-logo--ghost { filter: invert(1) brightness(0.42); }
-  :global([data-theme="dark"])  .hero-logo--ghost { filter: invert(1) brightness(0.55); }
+  :global([data-theme="light"]) .hero-logo--ghost { filter: invert(1) brightness(0.65); }
+  :global([data-theme="dark"])  .hero-logo--ghost { filter: invert(1) brightness(0.35); }
 
   .hero-logo--base.is-dimmed { opacity: 0.09; }
   :global([data-theme="light"]) .hero-logo--base.is-dimmed { opacity: 0.08; }
@@ -327,11 +340,11 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: clamp(var(--space-xl), 4vw, 5rem);
-    align-items: center;
+    align-items: start;
     width: 100%;
     max-width: 96rem;
     margin: 0 auto;
-    padding: clamp(3rem, 8vh, 5rem) 0 clamp(1.5rem, 4vh, 2.5rem);
+    padding: 0 0 clamp(1.5rem, 4vh, 2.5rem);
   }
 
   .hero-head {
@@ -356,10 +369,10 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
 
   .hero-title {
     margin: 0;
-    font-family: var(--font-heading);
+    font-family: var(--font-wordmark);
     font-weight: 700;
     line-height: 1;
-    letter-spacing: -0.025em;
+    letter-spacing: 0.01em;
     color: var(--color-text-heading);
     display: flex;
     flex-direction: column;
@@ -397,16 +410,16 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     background: var(--color-accent);
   }
 
-  .hero-title__word.is-dimmed { opacity: 0.5; }
+  .hero-title__word.is-dimmed { opacity: 0.5; transition: opacity 80ms ease; }
 
   .hero-tag {
     margin: 0;
     max-width: 42ch;
     font-family: var(--font-body);
-    font-size: clamp(0.98rem, 1.15vw, 1.1rem);
-    font-weight: 500;
-    line-height: 1.55;
-    color: var(--color-text-muted);
+    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+    font-weight: 600;
+    line-height: 1.5;
+    color: var(--color-text);
   }
 
   /* -------- card stack -------- */
@@ -504,14 +517,13 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-log {
     position: relative;
     z-index: 3;
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
+    padding-top: 0;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 4rem;
     font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    letter-spacing: 0.22em;
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--color-text-faint);
     line-height: 1.4;
@@ -519,7 +531,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-log__line {
     display: flex;
     align-items: baseline;
-    gap: clamp(3.5rem, 9vw, 7rem);
+    gap: clamp(1.5rem, 4vw, 3rem);
     white-space: nowrap;
     overflow: hidden;
     /* Soft fade on the right so long strips feel like they continue off-edge */
@@ -545,7 +557,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-log__verdict--mostly-false { color: var(--color-verdict-mostly-false); }
   .hero-log__verdict--unverified { color: var(--color-verdict-unverified); }
   .hero-log__verdict--mixed { color: var(--color-verdict-mixed); }
-  .hero-log__body { color: var(--color-text-faint); }
+  .hero-log__body { color: var(--color-text-muted); letter-spacing: 0.08em; }
 
   /* -------- nav overlay -------- */
   .hero-nav {
@@ -628,8 +640,8 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   }
   @keyframes logoGhost {
     0%   { opacity: 0; transform: translate(0, 0); }
-    15%  { opacity: 0.35; transform: translate(8px, -4px); }
-    60%  { opacity: 0.35; transform: translate(8px, -4px); }
+    15%  { opacity: 0.175; transform: translate(8px, -4px); }
+    60%  { opacity: 0.175; transform: translate(8px, -4px); }
     100% { opacity: 0; transform: translate(0, 0); }
   }
   @keyframes logoJolt {
@@ -647,20 +659,20 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     20% {
       transform: translate(-1.5px, 0);
       text-shadow:
-        2px 0 0 rgba(196, 78, 62, 0.38),
-        -2px 0 0 rgba(66, 149, 139, 0.42);
+        2px 0 0 rgba(196, 78, 62, 0.25),
+        -2px 0 0 rgba(66, 149, 139, 0.28);
     }
     40% {
       transform: translate(2px, -0.5px);
       text-shadow:
-        -2px 0 0 rgba(196, 78, 62, 0.38),
-        2px 0 0 rgba(66, 149, 139, 0.42);
+        -2px 0 0 rgba(196, 78, 62, 0.25),
+        2px 0 0 rgba(66, 149, 139, 0.28);
     }
     60% {
       transform: translate(-1px, 0.5px);
       text-shadow:
-        1.5px 0 0 rgba(196, 78, 62, 0.38),
-        -1.5px 0 0 rgba(66, 149, 139, 0.42);
+        1.5px 0 0 rgba(196, 78, 62, 0.25),
+        -1.5px 0 0 rgba(66, 149, 139, 0.28);
     }
     80% { transform: translate(0.5px, 0); text-shadow: none; }
   }
@@ -765,13 +777,24 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
       scheduleGlitch(word, 'is-glitching', { minDur: 220, maxDur: 300, minGap: 5000, maxGap: 12500 });
     });
 
-    const scheduleDim = (el, holdMs, minGap, maxGap) => {
+    const scheduleDim = (el, holdMs, minGap, maxGap, secondHoldMs) => {
       const tick = () => {
         el.classList.add('is-dimmed');
         window.setTimeout(() => {
           el.classList.remove('is-dimmed');
-          const gap = minGap + Math.random() * (maxGap - minGap);
-          window.setTimeout(tick, gap);
+          if (secondHoldMs) {
+            window.setTimeout(() => {
+              el.classList.add('is-dimmed');
+              window.setTimeout(() => {
+                el.classList.remove('is-dimmed');
+                const gap = minGap + Math.random() * (maxGap - minGap);
+                window.setTimeout(tick, gap);
+              }, secondHoldMs);
+            }, 180 + Math.random() * 120);
+          } else {
+            const gap = minGap + Math.random() * (maxGap - minGap);
+            window.setTimeout(tick, gap);
+          }
         }, holdMs);
       };
       window.setTimeout(tick, 12000 + Math.random() * 15000);
@@ -780,7 +803,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     const baseLogo = document.getElementById('hero-logo');
     if (baseLogo) scheduleDim(baseLogo, 1100, 28000, 55000);
     document.querySelectorAll('.hero-title__word').forEach((word, i) => {
-      scheduleDim(word, 900, 32000 + i * 4000, 65000);
+      scheduleDim(word, 450, 32000 + i * 4000, 65000, 160);
     });
   })();
 </script>
