@@ -111,7 +111,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
         </h1>
 
         <p class="hero-tag">
-          Open, accountable research on AI companies — built by people, powered by AI.
+          Open, accountable research on AI companies: built by people, powered by AI.
         </p>
       </header>
 
@@ -238,7 +238,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   :global([data-theme="light"]) .hero-logo--ghost { filter: invert(1) brightness(0.65); }
   :global([data-theme="dark"])  .hero-logo--ghost { filter: invert(1) brightness(0.35); }
 
-  .hero-logo--base.is-dimmed { opacity: 0.09; }
+  .hero-logo--base.is-dimmed { opacity: 0.14; }
   :global([data-theme="light"]) .hero-logo--base.is-dimmed { opacity: 0.08; }
 
   /* -------- scanlines -------- */
@@ -370,9 +370,10 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-title {
     margin: 0;
     font-family: var(--font-wordmark);
-    font-weight: 700;
+    font-weight: 600;
     line-height: 1;
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     color: var(--color-text-heading);
     display: flex;
     flex-direction: column;
@@ -388,16 +389,17 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-title__word {
     display: inline-block;
     position: relative;
-    font-size: clamp(2.5rem, 6.4vw, 5.25rem);
+    font-size: clamp(2rem, 5.2vw, 4.4rem);
+    font-weight: 600;
     max-width: 100%;
     line-height: 1.15;
     will-change: transform;
     transition: opacity 600ms ease;
   }
   .hero-title__word--italic {
-    font-style: italic;
+    font-style: normal;
+    font-weight: 800;
     color: var(--color-text);
-    letter-spacing: -0.015em;
     padding-bottom: 0.14em;
   }
   .hero-title__word--italic::after {
@@ -699,6 +701,55 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   }
 </style>
 
+<!-- Letter spans are injected dynamically and lack Astro's scoped cid attribute,
+     so their rules must live in a global block. -->
+<style is:global>
+  .hero-title__letter {
+    display: inline-block;
+    transition: opacity 600ms ease;
+  }
+
+  .hero-title__letter.is-dimmed {
+    opacity: 0.5;
+    transition: opacity 80ms ease;
+  }
+
+  @keyframes letterGlitch {
+    0%, 100% { transform: translate(0, 0); text-shadow: none; }
+    20% {
+      transform: translate(-1.5px, 0);
+      text-shadow:
+        3px 0 0 rgba(196, 78, 62, 0.65),
+        -3px 0 0 rgba(66, 149, 139, 0.70);
+    }
+    40% {
+      transform: translate(2px, -0.5px);
+      text-shadow:
+        -3px 0 0 rgba(196, 78, 62, 0.65),
+        3px 0 0 rgba(66, 149, 139, 0.70);
+    }
+    60% {
+      transform: translate(-1px, 0.5px);
+      text-shadow:
+        2px 0 0 rgba(196, 78, 62, 0.65),
+        -2px 0 0 rgba(66, 149, 139, 0.70);
+    }
+    80% { transform: translate(0.5px, 0); text-shadow: none; }
+  }
+
+  .hero-title__letter.is-glitching {
+    animation-name: letterGlitch;
+    animation-duration: var(--glitch-dur, 240ms);
+    animation-timing-function: step-end;
+    animation-fill-mode: both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-title__letter.is-glitching { animation: none; }
+    .hero-title__letter { transition: none !important; }
+  }
+</style>
+
 <script is:inline>
   (function () {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -755,6 +806,14 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
 
     if (prefersReduced) return;
 
+    document.querySelectorAll('.hero-title__word').forEach((word) => {
+      const text = word.dataset.text || word.textContent;
+      word.setAttribute('aria-label', text);
+      word.innerHTML = Array.from(text).map(
+        (ch) => '<span class="hero-title__letter" aria-hidden="true">' + ch + '</span>'
+      ).join('');
+    });
+
     const scheduleGlitch = (el, className, opts) => {
       const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
       const tick = () => {
@@ -769,13 +828,63 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
       window.setTimeout(tick, 700 + Math.random() * 3000);
     };
 
-    const logoWrap = document.getElementById('hero-logo-wrap');
-    if (logoWrap) {
-      scheduleGlitch(logoWrap, 'is-glitching', { minDur: 200, maxDur: 220, minGap: 6000, maxGap: 14000 });
-    }
-    document.querySelectorAll('.hero-title__word').forEach((word) => {
-      scheduleGlitch(word, 'is-glitching', { minDur: 220, maxDur: 300, minGap: 5000, maxGap: 12500 });
-    });
+    const pickSlice = (word) => {
+      const letters = Array.from(word.querySelectorAll('.hero-title__letter'));
+      if (!letters.length) return [];
+      const len = 1 + Math.floor(Math.random() * Math.min(9, letters.length));
+      const start = Math.floor(Math.random() * (letters.length - len + 1));
+      const slice = letters.slice(start, start + len);
+      const dropCount = Math.min(Math.floor(Math.random() * 3), slice.length - 1);
+      for (let i = 0; i < dropCount; i++) {
+        slice.splice(Math.floor(Math.random() * slice.length), 1);
+      }
+      return slice;
+    };
+
+    const glitchHoldStates = [
+      { transform: 'translate(-1.5px, 0)',   textShadow: '3px 0 0 rgba(196,78,62,0.65), -3px 0 0 rgba(66,149,139,0.70)' },
+      { transform: 'translate(2px, -0.5px)', textShadow: '-3px 0 0 rgba(196,78,62,0.65), 3px 0 0 rgba(66,149,139,0.70)' },
+      { transform: 'translate(-1px, 0.5px)', textShadow: '2px 0 0 rgba(196,78,62,0.65), -2px 0 0 rgba(66,149,139,0.70)' },
+    ];
+
+    const scheduleGlitchLetters = (word, opts) => {
+      const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
+      const tick = () => {
+        const slice = pickSlice(word);
+        const duration = Math.floor(minDur + Math.random() * (maxDur - minDur));
+        // 0 or 1 letters freeze in place after the glitch, then snap back 1-3s later
+        const hasStraggler = slice.length > 1 && Math.random() < 0.5;
+        const stragglerIdx = hasStraggler ? Math.floor(Math.random() * slice.length) : -1;
+        const stragglerDelay = 1000 + Math.random() * 2000;
+        slice.forEach((l) => {
+          l.style.setProperty('--glitch-dur', duration + 'ms');
+          l.classList.add('is-glitching');
+        });
+        window.setTimeout(() => {
+          // End animation on all letters
+          slice.forEach((l) => {
+            l.classList.remove('is-glitching');
+            l.style.removeProperty('--glitch-dur');
+          });
+          const scheduleNext = () => window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
+          if (stragglerIdx >= 0) {
+            // Freeze straggler in a static glitch position
+            const hold = glitchHoldStates[Math.floor(Math.random() * glitchHoldStates.length)];
+            const el = slice[stragglerIdx];
+            el.style.transform = hold.transform;
+            el.style.textShadow = hold.textShadow;
+            window.setTimeout(() => {
+              el.style.removeProperty('transform');
+              el.style.removeProperty('text-shadow');
+              scheduleNext();
+            }, stragglerDelay);
+          } else {
+            scheduleNext();
+          }
+        }, duration);
+      };
+      window.setTimeout(tick, 700 + Math.random() * 3000);
+    };
 
     const scheduleDim = (el, holdMs, minGap, maxGap, secondHoldMs) => {
       const tick = () => {
@@ -800,10 +909,41 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
       window.setTimeout(tick, 12000 + Math.random() * 15000);
     };
 
+    const scheduleDimLetters = (word, holdMs, minGap, maxGap, secondHoldMs) => {
+      const tick = () => {
+        const slice = pickSlice(word);
+        slice.forEach((l) => l.classList.add('is-dimmed'));
+        window.setTimeout(() => {
+          slice.forEach((l) => l.classList.remove('is-dimmed'));
+          if (secondHoldMs) {
+            window.setTimeout(() => {
+              const slice2 = pickSlice(word);
+              slice2.forEach((l) => l.classList.add('is-dimmed'));
+              window.setTimeout(() => {
+                slice2.forEach((l) => l.classList.remove('is-dimmed'));
+                window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
+              }, secondHoldMs);
+            }, 180 + Math.random() * 120);
+          } else {
+            window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
+          }
+        }, holdMs);
+      };
+      window.setTimeout(tick, 12000 + Math.random() * 15000);
+    };
+
+    const logoWrap = document.getElementById('hero-logo-wrap');
+    if (logoWrap) {
+      scheduleGlitch(logoWrap, 'is-glitching', { minDur: 200, maxDur: 220, minGap: 7500, maxGap: 14000 });
+    }
+    document.querySelectorAll('.hero-title__word').forEach((word) => {
+      scheduleGlitchLetters(word, { minDur: 150, maxDur: 350, minGap: 6250, maxGap: 12500 });
+    });
+
     const baseLogo = document.getElementById('hero-logo');
-    if (baseLogo) scheduleDim(baseLogo, 1100, 28000, 55000);
+    if (baseLogo) scheduleDim(baseLogo, 1100, 35000, 55000);
     document.querySelectorAll('.hero-title__word').forEach((word, i) => {
-      scheduleDim(word, 450, 32000 + i * 4000, 65000, 160);
+      scheduleDimLetters(word, 450, 40000 + i * 5000, 65000, 160);
     });
   })();
 </script>
