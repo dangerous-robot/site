@@ -806,30 +806,31 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
 
     if (prefersReduced) return;
 
-    document.querySelectorAll('.hero-title__word').forEach((word) => {
+    const randBetween = (min, max) => min + Math.random() * (max - min);
+
+    const words = Array.from(document.querySelectorAll('.hero-title__word'));
+    const wordLetters = words.map((word) => {
       const text = word.dataset.text || word.textContent;
       word.setAttribute('aria-label', text);
       word.innerHTML = Array.from(text).map(
         (ch) => '<span class="hero-title__letter" aria-hidden="true">' + ch + '</span>'
       ).join('');
+      return Array.from(word.querySelectorAll('.hero-title__letter'));
     });
 
     const scheduleGlitch = (el, className, opts) => {
       const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
       const tick = () => {
         el.classList.add(className);
-        const duration = minDur + Math.random() * (maxDur - minDur);
         window.setTimeout(() => {
           el.classList.remove(className);
-          const gap = minGap + Math.random() * (maxGap - minGap);
-          window.setTimeout(tick, gap);
-        }, duration);
+          window.setTimeout(tick, randBetween(minGap, maxGap));
+        }, randBetween(minDur, maxDur));
       };
-      window.setTimeout(tick, 700 + Math.random() * 3000);
+      window.setTimeout(tick, randBetween(700, 3700));
     };
 
-    const pickSlice = (word) => {
-      const letters = Array.from(word.querySelectorAll('.hero-title__letter'));
+    const pickSlice = (letters) => {
       if (!letters.length) return [];
       const len = 1 + Math.floor(Math.random() * Math.min(9, letters.length));
       const start = Math.floor(Math.random() * (letters.length - len + 1));
@@ -847,28 +848,25 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
       { transform: 'translate(-1px, 0.5px)', textShadow: '2px 0 0 rgba(196,78,62,0.65), -2px 0 0 rgba(66,149,139,0.70)' },
     ];
 
-    const scheduleGlitchLetters = (word, opts) => {
+    const scheduleGlitchLetters = (letters, opts) => {
       const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
       const tick = () => {
-        const slice = pickSlice(word);
-        const duration = Math.floor(minDur + Math.random() * (maxDur - minDur));
-        // 0 or 1 letters freeze in place after the glitch, then snap back 1-3s later
+        const slice = pickSlice(letters);
+        const duration = Math.floor(randBetween(minDur, maxDur));
         const hasStraggler = slice.length > 1 && Math.random() < 0.5;
         const stragglerIdx = hasStraggler ? Math.floor(Math.random() * slice.length) : -1;
-        const stragglerDelay = 1000 + Math.random() * 2000;
         slice.forEach((l) => {
           l.style.setProperty('--glitch-dur', duration + 'ms');
           l.classList.add('is-glitching');
         });
         window.setTimeout(() => {
-          // End animation on all letters
           slice.forEach((l) => {
             l.classList.remove('is-glitching');
             l.style.removeProperty('--glitch-dur');
           });
-          const scheduleNext = () => window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
+          const scheduleNext = () => window.setTimeout(tick, randBetween(minGap, maxGap));
           if (stragglerIdx >= 0) {
-            // Freeze straggler in a static glitch position
+            const stragglerDelay = randBetween(1000, 3000);
             const hold = glitchHoldStates[Math.floor(Math.random() * glitchHoldStates.length)];
             const el = slice[stragglerIdx];
             el.style.transform = hold.transform;
@@ -883,67 +881,44 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
           }
         }, duration);
       };
-      window.setTimeout(tick, 700 + Math.random() * 3000);
+      window.setTimeout(tick, randBetween(700, 3700));
     };
 
-    const scheduleDim = (el, holdMs, minGap, maxGap, secondHoldMs) => {
+    const scheduleDimTargets = (getTargets, holdMs, minGap, maxGap, secondHoldMs) => {
+      const applyDim = (targets) => targets.forEach((t) => t.classList.add('is-dimmed'));
+      const clearDim = (targets) => targets.forEach((t) => t.classList.remove('is-dimmed'));
       const tick = () => {
-        el.classList.add('is-dimmed');
+        const targets = getTargets();
+        applyDim(targets);
         window.setTimeout(() => {
-          el.classList.remove('is-dimmed');
-          if (secondHoldMs) {
+          clearDim(targets);
+          const scheduleNext = () => window.setTimeout(tick, randBetween(minGap, maxGap));
+          if (!secondHoldMs) return scheduleNext();
+          window.setTimeout(() => {
+            const targets2 = getTargets();
+            applyDim(targets2);
             window.setTimeout(() => {
-              el.classList.add('is-dimmed');
-              window.setTimeout(() => {
-                el.classList.remove('is-dimmed');
-                const gap = minGap + Math.random() * (maxGap - minGap);
-                window.setTimeout(tick, gap);
-              }, secondHoldMs);
-            }, 180 + Math.random() * 120);
-          } else {
-            const gap = minGap + Math.random() * (maxGap - minGap);
-            window.setTimeout(tick, gap);
-          }
+              clearDim(targets2);
+              scheduleNext();
+            }, secondHoldMs);
+          }, randBetween(180, 300));
         }, holdMs);
       };
-      window.setTimeout(tick, 12000 + Math.random() * 15000);
-    };
-
-    const scheduleDimLetters = (word, holdMs, minGap, maxGap, secondHoldMs) => {
-      const tick = () => {
-        const slice = pickSlice(word);
-        slice.forEach((l) => l.classList.add('is-dimmed'));
-        window.setTimeout(() => {
-          slice.forEach((l) => l.classList.remove('is-dimmed'));
-          if (secondHoldMs) {
-            window.setTimeout(() => {
-              const slice2 = pickSlice(word);
-              slice2.forEach((l) => l.classList.add('is-dimmed'));
-              window.setTimeout(() => {
-                slice2.forEach((l) => l.classList.remove('is-dimmed'));
-                window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
-              }, secondHoldMs);
-            }, 180 + Math.random() * 120);
-          } else {
-            window.setTimeout(tick, minGap + Math.random() * (maxGap - minGap));
-          }
-        }, holdMs);
-      };
-      window.setTimeout(tick, 12000 + Math.random() * 15000);
+      window.setTimeout(tick, randBetween(12000, 27000));
     };
 
     const logoWrap = document.getElementById('hero-logo-wrap');
     if (logoWrap) {
       scheduleGlitch(logoWrap, 'is-glitching', { minDur: 200, maxDur: 220, minGap: 7500, maxGap: 14000 });
     }
-    document.querySelectorAll('.hero-title__word').forEach((word) => {
-      scheduleGlitchLetters(word, { minDur: 150, maxDur: 350, minGap: 6250, maxGap: 12500 });
+    wordLetters.forEach((letters) => {
+      scheduleGlitchLetters(letters, { minDur: 150, maxDur: 350, minGap: 6250, maxGap: 12500 });
     });
 
     const baseLogo = document.getElementById('hero-logo');
-    if (baseLogo) scheduleDim(baseLogo, 1100, 35000, 55000);
-    document.querySelectorAll('.hero-title__word').forEach((word, i) => {
-      scheduleDimLetters(word, 450, 40000 + i * 5000, 65000, 160);
+    if (baseLogo) scheduleDimTargets(() => [baseLogo], 1100, 35000, 55000);
+    wordLetters.forEach((letters, i) => {
+      scheduleDimTargets(() => pickSlice(letters), 450, 40000 + i * 5000, 65000, 160);
     });
   })();
 </script>
