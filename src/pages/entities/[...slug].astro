@@ -105,7 +105,7 @@ const kindLabels: Record<string, string> = {
       )}
     </section>
 
-    {applicableCriteria.length > 0 && (
+    {entity.data.type !== 'product' && entity.data.type !== 'company' && applicableCriteria.length > 0 && (
       <section class="criteria-applied">
         <h2>Criteria</h2>
         <p class="criteria-note">How this {entity.data.type} fares against applicable claim templates.</p>
