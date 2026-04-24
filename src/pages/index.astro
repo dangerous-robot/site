@@ -200,9 +200,9 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-logo-wrap {
     position: absolute;
     left: -18vh;
-    bottom: calc(-25vh - 0.4em);
-    width: 125vh;
-    height: 125vh;
+    bottom: calc(-3vh - 0.4em);
+    width: 98vh;
+    height: 98vh;
     pointer-events: none;
     z-index: 0;
     transform: rotate(-8deg);
@@ -430,7 +430,6 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     list-style: none;
     margin: 0;
     padding: 0;
-    border-top: 1px solid var(--color-border);
   }
   .hero-card-item { margin: 0; }
 
@@ -715,6 +714,13 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
      behavior at every width. */
   @media (max-width: 680px) {
     .hero-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Desktop only: push the index list below the fixed hamburger button */
+  @media (min-width: 681px) {
+    .hero-cards {
+      padding-top: clamp(3rem, 5vh, 4rem);
+    }
   }
 </style>
 
