@@ -16,6 +16,8 @@ const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] 
 <a
   href={`/claims/${id}`}
   class="claim-row"
+  data-filterable
+  data-title={title.toLowerCase()}
   data-verdict={verdict}
   data-category={category}
   data-confidence={confidence}
