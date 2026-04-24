@@ -1,0 +1,39 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T05:58:24.043496+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/claude-models-overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
+  ingested: true
+- id: 2026/claude-opus-4-7
+  url: https://www.anthropic.com/news/claude-opus-4-7
+  title: Introducing Claude Opus 4.7
+  ingested: true
+- id: 2026/claude-opus-4-6
+  url: https://www.anthropic.com/news/claude-opus-4-6
+  title: Claude Opus 4.6
+  ingested: true
+- id: 2026/claude-mythos-preview
+  url: https://claudefa.st/blog/models/claude-mythos
+  title: 'Claude Mythos Preview: Anthropic''s Frontier Model'
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

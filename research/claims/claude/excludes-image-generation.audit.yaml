@@ -1,0 +1,35 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T05:57:57.307069+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/can-claude-produce-images
+  url: https://support.claude.com/en/articles/9002504-can-claude-produce-images
+  title: Can Claude produce images?
+  ingested: true
+- id: 2026/claude-vision-documentation
+  url: https://platform.claude.com/docs/en/build-with-claude/vision
+  title: Vision
+  ingested: true
+- id: 2025/generate-images-claude-hugging-face
+  url: https://huggingface.co/blog/claude-and-mcp
+  title: Generate Images with Claude and Hugging Face
+  ingested: true
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: mostly-true
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

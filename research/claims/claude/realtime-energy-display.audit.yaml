@@ -1,0 +1,41 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T05:57:36.830817+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/anthropic-claude-ai-energy-consumption
+  url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
+  title: How Much Energy Does Anthropic's Claude AI Consume?
+  ingested: true
+- id: 2025/how-hungry-is-ai-llm-inference-environmental-footprint
+  url: https://arxiv.org/html/2505.09598v1
+  title: How Hungry is AI? Benchmarking Energy, Water, and Carbon Footprint of LLM
+    Inference
+  ingested: true
+- id: 2026/ai-cost-usage-tracker-extension
+  url: https://github.com/argmin-com/extension
+  title: AI Cost & Usage Tracker
+  ingested: true
+- id: 2025/monitor-claude-usage-anthropic-grafana-integration
+  url: https://grafana.com/blog/how-to-monitor-claude-usage-and-costs-introducing-the-anthropic-integration-for-grafana-cloud/
+  title: 'How to monitor Claude usage and costs: introducing the Anthropic integration
+    for Grafana Cloud'
+  ingested: true
+audit:
+  analyst_verdict: mostly-false
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
