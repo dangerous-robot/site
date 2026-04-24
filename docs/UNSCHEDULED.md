@@ -195,3 +195,15 @@ Plan 2 (`claim-promotion-audit-rename-verdicts`) sharpened the `mostly-true` vs 
 | Audit trail (sidecar + pipeline write + Astro loader + UI) | v0.1.0 blocker (resolved 2026-04-22; prerequisite for audit trail CI gates) |
 | Public feedback (Worker + D1 + admin CLI) | Post-v0.1.0 (resolved 2026-04-22) |
 | Participation forms (challenge/request/propose) | Open -- depends on public feedback timing; bundle or after decision still needed |
+
+---
+
+## Claim detail page — deferred improvements
+
+From UI redesign plan (2026-04-24). Current implementation shows reviewer count in the meta row; reviewer name in expanded research details.
+
+| Work Item | Notes |
+|-----------|-------|
+| Multi-reviewer tracking | Change `human_review` from single object to array of `{ reviewed_at, reviewer, notes, pr_url }`. Meta row count (`✓ N reviewers`) derives from array length. Requires schema version bump and backfill script. |
+| Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity detail claim lists as a trust signal. |
+| Verdict change history | Append-only `history` array in `.audit.yaml` recording each pipeline run's verdict+confidence output. Site renders a timeline on the claim detail page. Requires pipeline write changes. |
