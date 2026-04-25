@@ -2,6 +2,7 @@
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
 import Breadcrumb from "../../components/Breadcrumb.astro";
+import VerdictBadge from "../../components/VerdictBadge.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 
 export async function getStaticPaths() {
@@ -37,26 +38,10 @@ const claimCrumbs = [
   { label: claim.data.title },
 ];
 
-const verdictCssVar: Record<string, string> = {
-  true: "var(--color-verdict-true)",
-  "mostly-true": "var(--color-verdict-mostly-true)",
-  mixed: "var(--color-verdict-mixed)",
-  "mostly-false": "var(--color-verdict-mostly-false)",
-  false: "var(--color-verdict-false)",
-  unverified: "var(--color-verdict-unverified)",
-  "not-applicable": "var(--color-verdict-not-applicable)",
-};
-
 const confidenceLabels: Record<string, string> = {
   high: "High",
   medium: "Medium",
   low: "Low",
-};
-
-const confidenceExplanations: Record<string, string> = {
-  high: "Multiple independent primary sources confirm this verdict. The evidence is direct and specific to this claim.",
-  medium: "Evidence is present but incomplete — sources may be secondary, partially relevant, or not fully corroborating. The verdict reflects the best available information.",
-  low: "Limited sources, conflicting evidence, or significant uncertainty. Treat this verdict as a working hypothesis subject to revision.",
 };
 
 const asOfDate = claim.data.as_of instanceof Date
@@ -76,6 +61,12 @@ const isoDate = (d: Date | string | null | undefined): string | null => {
 const audit = claim.data.audit ?? null;
 const ranAt = audit ? isoDate(audit.pipeline_run.ran_at) : null;
 const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
+
+// Source collection lookup for the audit trail. Items not in the collection render as external links.
+const allSources = await getCollection("sources");
+const sourceMap = new Map(allSources.map(s => [s.id, s]));
+
+const isReviewed = !!(audit?.human_review.reviewer);
 ---
 
 <Base title={claim.data.title}>
@@ -83,11 +74,6 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
     <Breadcrumb crumbs={claimCrumbs} />
 
     <header>
-      {matchedCriteria && (
-        <p class="criterion-ref">
-          Criterion: <a href={`/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
-        </p>
-      )}
       {showNotice && (
         <p class="status-notice">
           {isDraft ? 'This claim is a draft and has not been published.' : 'This claim is archived and may be outdated.'}
@@ -96,33 +82,12 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
       <h1>{claim.data.title}</h1>
 
       <div class="meta">
-        <span
-          class="verdict-badge"
-          style={`background: ${verdictCssVar[claim.data.verdict] || "var(--color-verdict-unverified)"}`}
-        >
-          {claim.data.verdict}
+        <VerdictBadge verdict={claim.data.verdict} />
+        <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
+        <span class="as-of">{asOfDate}</span>
+        <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
+          {isReviewed ? "✓ Reviewed" : "Unreviewed"}
         </span>
-
-        <details class="confidence-details">
-          <summary class="confidence">
-            Confidence: {confidenceLabels[claim.data.confidence] || claim.data.confidence}
-          </summary>
-          <p class="confidence-explanation">
-            {confidenceExplanations[claim.data.confidence]}
-          </p>
-        </details>
-
-        <span class="as-of">
-          As of {asOfDate}
-        </span>
-
-        <span class="category">
-          {claim.data.category}
-        </span>
-      </div>
-
-      <div class="entity-link">
-        Entity: <a href={`/entities/${claim.data.entity}`}>{claim.data.entity}</a>
       </div>
     </header>
 
@@ -145,21 +110,27 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 
     {audit && (
       <details class="audit-trail">
-        <summary>Research process: {ranAt}, {audit.pipeline_run.model}</summary>
+        <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
 
         <div class="audit-content">
           <section class="audit-section">
             <h3>Sources consulted</h3>
             <ul class="audit-source-list">
-              {audit.sources_consulted.map((src) => (
-                <li>
-                  <a href={src.url}>{src.title}</a>
-                  {' '}
-                  <span class={src.ingested ? 'ingested-yes' : 'ingested-no'}>
-                    {src.ingested ? 'ingested' : 'not ingested'}
-                  </span>
-                </li>
-              ))}
+              {audit.sources_consulted.map((src) => {
+                const meta = sourceMap.get(src.id);
+                return (
+                  <li>
+                    {meta
+                      ? <a href={`/sources/${src.id}`}>{src.title}</a>
+                      : <a href={src.url} target="_blank" rel="noopener noreferrer">{src.title} ↗</a>}
+                    {meta && (
+                      <span class="source-meta">
+                        {meta.data.kind}{meta.data.source_type ? ` · ${meta.data.source_type}` : ''} · {meta.data.publisher}
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -191,6 +162,12 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
           </section>
         </div>
       </details>
+    )}
+
+    {matchedCriteria && (
+      <p class="criterion-ref">
+        Criterion: <a href={`/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
+      </p>
     )}
 
     <section class="review-info">
@@ -244,49 +221,18 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
     margin-bottom: 0.75rem;
   }
 
-  .verdict-badge {
-    display: inline-block;
-    padding: 0.2rem 0.6rem;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
-    text-transform: uppercase;
+  .confidence, .as-of { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+
+  .review-state { font-size: var(--font-size-sm); }
+  .review-state.reviewed { color: var(--color-text-muted); }
+  .review-state.unreviewed {
+    color: var(--color-text);
+    border: 1px solid var(--color-text-faint);
+    border-radius: 999px;
+    padding: 0.1em 0.6em;
   }
 
-  .confidence,
-  .as-of,
-  .category {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-  }
-
-  .confidence-details {
-    font-size: var(--font-size-sm);
-  }
-
-  .confidence-details summary {
-    list-style: none;
-    cursor: pointer;
-  }
-
-  .confidence-details summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .confidence-explanation {
-    margin: var(--space-xs) 0 0;
-    padding: var(--space-xs) var(--space-sm);
-    border-left: 2px solid var(--color-border);
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-    line-height: 1.5;
-  }
-
-  .entity-link {
-    color: var(--color-text-muted);
-    font-size: var(--font-size-sm);
-  }
+  .source-meta { color: var(--color-text-faint); font-size: var(--font-size-xs); margin-left: 0.4em; }
 
   .rationale {
     margin-bottom: var(--space-xl);
@@ -380,17 +326,6 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 
   .audit-source-list li {
     padding: 0.2rem 0;
-  }
-
-  .ingested-yes {
-    color: var(--color-text-faint);
-    font-size: var(--font-size-xs);
-  }
-
-  .ingested-no {
-    color: var(--color-text-faint);
-    font-size: var(--font-size-xs);
-    font-style: italic;
   }
 
   .audit-agrees {
