@@ -154,8 +154,8 @@ class TestOnboardEntityHappyPath:
         entity_path = tmp_path / "research" / "entities" / "companies" / "testcorp.md"
         assert entity_path.exists()
 
-        # At least some claims created (6 company templates)
-        assert len(result.templates_applied) == 6
+        # At least some claims created (4 company templates active in v0.1.0)
+        assert len(result.templates_applied) == 4
         assert len(result.claims_created) > 0
 
 
@@ -211,10 +211,10 @@ class TestOnboardEntityNoDoubleIngest:
             )
 
         assert result.status == "accepted"
-        # 6 company templates + 1 light-research pass = 7 ingest + 7 research calls.
-        # Pre-refactor was 1 + 6*2 = 13. Cap at 7 to lock in the single-pair invariant.
-        assert ingest_calls == 7, f"expected 7 ingest calls, got {ingest_calls}"
-        assert research_calls <= 7, f"expected <=7 research calls, got {research_calls}"
+        # 4 company templates + 1 light-research pass = 5 ingest + 5 research calls.
+        # Pre-refactor was 1 + N*2 calls; cap at templates+1 to lock in the single-pair invariant.
+        assert ingest_calls == 5, f"expected 5 ingest calls, got {ingest_calls}"
+        assert research_calls <= 5, f"expected <=5 research calls, got {research_calls}"
 
 
 class TestOnboardEntitySeedUrl:

@@ -9,7 +9,15 @@ from common.models import Category, Confidence, EntityType, SourceKind, Verdict
 
 class TestVerdict:
     def test_values(self) -> None:
-        expected = {"true", "mostly-true", "mixed", "mostly-false", "false", "unverified"}
+        expected = {
+            "true",
+            "mostly-true",
+            "mixed",
+            "mostly-false",
+            "false",
+            "unverified",
+            "not-applicable",
+        }
         actual = {v.value for v in Verdict}
         assert actual == expected
 

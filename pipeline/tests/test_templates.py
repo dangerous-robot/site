@@ -16,33 +16,43 @@ from common.templates import (
 
 
 class TestLoadTemplates:
-    def test_loads_all_19_templates(self, repo_root: Path) -> None:
+    def test_loads_active_templates_from_yaml(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
-        assert len(templates) == 19
+        assert len(templates) == 11
 
     def test_returns_template_records(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
         assert all(isinstance(t, TemplateRecord) for t in templates)
 
-    def test_first_template_is_renewable_energy(self, repo_root: Path) -> None:
+    def test_first_template_matches_yaml_order(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
         first = templates[0]
-        assert first.slug == "renewable-energy-hosting"
-        assert first.entity_type == "product"
+        assert first.slug == "publishes-sustainability-report"
+        assert first.entity_type == "company"
         assert first.category == "environmental-impact"
         assert first.core is True
 
+    def test_load_templates_excludes_inactive(self, repo_root: Path) -> None:
+        """load_templates returns only the 'templates' list, not 'inactive_templates'."""
+        templates = load_templates(repo_root)
+        slugs = {t.slug for t in templates}
+        assert "data-jurisdiction" not in slugs
+
 
 class TestTemplatesForEntityType:
-    def test_product_returns_13(self, repo_root: Path) -> None:
+    def test_product_filter_returns_active_product_templates(
+        self, repo_root: Path
+    ) -> None:
         templates = load_templates(repo_root)
         product_templates = templates_for_entity_type(templates, "product")
-        assert len(product_templates) == 13
+        assert len(product_templates) == 7
 
-    def test_company_returns_6(self, repo_root: Path) -> None:
+    def test_company_filter_returns_active_company_templates(
+        self, repo_root: Path
+    ) -> None:
         templates = load_templates(repo_root)
         company_templates = templates_for_entity_type(templates, "company")
-        assert len(company_templates) == 6
+        assert len(company_templates) == 4
 
     def test_unknown_type_returns_empty(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
@@ -59,9 +69,9 @@ class TestTemplatesForEntityType:
 class TestGetTemplate:
     def test_returns_correct_record(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
-        t = get_template(templates, "data-jurisdiction")
+        t = get_template(templates, "no-training-on-user-data")
         assert t is not None
-        assert t.slug == "data-jurisdiction"
+        assert t.slug == "no-training-on-user-data"
         assert t.entity_type == "product"
         assert t.category == "data-privacy"
 
@@ -145,13 +155,6 @@ class TestRenderClaimText:
         assert t is not None
         assert "STRUCTURE" in t.vocabulary
         assert "B-corp" in t.vocabulary["STRUCTURE"]
-
-    def test_data_jurisdiction_template_has_vocabulary(self, repo_root: Path) -> None:
-        templates = load_templates(repo_root)
-        t = get_template(templates, "data-jurisdiction")
-        assert t is not None
-        assert "JURISDICTION" in t.vocabulary
-        assert "EU" in t.vocabulary["JURISDICTION"]
 
     def test_template_is_frozen(self) -> None:
         template = TemplateRecord(
