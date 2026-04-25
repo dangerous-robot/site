@@ -233,7 +233,7 @@ GitHub's `core.error()` renders inline annotations on the PR diff when `file:` m
 
 `dr lint --queue` appends orphaned-claim entity names to `research/ONBOARD_QUEUE.md` so `dr onboard` can process them in bulk. This creates a closed loop: lint surfaces orphans, `ONBOARD_QUEUE.md` holds the backlog, onboard clears it.
 
-**Note on file choice:** `research/QUEUE.md` exists but holds URLs/topics for source ingestion (input to `dr ingest`). `research/ONBOARD_QUEUE.md` is the correct target — it already holds entity re-onboarding commands in shell format, and already documents `Earthly Insight` and `ChatGPTRee` as entities needing manual review before re-onboarding. The `--queue` output should append to `ONBOARD_QUEUE.md` in a format compatible with the existing file.
+**Note on file choice:** `research/QUEUE.md` holds URLs/topics for source ingestion (input to `dr ingest`). `research/ONBOARD_QUEUE.md` is the correct target for entity re-onboarding. The previous file was deleted 2026-04-24 as stale; `dr lint --queue` should re-create it on first append in the pipe-delimited format below.
 
 `ONBOARD_QUEUE.md` uses a pipe-delimited format (`name|type`, one per line) that a bash one-liner or `dr onboard --queue ONBOARD_QUEUE.md` can iterate without shell parsing complexity. `dr lint --queue` appends in this same format with an inline comment noting the reason:
 

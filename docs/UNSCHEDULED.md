@@ -133,6 +133,18 @@ From architectural review (2026-04-18) and TODO.md:
 
 ---
 
+## Operator workflow and data lifecycle
+
+Goal: Move from one-CLI-call-at-a-time to a queue + batch + error-file flow, and define how reprocessing interacts with existing content. Generated from the 2026-04-24 pre-launch triage; not v1 because manual operation suffices at the v1 launch scale (~20 claims).
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Operator queue + batch + error-file workflow | [operator-queue-batch-workflow_stub.md](plans/operator-queue-batch-workflow_stub.md) | v2; aligns operator-facing intake files with the six-input taxonomy |
+| Data lifecycle policy (skip-existing, overwrite, partial-fix) | [data-lifecycle-policy_stub.md](plans/data-lifecycle-policy_stub.md) | v2; design pre-launch is cheap. Pairs with audit-trail.md Stage 3 |
+| Source-triggered reassessment | (no plan yet) | v2; add a source, related claims re-evaluate. Operator confirmed v2. |
+
+---
+
 ## Follow-up items (2026-04-22)
 
 From `docs/follow-up-2026-04-22.md`:
