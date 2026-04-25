@@ -9,10 +9,16 @@ Requires BRAVE_WEB_SEARCH_API_KEY and ANTHROPIC_API_KEY in .env or environment.
 from __future__ import annotations
 
 import os
+import re
+import subprocess
+import sys
+from pathlib import Path
 
 import pytest
+import yaml
 from dotenv import load_dotenv
 
+from common.content_loader import resolve_repo_root
 from common.models import Verdict
 from orchestrator.pipeline import VerifyConfig, verify_claim
 
@@ -71,3 +77,181 @@ class TestLiveVerification:
             Verdict.TRUE,
             Verdict.MOSTLY_TRUE,
         ), f"False claim rated as true: {result.analyst_output.verdict.verdict}"
+
+
+# Baseline captured 2026-04-24 from the post-cleanup run. After re-running
+# `dr onboard` the test compares the resulting research/ state to these values.
+# LLM non-determinism: pin the deterministic fields (slug, category) and lock
+# verdict/confidence to current values so drift is visible (test fails -> review
+# the change and either accept the new baseline or treat it as a regression).
+
+ANTHROPIC_ENTITY_BASELINE = {
+    "name": "Anthropic",
+    "type": "company",
+    "website": "https://anthropic.com",
+}
+
+CLAUDE_ENTITY_BASELINE = {
+    "name": "Claude",
+    "type": "product",
+    "website": "https://claude.ai",
+}
+
+# slug -> expected (verdict, confidence, category, min_sources)
+ANTHROPIC_CLAIM_BASELINE = {
+    "corporate-structure": ("true", "high", "industry-analysis", 2),
+    "donates-to-ai-safety": ("true", "high", "ai-safety", 2),
+    "donates-to-environmental-causes": (
+        "unverified",
+        "low",
+        "environmental-impact",
+        2,
+    ),
+    "publishes-sustainability-report": (
+        "unverified",
+        "high",
+        "industry-analysis",
+        2,
+    ),
+}
+
+CLAUDE_CLAIM_BASELINE = {
+    "discloses-energy-sourcing": (
+        "unverified",
+        "medium",
+        "environmental-impact",
+        3,
+    ),
+    "discloses-models-used": ("true", "high", "ai-literacy", 3),
+    "excludes-frontier-models": ("mostly-true", "high", "ai-literacy", 4),
+    "excludes-image-generation": (
+        "mostly-false",
+        "high",
+        "product-comparison",
+        4,
+    ),
+    "no-training-on-user-data": ("mostly-true", "high", "data-privacy", 4),
+    "realtime-energy-display": ("false", "high", "product-comparison", 4),
+    "renewable-energy-hosting": (
+        "unverified",
+        "low",
+        "environmental-impact",
+        4,
+    ),
+}
+
+REQUIRED_SIDECAR_KEYS = {
+    "schema_version",
+    "pipeline_run",
+    "sources_consulted",
+    "audit",
+    "human_review",
+}
+
+
+def _parse_frontmatter(path: Path) -> dict:
+    text = path.read_text()
+    m = re.search(r"^---\s*\n(.*?)\n---\s*\n", text, re.S)
+    assert m, f"No frontmatter in {path}"
+    return yaml.safe_load(m.group(1)) or {}
+
+
+@pytest.mark.acceptance
+@pytest.mark.skipif(not _has_keys, reason="API keys not available")
+class TestLiveCliCommands:
+    """End-to-end CLI walkthrough for the Anthropic / Claude fixture.
+
+    Runs the operator-facing commands against the real repo so resulting
+    research/ files can be inspected by hand. ``--force`` is passed on
+    onboard so the test is rerunnable without manual cleanup.
+
+    After the commands complete, the resulting research/ state is asserted
+    against the 2026-04-24 baseline captured at module top. A failing
+    assertion means either (a) the LLM produced a different verdict and
+    the baseline should be updated, or (b) the pipeline regressed.
+    """
+
+    def test_anthropic_claude_walkthrough(self) -> None:
+        repo_root = resolve_repo_root()
+
+        commands = [
+            ["dr", "onboard", "Anthropic", "anthropic.com", "--type", "company", "--force"],
+            ["dr", "review", "--claim", "anthropic/publishes-sustainability-report"],
+            ["dr", "onboard", "Claude", "claude.ai", "--type", "product", "--force"],
+        ]
+
+        for cmd in commands:
+            result = subprocess.run(
+                cmd,
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            sys.stdout.write(result.stdout)
+            sys.stderr.write(result.stderr)
+            assert result.returncode == 0, (
+                f"Command failed ({result.returncode}): {' '.join(cmd)}"
+            )
+
+        self._assert_entity(repo_root, "companies/anthropic", ANTHROPIC_ENTITY_BASELINE)
+        self._assert_entity(repo_root, "products/claude", CLAUDE_ENTITY_BASELINE)
+
+        self._assert_claims(repo_root, "anthropic", ANTHROPIC_CLAIM_BASELINE)
+        self._assert_claims(repo_root, "claude", CLAUDE_CLAIM_BASELINE)
+
+    @staticmethod
+    def _assert_entity(repo_root: Path, ref: str, baseline: dict) -> None:
+        path = repo_root / "research" / "entities" / f"{ref}.md"
+        assert path.exists(), f"Missing entity file: {path}"
+        fm = _parse_frontmatter(path)
+        for field, expected in baseline.items():
+            assert fm.get(field) == expected, (
+                f"{ref}: expected {field}={expected!r}, got {fm.get(field)!r}"
+            )
+
+    @staticmethod
+    def _assert_claims(
+        repo_root: Path,
+        entity_dir: str,
+        baseline: dict[str, tuple[str, str, str, int]],
+    ) -> None:
+        claim_dir = repo_root / "research" / "claims" / entity_dir
+        assert claim_dir.is_dir(), f"Missing claim directory: {claim_dir}"
+
+        actual_slugs = {p.stem for p in claim_dir.glob("*.md")}
+        expected_slugs = set(baseline)
+        assert actual_slugs == expected_slugs, (
+            f"{entity_dir} claim set differs.\n"
+            f"  missing:  {expected_slugs - actual_slugs}\n"
+            f"  extra:    {actual_slugs - expected_slugs}"
+        )
+
+        for slug, (verdict, confidence, category, min_sources) in baseline.items():
+            claim_path = claim_dir / f"{slug}.md"
+            fm = _parse_frontmatter(claim_path)
+            assert fm.get("verdict") == verdict, (
+                f"{entity_dir}/{slug}: verdict drift "
+                f"(expected {verdict!r}, got {fm.get('verdict')!r})"
+            )
+            assert fm.get("confidence") == confidence, (
+                f"{entity_dir}/{slug}: confidence drift "
+                f"(expected {confidence!r}, got {fm.get('confidence')!r})"
+            )
+            assert fm.get("category") == category, (
+                f"{entity_dir}/{slug}: category mismatch "
+                f"(expected {category!r}, got {fm.get('category')!r})"
+            )
+            sources = fm.get("sources") or []
+            assert len(sources) >= min_sources, (
+                f"{entity_dir}/{slug}: expected >= {min_sources} sources, "
+                f"got {len(sources)}"
+            )
+
+            sidecar = claim_path.with_suffix(".audit.yaml")
+            assert sidecar.exists(), f"Missing audit sidecar: {sidecar}"
+            sidecar_data = yaml.safe_load(sidecar.read_text()) or {}
+            missing_keys = REQUIRED_SIDECAR_KEYS - set(sidecar_data)
+            assert not missing_keys, (
+                f"{entity_dir}/{slug} sidecar missing keys: {missing_keys}"
+            )
