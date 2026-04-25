@@ -4,28 +4,28 @@ templates:
 
   # --- Company ---
 
-  - slug: publishes-sustainability-report
-    text: "COMPANY publishes a sustainability or ESG report"
-    entity_type: company
-    category: environmental-impact
-    core: true
-    notes: "Environmental analog of financial transparency"
+  # - slug: publishes-sustainability-report
+  #   text: "COMPANY publishes a sustainability or ESG report"
+  #   entity_type: company
+  #   category: environmental-impact
+  #   core: true
+  #   notes: "Environmental analog of financial transparency"
 
-  - slug: corporate-structure
-    text: "COMPANY has STRUCTURE corporate structure"
-    entity_type: company
-    category: industry-analysis
-    core: true
-    notes: "Controlled vocabulary; ownership determines incentives"
-    vocabulary:
-      STRUCTURE:
-        - publicly-traded
-        - privately-held
-        - non-profit
-        - B-corp
-        - employee-owned
-        - steward-ownership
-        - cooperative
+  # - slug: corporate-structure
+  #   text: "COMPANY has STRUCTURE corporate structure"
+  #   entity_type: company
+  #   category: industry-analysis
+  #   core: true
+  #   notes: "Controlled vocabulary; ownership determines incentives"
+  #   vocabulary:
+  #     STRUCTURE:
+  #       - publicly-traded
+  #       - privately-held
+  #       - non-profit
+  #       - B-corp
+  #       - employee-owned
+  #       - steward-ownership
+  #       - cooperative
 
   - slug: donates-to-ai-safety
     text: "COMPANY donates to AI safety causes"
@@ -34,12 +34,12 @@ templates:
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
-  - slug: ewew
-    text: "COMPANY donates to environmental causes"
-    entity_type: company
-    category: environmental-impact
-    core: true
-    notes: "Verifiable from financial disclosures or public commitments"
+  # - slug: donates-to-environmental-causes
+  #   text: "COMPANY donates to environmental causes"
+  #   entity_type: company
+  #   category: environmental-impact
+  #   core: true
+  #   notes: "Verifiable from financial disclosures or public commitments"
 
   # --- Product ---
 

@@ -5,9 +5,10 @@ category: ai-safety
 verdict: 'true'
 confidence: high
 status: draft
-as_of: '2026-04-24'
+as_of: '2026-04-25'
 sources:
-- 2026/anthropic-donates-20-million-public-first-action
-- 2026/anthropic-fellows-program-2026
+- 2024/anthropic-fellows-program
+- 2026/project-glasswing-securing-critical-software
+- 2024/external-researcher-access-program
 ---
-Anthropic demonstrates support for AI safety through multiple mechanisms. The company operates the Anthropic Fellows program, a research fellowship that explicitly focuses on AI safety research with fellows working on projects including 'scalable oversight, adversarial robustness, mechanistic interpretability, and model organisms.' Additionally, Anthropic announced a $20 million donation to Public First Action, a bipartisan organization focused on AI policy and safeguards, framing the contribution as supporting 'public interest governance' and addressing AI risks. Both initiatives directly support AI safety-related causes.
+Anthropic makes multiple direct and indirect donations to AI safety causes. Source 2 (Project Glasswing) explicitly states that 'Anthropic is committing $100M in model usage credits and $4M in donations to open-source security organizations' as part of securing critical software infrastructure. Beyond direct donations, Anthropic funds AI safety research through the Anthropic Fellows Program (Source 1), which provides $2,100 weekly stipends to 10-15 researchers working on AI safety topics including scalable oversight, robustness, and interpretability. Additionally, the External Researcher Access Program (Source 3) provides free API credits worth $1,000 monthly to alignment researchers, lowering financial barriers to AI safety work. These programs collectively demonstrate sustained financial commitment to advancing AI safety research and securing critical infrastructure.

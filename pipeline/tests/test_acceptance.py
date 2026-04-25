@@ -38,16 +38,16 @@ class TestLiveVerification:
     async def test_false_claim_gets_false_verdict(self) -> None:
         """A knowingly false claim should produce a false or mostly-false verdict.
 
-        TreadLightly AI does not exclusively use models trained on 100%
+        Anthropic does not exclusively use models trained on 100%
         renewable energy -- no major LLM provider makes that guarantee.
         The pipeline should research this and reach that conclusion.
         """
         from orchestrator.checkpoints import AutoApproveCheckpointHandler
 
         result = await verify_claim(
-            entity_name="TreadLightly AI",
+            entity_name="Anthropic",
             claim_text=(
-                "TreadLightly AI only uses models that were trained "
+                "Anthropic only uses models that were trained "
                 "on 100% renewable energy"
             ),
             config=VerifyConfig(max_sources=3),
@@ -65,6 +65,7 @@ class TestLiveVerification:
 
         # Analyst should produce a verdict
         assert result.analyst_output is not None, "No analyst output produced"
+
         assert result.analyst_output.verdict.verdict in (
             Verdict.FALSE,
             Verdict.MOSTLY_FALSE,

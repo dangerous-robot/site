@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T19:46:45.255670+00:00'
+  ran_at: '2026-04-25T14:58:17.296618+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,14 +8,17 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/anthropic-donates-20-million-public-first-action
-  url: https://www.anthropic.com/news/donate-public-first-action
-  title: Anthropic is donating $20 million to Public First Action
+- id: 2024/anthropic-fellows-program
+  url: https://alignment.anthropic.com/2024/anthropic-fellows-program/
+  title: Introducing the Anthropic Fellows Program
   ingested: true
-- id: 2026/anthropic-fellows-program-2026
-  url: https://alignment.anthropic.com/2025/anthropic-fellows-program-2026/
-  title: 'Anthropic Fellows Program for AI safety research: applications open for
-    May & July 2026'
+- id: 2026/project-glasswing-securing-critical-software
+  url: https://www.anthropic.com/glasswing
+  title: 'Project Glasswing: Securing Critical Software for the AI Era'
+  ingested: true
+- id: 2024/external-researcher-access-program
+  url: https://support.claude.com/en/articles/9125743-what-is-the-external-researcher-access-program
+  title: What is the External Researcher Access Program?
   ingested: true
 audit:
   analyst_verdict: 'true'
