@@ -3,6 +3,7 @@ import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
 import { buildCitationIndex } from "../../lib/citations";
 import ClaimRow from "../../components/ClaimRow.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
 
 export async function getStaticPaths() {
   const sources = await getCollection("sources");
@@ -51,10 +52,17 @@ const publishedDate = source.data.published_date instanceof Date
   : source.data.published_date
     ? String(source.data.published_date)
     : null;
+
+const sourceCrumbs = [
+  { label: "Home", href: "/" },
+  { label: "Sources", href: "/sources" },
+  { label: source.data.title },
+];
 ---
 
 <Base title={source.data.title}>
   <article class="source-detail">
+    <Breadcrumb crumbs={sourceCrumbs} />
     <header>
       <h1>{source.data.title}</h1>
 

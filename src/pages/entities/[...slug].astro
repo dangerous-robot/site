@@ -5,6 +5,8 @@ import { buildCriteriaIndex } from "../../lib/criteria";
 import { CATEGORY_LABELS } from "../../lib/research";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 
 export async function getStaticPaths() {
   const entities = await getCollection("entities");
@@ -54,10 +56,22 @@ const kindLabels: Record<string, string> = {
   product: "Product",
   topic: "Topic",
 };
+
+// Breadcrumb. Omit type-parent crumb when the parent index does not exist (currently /sectors).
+const PARENT_ROUTES_AVAILABLE = new Set(["company", "product", "topic"]);
+const typeParent = PARENT_ROUTES_AVAILABLE.has(entity.data.type)
+  ? ENTITY_TYPE_PARENTS[entity.data.type]
+  : null;
+const entityCrumbs = [
+  { label: "Home", href: "/" },
+  ...(typeParent ? [typeParent] : []),
+  { label: entity.data.name },
+];
 ---
 
 <Base title={entity.data.name}>
   <article class="entity-detail">
+    <Breadcrumb crumbs={entityCrumbs} />
     <header>
       <h1>{entity.data.name}</h1>
 

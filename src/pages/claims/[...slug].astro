@@ -1,6 +1,8 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
+import Breadcrumb from "../../components/Breadcrumb.astro";
+import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 
 export async function getStaticPaths() {
   const claims = await getCollection("claims");
@@ -18,6 +20,22 @@ const criteria = await getCollection("criteria");
 const stem = claim.id.split("/").pop() ?? claim.id;
 const criteriaSlug = claim.data.criteria_slug ?? stem;
 const matchedCriteria = criteria.find(s => s.id === criteriaSlug);
+
+// Entity lookup for breadcrumb. Omit type parent crumb when the parent index does not exist (currently /sectors).
+const entities = await getCollection("entities");
+const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
+const PARENT_ROUTES_AVAILABLE = new Set(["company", "product", "topic"]);
+const typeParent = entityEntry && PARENT_ROUTES_AVAILABLE.has(entityEntry.data.type)
+  ? ENTITY_TYPE_PARENTS[entityEntry.data.type]
+  : null;
+const entityLabel = entityEntry?.data.name ?? claim.data.entity;
+
+const claimCrumbs = [
+  { label: "Home", href: "/" },
+  ...(typeParent ? [typeParent] : []),
+  { label: entityLabel, href: `/entities/${claim.data.entity}` },
+  { label: claim.data.title },
+];
 
 const verdictCssVar: Record<string, string> = {
   true: "var(--color-verdict-true)",
@@ -62,6 +80,8 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 
 <Base title={claim.data.title}>
   <article class="claim-detail">
+    <Breadcrumb crumbs={claimCrumbs} />
+
     <header>
       {matchedCriteria && (
         <p class="criterion-ref">

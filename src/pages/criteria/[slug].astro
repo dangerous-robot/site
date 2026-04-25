@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import { buildCriteriaIndex, logDerivationMisses } from '../../lib/criteria';
 import type { CriteriaMiss } from '../../lib/criteria';
 import CriteriaMatrix from '../../components/CriteriaMatrix.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
 
 export async function getStaticPaths() {
   const criteria = await getCollection('criteria');
@@ -55,8 +56,15 @@ const alsoReferenced = [...byEntity.entries()]
   .filter((r): r is NonNullable<typeof r> => r !== null);
 
 logDerivationMisses(misses);
+
+const criteriaCrumbs = [
+  { label: 'Home', href: '/' },
+  { label: 'Criteria', href: '/criteria' },
+  { label: std.data.text },
+];
 ---
 <Base title={std.data.text} layout="wide">
+  <Breadcrumb crumbs={criteriaCrumbs} />
   <header class="std-header">
     <p class="std-category">{std.data.category.replace(/-/g, ' ')}</p>
     <h1>{std.data.text}</h1>
