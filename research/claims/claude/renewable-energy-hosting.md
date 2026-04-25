@@ -4,7 +4,7 @@ entity: products/claude
 category: environmental-impact
 verdict: unverified
 confidence: low
-status: draft
+status: published
 as_of: '2026-04-24'
 sources:
 - 2026/anthropic-claude-credo-risk-profile

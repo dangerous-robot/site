@@ -1,0 +1,32 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-24T19:46:45.255670+00:00'
+  model: anthropic:claude-haiku-4-5-20251001
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/anthropic-donates-20-million-public-first-action
+  url: https://www.anthropic.com/news/donate-public-first-action
+  title: Anthropic is donating $20 million to Public First Action
+  ingested: true
+- id: 2026/anthropic-fellows-program-2026
+  url: https://alignment.anthropic.com/2025/anthropic-fellows-program-2026/
+  title: 'Anthropic Fellows Program for AI safety research: applications open for
+    May & July 2026'
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

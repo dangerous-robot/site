@@ -34,7 +34,7 @@ templates:
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
-  - slug: donates-to-environmental-causes
+  - slug: ewew
     text: "COMPANY donates to environmental causes"
     entity_type: company
     category: environmental-impact

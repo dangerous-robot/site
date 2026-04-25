@@ -4,7 +4,7 @@ entity: products/claude
 category: product-comparison
 verdict: mostly-false
 confidence: high
-status: draft
+status: published
 as_of: '2026-04-24'
 sources:
 - 2026/can-claude-produce-images

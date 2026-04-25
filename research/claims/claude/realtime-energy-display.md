@@ -4,7 +4,7 @@ entity: products/claude
 category: product-comparison
 verdict: 'false'
 confidence: high
-status: draft
+status: published
 as_of: '2026-04-24'
 sources:
 - 2026/anthropic-claude-ai-energy-consumption
