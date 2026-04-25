@@ -57,23 +57,42 @@ def clean(ctx):
 # --- Test namespace: inv test, inv test.all ---
 
 
+# in_stream=False disables invoke's stdin capture; works around a Python 3.14
+# fcntl.ioctl buffer overflow that fires after pytest exits.
+
 @task
 def _test_unit(ctx):
     """Run pipeline unit tests (excludes acceptance)."""
     with ctx.cd("pipeline"):
-        ctx.run("uv run python -m pytest -m 'not acceptance'", pty=True)
+        ctx.run(
+            "uv run python -m pytest -m 'not acceptance'",
+            pty=True,
+            in_stream=False,
+        )
 
 
 @task
 def _test_all(ctx):
     """Run all pipeline tests including acceptance (needs ANTHROPIC_API_KEY)."""
     with ctx.cd("pipeline"):
-        ctx.run("uv run python -m pytest", pty=True)
+        ctx.run("uv run python -m pytest", pty=True, in_stream=False)
+
+
+@task
+def _test_acceptance(ctx):
+    """Run only acceptance tests (live APIs; needs ANTHROPIC_API_KEY + BRAVE_WEB_SEARCH_API_KEY)."""
+    with ctx.cd("pipeline"):
+        ctx.run(
+            "uv run python -m pytest -m acceptance",
+            pty=True,
+            in_stream=False,
+        )
 
 
 test_ns = Collection("test")
 test_ns.add_task(_test_unit, name="unit", default=True)
 test_ns.add_task(_test_all, name="all")
+test_ns.add_task(_test_acceptance, name="acceptance")
 
 
 # --- Namespace assembly ---

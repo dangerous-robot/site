@@ -1,2 +1,7 @@
 [tool.uv.workspace]
 members = ["pipeline"]
+
+[tool.pytest.ini_options]
+markers = [
+    "acceptance: live end-to-end tests that hit real APIs (requires API keys in .env)",
+]
