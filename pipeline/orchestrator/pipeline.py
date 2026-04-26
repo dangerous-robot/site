@@ -24,7 +24,7 @@ from common.utils import slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
-from common.models import DEFAULT_MODEL
+from common.models import DEFAULT_MODEL, resolve_model
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -180,7 +180,7 @@ async def _research(
     prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
 
     try:
-        with research_agent.override(model=cfg.model):
+        with research_agent.override(model=resolve_model(cfg.model)):
             res = await asyncio.wait_for(
                 research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
             )
@@ -250,7 +250,7 @@ async def _ingest_one(
         f"Today's date: {today.isoformat()}\n"
     )
     try:
-        with ingestor_agent.override(model=cfg.model):
+        with ingestor_agent.override(model=resolve_model(cfg.model)):
             res = await asyncio.wait_for(
                 ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
             )
@@ -310,7 +310,7 @@ async def _analyse_claim(
     prompt = build_analyst_prompt(entity_name, claim_text, sources)
 
     try:
-        with analyst_agent.override(model=cfg.model):
+        with analyst_agent.override(model=resolve_model(cfg.model)):
             res = await asyncio.wait_for(
                 analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
             )
@@ -339,7 +339,7 @@ async def _audit_claim(
     prompt = build_auditor_prompt(bundle)
 
     try:
-        with auditor_agent.override(model=cfg.model):
+        with auditor_agent.override(model=resolve_model(cfg.model)):
             res = await asyncio.wait_for(
                 auditor_agent.run(prompt), timeout=cfg.auditor_timeout_s
             )

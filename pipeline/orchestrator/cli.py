@@ -13,8 +13,27 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from common.models import DEFAULT_MODEL
+from common.models import DEFAULT_MODEL, resolve_model
 from orchestrator.persistence import set_claim_status
+
+
+def _check_provider_api_keys(model: str) -> None:
+    """Exit with code 2 if the env vars required by `model`'s provider are missing.
+
+    `infomaniak:...` requires both INFOMANIAK_API_KEY and INFOMANIAK_PRODUCT_ID
+    so resolve_model cannot raise mid-run. Specs containing "test" skip the
+    check (used by TestModel paths). Everything else requires ANTHROPIC_API_KEY.
+    """
+    if "test" in model:
+        return
+    if model.startswith("infomaniak:"):
+        required = ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
+    else:
+        required = ("ANTHROPIC_API_KEY",)
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        click.echo(f"Error: {', '.join(missing)} not set.", err=True)
+        sys.exit(2)
 
 
 @click.group()
@@ -110,9 +129,7 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
     Example:
         dr verify "Ecosia" "Ecosia's AI chat runs on renewable energy"
     """
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
-        sys.exit(2)
+    _check_provider_api_keys(ctx.obj["model"])
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.pipeline import VerifyConfig, verify_claim
@@ -143,9 +160,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
     Example:
         dr research "iPhone 20 will support Neuralink"
     """
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
-        sys.exit(2)
+    _check_provider_api_keys(ctx.obj["model"])
 
     if not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
         click.echo("Error: BRAVE_WEB_SEARCH_API_KEY not set.", err=True)
@@ -290,7 +305,7 @@ def reassess(
 
             click.echo(f"Checking: {claim_id} ...", err=True)
             prompt = build_auditor_prompt(bundle)
-            with auditor_agent.override(model=model):
+            with auditor_agent.override(model=resolve_model(model)):
                 res = await auditor_agent.run(prompt)
             result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
 
@@ -331,9 +346,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
         click.echo(f"Error: invalid URL: {url}", err=True)
         sys.exit(1)
 
-    if not os.environ.get("ANTHROPIC_API_KEY") and "test" not in ctx.obj["model"]:
-        click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
-        sys.exit(2)
+    _check_provider_api_keys(ctx.obj["model"])
 
     import datetime
     import httpx
@@ -366,7 +379,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
             )
 
             try:
-                with ingestor_agent.override(model=model):
+                with ingestor_agent.override(model=resolve_model(model)):
                     res = await asyncio.wait_for(
                         ingestor_agent.run(prompt, deps=deps), timeout=120
                     )
@@ -457,9 +470,7 @@ def onboard(
     """
     if verbose:
         logging.getLogger().setLevel(logging.INFO)
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        click.echo("Error: ANTHROPIC_API_KEY not set.", err=True)
-        sys.exit(2)
+    _check_provider_api_keys(ctx.obj["model"])
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
