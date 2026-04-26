@@ -233,3 +233,18 @@ From UI redesign plan (2026-04-24). Current implementation shows reviewer count 
 | Multi-reviewer tracking | Change `human_review` from single object to array of `{ reviewed_at, reviewer, notes, pr_url }`. Meta row count (`✓ N reviewers`) derives from array length. Requires schema version bump and backfill script. |
 | Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity detail claim lists as a trust signal. |
 | Verdict change history | Append-only `history` array in `.audit.yaml` recording each pipeline run's verdict+confidence output. Site renders a timeline on the claim detail page. Requires pipeline write changes. |
+
+---
+
+## v1 vocab/lifecycle follow-ups (2026-04-26)
+
+Cleanup items surfaced during the v0.1.0 vocab + multi-topic + claim-lifecycle landings (commits `7943577`, `1394bc6`, `df7537e`, `020409f`, `2ec0ed3`). All non-blocking for v0.1.0; nice-to-have polish.
+
+| Work Item | Notes |
+|-----------|-------|
+| Vocabulary sweep through `pipeline/orchestrator/pipeline.py` | Lingering "Auditor" references in `verify_claim`'s function docstring (line ~145), inline comments (lines ~221, ~551), and a log message (line ~420). The vocab landing PR was scoped to module-level docstrings only; this is the in-function follow-up. |
+| Detail-page filter for `status: blocked` | `src/pages/claims/[...slug].astro` still calls `getStaticPaths` over all claims regardless of status. Public list pages already exclude blocked, but direct URLs to blocked claims still resolve. Add a status filter to `getStaticPaths` if operator-only visibility should extend to detail URLs. |
+| Multi-topic faceted filtering | `src/components/ClaimRow.astro` and `src/pages/criteria/index.astro` set `data-topic={topics[0]}` because `FilterBar` matches one attribute value per facet. Multi-topic claims/criteria filter only on their first topic. Fix needs richer `FilterBar` matching (split-by-space) or a different markup shape. |
+| Delete `research/claims/.gitkeep` after first regen | The bridge file was added in commit `1394bc6` so Astro's `walkMdFiles` doesn't ENOENT before regeneration. Once regenerated claims exist, delete the bridge. |
+| Consider `pipeline/auditor/` → `pipeline/evaluator/` directory rename | Doc rename Auditor → Evaluator landed in `7943577`; the Python package keeps its old name for v1. Tracked in `docs/plans/v0.1.0-vocab-workflow-landing.md` as deferred. |
+| Sweep stringly-typed `"blocked"` literals to `ClaimStatus.BLOCKED.value` | `pipeline/orchestrator/persistence.py` and `pipeline/orchestrator/cli.py` write/compare raw "blocked" strings. Consistent with existing style; cosmetic enum-everywhere upgrade. |
