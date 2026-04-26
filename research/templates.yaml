@@ -88,7 +88,7 @@ templates:
   - slug: excludes-frontier-models
     text: "PRODUCT excludes frontier-scale models"
     entity_type: product
-    topics: [ai-safety]
+    topics: [ai-safety, environmental-impact]
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
 
