@@ -389,6 +389,61 @@ class TestDrReviewCli:
         assert result.exit_code != 0
         assert "No audit sidecar found" in (result.output + result.stderr if hasattr(result, 'stderr') else result.output)
 
+    def test_exits_nonzero_on_missing_claim_file(self, tmp_path):
+        # Claims directory exists but the requested slug does not.
+        (tmp_path / "research" / "claims").mkdir(parents=True)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "missing-entity/no-such-claim",
+            "--reviewer", "test@example.com",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert "Claim file not found" in result.output
+
+    def test_resolves_bare_slug_when_unique(self, tmp_path):
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True)
+        claim_md = entity_dir / "uniq-claim.md"
+        claim_md.write_text("---\ntitle: Test\n---\n", encoding="utf-8")
+        sidecar = entity_dir / "uniq-claim.audit.yaml"
+        _write_minimal_sidecar(sidecar)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "uniq-claim",
+            "--reviewer", "test@example.com",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["reviewer"] == "test@example.com"
+
+    def test_rejects_ambiguous_bare_slug(self, tmp_path):
+        for entity in ("entity-a", "entity-b"):
+            d = tmp_path / "research" / "claims" / entity
+            d.mkdir(parents=True)
+            (d / "shared-slug.md").write_text("---\ntitle: T\n---\n", encoding="utf-8")
+            _write_minimal_sidecar(d / "shared-slug.audit.yaml")
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "shared-slug",
+            "--reviewer", "test@example.com",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert "Ambiguous" in result.output
+        assert "entity-a/shared-slug" in result.output
+        assert "entity-b/shared-slug" in result.output
+
 
 # ---------------------------------------------------------------------------
 # dr review --approve / --archive (claim promotion)

@@ -540,7 +540,7 @@ def onboard(
 # --------------------------------------------------------------------------- #
 
 @main.command()
-@click.option("--claim", required=True, help="Claim identifier: <entity-slug>/<claim-slug>")
+@click.option("--claim", required=True, help="Claim identifier: <entity-slug>/<claim-slug>, or a bare <claim-slug> if unique across entities.")
 @click.option("--reviewer", default=None, help="Reviewer name or email (defaults to git config user.email)")
 @click.option("--notes", default=None, help="Optional review notes")
 @click.option("--pr-url", default=None, help="Optional GitHub PR URL")
@@ -579,13 +579,43 @@ def review(
         raise click.ClickException("--approve and --archive are mutually exclusive")
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
+    claims_dir = root / "research" / "claims"
 
-    slug = claim if claim.endswith(".md") else f"{claim}.md"
-    claim_path = root / "research" / "claims" / slug
+    bare = claim[:-3] if claim.endswith(".md") else claim
+    if "/" in bare:
+        claim_path = claims_dir / f"{bare}.md"
+    else:
+        # Bare slug is accepted if exactly one entity directory carries it.
+        matches = sorted(claims_dir.glob(f"*/{bare}.md"))
+        if not matches:
+            click.echo(
+                f"Claim file not found: no research/claims/*/{bare}.md.",
+                err=True,
+            )
+            sys.exit(1)
+        if len(matches) > 1:
+            rels = ", ".join(str(m.relative_to(claims_dir).with_suffix("")) for m in matches)
+            click.echo(
+                f"Ambiguous claim slug {bare!r}; matches: {rels}. "
+                f"Re-run with --claim <entity-slug>/{bare}.",
+                err=True,
+            )
+            sys.exit(1)
+        claim_path = matches[0]
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
 
+    if not claim_path.exists():
+        click.echo(
+            f"Claim file not found: {claim_path.relative_to(root)}.",
+            err=True,
+        )
+        sys.exit(1)
     if not sidecar_path.exists():
-        click.echo("No audit sidecar found. Run the pipeline first.", err=True)
+        click.echo(
+            f"No audit sidecar found at {sidecar_path.relative_to(root)}. "
+            f"Run the pipeline first.",
+            err=True,
+        )
         sys.exit(1)
 
     # Pre-flight runs before any write so a bad state aborts cleanly,
