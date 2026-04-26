@@ -19,10 +19,13 @@ from ingestor.models import SourceFile, SourceFrontmatter
 from common.models import SourceKind
 from orchestrator.cli import main
 from common.models import Category
+from common.frontmatter import parse_frontmatter
+from common.models import BlockedReason, Phase
 from orchestrator.persistence import (
     _build_sources_consulted,
     _write_audit_sidecar,
     _write_claim_file,
+    set_claim_status,
 )
 
 
@@ -635,6 +638,63 @@ class TestDrReviewPromotion:
         assert claim_md.read_bytes() == md_before
         assert sidecar.read_bytes() == sidecar_before
 
+    def test_approve_on_blocked_claim_fails_with_clear_error(self, tmp_path):
+        """Blocked claims must not be promotable to published."""
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        claim_md = entity_dir / "test-claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: blocked\n"
+            "blocked_reason: insufficient_sources\n---\nBody.\n",
+            encoding="utf-8",
+        )
+        sidecar = entity_dir / "test-claim.audit.yaml"
+        _write_minimal_sidecar(sidecar)
+        md_before = claim_md.read_bytes()
+        sidecar_before = sidecar.read_bytes()
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code != 0
+        assert "blocked" in result.output.lower()
+        assert "insufficient_sources" in result.output
+        # Files remain untouched; the gate fires pre-write.
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_archive_on_blocked_claim_succeeds(self, tmp_path):
+        """blocked → archived is a valid transition (operator retires the claim)."""
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        claim_md = entity_dir / "test-claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: blocked\n"
+            "blocked_reason: insufficient_sources\n---\nBody.\n",
+            encoding="utf-8",
+        )
+        sidecar = entity_dir / "test-claim.audit.yaml"
+        _write_minimal_sidecar(sidecar)
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--archive",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        fm_text = claim_md.read_text(encoding="utf-8")
+        assert "status: archived" in fm_text
+
     def test_atomicity_md_write_failure_leaves_sidecar_updated(self, tmp_path, monkeypatch):
         """Sidecar is the commit point.
 
@@ -669,3 +729,84 @@ class TestDrReviewPromotion:
         assert sidecar.read_bytes() != sidecar_before_bytes
         # .md was not modified (status still draft).
         assert "status: draft" in claim_md.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# set_claim_status — phase / blocked_reason kwargs (PR 2)
+# ---------------------------------------------------------------------------
+
+class TestSetClaimStatusBlocked:
+    def test_blocked_round_trip_via_parse_frontmatter(self, tmp_path):
+        """Writing status=blocked + blocked_reason round-trips through the parser."""
+        claim_md = tmp_path / "claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: draft\n---\nBody.\n",
+            encoding="utf-8",
+        )
+
+        set_claim_status(
+            claim_md,
+            "blocked",
+            expected_current="draft",
+            blocked_reason=BlockedReason.INSUFFICIENT_SOURCES,
+        )
+
+        fm, body = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "blocked"
+        assert fm["blocked_reason"] == "insufficient_sources"
+        assert "Body." in body
+
+    def test_phase_kwarg_writes_field(self, tmp_path):
+        claim_md = tmp_path / "claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: draft\n---\nBody.\n",
+            encoding="utf-8",
+        )
+
+        set_claim_status(
+            claim_md,
+            "draft",
+            expected_current="draft",
+            phase=Phase.ANALYZING,
+        )
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["phase"] == "analyzing"
+
+    def test_phase_set_to_none_clears_field(self, tmp_path):
+        """Passing phase=None must drop the key from the persisted frontmatter."""
+        claim_md = tmp_path / "claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: draft\nphase: analyzing\n---\nBody.\n",
+            encoding="utf-8",
+        )
+
+        set_claim_status(
+            claim_md,
+            "blocked",
+            expected_current="draft",
+            phase=None,
+            blocked_reason=BlockedReason.INSUFFICIENT_SOURCES,
+        )
+
+        text = claim_md.read_text(encoding="utf-8")
+        assert "phase:" not in text
+        assert "status: blocked" in text
+        assert "blocked_reason: insufficient_sources" in text
+
+    def test_default_kwargs_do_not_touch_phase_or_blocked_reason(self, tmp_path):
+        """Existing draft → published callers omit kwargs and must not lose state."""
+        claim_md = tmp_path / "claim.md"
+        claim_md.write_text(
+            "---\ntitle: Test\nstatus: draft\nphase: analyzing\n"
+            "blocked_reason: insufficient_sources\n---\nBody.\n",
+            encoding="utf-8",
+        )
+
+        set_claim_status(claim_md, "published", expected_current="draft")
+
+        text = claim_md.read_text(encoding="utf-8")
+        assert "status: published" in text
+        # Untouched fields still present.
+        assert "phase: analyzing" in text
+        assert "blocked_reason: insufficient_sources" in text

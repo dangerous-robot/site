@@ -29,6 +29,25 @@ class Confidence(str, Enum):
     LOW = "low"
 
 
+class ClaimStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+    BLOCKED = "blocked"
+
+
+class Phase(str, Enum):
+    RESEARCHING = "researching"
+    INGESTING = "ingesting"
+    ANALYZING = "analyzing"
+    EVALUATING = "evaluating"
+
+
+class BlockedReason(str, Enum):
+    INSUFFICIENT_SOURCES = "insufficient_sources"
+    TERMINAL_FETCH_ERROR = "terminal_fetch_error"
+
+
 class Category(str, Enum):
     AI_SAFETY = "ai-safety"
     ENVIRONMENTAL_IMPACT = "environmental-impact"

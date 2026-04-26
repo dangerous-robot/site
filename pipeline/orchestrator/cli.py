@@ -107,6 +107,13 @@ def _print_verify_result(result) -> None:
                 click.echo(f"    - {gap}")
         click.echo("")
 
+    if result.blocked_reason is not None:
+        click.echo("--- Blocked ---")
+        click.echo(
+            f"  Pipeline halted: blocked_reason={result.blocked_reason.value}"
+        )
+        click.echo("")
+
     if result.errors:
         click.echo("--- Errors ---")
         for err in result.errors:
@@ -638,6 +645,12 @@ def review(
             effective_current = current_status if current_status is not None else "draft"
             if effective_current == "archived":
                 raise click.ClickException("cannot approve an archived claim")
+            if effective_current == "blocked":
+                blocked_reason = fm.get("blocked_reason", "<unset>")
+                raise click.ClickException(
+                    f"Cannot approve blocked claim {claim_path.relative_to(root)}; "
+                    f"address blocked_reason={blocked_reason!r} first."
+                )
             if effective_current != "draft":
                 raise click.ClickException(
                     f"claim already {effective_current}; use --archive to retire"
@@ -649,11 +662,12 @@ def review(
                 raise click.ClickException(
                     "cannot archive: claim has no status field; publish first or edit the file manually"
                 )
-            if current_status != "published":
+            if current_status not in ("published", "blocked"):
                 raise click.ClickException(
-                    f"cannot archive a claim with status {current_status!r}; only published claims can be archived"
+                    f"cannot archive a claim with status {current_status!r}; "
+                    f"only published or blocked claims can be archived"
                 )
-            expected_current = "published"
+            expected_current = current_status
             new_status = "archived"
 
     # Resolve reviewer

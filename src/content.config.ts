@@ -157,7 +157,12 @@ const claims = defineCollection({
     ]),
     confidence: z.enum(['high', 'medium', 'low']),
     criteria_slug: z.string().optional(),
-    status: z.enum(['draft', 'published', 'archived']).default('draft'),
+    status: z.enum(['draft', 'published', 'archived', 'blocked']).default('draft'),
+    // Pipeline phase advanced by the Orchestrator while a claim is in
+    // progress; absent on terminal states. See docs/plans/claim-lifecycle-states.md.
+    phase: z.enum(['researching', 'ingesting', 'analyzing', 'evaluating']).optional(),
+    // Set together with status='blocked' to record why the pipeline halted.
+    blocked_reason: z.enum(['insufficient_sources', 'terminal_fetch_error']).optional(),
     as_of: z.coerce.date(),
     sources: z.array(z.string()),
     recheck_cadence_days: z.number().default(60),

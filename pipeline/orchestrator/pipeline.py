@@ -17,7 +17,7 @@ from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
-from common.models import Category, EntityType
+from common.models import BlockedReason, Category, EntityType
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slugify
@@ -46,9 +46,43 @@ class VerificationResult(BaseModel):
     analyst_output: AnalystOutput | None = None
     consistency: ComparisonResult | None = None
     errors: list[str] = field(default_factory=list)
+    # Set when the Orchestrator halts the claim post-ingest because fewer
+    # than two usable sources were obtained. Callers that persist claim
+    # files (research_claim, onboard_entity) inspect this to write a
+    # blocked claim file instead of skipping.
+    blocked_reason: BlockedReason | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
+def below_threshold(usable_sources: list) -> bool:
+    """True when fewer than two usable sources are available.
+
+    A "usable" source is one that ingested successfully (parsed body,
+    not blocked, not a terminal HTTP error). The Orchestrator calls this
+    after the Ingestor returns and halts the claim with status='blocked'
+    when it returns True. See docs/plans/claim-lifecycle-states.md.
+    """
+    return len(usable_sources) < 2
+
+
+def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
+    """Pick the right blocked_reason given the post-ingest error list.
+
+    If every recorded ingest error is a non-retryable terminal fetch
+    (HTTP 401/403/etc. surfaced by TerminalFetchError), the cause is
+    classified as ``terminal_fetch_error``. Otherwise (mix of timeouts,
+    parse failures, or simply too few URLs found) it defaults to
+    ``insufficient_sources``.
+    """
+    ingest_only = [e for e in ingest_errors if e.step == "ingest"]
+    if ingest_only and all(
+        (e.retryable is False) and e.error_type.startswith("http_")
+        for e in ingest_only
+    ):
+        return BlockedReason.TERMINAL_FETCH_ERROR
+    return BlockedReason.INSUFFICIENT_SOURCES
 
 
 # Timeout chain invariant: the ingestor agent wrapper (``ingest_timeout_s``)
@@ -141,8 +175,20 @@ async def verify_claim(
             result.errors.append("Halted at source review checkpoint")
             return result
 
-        if not result.sources:
-            result.errors.append("All source URLs failed to ingest")
+        # Threshold gate: Orchestrator halts the claim before invoking the
+        # Analyst when fewer than two usable sources were obtained. See
+        # docs/plans/claim-lifecycle-states.md § Behavior change.
+        if below_threshold(result.sources):
+            result.blocked_reason = _classify_blocked_reason(ingest_errors)
+            click.echo(
+                f"Claim halted: < 2 usable sources "
+                f"(blocked_reason={result.blocked_reason.value})",
+                err=True,
+            )
+            logger.warning(
+                "Claim halted: < 2 usable sources (blocked_reason=%s)",
+                result.blocked_reason.value,
+            )
             return result
 
         # Step 3: Analyst
@@ -428,8 +474,22 @@ async def research_claim(
             result.errors.append("Halted at source review checkpoint")
             return result
 
-        if not result.sources:
-            result.errors.append("All source URLs failed to ingest")
+        # Threshold gate: persist any usable sources we did get and signal
+        # blocked back to the caller. The Analyst is not invoked. See
+        # docs/plans/claim-lifecycle-states.md.
+        if below_threshold(result.sources):
+            if source_files:
+                _write_source_files(source_files, repo_root)
+            result.blocked_reason = _classify_blocked_reason(ingest_errors)
+            click.echo(
+                f"Claim halted: < 2 usable sources "
+                f"(blocked_reason={result.blocked_reason.value})",
+                err=True,
+            )
+            logger.warning(
+                "Claim halted: < 2 usable sources (blocked_reason=%s)",
+                result.blocked_reason.value,
+            )
             return result
 
         # Step 3: Write sources to disk
@@ -542,6 +602,7 @@ async def onboard_entity(
     from orchestrator.persistence import (
         _build_sources_consulted,
         _write_audit_sidecar,
+        _write_blocked_claim_file,
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
@@ -663,6 +724,39 @@ async def onboard_entity(
 
             if vr.errors:
                 result.errors.extend(vr.errors)
+
+            # Threshold-blocked branch: persist a placeholder claim file
+            # with status='blocked' so the operator can see (and later
+            # re-run or archive) the halted work. Sources that did ingest
+            # are still written out.
+            if vr.blocked_reason is not None:
+                source_ids = (
+                    _write_source_files(vr.source_files, repo_root)
+                    if vr.source_files
+                    else []
+                )
+                try:
+                    inherited_topics = [Category(t) for t in template.topics]
+                except ValueError:
+                    inherited_topics = []
+                blocked_path = _write_blocked_claim_file(
+                    title=claim_text,
+                    entity_name=entity_name,
+                    entity_ref=entity_ref,
+                    topics=inherited_topics,
+                    claim_slug=slug,
+                    source_ids=source_ids,
+                    blocked_reason=vr.blocked_reason,
+                    repo_root=repo_root,
+                    force=cfg.force_overwrite,
+                )
+                result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                click.echo(
+                    f"[{idx}/{total}] Blocked: {slug} "
+                    f"({vr.blocked_reason.value})",
+                    err=True,
+                )
+                continue
 
             if not vr.analyst_output:
                 result.claims_failed.append(slug)

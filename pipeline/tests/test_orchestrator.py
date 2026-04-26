@@ -12,13 +12,17 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
+from common.models import BlockedReason
 from ingestor.models import SourceFile, SourceFrontmatter
 from orchestrator.checkpoints import StepError
 from orchestrator.pipeline import (
     VerificationResult,
     VerifyConfig,
+    _classify_blocked_reason,
     _ingest_one,
     _research,
+    below_threshold,
+    verify_claim,
 )
 from researcher.agent import research_agent
 
@@ -244,3 +248,179 @@ class TestVerifyConfigTimeouts:
         assert outcome.step == "ingest"
         assert outcome.error_type == "timeout"
         assert outcome.url == url
+
+
+class TestThresholdEnforcement:
+    """The Orchestrator halts a claim with status='blocked' below threshold."""
+
+    def test_below_threshold_returns_true_for_zero_sources(self) -> None:
+        assert below_threshold([]) is True
+
+    def test_below_threshold_returns_true_for_one_source(self) -> None:
+        assert below_threshold(["only-one"]) is True
+
+    def test_below_threshold_returns_false_for_two_sources(self) -> None:
+        assert below_threshold(["a", "b"]) is False
+
+    def test_below_threshold_returns_false_for_many_sources(self) -> None:
+        assert below_threshold(["a", "b", "c", "d"]) is False
+
+    def test_classify_blocked_reason_terminal_when_all_http_errors(self) -> None:
+        errors = [
+            StepError(step="ingest", url="https://a", error_type="http_403",
+                      message="forbidden", retryable=False),
+            StepError(step="ingest", url="https://b", error_type="http_401",
+                      message="unauthorised", retryable=False),
+        ]
+        assert _classify_blocked_reason(errors) is BlockedReason.TERMINAL_FETCH_ERROR
+
+    def test_classify_blocked_reason_insufficient_when_mixed(self) -> None:
+        errors = [
+            StepError(step="ingest", url="https://a", error_type="timeout",
+                      message="timed out"),
+            StepError(step="ingest", url="https://b", error_type="http_403",
+                      message="forbidden", retryable=False),
+        ]
+        assert _classify_blocked_reason(errors) is BlockedReason.INSUFFICIENT_SOURCES
+
+    def test_classify_blocked_reason_insufficient_when_no_ingest_errors(self) -> None:
+        # Researcher returned nothing usable, no ingest attempts made.
+        assert _classify_blocked_reason([]) is BlockedReason.INSUFFICIENT_SOURCES
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_halts_when_one_source_ingested(
+        self, monkeypatch
+    ) -> None:
+        """With < 2 usable sources, verify_claim sets blocked_reason and skips Analyst.
+
+        We patch the internal _research and _ingest_urls helpers so the test
+        exercises the threshold gate without hitting any model providers.
+        """
+        sf = SourceFile(
+            frontmatter=SourceFrontmatter(
+                url="https://example.com/one",
+                title="One Source",
+                publisher="Example",
+                accessed_date=datetime.date(2026, 4, 26),
+                kind="article",
+                summary="Just one source.",
+            ),
+            body="Body.",
+            slug="one-source",
+            year=2026,
+        )
+
+        async def _fake_research(client, entity, claim, cfg):
+            return ["https://example.com/one"], []
+
+        async def _fake_ingest(client, urls, cfg):
+            return [("https://example.com/one", sf)], []
+
+        analyst_called = False
+
+        async def _fake_analyse(*args, **kwargs):
+            nonlocal analyst_called
+            analyst_called = True
+            return None
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+
+        result = await verify_claim(
+            entity_name="TestCorp",
+            claim_text="A claim",
+            config=VerifyConfig(model="test", repo_root="/tmp"),
+        )
+
+        assert analyst_called is False
+        assert result.blocked_reason is BlockedReason.INSUFFICIENT_SOURCES
+        assert result.analyst_output is None
+        # Threshold halt does not surface as a generic error; the
+        # blocked_reason field is the signal.
+        assert not any("All source URLs failed" in e for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_terminal_fetch_error_classified(
+        self, monkeypatch
+    ) -> None:
+        """When zero sources ingest and all errors are terminal HTTP, mark it so."""
+        async def _fake_research(client, entity, claim, cfg):
+            return ["https://a", "https://b"], []
+
+        async def _fake_ingest(client, urls, cfg):
+            errors = [
+                StepError(step="ingest", url="https://a", error_type="http_403",
+                          message="forbidden", retryable=False),
+                StepError(step="ingest", url="https://b", error_type="http_401",
+                          message="unauthorised", retryable=False),
+            ]
+            return [], errors
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+
+        result = await verify_claim(
+            entity_name="TestCorp",
+            claim_text="A claim",
+            config=VerifyConfig(model="test", repo_root="/tmp"),
+        )
+
+        assert result.blocked_reason is BlockedReason.TERMINAL_FETCH_ERROR
+        assert result.analyst_output is None
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_does_not_halt_with_two_sources(
+        self, monkeypatch
+    ) -> None:
+        """At threshold (>= 2 sources), the gate does not fire."""
+        sf1 = SourceFile(
+            frontmatter=SourceFrontmatter(
+                url="https://example.com/a", title="A", publisher="Ex",
+                accessed_date=datetime.date(2026, 4, 26), kind="article",
+                summary="A summary.",
+            ),
+            body="Body.", slug="a", year=2026,
+        )
+        sf2 = SourceFile(
+            frontmatter=SourceFrontmatter(
+                url="https://example.com/b", title="B", publisher="Ex",
+                accessed_date=datetime.date(2026, 4, 26), kind="article",
+                summary="A summary.",
+            ),
+            body="Body.", slug="b", year=2026,
+        )
+
+        async def _fake_research(client, entity, claim, cfg):
+            return ["https://example.com/a", "https://example.com/b"], []
+
+        async def _fake_ingest(client, urls, cfg):
+            return [
+                ("https://example.com/a", sf1),
+                ("https://example.com/b", sf2),
+            ], []
+
+        analyst_called = False
+
+        async def _fake_analyse(*args, **kwargs):
+            nonlocal analyst_called
+            analyst_called = True
+            return None
+
+        async def _fake_audit(*args, **kwargs):
+            return None
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+        monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+
+        result = await verify_claim(
+            entity_name="TestCorp",
+            claim_text="A claim",
+            config=VerifyConfig(model="test", repo_root="/tmp"),
+        )
+
+        assert result.blocked_reason is None
+        # Analyst was reached (then returned None, hitting a different branch).
+        assert analyst_called is True

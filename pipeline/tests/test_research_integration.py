@@ -24,9 +24,14 @@ def _noop(**kwargs):
 
 
 def _research_model() -> TestModel:
+    # Two URLs so research_claim clears the >=2 usable-source threshold the
+    # Orchestrator enforces post-ingest (docs/plans/claim-lifecycle-states.md).
     return TestModel(
         custom_output_args={
-            "urls": ["https://example.com/report"],
+            "urls": [
+                "https://example.com/report",
+                "https://example.com/second-report",
+            ],
             "reasoning": "Found a relevant report.",
         },
         call_tools=[],

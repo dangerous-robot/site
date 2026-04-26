@@ -10,7 +10,13 @@ import yaml
 
 from auditor.models import ComparisonResult
 from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
-from common.models import Category, Confidence, EntityType, Verdict
+from common.models import (
+    BlockedReason,
+    Category,
+    Confidence,
+    EntityType,
+    Verdict,
+)
 from common.source_classification import classify_source_type
 from common.utils import slugify
 from ingestor.models import SourceFile
@@ -153,6 +159,61 @@ def _write_claim_file(
     return claim_path
 
 
+def _write_blocked_claim_file(
+    title: str,
+    entity_name: str,
+    entity_ref: str,
+    topics: list[Category],
+    claim_slug: str,
+    source_ids: list[str],
+    blocked_reason: BlockedReason,
+    repo_root: Path,
+    force: bool = False,
+) -> Path:
+    """Write a placeholder claim file for a pipeline halted by the threshold.
+
+    The Analyst never ran, so verdict and confidence carry placeholder
+    values (`unverified` / `low`) and the body explains why the claim is
+    blocked. ``status`` is set to ``blocked`` and ``blocked_reason``
+    records which gate fired.
+    """
+    entity_slug = slugify(entity_name)
+    claim_slug_clean = slugify(claim_slug)
+
+    claim_dir = repo_root / "research" / "claims" / entity_slug
+    claim_dir.mkdir(parents=True, exist_ok=True)
+    claim_path = claim_dir / f"{claim_slug_clean}.md"
+
+    if claim_path.exists() and not force:
+        raise FileExistsError(
+            f"claim file already exists: {claim_path} (pass force=True to overwrite)"
+        )
+
+    fm = {
+        "title": title,
+        "entity": entity_ref,
+        "topics": FlowList(topics),
+        "verdict": Verdict.UNVERIFIED,
+        "confidence": Confidence.LOW,
+        "status": "blocked",
+        "blocked_reason": blocked_reason.value,
+        "as_of": datetime.date.today(),
+        "sources": source_ids,
+    }
+    body = (
+        f"This claim is blocked: `{blocked_reason.value}`. The pipeline halted "
+        f"before the Analyst could produce a verdict. Re-run the pipeline once "
+        f"more usable sources are available, or archive this claim if it cannot "
+        f"be verified.\n"
+    )
+    claim_path.write_text(
+        serialize_frontmatter(fm, body),
+        encoding="utf-8",
+    )
+    logger.info("Wrote blocked claim: %s (%s)", claim_path, blocked_reason.value)
+    return claim_path
+
+
 def _build_sources_consulted(
     source_files: list[tuple[str, SourceFile]] | None,
 ) -> list[dict]:
@@ -248,16 +309,31 @@ def _write_audit_sidecar(
     return sidecar_path
 
 
+_UNSET = object()
+
+
 def set_claim_status(
     claim_path: Path,
     new_status: str,
     expected_current: str | None,
+    *,
+    phase: object = _UNSET,
+    blocked_reason: object = _UNSET,
 ) -> None:
     """Flip the ``status`` field in a claim's frontmatter.
 
     Parses the claim file, verifies the current status matches
     ``expected_current`` (if provided), and writes the file back with the
     new status. Passing ``expected_current=None`` skips the status check.
+
+    Optional kwargs:
+        phase: When provided, sets the ``phase`` field. Pass ``None`` to
+            clear it (e.g. on transition to a terminal state). Omitting
+            the argument leaves the existing value untouched.
+        blocked_reason: Same semantics as ``phase`` for ``blocked_reason``.
+            Both kwargs default to a sentinel that means "do not touch",
+            so existing draft → published / published → archived callers
+            are unchanged.
 
     Raises:
         ValueError: If current status does not match ``expected_current``,
@@ -275,6 +351,14 @@ def set_claim_status(
             )
 
     fm["status"] = new_status
+    if phase is not _UNSET:
+        # _clean_for_serialize drops None-valued keys, so setting None
+        # effectively removes the key from the persisted frontmatter.
+        fm["phase"] = phase.value if hasattr(phase, "value") else phase
+    if blocked_reason is not _UNSET:
+        fm["blocked_reason"] = (
+            blocked_reason.value if hasattr(blocked_reason, "value") else blocked_reason
+        )
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 
