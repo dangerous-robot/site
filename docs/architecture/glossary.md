@@ -70,8 +70,22 @@ The pipeline implements roles as runnable code. Lives in `pipeline/`.
 |---|---|
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
 | **Ingest** | Fetching a URL, archiving it, producing a source file |
+| **Onboard** | Adding a new entity to the archive via `dr onboard`; see [onboarding.md](onboarding.md) |
 | **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` |
 | **Submitted claim** | A claim proposed through public feedback (planned feature, pending public-participation work), pending review |
+
+## Criterion vocabularies
+
+Some criterion templates use controlled vocabularies for substitutions in their `text` (e.g. `STRUCTURE`, `JURISDICTION`). The authoritative lists live alongside each template in `research/templates.yaml` under `vocabulary:`. Definitions below are for terms whose meaning is not self-evident from the value list.
+
+### Frontier-scale
+
+Used by the `excludes-frontier-models` criterion. A model is **frontier-scale** if it meets either criterion at time of release:
+
+- Top-5 performance on major benchmarks (MMLU, HumanEval, etc.)
+- Greater than 100B parameters
+
+This definition is a moving target. When evaluating a claim, the narrative should state which criterion was applied and the date of assessment.
 
 ## Governance Rules
 
