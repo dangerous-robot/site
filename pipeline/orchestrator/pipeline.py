@@ -1,4 +1,22 @@
-"""Pipeline: chains researcher -> ingestor -> analyst -> auditor."""
+"""Orchestrator-owned claim verification pipeline.
+
+Chains the per-claim flow:
+
+    research -> ingest -> [threshold check] -> analyze -> evaluate
+
+Checkpoints sit between major steps (source review after ingest;
+disagreement review after the Evaluator runs). Post-ingest, the
+Orchestrator calls ``below_threshold`` and, when fewer than two usable
+sources are available, halts the claim by setting ``status: blocked`` with
+a ``blocked_reason`` (``insufficient_sources`` or ``terminal_fetch_error``)
+instead of invoking the Analyst.
+
+The ``Evaluator`` step is implemented by the ``pipeline/auditor/`` package
+(directory name retained for v1 per
+``docs/plans/v0.1.0-vocab-workflow-landing.md``).
+
+See ``AGENTS.md`` ``## How the system works`` for the canonical narrative.
+"""
 
 from __future__ import annotations
 
