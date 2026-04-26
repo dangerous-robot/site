@@ -20,6 +20,16 @@ Recommended implementation order: reuse sources → fail-fast → blocklist → 
 
 ---
 
+## Pipeline observability
+
+Goal: Make per-object model spend visible so we can see which claims, sources, and entities are consuming the most tokens, and what the daily/weekly burn looks like.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Token usage log + `inv tokens.summary` | [token-usage-log.md](plans/token-usage-log.md) | Append-only JSONL at `logs/token-log.jsonl` written by a thin wrapper around every `agent.run(...)`; `inv tokens.summary --by object\|time` reader; no DB, no UI |
+
+---
+
 ## PDF attachment as alternate source content surface
 
 Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/451 origins) as a content surface for both the ingestion agent and the human reviewer. Pairs with the fail-fast plan — when the ingestor can't fetch, a pre-attached PDF is the fallback.
