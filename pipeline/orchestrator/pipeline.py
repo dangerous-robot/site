@@ -35,7 +35,7 @@ from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
-from common.models import BlockedReason, Category, EntityType
+from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slugify
@@ -101,6 +101,19 @@ def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
     ):
         return BlockedReason.TERMINAL_FETCH_ERROR
     return BlockedReason.INSUFFICIENT_SOURCES
+
+
+def _record_threshold_block(
+    result: VerificationResult, ingest_errors: list[StepError]
+) -> None:
+    """Mark `result` as blocked by the < 2 source threshold and emit logs."""
+    result.blocked_reason = _classify_blocked_reason(ingest_errors)
+    msg = (
+        f"Claim halted: < 2 usable sources "
+        f"(blocked_reason={result.blocked_reason.value})"
+    )
+    click.echo(msg, err=True)
+    logger.warning(msg)
 
 
 # Timeout chain invariant: the ingestor agent wrapper (``ingest_timeout_s``)
@@ -197,16 +210,7 @@ async def verify_claim(
         # Analyst when fewer than two usable sources were obtained. See
         # docs/plans/claim-lifecycle-states.md § Behavior change.
         if below_threshold(result.sources):
-            result.blocked_reason = _classify_blocked_reason(ingest_errors)
-            click.echo(
-                f"Claim halted: < 2 usable sources "
-                f"(blocked_reason={result.blocked_reason.value})",
-                err=True,
-            )
-            logger.warning(
-                "Claim halted: < 2 usable sources (blocked_reason=%s)",
-                result.blocked_reason.value,
-            )
+            _record_threshold_block(result, ingest_errors)
             return result
 
         # Step 3: Analyst
@@ -493,21 +497,11 @@ async def research_claim(
             return result
 
         # Threshold gate: persist any usable sources we did get and signal
-        # blocked back to the caller. The Analyst is not invoked. See
-        # docs/plans/claim-lifecycle-states.md.
+        # blocked back to the caller. The Analyst is not invoked.
         if below_threshold(result.sources):
             if source_files:
                 _write_source_files(source_files, repo_root)
-            result.blocked_reason = _classify_blocked_reason(ingest_errors)
-            click.echo(
-                f"Claim halted: < 2 usable sources "
-                f"(blocked_reason={result.blocked_reason.value})",
-                err=True,
-            )
-            logger.warning(
-                "Claim halted: < 2 usable sources (blocked_reason=%s)",
-                result.blocked_reason.value,
-            )
+            _record_threshold_block(result, ingest_errors)
             return result
 
         # Step 3: Write sources to disk
@@ -620,7 +614,6 @@ async def onboard_entity(
     from orchestrator.persistence import (
         _build_sources_consulted,
         _write_audit_sidecar,
-        _write_blocked_claim_file,
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
@@ -757,16 +750,27 @@ async def onboard_entity(
                     inherited_topics = [Category(t) for t in template.topics]
                 except ValueError:
                     inherited_topics = []
-                blocked_path = _write_blocked_claim_file(
+                blocked_body = (
+                    f"This claim is blocked: `{vr.blocked_reason.value}`. "
+                    f"The pipeline halted before the Analyst could produce a "
+                    f"verdict. Re-run the pipeline once more usable sources "
+                    f"are available, or archive this claim if it cannot be "
+                    f"verified.\n"
+                )
+                blocked_path = _write_claim_file(
                     title=claim_text,
                     entity_name=entity_name,
                     entity_ref=entity_ref,
                     topics=inherited_topics,
+                    verdict=Verdict.UNVERIFIED,
+                    confidence=Confidence.LOW,
+                    narrative=blocked_body,
                     claim_slug=slug,
                     source_ids=source_ids,
-                    blocked_reason=vr.blocked_reason,
                     repo_root=repo_root,
                     force=cfg.force_overwrite,
+                    status="blocked",
+                    blocked_reason=vr.blocked_reason,
                 )
                 result.claims_created.append(str(blocked_path.relative_to(repo_root)))
                 click.echo(

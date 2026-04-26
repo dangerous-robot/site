@@ -47,6 +47,9 @@ const coreFacet = {
     facets={[topicFacet, coreFacet]}
   />
   <div class="criteria-list">
+    {/* `data-topic` exposes the first topic only: FilterBar matches one
+        attribute value per facet. Multi-topic faceting is a known
+        follow-up (same workaround in src/components/ClaimRow.astro). */}
     {rows.map(row => (
       <a
         href={`/criteria/${row.slug}`}

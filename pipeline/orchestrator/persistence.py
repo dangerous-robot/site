@@ -119,12 +119,19 @@ def _write_claim_file(
     source_ids: list[str],
     repo_root: Path,
     force: bool = False,
+    status: str = "draft",
+    blocked_reason: BlockedReason | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
     Refuses to overwrite an existing claim file unless ``force=True``.
     Overwriting silently would clobber operator edits and any
     ``status: published`` flip made by ``dr review --approve``.
+
+    Pass ``status='blocked'`` plus a ``blocked_reason`` for the
+    threshold-blocked variant; the caller supplies a placeholder
+    ``narrative`` and ``verdict``/``confidence`` since the Analyst did
+    not run.
     """
     entity_slug = slugify(entity_name)
     claim_slug_clean = slugify(claim_slug)
@@ -138,16 +145,14 @@ def _write_claim_file(
             f"claim file already exists: {claim_path} (pass force=True to overwrite)"
         )
 
-    # Topics are written as a YAML flow list `[a, b]` so the typically
-    # 1-3 element sequence stays single-line and diff-stable. Other lists
-    # (e.g. sources) keep block style via the dumper default.
     fm = {
         "title": title,
         "entity": entity_ref,
         "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
-        "status": "draft",
+        "status": status,
+        "blocked_reason": blocked_reason,
         "as_of": datetime.date.today(),
         "sources": source_ids,
     }
@@ -155,62 +160,7 @@ def _write_claim_file(
         serialize_frontmatter(fm, narrative.rstrip() + "\n"),
         encoding="utf-8",
     )
-    logger.info("Wrote claim: %s", claim_path)
-    return claim_path
-
-
-def _write_blocked_claim_file(
-    title: str,
-    entity_name: str,
-    entity_ref: str,
-    topics: list[Category],
-    claim_slug: str,
-    source_ids: list[str],
-    blocked_reason: BlockedReason,
-    repo_root: Path,
-    force: bool = False,
-) -> Path:
-    """Write a placeholder claim file for a pipeline halted by the threshold.
-
-    The Analyst never ran, so verdict and confidence carry placeholder
-    values (`unverified` / `low`) and the body explains why the claim is
-    blocked. ``status`` is set to ``blocked`` and ``blocked_reason``
-    records which gate fired.
-    """
-    entity_slug = slugify(entity_name)
-    claim_slug_clean = slugify(claim_slug)
-
-    claim_dir = repo_root / "research" / "claims" / entity_slug
-    claim_dir.mkdir(parents=True, exist_ok=True)
-    claim_path = claim_dir / f"{claim_slug_clean}.md"
-
-    if claim_path.exists() and not force:
-        raise FileExistsError(
-            f"claim file already exists: {claim_path} (pass force=True to overwrite)"
-        )
-
-    fm = {
-        "title": title,
-        "entity": entity_ref,
-        "topics": FlowList(topics),
-        "verdict": Verdict.UNVERIFIED,
-        "confidence": Confidence.LOW,
-        "status": "blocked",
-        "blocked_reason": blocked_reason.value,
-        "as_of": datetime.date.today(),
-        "sources": source_ids,
-    }
-    body = (
-        f"This claim is blocked: `{blocked_reason.value}`. The pipeline halted "
-        f"before the Analyst could produce a verdict. Re-run the pipeline once "
-        f"more usable sources are available, or archive this claim if it cannot "
-        f"be verified.\n"
-    )
-    claim_path.write_text(
-        serialize_frontmatter(fm, body),
-        encoding="utf-8",
-    )
-    logger.info("Wrote blocked claim: %s (%s)", claim_path, blocked_reason.value)
+    logger.info("Wrote claim: %s (status=%s)", claim_path, status)
     return claim_path
 
 
@@ -351,14 +301,14 @@ def set_claim_status(
             )
 
     fm["status"] = new_status
+    # _clean_for_serialize drops None-valued keys (so passing None clears
+    # the field on disk); the FrontmatterDumper enum representer handles
+    # enum-to-scalar conversion, so callers can pass Phase / BlockedReason
+    # values directly without a `.value` unwrap.
     if phase is not _UNSET:
-        # _clean_for_serialize drops None-valued keys, so setting None
-        # effectively removes the key from the persisted frontmatter.
-        fm["phase"] = phase.value if hasattr(phase, "value") else phase
+        fm["phase"] = phase
     if blocked_reason is not _UNSET:
-        fm["blocked_reason"] = (
-            blocked_reason.value if hasattr(blocked_reason, "value") else blocked_reason
-        )
+        fm["blocked_reason"] = blocked_reason
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 

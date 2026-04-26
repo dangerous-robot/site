@@ -37,18 +37,10 @@ const entityGroups = [...byEntity.entries()].map(([entityId, entityClaims]) => {
   };
 }).sort((a, b) => a.entityName.localeCompare(b.entityName));
 
-// Per-topic verdict distribution: each (claim, topic) tuple contributes once.
-// Since `claims` is already the topic-filtered list, this is just the verdict
-// from each filtered claim, deduplicated by claim id (defensive, even though
-// filter cannot return a single claim twice).
-const seenIds = new Set<string>();
-const allVerdicts: string[] = [];
-for (const c of claims) {
-  if (seenIds.has(c.id)) continue;
-  seenIds.add(c.id);
-  allVerdicts.push(c.data.verdict);
-}
-const uniqueClaimCount = seenIds.size;
+// Per-topic verdict distribution: `claims` is already the topic-filtered
+// list, so each entry contributes one verdict to this topic's overall.
+const allVerdicts = claims.map(c => c.data.verdict);
+const uniqueClaimCount = claims.length;
 ---
 <Base title={label} layout="wide">
   <header class="topic-header">
