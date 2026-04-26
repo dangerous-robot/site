@@ -51,7 +51,7 @@ This file replaces an earlier longer triage synthesis with a slim ledger. Goal: 
 | Source-triggered reassessment | UNSCHEDULED.md |
 | Selective reprocessing | [data-lifecycle-policy_stub.md](plans/data-lifecycle-policy_stub.md) |
 | Show-your-work full panel (Q11) | in flight per operator |
-| Multi-provider POC (Infomaniak; GreenPT fallback) | [multi-provider-poc.md](plans/multi-provider-poc.md) (v1 urgent; v2 fallback acceptable) |
+| Multi-provider plan (Infomaniak first; GreenPT considered) | [multi-provider.md](plans/multi-provider.md) (Part 1 = v1 urgent; later parts post-v1) |
 
 ## Open questions
 

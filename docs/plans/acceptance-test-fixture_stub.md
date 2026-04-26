@@ -10,7 +10,7 @@ A real-LLM, real-entity end-to-end test that verifies the `dr` pipeline produces
 
 - The pipeline is approaching maturity but has no known-good regression case.
 - Vocab rename pass ([`vocab-rename-pass_stub.md`](vocab-rename-pass_stub.md)) needs this as its safety net.
-- Multi-provider POC ([`multi-provider-poc.md`](multi-provider-poc.md)) needs a baseline to compare drift against.
+- Multi-provider plan ([`multi-provider.md`](multi-provider.md)) needs a baseline to compare drift against.
 
 ## Goal
 

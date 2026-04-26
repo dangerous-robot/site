@@ -31,3 +31,6 @@ pipeline/__pycache__/
 __pycache__/
 *.pyc
 uv.lock
+
+# Multi-provider POC scratch (keys, ad-hoc scripts, reports)
+scripts/poc-multi-provider/
