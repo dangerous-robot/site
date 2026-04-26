@@ -39,9 +39,9 @@ Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline afte
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Sidecar format + pipeline write + Astro loader + UI (Stage 1) | [audit-trail.md](plans/audit-trail.md) | `_write_audit_sidecar` in persistence.py; `dr review --claim` CLI; collapsible UI |
-| Extended audit fields + staleness check + orphan CI gate (Stage 2) | [audit-trail.md](plans/audit-trail.md) | Requires: no stale sidecars, orphan check CI, backfill script |
-| Append-only history (Stage 3) | [audit-trail.md](plans/audit-trail.md) | Full recheck history per claim |
+| ~~Sidecar format + pipeline write + Astro loader + UI (Stage 1)~~ | [audit-trail.md](plans/completed/audit-trail.md) | **Done** (2026-04-25, moved to `completed/`). `_write_audit_sidecar` in persistence.py; `dr review --claim` CLI; collapsible UI; 11 sidecars committed. |
+| Extended audit fields + staleness check + orphan CI gate (Stage 2) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Requires: no stale sidecars, orphan check CI, backfill script |
+| Append-only history (Stage 3) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Full recheck history per claim |
 
 Scheduling note: Stage 1 (pipeline write + Astro loader) depends on pipeline work (persistence.py). Decision needed: before or after pipeline hardening?
 
@@ -140,8 +140,22 @@ Goal: Move from one-CLI-call-at-a-time to a queue + batch + error-file flow, and
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Operator queue + batch + error-file workflow | [operator-queue-batch-workflow_stub.md](plans/operator-queue-batch-workflow_stub.md) | v2; aligns operator-facing intake files with the six-input taxonomy |
-| Data lifecycle policy (skip-existing, overwrite, partial-fix) | [data-lifecycle-policy_stub.md](plans/data-lifecycle-policy_stub.md) | v2; design pre-launch is cheap. Pairs with audit-trail.md Stage 3 |
+| Data lifecycle policy (skip-existing, overwrite, partial-fix) | [data-lifecycle-policy_stub.md](plans/data-lifecycle-policy_stub.md) | v2; design pre-launch is cheap. Pairs with audit-trail-extensions.md Phase 3 |
 | Source-triggered reassessment | (no plan yet) | v2; add a source, related claims re-evaluate. Operator confirmed v2. |
+
+---
+
+## Canonical verdict artifact (LLM-as-judge framing)
+
+Goal: Treat the combined Analyst + Auditor output as the single trustworthy verdict, rather than the Analyst's draft with the audit sidecar as supporting metadata. Aligns with the evaluator-optimizer / LLM-as-judge pattern, where the *combined* judgment is the unit of trust. Pairs with audit-trail work but is a separate framing shift.
+
+| Work Item | Notes |
+|-----------|-------|
+| Decide carrier | Either elevate `.audit.yaml` to "verdict record" (rename + reshape) or merge audit fields into claim frontmatter. Operator decision pending; previously deferred in `docs/plans/drafts/v0.1.0-vocab-workflow-landing.md` Out-of-scope. |
+| Update canonical paragraphs once carrier decision lands | Generalized + v1 paragraphs in `AGENTS.md` and `docs/architecture/glossary.md` need to reflect the new artifact name and ownership. |
+| Schema migration | Whichever carrier wins, `src/content.config.ts` enum/shape needs updating; backfill all existing claims and `.audit.yaml` files. |
+
+Scheduling note: blocked on operator decision; not v0.1.0. Touches audit-trail Stage 2/3 and the data-lifecycle-policy stub.
 
 ---
 
