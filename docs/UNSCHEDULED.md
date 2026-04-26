@@ -20,6 +20,17 @@ Recommended implementation order: reuse sources → fail-fast → blocklist → 
 
 ---
 
+## CLI ergonomics
+
+Goal: Reduce friction when an operator's `dr` invocation is shaped slightly off. Surfaced 2026-04-26 when `dr review --claim publishes-sustainability-report --approve` returned "No audit sidecar found. Run the pipeline first." even though the sidecar existed; the slug was missing its `google/` entity prefix and the error blamed the wrong layer.
+
+| Work Item | Notes |
+|-----------|-------|
+| `dr review` better not-found messaging | At `pipeline/orchestrator/cli.py:587-589` distinguish "claim file not found at `<path>`" from "claim exists but sidecar missing." Currently both collapse to "Run the pipeline first," which misleads when the slug is malformed. |
+| `dr review` accept bare claim slug | If `--claim foo` matches exactly one `research/claims/*/foo.md`, accept it without the `<entity-slug>/` prefix; fall back to the current behavior when the slash form is given or multiple matches exist. |
+
+---
+
 ## PDF attachment as alternate source content surface
 
 Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/451 origins) as a content surface for both the ingestion agent and the human reviewer. Pairs with the fail-fast plan — when the ingestor can't fetch, a pre-attached PDF is the fallback.
