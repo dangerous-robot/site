@@ -66,7 +66,7 @@ def _analyst_model() -> TestModel:
             },
             "verdict": {
                 "title": "test-claim",
-                "category": "environmental-impact",
+                "topics": ["environmental-impact"],
                 "verdict": "mixed",
                 "confidence": "medium",
                 "narrative": "The evidence is mixed.",

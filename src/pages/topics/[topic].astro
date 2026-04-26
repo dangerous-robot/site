@@ -7,14 +7,17 @@ import ClaimRow from '../../components/ClaimRow.astro';
 import EmptyState from '../../components/EmptyState.astro';
 
 export async function getStaticPaths() {
-  return CATEGORIES.map(category => ({ params: { category } }));
+  return CATEGORIES.map(topic => ({ params: { topic } }));
 }
 
-const { category } = Astro.params;
-const label = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category;
+const { topic } = Astro.params;
+const label = CATEGORY_LABELS[topic as keyof typeof CATEGORY_LABELS] ?? topic;
 
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
-const claims = allClaims.filter(c => c.data.category === category);
+// A claim with topics [a, b] appears on both /topics/a and /topics/b. Per-topic
+// distribution counts use these matched claims; deduplication happens at claim
+// id level (the claim is the unit, the topic is the lens).
+const claims = allClaims.filter(c => c.data.topics.includes(topic as any));
 const entities = await getCollection('entities');
 
 // Group by entity
@@ -34,13 +37,24 @@ const entityGroups = [...byEntity.entries()].map(([entityId, entityClaims]) => {
   };
 }).sort((a, b) => a.entityName.localeCompare(b.entityName));
 
-const allVerdicts = claims.map(c => c.data.verdict);
+// Per-topic verdict distribution: each (claim, topic) tuple contributes once.
+// Since `claims` is already the topic-filtered list, this is just the verdict
+// from each filtered claim, deduplicated by claim id (defensive, even though
+// filter cannot return a single claim twice).
+const seenIds = new Set<string>();
+const allVerdicts: string[] = [];
+for (const c of claims) {
+  if (seenIds.has(c.id)) continue;
+  seenIds.add(c.id);
+  allVerdicts.push(c.data.verdict);
+}
+const uniqueClaimCount = seenIds.size;
 ---
 <Base title={label} layout="wide">
   <header class="topic-header">
     <p class="breadcrumb"><a href="/topics">Topics</a></p>
     <h1>{label}</h1>
-    <p class="total-count">{claims.length} claim{claims.length !== 1 ? 's' : ''} across {entityGroups.length} entit{entityGroups.length !== 1 ? 'ies' : 'y'}</p>
+    <p class="total-count">{uniqueClaimCount} claim{uniqueClaimCount !== 1 ? 's' : ''} across {entityGroups.length} entit{entityGroups.length !== 1 ? 'ies' : 'y'}</p>
     <div class="overall-distribution">
       <span class="dist-label">Overall</span>
       <VerdictDistribution verdicts={allVerdicts} />
@@ -48,7 +62,7 @@ const allVerdicts = claims.map(c => c.data.verdict);
   </header>
 
   {entityGroups.length === 0
-    ? <EmptyState message="No claims in this category yet." />
+    ? <EmptyState message="No claims in this topic yet." />
     : entityGroups.map(group => (
       <section class="entity-group">
         <div class="entity-group-header">
@@ -61,7 +75,7 @@ const allVerdicts = claims.map(c => c.data.verdict);
             title={c.data.title}
             verdict={c.data.verdict}
             entity={c.data.entity}
-            category={c.data.category}
+            topics={c.data.topics}
             asOf={c.data.as_of instanceof Date ? c.data.as_of.toISOString().split('T')[0] : String(c.data.as_of)}
           />
         ))}

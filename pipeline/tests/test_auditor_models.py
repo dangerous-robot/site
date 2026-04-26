@@ -21,7 +21,7 @@ class TestClaimBundle:
                 type="company",
                 description="Search engine that plants trees.",
             ),
-            category=Category.ENVIRONMENTAL_IMPACT,
+            topics=[Category.ENVIRONMENTAL_IMPACT],
             narrative="Ecosia claims renewable energy for its servers.",
             sources=[
                 SourceContext(
@@ -36,14 +36,14 @@ class TestClaimBundle:
         )
         assert bundle.claim_id == "ecosia/renewable-energy-hosting"
         assert bundle.entity.name == "Ecosia"
-        assert bundle.category == Category.ENVIRONMENTAL_IMPACT
+        assert bundle.topics == [Category.ENVIRONMENTAL_IMPACT]
         assert len(bundle.sources) == 1
 
     def test_empty_sources(self) -> None:
         bundle = ClaimBundle(
             claim_id="test/no-sources",
             entity=EntityContext(name="Test", type="company", description="A test entity."),
-            category=Category.AI_SAFETY,
+            topics=[Category.AI_SAFETY],
             narrative="A claim with no sources.",
             sources=[],
         )

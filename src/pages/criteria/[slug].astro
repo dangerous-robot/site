@@ -66,7 +66,7 @@ const criteriaCrumbs = [
 <Base title={std.data.text} layout="wide">
   <Breadcrumb crumbs={criteriaCrumbs} />
   <header class="std-header">
-    <p class="std-category">{std.data.category.replace(/-/g, ' ')}</p>
+    <p class="std-category">{std.data.topics.map(t => t.replace(/-/g, ' ')).join(', ')}</p>
     <h1>{std.data.text}</h1>
     {std.data.notes && <p class="std-notes">{std.data.notes}</p>}
   </header>

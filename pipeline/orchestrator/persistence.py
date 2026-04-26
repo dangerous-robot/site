@@ -9,7 +9,7 @@ from pathlib import Path
 import yaml
 
 from auditor.models import ComparisonResult
-from common.frontmatter import parse_frontmatter, serialize_frontmatter
+from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
 from common.models import Category, Confidence, EntityType, Verdict
 from common.source_classification import classify_source_type
 from common.utils import slugify
@@ -105,7 +105,7 @@ def _write_claim_file(
     title: str,
     entity_name: str,
     entity_ref: str,
-    category: Category,
+    topics: list[Category],
     verdict: Verdict,
     confidence: Confidence,
     narrative: str,
@@ -132,10 +132,13 @@ def _write_claim_file(
             f"claim file already exists: {claim_path} (pass force=True to overwrite)"
         )
 
+    # Topics are written as a YAML flow list `[a, b]` so the typically
+    # 1-3 element sequence stays single-line and diff-stable. Other lists
+    # (e.g. sources) keep block style via the dumper default.
     fm = {
         "title": title,
         "entity": entity_ref,
-        "category": category,
+        "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
         "status": "draft",

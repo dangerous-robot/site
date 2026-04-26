@@ -29,7 +29,7 @@ class TestLoadTemplates:
         first = templates[0]
         assert first.slug == "publishes-sustainability-report"
         assert first.entity_type == "company"
-        assert first.category == "environmental-impact"
+        assert first.topics == ["environmental-impact"]
         assert first.core is True
 
     def test_load_templates_excludes_inactive(self, repo_root: Path) -> None:
@@ -73,7 +73,7 @@ class TestGetTemplate:
         assert t is not None
         assert t.slug == "no-training-on-user-data"
         assert t.entity_type == "product"
-        assert t.category == "data-privacy"
+        assert t.topics == ["data-privacy"]
 
     def test_returns_none_for_unknown_slug(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
@@ -86,7 +86,7 @@ class TestRenderClaimText:
             slug="renewable-energy-hosting",
             text="PRODUCT is hosted on renewable energy",
             entity_type="product",
-            category="environmental-impact",
+            topics=["environmental-impact"],
             core=True,
             notes="test",
         )
@@ -98,7 +98,7 @@ class TestRenderClaimText:
             slug="publishes-sustainability-report",
             text="COMPANY publishes a sustainability or ESG report",
             entity_type="company",
-            category="environmental-impact",
+            topics=["environmental-impact"],
             core=True,
             notes="test",
         )
@@ -110,7 +110,7 @@ class TestRenderClaimText:
             slug="corporate-structure",
             text="COMPANY has STRUCTURE corporate structure",
             entity_type="company",
-            category="industry-analysis",
+            topics=["industry-analysis"],
             core=True,
             notes="test",
             vocabulary={"STRUCTURE": ["publicly-traded", "non-profit", "B-corp"]},
@@ -125,7 +125,7 @@ class TestRenderClaimText:
             slug="multi",
             text="PRODUCT stores data in JURISDICTION under STRUCTURE control",
             entity_type="product",
-            category="data-privacy",
+            topics=["data-privacy"],
             core=True,
             notes="test",
             vocabulary={
@@ -143,7 +143,7 @@ class TestRenderClaimText:
             slug="renewable-energy-hosting",
             text="PRODUCT is hosted on renewable energy",
             entity_type="product",
-            category="environmental-impact",
+            topics=["environmental-impact"],
             core=True,
             notes="test",
         )
@@ -161,7 +161,7 @@ class TestRenderClaimText:
             slug="test",
             text="PRODUCT test",
             entity_type="product",
-            category="test",
+            topics=["data-privacy"],
             core=True,
             notes="test",
         )

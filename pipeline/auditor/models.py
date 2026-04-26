@@ -31,7 +31,7 @@ class ClaimBundle(BaseModel):
 
     claim_id: str
     entity: EntityContext
-    category: Category
+    topics: list[Category] = Field(min_length=1, max_length=3)
     narrative: str  # Markdown body stripped of frontmatter
     sources: list[SourceContext]
     # title deliberately excluded -- often encodes the verdict

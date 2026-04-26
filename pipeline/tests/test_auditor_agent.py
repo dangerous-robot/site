@@ -18,7 +18,7 @@ def _sample_bundle() -> ClaimBundle:
             type="company",
             description="A fictional company for testing.",
         ),
-        category=Category.AI_SAFETY,
+        topics=[Category.AI_SAFETY],
         narrative="TestCorp has implemented safety measures that meet industry standards.",
         sources=[
             SourceContext(
@@ -57,7 +57,7 @@ class TestBuildAuditorPrompt:
         assert "company" in prompt
         assert "A fictional company for testing." in prompt
 
-    def test_prompt_contains_category(self) -> None:
+    def test_prompt_contains_topic(self) -> None:
         bundle = _sample_bundle()
         prompt = build_auditor_prompt(bundle)
         assert "ai-safety" in prompt
@@ -78,7 +78,7 @@ class TestBuildAuditorPrompt:
         bundle = ClaimBundle(
             claim_id="test/no-sources",
             entity=EntityContext(name="X", type="company", description="Desc."),
-            category=Category.AI_SAFETY,
+            topics=[Category.AI_SAFETY],
             narrative="A claim.",
             sources=[],
         )
@@ -116,7 +116,7 @@ class TestBundleNeverLeaksVerdict:
                 type="company",
                 description="Search engine that plants trees.",
             ),
-            category=Category.ENVIRONMENTAL_IMPACT,
+            topics=[Category.ENVIRONMENTAL_IMPACT],
             narrative="Ecosia's AI chat uses GPT-4 mini on Azure infrastructure.",
             sources=[],
         )

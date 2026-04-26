@@ -1,7 +1,7 @@
 ---
 title: Acme Corp publishes annual transparency reports
 entity: companies/acme
-category: ai-safety
+topics: [ai-safety]
 verdict: "true"
 confidence: high
 as_of: 2026-04-01

@@ -23,7 +23,7 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 |---|---|---|
 | **Verdict** | Claim | Assessment: true, mostly-true, mixed, mostly-false, false, unverified, not-applicable |
 | **Confidence** | Claim | Certainty level: high, medium, low |
-| **Category** | Claim | Taxonomy: ai-safety, environmental-impact, product-comparison, etc. (8 total) |
+| **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total) |
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index |
 | **as_of** | Claim | Date when verdict was last evaluated |
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |

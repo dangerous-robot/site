@@ -17,7 +17,7 @@ export function buildCitationIndex(
         title: claim.data.title,
         verdict: claim.data.verdict,
         entity: claim.data.entity,
-        category: claim.data.category,
+        topics: claim.data.topics,
         criteria_slug: claim.data.criteria_slug,
       });
     }

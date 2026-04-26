@@ -52,7 +52,7 @@ class TestMissingRequiredFields:
     def test_all_required_present_no_issue(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {
-            "title": "T", "entity": "companies/foo", "category": "ai-safety",
+            "title": "T", "entity": "companies/foo", "topics": ["ai-safety"],
             "verdict": "true", "confidence": "high", "as_of": datetime.date.today(),
             "sources": [],
         }}
@@ -60,7 +60,7 @@ class TestMissingRequiredFields:
 
     def test_missing_verdict_raises_error(self):
         claim = _p("research/claims/foo/bar.md")
-        fms = {str(claim): {"title": "T", "entity": "companies/foo", "category": "ai-safety",
+        fms = {str(claim): {"title": "T", "entity": "companies/foo", "topics": ["ai-safety"],
                              "confidence": "high", "as_of": datetime.date.today(), "sources": []}}
         issues = check_missing_required_fields([claim], fms)
         assert any(i.check_id == "missing-required-field" and "verdict" in i.message for i in issues)
@@ -70,7 +70,7 @@ class TestEmptyRequiredStrings:
     def test_empty_title_raises_error(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"title": "   ", "entity": "companies/foo", "verdict": "true",
-                             "category": "ai-safety", "confidence": "high"}}
+                             "topics": ["ai-safety"], "confidence": "high"}}
         issues = check_empty_required_strings([claim], fms, [], {})
         assert any(i.check_id == "empty-required-string" and "title" in i.message for i in issues)
 

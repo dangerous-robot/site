@@ -1,7 +1,7 @@
 ---
 title: DeltaAI uses only renewable energy
 entity: companies/deltaai
-category: environmental-impact
+topics: [environmental-impact]
 verdict: "true"
 confidence: high
 as_of: 2026-04-01

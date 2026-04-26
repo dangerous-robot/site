@@ -48,12 +48,14 @@ def load_entity(entity_path: str, repo_root: Path) -> tuple[dict, str]:
 def list_claims(
     repo_root: Path,
     entity: str | None = None,
-    category: str | None = None,
+    topic: str | None = None,
 ) -> list[Path]:
-    """List claim files, optionally filtered by entity or category.
+    """List claim files, optionally filtered by entity or topic.
 
     Filtering by entity matches on the directory name (e.g. 'ecosia').
-    Filtering by category requires parsing frontmatter to check the value.
+    Filtering by topic parses frontmatter and tests membership in the
+    claim's ``topics`` list (a claim with topics ``[a, b]`` matches a
+    filter on either ``a`` or ``b``).
     """
     claims_dir = repo_root / "research" / "claims"
     if not claims_dir.exists():
@@ -64,11 +66,12 @@ def list_claims(
     if entity is not None:
         paths = [p for p in paths if p.parent.name == entity]
 
-    if category is not None:
+    if topic is not None:
         filtered = []
         for p in paths:
             fm, _ = parse_frontmatter(p.read_text(encoding="utf-8"))
-            if fm.get("category") == category:
+            topics = fm.get("topics") or []
+            if isinstance(topics, list) and topic in topics:
                 filtered.append(p)
         paths = filtered
 

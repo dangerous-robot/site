@@ -82,7 +82,7 @@ def _print_verify_result(result) -> None:
         click.echo("--- Analyst Assessment ---")
         click.echo(f"  Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
         click.echo(f"  Title:      {a.verdict.title}")
-        click.echo(f"  Category:   {a.verdict.category.value}")
+        click.echo(f"  Topics:     {', '.join(t.value for t in a.verdict.topics)}")
         click.echo(f"  Verdict:    {a.verdict.verdict.value}")
         click.echo(f"  Confidence: {a.verdict.confidence.value}")
         click.echo(f"  Narrative:")
@@ -208,7 +208,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
 @main.command()
 @click.option("--claim", default=None, help="Check a single claim file")
 @click.option("--entity", default=None, help="Check all claims for an entity")
-@click.option("--category", default=None, help="Check all claims in a category")
+@click.option("--topic", default=None, help="Check all claims with a given topic")
 @click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
 @click.option("--dry-run", is_flag=True, help="Show what would be checked without calling LLM")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
@@ -217,7 +217,7 @@ def reassess(
     ctx: click.Context,
     claim: str | None,
     entity: str | None,
-    category: str | None,
+    topic: str | None,
     output_format: str,
     dry_run: bool,
     repo_root: str | None,
@@ -250,7 +250,7 @@ def reassess(
             sys.exit(1)
         claim_paths = [path]
     else:
-        claim_paths = list_claims(root, entity=entity, category=category)
+        claim_paths = list_claims(root, entity=entity, topic=topic)
 
     if not claim_paths:
         click.echo("No claims found.", err=True)
@@ -294,7 +294,7 @@ def reassess(
             bundle = ClaimBundle(
                 claim_id=claim_id,
                 entity=ent,
-                category=Category(fm["category"]),
+                topics=[Category(t) for t in fm["topics"]],
                 narrative=body,
                 sources=sources,
             )

@@ -17,7 +17,7 @@ from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
-from common.models import EntityType
+from common.models import Category, EntityType
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slugify
@@ -331,7 +331,7 @@ async def _audit_claim(
         entity_name=analyst_out.entity.entity_name,
         entity_type=analyst_out.entity.entity_type,
         description=analyst_out.entity.entity_description,
-        category=analyst_out.verdict.category,
+        topics=analyst_out.verdict.topics,
         narrative=analyst_out.verdict.narrative,
         sources=sources,
     )
@@ -460,7 +460,7 @@ async def research_claim(
             title=analyst_out.verdict.title,
             entity_name=analyst_out.entity.entity_name,
             entity_ref=entity_ref,
-            category=analyst_out.verdict.category,
+            topics=analyst_out.verdict.topics,
             verdict=analyst_out.verdict.verdict,
             confidence=analyst_out.verdict.confidence,
             narrative=analyst_out.verdict.narrative,
@@ -671,13 +671,26 @@ async def onboard_entity(
             # Write sources (reuse verify_claim's already-ingested sources)
             source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
 
-            # Write claim file
+            # Write claim file. The claim inherits the source criterion's
+            # full `topics` set by default (per docs/plans/multi-topic.md
+            # §"Pipeline output"). The operator can hand-edit a claim's
+            # topics post-pipeline if specialization is needed.
             ao = vr.analyst_output
+            try:
+                inherited_topics = [Category(t) for t in template.topics]
+            except ValueError as exc:
+                logger.warning(
+                    "Template %s has invalid topic; falling back to analyst topics: %s",
+                    slug,
+                    exc,
+                )
+                inherited_topics = list(ao.verdict.topics)
+
             claim_path = _write_claim_file(
                 title=ao.verdict.title,
                 entity_name=entity_name,
                 entity_ref=entity_ref,
-                category=ao.verdict.category,
+                topics=inherited_topics,
                 verdict=ao.verdict.verdict,
                 confidence=ao.verdict.confidence,
                 narrative=ao.verdict.narrative,

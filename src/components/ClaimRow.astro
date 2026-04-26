@@ -6,12 +6,18 @@ interface Props {
   title: string;
   verdict: string;
   entity: string;
-  category: string;
+  topics: string[];
   asOf?: string;
   confidence?: string;
 }
-const { id, title, verdict, entity, category, asOf, confidence } = Astro.props;
-const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] ?? category;
+const { id, title, verdict, entity, topics, asOf, confidence } = Astro.props;
+const topicLabels = topics
+  .map(t => CATEGORY_LABELS[t as keyof typeof CATEGORY_LABELS] ?? t)
+  .join(', ');
+// Single value for the FilterBar `topic` facet (whose match is set membership
+// against one attribute value). Multi-topic faceted filtering is a known
+// follow-up; for now the first topic determines the facet bucket.
+const primaryTopic = topics[0];
 ---
 <a
   href={`/claims/${id}`}
@@ -19,7 +25,7 @@ const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] 
   data-filterable
   data-title={title.toLowerCase()}
   data-verdict={verdict}
-  data-category={category}
+  data-topic={primaryTopic}
   data-confidence={confidence}
 >
   <span class="badge-col"><VerdictBadge verdict={verdict} size="sm" /></span>
@@ -27,7 +33,7 @@ const categoryLabel = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS] 
   <span class="meta-col">
     <span class="entity">{entity}</span>
     <span class="sep">·</span>
-    <span class="category">{categoryLabel}</span>
+    <span class="category">{topicLabels}</span>
     {asOf && <><span class="sep">·</span><span class="as-of">{asOf}</span></>}
   </span>
 </a>

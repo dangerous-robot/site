@@ -281,7 +281,7 @@ class TestWriteClaimFile:
             title="Test Claim",
             entity_name="Test Entity",
             entity_ref="companies/test-entity",
-            category=Category.ENVIRONMENTAL_IMPACT,
+            topics=[Category.ENVIRONMENTAL_IMPACT],
             verdict=Verdict.TRUE,
             confidence=Confidence.HIGH,
             narrative=narrative,

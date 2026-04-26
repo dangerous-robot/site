@@ -7,14 +7,14 @@ templates:
   - slug: publishes-sustainability-report
     text: "COMPANY publishes a sustainability or ESG report"
     entity_type: company
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Environmental analog of financial transparency"
 
   - slug: corporate-structure
     text: "COMPANY has STRUCTURE corporate structure"
     entity_type: company
-    category: industry-analysis
+    topics: [industry-analysis]
     core: true
     notes: "Controlled vocabulary; ownership determines incentives"
     vocabulary:
@@ -30,14 +30,14 @@ templates:
   - slug: donates-to-ai-safety
     text: "COMPANY donates to AI safety causes"
     entity_type: company
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
   - slug: donates-to-environmental-causes
     text: "COMPANY donates to environmental causes"
     entity_type: company
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
@@ -46,49 +46,49 @@ templates:
   - slug: renewable-energy-hosting
     text: "PRODUCT is hosted on renewable energy"
     entity_type: product
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Verdict encodes degree: true = 100%, mostly-true = significant with gaps, mixed = offsets only"
 
   - slug: no-training-on-user-data
     text: "PRODUCT does not use user data for training"
     entity_type: product
-    category: data-privacy
+    topics: [data-privacy]
     core: true
     notes: "Covers default behavior; opt-out options noted in narrative"
 
   - slug: discloses-models-used
     text: "PRODUCT discloses which models it uses"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Some products don't say what's running behind the API"
 
   - slug: discloses-energy-sourcing
     text: "PRODUCT discloses its energy sourcing"
     entity_type: product
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Transparency meta-claim: does the company say where its energy comes from?"
 
   - slug: realtime-energy-display
     text: "PRODUCT displays real-time energy usage"
     entity_type: product
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Binary: the feature exists or it doesn't"
 
   - slug: excludes-image-generation
     text: "PRODUCT excludes image generation"
     entity_type: product
-    category: environmental-impact
+    topics: [environmental-impact]
     core: true
     notes: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"
 
   - slug: excludes-frontier-models
     text: "PRODUCT excludes frontier-scale models"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
 
@@ -106,7 +106,7 @@ inactive_templates:
   - slug: data-jurisdiction
     text: "PRODUCT stores user data in JURISDICTION"
     entity_type: product
-    category: data-privacy
+    topics: [data-privacy]
     core: true
     notes: "Controlled vocabulary; assess data protection strength"
     vocabulary:
@@ -123,7 +123,7 @@ inactive_templates:
   - slug: user-data-deletion
     text: "PRODUCT allows users to delete their data"
     entity_type: product
-    category: data-privacy
+    topics: [data-privacy]
     core: true
     notes: "Basic GDPR/CCPA concern; binary but implementation quality varies"
 
@@ -132,21 +132,21 @@ inactive_templates:
   - slug: publishes-ai-limitations
     text: "COMPANY publishes known AI limitations"
     entity_type: company
-    category: ai-literacy
+    topics: [ai-literacy]
     core: true
     notes: "Public documentation of what the product can't do or gets wrong"
 
   - slug: anti-sycophancy-by-design
     text: "PRODUCT implements anti-sycophancy by design"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Documented design choices to reduce flattery/agreement bias"
 
   - slug: labels-ai-generated-content
     text: "PRODUCT labels AI-generated content"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Watermarking, metadata, or visible labeling of AI outputs"
 
@@ -155,14 +155,14 @@ inactive_templates:
   - slug: financial-transparency
     text: "COMPANY provides financial transparency"
     entity_type: company
-    category: industry-analysis
+    topics: [industry-analysis]
     core: true
     notes: "Public financials, revenue breakdowns, cost disclosures"
 
   - slug: ai-alternatives-guidance
     text: "COMPANY offers AI alternatives guidance"
     entity_type: company
-    category: ai-literacy
+    topics: [ai-literacy]
     core: true
     notes: "Willingness to recommend not using your own product"
 
@@ -171,13 +171,13 @@ inactive_templates:
   - slug: open-source-models-only
     text: "PRODUCT uses only open-source models"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Auditability: weights and architecture are publicly available"
 
   - slug: documents-model-selection
     text: "PRODUCT documents model selection criteria"
     entity_type: product
-    category: ai-safety
+    topics: [ai-safety]
     core: true
     notes: "Meta-transparency: why these models and not others?"

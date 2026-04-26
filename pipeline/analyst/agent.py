@@ -31,7 +31,11 @@ class VerdictAssessment(BaseModel):
     verdict: Verdict
     confidence: Confidence
     narrative: str = Field(description="2-5 sentence assessment. Cite sources by title. Factual, not evaluative.")
-    category: Category
+    topics: list[Category] = Field(
+        min_length=1,
+        max_length=3,
+        description="One to three topic slugs that classify the claim. Mirror the source criterion's topics by default.",
+    )
 
 
 class AnalystOutput(BaseModel):

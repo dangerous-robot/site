@@ -16,6 +16,15 @@ class _FrontmatterDumper(yaml.SafeDumper):
     """YAML dumper with custom representers for frontmatter output."""
 
 
+class FlowList(list):
+    """List subclass that serializes in YAML flow style ([a, b]).
+
+    Used for short, fixed-shape sequences (e.g. claim/criterion `topics`)
+    where flow style keeps diffs single-line and visually compact.
+    Other lists (e.g. `sources`) keep the dumper's default block style.
+    """
+
+
 def _represent_date(dumper: yaml.SafeDumper, data: datetime.date) -> yaml.ScalarNode:
     return dumper.represent_scalar("tag:yaml.org,2002:str", data.isoformat())
 
@@ -28,9 +37,16 @@ def _represent_enum(dumper: yaml.SafeDumper, data: enum.Enum) -> yaml.ScalarNode
     return dumper.represent_data(data.value)
 
 
+def _represent_flow_list(dumper: yaml.SafeDumper, data: list) -> yaml.SequenceNode:
+    return dumper.represent_sequence(
+        "tag:yaml.org,2002:seq", data, flow_style=True
+    )
+
+
 _FrontmatterDumper.add_representer(datetime.date, _represent_date)
 _FrontmatterDumper.add_representer(type(None), _represent_none)
 _FrontmatterDumper.add_multi_representer(enum.Enum, _represent_enum)
+_FrontmatterDumper.add_representer(FlowList, _represent_flow_list)
 
 
 # --- Frontmatter delimiter pattern ---
@@ -62,11 +78,15 @@ def strip_frontmatter(text: str) -> str:
 
 
 def _clean_for_serialize(obj: Any) -> Any:
-    """Recursively remove keys with None values from dicts."""
+    """Recursively remove keys with None values from dicts.
+
+    Preserves the concrete list type (e.g. ``FlowList``) so flow-style
+    sequences keep their representer when rebuilt.
+    """
     if isinstance(obj, dict):
         return {k: _clean_for_serialize(v) for k, v in obj.items() if v is not None}
     if isinstance(obj, list):
-        return [_clean_for_serialize(item) for item in obj]
+        return type(obj)(_clean_for_serialize(item) for item in obj)
     return obj
 
 

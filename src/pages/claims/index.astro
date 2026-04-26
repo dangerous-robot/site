@@ -19,9 +19,9 @@ const verdictFacet = {
   label: 'Verdict',
   values: VERDICT_ORDER.map(v => ({ value: v, label: VERDICT_LABELS[v] })),
 };
-const categoryFacet = {
-  id: 'category',
-  label: 'Category',
+const topicFacet = {
+  id: 'topic',
+  label: 'Topic',
   values: CATEGORIES.map(c => ({ value: c, label: CATEGORY_LABELS[c] })),
 };
 const confidenceFacet = {
@@ -40,7 +40,7 @@ const confidenceFacet = {
     total={sorted.length}
     searchPlaceholder="Search claims…"
     searchDataAttr="data-title"
-    facets={[verdictFacet, categoryFacet, confidenceFacet]}
+    facets={[verdictFacet, topicFacet, confidenceFacet]}
   />
   <div class="claims-list">
     {sorted.map(claim => (
@@ -49,7 +49,7 @@ const confidenceFacet = {
         title={claim.data.title}
         verdict={claim.data.verdict}
         entity={claim.data.entity}
-        category={claim.data.category}
+        topics={claim.data.topics}
         asOf={claim.data.as_of instanceof Date ? claim.data.as_of.toISOString().split('T')[0] : String(claim.data.as_of)}
         confidence={claim.data.confidence}
       />

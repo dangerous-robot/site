@@ -135,7 +135,7 @@ const claims = defineCollection({
   schema: z.object({
     title: z.string(),
     entity: z.string(),
-    category: z.enum([
+    topics: z.array(z.enum([
       'ai-safety',
       'environmental-impact',
       'product-comparison',
@@ -144,7 +144,7 @@ const claims = defineCollection({
       'data-privacy',
       'industry-analysis',
       'regulation-policy',
-    ]),
+    ])).min(1).max(3),
     // Operational definitions for each verdict live in docs/architecture/glossary.md.
     verdict: z.enum([
       'true',
@@ -188,7 +188,7 @@ const criteria = defineCollection({
     slug: z.string(),
     text: z.string(),
     entity_type: z.enum(['company', 'product']),
-    category: z.enum([
+    topics: z.array(z.enum([
       'ai-safety',
       'environmental-impact',
       'product-comparison',
@@ -197,7 +197,7 @@ const criteria = defineCollection({
       'data-privacy',
       'industry-analysis',
       'regulation-policy',
-    ]),
+    ])).min(1).max(3),
     core: z.boolean().default(false),
     notes: z.string().optional(),
     vocabulary: z.record(z.string(), z.array(z.string())).optional(),

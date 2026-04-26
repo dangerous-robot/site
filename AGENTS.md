@@ -32,7 +32,12 @@ Claims reference source files by ID, never raw URLs.
 
 Schemas are defined in `src/content.config.ts` and enforced at build time by Astro.
 
-## Claim Category Taxonomy
+## Claim Topic Taxonomy
+
+Each claim and each criterion carries a `topics:` array of 1 to 3 slugs from
+this set. The slugs themselves did not change; only the field name (`category`
+to `topics`) and cardinality (single value to array) were changed. See
+`docs/plans/multi-topic.md` for context.
 
 | Slug | Description |
 |------|-------------|

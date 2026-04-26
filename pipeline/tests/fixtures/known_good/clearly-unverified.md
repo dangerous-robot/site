@@ -1,7 +1,7 @@
 ---
 title: BetaCo's water usage reduction claims are unverified
 entity: companies/betaco
-category: environmental-impact
+topics: [environmental-impact]
 verdict: unverified
 confidence: low
 as_of: 2026-04-01

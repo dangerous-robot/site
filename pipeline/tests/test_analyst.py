@@ -26,7 +26,7 @@ class TestAnalystAgent:
                     },
                     "verdict": {
                         "title": "Test claim about renewable energy",
-                        "category": "environmental-impact",
+                        "topics": ["environmental-impact"],
                         "verdict": "mixed",
                         "confidence": "medium",
                         "narrative": "The evidence is mixed on this claim.",
@@ -41,7 +41,7 @@ class TestAnalystAgent:
             assert isinstance(out, AnalystOutput)
             assert out.verdict.verdict == Verdict.MIXED
             assert out.verdict.confidence == Confidence.MEDIUM
-            assert out.verdict.category == Category.ENVIRONMENTAL_IMPACT
+            assert out.verdict.topics == [Category.ENVIRONMENTAL_IMPACT]
             assert out.entity.entity_name == "TestCorp"
 
 

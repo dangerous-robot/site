@@ -34,7 +34,8 @@ def build_auditor_prompt(bundle: ClaimBundle) -> str:
     parts.append(f"Description: {bundle.entity.description}")
     parts.append("")
 
-    parts.append(f"## Category: {bundle.category.value}")
+    topics_label = ", ".join(t.value for t in bundle.topics)
+    parts.append(f"## Topics: {topics_label}")
     parts.append("")
 
     parts.append("## Claim Narrative")

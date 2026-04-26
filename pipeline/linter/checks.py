@@ -8,10 +8,10 @@ from urllib.parse import urlparse
 
 from .models import LintIssue
 
-REQUIRED_CLAIM_FIELDS = {"title", "entity", "category", "verdict", "confidence", "as_of", "sources"}
+REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
 CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description"}
 CANONICAL_CLAIM_KEYS = {
-    "title", "entity", "category", "verdict", "confidence",
+    "title", "entity", "topics", "verdict", "confidence",
     "criteria_slug", "status", "as_of", "sources",
     "recheck_cadence_days", "next_recheck_due",
 }
@@ -74,7 +74,8 @@ def check_empty_required_strings(
     entity_frontmatters: dict[str, dict[str, Any]],
 ) -> list[LintIssue]:
     issues = []
-    string_fields = {"title", "entity", "category", "verdict", "confidence"}
+    # `topics` is a list, not a string field, so it is not in this set.
+    string_fields = {"title", "entity", "verdict", "confidence"}
     for path in claim_files:
         fm = claim_frontmatters.get(str(path), {})
         for field in string_fields:

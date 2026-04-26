@@ -24,12 +24,15 @@ const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
 
-// Group claims by category
+// Group claims by topic. A claim with topics [a, b] appears in both
+// /entities/<slug>'s "a" and "b" groups; this is intentional so the page
+// reflects the multi-topic lens.
 const claimsByCategory = new Map<string, typeof relatedClaims>();
 for (const claim of relatedClaims) {
-  const cat = claim.data.category;
-  if (!claimsByCategory.has(cat)) claimsByCategory.set(cat, []);
-  claimsByCategory.get(cat)!.push(claim);
+  for (const cat of claim.data.topics) {
+    if (!claimsByCategory.has(cat)) claimsByCategory.set(cat, []);
+    claimsByCategory.get(cat)!.push(claim);
+  }
 }
 const categoriesWithClaims = [...claimsByCategory.keys()].sort();
 
@@ -42,12 +45,14 @@ const applicableCriteria = criteria.filter(
   std => std.data.entity_type === entity.data.type
 );
 
-// Group applicable criteria by category
+// Group applicable criteria by topic. A criterion with topics [a, b]
+// shows under both topic headings (same multi-topic lens as claims above).
 const critByCategory = new Map<string, typeof applicableCriteria>();
 for (const std of applicableCriteria) {
-  const cat = std.data.category;
-  if (!critByCategory.has(cat)) critByCategory.set(cat, []);
-  critByCategory.get(cat)!.push(std);
+  for (const cat of std.data.topics) {
+    if (!critByCategory.has(cat)) critByCategory.set(cat, []);
+    critByCategory.get(cat)!.push(std);
+  }
 }
 const critCategoriesSorted = [...critByCategory.keys()].sort();
 

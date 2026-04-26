@@ -1,7 +1,7 @@
 ---
 title: GammaTech safety practices are inadequate
 entity: companies/gammatech
-category: ai-safety
+topics: [ai-safety]
 verdict: "false"
 confidence: high
 as_of: 2026-04-01

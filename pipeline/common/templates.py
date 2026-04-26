@@ -26,7 +26,7 @@ class TemplateRecord:
     slug: str
     text: str  # e.g. "PRODUCT is hosted on renewable energy"
     entity_type: str  # "company" or "product"
-    category: str  # kebab-case category slug
+    topics: list[str]  # 1-3 kebab-case topic slugs
     core: bool
     notes: str
     vocabulary: dict[str, list[str]] = field(default_factory=dict)
@@ -42,7 +42,7 @@ def load_templates(repo_root: Path) -> list[TemplateRecord]:
             slug=entry["slug"],
             text=entry["text"],
             entity_type=entry["entity_type"],
-            category=entry["category"],
+            topics=list(entry["topics"]),
             core=entry["core"],
             notes=entry["notes"],
             vocabulary=entry.get("vocabulary") or {},

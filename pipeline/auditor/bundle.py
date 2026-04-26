@@ -12,7 +12,7 @@ def build_bundle(
     entity_name: str,
     entity_type: str,
     description: str,
-    category: Category,
+    topics: list[Category],
     narrative: str,
     sources: list[dict],
 ) -> ClaimBundle:
@@ -41,7 +41,7 @@ def build_bundle(
     return ClaimBundle(
         claim_id=f"verify/{slugify(entity_name)}",
         entity=entity,
-        category=category,
+        topics=topics,
         narrative=narrative,
         sources=source_contexts,
     )

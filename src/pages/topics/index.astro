@@ -6,11 +6,15 @@ import VerdictDistribution from '../../components/VerdictDistribution.astro';
 
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
-const categoryStats = CATEGORIES.map(cat => {
-  const catClaims = claims.filter(c => c.data.category === cat);
+// Per-topic counts include any claim whose topics list includes the topic.
+// A claim with topics [a, b] is counted once under /topics/a and once under
+// /topics/b (intentional: each topic page is its own lens). The sum across
+// topic cards is therefore not the unique-claim total.
+const topicStats = CATEGORIES.map(cat => {
+  const catClaims = claims.filter(c => c.data.topics.includes(cat));
   const verdicts = catClaims.map(c => c.data.verdict);
   return {
-    category: cat,
+    topic: cat,
     label: CATEGORY_LABELS[cat],
     count: catClaims.length,
     verdicts,
@@ -21,8 +25,8 @@ const categoryStats = CATEGORIES.map(cat => {
 <Base title="Topics" layout="wide">
   <h1>Topics</h1>
   <div class="topics-grid">
-    {categoryStats.map(stat => (
-      <a href={`/topics/${stat.category}`} class="topic-card">
+    {topicStats.map(stat => (
+      <a href={`/topics/${stat.topic}`} class="topic-card">
         <div class="topic-header">
           <span class="topic-label">{stat.label}</span>
           <span class="topic-count">{stat.count} claims</span>
