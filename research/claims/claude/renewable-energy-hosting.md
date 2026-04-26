@@ -4,12 +4,10 @@ entity: products/claude
 category: environmental-impact
 verdict: unverified
 confidence: low
-status: published
-as_of: '2026-04-24'
+status: draft
+as_of: '2026-04-25'
 sources:
-- 2026/anthropic-claude-credo-risk-profile
-- 2025/ai-water-energy-usage-chatgpt-claude-gemini
+- 2026/anthropic-claude-risk-profile
 - 2025/build-ai-in-america
-- 2026/claude-ai-introduce-itself-pattern-matchers
 ---
-The provided sources do not contain direct evidence about whether Claude is hosted on renewable energy. Source 3 (Build AI in America: Anthropic Energy Report) discusses Anthropic's projected power capacity needs and policy recommendations for U.S. energy infrastructure through 2028, but does not specify the energy sources or renewable energy commitments for existing or planned Claude infrastructure. Source 2 (AI Water & Energy Usage) provides general benchmarking on AI energy consumption but does not address Claude's specific hosting infrastructure or renewable energy usage. Source 4 mentions the author asked Claude about energy practices, but the actual response regarding renewable energy usage is not quoted or detailed in the summary. Without explicit statements from Anthropic or verified reporting on Claude's hosting infrastructure and power sourcing, this claim cannot be assessed.
+The provided sources do not contain information about the current energy sources powering Claude's infrastructure. The Credo AI risk profile documents potential risks associated with Claude but does not address energy sourcing. The Anthropic Energy Report outlines policy recommendations for U.S. AI infrastructure development and argues for increased electrical capacity by 2028, but does not disclose the specific energy mix currently used to host Claude's systems. To verify this claim, direct disclosure from Anthropic about Claude's hosting infrastructure and energy sources would be required.

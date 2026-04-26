@@ -4,11 +4,11 @@ entity: products/claude
 category: environmental-impact
 verdict: unverified
 confidence: medium
-status: published
-as_of: '2026-04-24'
+status: draft
+as_of: '2026-04-25'
 sources:
-- 2026/anthropic-voluntary-commitments
-- 2024/anthropic-claude-3-transparency
-- 2026/claude-ai-introduce-itself-sophisticated-pattern-matchers
+- 2026/claude-ai-energy-consumption
+- 2024/anthropic-claude-3-transparency-report
+- 2025/build-ai-in-america
 ---
-The provided sources do not contain specific information about Claude's energy sourcing disclosures. Source 1 (Voluntary Commitments) discusses Anthropic's safety and security frameworks but does not address energy sourcing. Source 2 (Foundation Model Transparency Index) mentions that Claude 3 models were trained using hardware from AWS and GCP, but does not specify energy sourcing details or renewable energy commitments. Source 3 is an interview where Claude discusses AI energy sustainability as a topic but does not document what disclosures Claude or Anthropic actually make about their energy sourcing. To verify this claim, direct evidence from Anthropic's official sustainability reports, environmental impact disclosures, or energy sourcing documentation would be needed.
+The provided sources do not directly address whether Claude discloses its energy sourcing. Source 1 (Energy Costs) notes that 'without standard reporting, the public ends up comparing apples to oranges,' implying a lack of standardized energy disclosure in the industry, but does not specifically assess Anthropic's disclosure practices. Source 2 (Stanford Foundation Model Transparency Index) is a transparency assessment of Claude 3 but the provided summary does not indicate whether energy sourcing disclosure is covered. Source 3 (Build AI in America: Anthropic Energy Report) discusses infrastructure and electricity needs for future AI development but does not address current energy sourcing transparency. To evaluate this claim, direct evidence from Anthropic's published disclosures or explicit third-party assessment of such disclosures would be required.

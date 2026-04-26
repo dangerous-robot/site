@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-25T15:04:22.333450+00:00'
+  ran_at: '2026-04-26T15:53:47.336937+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,13 +8,13 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2024/anthropic-fellows-program
-  url: https://alignment.anthropic.com/2024/anthropic-fellows-program/
-  title: Introducing the Anthropic Fellows Program
+- id: 2015/alphabet-investor-relations-home
+  url: https://abc.xyz/
+  title: Alphabet Investor Relations - Home
   ingested: true
-- id: 2026/project-glasswing
-  url: https://www.anthropic.com/glasswing
-  title: 'Project Glasswing: Securing Critical Software for the AI Era'
+- id: 2026/nasdaq-googl-institutional-holdings
+  url: https://www.nasdaq.com/market-activity/stocks/googl/institutional-holdings
+  title: Google Institutional Holdings
   ingested: true
 audit:
   analyst_verdict: 'true'
@@ -23,7 +23,7 @@ audit:
   auditor_confidence: high
   verdict_agrees: true
   confidence_agrees: true
-  needs_review: true
+  needs_review: false
 human_review:
   reviewed_at: null
   reviewer: null

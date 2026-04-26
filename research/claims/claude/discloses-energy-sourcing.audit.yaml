@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T12:56:32.589653+00:00'
+  ran_at: '2026-04-25T15:06:33.466045+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,17 +8,17 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/anthropic-voluntary-commitments
-  url: https://www.anthropic.com/transparency/voluntary-commitments
-  title: Voluntary Commitments
+- id: 2026/claude-ai-energy-consumption
+  url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
+  title: How Much Energy Does Anthropic's Claude AI Consume?
   ingested: true
-- id: 2024/anthropic-claude-3-transparency
+- id: 2024/anthropic-claude-3-transparency-report
   url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
   title: 'Anthropic: Claude 3'
   ingested: true
-- id: 2026/claude-ai-introduce-itself-sophisticated-pattern-matchers
-  url: https://dwaves.de/2026/04/12/letting-claude.ai-introduce-itself-llm-sophisticated-pattern-matchers/
-  title: 'Letting claude.ai Introduce Itself: LLM "Sophisticated Pattern Matchers"'
+- id: 2025/build-ai-in-america
+  url: https://www.anthropic.com/news/build-ai-in-america
+  title: 'Build AI in America: Anthropic Energy Report'
   ingested: true
 audit:
   analyst_verdict: unverified

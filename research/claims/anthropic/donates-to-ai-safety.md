@@ -8,7 +8,6 @@ status: draft
 as_of: '2026-04-25'
 sources:
 - 2024/anthropic-fellows-program
-- 2026/project-glasswing-securing-critical-software
-- 2024/external-researcher-access-program
+- 2026/project-glasswing
 ---
-Anthropic makes multiple direct and indirect donations to AI safety causes. Source 2 (Project Glasswing) explicitly states that 'Anthropic is committing $100M in model usage credits and $4M in donations to open-source security organizations' as part of securing critical software infrastructure. Beyond direct donations, Anthropic funds AI safety research through the Anthropic Fellows Program (Source 1), which provides $2,100 weekly stipends to 10-15 researchers working on AI safety topics including scalable oversight, robustness, and interpretability. Additionally, the External Researcher Access Program (Source 3) provides free API credits worth $1,000 monthly to alignment researchers, lowering financial barriers to AI safety work. These programs collectively demonstrate sustained financial commitment to advancing AI safety research and securing critical infrastructure.
+The provided sources offer direct evidence of Anthropic's donations to AI safety causes. According to 'Project Glasswing: Securing Critical Software for the AI Era,' Anthropic commits '$4M in donations to open-source security organizations' as part of a multi-organization cybersecurity initiative. Additionally, 'Introducing the Anthropic Fellows Program' describes a pilot fellowship program that funds 10-15 researchers for full-time AI safety research with substantial financial support ($2,100 weekly stipends and $10,000/month compute budgets per fellow). These initiatives demonstrate that Anthropic actively donates resources and funding to advance AI safety research and related causes.

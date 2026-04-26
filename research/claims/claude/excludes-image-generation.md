@@ -1,15 +1,15 @@
 ---
-title: Claude has native image generation capabilities
+title: Claude excludes image generation
 entity: products/claude
 category: product-comparison
-verdict: mostly-false
+verdict: mostly-true
 confidence: high
-status: published
-as_of: '2026-04-24'
+status: draft
+as_of: '2026-04-25'
 sources:
-- 2026/can-claude-produce-images
-- 2024/claude-3-5-sonnet
-- 2026/anthropic-claude-charts-diagrams
-- 2025/generate-images-claude-hugging-face
+- 2026/claude-produce-images
+- 2026/claude-vision-api-guide
+- 2026/can-claude-ai-generate-images
+- 2025/claude-and-mcp-image-generation
 ---
-Claude's core product does not natively generate images. According to Anthropic's official documentation ('Can Claude produce images?'), 'Claude doesn't generate photos or illustrations the way image-generation tools do.' Instead, Claude can create diagrams, charts, and interactive visualizations using code (HTML and SVG). While Anthropic later enabled Claude to automatically generate custom charts and diagrams within conversations ('Anthropic's Claude AI can respond with charts, diagrams, and other visuals now'), these are code-based visualizations rather than image generation. Third-party integration with external image generation models via Hugging Face is possible ('Generate Images with Claude and Hugging Face'), but this represents external tool use, not native Claude capability. The claim that Claude 'excludes image generation' is substantially accurate regarding its built-in feature set.
+Claude's core product does not natively generate images. According to Anthropic's official documentation in 'Can Claude produce images?', Claude 'doesn't generate photos or illustrations the way image-generation tools do.' The Promptaa guide confirms this is by design, stating 'Claude AI cannot generate images by design, as it specializes in language and reasoning.' However, the claim requires nuance: Claude can create diagrams and charts in HTML/SVG directly in conversations, and it can be connected to external image generation services via integrations with platforms like Hugging Face Spaces, as detailed in 'Generate Images with Claude and Hugging Face.' Thus Claude itself excludes native image generation, but users can extend its functionality through third-party integrations.

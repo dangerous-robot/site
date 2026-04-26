@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T12:54:50.219886+00:00'
+  ran_at: '2026-04-25T15:04:48.718989+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,22 +8,13 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/anthropic-claude-credo-risk-profile
+- id: 2026/anthropic-claude-risk-profile
   url: https://www.credo.ai/ai-vendor-directory/anthropic-claude
   title: Anthropic Claude - AI Vendor Risk Profile
-  ingested: true
-- id: 2025/ai-water-energy-usage-chatgpt-claude-gemini
-  url: https://devera.ai/resources/environmental-impact-ai-energy-carbon/
-  title: 'AI Water & Energy Usage: ChatGPT vs Claude vs Gemini (2026)'
   ingested: true
 - id: 2025/build-ai-in-america
   url: https://www.anthropic.com/news/build-ai-in-america
   title: 'Build AI in America: Anthropic Energy Report'
-  ingested: true
-- id: 2026/claude-ai-introduce-itself-pattern-matchers
-  url: https://dwaves.de/2026/04/12/letting-claude-ai-introduce-itself-llm-sophisticated-pattern-matchers/
-  title: 'Letting Claude.ai introduce itself: LLM as sophisticated pattern matchers;
-    asking AI about love'
   ingested: true
 audit:
   analyst_verdict: unverified

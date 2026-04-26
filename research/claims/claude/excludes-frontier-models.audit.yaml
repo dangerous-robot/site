@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T12:58:17.682549+00:00'
+  ran_at: '2026-04-25T15:07:50.686755+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,31 +8,30 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/anthropic-responsible-scaling-policy
-  url: https://www.anthropic.com/responsible-scaling-policy
-  title: Responsible Scaling Policy Updates
+- id: 2026/claude-models-overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
   ingested: true
-- id: 2026/claude-mythos-project-glasswing
-  url: https://www.mindstudio.ai/blog/what-is-claude-mythos-project-glasswing-explained
-  title: What Is Claude Mythos? Anthropic's Unreleased Frontier Model and Project
-    Glasswing Explained
+- id: 2026/claude-opus-4-6-announcement
+  url: https://www.anthropic.com/news/claude-opus-4-6
+  title: Introducing Claude Opus 4.6
   ingested: true
-- id: 2026/claude-anthropic-bedrock
-  url: https://aws.amazon.com/bedrock/anthropic/
-  title: Claude by Anthropic - Models in Amazon Bedrock
+- id: 2026/anthropic-claude-models-vertex-ai
+  url: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude
+  title: Anthropic's Claude Models
   ingested: true
 - id: 2025/claude-models-microsoft-foundry
   url: https://azure.microsoft.com/en-us/blog/introducing-anthropics-claude-models-in-microsoft-foundry-bringing-frontier-intelligence-to-azure/
-  title: 'Introducing Anthropic''s Claude Models in Microsoft Foundry: Bringing Frontier
-    Intelligence to Azure'
+  title: 'Introducing Anthropic''s Claude models in Microsoft Foundry: Bringing Frontier
+    intelligence to Azure'
   ingested: true
 audit:
-  analyst_verdict: mostly-true
-  auditor_verdict: mostly-true
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
   analyst_confidence: high
-  auditor_confidence: medium
-  verdict_agrees: true
-  confidence_agrees: false
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
   needs_review: true
 human_review:
   reviewed_at: null

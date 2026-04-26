@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-24T12:57:40.142088+00:00'
+  ran_at: '2026-04-25T15:07:21.655958+00:00'
   model: anthropic:claude-haiku-4-5-20251001
   agents:
   - researcher
@@ -8,26 +8,25 @@ pipeline_run:
   - analyst
   - auditor
 sources_consulted:
-- id: 2026/can-claude-produce-images
+- id: 2026/claude-produce-images
   url: https://support.claude.com/en/articles/9002504-can-claude-produce-images
   title: Can Claude produce images?
   ingested: true
-- id: 2024/claude-3-5-sonnet
-  url: https://www.anthropic.com/news/claude-3-5-sonnet
-  title: Introducing Claude 3.5 Sonnet
+- id: 2026/claude-vision-api-guide
+  url: https://docs.anthropic.com/en/docs/build-with-claude/vision
+  title: Vision - Build with Claude
   ingested: true
-- id: 2026/anthropic-claude-charts-diagrams
-  url: https://www.theverge.com/ai-artificial-intelligence/893625/anthropic-claude-ai-charts-diagrams
-  title: Anthropic's Claude AI can respond with charts, diagrams, and other visuals
-    now
+- id: 2026/can-claude-ai-generate-images
+  url: https://promptaa.com/blog/can-claude-ai-generate-images
+  title: Can Claude AI Generate Images? Your Complete Guide
   ingested: true
-- id: 2025/generate-images-claude-hugging-face
+- id: 2025/claude-and-mcp-image-generation
   url: https://huggingface.co/blog/claude-and-mcp
   title: Generate Images with Claude and Hugging Face
   ingested: true
 audit:
-  analyst_verdict: mostly-false
-  auditor_verdict: mostly-true
+  analyst_verdict: mostly-true
+  auditor_verdict: 'true'
   analyst_confidence: high
   auditor_confidence: high
   verdict_agrees: false
