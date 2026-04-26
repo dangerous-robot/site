@@ -159,13 +159,17 @@ All plans live under `docs/plans/`. Lifecycle determines subdirectory:
 | `docs/plans/` | Active, final plans | Committed |
 | `docs/plans/completed/` | Fully done plans | Committed |
 
+Release roadmaps are a separate object: they live at the top level of `docs/` (`docs/v{semver}.md`) and are governed by the [Release planning](#release-planning) section. The lifecycle rules below apply equally to release docs and sub-plans; the only difference is the active-state location.
+
 Rules:
 
 1. **Drafts stay local.** Write WIP plans to `docs/plans/drafts/`. Never commit a plan until its design is reviewed and final.
-2. **Final plans are committed** to `docs/plans/` when approved.
-3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `docs/plans/completed/`.
-4. **Keep the backlog current.** Update `docs/BACKLOG.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
-5. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in BACKLOG.md but do not duplicate issue content.
+2. **Final plans are committed** to `docs/plans/` (or, for release roadmaps, to `docs/v{semver}.md`) when approved.
+3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `docs/plans/completed/`. Release roadmaps move from `docs/v{semver}.md` to `docs/plans/completed/v{semver}.md` once the release ships.
+4. **Update the plan as work lands.** When you complete a work item from a plan, update the plan in the same change: tick the checkbox, set the relevant Status field, and add a commit reference (`commit XXXXXXX`) where the doc already cites commits. Do not batch plan updates across sessions; an out-of-date plan misleads the next agent. This applies to release roadmaps and sub-plans alike.
+5. **At commit time, ask whether touched plans are complete.** When Claude is asked to commit on the user's behalf and the change touched any file under `docs/plans/` or any release roadmap (`docs/v*.*.*.md`): for each touched plan, ask the operator whether the plan is now fully implemented. If yes, `git mv` it to `docs/plans/completed/` (preserving the filename, plus the `_completed` suffix per the naming convention below if it helps disambiguate from abandoned/superseded plans) in the same commit. Phrase the question concretely (name the plan files); do not ask in the abstract.
+6. **Keep the backlog current.** Update `docs/UNSCHEDULED.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
+7. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in UNSCHEDULED.md but do not duplicate issue content.
 
 ### Plan review records
 
@@ -201,8 +205,10 @@ Three mutually exclusive work states:
 | State | Location | Meaning |
 |---|---|---|
 | Unscheduled | `docs/UNSCHEDULED.md` | Known work not yet assigned to a release. May or may not have a plan file. Default holding area. |
-| Scheduled | A release doc (`docs/plans/v*.*.*.md`) | Committed to a specific release. When an item enters a release doc, remove it from UNSCHEDULED.md. |
-| Plan-only | `docs/plans/drafts/` (draft) or `docs/plans/` (reviewed) | A plan exists for exploratory/future work not yet prioritized into a release or unscheduled. |
+| Scheduled | A release roadmap (`docs/v*.*.*.md`) | Committed to a specific release. When an item enters a release roadmap, remove it from UNSCHEDULED.md. |
+| Plan-only | `docs/plans/drafts/` (draft) or `docs/plans/` (reviewed) | A sub-plan exists for exploratory/future work not yet prioritized into a release or unscheduled. |
+
+**Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
 
 **Plan lifecycle** (within plan-only state):
 1. New/speculative plan → `docs/plans/drafts/` (gitignored, WIP)
@@ -211,8 +217,8 @@ Three mutually exclusive work states:
 
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
-- When assigned to a release: add to release doc, remove from UNSCHEDULED.md
-- When a release ships: move its release doc to `docs/plans/completed/`
+- When assigned to a release: add to the release roadmap, remove from UNSCHEDULED.md
+- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`
 
 **Plan filename suffix convention** — append to base name when it adds signal:
 
@@ -223,7 +229,7 @@ Three mutually exclusive work states:
 
 No suffix = plan is complete and reviewable. Keep the set small.
 
-**Release doc naming:** `docs/plans/v{semver}.md`. `VERSION.md` declares the current working version.
+**Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
 
 **Note on `future/` directory:** `docs/plans/future/` is undocumented. Dissolve it: move contents to `docs/plans/drafts/` and delete the directory.
 

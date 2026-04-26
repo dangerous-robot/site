@@ -117,7 +117,7 @@ When the operator schedules Router implementation. Each item below is a self-con
 - The threshold check (the only Router responsibility tied to a v1 reliability requirement) can live in the Orchestrator without architectural compromise (Cross-stub decision 1).
 - Deferring Router implementation does not block multi-topic or claim-lifecycle (`blocked` + threshold).
 
-If the operator chooses the full Router instead, scope balloons substantially (six new responsibilities, model-class enforcement, wiring, tests). The landing plan's `v0.1.0-roadmap.md` checklist additions (line 234) treat full implementation as v1.0.0 scope — that line should be revised to "Orchestrator named; Router documented" if the operator confirms the docstring-only minimum.
+If the operator chooses the full Router instead, scope balloons substantially (six new responsibilities, model-class enforcement, wiring, tests). The landing plan's `../v1.0.0-roadmap.md` checklist additions (line 234) treat full implementation as v1.0.0 scope — that line should be revised to "Orchestrator named; Router documented" if the operator confirms the docstring-only minimum.
 
 ---
 

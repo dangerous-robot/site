@@ -73,6 +73,6 @@ Delete this file when:
 
 - Every row above has a non-empty destination (currently true for all).
 - Each linked plan / stub / question doc exists.
-- `docs/plans/v0.1.0-roadmap.md` references the v1-bound plans.
+- `docs/v1.0.0-roadmap.md` references the v1-bound plans.
 
 Once those conditions are met, this dispatch ledger has served its purpose.

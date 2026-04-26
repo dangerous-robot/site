@@ -17,7 +17,7 @@
 
 ### Problem
 
-New claims are written with `status: draft` in `persistence.py` `_write_claim_file()` (line 130). Nothing flips them to `status: published`. `dr review` today (`pipeline/orchestrator/cli.py` lines 524-588) only writes `human_review.*` fields to the `.audit.yaml` sidecar and never touches the claim file. The v0.1.0 roadmap release criteria include: "CI check enforces `human_review.reviewed_at` non-null on all `status: published` claims" (`docs/plans/v0.1.0-roadmap.md` release criteria checklist). A sidecar-only review produces a published-but-unreviewable (or never-published) state.
+New claims are written with `status: draft` in `persistence.py` `_write_claim_file()` (line 130). Nothing flips them to `status: published`. `dr review` today (`pipeline/orchestrator/cli.py` lines 524-588) only writes `human_review.*` fields to the `.audit.yaml` sidecar and never touches the claim file. The v1.0.0 roadmap release criteria include: "CI check enforces `human_review.reviewed_at` non-null on all `status: published` claims" (`docs/v1.0.0-roadmap.md` release criteria checklist). A sidecar-only review produces a published-but-unreviewable (or never-published) state.
 
 ### Direction
 
@@ -39,7 +39,7 @@ Two files are mutated. Write order is fixed: **sidecar first, then `.md`**. Rati
 
 - Sidecar write fails: claim remains `draft`, no `human_review.reviewed_at`. Clean, operator retries.
 - `.md` write fails after sidecar write succeeds: claim is `reviewed but not promoted` (sidecar records the review, `.md` status unchanged). Recoverable by re-running the command, which is idempotent on sidecar updates and still finds the pre-action status.
-- Reverse order (`.md` first) creates `published-but-unreviewed`, which is exactly the state the v0.1.0 CI gate exists to prevent.
+- Reverse order (`.md` first) creates `published-but-unreviewed`, which is exactly the state the v1.0.0 CI gate exists to prevent.
 
 Before either write, both files must pass a pre-flight check: sidecar exists, `.md` frontmatter parses, current status matches `expected_current`. Any failure in pre-flight aborts before touching either file.
 
@@ -55,7 +55,7 @@ Before either write, both files must pass a pre-flight check: sidecar exists, `.
    - Add `--approve` and `--archive` Boolean flags. Use a manual guard in the command body (the codebase has no `MutuallyExclusiveOption` pattern and no `ClickException` uses today; stick to a plain `if approve and archive: raise click.ClickException(...)`).
    - If `--approve` or `--archive`: call `_set_claim_status()` from `persistence.py` after the sidecar write succeeds. Pre-flight validation (parse `.md`, verify status) happens before the sidecar write.
    - Update the success message to name both files when status changed: `Marked reviewed and published: research/claims/<slug>.md (+ .audit.yaml)`. Bare review keeps the existing sidecar-only message.
-2. Add `_set_claim_status(claim_path: Path, new_status: str, expected_current: str | None) -> None` to `pipeline/orchestrator/persistence.py`. Uses `common.frontmatter.parse_frontmatter` / `serialize_frontmatter` (confirmed to exist with these signatures). Raises `ValueError` if current status does not match `expected_current`. When `expected_current is None`, skips the check (not needed for v0.1.0 but keeps the helper composable).
+2. Add `_set_claim_status(claim_path: Path, new_status: str, expected_current: str | None) -> None` to `pipeline/orchestrator/persistence.py`. Uses `common.frontmatter.parse_frontmatter` / `serialize_frontmatter` (confirmed to exist with these signatures). Raises `ValueError` if current status does not match `expected_current`. When `expected_current is None`, skips the check (not needed for v1.0.0 but keeps the helper composable).
 3. Add tests to `pipeline/tests/test_audit_trail.py` (existing location for `dr review` tests, pattern: `CliRunner().invoke(main, [...])` with `tmp_path` fixtures, see lines 235-302):
    - `--approve` flips `draft` to `published`, writes both files.
    - `--approve` on already-`published` claim exits non-zero, leaves both files unchanged (status bytes and sidecar bytes compared).
@@ -67,9 +67,9 @@ Before either write, both files must pass a pre-flight check: sidecar exists, `.
    - `--approve` and `--archive` together exits non-zero before any write.
    - Atomicity: mid-flight failure simulation where the `.md` write step raises leaves the sidecar in its *updated* state (sidecar is the commit point); document this behavior in the test docstring. Operator guidance: rerun with `--approve`, which re-detects still-`draft` and completes the flip.
 4. Update `docs/plans/audit-trail.md` §"`dr review` CLI command" (lines 172-194) to document the new flags and the sidecar-first ordering. Mark the previous "writes only the sidecar" behavior as the no-flag path. Update acceptance checklist entries at lines 281-282 and 290 to cover the new flags.
-5. Update `docs/plans/v0.1.0-roadmap.md` §5 ("Human sign-off", bullet list at line ~100) to note `dr review --approve` as the supported promotion path.
+5. Update `docs/v1.0.0-roadmap.md` §5 ("Human sign-off", bullet list at line ~100) to note `dr review --approve` as the supported promotion path.
 6. Update `docs/architecture/research-workflow.md` "Maintain" section and `docs/architecture/research-flow.md` section 6 (human review) to document the `--approve` / `--archive` lifecycle.
-7. The CI gate for `status: published` + `human_review.reviewed_at` non-null (release criteria, `v0.1.0-roadmap.md`) is a downstream consumer of this work. Writing that CI check is out of scope here but blocked by this section.
+7. The CI gate for `status: published` + `human_review.reviewed_at` non-null (release criteria, `v1.0.0-roadmap.md`) is a downstream consumer of this work. Writing that CI check is out of scope here but blocked by this section.
 
 ### Dependencies
 
@@ -80,7 +80,7 @@ Before either write, both files must pass a pre-flight check: sidecar exists, `.
 
 - PR automation (opening a PR from the CLI). The reviewer runs `git commit` / `gh pr create` by hand, same as today.
 - Multi-reviewer or quorum logic.
-- Undoing a status change (`--revert`). Not needed for v0.1.0; use `git revert`.
+- Undoing a status change (`--revert`). Not needed for v1.0.0; use `git revert`.
 
 ---
 
@@ -166,8 +166,8 @@ Both are `not-applicable`. The distinction between them is operational (the firs
 
 ## Dependencies and ordering
 
-- Section 1 (claim promotion) is a prerequisite for the v0.1.0 roadmap release criterion "CI check enforces `human_review.reviewed_at` non-null on all `status: published` claims" (see release criteria checklist in `docs/plans/v0.1.0-roadmap.md`). That gate cannot be correctly specified until `dr review --approve` exists.
+- Section 1 (claim promotion) is a prerequisite for the v1.0.0 roadmap release criterion "CI check enforces `human_review.reviewed_at` non-null on all `status: published` claims" (see release criteria checklist in `docs/v1.0.0-roadmap.md`). That gate cannot be correctly specified until `dr review --approve` exists.
 - Section 2 (rename) is independent of Sections 1 and 3. Can land in any order.
-- Section 3 (verdict definitions) should land before or together with the v0.1.0 claim-curation pass (roadmap §3). Curation requires operators to confidently apply the definitions, particularly `mostly-true` / `mixed`.
+- Section 3 (verdict definitions) should land before or together with the v1.0.0 claim-curation pass (roadmap §3). Curation requires operators to confidently apply the definitions, particularly `mostly-true` / `mixed`.
 - The audit-trail plan's `dr review` section (lines 172-194) must be updated to reference the new `--approve` / `--archive` flags as part of Section 1's documentation work.
 - The `dr-lint.md:263` reference to `dr audit` should be updated as part of Section 2's rename sweep.

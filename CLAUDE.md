@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Status
 
-Astro 6.x site with GitHub Actions deploy workflow. Unscheduled work is in `docs/UNSCHEDULED.md`. Release planning is in `docs/plans/v*.*.*.md`. Current version is in `VERSION.md`. Architecture docs are in `docs/architecture/`. See AGENTS.md for plan lifecycle and architecture doc rules.
+Astro 6.x site with GitHub Actions deploy workflow. Unscheduled work is in `docs/UNSCHEDULED.md`. Release roadmaps live at the top level of `docs/` as `docs/v*.*.*.md` (first release: `docs/v1.0.0-roadmap.md`). Sub-plans live under `docs/plans/`. Current version is in `VERSION.md`. Architecture docs are in `docs/architecture/`. See AGENTS.md for plan lifecycle and architecture doc rules.
 
 ## Custom Domain
 

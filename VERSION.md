@@ -1,8 +1,9 @@
-0.1.0-dev
+1.0.0-dev
 
-Version semantics:
+Version semantics (post-1.0):
 - Major: breaking change to verdict enum, criterion definitions, or entity URL structure
 - Minor: new entity type, new criterion, new phase shipped
 - Patch: content corrections, verdict updates, bug fixes, source additions
 
-Active release: docs/plans/v0.1.0-roadmap.md
+Active release: docs/v1.0.0-roadmap.md
+Future release plans live at docs/v{semver}.md.

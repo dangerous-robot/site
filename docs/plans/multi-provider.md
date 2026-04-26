@@ -28,7 +28,7 @@ The evaluation found GreenPT cleaner on tool-loop tests (3-of-5 models pass T5 v
 
 ### Objective
 
-Ship a `dr verify` end-to-end run against `infomaniak:openai/gpt-oss-120b` for all four agents on at least one canned claim, producing a written `.audit.yaml` sidecar. This is a **v0.1.0 release item**; tracked from [`v0.1.0-roadmap.md`](v0.1.0-roadmap.md).
+Ship a `dr verify` end-to-end run against `infomaniak:openai/gpt-oss-120b` for all four agents on at least one canned claim, producing a written `.audit.yaml` sidecar. This is a **v1.0.0 release item**; tracked from [`../v1.0.0-roadmap.md`](../v1.0.0-roadmap.md).
 
 The model choice changed from the original POC plan (`mistral24b`) to `gpt-oss-120b` because the evaluation showed it is the only Infomaniak model that passes every test cleanly, including the multi-turn tool loop (T5) that the researcher and ingestor agents depend on. Mistral-Small needed a `reasoning_content` strip to pass T5; that complication moves into Part 2.
 

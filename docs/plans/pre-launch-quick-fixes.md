@@ -19,7 +19,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 |---|---|---|
 | S1 | ALPHA banner sitewide | `src/layouts/Base.astro` |
 | S2 | Curate launch claim set to ~20 (random selection); homepage and list pages already filter to `status: published` | content; verify filtering on `src/pages/index.astro`, `src/pages/claims/index.astro` |
-| S3 | COI disclosure on `/methodology` and `companies/treadlightlyai` (also on v0.1.0-roadmap §7) | methodology page, `research/entities/companies/treadlightlyai.md` |
+| S3 | COI disclosure on `/methodology` and `companies/treadlightlyai` (also on v1.0.0-roadmap §7) | methodology page, `research/entities/companies/treadlightlyai.md` |
 | S4 | Create `/values` editorial page (uncited; cross-link to relevant claim categories per Q9). Note: page should include the public design principle paragraph as one of its core values entries (per [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) Canonical paragraphs → Design principle (public, for `/values`)). | new `src/pages/values.astro` |
 | S5 | Surface a consolidated pipeline diagram inside FAQ accordion or on `/methodology` | `src/pages/faq/index.astro` or `src/pages/methodology.astro`. Source: `docs/architecture/research-flow.md` (5 Mermaid diagrams already exist; pick one) |
 | S6 | Audit sidecar: lock `models_used` field in schema and display on claim page | `src/content.config.ts`, `src/pages/claims/[...slug].astro`, `pipeline/orchestrator/persistence.py`. **Timing critical**: no `.audit.yaml` files exist yet (per roadmap §10). Lock the schema before the first sidecar is written. |
@@ -34,7 +34,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 | P1 | Rename "Citation Auditor" → "citation check" (the CI integrity check). Resolves the three-way "audit" overload (audit sidecar / Citation Auditor / Auditor agent). | `AGENTS.md`, `docs/architecture/glossary.md`, `scripts/check-citations.ts` (script name already aligns), any plan/doc references |
 | P2 | Rename `dr research` → `dr verify-claim`. Footgun: the command runs the entire pipeline, not just the Researcher role. | `pipeline/orchestrator/cli.py`, `AGENTS.md`, `docs/architecture/research-flow.md`, `docs/architecture/research-workflow.md`, smoke tests |
 | P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | `AGENTS.md`, `docs/architecture/glossary.md`. Companion to S6 display. |
-| P5 | Roadmap cleanup: visibly separate hard launch blockers from nice-to-haves | `docs/plans/v0.1.0-roadmap.md` |
+| P5 | Roadmap cleanup: visibly separate hard launch blockers from nice-to-haves | `docs/v1.0.0-roadmap.md` |
 | P6 | Glossary: add "Vocabulary layers" reader-facing summary mapping role ↔ pipeline agent ↔ CLI command | `docs/architecture/glossary.md` |
 | ST4 | Remove "Page Builder" role from everywhere (operator: causing confusion) | `AGENTS.md` (role table), `docs/architecture/glossary.md` (Roles table), any other `rg "Page Builder"` hits |
 | ST5 | Define what `high` / `medium` / `low` confidence concretely mean; render rubric on `/methodology` | `src/pages/methodology.astro`; reference from claim pages |
@@ -47,7 +47,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 - **P2 naming**: "verify-claim" is suggested. Note `dr verify` already exists for verifying a known claim+entity pair, so the new name needs to not collide. Alternatives: `dr investigate`, `dr research-claim`. Decide before P2 lands.
 - **S2 (curation)**: operator picks the set. No script needed; mark out-of-scope claims with `status: archived` or remove. Verify the homepage and `/claims/` index already filter to published (per roadmap §2; should be done).
 - **ST4 (Page Builder removal)**: run `rg "Page Builder" -n` first to confirm scope before edits. Known hits: `AGENTS.md` agent-roles table, `docs/architecture/glossary.md` Roles table.
-- **P5 cleanup**: this is a small editorial pass on `v0.1.0-roadmap.md`. Move "decision needed" and "future" items out of the active checklist; the only items in the release-criteria block at the top should be true launch blockers.
+- **P5 cleanup**: this is a small editorial pass on `docs/v1.0.0-roadmap.md`. Move "decision needed" and "future" items out of the active checklist; the only items in the release-criteria block at the top should be true launch blockers.
 
 ## Out of scope
 
