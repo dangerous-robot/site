@@ -2,6 +2,12 @@
 
 Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](../../AGENTS.md) for role definitions and content rules.
 
+## How the system works
+
+The system tracks four object types: **criteria** (reusable claim templates), **entities** (companies, products, sectors), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
+
+For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
+
 ## Research Objects
 
 | Term | What it is | Lives at |
@@ -43,28 +49,66 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 
 | Role | Responsibility |
 |---|---|
-| **Research Lead** | Orchestrator; assigns tasks, never edits claims directly |
+| **Research Lead** | Assigns tasks, never edits claims directly |
+| **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
 | **Researcher** | Finds relevant URLs for a given claim topic |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
-| **Auditor** | Provides an independent second opinion on the analyst's output |
-| **Citation Auditor** | Finds claims with zero sources, stale dates, broken references |
-| **Page Builder** | Generates TypeScript data files for downstream consumption |
+| **Evaluator** | Produces an independent evaluation of the analyst's output |
 
-## Pipeline
+## Workflow
 
-The pipeline implements roles as runnable code. Lives in `pipeline/`.
+The workflow implements roles as runnable code. Lives in `pipeline/`.
 
 | Term | Meaning |
 |---|---|
+| **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue. Implicit in `pipeline/orchestrator/`; named role documented (`pipeline/orchestrator/`) |
+| **Router** | Matches new sources to criteria/claims; small classification calls; threshold-trigger to blocked; stale flagging. Documented; implementation deferred (`pipeline/router/` planned) |
 | **Researcher agent** | Takes claim text, returns relevant URLs (`pipeline/researcher/`) |
 | **Ingestor agent** | Takes a URL, produces a source file (`pipeline/ingestor/`) |
 | **Analyst agent** | Takes sources + claim, produces verdict + narrative (`pipeline/analyst/`) |
-| **Auditor agent** | Independent second-opinion assessment (`pipeline/auditor/`) |
-| **Orchestrator** | Routes claim work through the four agents (`pipeline/orchestrator/`) |
+| **Evaluator agent** | Independent evaluation of the analyst's output (`pipeline/auditor/` in v1; directory rename to `pipeline/evaluator/` deferred to post-v1) |
 | **Pipeline** | The collective automation: agents + CLI + shared utilities |
 
+## Agent tasks
+
+| Agent | Tasks |
+|---|---|
+| **Orchestrator** | Advance claim through `phase`; route to `blocked` on threshold breach; manage queue |
+| **Router** | (Documented; implementation deferred) Match new sources back to criteria/claims; small classification calls; threshold-trigger to blocked; stale flagging |
+| **Researcher** | Find sources for a claim |
+| **Ingestor** | Fetch URL; extract content; classify source kind; produce source file |
+| **Analyst** | Propose draft verdict; write narrative; cite sources |
+| **Evaluator** | Produce an independent evaluation; flag disagreements |
+
+## Object lifecycle (general)
+
+Applies to criteria, entities, and sources.
+
+| State | Meaning |
+|---|---|
+| **proposed** | Object exists, not yet vetted/active |
+| **active** | Object is in use |
+| **flagged** | Needs review (stale, COI, broken, contested) |
+| **retired** | No longer in use |
+
 ## Lifecycle
+
+Claim states.
+
+| State | Meaning | Where | Schema status |
+|---|---|---|---|
+| **queued** | Intake recorded, pipeline not yet run | `QUEUE.md` | (no schema field; `QUEUE.md` only) |
+| **in-progress** | Pipeline is working it; `phase` ∈ {researching, ingesting, analyzing, evaluating} | (transient) | (v1: schema only has draft / published / archived) |
+| **blocked** | Pipeline halted: insufficient sources (< 2) or terminal fetch error | `status: draft` + reason field | (v1: schema only has draft / published / archived) |
+| **drafted** | Pipeline produced a draft verdict; awaiting review | `status: draft` | (in schema) |
+| **published** | Operator approved | `status: published` | (in schema) |
+| **archived** | Retired | `status: archived` | (in schema) |
+
+## Lifecycle vocabulary
+
+Operator-facing pipeline-step terms. These describe pipeline mechanics, not claim states.
 
 | Term | Meaning |
 |---|---|
@@ -102,7 +146,7 @@ This definition is a moving target. When evaluating a claim, the narrative shoul
 |---|---|---|
 | Content | "research objects" | entity, claim, source |
 | People/AI doing work | "roles" (defined in AGENTS.md) | Research Lead, Ingestor |
-| Python automation | "pipeline" (code in `pipeline/`) | researcher agent, ingestor agent, analyst agent, auditor agent |
+| Python automation | "pipeline" (code in `pipeline/`) | researcher agent, ingestor agent, analyst agent, evaluator agent, orchestrator (Implicit in `pipeline/orchestrator/`; named) and router agent (Documented; implementation deferred) |
 | Constraints/policies | "governance rules" | content rules, schema authority, plan lifecycle |
 | Verification | "tests" (code) / "checks" (CI/content) | unit tests, citation check, build validation |
 

@@ -6,21 +6,6 @@ Status: open as of 2026-04-24, derived from the pre-launch triage. Captures ques
 
 ## Currently open
 
-### Q1. What concretely satisfies the reader test?
-
-The skeptical-reader test says readers should be able to "tell if they agree or disagree with the process behind specific verdicts." The launch-set scope of source/sidecar/trust-metadata visibility hinges on this answer.
-
-Candidates, ordered by lift:
-
-1. Source list with archived URLs (current).
-2. Audit sidecar surfaced inline (planned, [`audit-trail.md`](plans/audit-trail.md)).
-3. Trust metadata per source (proposed, [`source-trust-metadata_stub.md`](plans/source-trust-metadata_stub.md)).
-4. Model-tier paper trail (proposed, audit sidecar `models_used` field — landing in [`pre-launch-quick-fixes.md`](plans/pre-launch-quick-fixes.md) S6).
-5. "Show your work" reasoning panel (Q11; partially implemented per operator note 2026-04-24; another agent improving).
-6. Reader-takeaway plain-language line under each badge ([`pre-launch-quick-fixes.md`](plans/pre-launch-quick-fixes.md) S8).
-
-Decision needed for: whether ST1 (trust metadata) is launch-blocking, and whether Q11 (full show-your-work) is v1 or v2.
-
 ### Q2. Polarity normalization
 
 Should claim titles be rewritten so TRUE = "better" reads consistently? Operator preference is yes ("X excludes wasteful features" rather than "X has wasteful features"). Tradeoffs:
@@ -49,7 +34,7 @@ Stated as a principle (P3 in [`pre-launch-quick-fixes.md`](plans/pre-launch-quic
 - (b) Per-agent model caps in config — `pipeline/orchestrator/cli.py` or `VerifyConfig` enforces tier ceilings.
 - (c) Cost-per-claim ceilings with escalation gates.
 
-Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Phase 2 of [`multi-provider-poc.md`](plans/multi-provider-poc.md).
+Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Part 2 of [`multi-provider.md`](plans/multi-provider.md).
 
 ### Q12. v1 feedback channel: what ships?
 
@@ -76,6 +61,17 @@ Per operator: partially implemented; another agent improving. Out of scope for r
 - Prompt visibility (the actual instruction text the analyst saw)?
 
 Currently treated as in flight.
+
+---
+
+## Closed (operator answers, 2026-04-25)
+
+- **Q1 — Reader test scope**: source list + audit sidecar + reader-takeaway is sufficient for v1; ST1 trust metadata defers to v2. (Uses "audit sidecar" — the current carrier name; the canonical-verdict-artifact rename is deferred per UNSCHEDULED.)
+- **Workflow + vocab decisions** (per [`plans/v0.1.0-vocab-workflow-landing.md`](plans/v0.1.0-vocab-workflow-landing.md)):
+  - Object types locked at four: criterion, entity, source, claim.
+  - Intake set locked to criterion / entity / source (claim is output-only).
+  - Item 3 resolved to option (a) split: Orchestrator (lifecycle) and Router (dispatch) are named as two distinct roles.
+  - Internal design principle "Small decisions, small models." adopted; public `/values` variant captured for landing on the values page.
 
 ---
 

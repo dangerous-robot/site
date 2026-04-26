@@ -6,6 +6,16 @@ Instructions for AI coding agents (Claude Code, Cursor, Copilot, etc.) working i
 
 This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot.org), backing claims made on the TreadLightly AI site with structured, citable evidence. Research content is Markdown with YAML frontmatter, organized for agent parsing and downstream consumption.
 
+## How the system works
+
+The system tracks four object types: **criteria** (reusable claim templates, intake-only), **entities** (companies and products in v1; sectors exist but aren't yet an intake; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: a **criterion** generates a claim for each entity it applies to; a **company** or **product** generates a claim for each active criterion; a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (open-loop: disagreements surface to the operator and are not auto-resolved, so the Evaluator does not feed back into the Analyst in v1). The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
+
+For the generalized vision, see `docs/architecture/glossary.md` § How the system works.
+
+## Design principle
+
+**Small decisions, small models.** Each agent is scoped to make the smallest defensible decision in its lane. Larger models are reserved for tasks that genuinely require them. The Router runs on the smallest model class; only Analyst and Evaluator may invoke frontier models. This minimizes wasteful use of large models, the central cost the project exists to make visible, and keeps behavior auditable and legible. (This is testable design intent: a future check can verify model classes per agent.)
+
 ## Writing conventions
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
@@ -44,17 +54,17 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 ## Agent Roles
 
-Seven roles, several automated via PydanticAI agents in `pipeline/`. Pipeline routing and persistence live in `orchestrator/`.
+Roles are listed below; several are automated via PydanticAI agents in `pipeline/`. Pipeline routing and persistence live in `orchestrator/`.
 
 | Role | What it does | Status | Package |
 |------|-------------|--------|---------|
 | **Research Lead** | Orchestrates work from `QUEUE.md`; creates sub-tasks and plans; never edits claims directly | Manual | (none) |
+| **Orchestrator** | Owns claim lifecycle: phase transitions, blocked routing, queue management | Implicit in `pipeline/orchestrator/` today; named role documented; full implementation tracked via `docs/plans/triage-agent.md` and `docs/plans/claim-lifecycle-states.md` | `pipeline/orchestrator/` |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources | Documented; implementation deferred via `docs/plans/triage-agent.md` | (`pipeline/router/` planned) |
 | **Researcher** | Takes claim text, returns relevant URLs for ingestion (`web_search` tool) | Automated | `researcher/` |
 | **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
 | **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
-| **Auditor** | Independent second opinion on analyst output, produces `IndependentAssessment` | Automated | `auditor/` |
-| **Citation Auditor** | Finds claims with zero sources, stale `as_of`, or broken URLs; produces audit reports | Partial (`scripts/check-citations.ts` covers broken refs; full auditing is backlog) | (none) |
-| **Page Builder** | Generates TS data files for downstream consumption by TreadLightly | Not yet implemented (no LLM needed; backlog) | (none) |
+| **Evaluator** | Produces an independent evaluation of analyst output, returning `IndependentAssessment` | Automated | `auditor/` |
 
 ### Directory layout
 
@@ -64,7 +74,7 @@ pipeline/
   ingestor/        # Agent: URL -> SourceFile
   researcher/      # Agent: claim -> relevant URLs
   analyst/         # Agent: sources + claim -> verdict + narrative
-  auditor/         # Agent: independent second opinion
+  auditor/         # Evaluator role; directory rename to evaluator/ deferred to post-v1
   orchestrator/    # Routing logic, checkpoints, persistence, dr CLI
   tests/
 ```
@@ -78,7 +88,7 @@ Each agent package contains an `instructions.md` file that is loaded at import t
 The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` protocol:
 
 - `review_sources` -- fires after ingest; allows halting before analysis when sources are poor
-- `review_disagreement` -- fires when analyst and auditor verdicts conflict
+- `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 
 Pass `--interactive` to `dr verify`, `dr research`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
@@ -89,7 +99,7 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, research, audit, ingest |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, research, evaluate, ingest |
 | `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
@@ -108,7 +118,7 @@ Commands:
 
 - `dr verify` -- Verify a claim about an entity using web research
 - `dr research` -- Research a claim: find sources, evaluate verdict, write everything to disk
-- `dr reassess` -- Run auditor checks on research claims
+- `dr reassess` -- Run evaluator checks on research claims
 - `dr ingest` -- Ingest a URL and produce a source file
 - `dr onboard` -- Onboard an entity using claim templates
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors

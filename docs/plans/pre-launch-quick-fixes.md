@@ -5,6 +5,8 @@
 
 A bundle of small reader-facing and operator-vocabulary fixes generated from the 2026-04-24 pre-launch triage. Each item is shippable in under a day. Larger items from the same triage are tracked in their own stub plans (see Cross-references).
 
+> **Note (2026-04-26)**: P1 (Citation Auditor → "citation check") and ST4 (Page Builder removal) are bundled with the [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) PR per its Dependencies section. They land via Lanes A and B of that plan rather than being re-done here.
+
 ## Goal
 
 Land the cluster of small pre-launch polish items before tagging v0.1.0. Items are grouped by surface (reader-facing site, glossary/docs, content). Each is independently revertible.
@@ -18,7 +20,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 | S1 | ALPHA banner sitewide | `src/layouts/Base.astro` |
 | S2 | Curate launch claim set to ~20 (random selection); homepage and list pages already filter to `status: published` | content; verify filtering on `src/pages/index.astro`, `src/pages/claims/index.astro` |
 | S3 | COI disclosure on `/methodology` and `companies/treadlightlyai` (also on v0.1.0-roadmap §7) | methodology page, `research/entities/companies/treadlightlyai.md` |
-| S4 | Create `/values` editorial page (uncited; cross-link to relevant claim categories per Q9) | new `src/pages/values.astro` |
+| S4 | Create `/values` editorial page (uncited; cross-link to relevant claim categories per Q9). Note: page should include the public design principle paragraph as one of its core values entries (per [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) Canonical paragraphs → Design principle (public, for `/values`)). | new `src/pages/values.astro` |
 | S5 | Surface a consolidated pipeline diagram inside FAQ accordion or on `/methodology` | `src/pages/faq/index.astro` or `src/pages/methodology.astro`. Source: `docs/architecture/research-flow.md` (5 Mermaid diagrams already exist; pick one) |
 | S6 | Audit sidecar: lock `models_used` field in schema and display on claim page | `src/content.config.ts`, `src/pages/claims/[...slug].astro`, `pipeline/orchestrator/persistence.py`. **Timing critical**: no `.audit.yaml` files exist yet (per roadmap §10). Lock the schema before the first sidecar is written. |
 | S7 | Inputs taxonomy block on FAQ ("how does work enter this site?") listing the six intake types | `src/pages/faq/index.astro` |
@@ -54,7 +56,7 @@ The following triage items are NOT in this plan; they have their own plans or de
 - Vocabulary cohesion deeper pass beyond P1+P2 → [`vocab-rename-pass_stub.md`](vocab-rename-pass_stub.md)
 - Acceptance test fixture (Anthropic/Claude per Q8) → [`acceptance-test-fixture_stub.md`](acceptance-test-fixture_stub.md)
 - Source trust metadata (4 axes) → [`source-trust-metadata_stub.md`](source-trust-metadata_stub.md)
-- Multi-provider POC (Infomaniak; GreenPT fallback) → existing [`multi-provider-poc.md`](multi-provider-poc.md)
+- Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](multi-provider.md)
 - Polarity normalization (Q2) → [`docs/pre-launch-questions.md`](../pre-launch-questions.md)
 - Operator queue + batch workflow → [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md) (v2)
 - Data lifecycle policy → [`data-lifecycle-policy_stub.md`](data-lifecycle-policy_stub.md) (v2)
@@ -82,7 +84,7 @@ After all items in scope land:
 | ST1 source trust metadata | [`source-trust-metadata_stub.md`](source-trust-metadata_stub.md) |
 | P4 acceptance test fixture | [`acceptance-test-fixture_stub.md`](acceptance-test-fixture_stub.md) |
 | PT4 vocab cohesion deeper pass | [`vocab-rename-pass_stub.md`](vocab-rename-pass_stub.md) |
-| Infomaniak/GreenPT POC | [`multi-provider-poc.md`](multi-provider-poc.md) |
+| Multi-provider plan | [`multi-provider.md`](multi-provider.md) |
 | ST2 polarity normalization | [Q2](../pre-launch-questions.md) |
 | ST3 in-page feedback | [`public-feedback.md`](public-feedback.md) (v2) |
 | PT1 operator queue + batch | [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md) (v2) |
