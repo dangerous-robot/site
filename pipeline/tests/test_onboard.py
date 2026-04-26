@@ -255,6 +255,52 @@ class TestOnboardEntitySeedUrl:
         assert entity_path.exists()
 
 
+class TestOnboardErrorAttribution:
+    @pytest.mark.asyncio
+    async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path) -> None:
+        """When verify_claim populates vr.errors, each entry must be slug-prefixed.
+
+        Regression: pipeline.py used to do `result.errors.extend(vr.errors)`,
+        which dropped the template slug. Operators saw a list of failed slugs
+        and a separate list of errors with no mapping between them.
+        """
+        _setup_tmp_repo(tmp_path)
+
+        empty_research = TestModel(
+            custom_output_args={"urls": [], "reasoning": "No sources found."},
+            call_tools=[],
+        )
+
+        with (
+            research_agent.override(model=empty_research),
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config
+            )
+
+        assert result.status == "accepted"
+        assert len(result.claims_failed) > 0, "expected at least one failed template"
+        assert len(result.errors) > 0, "expected per-template errors"
+
+        for err in result.errors:
+            assert any(slug in err for slug in result.claims_failed), (
+                f"error {err!r} carries no slug from claims_failed={result.claims_failed}"
+            )
+            assert ":" in err, f"error {err!r} missing slug-prefix delimiter"
+
+
 class TestOnboardEntityRejection:
     @pytest.mark.asyncio
     async def test_rejected_writes_draft(self, tmp_path: Path) -> None:

@@ -734,7 +734,7 @@ async def onboard_entity(
             vr = await verify_claim(entity_name, claim_text, cfg, gate)
 
             if vr.errors:
-                result.errors.extend(vr.errors)
+                result.errors.extend(f"{slug}: {e}" for e in vr.errors)
 
             # Threshold-blocked branch: persist a placeholder claim file
             # with status='blocked' so the operator can see (and later
