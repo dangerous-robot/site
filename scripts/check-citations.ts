@@ -32,7 +32,7 @@ function collectMarkdownFiles(dir: string): string[] {
 const claimFiles = collectMarkdownFiles(CLAIMS_DIR);
 
 if (claimFiles.length === 0) {
-  console.log("No claim files found -- skipping citation check.");
+  console.log(`${CLAIMS_DIR}/ is empty -- skipping citation check.`);
   process.exit(0);
 }
 
