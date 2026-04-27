@@ -22,10 +22,10 @@ Four collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
-| `claims`    | custom `claims-with-audit` loader      | title, entity, category, verdict, confidence, as_of, sources, audit (sidecar) |
+| `claims`    | custom `claims-with-audit` loader      | title, entity, topics, verdict, confidence, as_of, sources, audit (sidecar) |
 | `sources`   | `glob()` from `research/sources`       | url, title, publisher, kind, summary, key_quotes         |
 | `entities`  | `glob()` from `research/entities`      | name, type (company/product/sector/topic), website, description |
-| `criteria` | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, category, core, notes |
+| `criteria` | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -71,7 +71,7 @@ All routes are statically generated at build time via `getStaticPaths()`.
 | `/companies`           | `src/pages/companies/index.astro`       | `entities` collection (company type)       |
 | `/products`            | `src/pages/products/index.astro`        | `entities` collection (product type)       |
 | `/topics`              | `src/pages/topics/index.astro`          | `entities` collection (topic type)         |
-| `/topics/[category]`   | `src/pages/topics/[category].astro`     | `claims` collection (filtered by category) |
+| `/topics/[topic]`      | `src/pages/topics/[topic].astro`        | `claims` collection (filtered by topic)    |
 | `/criteria`            | `src/pages/criteria/index.astro`        | `criteria` collection                      |
 | `/criteria/[slug]`     | `src/pages/criteria/[slug].astro`       | `criteria` collection                      |
 | `/faq`                 | `src/pages/faq/index.astro`             | Static content                             |

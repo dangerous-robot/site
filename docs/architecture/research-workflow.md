@@ -8,15 +8,7 @@ dangerousrobot.org is a research hub that publishes structured, citable fact-che
 
 ## Content Model
 
-Three entity types live under `research/`, each defined as a Zod schema in `src/content.config.ts` and enforced at build time by Astro Content Collections.
-
-| Entity | Location | Purpose |
-|--------|----------|---------|
-| **Entity** | `research/entities/{type}/{slug}.md` | A stable thing we make claims about (company, product, sector, topic) |
-| **Source** | `research/sources/{yyyy}/{slug}.md` | A citable reference -- cite once, reference from many claims |
-| **Claim** | `research/claims/{entity-slug}/{claim-id}.md` | An assertion with verdict, confidence, and linked sources |
-
-Claims reference sources by slug (e.g., `2025/fli-safety-index`), never by raw URL. This indirection allows one source to back multiple claims and keeps URLs centralized.
+Research content lives under `research/` as Markdown with YAML frontmatter, defined as Zod schemas in `src/content.config.ts` and enforced at build time. Three on-disk types -- **Entity**, **Source**, **Claim** -- plus reusable claim templates (criteria) in `research/templates.yaml`. Claims reference sources by slug (e.g., `2025/fli-safety-index`), never by raw URL, so one source can back many claims. Full schema and directory conventions: [content-model.md](content-model.md).
 
 ## Content Lifecycle
 
@@ -24,24 +16,28 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 
 1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
-3. **Claim** -- The Analyst and Auditor agents propose or update a claim file under `research/claims/{entity-slug}/`.
+3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The orchestrator halts the claim with `status: blocked` and a `blocked_reason` if fewer than two usable sources were obtained.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
 6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
 
+A separate operator command, `dr publish`, performs a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. Use it for backfills (e.g., a release-cut auto-publish); use `dr review --approve` for human-reviewed publication.
+
 ## Agent Roles
 
-Seven roles are defined in `AGENTS.md`. Several are now automated via PydanticAI agents in `pipeline/`.
+Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#agent-roles). The table below tracks current automation status; refer to AGENTS.md for what each role does.
 
-| Role | What it does | Current status |
-|------|-------------|----------------|
-| **Research Lead** | Orchestrates work from `QUEUE.md`. Creates sub-tasks and plans. Never edits claims directly. | Manual |
-| **Researcher** | Takes a claim text, returns relevant URLs for ingestion. | Automated -- PydanticAI agent in `pipeline/researcher/` |
-| **Ingestor** | Takes a URL, produces a source file. One URL in, one `sources/{yyyy}/{slug}.md` out. | Automated -- PydanticAI agent in `pipeline/ingestor/` |
-| **Analyst** | Proposes verdict changes with rationale, given a claim and its source files. | Automated -- PydanticAI agent in `pipeline/analyst/` |
-| **Auditor** | Reviews and refines analyst output before the claim file is written. | Automated -- PydanticAI agent in `pipeline/auditor/` |
-| **Citation Auditor** | Finds claims with zero sources, stale `as_of` dates, or broken URLs. Produces audit reports. | Partially automated, split across three tools (see below). Full auditing is a backlog item (see `docs/UNSCHEDULED.md`). |
-| **Page Builder** | Generates TS data files for downstream consumption by the TreadLightly site. | Not yet implemented. No LLM needed -- plain data transformation. Backlog item (see `docs/UNSCHEDULED.md`). |
+| Role | Current status |
+|------|----------------|
+| **Research Lead** | Manual |
+| **Orchestrator** | `pipeline/orchestrator/` (`pipeline.py`, `cli.py`, `persistence.py`, `checkpoints.py`) |
+| **Router** | Documented; implementation deferred via `docs/plans/triage-agent.md` |
+| **Researcher** | Automated -- `pipeline/researcher/` |
+| **Ingestor** | Automated -- `pipeline/ingestor/` |
+| **Analyst** | Automated -- `pipeline/analyst/` |
+| **Evaluator** | Automated -- `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) |
+| **Citation Auditor** | Partially automated, split across three tools (see below). Full auditing is a backlog item (`docs/UNSCHEDULED.md`). |
+| **Page Builder** | Not yet implemented. No LLM needed -- plain data transformation. Backlog item (`docs/UNSCHEDULED.md`). |
 
 ### Citation Auditor tools
 
@@ -51,9 +47,7 @@ The Citation Auditor responsibility is covered by three separate tools:
 |------|-------|
 | `scripts/check-citations.ts` | Broken source refs (claim `sources` slugs that do not resolve to a file). Runs in CI. |
 | `dr lint` | Missing required fields, orphaned claims, stale `next_recheck_due` dates. No LLM, no network. |
-| `dr reassess` | Verdict re-evaluation: re-runs the Auditor agent against current sources to flag claims whose published verdict may no longer hold. |
-
-Note: `dr reassess` was previously named `dr audit`; it was renamed because its scope (verdict re-evaluation) differs from the broader Citation Auditor role.
+| `dr reassess` | Verdict re-evaluation: re-runs the Evaluator agent against current sources to flag claims whose published verdict may no longer hold. |
 
 ## Content Rules
 
@@ -78,13 +72,14 @@ There is no automated scheduling for reviews today. The Citation Auditor role is
 
 ## Quality Gates
 
-PRs to `main` run a CI workflow (`.github/workflows/ci.yml`) with three checks:
+PRs to `main` run a CI workflow (`.github/workflows/ci.yml`) with four checks across two jobs:
 
 1. **Astro build** (`npm run build`) -- Validates all content against Zod schemas. A claim with a missing required field, invalid verdict value, or malformed date will fail the build.
-2. **Markdown lint** (`npm run lint:md`) -- Runs `markdownlint-cli2` against `research/**/*.md` (excluding `research/plans/`).
+2. **Markdown lint** (`npm run lint:md`) -- Runs `markdownlint-cli2` against `research/**/*.md`.
 3. **Citation integrity** (`npm run check:citations`) -- Verifies every source slug in a claim's `sources` array resolves to an existing file under `research/sources/`. Catches broken references before merge.
+4. **Content lint** (`dr lint --severity error`) -- Separate `lint-content` CI job that runs static content checks (no LLM, no network) and annotates errors on the PR. Backed by `pipeline/linter/`.
 
-All three must pass. The combined check is also available locally via `npm run check`.
+All four must pass. The first three are also available locally via `npm run check`; the fourth runs locally via `uv run dr lint`.
 
 ### What the gates do NOT currently check
 
@@ -97,22 +92,7 @@ These gaps are candidates for additional CI scripts or the Citation Auditor agen
 
 ## Claim Schema
 
-Key fields enforced by Zod at build time:
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `title` | string | Human-readable claim statement |
-| `entity` | string | Path like `companies/anthropic` |
-| `category` | enum | One of 8 categories (see `AGENTS.md`) |
-| `verdict` | enum | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
-| `confidence` | enum | `high`, `medium`, `low` |
-| `criteria_slug` | string | Optional. Links to the criterion template this claim was generated from |
-| `status` | enum | `draft`, `published`, `archived` (default: `draft`) |
-| `as_of` | date | When the verdict was last evaluated |
-| `sources` | string[] | Slugs referencing files under `research/sources/` |
-| `recheck_cadence_days` | number | Default 60 |
-| `next_recheck_due` | date | Optional. When this claim should next be reviewed |
-| `audit` | object | Optional. Pipeline audit sidecar data (see content-model.md) |
+Canonical schema lives in `src/content.config.ts` and is documented in [content-model.md § Claim](content-model.md#claim). Notable fields: `topics` (1-3 slugs), `verdict`, `confidence`, `status` (`draft` | `published` | `archived` | `blocked`), `phase`, `blocked_reason`, `as_of`, `sources`, `recheck_cadence_days`, `audit` (sidecar).
 
 ## Licensing
 

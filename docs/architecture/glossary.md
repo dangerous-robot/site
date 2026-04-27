@@ -23,8 +23,12 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 |---|---|---|
 | **Verdict** | Claim | Assessment: true, mostly-true, mixed, mostly-false, false, unverified, not-applicable |
 | **Confidence** | Claim | Certainty level: high, medium, low |
-| **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total) |
+| **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total). Field name is `topics` (renamed from singular `category` per `docs/plans/multi-topic.md`). |
+| **Takeaway** | Claim | Optional reader-facing one-liner (≤200 chars) rendered under the verdict badge. Operators add this by hand during review in v1. |
+| **Phase** | Claim | Optional pipeline-progress field, set by the Orchestrator while a claim is in flight; absent on terminal states. Enum: `researching`, `ingesting`, `analyzing`, `evaluating`. |
+| **blocked_reason** | Claim | Optional reason field paired with `status: blocked`. Enum: `insufficient_sources`, `terminal_fetch_error`. |
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index |
+| **source_type** | Source | Optional authority classification: `primary`, `secondary`, `tertiary`. Set by `pipeline/common/source_classification.py` during ingest. |
 | **as_of** | Claim | Date when verdict was last evaluated |
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
 | **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion template it was generated from |
@@ -52,10 +56,12 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Research Lead** | (human; no agent) | — |
 | **Orchestrator** | `pipeline/orchestrator/` | the `dr` CLI itself; entry point for every pipeline command |
 | **Router** | planned (`pipeline/router/`); deferred via [`triage-agent.md`](../plans/triage-agent.md) | — |
-| **Researcher** | `pipeline/researcher/` | invoked by `dr research`, `dr verify` |
+| **Researcher** | `pipeline/researcher/` | invoked by `dr research`, `dr verify`, `dr onboard` |
 | **Ingestor** | `pipeline/ingestor/` | invoked by `dr research`, `dr verify`, `dr onboard`; standalone via `dr ingest` |
-| **Analyst** | `pipeline/analyst/` | invoked by `dr research`, `dr verify` |
-| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr research`, `dr verify` |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr research`, `dr verify`, `dr onboard` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr research`, `dr verify`, `dr onboard`, `dr reassess` |
+| **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
+| (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording) |
 
 ## Model-tier discipline
 
@@ -77,17 +83,24 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 
 ## Workflow
 
-The workflow implements roles as runnable code. Lives in `pipeline/`.
+The workflow implements roles as runnable code under `pipeline/`. Per-agent package paths are in the [Role / agent / CLI cross-walk](#role--agent--cli-cross-walk) above; tasks are listed in [Agent tasks](#agent-tasks) below.
 
 | Term | Meaning |
 |---|---|
-| **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue. Implicit in `pipeline/orchestrator/`; named role documented (`pipeline/orchestrator/`) |
-| **Router** | Matches new sources to criteria/claims; small classification calls; threshold-trigger to blocked; stale flagging. Documented; implementation deferred (`pipeline/router/` planned) |
-| **Researcher agent** | Takes claim text, returns relevant URLs (`pipeline/researcher/`) |
-| **Ingestor agent** | Takes a URL, produces a source file (`pipeline/ingestor/`) |
-| **Analyst agent** | Takes sources + claim, produces verdict + narrative (`pipeline/analyst/`) |
-| **Evaluator agent** | Independent evaluation of the analyst's output (`pipeline/auditor/` in v1; directory rename to `pipeline/evaluator/` deferred to post-v1) |
-| **Pipeline** | The collective automation: agents + CLI + shared utilities |
+| **Pipeline** | The collective automation: agents + CLI + shared utilities (`pipeline/`) |
+
+## Pipeline mechanisms
+
+Implementation-level concepts that surface in operator workflows and audit artifacts.
+
+| Term | Meaning |
+|---|---|
+| **Audit sidecar** / `.audit.yaml` | Paired YAML file at the same path as a claim `.md`. Records the pipeline run (model, agents), sources consulted, analyst/evaluator verdicts, and human review state. Merged into the claim's `audit` field by the `claims-with-audit` content loader. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
+| **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
+| **Threshold gate** | Post-ingest check in the orchestrator: if fewer than two usable sources are available, the claim is halted with `status: blocked` and a `blocked_reason`, and the Analyst is not invoked. (`pipeline/orchestrator/pipeline.py`) |
+| **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
+| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
+| **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
 
 ## Agent tasks
 
@@ -113,16 +126,16 @@ Applies to criteria, entities, and sources.
 
 ## Lifecycle
 
-Claim states.
+Claim states. Schema source of truth: `src/content.config.ts` § claims (`status`, `phase`, `blocked_reason`).
 
-| State | Meaning | Where | Schema status |
+| State | Meaning | Where | Schema field |
 |---|---|---|---|
 | **queued** | Intake recorded, pipeline not yet run | `QUEUE.md` | (no schema field; `QUEUE.md` only) |
-| **in-progress** | Pipeline is working it; `phase` ∈ {researching, ingesting, analyzing, evaluating} | (transient) | (v1: schema only has draft / published / archived) |
-| **blocked** | Pipeline halted: insufficient sources (< 2) or terminal fetch error | `status: draft` + reason field | (v1: schema only has draft / published / archived) |
-| **drafted** | Pipeline produced a draft verdict; awaiting review | `status: draft` | (in schema) |
-| **published** | Operator approved | `status: published` | (in schema) |
-| **archived** | Retired | `status: archived` | (in schema) |
+| **in-progress** | Pipeline is working it | (transient frontmatter) | `phase` ∈ {researching, ingesting, analyzing, evaluating} |
+| **blocked** | Pipeline halted before Analyst: < 2 usable sources or terminal fetch error | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error} |
+| **draft** | Pipeline produced a draft verdict; awaiting review | `status: draft` | `status: draft` |
+| **published** | Operator approved | `status: published` | `status: published` |
+| **archived** | Retired | `status: archived` | `status: archived` |
 
 ## Lifecycle vocabulary
 
@@ -131,9 +144,20 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | Term | Meaning |
 |---|---|
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
-| **Ingest** | Fetching a URL, archiving it, producing a source file |
-| **Onboard** | Adding a new entity to the archive via `dr onboard`; see [onboarding.md](onboarding.md) |
-| **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` |
+| **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr ingest`. |
+| **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then loops `verify_claim` per applicable template. See [onboarding.md](onboarding.md) |
+| **Verify** | Run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim. CLI: `dr verify`. |
+| **Research** | Like verify, but writes outputs to disk (sources, claim file, audit sidecar). CLI: `dr research`. |
+| **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr reassess`. |
+| **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
+| **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). |
+| **Publish** | Bulk draft → published flip without recording an individual reviewer. CLI: `dr publish`. Sidecar gets `[auto-publish]` notes; resulting claims render as "Unreviewed" until a later `dr review` writes a reviewer in. |
+| **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` (manual today; no scheduler) |
+
+### Planned terms
+
+| Term | Meaning |
+|---|---|
 | **Submitted claim** | A claim proposed through public feedback (planned feature, pending public-participation work), pending review |
 
 ## Criterion vocabularies

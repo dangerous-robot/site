@@ -33,7 +33,7 @@ For each applicable template:
   [Researcher] -> find sources
   [Ingestor]   -> URLs into source files
   [Analyst]    -> verdict + narrative
-  [Auditor]    -> independent second opinion
+  [Evaluator]  -> independent assessment (open-loop)
   |
   v
 Onboard report (N claims created, M flagged for review)
@@ -46,7 +46,7 @@ Onboard report (N claims created, M flagged for review)
 | **Ingestor** | Creates entity file, screens templates for applicability | Light — one web search, homepage scan |
 | **Researcher** | Finds evidence for each applicable claim | Deep — multiple searches per claim |
 | **Analyst** | Renders verdict from evidence | Deep |
-| **Auditor** | Independent check on analyst's verdict | Deep — adversarial review |
+| **Evaluator** | Independent assessment of the analyst's verdict (open loop) | Deep — adversarial review (`pipeline/auditor/`) |
 
 The ingestor's screening is an LLM reasoning task, not deterministic filtering: deciding whether a template applies depends on understanding the entity (e.g. "does this product offer image generation?") and that understanding only becomes available after the light research step.
 
@@ -63,7 +63,7 @@ See `pipeline/orchestrator/checkpoints.py` for the handler interface.
 ## Template applicability
 
 - Templates are tagged `core: true` or `core: false` in `research/templates.yaml`. Core templates are screened automatically during onboard.
-- Non-core templates are available for manual or category-driven runs.
+- Non-core templates are available for manual or topic-driven runs.
 - Onboarding is per entity type: a company and its products are distinct `dr onboard` operations, each receiving the templates whose `entity_type` matches.
 
 The active template set lives in `research/templates.yaml`. Refer to that file for the current core list — it changes more often than this doc and is the source of truth.
@@ -72,9 +72,9 @@ The active template set lives in `research/templates.yaml`. Refer to that file f
 
 Companies and products onboard independently. The entity schema does not enforce a parent relationship. When onboarding a product, the ingestor notes the parent company in the entity description; if the parent entity does not yet exist, the ingestor flags it in the onboard report but does not create it automatically — the operator decides whether to onboard the company separately.
 
-## Category origin
+## Topic origin
 
-Each template carries a `category` (one of the eight slugs in [content-model.md](content-model.md)). That category is what initially populates a generated claim's frontmatter. Whether the analyst can later override it during verdict assessment is an open behavior question (see `docs/follow-up-2026-04-24.md`).
+Each template carries a `topics` array (1-3 slugs from the taxonomy in [content-model.md § Claim Topic Taxonomy](content-model.md#claim-topic-taxonomy)). Those topics are what initially populate a generated claim's frontmatter. Whether the analyst can later override them during verdict assessment is an open behavior question (see `docs/follow-up-2026-04-24.md`).
 
 ## File references
 

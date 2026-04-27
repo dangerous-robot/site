@@ -14,11 +14,13 @@ Sections:
 
 ## 1. Claim lifecycle
 
-Every claim moves through the same five states regardless of how it was initiated (`dr research`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
+Every claim moves through the same set of states regardless of how it was initiated (`dr research`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
 
 ```mermaid
 stateDiagram-v2
     [*] --> draft: dr research / dr onboard / manual edit
+    draft --> blocked: pipeline threshold gate (< 2 sources or terminal fetch error)
+    blocked --> archived: dr review --archive
     draft --> under_review: PR opened
     under_review --> draft: PR closed without merge
     under_review --> published: dr review --approve (status flip) + PR merged
@@ -31,9 +33,10 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `stale` is detected manually or by the Citation Auditor today (no scheduler yet).
+- `blocked` is written by the orchestrator when the post-ingest threshold gate fails. The frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`).
+- Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
-- `draft` to `published` and `published` to `archived` transitions are driven by `dr review --approve` and `dr review --archive`, which flip `status` in the `.md` frontmatter after writing the audit sidecar (sidecar-first ordering). Bare `dr review` records a human sign-off in the sidecar without changing status.
+- `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 
 ---
 
@@ -61,7 +64,7 @@ flowchart LR
 
 ## 3. Pipeline execution
 
-The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher.
+The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1.
 
 ```mermaid
 sequenceDiagram
@@ -69,7 +72,7 @@ sequenceDiagram
     participant Researcher
     participant Ingestor
     participant Analyst
-    participant Auditor
+    participant Evaluator
     actor Human
 
     Operator->>Researcher: claim text + entity
@@ -89,15 +92,19 @@ sequenceDiagram
     Operator->>Human: checkpoint review_sources
     Human-->>Operator: proceed or halt
 
-    Operator->>Analyst: sources
-    Analyst-->>Operator: AnalystOutput (verdict, narrative)
+    alt below_threshold (< 2 usable sources)
+        Operator-->>Operator: status=blocked + blocked_reason; return
+    else proceed
+        Operator->>Analyst: sources
+        Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
-    Operator->>Auditor: analyst output + sources
-    Auditor-->>Operator: ComparisonResult
+        Operator->>Evaluator: analyst output + sources
+        Evaluator-->>Operator: ComparisonResult (independent, open-loop)
 
-    alt needs_review
-        Operator->>Human: checkpoint review_disagreement
-        Human-->>Operator: accept or flag
+        alt needs_review
+            Operator->>Human: checkpoint review_disagreement
+            Human-->>Operator: accept or flag
+        end
     end
 
     Operator-->>Operator: VerificationResult
@@ -199,7 +206,12 @@ flowchart TD
         CI3["Citation integrity
         — scripts/check-citations.ts"]
         CI3 -->|fails| REWORK
-        CI3 -->|passes| REV
+        CI3 -->|passes| CI4
+        CI4["dr lint --severity error
+        — lint-content job
+        — annotates errors"]
+        CI4 -->|fails| REWORK
+        CI4 -->|passes| REV
         REV{Human PR review}
         REV -->|changes requested| REWORK
         REV -->|approved| MERGE([Merge to main])
@@ -214,4 +226,5 @@ flowchart TD
 
 Notes:
 
-- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim. Bare `dr review` records a sign-off without changing status. See [`docs/plans/audit-trail.md`](../plans/audit-trail.md) for the CLI contract.
+- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
+- A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in.

@@ -57,11 +57,14 @@ The Markdown body provides extended context about the entity.
 |-------|------|----------|-------|
 | `title` | string | yes | Human-readable claim statement |
 | `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
-| `category` | enum | yes | One of the taxonomy slugs (see below) |
+| `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
 | `confidence` | enum | yes | `high`, `medium`, `low` |
+| `takeaway` | string | no | Optional reader-facing one-liner; max 200 chars; rendered under the verdict badge |
 | `criteria_slug` | string | no | Optional back-reference to the criterion template this claim was generated from |
-| `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived` |
+| `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived`, `blocked` |
+| `phase` | enum | no | Pipeline progress while in flight; absent on terminal states. One of `researching`, `ingesting`, `analyzing`, `evaluating` |
+| `blocked_reason` | enum | no | Set together with `status: blocked`; one of `insufficient_sources`, `terminal_fetch_error` |
 | `as_of` | date | yes | Date the verdict was last evaluated |
 | `sources` | string[] | yes | List of source IDs (e.g. `2025/fli-safety-index`) |
 | `recheck_cadence_days` | number | no | Days between reviews; defaults to 60 |
@@ -104,8 +107,8 @@ The `audit` object has the shape:
 | `audit.auditor_verdict` | string | Verdict from the Auditor agent |
 | `audit.analyst_confidence` | string | Confidence from the Analyst agent |
 | `audit.auditor_confidence` | string | Confidence from the Auditor agent |
-| `audit.verdict_agrees` | boolean | Whether analyst and auditor verdicts agreed |
-| `audit.confidence_agrees` | boolean | Whether analyst and auditor confidence levels agreed |
+| `audit.verdict_agrees` | boolean | Whether the analyst and evaluator verdicts agreed |
+| `audit.confidence_agrees` | boolean | Whether the analyst and evaluator confidence levels agreed |
 | `audit.needs_review` | boolean | Whether human review is flagged |
 | `human_review.reviewed_at` | date or null | When a human reviewed |
 | `human_review.reviewer` | string or null | Reviewer identity |
@@ -113,6 +116,8 @@ The `audit` object has the shape:
 | `human_review.pr_url` | URL or null | PR where the review happened |
 
 Sidecar files are optional. Claims without a sidecar have no `audit` field.
+
+The Evaluator role is implemented in `pipeline/auditor/`; sidecar field names retain the `auditor_` prefix in v1 and will be renamed when the package directory is renamed (post-v1).
 
 ### Criterion
 
@@ -123,7 +128,7 @@ Criteria are loaded from a single YAML file (`research/templates.yaml`), not via
 | `slug` | string | yes | Unique identifier |
 | `text` | string | yes | The claim template text |
 | `entity_type` | enum | yes | `company` or `product` |
-| `category` | enum | yes | One of the 8 claim category slugs |
+| `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy)) |
 | `core` | boolean | yes (default: false) | Whether this is a core/required criterion |
 | `notes` | string | no | Editorial notes |
 | `vocabulary` | map | no | Entity-type-specific vocabulary substitutions |
@@ -144,7 +149,7 @@ Entity  <----  Claim  ---->  Source(s)
 
 Claims never contain raw URLs for evidence. All citations go through source files so that metadata, archive links, and quotes are maintained in a single place.
 
-## Claim Category Taxonomy
+## Claim Topic Taxonomy
 
 | Slug | Description |
 |------|-------------|
@@ -175,7 +180,8 @@ description: AI safety company and developer of the Claude family of large langu
 ---
 title: No AI company scores above D on existential safety
 entity: companies/anthropic
-category: ai-safety
+topics:
+  - ai-safety
 verdict: "true"
 confidence: high
 as_of: 2026-04-18

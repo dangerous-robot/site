@@ -53,7 +53,7 @@ The recheck loop is described architecturally but has no operational owner. With
 
 **Where**: `pipeline/orchestrator/pipeline.py`
 
-`verify_claim()`, `research_claim()`, and the per-template loop in `onboard_entity()` implement the same four-step pipeline (researcher, ingestor, checkpoint, analyst, auditor) with small variations. The primary variation is whether files are written to disk.
+`verify_claim()`, `research_claim()`, and the per-template loop in `onboard_entity()` implement the same four-step pipeline (researcher, ingestor, checkpoint, analyst, evaluator) with small variations. The primary variation is whether files are written to disk.
 
 A shared pipeline core with a `persist: bool` flag (or persistence callback) would reduce duplication. The risk is that `dr verify` (no writes, safe for dry-run use) and `dr research` (file-writing) would share a code path where a single conditional separates the two behaviors. A bug in the conditional could cause `dr verify` to write files unexpectedly.
 
