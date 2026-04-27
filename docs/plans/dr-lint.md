@@ -48,6 +48,7 @@ Runs fast, file-level checks on research content — no LLM, no network. Reads Y
 | `stale-recheck` | info | `next_recheck_due` is in the past |
 | `future-as-of` | info | Claim `as_of` date is in the future — likely a paste error |
 | `entity-type-dir-mismatch` | warning | Entity file `type:` field does not match its directory (e.g., `type: company` in `research/entities/products/`) |
+| `published-without-review` | error | A claim with `status: published` either has no `.audit.yaml` sidecar next to it, or its sidecar's `human_review.reviewed_at` is null. Operator runs `dr review --approve <claim>` to record sign-off. The check is only active for `published` claims; `draft`, `archived`, and `blocked` are not gated. |
 
 `standard_slug` is the canonical name today (per `content.config.ts`). The roadmap plans to rename it to `criteria_slug` as part of the Standards→Criteria rename before v0.1.0. Until that rename ships, `standard_slug` is valid and `criteria_slug` is unknown; after the rename, the polarity of `legacy-field-name` flips. The linter treats absence of `standard_slug` as `info`, not `error`. A present-but-broken value (not matched in `templates.yaml`) is `error`.
 

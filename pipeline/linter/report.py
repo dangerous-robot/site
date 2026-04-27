@@ -15,17 +15,20 @@ def _filter_by_severity(issues: list[LintIssue], min_severity: str) -> list[Lint
     return [i for i in issues if SEVERITY_ORDER.get(i.severity, 2) <= threshold]
 
 
-def format_text_report(issues: list[LintIssue], min_severity: str = "info") -> str:
+def format_text_report(
+    issues: list[LintIssue],
+    files_checked: int,
+    min_severity: str = "info",
+) -> str:
     filtered = _filter_by_severity(issues, min_severity)
     errors = [i for i in filtered if i.severity == "error"]
     warnings = [i for i in filtered if i.severity == "warning"]
     infos = [i for i in filtered if i.severity == "info"]
 
-    all_paths: set[str] = {i.path for i in filtered}
     lines = [
         "dr lint — dangerousrobot.org content linter",
         "=" * 60,
-        f"  {len(all_paths)} files checked  |  "
+        f"  {files_checked} files checked  |  "
         f"{len(errors)} errors  |  {len(warnings)} warnings  |  {len(infos)} info",
     ]
 

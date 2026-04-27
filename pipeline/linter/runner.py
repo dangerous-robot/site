@@ -20,6 +20,7 @@ from .checks import (
     check_missing_required_fields,
     check_orphaned_claims,
     check_placeholder_website,
+    check_published_review_signoff,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
 )
@@ -30,6 +31,16 @@ def _read_frontmatter(path: Path) -> dict[str, Any]:
     try:
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         return fm
+    except Exception:
+        return {}
+
+
+def _read_sidecar(claim_path: Path) -> dict[str, Any] | None:
+    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+    if not sidecar_path.exists():
+        return None
+    try:
+        return yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
     except Exception:
         return {}
 
@@ -69,15 +80,17 @@ def run_all_checks(
     repo_root: Path,
     entity_filter: str | None = None,
     today: datetime.date | None = None,
-) -> list[LintIssue]:
+) -> tuple[list[LintIssue], int]:
     if today is None:
         today = datetime.date.today()
 
     claim_files, entity_files, source_files = collect_all_paths(repo_root, entity_filter)
+    files_checked = len(claim_files) + len(entity_files) + len(source_files)
     template_slugs = load_templates(repo_root)
 
     claim_fms = {str(p): _read_frontmatter(p) for p in claim_files}
     entity_fms = {str(p): _read_frontmatter(p) for p in entity_files}
+    claim_sidecars = {str(p): _read_sidecar(p) for p in claim_files}
 
     # Build entity index: "companies/ecosia" style refs
     entity_index: set[str] = set()
@@ -106,5 +119,6 @@ def run_all_checks(
     issues += check_stale_recheck(claim_files, claim_fms, today)
     issues += check_future_as_of(claim_files, claim_fms, today)
     issues += check_entity_type_dir_mismatch(entity_files, entity_fms)
+    issues += check_published_review_signoff(claim_files, claim_fms, claim_sidecars)
 
-    return issues
+    return issues, files_checked

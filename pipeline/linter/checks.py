@@ -67,6 +67,38 @@ def check_missing_required_fields(
     return issues
 
 
+def check_published_review_signoff(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    claim_sidecars: dict[str, dict[str, Any] | None],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if fm.get("status") != "published":
+            continue
+        sidecar = claim_sidecars.get(str(path))
+        if sidecar is None:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="published-without-review",
+                severity="error",
+                message="published claim has no audit sidecar; reviewer sign-off is missing",
+                hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
+            ))
+            continue
+        review = sidecar.get("human_review") or {}
+        if not review.get("reviewed_at"):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="published-without-review",
+                severity="error",
+                message="published claim's audit sidecar has no `human_review.reviewed_at`",
+                hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
+            ))
+    return issues
+
+
 def check_empty_required_strings(
     claim_files: list[Path],
     claim_frontmatters: dict[str, dict[str, Any]],
