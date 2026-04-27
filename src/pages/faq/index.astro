@@ -145,6 +145,34 @@ import Base from '../../layouts/Base.astro';
     </details>
 
     <details>
+      <summary>How does work enter this site?</summary>
+      <div class="answer">
+        <p>Six channels can put new research in the queue. The first four are operator-driven; the last two are public submission paths.</p>
+        <ol>
+          <li>
+            <strong>A new criterion.</strong> A reusable claim template is added to the template library. The system fans out a draft claim for every entity the criterion applies to.
+          </li>
+          <li>
+            <strong>A new company or product.</strong> An operator onboards an entity. The system fans out a draft claim across every active criterion.
+          </li>
+          <li>
+            <strong>A new source.</strong> An operator adds a citable reference. The system matches it to existing criteria (queuing new claim work) or to existing claims (queuing a reassessment).
+          </li>
+          <li>
+            <strong>A topic or URL drop.</strong> An operator adds free-form work to the queue file for triage and routing.
+          </li>
+          <li>
+            <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. An operator reviews and ingests if accepted.
+          </li>
+          <li>
+            <strong>A public claim request.</strong> Planned, not yet live. Anyone will be able to propose a claim worth investigating; an operator triages.
+          </li>
+        </ol>
+        <p>None of these channels publish anything directly. Every claim goes through the methodology pipeline above before it appears on the site.</p>
+      </div>
+    </details>
+
+    <details>
       <summary>What types of sources are used?</summary>
       <div class="answer">
         <p>Sources are classified into three tiers:</p>
