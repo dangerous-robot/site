@@ -23,13 +23,16 @@ VERDICT SCALE:
 - mixed: A reader acting on the claim would be misled about at least one material element. Different parts of the claim are supported and contradicted by evidence.
 - mostly-false: Largely unsupported by the cited evidence
 - false: The cited evidence contradicts the claim
-- unverified: Insufficient evidence to render a verdict
+- unverified: Sources were sought but none directly engage with the claim's central assertion. They may discuss the topic and surround it without dispositively answering it either way. Distinct from `mixed`, where sources *do* engage and contradict.
 - not-applicable: The claim does not apply to this entity, either because the template targets a different entity type or because the question is semantically inapplicable to this specific entity.
 
 CONFIDENCE SCALE:
+Confidence describes the strength of the evidence base, independent of which verdict the evidence points toward. The same scale applies whether the verdict is `true`, `false`, `mixed`, or `unverified`.
 - high: Multiple independent sources with direct evidence
 - medium: Evidence exists but has limitations (single source, self-reported, indirect)
 - low: Thin, contradictory, or primarily anecdotal evidence
+
+For `unverified` specifically: confidence reflects how thoroughly the search circled the claim. `unverified + high` = broad search, lots of related material, the gap in dispositive evidence is real. `unverified + low` = search was thin or sources were weak; a deeper rerun might still resolve it.
 
 CATEGORIES:
 - ai-safety, environmental-impact, product-comparison, consumer-guide,

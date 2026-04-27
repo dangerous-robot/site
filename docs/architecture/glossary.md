@@ -40,8 +40,26 @@ Operational rules for picking a verdict. Values match the enum in `src/content.c
 | **mixed** | A reader acting on the claim would be misled about at least one material element. Different parts of the claim are supported and contradicted by evidence. |
 | **mostly-false** | The claim is misleading or wrong in its main thrust, though some narrow element is accurate. |
 | **false** | Cited sources directly contradict the claim; no supporting evidence found. |
-| **unverified** | Sources were sought but none are sufficient to judge the claim in either direction. Distinct from "no sources cited," which is a lint error rather than a verdict. |
+| **unverified** | Sources were sought but none directly **engage with** the claim's central assertion — they may circle the topic and surround it without dispositively answering it either way. Distinct from `mixed`, where sources *do* engage and contradict each other. Also distinct from "no sources cited," which is a lint error rather than a verdict. |
 | **not-applicable** | The claim does not apply to this entity, either because the template targets a different entity type or because the question is semantically inapplicable to this specific entity. |
+
+## Role / agent / CLI cross-walk
+
+The same work is described by three vocabularies: **role** (what should happen, agnostic of who does it), **pipeline agent** (the runnable code that fills the role), and **CLI command** (the operator surface that triggers it). This single table maps all three for quick reference; the detailed responsibility/task tables follow below.
+
+| Role | Pipeline agent | CLI surface |
+|---|---|---|
+| **Research Lead** | (human; no agent) | — |
+| **Orchestrator** | `pipeline/orchestrator/` | the `dr` CLI itself; entry point for every pipeline command |
+| **Router** | planned (`pipeline/router/`); deferred via [`triage-agent.md`](../plans/triage-agent.md) | — |
+| **Researcher** | `pipeline/researcher/` | invoked by `dr research`, `dr verify` |
+| **Ingestor** | `pipeline/ingestor/` | invoked by `dr research`, `dr verify`, `dr onboard`; standalone via `dr ingest` |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr research`, `dr verify` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr research`, `dr verify` |
+
+## Model-tier discipline
+
+Agents default to the smallest model class that can defensibly handle the task; larger models are reserved for tasks that genuinely require them. Canonical statement: [`AGENTS.md` § How the system works](../../AGENTS.md). Each `.audit.yaml` sidecar records the per-agent model used in `models_used`, so the lineage of a published verdict is auditable. The concrete enforcement mechanism (instructions-only vs. config-level caps) is open — see Q4 in [`pre-launch-questions.md`](../pre-launch-questions.md).
 
 ## Roles
 
