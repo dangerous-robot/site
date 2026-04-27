@@ -63,8 +63,9 @@ const {
   </head>
   <body>
     <div class="alpha-banner" role="status">
-      <span class="alpha-tag">ALPHA</span>
-      <span>This site is in active development; content and structure may change. See <a href="/faq#methodology">methodology</a>.</span>
+      <span class="alpha-tag">PRE-RELEASE ALPHA</span>
+      <span>This site is in active development; content and structure may change.</span>
+      <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">Fork me on GitHub</a>
     </div>
     {chrome === 'standard' && (
       <nav class="site-nav">
@@ -108,12 +109,17 @@ const {
     <footer class="site-footer">
       <p>
         Dangerous Robot is a research project sponsored by <a href="https://treadlightly.ai">TreadLightly AI</a>
+      </p>
+      <p>
+        <a href="/values">Values</a>
         &nbsp;·&nbsp;
         <a href="/faq#methodology">Methodology</a>
         &nbsp;·&nbsp;
         <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">GitHub</a>
         &nbsp;·&nbsp;
         <a href="/credits">Credits</a>
+        &nbsp;·&nbsp;
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>
       </p>
     </footer>
 
@@ -133,12 +139,16 @@ const {
         gap: var(--space-sm);
         justify-content: center;
         align-items: baseline;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        overflow: hidden;
       }
 
       .alpha-tag {
         font-weight: 700;
         letter-spacing: 0.18em;
+        margin-inline-end: var(--space-xs);
+        flex-shrink: 0;
       }
 
       .alpha-banner a {
@@ -148,6 +158,13 @@ const {
 
       .alpha-banner a:hover {
         text-decoration: none;
+      }
+
+      @media (max-width: 880px) {
+        .alpha-banner > span:not(.alpha-tag),
+        .alpha-banner > a {
+          display: none;
+        }
       }
 
       .site-nav {
