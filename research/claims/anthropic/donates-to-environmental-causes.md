@@ -4,6 +4,7 @@ entity: companies/anthropic
 topics: [environmental-impact]
 verdict: unverified
 confidence: low
+criteria_slug: donates-to-environmental-causes
 status: blocked
 blocked_reason: insufficient_sources
 as_of: '2026-04-26'

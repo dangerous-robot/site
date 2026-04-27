@@ -121,12 +121,19 @@ def _write_claim_file(
     force: bool = False,
     status: str = "draft",
     blocked_reason: BlockedReason | None = None,
+    criteria_slug: str | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
     Refuses to overwrite an existing claim file unless ``force=True``.
     Overwriting silently would clobber operator edits and any
     ``status: published`` flip made by ``dr review --approve``.
+
+    ``claim_slug`` becomes the filename stem; ``criteria_slug`` is the
+    optional template back-reference written into frontmatter. Onboard
+    passes the same value for both (filename derives from the template
+    slug); the standalone verify path passes only ``claim_slug`` (a
+    slugified verdict title with no template association).
 
     Pass ``status='blocked'`` plus a ``blocked_reason`` for the
     threshold-blocked variant; the caller supplies a placeholder
@@ -151,6 +158,7 @@ def _write_claim_file(
         "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
+        "criteria_slug": criteria_slug,
         "status": status,
         "blocked_reason": blocked_reason,
         "as_of": datetime.date.today(),
