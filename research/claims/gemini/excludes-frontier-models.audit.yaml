@@ -1,0 +1,39 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-26T23:19:33.084876+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2025/gemini-3-flash-preview
+  url: https://openrouter.ai/google/gemini-3-flash-preview
+  title: Gemini 3 Flash Preview - API Pricing & Providers
+  ingested: true
+- id: 2025/google-gemini-3-flash
+  url: https://thenewstack.io/googles-new-gemini-3-flash-rivals-frontier-models-at-a-fraction-of-the-cost/
+  title: Google's New Gemini 3 Flash Rivals Frontier Models at a Fraction of the Cost
+  ingested: true
+- id: 2026/google-favors-general-purpose-gemini-models-over-cybersecurity-specific-ai
+  url: https://www.infosecurity-magazine.com/news/google-gemini-over-cyber-specific/
+  title: Google Favors General‑Purpose Gemini Models Over Cybersecurity‑Specific AI
+  ingested: true
+- id: 2026/gemini-3
+  url: https://deepmind.google/models/gemini/
+  title: Gemini 3
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

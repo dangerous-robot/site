@@ -1,0 +1,31 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-26T23:18:46.457309+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2025/measuring-environmental-impact-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference/
+  title: Measuring the environmental impact of AI inference
+  ingested: true
+- id: 2025/google-gemini-ai-energy-use
+  url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy/
+  title: In a first, Google has released data on how much energy an AI prompt uses
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: low
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null
