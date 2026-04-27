@@ -17,14 +17,14 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 
 | ID | Item | Files |
 |---|---|---|
-| S1 | ALPHA banner sitewide | `src/layouts/Base.astro` |
+| S1 | ALPHA banner sitewide | **Done (2026-04-26).** Top-of-body banner in `src/layouts/Base.astro` renders on every chrome variant; links to `/faq#methodology`. Uses `--color-accent` on `--color-surface` for theme/contrast compatibility. |
 | S2 | Curate launch claim set to ~20 (random selection); homepage and list pages already filter to `status: published` | content; verify filtering on `src/pages/index.astro`, `src/pages/claims/index.astro` |
 | S3 | COI disclosure on `/methodology` and `companies/treadlightlyai` (also on v1.0.0-roadmap §7) | methodology page, `research/entities/companies/treadlightlyai.md` |
 | S4 | Create `/values` editorial page (uncited; cross-link to relevant claim categories per Q9). Note: page should include the public design principle paragraph as one of its core values entries (per [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) Canonical paragraphs → Design principle (public, for `/values`)). | new `src/pages/values.astro` |
 | S5 | Surface a consolidated pipeline diagram inside FAQ accordion or on `/methodology` | `src/pages/faq/index.astro` or `src/pages/methodology.astro`. Source: `docs/architecture/research-flow.md` (5 Mermaid diagrams already exist; pick one) |
-| S6 | Audit sidecar: lock `models_used` field in schema and display on claim page | `src/content.config.ts`, `src/pages/claims/[...slug].astro`, `pipeline/orchestrator/persistence.py`. **Timing critical**: no `.audit.yaml` files exist yet (per roadmap §10). Lock the schema before the first sidecar is written. |
-| S7 | Inputs taxonomy block on FAQ ("how does work enter this site?") listing the six intake types | `src/pages/faq/index.astro` |
-| S8 | Reader-takeaway line under verdict badge (a single sentence: "what this means for the reader") | `src/pages/claims/[...slug].astro` + new optional frontmatter field, e.g., `takeaway:` |
+| S6 | Audit sidecar: lock `models_used` field in schema and display on claim page | **Done (2026-04-26).** `models_used: dict[str, str]` written by `_write_audit_sidecar` (`pipeline/orchestrator/persistence.py`); optional in Astro schema (`src/content.config.ts`) so the 12 in-flight sidecars validate without it; rendered as a "Models used" subsection on the claim audit-trail (`src/pages/claims/[...slug].astro`). Optional now, will be promoted to required once all sidecars carry it. |
+| S7 | Inputs taxonomy block on FAQ ("how does work enter this site?") listing the six intake types | **Done (2026-04-26).** New "How does work enter this site?" accordion in `src/pages/faq/index.astro`, six items: criterion / company-or-product / source / topic-or-URL drop / public source submission / public claim request (planned). Operator should review the list — the canonical "six" wasn't enumerated in the source plan, so this draws from the v1 workflow paragraph in [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) plus the public submission paths. |
+| S8 | Reader-takeaway line under verdict badge (a single sentence: "what this means for the reader") | **Done (2026-04-26).** Optional `takeaway: z.string().max(200).optional()` added to claim schema in `src/content.config.ts`; rendered as `<p class="takeaway">` under the meta row in `src/pages/claims/[...slug].astro` with a left-accent rule. Pipeline-side generation deferred — operators add the line by hand during review. |
 | S9 | Footer links to `/values` and `/methodology` | `src/layouts/Base.astro` |
 
 ### Glossary, AGENTS.md, vocabulary, removals
@@ -33,9 +33,9 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 |---|---|---|
 | P1 | Rename "Citation Auditor" → "citation check" (the CI integrity check). Resolves the three-way "audit" overload (audit sidecar / Citation Auditor / Auditor agent). | `AGENTS.md`, `docs/architecture/glossary.md`, `scripts/check-citations.ts` (script name already aligns), any plan/doc references |
 | P2 | Rename `dr research` → `dr verify-claim`. Footgun: the command runs the entire pipeline, not just the Researcher role. | `pipeline/orchestrator/cli.py`, `AGENTS.md`, `docs/architecture/research-flow.md`, `docs/architecture/research-workflow.md`, smoke tests |
-| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | `AGENTS.md`, `docs/architecture/glossary.md`. Companion to S6 display. |
+| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | **Done (2026-04-26).** Canonical statement at [`AGENTS.md` § How the system works](../../AGENTS.md) (line 17, "Small decisions, small models"). New "Model-tier discipline" subsection in `docs/architecture/glossary.md` cross-links to it and to the `models_used` audit field. Concrete tiers/enforcement deferred to Q4 in [`pre-launch-questions.md`](../pre-launch-questions.md). |
 | P5 | Roadmap cleanup: visibly separate hard launch blockers from nice-to-haves | `docs/v1.0.0-roadmap.md` |
-| P6 | Glossary: add "Vocabulary layers" reader-facing summary mapping role ↔ pipeline agent ↔ CLI command | `docs/architecture/glossary.md` |
+| P6 | Glossary: add "Vocabulary layers" reader-facing summary mapping role ↔ pipeline agent ↔ CLI command | **Done (2026-04-26).** New "Role / agent / CLI cross-walk" subsection in `docs/architecture/glossary.md`, placed above Roles, gives a single 7-row table covering all three vocabularies. (Heading renamed from "Vocabulary layers" to avoid collision with the existing meta-table further down.) |
 | ST4 | Remove "Page Builder" role from everywhere (operator: causing confusion) | `AGENTS.md` (role table), `docs/architecture/glossary.md` (Roles table), any other `rg "Page Builder"` hits |
 | ST5 | Define what `high` / `medium` / `low` confidence concretely mean; render rubric on `/methodology` | `src/pages/methodology.astro`; reference from claim pages |
 
