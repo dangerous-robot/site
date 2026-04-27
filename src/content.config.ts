@@ -35,6 +35,9 @@ const auditSchema = z.object({
     model: z.string(),
     agents: z.array(z.string()),
   }),
+  // Per-agent model lineage. Optional during the v1 transition: existing sidecars
+  // written before this field landed validate without it; new sidecars always carry it.
+  models_used: z.record(z.string(), z.string()).optional(),
   sources_consulted: z.array(z.object({
     id: z.string(),
     url: z.string().url(),
@@ -156,6 +159,10 @@ const claims = defineCollection({
       'not-applicable',
     ]),
     confidence: z.enum(['high', 'medium', 'low']),
+    // One-sentence reader-facing takeaway rendered under the verdict badge on the
+    // claim page. Optional during v1; the analyst pipeline doesn't yet generate it,
+    // so operators add it by hand during review. Capped to keep it scannable.
+    takeaway: z.string().max(200).optional(),
     criteria_slug: z.string().optional(),
     status: z.enum(['draft', 'published', 'archived', 'blocked']).default('draft'),
     // Pipeline phase advanced by the Orchestrator while a claim is in

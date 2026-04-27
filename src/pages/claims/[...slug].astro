@@ -89,6 +89,9 @@ const isReviewed = !!(audit?.human_review.reviewer);
           {isReviewed ? "✓ Reviewed" : "Unreviewed"}
         </span>
       </div>
+      {claim.data.takeaway && (
+        <p class="takeaway">{claim.data.takeaway}</p>
+      )}
     </header>
 
     <section class="rationale">
@@ -133,6 +136,17 @@ const isReviewed = !!(audit?.human_review.reviewer);
               })}
             </ul>
           </section>
+
+          {audit.models_used && Object.keys(audit.models_used).length > 0 && (
+            <section class="audit-section">
+              <h3>Models used</h3>
+              <ul class="audit-models-list">
+                {Object.entries(audit.models_used).map(([agent, m]) => (
+                  <li><code>{agent}</code>: <code>{m}</code></li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <section class="audit-section">
             <h3>Verdict check</h3>
@@ -222,6 +236,14 @@ const isReviewed = !!(audit?.human_review.reviewer);
   }
 
   .confidence, .as-of { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+
+  .takeaway {
+    font-size: var(--font-size-md);
+    color: var(--color-text);
+    border-left: 3px solid var(--color-accent);
+    padding-left: var(--space-sm);
+    margin: var(--space-sm) 0 var(--space-md);
+  }
 
   .review-state { font-size: var(--font-size-sm); }
   .review-state.reviewed { color: var(--color-text-muted); }

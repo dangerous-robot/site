@@ -239,6 +239,8 @@ def _write_audit_sidecar(
         except yaml.YAMLError as exc:
             logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
 
+    models_used = {agent: model for agent in agents_run}
+
     sidecar_data = {
         "schema_version": 1,
         "pipeline_run": {
@@ -246,6 +248,7 @@ def _write_audit_sidecar(
             "model": model,
             "agents": agents_run,
         },
+        "models_used": models_used,
         "sources_consulted": sources_consulted,
         "audit": audit_block,
         "human_review": human_review,
