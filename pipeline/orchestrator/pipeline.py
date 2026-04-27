@@ -723,7 +723,12 @@ async def onboard_entity(
         template = get_template(all_templates, slug)
         if not template:
             click.echo(f"[{idx}/{total}] ERROR: template not found: {slug}", err=True)
-            result.errors.append(f"Template not found: {slug}")
+            # Invariant (also enforced at lines 737, 835): every entry in
+            # result.claims_failed must have at least one matching entry in
+            # result.errors of the form f"{slug}: <reason>". The CLI renders
+            # them as a unified "Failed:" block; an unattributed failure
+            # would silently disappear from operator output.
+            result.errors.append(f"{slug}: template not found")
             result.claims_failed.append(slug)
             continue
 
@@ -832,7 +837,7 @@ async def onboard_entity(
         except Exception as exc:
             click.echo(f"[{idx}/{total}] FAILED: {slug}: {exc}", err=True)
             logger.error("Template %s failed: %s", slug, exc)
-            result.errors.append(f"Template {slug}: {exc}")
+            result.errors.append(f"{slug}: {exc}")
             result.claims_failed.append(slug)
 
     return result

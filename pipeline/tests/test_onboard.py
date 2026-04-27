@@ -258,11 +258,18 @@ class TestOnboardEntitySeedUrl:
 class TestOnboardErrorAttribution:
     @pytest.mark.asyncio
     async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path) -> None:
-        """When verify_claim populates vr.errors, each entry must be slug-prefixed.
+        """Every result.errors entry must start with `<slug>: ` so the CLI can
+        render a single unified "Failed:" block instead of two parallel lists.
 
-        Regression: pipeline.py used to do `result.errors.extend(vr.errors)`,
-        which dropped the template slug. Operators saw a list of failed slugs
-        and a separate list of errors with no mapping between them.
+        Regression history:
+        - First bug: pipeline.py did `result.errors.extend(vr.errors)` with no
+          slug context, so operators saw "Failed: <slug>" + "Errors: <reason>"
+          with no mapping between them.
+        - Second bug: even after slug-prefixing, the CLI rendered two parallel
+          blocks ("Failed:" + "Errors:") that mostly duplicated each other,
+          and the three error-population sites used three different formats.
+          This test locks the canonical format: `f"{slug}: {reason}"` at every
+          site (lines 726, 737, 835 of pipeline.py).
         """
         _setup_tmp_repo(tmp_path)
 
@@ -292,13 +299,29 @@ class TestOnboardErrorAttribution:
 
         assert result.status == "accepted"
         assert len(result.claims_failed) > 0, "expected at least one failed template"
-        assert len(result.errors) > 0, "expected per-template errors"
+        assert len(result.errors) >= len(result.claims_failed), (
+            "invariant: every claims_failed entry must produce at least one "
+            f"errors entry; got {len(result.claims_failed)} failures and "
+            f"{len(result.errors)} errors"
+        )
 
+        failed_set = set(result.claims_failed)
+        attributed_slugs: set[str] = set()
         for err in result.errors:
-            assert any(slug in err for slug in result.claims_failed), (
-                f"error {err!r} carries no slug from claims_failed={result.claims_failed}"
+            slug, sep, _reason = err.partition(": ")
+            assert sep == ": ", (
+                f"error {err!r} not in canonical `<slug>: <reason>` format"
             )
-            assert ":" in err, f"error {err!r} missing slug-prefix delimiter"
+            assert slug in failed_set, (
+                f"error slug {slug!r} not in claims_failed={result.claims_failed}"
+            )
+            attributed_slugs.add(slug)
+
+        unattributed = failed_set - attributed_slugs
+        assert not unattributed, (
+            f"failures with no error message would silently disappear from "
+            f"the unified 'Failed:' rendering: {sorted(unattributed)}"
+        )
 
 
 class TestOnboardEntityRejection:

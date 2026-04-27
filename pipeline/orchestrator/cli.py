@@ -521,21 +521,19 @@ def onboard(
             for path in result.claims_created:
                 click.echo(f"  + {path}")
 
-        if result.claims_failed:
-            click.echo("")
-            click.echo("Failed:")
-            for slug in result.claims_failed:
-                click.echo(f"  ! {slug}")
-
     if result.templates_excluded:
         click.echo("")
         click.echo("Excluded templates:")
         for slug, reason in result.templates_excluded:
             click.echo(f"  - {slug}: {reason}")
 
+    # Render failures and errors as a single "Failed:" block. Every entry in
+    # result.errors is slug-prefixed (invariant enforced in pipeline.py); the
+    # bare result.claims_failed list is redundant for rendering and only used
+    # for the "Claims failed: N" count line above.
     if result.errors:
         click.echo("")
-        click.echo("Errors:")
+        click.echo("Failed:")
         for err in result.errors:
             click.echo(f"  ! {err}")
 
@@ -746,12 +744,12 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
     from common.content_loader import resolve_repo_root as _resolve_root
 
     resolved_root = Path(repo_root) if repo_root else _resolve_root()
-    issues = run_all_checks(repo_root=resolved_root, entity_filter=entity)
+    issues, files_checked = run_all_checks(repo_root=resolved_root, entity_filter=entity)
 
     if output_format == "json":
         click.echo(format_json_report(issues, min_severity=severity))
     else:
-        click.echo(format_text_report(issues, min_severity=severity))
+        click.echo(format_text_report(issues, files_checked, min_severity=severity))
 
     errors = [i for i in issues if i.severity == "error"]
     if errors:
