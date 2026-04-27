@@ -26,6 +26,18 @@ The evaluation found GreenPT cleaner on tool-loop tests (3-of-5 models pass T5 v
 
 ## Part 1 -- v1 release: switch to Infomaniak `gpt-oss-120b`
 
+### Status: ✅ Complete (2026-04-26)
+
+Verified via `dr onboard anthropic` against `infomaniak:openai/gpt-oss-120b`. All four agents (`researcher`, `analyst`, `auditor`, `ingestor`) executed in sequence; the run terminated with claim files written under `research/claims/anthropic/` (some `status: published`, some `status: blocked` for threshold-insufficient sources). Acceptance bar (§Acceptance bar) met and exceeded — `dr onboard` runs the per-template loop, which is `verify_claim` × N rather than the single `dr verify` the bar required.
+
+Part 2 (Mistral-Small + per-agent preference + serialization scrubber) and Part 3 (fallback + multi-provider) remain post-v1; this plan stays in `docs/plans/` until they ship.
+
+### Observed quirks (2026-04-26)
+
+Operational notes captured during the v1 onboard run; surfaced for Part 2/3 planning, not yet investigated.
+
+- **HTTP 200 with all-null OpenAI ChatCompletion fields.** During an ingestor call against `https://www.anthropic.com/transparency/voluntary-commitments`, Infomaniak returned a successful 200 whose JSON body parsed with `id`, `choices`, `model`, and `object` all `None`. PydanticAI's `OpenAIModel` raised four `string_type` / `list_type` / `literal_error` validation errors. The pipeline handled it correctly: warning logged, URL marked failed, threshold check fired, claim written with `status: blocked` and `blocked_reason: insufficient_sources`. Root cause is provider-side (likely a content-policy refusal, context-overflow, or gateway error wrapped as 200) but unconfirmed because we don't capture the raw response body before validation. **Suggested follow-up for Part 2:** add raw-body logging on validation failure so the next occurrence can be diagnosed and reported upstream to Infomaniak.
+
 ### Objective
 
 Ship a `dr verify` end-to-end run against `infomaniak:openai/gpt-oss-120b` for all four agents on at least one canned claim, producing a written `.audit.yaml` sidecar. This is a **v1.0.0 release item**; tracked from [`../v1.0.0-roadmap.md`](../v1.0.0-roadmap.md).
