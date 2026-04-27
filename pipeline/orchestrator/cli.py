@@ -722,6 +722,260 @@ def review(
         click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
 
 
+# --------------------------------------------------------------------------- #
+# dr publish                                                                    #
+# --------------------------------------------------------------------------- #
+
+
+def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:
+    """Resolve a `--claim` argument to a concrete claim .md path.
+
+    Accepts ``<entity>/<slug>``, ``<entity>/<slug>.md``, or a bare ``<slug>``
+    that is unique across entity directories. Calls ``sys.exit(1)`` on
+    missing or ambiguous slugs (matching dr review's behavior).
+    """
+    bare = claim[:-3] if claim.endswith(".md") else claim
+    if "/" in bare:
+        return claims_dir / f"{bare}.md"
+    matches = sorted(claims_dir.glob(f"*/{bare}.md"))
+    if not matches:
+        click.echo(
+            f"Claim file not found: no research/claims/*/{bare}.md.",
+            err=True,
+        )
+        sys.exit(1)
+    if len(matches) > 1:
+        rels = ", ".join(str(m.relative_to(claims_dir).with_suffix("")) for m in matches)
+        click.echo(
+            f"Ambiguous claim slug {bare!r}; matches: {rels}. "
+            f"Re-run with --claim <entity-slug>/{bare}.",
+            err=True,
+        )
+        sys.exit(1)
+    return matches[0]
+
+
+@main.command()
+@click.option("--entity", default=None, help="Publish all draft claims under this entity slug.")
+@click.option("--claim", default=None, help="Publish a single claim: <entity-slug>/<claim-slug>, or a unique bare <claim-slug>.")
+@click.option("--all", "all_", is_flag=True, default=False, help="Publish every draft claim in the repo.")
+@click.option("--dry-run", is_flag=True, default=False, help="List planned transitions without writing anything.")
+@click.option("--yes", "-y", is_flag=True, default=False, help="Skip the interactive confirmation prompt.")
+@click.option("--note", default=None, help="Suffix appended to the canonical '[auto-publish] ' note prefix.")
+@click.option(
+    "--continue-on-error/--strict",
+    default=True,
+    help=(
+        "Default: continue past per-claim errors and exit 1 at end if any occurred. "
+        "Use --strict to fail-fast on the first error."
+    ),
+)
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def publish(
+    ctx: click.Context,
+    entity: str | None,
+    claim: str | None,
+    all_: bool,
+    dry_run: bool,
+    yes: bool,
+    note: str | None,
+    continue_on_error: bool,
+    repo_root: str | None,
+) -> None:
+    """Bulk-flip drafts to published WITHOUT recording human review.
+
+    Claims processed by this command render as "Unreviewed" on the site.
+    Use `dr review --approve` for human-reviewed publication.
+
+    Each matched draft has its sidecar updated with reviewed_at=<today>,
+    reviewer=null, notes="[auto-publish] <suffix>", and pr_url=null, then
+    its `status:` flipped from draft to published. Claims with status
+    published, archived, or blocked are skipped with a warning.
+
+    Reversibility: a later `dr review --claim <slug> --reviewer alice` (no
+    `--approve`) writes the reviewer in and flips the badge to "Reviewed".
+
+    Discoverability: `grep -l '\\[auto-publish\\]' research/claims/*/*.audit.yaml`.
+
+    \b
+    Examples:
+      dr publish --entity ecosia --dry-run
+      dr publish --claim ecosia/renewable-energy-hosting --yes
+      dr publish --all --yes --note "v1.0.0 backfill"
+    """
+    import datetime
+
+    import yaml
+    from common.content_loader import list_claims, resolve_repo_root
+    from common.frontmatter import parse_frontmatter
+
+    # Mode selection: exactly one of {--claim, --entity, --all}.
+    selectors = sum(1 for s in (claim, entity, all_) if s)
+    if selectors == 0:
+        raise click.ClickException(
+            "specify exactly one of --claim, --entity, or --all"
+        )
+    if selectors > 1:
+        raise click.ClickException(
+            "--claim, --entity, and --all are mutually exclusive"
+        )
+
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+    claims_dir = root / "research" / "claims"
+
+    # Resolve the candidate claim set.
+    if claim is not None:
+        candidate_paths = [_resolve_claim_path(claim, claims_dir)]
+    elif entity is not None:
+        candidate_paths = list_claims(root, entity=entity)
+    else:  # all_
+        candidate_paths = list_claims(root)
+
+    if not candidate_paths:
+        click.echo("No claims matched the given filters.", err=True)
+        sys.exit(1)
+
+    # Build canonical note string. The "[auto-publish] " prefix is fixed
+    # so a grep across audit sidecars finds every bot-published claim;
+    # operator-supplied --note text appends as the suffix.
+    suffix = note if note else "bulk publish, no human review"
+    note_text = f"[auto-publish] {suffix}"
+
+    # Classify each candidate. Only `to_publish` are written; other lists
+    # surface in the summary so an operator can see what was skipped.
+    to_publish: list[tuple[Path, str | None]] = []  # (claim_path, current_status)
+    already_published: list[Path] = []
+    skipped_archived: list[Path] = []
+    skipped_blocked: list[tuple[Path, str]] = []  # (path, blocked_reason)
+    skipped_missing_sidecar: list[Path] = []
+    classify_errors: list[tuple[Path, str]] = []
+
+    for claim_path in candidate_paths:
+        try:
+            fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        except (FileNotFoundError, ValueError) as exc:
+            classify_errors.append((claim_path, f"frontmatter parse failed: {exc}"))
+            continue
+
+        current_status = fm.get("status")
+        # Missing status field is treated as draft (parity with `dr review`).
+        effective_current = current_status if current_status is not None else "draft"
+
+        if effective_current == "published":
+            already_published.append(claim_path)
+            continue
+        if effective_current == "archived":
+            skipped_archived.append(claim_path)
+            continue
+        if effective_current == "blocked":
+            skipped_blocked.append((claim_path, str(fm.get("blocked_reason", "<unset>"))))
+            continue
+        if effective_current != "draft":
+            classify_errors.append(
+                (claim_path, f"unrecognized status {effective_current!r}")
+            )
+            continue
+
+        # Draft: still need a sidecar to update.
+        sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+        if not sidecar_path.exists():
+            skipped_missing_sidecar.append(claim_path)
+            continue
+
+        to_publish.append((claim_path, current_status))
+
+    # Print the classification summary.
+    def _rel(p: Path) -> str:
+        try:
+            return str(p.relative_to(root))
+        except ValueError:
+            return str(p)
+
+    click.echo(f"Matched {len(candidate_paths)} claim(s); {len(to_publish)} to publish.")
+    if to_publish:
+        sample = to_publish[:10]
+        for path, _ in sample:
+            click.echo(f"  draft -> published: {_rel(path)}")
+        if len(to_publish) > 10:
+            click.echo(f"  ... and {len(to_publish) - 10} more")
+    if already_published:
+        click.echo(f"Skipped (already published): {len(already_published)}")
+    if skipped_archived:
+        click.echo(f"Skipped (archived): {len(skipped_archived)}")
+        for path in skipped_archived:
+            click.echo(f"  ! archived, not republished: {_rel(path)}", err=True)
+    if skipped_blocked:
+        click.echo(f"Skipped (blocked): {len(skipped_blocked)}")
+        for path, reason in skipped_blocked:
+            click.echo(f"  ! blocked ({reason}): {_rel(path)}", err=True)
+    if skipped_missing_sidecar:
+        click.echo(f"Skipped (no audit sidecar): {len(skipped_missing_sidecar)}")
+        for path in skipped_missing_sidecar:
+            click.echo(f"  ! missing sidecar: {_rel(path)}", err=True)
+    if classify_errors:
+        click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
+        for path, msg in classify_errors:
+            click.echo(f"  ! {_rel(path)}: {msg}", err=True)
+
+    if dry_run:
+        click.echo("Dry run: no files written.")
+        sys.exit(0)
+
+    if not to_publish:
+        click.echo("Nothing to publish.")
+        # Per-claim errors during classification (e.g. unparseable frontmatter)
+        # still count as failures even if no claim was eligible to publish.
+        sys.exit(1 if classify_errors else 0)
+
+    # Confirmation prompt unless --yes.
+    if not yes:
+        click.confirm(
+            f"Flip {len(to_publish)} draft(s) to published WITHOUT recording human review?",
+            abort=True,
+        )
+
+    today_iso = datetime.date.today().isoformat()
+    published_count = 0
+    publish_errors: list[tuple[Path, str]] = list(classify_errors)
+
+    for claim_path, current_status in to_publish:
+        sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+        try:
+            sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+            sidecar_data["human_review"]["reviewed_at"] = today_iso
+            sidecar_data["human_review"]["reviewer"] = None
+            sidecar_data["human_review"]["notes"] = note_text
+            sidecar_data["human_review"]["pr_url"] = None
+            sidecar_path.write_text(
+                yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
+                encoding="utf-8",
+            )
+            # current_status may be None (key absent); pass it through so
+            # set_claim_status's mismatch check sees the actual on-disk value.
+            set_claim_status(claim_path, "published", expected_current=current_status)
+        except Exception as exc:
+            publish_errors.append((claim_path, str(exc)))
+            click.echo(f"  ! failed: {_rel(claim_path)}: {exc}", err=True)
+            if not continue_on_error:
+                click.echo(
+                    f"\nAborted on first error (--strict). Published {published_count} "
+                    f"of {len(to_publish)} before failing.",
+                    err=True,
+                )
+                sys.exit(1)
+            continue
+
+        published_count += 1
+        click.echo(f"  + published: {_rel(claim_path)}")
+
+    click.echo(
+        f"\nDone. Published {published_count} of {len(to_publish)} matched draft(s); "
+        f"{len(publish_errors)} error(s)."
+    )
+    sys.exit(1 if publish_errors else 0)
+
+
 @main.command()
 @click.option("--entity", default=None, help="Lint only claims for this entity slug")
 @click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
