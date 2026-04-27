@@ -59,6 +59,8 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     still-429 also raises. All other HTTP errors fall through to the
     existing error-dict behavior so the LLM can try ``wayback_check``.
     """
+    if not url.startswith(("http://", "https://")):
+        return {"error": f"Invalid URL: {url!r} (must start with http:// or https://)", "url": url}
     try:
         resp = await ctx.deps.http_client.get(
             url, timeout=default_httpx_timeout(), follow_redirects=True
@@ -87,6 +89,8 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
 @ingestor_agent.tool
 async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """Check Wayback Machine availability and optionally save the URL."""
+    if not url.startswith(("http://", "https://")):
+        return {"available": False, "archived_url": None, "error": f"Invalid URL: {url!r}"}
     if ctx.deps.skip_wayback:
         return {"available": False, "archived_url": None, "skipped": True}
     result = await check_wayback(ctx.deps.http_client, url)
