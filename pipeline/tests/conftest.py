@@ -7,6 +7,18 @@ from pathlib import Path
 import pytest
 
 from common.content_loader import resolve_repo_root
+from common.logging_setup import run_id_var
+
+
+@pytest.fixture(autouse=True)
+def _reset_run_id_var():
+    """Clear any run_id binding the test left behind.
+
+    Without this, a test that calls `dr` via CliRunner (which sets run_id_var
+    in the click callback) leaks the id into subsequent tests' log records.
+    """
+    yield
+    run_id_var.set(None)
 
 
 @pytest.fixture(scope="session")

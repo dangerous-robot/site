@@ -37,7 +37,7 @@ from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
-from common.logging_setup import bind_run_id, new_run_id, progress
+from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
@@ -139,9 +139,9 @@ class VerifyConfig:
     auditor_timeout_s: float = 60.0
     force_overwrite: bool = False
     # Correlates every log record (and future token-usage record) emitted
-    # during one top-level pipeline invocation. Onboard runs override this
-    # per-template iteration so each templated claim has its own id.
-    run_id: str = field(default_factory=new_run_id)
+    # during one top-level pipeline invocation. Inherits a CLI-bound id if
+    # set; onboard's per-template loop overrides via dataclasses.replace.
+    run_id: str = field(default_factory=lambda: run_id_var.get() or new_run_id())
 
     def __post_init__(self) -> None:
         if self.ingest_timeout_s is None:

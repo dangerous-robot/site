@@ -19,6 +19,7 @@ from common.logging_setup import (
     new_run_id,
     run_id_var,
 )
+from orchestrator.pipeline import VerifyConfig
 
 
 def _read_jsonl(path: Path) -> list[dict]:
@@ -44,11 +45,6 @@ def _reset_root_logger():
     for f in saved_filters:
         root.addFilter(f)
     root.setLevel(saved_level)
-    # Clear any leftover run_id binding so contextvar state doesn't leak.
-    try:
-        run_id_var.set(None)
-    except Exception:
-        pass
 
 
 def test_configure_logging_creates_handlers(tmp_path: Path) -> None:
@@ -199,6 +195,33 @@ def test_repo_root_none_fallback(tmp_path: Path, capsys: pytest.CaptureFixture[s
     # No logs/ directory should have been created anywhere we can check; the
     # function should not have called mkdir at all.
     assert not (tmp_path / "logs").exists()
+
+
+def test_verify_config_run_id_inherits_bound_contextvar() -> None:
+    with bind_run_id("inherit-me"):
+        assert VerifyConfig().run_id == "inherit-me"
+
+
+def test_verify_config_run_id_generates_when_unbound() -> None:
+    assert run_id_var.get() is None
+    assert VerifyConfig().run_id is not None
+
+
+def test_cli_invocation_emits_non_null_run_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Regression: subcommand banner logs (and lint/review/publish in full) used to log run_id=null."""
+    from click.testing import CliRunner
+    from orchestrator.cli import main
+
+    # Override the session-scoped fixture that pins _safe_repo_root to None,
+    # so file handlers attach to tmp_path/logs and we can read the result.
+    monkeypatch.setattr("orchestrator.cli._safe_repo_root", lambda: tmp_path)
+
+    result = CliRunner().invoke(main, ["lint", "--repo-root", str(tmp_path)])
+    assert result.exit_code == 0, f"dr lint failed: {result.output!r}"
+    records = _read_jsonl(tmp_path / "logs" / "debug.log")
+    banner = next((r for r in records if r["msg"].startswith("dr lint:")), None)
+    assert banner is not None, f"no banner record; output={result.output!r}"
+    assert banner["run_id"] is not None, f"banner run_id is null: {banner!r}"
 
 
 def test_timestamp_is_utc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

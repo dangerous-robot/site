@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from common.logging_setup import bind_run_id, configure_logging, new_run_id, progress
+from common.logging_setup import configure_logging, new_run_id, progress, run_id_var
 from common.models import DEFAULT_MODEL, resolve_model
 from orchestrator.persistence import set_claim_status
 
@@ -65,6 +65,9 @@ def main(ctx: click.Context, verbose: bool, model: str) -> None:
     # open file handles when the user is just inspecting usage.
     if ctx.invoked_subcommand is not None:
         configure_logging(verbose=verbose, repo_root=_safe_repo_root())
+        # Bare set() rather than bind_run_id(): the id must outlive this
+        # callback frame to reach the subcommand body.
+        run_id_var.set(new_run_id())
 
 
 # --------------------------------------------------------------------------- #
@@ -291,70 +294,69 @@ def reassess(
     async def _run():
         from auditor.compare import compare as _compare
         results = []
-        with bind_run_id(new_run_id()):
-            for path in claim_paths:
-                text = path.read_text(encoding="utf-8")
-                fm, body = parse_frontmatter(text)
+        for path in claim_paths:
+            text = path.read_text(encoding="utf-8")
+            fm, body = parse_frontmatter(text)
 
-                claims_dir = root / "research" / "claims"
-                claim_id = str(path.relative_to(claims_dir).with_suffix(""))
+            claims_dir = root / "research" / "claims"
+            claim_id = str(path.relative_to(claims_dir).with_suffix(""))
 
-                actual_verdict = Verdict(fm["verdict"])
-                actual_confidence = Confidence(fm["confidence"])
+            actual_verdict = Verdict(fm["verdict"])
+            actual_confidence = Confidence(fm["confidence"])
 
-                entity_fm, _ = load_entity(fm["entity"], root)
-                ent = EntityContext(
-                    name=entity_fm["name"],
-                    type=entity_fm["type"],
-                    description=entity_fm["description"],
+            entity_fm, _ = load_entity(fm["entity"], root)
+            ent = EntityContext(
+                name=entity_fm["name"],
+                type=entity_fm["type"],
+                description=entity_fm["description"],
+            )
+
+            sources = []
+            for sid in fm.get("sources", []):
+                try:
+                    src_fm, src_body = load_source(sid, root)
+                    sources.append(SourceContext(
+                        id=sid,
+                        title=src_fm["title"],
+                        publisher=src_fm["publisher"],
+                        summary=src_fm["summary"],
+                        key_quotes=src_fm.get("key_quotes", []) or [],
+                        body=src_body,
+                    ))
+                except FileNotFoundError:
+                    click.echo(f"Warning: source '{sid}' not found", err=True)
+
+            bundle = ClaimBundle(
+                claim_id=claim_id,
+                entity=ent,
+                topics=[Category(t) for t in fm["topics"]],
+                narrative=body,
+                sources=sources,
+            )
+
+            if dry_run:
+                click.echo(f"[dry-run] Would check: {claim_id}")
+                continue
+
+            progress("Checking: %s ...", claim_id)
+            prompt = build_auditor_prompt(bundle)
+            with auditor_agent.override(model=resolve_model(model)):
+                res = await auditor_agent.run(prompt)
+            result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
+
+            if verbose or result.needs_review:
+                click.echo(
+                    f"  {result.claim_id}: {result.primary_verdict.value} vs "
+                    f"{result.assessed_verdict.value} ({result.verdict_severity.value})",
+                    err=True,
                 )
+            results.append(result)
 
-                sources = []
-                for sid in fm.get("sources", []):
-                    try:
-                        src_fm, src_body = load_source(sid, root)
-                        sources.append(SourceContext(
-                            id=sid,
-                            title=src_fm["title"],
-                            publisher=src_fm["publisher"],
-                            summary=src_fm["summary"],
-                            key_quotes=src_fm.get("key_quotes", []) or [],
-                            body=src_body,
-                        ))
-                    except FileNotFoundError:
-                        click.echo(f"Warning: source '{sid}' not found", err=True)
-
-                bundle = ClaimBundle(
-                    claim_id=claim_id,
-                    entity=ent,
-                    topics=[Category(t) for t in fm["topics"]],
-                    narrative=body,
-                    sources=sources,
-                )
-
-                if dry_run:
-                    click.echo(f"[dry-run] Would check: {claim_id}")
-                    continue
-
-                progress("Checking: %s ...", claim_id)
-                prompt = build_auditor_prompt(bundle)
-                with auditor_agent.override(model=resolve_model(model)):
-                    res = await auditor_agent.run(prompt)
-                result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
-
-                if verbose or result.needs_review:
-                    click.echo(
-                        f"  {result.claim_id}: {result.primary_verdict.value} vs "
-                        f"{result.assessed_verdict.value} ({result.verdict_severity.value})",
-                        err=True,
-                    )
-                results.append(result)
-
-            if results:
-                if output_format == "json":
-                    click.echo(format_json_report(results))
-                else:
-                    click.echo(format_text_report(results))
+        if results:
+            if output_format == "json":
+                click.echo(format_json_report(results))
+            else:
+                click.echo(format_text_report(results))
 
     asyncio.run(_run())
 
@@ -400,7 +402,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
         sys.exit(2)
 
     async def _run():
-        async with httpx.AsyncClient() as client, bind_run_id(new_run_id()):
+        async with httpx.AsyncClient() as client:
             deps = IngestorDeps(
                 http_client=client,
                 repo_root=root,
