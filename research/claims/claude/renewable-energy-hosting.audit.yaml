@@ -1,0 +1,32 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-27T02:25:55.213392+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2025/anthropic-claude-models-microsoft-foundry
+  url: https://azure.microsoft.com/en-us/blog/introducing-anthropics-claude-models-in-microsoft-foundry-bringing-frontier-intelligence-to-azure/
+  title: 'Introducing Anthropic''s Claude models in Microsoft Foundry: Bringing Frontier
+    intelligence to Azure'
+  ingested: true
+- id: 2026/covering-electricity-price-increases
+  url: https://www.anthropic.com/news/covering-electricity-price-increases
+  title: Covering electricity price increases from our data centers
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

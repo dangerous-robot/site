@@ -1,0 +1,39 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-26T23:55:30.378291+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2024/introducing-the-next-generation-of-claude
+  url: https://www.anthropic.com/news/claude-3-family
+  title: Introducing the next generation of Claude
+  ingested: true
+- id: 2026/models-overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
+  ingested: true
+- id: 2026/list-models-claude-api
+  url: https://platform.claude.com/docs/en/api/models/list
+  title: List Models
+  ingested: true
+- id: 2026/model-report
+  url: https://www.anthropic.com/transparency/model-report
+  title: Model Report
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

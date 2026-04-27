@@ -1,0 +1,36 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-27T02:12:15.157387+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/how-much-energy-does-anthropics-claude-ai-consume
+  url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
+  title: How Much Energy Does Anthropic’s Claude AI Consume?
+  ingested: true
+- id: 2025/how-to-monitor-claude-usage-and-costs-anthropic-integration
+  url: https://grafana.com/blog/how-to-monitor-claude-usage-and-costs-introducing-the-anthropic-integration-for-grafana-cloud/
+  title: 'How to monitor Claude usage and costs: introducing the Anthropic integration
+    for Grafana Cloud'
+  ingested: true
+- id: 2026/usage-and-cost-api
+  url: https://platform.claude.com/docs/en/build-with-claude/usage-cost-api
+  title: Usage and Cost API
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

@@ -1,0 +1,35 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-26T23:56:32.503725+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/can-claude-produce-images
+  url: https://support.claude.com/en/articles/9002504-can-claude-produce-images
+  title: Can Claude produce images?
+  ingested: true
+- id: 2026/vision
+  url: https://platform.claude.com/docs/en/build-with-claude/vision
+  title: Vision
+  ingested: true
+- id: 2025/can-claude-generate-images
+  url: https://www.datastudios.org/post/can-claude-generate-images
+  title: Can Claude Generate Images?
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mixed
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

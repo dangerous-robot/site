@@ -1,0 +1,39 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-26T23:54:58.802751+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+sources_consulted:
+- id: 2026/is-my-data-used-for-model-training
+  url: https://privacy.claude.com/en/articles/7996868-is-my-data-used-for-model-training
+  title: Is my data used for model training?
+  ingested: true
+- id: 2025/updates-to-consumer-terms-and-privacy-policy
+  url: https://www.anthropic.com/news/updates-to-our-consumer-terms
+  title: Updates to Consumer Terms and Privacy Policy
+  ingested: true
+- id: 2025/anthropic-claude-chats-opt-out
+  url: https://www.wired.com/story/anthropic-using-claude-chats-for-training-how-to-opt-out/
+  title: Anthropic Will Use Claude Chats for Training Data. Here’s How to Opt Out
+  ingested: true
+- id: 2025/anthropic-users-face-a-new-choice-opt-out-or-share-your-chats-for-ai-training
+  url: https://techcrunch.com/2025/08/28/anthropic-users-face-a-new-choice-opt-out-or-share-your-data-for-ai-training/
+  title: Anthropic users face a new choice – opt out or share your chats for AI training
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-27'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null
