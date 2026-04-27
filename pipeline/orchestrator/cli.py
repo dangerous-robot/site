@@ -13,8 +13,24 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from common.logging_setup import bind_run_id, configure_logging, new_run_id, progress
 from common.models import DEFAULT_MODEL, resolve_model
 from orchestrator.persistence import set_claim_status
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_repo_root() -> Path | None:
+    """Walk up from cwd looking for ``.git`` (file or dir); return None on miss.
+
+    Pure-Python so every ``dr`` invocation skips the ``git rev-parse`` fork.
+    ``dr --help`` outside a checkout falls back to console-only logging.
+    """
+    cwd = Path.cwd()
+    for parent in (cwd, *cwd.parents):
+        if (parent / ".git").exists():
+            return parent
+    return None
 
 
 def _check_provider_api_keys(model: str) -> None:
@@ -37,7 +53,7 @@ def _check_provider_api_keys(model: str) -> None:
 
 
 @click.group()
-@click.option("--verbose", is_flag=True, help="Enable verbose logging")
+@click.option("--verbose", is_flag=True, help="Enable verbose logging (INFO on console; DEBUG always written to logs/debug.log)")
 @click.option("--model", default=DEFAULT_MODEL, help="LLM model to use", envvar="DR_MODEL")
 @click.pass_context
 def main(ctx: click.Context, verbose: bool, model: str) -> None:
@@ -45,10 +61,10 @@ def main(ctx: click.Context, verbose: bool, model: str) -> None:
     ctx.ensure_object(dict)
     ctx.obj["model"] = model
     ctx.obj["verbose"] = verbose
-    logging.basicConfig(
-        level=logging.INFO if verbose else logging.WARNING,
-        format="%(levelname)s: %(message)s",
-    )
+    # Skip logging setup for the bare `dr` / `dr --help` paths so we don't
+    # open file handles when the user is just inspecting usage.
+    if ctx.invoked_subcommand is not None:
+        configure_logging(verbose=verbose, repo_root=_safe_repo_root())
 
 
 # --------------------------------------------------------------------------- #
@@ -136,6 +152,7 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
     Example:
         dr verify "Ecosia" "Ecosia's AI chat runs on renewable energy"
     """
+    logger.info("dr verify: entity=%s claim=%s", entity, claim)
     _check_provider_api_keys(ctx.obj["model"])
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
@@ -167,6 +184,7 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
     Example:
         dr research "iPhone 20 will support Neuralink"
     """
+    logger.info("dr research: claim=%s", claim_text)
     _check_provider_api_keys(ctx.obj["model"])
 
     if not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
@@ -235,6 +253,13 @@ def reassess(
         dr reassess --entity ecosia
         dr reassess --claim ecosia/renewable-energy-hosting
     """
+    logger.info(
+        "dr reassess: claim=%s entity=%s topic=%s dry_run=%s",
+        claim,
+        entity,
+        topic,
+        dry_run,
+    )
     from common.content_loader import list_claims, load_entity, load_source, resolve_repo_root
     from common.frontmatter import parse_frontmatter
     from common.models import Category, Confidence, Verdict
@@ -266,69 +291,70 @@ def reassess(
     async def _run():
         from auditor.compare import compare as _compare
         results = []
-        for path in claim_paths:
-            text = path.read_text(encoding="utf-8")
-            fm, body = parse_frontmatter(text)
+        with bind_run_id(new_run_id()):
+            for path in claim_paths:
+                text = path.read_text(encoding="utf-8")
+                fm, body = parse_frontmatter(text)
 
-            claims_dir = root / "research" / "claims"
-            claim_id = str(path.relative_to(claims_dir).with_suffix(""))
+                claims_dir = root / "research" / "claims"
+                claim_id = str(path.relative_to(claims_dir).with_suffix(""))
 
-            actual_verdict = Verdict(fm["verdict"])
-            actual_confidence = Confidence(fm["confidence"])
+                actual_verdict = Verdict(fm["verdict"])
+                actual_confidence = Confidence(fm["confidence"])
 
-            entity_fm, _ = load_entity(fm["entity"], root)
-            ent = EntityContext(
-                name=entity_fm["name"],
-                type=entity_fm["type"],
-                description=entity_fm["description"],
-            )
-
-            sources = []
-            for sid in fm.get("sources", []):
-                try:
-                    src_fm, src_body = load_source(sid, root)
-                    sources.append(SourceContext(
-                        id=sid,
-                        title=src_fm["title"],
-                        publisher=src_fm["publisher"],
-                        summary=src_fm["summary"],
-                        key_quotes=src_fm.get("key_quotes", []) or [],
-                        body=src_body,
-                    ))
-                except FileNotFoundError:
-                    click.echo(f"Warning: source '{sid}' not found", err=True)
-
-            bundle = ClaimBundle(
-                claim_id=claim_id,
-                entity=ent,
-                topics=[Category(t) for t in fm["topics"]],
-                narrative=body,
-                sources=sources,
-            )
-
-            if dry_run:
-                click.echo(f"[dry-run] Would check: {claim_id}")
-                continue
-
-            click.echo(f"Checking: {claim_id} ...", err=True)
-            prompt = build_auditor_prompt(bundle)
-            with auditor_agent.override(model=resolve_model(model)):
-                res = await auditor_agent.run(prompt)
-            result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
-
-            if verbose or result.needs_review:
-                click.echo(
-                    f"  {result.claim_id}: {result.primary_verdict.value} vs "
-                    f"{result.assessed_verdict.value} ({result.verdict_severity.value})",
-                    err=True,
+                entity_fm, _ = load_entity(fm["entity"], root)
+                ent = EntityContext(
+                    name=entity_fm["name"],
+                    type=entity_fm["type"],
+                    description=entity_fm["description"],
                 )
-            results.append(result)
 
-        if results:
-            if output_format == "json":
-                click.echo(format_json_report(results))
-            else:
-                click.echo(format_text_report(results))
+                sources = []
+                for sid in fm.get("sources", []):
+                    try:
+                        src_fm, src_body = load_source(sid, root)
+                        sources.append(SourceContext(
+                            id=sid,
+                            title=src_fm["title"],
+                            publisher=src_fm["publisher"],
+                            summary=src_fm["summary"],
+                            key_quotes=src_fm.get("key_quotes", []) or [],
+                            body=src_body,
+                        ))
+                    except FileNotFoundError:
+                        click.echo(f"Warning: source '{sid}' not found", err=True)
+
+                bundle = ClaimBundle(
+                    claim_id=claim_id,
+                    entity=ent,
+                    topics=[Category(t) for t in fm["topics"]],
+                    narrative=body,
+                    sources=sources,
+                )
+
+                if dry_run:
+                    click.echo(f"[dry-run] Would check: {claim_id}")
+                    continue
+
+                progress("Checking: %s ...", claim_id)
+                prompt = build_auditor_prompt(bundle)
+                with auditor_agent.override(model=resolve_model(model)):
+                    res = await auditor_agent.run(prompt)
+                result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
+
+                if verbose or result.needs_review:
+                    click.echo(
+                        f"  {result.claim_id}: {result.primary_verdict.value} vs "
+                        f"{result.assessed_verdict.value} ({result.verdict_severity.value})",
+                        err=True,
+                    )
+                results.append(result)
+
+            if results:
+                if output_format == "json":
+                    click.echo(format_json_report(results))
+                else:
+                    click.echo(format_text_report(results))
 
     asyncio.run(_run())
 
@@ -349,6 +375,8 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
     Example:
         dr ingest https://example.com/article
     """
+    logger.info("dr ingest: url=%s dry_run=%s", url, dry_run)
+
     if not url.startswith(("http://", "https://")):
         click.echo(f"Error: invalid URL: {url}", err=True)
         sys.exit(1)
@@ -372,7 +400,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
         sys.exit(2)
 
     async def _run():
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient() as client, bind_run_id(new_run_id()):
             deps = IngestorDeps(
                 http_client=client,
                 repo_root=root,
@@ -445,7 +473,6 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
 @click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product", "sector"]), help="Entity type")
-@click.option("--verbose", is_flag=True, help="Enable verbose logging")
 @click.option("--max-sources", default=4, type=int, help="Max sources to ingest per template")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
@@ -458,7 +485,6 @@ def onboard(
     entity_name: str,
     homepage_url: str | None,
     entity_type: str,
-    verbose: bool,
     max_sources: int,
     skip_wayback: bool,
     repo_root: str | None,
@@ -475,8 +501,13 @@ def onboard(
         dr onboard "Ecosia AI" --type product
         dr onboard "TreadLightlyAI" treadlightly.ai --type company --interactive
     """
-    if verbose:
-        logging.getLogger().setLevel(logging.INFO)
+    logger.info(
+        "dr onboard: name=%s type=%s seed_url=%s only=%s",
+        entity_name,
+        entity_type,
+        homepage_url,
+        only,
+    )
     _check_provider_api_keys(ctx.obj["model"])
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
@@ -573,6 +604,13 @@ def review(
     Example:
         dr review --claim ecosia/renewable-energy-hosting --approve
     """
+    logger.info(
+        "dr review: claim=%s approve=%s archive=%s",
+        claim,
+        approve,
+        archive,
+    )
+
     import datetime
     import subprocess
 
@@ -804,6 +842,14 @@ def publish(
       dr publish --claim ecosia/renewable-energy-hosting --yes
       dr publish --all --yes --note "v1.0.0 backfill"
     """
+    logger.info(
+        "dr publish: claim=%s entity=%s all=%s dry_run=%s",
+        claim,
+        entity,
+        all_,
+        dry_run,
+    )
+
     import datetime
 
     import yaml
@@ -993,6 +1039,13 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
       dr lint --entity ecosia
       dr lint --format json --severity error
     """
+    logger.info(
+        "dr lint: entity=%s severity=%s format=%s",
+        entity or "<all>",
+        severity,
+        output_format,
+    )
+
     from linter.runner import run_all_checks
     from linter.report import format_text_report, format_json_report
     from common.content_loader import resolve_repo_root as _resolve_root

@@ -31,10 +31,13 @@ import click
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+import dataclasses
+
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
+from common.logging_setup import bind_run_id, new_run_id, progress
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
 from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
@@ -135,6 +138,10 @@ class VerifyConfig:
     analyst_timeout_s: float = 60.0
     auditor_timeout_s: float = 60.0
     force_overwrite: bool = False
+    # Correlates every log record (and future token-usage record) emitted
+    # during one top-level pipeline invocation. Onboard runs override this
+    # per-template iteration so each templated claim has its own id.
+    run_id: str = field(default_factory=new_run_id)
 
     def __post_init__(self) -> None:
         if self.ingest_timeout_s is None:
@@ -173,67 +180,69 @@ async def verify_claim(
         errors=[],
     )
 
-    async with httpx.AsyncClient() as client:
-        # Step 1: Research
-        logger.info("Step 1/4: Searching for sources...")
-        urls, research_errors = await _research(client, entity_name, claim_text, cfg)
-        result.urls_found = urls
+    with bind_run_id(cfg.run_id):
+        logger.info("verify_claim entry: entity=%s claim=%s", entity_name, claim_text)
+        async with httpx.AsyncClient() as client:
+            # Step 1: Research
+            logger.info("Step 1/4: Searching for sources...")
+            urls, research_errors = await _research(client, entity_name, claim_text, cfg)
+            result.urls_found = urls
 
-        if not urls:
-            result.errors.append("Researcher agent found no relevant URLs")
-            return result
+            if not urls:
+                result.errors.append("Researcher agent found no relevant URLs")
+                return result
 
-        # Step 2: Ingest
-        logger.info("Step 2/4: Ingesting %d sources...", len(urls))
-        source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+            # Step 2: Ingest
+            logger.info("Step 2/4: Ingesting %d sources...", len(urls))
+            source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
 
-        for url, sf in source_files:
-            result.urls_ingested.append(url)
-            result.sources.append(_build_source_dict(sf))
-            result.source_files.append((url, sf))
+            for url, sf in source_files:
+                result.urls_ingested.append(url)
+                result.sources.append(_build_source_dict(sf))
+                result.source_files.append((url, sf))
 
-        ingested_set = set(result.urls_ingested)
-        result.urls_failed = [u for u in urls if u not in ingested_set]
-        all_errors = research_errors + ingest_errors
+            ingested_set = set(result.urls_ingested)
+            result.urls_failed = [u for u in urls if u not in ingested_set]
+            all_errors = research_errors + ingest_errors
 
-        # Checkpoint: review sources
-        proceed = await gate.review_sources(
-            urls_found=len(result.urls_found),
-            urls_ingested=len(result.urls_ingested),
-            errors=all_errors,
-        )
-        if not proceed:
-            result.errors.append("Halted at source review checkpoint")
-            return result
+            # Checkpoint: review sources
+            proceed = await gate.review_sources(
+                urls_found=len(result.urls_found),
+                urls_ingested=len(result.urls_ingested),
+                errors=all_errors,
+            )
+            if not proceed:
+                result.errors.append("Halted at source review checkpoint")
+                return result
 
-        # Threshold gate: Orchestrator halts the claim before invoking the
-        # Analyst when fewer than two usable sources were obtained. See
-        # docs/plans/claim-lifecycle-states.md § Behavior change.
-        if below_threshold(result.sources):
-            _record_threshold_block(result, ingest_errors)
-            return result
+            # Threshold gate: Orchestrator halts the claim before invoking the
+            # Analyst when fewer than two usable sources were obtained. See
+            # docs/plans/claim-lifecycle-states.md § Behavior change.
+            if below_threshold(result.sources):
+                _record_threshold_block(result, ingest_errors)
+                return result
 
-        # Step 3: Analyst
-        logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
-        analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg)
-        result.analyst_output = analyst_out
+            # Step 3: Analyst
+            logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+            analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg)
+            result.analyst_output = analyst_out
 
-        if not analyst_out:
-            result.errors.append("Analyst failed to produce an assessment")
-            return result
+            if not analyst_out:
+                result.errors.append("Analyst failed to produce an assessment")
+                return result
 
-        # Step 4: Auditor
-        logger.info("Step 4/4: Running auditor check...")
-        comparison = await _audit_claim(
-            entity_name, claim_text, analyst_out, result.sources, cfg
-        )
-        result.consistency = comparison
+            # Step 4: Auditor
+            logger.info("Step 4/4: Running auditor check...")
+            comparison = await _audit_claim(
+                entity_name, claim_text, analyst_out, result.sources, cfg
+            )
+            result.consistency = comparison
 
-        # Checkpoint: review disagreement
-        if comparison and comparison.needs_review:
-            accept = await gate.review_disagreement(comparison)
-            if not accept:
-                result.errors.append("Flagged for human review: analyst/auditor disagree")
+            # Checkpoint: review disagreement
+            if comparison and comparison.needs_review:
+                accept = await gate.review_disagreement(comparison)
+                if not accept:
+                    result.errors.append("Flagged for human review: analyst/auditor disagree")
 
     return result
 
@@ -463,108 +472,110 @@ async def research_claim(
         errors=[],
     )
 
-    async with httpx.AsyncClient() as client:
-        # Step 1: Research
-        logger.info("Step 1/5: Searching for sources...")
-        urls, research_errors = await _research(client, "", claim_text, cfg)
-        result.urls_found = urls
+    with bind_run_id(cfg.run_id):
+        logger.info("research_claim entry: claim=%s", claim_text)
+        async with httpx.AsyncClient() as client:
+            # Step 1: Research
+            logger.info("Step 1/5: Searching for sources...")
+            urls, research_errors = await _research(client, "", claim_text, cfg)
+            result.urls_found = urls
 
-        if not urls:
-            result.errors.append("Researcher agent found no relevant URLs")
-            return result
+            if not urls:
+                result.errors.append("Researcher agent found no relevant URLs")
+                return result
 
-        # Step 2: Ingest
-        logger.info("Step 2/5: Ingesting %d sources...", len(urls))
-        source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+            # Step 2: Ingest
+            logger.info("Step 2/5: Ingesting %d sources...", len(urls))
+            source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
 
-        for url, sf in source_files:
-            result.urls_ingested.append(url)
-            result.sources.append(_build_source_dict(sf))
-            result.source_files.append((url, sf))
+            for url, sf in source_files:
+                result.urls_ingested.append(url)
+                result.sources.append(_build_source_dict(sf))
+                result.source_files.append((url, sf))
 
-        ingested_set = set(result.urls_ingested)
-        result.urls_failed = [u for u in urls if u not in ingested_set]
-        all_errors = research_errors + ingest_errors
+            ingested_set = set(result.urls_ingested)
+            result.urls_failed = [u for u in urls if u not in ingested_set]
+            all_errors = research_errors + ingest_errors
 
-        # Checkpoint: review sources
-        proceed = await gate.review_sources(
-            urls_found=len(result.urls_found),
-            urls_ingested=len(result.urls_ingested),
-            errors=all_errors,
-        )
-        if not proceed:
-            result.errors.append("Halted at source review checkpoint")
-            return result
+            # Checkpoint: review sources
+            proceed = await gate.review_sources(
+                urls_found=len(result.urls_found),
+                urls_ingested=len(result.urls_ingested),
+                errors=all_errors,
+            )
+            if not proceed:
+                result.errors.append("Halted at source review checkpoint")
+                return result
 
-        # Threshold gate: persist any usable sources we did get and signal
-        # blocked back to the caller. The Analyst is not invoked.
-        if below_threshold(result.sources):
-            if source_files:
-                _write_source_files(source_files, repo_root)
-            _record_threshold_block(result, ingest_errors)
-            return result
+            # Threshold gate: persist any usable sources we did get and signal
+            # blocked back to the caller. The Analyst is not invoked.
+            if below_threshold(result.sources):
+                if source_files:
+                    _write_source_files(source_files, repo_root)
+                _record_threshold_block(result, ingest_errors)
+                return result
 
-        # Step 3: Write sources to disk
-        logger.info("Step 3/5: Writing %d source files...", len(source_files))
-        source_ids = _write_source_files(source_files, repo_root)
+            # Step 3: Write sources to disk
+            logger.info("Step 3/5: Writing %d source files...", len(source_files))
+            source_ids = _write_source_files(source_files, repo_root)
 
-        # Step 4: Analyse claim (analyst identifies entity)
-        logger.info("Step 4/5: Analysing claim...")
-        analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg)
-        result.analyst_output = analyst_out
+            # Step 4: Analyse claim (analyst identifies entity)
+            logger.info("Step 4/5: Analysing claim...")
+            analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg)
+            result.analyst_output = analyst_out
 
-        if not analyst_out:
-            result.errors.append("Analyst failed to produce an assessment")
-            return result
+            if not analyst_out:
+                result.errors.append("Analyst failed to produce an assessment")
+                return result
 
-        result.entity = analyst_out.entity.entity_name
+            result.entity = analyst_out.entity.entity_name
 
-        # Write entity and claim to disk
-        entity_ref = _write_entity_file(
-            entity_name=analyst_out.entity.entity_name,
-            entity_type=analyst_out.entity.entity_type,
-            entity_description=analyst_out.entity.entity_description,
-            repo_root=repo_root,
-            aliases=analyst_out.entity.aliases or None,
-        )
-        claim_slug = slugify(analyst_out.verdict.title)
-        claim_path = _write_claim_file(
-            title=analyst_out.verdict.title,
-            entity_name=analyst_out.entity.entity_name,
-            entity_ref=entity_ref,
-            topics=analyst_out.verdict.topics,
-            verdict=analyst_out.verdict.verdict,
-            confidence=analyst_out.verdict.confidence,
-            narrative=analyst_out.verdict.narrative,
-            claim_slug=claim_slug,
-            source_ids=source_ids,
-            repo_root=repo_root,
-            force=cfg.force_overwrite,
-        )
+            # Write entity and claim to disk
+            entity_ref = _write_entity_file(
+                entity_name=analyst_out.entity.entity_name,
+                entity_type=analyst_out.entity.entity_type,
+                entity_description=analyst_out.entity.entity_description,
+                repo_root=repo_root,
+                aliases=analyst_out.entity.aliases or None,
+            )
+            claim_slug = slugify(analyst_out.verdict.title)
+            claim_path = _write_claim_file(
+                title=analyst_out.verdict.title,
+                entity_name=analyst_out.entity.entity_name,
+                entity_ref=entity_ref,
+                topics=analyst_out.verdict.topics,
+                verdict=analyst_out.verdict.verdict,
+                confidence=analyst_out.verdict.confidence,
+                narrative=analyst_out.verdict.narrative,
+                claim_slug=claim_slug,
+                source_ids=source_ids,
+                repo_root=repo_root,
+                force=cfg.force_overwrite,
+            )
 
-        # Step 5: Auditor check
-        logger.info("Step 5/5: Running auditor check...")
-        comparison = await _audit_claim(
-            analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
-        )
-        result.consistency = comparison
+            # Step 5: Auditor check
+            logger.info("Step 5/5: Running auditor check...")
+            comparison = await _audit_claim(
+                analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
+            )
+            result.consistency = comparison
 
-        # Write audit sidecar after auditor step
-        sidecar_sources = _build_sources_consulted(result.source_files)
-        _write_audit_sidecar(
-            claim_path=claim_path,
-            comparison=comparison,
-            model=cfg.model,
-            ran_at=datetime.datetime.now(datetime.timezone.utc),
-            sources_consulted=sidecar_sources,
-            agents_run=["researcher", "ingestor", "analyst", "auditor"],
-        )
+            # Write audit sidecar after auditor step
+            sidecar_sources = _build_sources_consulted(result.source_files)
+            _write_audit_sidecar(
+                claim_path=claim_path,
+                comparison=comparison,
+                model=cfg.model,
+                ran_at=datetime.datetime.now(datetime.timezone.utc),
+                sources_consulted=sidecar_sources,
+                agents_run=["researcher", "ingestor", "analyst", "auditor"],
+            )
 
-        # Checkpoint: review disagreement
-        if comparison and comparison.needs_review:
-            accept = await gate.review_disagreement(comparison)
-            if not accept:
-                result.errors.append("Flagged for human review: analyst/auditor disagree")
+            # Checkpoint: review disagreement
+            if comparison and comparison.needs_review:
+                accept = await gate.review_disagreement(comparison)
+                if not accept:
+                    result.errors.append("Flagged for human review: analyst/auditor disagree")
 
     return result
 
@@ -635,209 +646,227 @@ async def onboard_entity(
         entity_ref=None,
     )
 
-    # Step 1: Light research for entity context
-    logger.info("Onboard step 1: light research for %s", entity_name)
-    entity_description = ""
-    entity_website: str | None = None
-    try:
-        async with httpx.AsyncClient() as client:
-            if seed_url:
-                _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
-                entity_website = _url
-                logger.info("Onboard step 1: ingesting seed URL %s", _url)
-                source_files, _ = await _ingest_urls(client, [_url], cfg)
-            else:
-                query = f"{entity_name} official website"
-                urls, _ = await _research(client, entity_name, query, cfg)
-                if urls:
-                    entity_website = urls[0]
-                source_files, _ = await _ingest_urls(client, urls[:1], cfg) if urls else ([], [])
-            if source_files:
-                _u, sf = source_files[0]
-                entity_description = sf.frontmatter.summary or ""
-    except Exception as exc:
-        logger.warning("Light research failed: %s", exc)
+    with bind_run_id(cfg.run_id):
+        logger.info(
+            "onboard_entity entry: name=%s type=%s seed_url=%s",
+            entity_name,
+            entity_type,
+            seed_url,
+        )
 
-    # Step 2: Template screening
-    logger.info("Onboard step 2: screening templates")
-    all_templates = load_templates(repo_root)
-    typed_templates = templates_for_entity_type(all_templates, entity_type)
+        # Step 1: Light research for entity context
+        logger.info("Onboard step 1: light research for %s", entity_name)
+        entity_description = ""
+        entity_website: str | None = None
+        try:
+            async with httpx.AsyncClient() as client:
+                if seed_url:
+                    _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
+                    entity_website = _url
+                    logger.info("Onboard step 1: ingesting seed URL %s", _url)
+                    source_files, _ = await _ingest_urls(client, [_url], cfg)
+                else:
+                    query = f"{entity_name} official website"
+                    urls, _ = await _research(client, entity_name, query, cfg)
+                    if urls:
+                        entity_website = urls[0]
+                    source_files, _ = await _ingest_urls(client, urls[:1], cfg) if urls else ([], [])
+                if source_files:
+                    _u, sf = source_files[0]
+                    entity_description = sf.frontmatter.summary or ""
+        except Exception as exc:
+            logger.warning("Light research failed: %s", exc)
 
-    if not typed_templates:
-        result.errors.append(f"No core templates found for entity_type={entity_type}")
-        result.status = "rejected"
-        return result
+        # Step 2: Template screening
+        logger.info("Onboard step 2: screening templates")
+        all_templates = load_templates(repo_root)
+        typed_templates = templates_for_entity_type(all_templates, entity_type)
 
-    applicable_slugs, excluded = _screen_templates(entity_description, typed_templates)
-
-    if only:
-        unknown = [s for s in only if s not in {t.slug for t in typed_templates}]
-        if unknown:
-            result.errors.append(
-                f"Unknown template slug(s) for entity_type={entity_type}: {', '.join(unknown)}"
-            )
+        if not typed_templates:
+            result.errors.append(f"No core templates found for entity_type={entity_type}")
             result.status = "rejected"
             return result
-        applicable_slugs = [s for s in applicable_slugs if s in set(only)]
 
-    result.templates_excluded = excluded
+        applicable_slugs, excluded = _screen_templates(entity_description, typed_templates)
 
-    # Step 3: Checkpoint
-    logger.info("Onboard step 3: checkpoint review")
-    decision = await gate.review_onboard(
-        entity_name, entity_type, applicable_slugs, excluded,
-        entity_description=entity_description,
-    )
+        if only:
+            unknown = [s for s in only if s not in {t.slug for t in typed_templates}]
+            if unknown:
+                result.errors.append(
+                    f"Unknown template slug(s) for entity_type={entity_type}: {', '.join(unknown)}"
+                )
+                result.status = "rejected"
+                return result
+            applicable_slugs = [s for s in applicable_slugs if s in set(only)]
 
-    if decision == "reject":
-        result.status = "rejected"
-        draft_ref = _write_draft_entity_file(
+        result.templates_excluded = excluded
+
+        # Step 3: Checkpoint
+        logger.info("Onboard step 3: checkpoint review")
+        decision = await gate.review_onboard(
+            entity_name, entity_type, applicable_slugs, excluded,
+            entity_description=entity_description,
+        )
+
+        if decision == "reject":
+            result.status = "rejected"
+            draft_ref = _write_draft_entity_file(
+                entity_name=entity_name,
+                entity_type=et,
+                entity_description=entity_description,
+                repo_root=repo_root,
+                website=entity_website,
+            )
+            result.entity_ref = draft_ref
+            return result
+
+        if isinstance(decision, list):
+            applicable_slugs = decision
+
+        result.templates_applied = applicable_slugs
+
+        # Step 4: Write entity file
+        entity_ref = _write_entity_file(
             entity_name=entity_name,
             entity_type=et,
             entity_description=entity_description,
             repo_root=repo_root,
             website=entity_website,
         )
-        result.entity_ref = draft_ref
-        return result
+        result.entity_ref = entity_ref
 
-    if isinstance(decision, list):
-        applicable_slugs = decision
+        # Step 5: Per-template research pipeline. Each template gets its own
+        # run_id so the per-claim agent runs (researcher/ingestor/analyst/
+        # auditor) in verify_claim group cleanly under one id. Token-usage
+        # records inherit this id via cfg.run_id.
+        total = len(applicable_slugs)
+        for idx, slug in enumerate(applicable_slugs, 1):
+            iter_cfg = dataclasses.replace(cfg, run_id=new_run_id())
+            with bind_run_id(iter_cfg.run_id):
+                progress("[%d/%d] Researching: %s ...", idx, total, slug)
+                template = get_template(all_templates, slug)
+                if not template:
+                    progress("[%d/%d] ERROR: template not found: %s", idx, total, slug)
+                    # Invariant: every entry in result.claims_failed must
+                    # have at least one matching entry in result.errors of
+                    # the form f"{slug}: <reason>". The CLI renders them as
+                    # a unified "Failed:" block; an unattributed failure
+                    # would silently disappear from operator output.
+                    result.errors.append(f"{slug}: template not found")
+                    result.claims_failed.append(slug)
+                    continue
 
-    result.templates_applied = applicable_slugs
+                claim_text = render_claim_text(template, entity_name)
+                logger.info("Onboard: researching template %s -> %s", slug, claim_text)
 
-    # Step 4: Write entity file
-    entity_ref = _write_entity_file(
-        entity_name=entity_name,
-        entity_type=et,
-        entity_description=entity_description,
-        repo_root=repo_root,
-        website=entity_website,
-    )
-    result.entity_ref = entity_ref
-
-    # Step 5: Per-template research pipeline (sequential; parallelism TBD per orchestrator config)
-    total = len(applicable_slugs)
-    for idx, slug in enumerate(applicable_slugs, 1):
-        click.echo(f"[{idx}/{total}] Researching: {slug} ...", err=True)
-        template = get_template(all_templates, slug)
-        if not template:
-            click.echo(f"[{idx}/{total}] ERROR: template not found: {slug}", err=True)
-            # Invariant (also enforced at lines 737, 835): every entry in
-            # result.claims_failed must have at least one matching entry in
-            # result.errors of the form f"{slug}: <reason>". The CLI renders
-            # them as a unified "Failed:" block; an unattributed failure
-            # would silently disappear from operator output.
-            result.errors.append(f"{slug}: template not found")
-            result.claims_failed.append(slug)
-            continue
-
-        claim_text = render_claim_text(template, entity_name)
-        logger.info("Onboard: researching template %s -> %s", slug, claim_text)
-
-        try:
-            vr = await verify_claim(entity_name, claim_text, cfg, gate)
-
-            if vr.errors:
-                result.errors.extend(f"{slug}: {e}" for e in vr.errors)
-
-            # Threshold-blocked branch: persist a placeholder claim file
-            # with status='blocked' so the operator can see (and later
-            # re-run or archive) the halted work. Sources that did ingest
-            # are still written out.
-            if vr.blocked_reason is not None:
-                source_ids = (
-                    _write_source_files(vr.source_files, repo_root)
-                    if vr.source_files
-                    else []
-                )
                 try:
-                    inherited_topics = [Category(t) for t in template.topics]
-                except ValueError:
-                    inherited_topics = []
-                blocked_body = (
-                    f"This claim is blocked: `{vr.blocked_reason.value}`. "
-                    f"The pipeline halted before the Analyst could produce a "
-                    f"verdict. Re-run the pipeline once more usable sources "
-                    f"are available, or archive this claim if it cannot be "
-                    f"verified.\n"
-                )
-                blocked_path = _write_claim_file(
-                    title=claim_text,
-                    entity_name=entity_name,
-                    entity_ref=entity_ref,
-                    topics=inherited_topics,
-                    verdict=Verdict.UNVERIFIED,
-                    confidence=Confidence.LOW,
-                    narrative=blocked_body,
-                    claim_slug=slug,
-                    source_ids=source_ids,
-                    repo_root=repo_root,
-                    force=cfg.force_overwrite,
-                    status="blocked",
-                    blocked_reason=vr.blocked_reason,
-                )
-                result.claims_created.append(str(blocked_path.relative_to(repo_root)))
-                click.echo(
-                    f"[{idx}/{total}] Blocked: {slug} "
-                    f"({vr.blocked_reason.value})",
-                    err=True,
-                )
-                continue
+                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate)
 
-            if not vr.analyst_output:
-                result.claims_failed.append(slug)
-                continue
+                    if vr.errors:
+                        result.errors.extend(f"{slug}: {e}" for e in vr.errors)
 
-            # Write sources (reuse verify_claim's already-ingested sources)
-            source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
+                    # Threshold-blocked branch: persist a placeholder claim
+                    # file with status='blocked' so the operator can see
+                    # (and later re-run or archive) the halted work.
+                    # Sources that did ingest are still written out.
+                    if vr.blocked_reason is not None:
+                        source_ids = (
+                            _write_source_files(vr.source_files, repo_root)
+                            if vr.source_files
+                            else []
+                        )
+                        try:
+                            inherited_topics = [Category(t) for t in template.topics]
+                        except ValueError:
+                            inherited_topics = []
+                        blocked_body = (
+                            f"This claim is blocked: `{vr.blocked_reason.value}`. "
+                            f"The pipeline halted before the Analyst could produce a "
+                            f"verdict. Re-run the pipeline once more usable sources "
+                            f"are available, or archive this claim if it cannot be "
+                            f"verified.\n"
+                        )
+                        blocked_path = _write_claim_file(
+                            title=claim_text,
+                            entity_name=entity_name,
+                            entity_ref=entity_ref,
+                            topics=inherited_topics,
+                            verdict=Verdict.UNVERIFIED,
+                            confidence=Confidence.LOW,
+                            narrative=blocked_body,
+                            claim_slug=slug,
+                            source_ids=source_ids,
+                            repo_root=repo_root,
+                            force=iter_cfg.force_overwrite,
+                            status="blocked",
+                            blocked_reason=vr.blocked_reason,
+                            criteria_slug=slug,
+                        )
+                        result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        progress(
+                            "[%d/%d] Blocked: %s (%s)",
+                            idx,
+                            total,
+                            slug,
+                            vr.blocked_reason.value,
+                        )
+                        continue
 
-            # Write claim file. The claim inherits the source criterion's
-            # full `topics` set by default (per docs/plans/multi-topic.md
-            # §"Pipeline output"). The operator can hand-edit a claim's
-            # topics post-pipeline if specialization is needed.
-            ao = vr.analyst_output
-            try:
-                inherited_topics = [Category(t) for t in template.topics]
-            except ValueError as exc:
-                logger.warning(
-                    "Template %s has invalid topic; falling back to analyst topics: %s",
-                    slug,
-                    exc,
-                )
-                inherited_topics = list(ao.verdict.topics)
+                    if not vr.analyst_output:
+                        result.claims_failed.append(slug)
+                        continue
 
-            claim_path = _write_claim_file(
-                title=ao.verdict.title,
-                entity_name=entity_name,
-                entity_ref=entity_ref,
-                topics=inherited_topics,
-                verdict=ao.verdict.verdict,
-                confidence=ao.verdict.confidence,
-                narrative=ao.verdict.narrative,
-                claim_slug=slug,
-                source_ids=source_ids,
-                repo_root=repo_root,
-                force=cfg.force_overwrite,
-            )
-            result.claims_created.append(str(claim_path.relative_to(repo_root)))
+                    # Write sources (reuse verify_claim's already-ingested sources)
+                    source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
 
-            # Write audit sidecar after auditor step
-            sidecar_sources = _build_sources_consulted(vr.source_files)
-            _write_audit_sidecar(
-                claim_path=claim_path,
-                comparison=vr.consistency,
-                model=cfg.model,
-                ran_at=datetime.datetime.now(datetime.timezone.utc),
-                sources_consulted=sidecar_sources,
-                agents_run=["researcher", "ingestor", "analyst", "auditor"],
-            )
+                    # Write claim file. The claim inherits the source
+                    # criterion's full `topics` set by default (per
+                    # docs/plans/multi-topic.md §"Pipeline output"). The
+                    # operator can hand-edit a claim's topics
+                    # post-pipeline if specialization is needed.
+                    ao = vr.analyst_output
+                    try:
+                        inherited_topics = [Category(t) for t in template.topics]
+                    except ValueError as exc:
+                        logger.warning(
+                            "Template %s has invalid topic; falling back to analyst topics: %s",
+                            slug,
+                            exc,
+                        )
+                        inherited_topics = list(ao.verdict.topics)
 
-            click.echo(f"[{idx}/{total}] Done: {slug}", err=True)
-        except Exception as exc:
-            click.echo(f"[{idx}/{total}] FAILED: {slug}: {exc}", err=True)
-            logger.error("Template %s failed: %s", slug, exc)
-            result.errors.append(f"{slug}: {exc}")
-            result.claims_failed.append(slug)
+                    claim_path = _write_claim_file(
+                        title=ao.verdict.title,
+                        entity_name=entity_name,
+                        entity_ref=entity_ref,
+                        topics=inherited_topics,
+                        verdict=ao.verdict.verdict,
+                        confidence=ao.verdict.confidence,
+                        narrative=ao.verdict.narrative,
+                        claim_slug=slug,
+                        source_ids=source_ids,
+                        repo_root=repo_root,
+                        force=iter_cfg.force_overwrite,
+                        criteria_slug=slug,
+                    )
+                    result.claims_created.append(str(claim_path.relative_to(repo_root)))
+
+                    # Write audit sidecar after auditor step
+                    sidecar_sources = _build_sources_consulted(vr.source_files)
+                    _write_audit_sidecar(
+                        claim_path=claim_path,
+                        comparison=vr.consistency,
+                        model=iter_cfg.model,
+                        ran_at=datetime.datetime.now(datetime.timezone.utc),
+                        sources_consulted=sidecar_sources,
+                        agents_run=["researcher", "ingestor", "analyst", "auditor"],
+                    )
+
+                    progress("[%d/%d] Done: %s", idx, total, slug)
+                except Exception as exc:
+                    progress("[%d/%d] FAILED: %s: %s", idx, total, slug, exc)
+                    logger.error("Template %s failed: %s", slug, exc)
+                    result.errors.append(f"{slug}: {exc}")
+                    result.claims_failed.append(slug)
 
     return result

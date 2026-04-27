@@ -18,6 +18,7 @@ dist/
 
 # Logs
 *.log
+/logs/
 
 # Draft plans (kept local, not committed)
 docs/plans/drafts/

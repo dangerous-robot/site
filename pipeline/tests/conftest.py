@@ -15,6 +15,23 @@ def repo_root() -> Path:
     return resolve_repo_root()
 
 
+@pytest.fixture(autouse=True, scope="session")
+def _isolate_cli_logging():
+    """Stop CLI tests (CliRunner.invoke) from writing to the real ``logs/``.
+
+    ``orchestrator.cli.main`` calls ``configure_logging(repo_root=_safe_repo_root())``
+    on every invocation. Without this fixture, tests that drive the CLI
+    via ``CliRunner`` install RotatingFileHandlers pointing at the
+    project's actual ``logs/`` directory and pollute it across runs.
+    """
+    mp = pytest.MonkeyPatch()
+    mp.setattr("orchestrator.cli._safe_repo_root", lambda: None)
+    try:
+        yield
+    finally:
+        mp.undo()
+
+
 @pytest.fixture()
 def sample_frontmatter_text() -> str:
     """A minimal frontmatter markdown string for testing."""

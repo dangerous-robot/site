@@ -4,6 +4,24 @@
 
 Log every PydanticAI agent run's token usage to a single append-only JSONL file, tagged with the object the run was spent on (claim, source, entity, criterion, or routing). Add an `inv tokens.summary` task that aggregates the log by object or by time window.
 
+> **Pointer (2026-04-27)**: parts of the plumbing this plan anticipates already
+> shipped with the logging-infrastructure work
+> (`/Users/brandon/.claude/plans/1-add-run-id-2-misty-glacier.md`). Inline
+> pointers throughout this document tag the spots worth re-reading; they are
+> for consideration, not prescriptive — the author of this plan may keep,
+> drop, or rework the affected sections as they see fit. The headline items:
+>
+> - `VerifyConfig.run_id` already exists (`pipeline/orchestrator/pipeline.py`).
+> - `new_run_id()` and `bind_run_id()` live in `pipeline/common/logging_setup.py`.
+> - `bind_run_id(cfg.run_id)` already wraps `verify_claim`, `research_claim`,
+>   and `onboard_entity` (per-template iteration uses
+>   `dataclasses.replace(cfg, run_id=new_run_id())`).
+> - `dr ingest` and `dr reassess` already bind a fresh `run_id` per invocation.
+> - `/logs/` exists and is git-ignored.
+>
+> The wrapper described below can read `cfg.run_id` (and the contextvar, if
+> useful) without re-introducing any of this.
+
 ## Goal
 
 Record token cost (input, output, total, request count) for every `agent.run(...)` call in the dangerousrobot.org pipeline, attached to the artifact the run produced or modified. The log answers: which claims, sources, and entities are consuming the most tokens; what is the daily/weekly model spend; which agents dominate. This is the simplest version because there is one writer (a small wrapper), one schema (one JSONL line per run), and one reader (the `inv` task). No DB, no service, no live UI.
@@ -187,6 +205,14 @@ Net change: one import, swap `analyst_agent.run(prompt)` for `run_with_logging(a
 
 ## `run_id` semantics
 
+> **Pointer**: most of this section already describes installed behaviour as
+> of the logging-infrastructure work. `VerifyConfig.run_id` exists with
+> `new_run_id` as its default factory; the entry-point bindings and the
+> per-template `dataclasses.replace(cfg, run_id=new_run_id())` are in
+> `pipeline/orchestrator/pipeline.py`; the CLI-side bindings are in
+> `pipeline/orchestrator/cli.py`. What remains specific to *this* plan is
+> `run_object_id` (the field below), which logging does not need.
+
 - Generated as `uuid.uuid4().hex` (32 hex chars, no dashes) at the top-level pipeline entry: `verify_claim`, `research_claim`, `onboard_entity` (one per template iteration), and the CLI handlers for `dr ingest` and `dr reassess`.
 - Threaded via two new fields on `VerifyConfig`:
 
@@ -206,8 +232,8 @@ For `onboard_entity`, the per-template loop creates a fresh `cfg` copy with a ne
 - **Append-only.** No record is ever rewritten. A new run on the same claim simply appends another line.
 - **Partial failure.** The wrapper's `finally` block always writes a record. On exception, fields default to: `input_tokens=0`, `output_tokens=0`, `total_tokens=0`, `requests=0`, `error="<ExcType>: <msg>"`. The exception still propagates; logging never swallows it. Goal: no silent loss.
 - **fsync.** Off by default. Opt-in via `DR_TOKEN_LOG_FSYNC=1` for paranoid runs.
-- **File location.** `<repo_root>/logs/token-log.jsonl`. The `logs/` directory is local operator telemetry, not research content. Add `/logs/` to `.gitignore` as part of this plan. Rationale: the log is operator-local, mixes with no research content, and is regenerated continuously. Future operator-facing logs can co-locate here without further plumbing.
-- **Concurrency.** `pipeline.py:_ingest_urls` ingests URLs concurrently via `asyncio.gather`. Append writes from multiple coroutines to the same file are unsafe at the byte level. Use a module-level `asyncio.Lock` guarding the append. Cross-process concurrency is not a v1 concern (one `dr` invocation per shell).
+- **File location.** `<repo_root>/logs/token-log.jsonl`. The `logs/` directory is local operator telemetry, not research content. Add `/logs/` to `.gitignore` as part of this plan. Rationale: the log is operator-local, mixes with no research content, and is regenerated continuously. Future operator-facing logs can co-locate here without further plumbing. *Pointer: `/logs/` is already in `.gitignore` and is already populated by `logs/info.log` and `logs/debug.log` from the logging-infrastructure work; this plan can drop the gitignore step.*
+- **Concurrency.** `pipeline.py:_ingest_urls` ingests URLs concurrently via `asyncio.gather`. Append writes from multiple coroutines to the same file are unsafe at the byte level. Use a module-level `asyncio.Lock` guarding the append. Cross-process concurrency is not a v1 concern (one `dr` invocation per shell). *Pointer: stdlib `RotatingFileHandler` (used by the logging streams) handles this with internal locks; if the JSONL writer wants the same robustness without a hand-rolled `asyncio.Lock`, it could lift `_open` / `emit` patterns from the logging handler.*
 
 ## `inv tokens.summary`
 
@@ -285,6 +311,14 @@ Fixtures use `pydantic_ai.usage.RunUsage(input_tokens=..., output_tokens=..., to
 
 ## Rollout order
 
+> **Pointer**: step 5's `/logs/` gitignore line is already done. The wrapper
+> in step 1 can import `new_run_id` and (optionally) `run_id_var` from
+> `pipeline/common/logging_setup.py` rather than duplicating uuid plumbing.
+> The `cfg.run_id` reads in steps 2-3 already work with no further wiring;
+> `dr reassess` and `dr ingest` already bind a `run_id` per invocation, so
+> step 3's "twice" footnote for the CLI sites no longer requires generating
+> the id at the wrapper call.
+
 1. **Wrapper and schema.** Add `pipeline/common/token_log.py` with `run_with_logging`, `_append_record`, `iter_records`, the schema constants, and unit tests for the wrapper.
 2. **Migrate analyst.** Wrap the analyst call in `pipeline.py:_analyse_claim` first; it is the lowest-risk call site (no concurrency, no tools, fastest path to a real record on disk). Run `dr verify` once on a canned claim and inspect the JSONL.
 3. **Migrate the rest.** Wrap researcher, ingestor (twice: pipeline.py and cli.py), and auditor (twice). Verify `run_id` propagation by running a full `dr verify` and confirming all four agent runs share one id.
@@ -306,3 +340,4 @@ Fixtures use `pydantic_ai.usage.RunUsage(input_tokens=..., output_tokens=..., to
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-04-26 | agent (claude-opus-4-7) | deep, implementation, iterated | Verified all six call sites against `pipeline.py` and `cli.py`; corrected ingestor CLI line (384 → 391); reused `entity_ref` instead of normalizing entity ids; split `claim` `object_id` shape into persisted vs. in-flight; added `cache_read_tokens`/`cache_write_tokens` to schema; collapsed `inv` task wiring to a single `__main__` in `pipeline/common/token_log.py` (no separate `token_log_cli.py`); switched log location from `.dr/` to `logs/`; tightened wrapper's `result.usage()` error path. |
+| 2026-04-27 | agent (claude-opus-4-7) | non-prescriptive pointers | Logging-infrastructure work shipped first and incidentally implemented `VerifyConfig.run_id`, the `bind_run_id`/`new_run_id` helpers, the entry-point bindings, the per-template `run_id` per onboard iteration, and `/logs/` gitignore. Added pointer callouts (top, run_id semantics, persistence concerns, rollout) noting which sections of this plan now describe already-installed behaviour. No prescriptive edits; the plan author can fold or rewrite affected sections at their discretion. |
