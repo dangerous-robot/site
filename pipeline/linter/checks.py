@@ -12,8 +12,9 @@ REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "
 CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description"}
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
-    "criteria_slug", "status", "as_of", "sources",
-    "recheck_cadence_days", "next_recheck_due",
+    "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
+    "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
+    "audit",
 }
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
