@@ -1,0 +1,53 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-28T02:11:10.077506+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+sources_consulted:
+- id: 2024/historic-renewable-energy-power-purchase-agreement
+  url: https://www.orrick.com/en/News/2024/05/Microsoft-and-Brookfield-Agree-on-Framework-to-Deliver-Over-10-GW-Capacity-Globally/
+  title: Historic Renewable Energy Power Purchase Agreement
+  ingested: true
+- id: 2026/carbon-removal-program
+  url: https://www.microsoft.com/en-us/corporate-responsibility/sustainability/carbon-removal-program
+  title: Carbon Removal Program
+  ingested: true
+- id: 2021/microsoft-climate-pledge-update
+  url: https://www.theverge.com/2021/1/28/22254483/microsoft-climate-change-pledge-update-carbon-dioxide-removal
+  title: Microsoft made a giant climate pledge one year ago — here’s where it’s at
+    now
+  ingested: true
+- id: 2026/microsoft-pauses-carbon-removal-purchases
+  url: https://carboncredits.com/microsoft-hits-pause-on-all-carbon-removal-purchases-a-major-shift-in-corporate-climate-strategy/
+  title: Microsoft Hits Pause on All Carbon Removal Purchases
+  ingested: true
+- id: 2026/sustainability-journey
+  url: https://www.microsoft.com/en-us/corporate-responsibility/sustainability-journey
+  title: Sustainability Journey
+  ingested: true
+- id: 2026/microsoft-carbon-negative-goal
+  url: https://unfccc.int/climate-action/un-global-climate-action-awards/climate-neutral-now/microsoft-carbon-negative-goal
+  title: Microsoft Carbon Negative Goal
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

@@ -1,0 +1,40 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-28T03:02:10.455043+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+sources_consulted:
+- id: 2024/tread-lightly-inc-financial-data
+  url: https://projects.propublica.org/nonprofits/organizations/870481456
+  title: Tread Lightly Inc
+  ingested: true
+- id: 2026/donate-to-support-ai-safety
+  url: https://safe.ai/donate
+  title: Donate to support AI Safety
+  ingested: true
+- id: 2025/donation-guide-ai-safety
+  url: https://www.aisafety.com/donation-guide
+  title: Donation guide
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
