@@ -13,10 +13,9 @@ import Base from '../layouts/Base.astro';
     <h2>AI safety is unsolved</h2>
     <p>
       Frontier AI is being deployed faster than the field can verify it is
-      safe. The plausible failure modes include an existential threat to
-      humanity. The companies shipping these systems publish glossy
-      responsibility pages, but cannot characterize what their own models
-      will do.
+      safe. The plausible failure modes include existential risk. Vendors
+      publish responsibility pages, but cannot characterize what their own
+      models will do.
     </p>
     <p>
       Dangerous Robot treats every vendor safety claim as a claim, not a fact.
@@ -24,29 +23,32 @@ import Base from '../layouts/Base.astro';
 
     <h2>AI is fueling environmental destruction</h2>
     <p>
-      Large AI Models burn electricity, water, and embodied carbon at
-      industrial scale. To win the AI arms race, firms are rushing to build
-      gigantic fossil fuel powered Data Centers. Dangerous Robot will not let
-      them hide the cost.
+      Large AI models burn electricity, water, and embodied carbon at
+      industrial scale. Firms are rushing to build fossil fuel-powered data
+      centers to win an arms race. The costs are real and worth naming.
     </p>
 
-    <h2>Our contradictions and commitments</h2>
+    <h2>Our contradictions</h2>
     <p>
-      Dangerous Robot runs on AI to investigate AI. We critique the tools we
+      Dangerous Robot runs on AI to investigate AI. We critique tools we
       depend on and burn electricity doing it. The contradictions are real,
-      and we will not dress them up. This work happens from inside the
-      problem, not from a clean room.
+      and we won't dress them up.
     </p>
     <p>
-      Our response is discipline. Small decisions go to small models; frontier
-      models are reserved for analysis and evaluation. Every call is logged,
-      every total is published. Large AI Models are wasteful by default; we
-      use them only when the task demands it. The environmental discipline we
-      ask of others, applied to our own pipeline.
-    </p>
-    <p>
-      Our model calls run on Infomaniak, a Swiss provider whose data centers
-      use 100% renewable energy and <a href="https://news.infomaniak.com/en/infomaniak-inaugurates-a-revolutionary-data-center-that-recovers-100-of-its-energy-for-building-heating/" target="_blank" rel="noopener noreferrer">recover 100% of their waste heat to warm buildings</a>.
+      We try to be careful: small decisions go to small models, frontier
+      models only when the task demands it. Our pipeline runs on Infomaniak,
+      a Swiss provider using 100% renewable energy that <a href="https://news.infomaniak.com/en/infomaniak-inaugurates-a-revolutionary-data-center-that-recovers-100-of-its-energy-for-building-heating/" target="_blank" rel="noopener noreferrer">recovers waste heat
+      to warm buildings</a>. It's a small effort, not a solution.
     </p>
   </article>
 </Base>
+
+<style>
+  article h2 {
+    margin-top: var(--space-2xl);
+  }
+
+  article > p:first-of-type {
+    margin-bottom: var(--space-lg);
+  }
+</style>
