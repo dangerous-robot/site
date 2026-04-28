@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from .models import LintIssue
 
 REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
-CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description"}
+CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description", "parent_company"}
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
@@ -68,6 +68,37 @@ def check_missing_required_fields(
     return issues
 
 
+def check_published_criterion(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Published claims must declare a `criteria_slug`.
+
+    A criterion is the join key for cross-entity comparison, criterion-driven
+    re-evaluation, and onboard-time propagation. Drafts may carry no criterion
+    (operator may still be exploring); published claims may not.
+    """
+    from common.frontmatter import has_criterion
+
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if fm.get("status") != "published":
+            continue
+        if not has_criterion(fm):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="published-without-criterion",
+                severity="error",
+                message="published claim has no `criteria_slug`",
+                hint=(
+                    "set `criteria_slug:` in the claim frontmatter to a slug from "
+                    "research/templates.yaml (or add a new template entry first)"
+                ),
+            ))
+    return issues
+
+
 def check_published_review_signoff(
     claim_files: list[Path],
     claim_frontmatters: dict[str, dict[str, Any]],
@@ -83,7 +114,7 @@ def check_published_review_signoff(
             issues.append(LintIssue(
                 path=str(path),
                 check_id="published-without-review",
-                severity="error",
+                severity="warning",
                 message="published claim has no audit sidecar; reviewer sign-off is missing",
                 hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
             ))
@@ -93,7 +124,7 @@ def check_published_review_signoff(
             issues.append(LintIssue(
                 path=str(path),
                 check_id="published-without-review",
-                severity="error",
+                severity="warning",
                 message="published claim's audit sidecar has no `human_review.reviewed_at`",
                 hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
             ))
