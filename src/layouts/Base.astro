@@ -1,7 +1,10 @@
 ---
+import { readFileSync } from 'node:fs';
 import "../styles/tokens.css";
 import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
+
+const siteVersion = readFileSync(new URL('../../VERSION.md', import.meta.url), 'utf-8').split('\n')[0].trim();
 
 interface Props {
   title: string;
@@ -115,11 +118,14 @@ const {
         &nbsp;·&nbsp;
         <a href="/faq#methodology">Methodology</a>
         &nbsp;·&nbsp;
+        <a href="/credits">Credits</a>
+      </p>
+      <p>
         <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">GitHub</a>
         &nbsp;·&nbsp;
-        <a href="/credits">Credits</a>
-        &nbsp;·&nbsp;
         <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>
+        &nbsp;·&nbsp;
+        v{siteVersion}
       </p>
     </footer>
 
@@ -258,13 +264,18 @@ const {
 
       .site-footer {
         border-top: 1px solid var(--color-border);
-        padding: var(--space-xl) 0;
+        padding: var(--space-md) 0;
         text-align: center;
         color: var(--color-footer-text);
         font-family: var(--font-mono);
         font-size: var(--font-size-2xs);
         text-transform: uppercase;
         letter-spacing: 0.12em;
+        line-height: 1.4;
+      }
+
+      .site-footer p {
+        margin: var(--space-xs) 0;
       }
 
       .site-footer a {
