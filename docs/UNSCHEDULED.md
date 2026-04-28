@@ -4,6 +4,14 @@ Work known but not yet assigned to a release. Items here are candidates for the 
 
 ---
 
+## Per-entity detail pages
+
+Goal: Render company / product / sector detail pages so entity body content (e.g. the COI blockquote on `research/entities/products/treadlightlyai.md`) is actually visible to readers. Today only `index.astro` exists for `companies/` and `products/`, and the entity body is dropped at build. The treadlightlyai COI block was added 2026-04-27 in anticipation of these pages; until they ship, the canonical disclosure is the FAQ accordion.
+
+Also unlocks: rendering `parent_company` cross-links from product pages back to the company page (and vice versa via a query of the entity collection).
+
+---
+
 ## Pipeline performance & hardening
 
 Goal: Reduce onboarding wall time and wasted API calls.
@@ -27,6 +35,27 @@ Goal: Make per-object model spend visible so we can see which claims, sources, a
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Token usage log + `inv tokens.summary` | [token-usage-log.md](plans/token-usage-log.md) | Append-only JSONL at `logs/token-log.jsonl` written by a thin wrapper around every `agent.run(...)`; `inv tokens.summary --by object\|time` reader; no DB, no UI |
+
+---
+
+## Analyst decomposition (cost lever)
+
+Goal: Split the Analyst's frontier-model call into smaller sub-decisions so cheaper models can handle the parts that don't need full reasoning. Aligns with the "small decisions, small models" principle in `AGENTS.md`.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Full 4-step decomposition (entity resolver, per-source stance, verdict synthesizer, narrative+title writer) | [analyst-decomposition_stub.md](plans/drafts/analyst-decomposition_stub.md) | Stub draft; needs token-usage baseline before committing. Keeps verdict+confidence on frontier; pushes the rest to Haiku-class. Biggest win is feeding frontier structured stances instead of raw source bodies (~10x smaller prompt). |
+| Narrative + title writer extraction (smallest slice) | (to be drafted from the stub) | Once verdict is fixed, this is structured writing with a mechanical title-polarity rule. Most defensibly Haiku-class sub-decision; could be promoted out of the broader plan as a single-step extraction. |
+
+---
+
+## Dedup detection on URL ingest and claim creation
+
+Goal: Stop creating duplicate sources/claims when the pipeline encounters a URL or claim that already exists. Today the pipeline writes a new file or fails on a path collision rather than reusing the existing object.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Match-and-return-existing for URL ingest and claim creation | [pipeline-dedup-detection_stub.md](plans/drafts/pipeline-dedup-detection_stub.md) | URL match: canonicalize (lowercase scheme/host, strip default ports, drop fragment + `utm_*`/`fbclid`/etc, strip trailing slash) and look up existing source by `canonical_url` frontmatter. Claim match: `(entity_slug, criteria_slug)` from frontmatter (already present today). On hit: `dr ingest` prints existing id, exits 0; onboard skips analyst+auditor and logs the dedup hit in the sidecar. `--force` bypasses dedup. Composes with onboard-reuse-verify-sources.md. |
 
 ---
 
