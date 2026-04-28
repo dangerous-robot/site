@@ -97,6 +97,16 @@ Goal: A single reference doc (`docs/RUNBOOK.md`) covering the dev loop, pipeline
 
 ---
 
+## Developer tooling
+
+Goal: Convert ad-hoc POC scripts into durable, agent-friendly tools that future model evaluations can reuse.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| `llm-tester` refactor of `scripts/poc-multi-provider/` | [llm-tester-refactor.md](plans/llm-tester-refactor.md) | Rename to `scripts/llm-tester/`, single `tester.py` dispatcher (`probe`/`trace`/`list`), archive POC artifacts. Stays gitignored. Minimal-change refactor of existing harnesses. |
+
+---
+
 ## Automation (conditional)
 
 Goal: Recurring audits, queue-based intake. Trigger: enough content exists that manual auditing is burdensome.
