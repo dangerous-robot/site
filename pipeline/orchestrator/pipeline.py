@@ -45,7 +45,7 @@ from common.utils import slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
-from common.models import DEFAULT_MODEL, resolve_model
+from common.models import AGENT_NAMES, DEFAULT_MODEL, AgentName, resolve_model
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -161,31 +161,9 @@ class VerifyConfig:
                 ingest_budget_with_wayback_s() if not self.skip_wayback else 60.0
             )
 
-    def model_for(self, agent: str) -> str:
-        """Resolve the model spec for a given agent, falling back to ``model``.
-
-        ``agent`` is one of "researcher", "analyst", "auditor", "ingestor".
-        """
-        per_agent = {
-            "researcher": self.researcher_model,
-            "analyst": self.analyst_model,
-            "auditor": self.auditor_model,
-            "ingestor": self.ingestor_model,
-        }
-        return per_agent.get(agent) or self.model
-
-    def all_models(self) -> list[str]:
-        """All distinct resolved model specs in use across the four agents.
-
-        Used by callers (notably the CLI) to enumerate which providers' env
-        vars are required for a given run.
-        """
-        seen: list[str] = []
-        for agent in ("researcher", "analyst", "auditor", "ingestor"):
-            m = self.model_for(agent)
-            if m not in seen:
-                seen.append(m)
-        return seen
+    def model_for(self, agent: AgentName) -> str:
+        """Resolve the model spec for a given agent, falling back to ``model``."""
+        return getattr(self, f"{agent}_model") or self.model
 
 
 async def verify_claim(

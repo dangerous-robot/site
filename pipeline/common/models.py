@@ -7,10 +7,18 @@ PydanticAI Model instances when needed.
 import os
 from enum import Enum
 from functools import lru_cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
+
+
+AgentName = Literal["researcher", "analyst", "auditor", "ingestor"]
+# Canonical iteration order for the four agents that participate in a
+# single claim verification. Used by VerifyConfig.model_for and CLI
+# helpers that enumerate per-agent overrides; adding an agent means
+# editing this tuple and the matching VerifyConfig fields.
+AGENT_NAMES: tuple[AgentName, ...] = ("researcher", "analyst", "auditor", "ingestor")
 
 
 class Verdict(str, Enum):

@@ -206,20 +206,12 @@ class TestVerifyConfigPerAgentModels:
         cfg = VerifyConfig(
             model="anthropic:claude",
             analyst_model="infomaniak:openai/gpt-oss-120b",
-            auditor_model="infomaniak:mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+            auditor_model="infomaniak:mistral24b",
         )
         assert cfg.model_for("researcher") == "anthropic:claude"
         assert cfg.model_for("analyst") == "infomaniak:openai/gpt-oss-120b"
-        assert cfg.model_for("auditor") == "infomaniak:mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+        assert cfg.model_for("auditor") == "infomaniak:mistral24b"
         assert cfg.model_for("ingestor") == "anthropic:claude"
-
-    def test_all_models_deduplicates(self) -> None:
-        cfg = VerifyConfig(
-            model="anthropic:claude",
-            analyst_model="anthropic:claude",  # duplicate of base
-            auditor_model="infomaniak:openai/gpt-oss-120b",
-        )
-        assert cfg.all_models() == ["anthropic:claude", "infomaniak:openai/gpt-oss-120b"]
 
 
 class TestVerifyConfigTimeouts:

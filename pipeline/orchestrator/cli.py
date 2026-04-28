@@ -15,7 +15,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from common.logging_setup import configure_logging, new_run_id, progress, run_id_var
-from common.models import DEFAULT_MODEL, resolve_model
+from common.models import AGENT_NAMES, DEFAULT_MODEL, resolve_model
 from orchestrator.persistence import set_claim_status
 
 logger = logging.getLogger(__name__)
@@ -68,7 +68,7 @@ def _agent_models_from_ctx(ctx: click.Context) -> list[str]:
     """All resolved model specs for the four agents in this CLI run."""
     base = ctx.obj["model"]
     seen: list[str] = []
-    for agent in ("researcher", "analyst", "auditor", "ingestor"):
+    for agent in AGENT_NAMES:
         m = ctx.obj.get(f"{agent}_model") or base
         if m not in seen:
             seen.append(m)
@@ -77,10 +77,7 @@ def _agent_models_from_ctx(ctx: click.Context) -> list[str]:
 
 def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
     """Per-agent model fields ready to splat into ``VerifyConfig(...)``."""
-    return {
-        f"{agent}_model": ctx.obj.get(f"{agent}_model")
-        for agent in ("researcher", "analyst", "auditor", "ingestor")
-    }
+    return {f"{agent}_model": ctx.obj.get(f"{agent}_model") for agent in AGENT_NAMES}
 
 
 # Subcommand groups for `dr --help`, ordered safest -> most destructive.
