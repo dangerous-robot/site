@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { CATEGORIES } from '../lib/research';
+import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -28,9 +29,6 @@ const navLinks = [
   { href: '/faq', label: 'FAQ' },
 ];
 
-// Archive log construction — we render two lines that look like we caught
-// the archive mid-stream: each line begins with the trailing words of some
-// other claim, then shows two or three real verdict/title pairs.
 const featuredVerdicts = new Set(['false', 'mostly-false', 'unverified', 'mixed']);
 const pool = allClaims
   .filter((c) => featuredVerdicts.has(c.data.verdict))
@@ -42,8 +40,7 @@ const manualClaim = {
   title: 'At least one major AI company scores a C or higher on existential threats',
 };
 
-const fmtVerdict = (v: string) => v.replace(/-/g, ' ').toUpperCase();
-const tail = (s: string, n = 4) => s.split(/\s+/).slice(-n).join(' ');
+const fmtVerdict = (v: string) => VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
 
 const fallback = [
   { verdict: 'unverified', title: 'ChatGPT is hosted on renewable energy' },
@@ -51,19 +48,23 @@ const fallback = [
   { verdict: 'mostly-false', title: 'Anthropic publishes detailed training-data disclosures' },
   { verdict: 'false', title: 'OpenAI discloses cumulative model training compute' },
 ];
-const src = [...pool, ...fallback];
+const src = [manualClaim, ...pool, ...fallback];
 
-// Skip the mandatory topic so we don't duplicate.
-const claimA = src[0];
-const claimB = src[1];
-const claimC = src[2];
-const claimD = src[3];
+// TODO: wire real claim slugs into card hrefs
+const scatterItems = src.slice(0, 5);
 
-const frag1 = tail(src[4]?.title ?? 'on verifiable sources', 4);
-const frag2 = tail(src[5]?.title ?? 'training', 1);
+function rnd(min: number, max: number): number {
+  return min + Math.random() * (max - min);
+}
 
-const line1 = { fragment: frag1, items: [manualClaim, claimA] };
-const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
+// Bottom-row cards: low bottom, spread right-to-left; top-row cards: high bottom
+const cardPositions = [
+  { bottom: rnd(20,  70),  right: rnd(-30, 5),   rotate: rnd(-14, -5), z: 2 },
+  { bottom: rnd(40,  100), right: rnd(215, 300),  rotate: rnd(8,   17), z: 3 },
+  { bottom: rnd(80,  155), right: rnd(460, 570),  rotate: rnd(-13, -3), z: 2 },
+  { bottom: rnd(385, 465), right: rnd(30,  115),  rotate: rnd(10,  20), z: 4 },
+  { bottom: rnd(340, 425), right: rnd(315, 415),  rotate: rnd(-17, -6), z: 3 },
+];
 ---
 
 <Base title="Dangerous Robot — AI transparency research" chrome="minimal" layout="bare">
@@ -91,7 +92,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
       </span>
     </button>
 
-    <div class="hero-grid">
+    <div class="hero-body">
       <header class="hero-head">
         <p class="hero-meta" aria-hidden="true">
           <span>DR</span>
@@ -111,45 +112,40 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
         </h1>
 
         <p class="hero-tag">
-          Open, accountable research on AI companies: built by people, powered by AI.
+          Open, accountable research on AI and the industries building it: built by people, powered by AI.
         </p>
       </header>
 
-      <ol class="hero-cards" aria-label="Browse the archive">
+      <div class="claim-scatter" aria-label="Sample claims from the archive">
+        {scatterItems.map((c, i) => {
+          const p = cardPositions[i];
+          return (
+            <a
+              class="claim-card"
+              href="#"
+              style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${p.z}`}
+            >
+              <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
+              <span class="claim-card__body">{c.title}</span>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+
+    <!-- Index strip at the bottom of the hero viewport -->
+    <nav class="site-index" aria-label="Browse the archive">
+      <ol class="site-index__list">
         {sections.map((s) => (
-          <li class="hero-card-item">
-            <a class="nav-card" href={s.href}>
-              <span class="nav-card__num" aria-hidden="true">{s.n}</span>
-              <span class="nav-card__label">{s.label}</span>
-              <span class="nav-card__meta">{s.meta}</span>
-              <span class="nav-card__arrow" aria-hidden="true">&rarr;</span>
+          <li>
+            <a class="site-index__link" href={s.href}>
+              <span class="site-index__num" aria-hidden="true">{s.n}</span>
+              <span class="site-index__label">{s.label}</span>
             </a>
           </li>
         ))}
       </ol>
-    </div>
-
-    <!-- Archive log: two horizontal strips, each beginning mid-claim -->
-    <div class="hero-log" aria-label="Archive index">
-      <div class="hero-log__line">
-        <span class="hero-log__frag">&hellip;{line1.fragment}</span>
-        {line1.items.map((c) => (
-          <span class="hero-log__pair">
-            <span class={`hero-log__verdict hero-log__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
-            <span class="hero-log__body">{c.title}</span>
-          </span>
-        ))}
-      </div>
-      <div class="hero-log__line hero-log__line--offset">
-        <span class="hero-log__frag">&hellip;{line2.fragment}</span>
-        {line2.items.map((c) => (
-          <span class="hero-log__pair">
-            <span class={`hero-log__verdict hero-log__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
-            <span class="hero-log__body">{c.title}</span>
-          </span>
-        ))}
-      </div>
-    </div>
+    </nav>
   </section>
 
   <div
@@ -186,11 +182,10 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     overflow: hidden;
     padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
     padding-top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px);
-    padding-bottom: clamp(var(--space-xl), 6vh, var(--space-2xl));
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: 1fr auto;
-    gap: clamp(var(--space-xl), 5vh, 4rem);
+    padding-bottom: clamp(var(--space-md), 3vh, var(--space-xl));
+    display: flex;
+    flex-direction: column;
+    gap: clamp(var(--space-sm), 1.5vh, var(--space-md));
     isolation: isolate;
   }
 
@@ -333,25 +328,24 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-burger[aria-expanded="true"] .hero-burger__bars { opacity: 0; }
   .hero-burger[aria-expanded="true"] .hero-burger__close { opacity: 1; }
 
-  /* -------- main grid -------- */
-  .hero-grid {
+  /* -------- hero body: wordmark left, scatter right -------- */
+  .hero-body {
+    display: grid;
+    grid-template-columns: clamp(300px, 38%, 500px) 1fr;
+    align-items: start;
+    flex: 1;
     position: relative;
     z-index: 3;
-    display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: clamp(var(--space-xl), 4vw, 5rem);
-    align-items: start;
-    width: 100%;
-    max-width: 96rem;
-    margin: 0 auto;
-    padding: 0 0 clamp(1.5rem, 4vh, 2.5rem);
   }
 
+  /* -------- hero header -------- */
   .hero-head {
-    min-width: 0;
+    position: relative;
+    z-index: 5; /* renders above scatter cards as they slide under */
     display: flex;
     flex-direction: column;
     gap: clamp(var(--space-md), 2vh, var(--space-lg));
+    padding-right: var(--space-lg);
   }
 
   .hero-meta {
@@ -383,7 +377,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   .hero-title__row {
     display: flex;
     align-items: baseline;
-    max-width: 100%;
+    white-space: nowrap;
   }
   .hero-title__row--indent { padding-left: 0.55em; }
   .hero-title__word {
@@ -424,141 +418,158 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     color: var(--color-text);
   }
 
-  /* -------- card stack -------- */
-  .hero-cards {
-    min-width: 0;
+  /* -------- scattered claim cards -------- */
+  .claim-scatter {
+    position: relative;
+    z-index: 2; /* stacking context below hero-head — cards slide under wordmark */
+    overflow: visible;
+    align-self: stretch;
+    min-height: clamp(380px, 55vh, 600px);
+    /* negate hero's right padding so cards can reach and clip at the viewport edge */
+    margin-right: calc(-1 * clamp(var(--space-lg), 4vw, var(--space-2xl)));
+  }
+
+  .claim-card {
+    position: absolute;
+    bottom: var(--pos-bottom);
+    right: var(--pos-right);
+    z-index: var(--pos-z);
+    transform: rotate(var(--pos-rotate, 0deg));
+    width: 290px;
+    aspect-ratio: 5 / 3; /* index card landscape — ~174px tall */
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 15px 14px 0;
+    overflow: hidden;
+    /*
+     * Layered background:
+     * 1. Cream mask (0–43px) + single red rule at 43px
+     * 2. Black ruled lines every 26px, phased so first line also lands at 43px
+     *    (phase = 18px → lines at 43, 69, 95, 121, 147, 173)
+     * 3. Cream base color
+     */
+    background:
+      linear-gradient(
+        to bottom,
+        #f8f5ea 43px,
+        rgba(176, 22, 22, 0.6) 43px,
+        rgba(176, 22, 22, 0.6) 44px,
+        transparent 44px
+      ),
+      repeating-linear-gradient(
+        transparent 0px,
+        transparent 25px,
+        rgba(28, 18, 12, 0.14) 25px,
+        rgba(28, 18, 12, 0.14) 26px
+      ),
+      #f8f5ea;
+    background-size: auto, 100% 26px, auto;
+    background-position: 0 0, 0 18px, 0 0;
+    background-repeat: no-repeat, repeat, no-repeat;
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    border-radius: 2px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.08),
+      0 5px 16px rgba(0, 0, 0, 0.1),
+      0 12px 32px rgba(0, 0, 0, 0.07);
+    text-decoration: none;
+    color: #2a2520;
+    cursor: pointer;
+    transform-origin: center center;
+    transition:
+      transform 0.35s cubic-bezier(.2, .8, .2, 1),
+      box-shadow 0.35s ease;
+    will-change: transform, box-shadow;
+  }
+  :global([data-theme="dark"]) .claim-card {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.5),
+      0 8px 24px rgba(0, 0, 0, 0.6),
+      0 20px 52px rgba(0, 0, 0, 0.4);
+  }
+
+  .claim-card:hover {
+    transform: rotate(0deg) translateY(-7px) scale(1.03);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.12),
+      0 16px 40px rgba(0, 0, 0, 0.2),
+      0 32px 80px rgba(0, 0, 0, 0.14);
+    z-index: 10;
+  }
+  :global([data-theme="dark"]) .claim-card:hover {
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.55),
+      0 16px 48px rgba(0, 0, 0, 0.7),
+      0 32px 80px rgba(0, 0, 0, 0.5);
+  }
+  .claim-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    z-index: 10;
+  }
+
+  .claim-card__verdict {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    border-radius: 3px;
+    padding: 0.1em 0.45em;
+    line-height: 1;
+  }
+  .claim-card__verdict--false        { color: var(--color-verdict-false); }
+  .claim-card__verdict--mostly-false { color: var(--color-verdict-mostly-false); }
+  .claim-card__verdict--unverified   { color: var(--color-verdict-unverified); }
+  .claim-card__verdict--mixed        { color: var(--color-verdict-mixed); }
+
+  .claim-card__body {
+    font-family: var(--font-body);
+    font-size: 0.78rem;
+    line-height: 26px; /* matches ruled-line spacing */
+    color: #2a2520;
+    font-weight: 500;
+    margin-top: 12px; /* 15px top-pad + ~13px badge + 12px = ~40px → just below red rule */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* -------- site index: horizontal strip at bottom of hero -------- */
+  .site-index {
+    position: relative;
+    z-index: 3;
+    padding-top: clamp(var(--space-sm), 1.5vh, var(--space-md));
+    border-top: 1px solid rgba(128, 128, 128, 0.2);
+  }
+  .site-index__list {
     list-style: none;
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem clamp(1.5rem, 3vw, 3rem);
   }
-  .hero-card-item { margin: 0; }
-
-  .nav-card {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-rows: auto auto;
-    column-gap: clamp(var(--space-md), 2vw, var(--space-xl));
-    row-gap: 0.25rem;
+  .site-index__link {
+    display: inline-flex;
+    gap: 0.6rem;
     align-items: baseline;
-    padding: clamp(var(--space-md), 2.4vh, var(--space-xl)) var(--space-sm);
-    border-bottom: 1px solid var(--color-border);
     text-decoration: none;
-    color: inherit;
-    position: relative;
-    transition: transform 0.4s cubic-bezier(.2,.8,.2,1),
-                padding-left 0.4s cubic-bezier(.2,.8,.2,1);
-  }
-  .nav-card::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    bottom: -1px;
-    width: 0;
-    height: 2px;
-    background: var(--color-accent);
-    transition: width 0.5s cubic-bezier(.2,.8,.2,1);
-  }
-  .nav-card__num {
-    grid-row: 1 / span 2;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-sm);
     color: var(--color-text-faint);
-    letter-spacing: 0.12em;
-    align-self: center;
-    transition: color 0.3s;
-  }
-  .nav-card__label {
-    grid-column: 2;
-    grid-row: 1;
-    font-family: var(--font-heading);
-    font-size: clamp(1.4rem, 2.6vw, 2.1rem);
-    line-height: 1;
-    letter-spacing: -0.01em;
-    color: var(--color-text-heading);
-    transition: color 0.3s;
-  }
-  .nav-card__meta {
-    grid-column: 2;
-    grid-row: 2;
     font-family: var(--font-mono);
     font-size: var(--font-size-2xs);
-    color: var(--color-text-faint);
     text-transform: uppercase;
-    letter-spacing: 0.18em;
+    letter-spacing: 0.2em;
+    transition: color 0.2s;
   }
-  .nav-card__arrow {
-    grid-row: 1 / span 2;
-    grid-column: 3;
-    align-self: center;
-    font-family: var(--font-mono);
-    font-size: 1.4rem;
-    color: var(--color-text-faint);
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: opacity 0.25s, transform 0.4s cubic-bezier(.2,.8,.2,1), color 0.25s;
-  }
-  .nav-card:hover {
-    transform: translateX(6px);
-    padding-left: calc(var(--space-sm) + 6px);
-  }
-  .nav-card:hover::before { width: 100%; }
-  .nav-card:hover .nav-card__label { color: var(--color-text); }
-  .nav-card:hover .nav-card__num { color: var(--color-accent); }
-  .nav-card:hover .nav-card__arrow {
-    opacity: 1;
-    transform: translateX(0);
-    color: var(--color-accent);
-  }
-  .nav-card:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 4px;
-  }
-
-  /* -------- archive log: two film-strip lines, each starts mid-claim -------- */
-  .hero-log {
-    position: relative;
-    z-index: 3;
-    padding-top: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4rem;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: var(--color-text-faint);
-    line-height: 1.4;
-  }
-  .hero-log__line {
-    display: flex;
-    align-items: baseline;
-    gap: clamp(1.5rem, 4vw, 3rem);
-    white-space: nowrap;
-    overflow: hidden;
-    /* Soft fade on the right so long strips feel like they continue off-edge */
-    -webkit-mask-image: linear-gradient(to right, #000 0, #000 90%, transparent 100%);
-            mask-image: linear-gradient(to right, #000 0, #000 90%, transparent 100%);
-  }
-  .hero-log__line--offset {
-    padding-left: clamp(1.5rem, 6vw, 5rem);
-  }
-  .hero-log__frag {
-    flex: 0 0 auto;
-    color: var(--color-text-faint);
-    opacity: 0.5;
-  }
-  .hero-log__pair {
-    display: inline-flex;
-    gap: 0.8rem;
-    align-items: baseline;
-    flex: 0 0 auto;
-  }
-  .hero-log__verdict { font-weight: 700; }
-  .hero-log__verdict--false { color: var(--color-verdict-false); }
-  .hero-log__verdict--mostly-false { color: var(--color-verdict-mostly-false); }
-  .hero-log__verdict--unverified { color: var(--color-verdict-unverified); }
-  .hero-log__verdict--mixed { color: var(--color-verdict-mixed); }
-  .hero-log__body { color: var(--color-text-muted); letter-spacing: 0.08em; }
+  .site-index__link:hover { color: var(--color-accent); }
+  .site-index__num { opacity: 0.55; }
 
   /* -------- nav overlay -------- */
   .hero-nav {
@@ -686,7 +697,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     .hero-logo { transition: none; }
     .hero-nav { animation: none; }
     .hero-burger, .hero-burger__icon,
-    .nav-card, .nav-card__arrow, .nav-card__label, .nav-card__num, .nav-card::before,
+    .claim-card,
     .hero-nav li a, .hero-nav__arrow, .hero-title__word {
       transition: none !important;
     }
@@ -697,11 +708,7 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
   :root[data-motion="reduce"] .hero-title__word,
   :root[data-motion="reduce"] .hero-burger,
   :root[data-motion="reduce"] .hero-burger__icon,
-  :root[data-motion="reduce"] .nav-card,
-  :root[data-motion="reduce"] .nav-card__arrow,
-  :root[data-motion="reduce"] .nav-card__label,
-  :root[data-motion="reduce"] .nav-card__num,
-  :root[data-motion="reduce"] .nav-card::before,
+  :root[data-motion="reduce"] .claim-card,
   :root[data-motion="reduce"] .hero-nav li a,
   :root[data-motion="reduce"] .hero-nav__arrow,
   :root[data-motion="reduce"] .hero-nav {
@@ -709,18 +716,32 @@ const line2 = { fragment: frag2, items: [claimB, claimC, claimD] };
     animation: none;
   }
 
-  /* Single-column stack only at phone widths where cards beside the
-     wordmark would crush content. The filmstrip keeps its nowrap/clip
-     behavior at every width. */
-  @media (max-width: 680px) {
-    .hero-grid { grid-template-columns: 1fr; }
+  /* Small screens: single column, 3 index-card-shaped cards */
+  /* Mid-viewport: cards 3 & 5 bleed into the wordmark column — hide them */
+  @media (max-width: 960px) and (min-width: 681px) {
+    .claim-card:nth-child(3),
+    .claim-card:nth-child(5) { display: none; }
+    /* pull card 2 to ~half-scatter-width so it stays clear of the wordmark column */
+    .claim-card:nth-child(2) { right: 145px; }
   }
 
-  /* Desktop only: push the index list below the fixed hamburger button */
-  @media (min-width: 681px) {
-    .hero-cards {
-      padding-top: clamp(3rem, 5vh, 4rem);
+  @media (max-width: 680px) {
+    .hero-body {
+      grid-template-columns: 1fr;
     }
+    .claim-scatter {
+      min-height: 310px;
+      margin-right: 0;
+    }
+    .claim-card { width: clamp(190px, 55vw, 260px); }
+
+    /* Triangle cluster of 3 */
+    .claim-card:nth-child(1) { top: 16px;  right: auto; left: 3vw;                    transform: rotate(-3.5deg); z-index: 2; }
+    .claim-card:nth-child(2) { top:  6px;  right: auto; left: calc(3vw + 55vw - 20px); transform: rotate(2.5deg);  z-index: 3; }
+    .claim-card:nth-child(3) { top: 144px; right: auto; left: calc(3vw + 25vw);        transform: rotate(-4deg);   z-index: 4; }
+
+    .claim-card:nth-child(4),
+    .claim-card:nth-child(5) { display: none; }
   }
 </style>
 
