@@ -33,5 +33,7 @@ __pycache__/
 *.pyc
 uv.lock
 
-# Multi-provider POC scratch (keys, ad-hoc scripts, reports)
-scripts/llm-tester/
+# llm-tester runtime artifacts (keys, run outputs, generated matrix)
+scripts/llm-tester/.env.poc
+scripts/llm-tester/archive/
+scripts/llm-tester/matrix-*.md
