@@ -59,17 +59,18 @@ def _setup_claim(
     slug: str = "test-claim",
     status: str | None = "draft",
     include_sidecar: bool = True,
+    criteria_slug: str | None = "test-criterion",
 ) -> tuple[Path, Path]:
     entity_dir = tmp_path / "research" / "claims" / entity
     entity_dir.mkdir(parents=True, exist_ok=True)
     claim_md = entity_dir / f"{slug}.md"
-    if status is None:
-        claim_md.write_text("---\ntitle: Test\n---\nBody.\n", encoding="utf-8")
-    else:
-        claim_md.write_text(
-            f"---\ntitle: Test\nstatus: {status}\n---\nBody.\n",
-            encoding="utf-8",
-        )
+    lines = ["---", "title: Test"]
+    if status is not None:
+        lines.append(f"status: {status}")
+    if criteria_slug is not None:
+        lines.append(f"criteria_slug: {criteria_slug}")
+    lines.extend(["---", "Body.", ""])
+    claim_md.write_text("\n".join(lines), encoding="utf-8")
     sidecar = entity_dir / f"{slug}.audit.yaml"
     if include_sidecar:
         _write_minimal_sidecar(sidecar)
@@ -236,7 +237,7 @@ class TestPublishBulk:
         entity_dir = tmp_path / "research" / "claims" / "test-entity"
         bad_claim = entity_dir / "claim-b.md"
         bad_claim.write_text(
-            "---\ntitle: Test\nstatus: draft\n---\nBody.\n",
+            "---\ntitle: Test\nstatus: draft\ncriteria_slug: test-criterion\n---\nBody.\n",
             encoding="utf-8",
         )
         bad_sidecar = entity_dir / "claim-b.audit.yaml"
@@ -290,6 +291,29 @@ class TestPublishBulk:
         assert "Nothing to publish" in result.output
         assert claim_md.read_bytes() == md_before
         assert sidecar.read_bytes() == sidecar_before
+
+    def test_missing_criterion_skipped_and_signals_failure(self, tmp_path):
+        """Publish gate: drafts without criteria_slug are skipped and the run exits 1."""
+        # One draft with criteria_slug, one without.
+        good, _ = _setup_claim(tmp_path, slug="claim-good", status="draft")
+        bad, _ = _setup_claim(
+            tmp_path, slug="claim-no-criterion", status="draft", criteria_slug=None,
+        )
+
+        runner = CliRunner()
+        result = runner.invoke(main, [
+            "publish",
+            "--entity", "test-entity",
+            "--yes",
+            "--repo-root", str(tmp_path),
+        ])
+
+        # Exit 1: criterion-less skips count as failures (publish was asked,
+        # publish couldn't, signal so CI/scripts notice).
+        assert result.exit_code == 1, result.output
+        assert "status: published" in good.read_text(encoding="utf-8")
+        assert "status: draft" in bad.read_text(encoding="utf-8")
+        assert "missing criteria_slug" in result.output
 
     def test_missing_sidecar_skipped_with_warning_batch_continues(self, tmp_path):
         # One draft with sidecar, one draft without.

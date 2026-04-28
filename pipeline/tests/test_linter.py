@@ -18,6 +18,7 @@ from linter.checks import (
     check_missing_required_fields,
     check_orphaned_claims,
     check_placeholder_website,
+    check_published_criterion,
     check_published_review_signoff,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
@@ -67,6 +68,38 @@ class TestMissingRequiredFields:
         assert any(i.check_id == "missing-required-field" and "verdict" in i.message for i in issues)
 
 
+class TestPublishedCriterion:
+    def test_draft_without_criterion_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "draft"}}
+        assert check_published_criterion([claim], fms) == []
+
+    def test_published_with_criterion_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "published", "criteria_slug": "renewable-energy-hosting"}}
+        assert check_published_criterion([claim], fms) == []
+
+    def test_published_without_criterion_raises_error(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "published"}}
+        issues = check_published_criterion([claim], fms)
+        assert len(issues) == 1
+        assert issues[0].check_id == "published-without-criterion"
+        assert issues[0].severity == "error"
+
+    def test_published_with_empty_criterion_raises_error(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "published", "criteria_slug": "   "}}
+        issues = check_published_criterion([claim], fms)
+        assert len(issues) == 1
+        assert issues[0].check_id == "published-without-criterion"
+
+    def test_archived_status_not_checked(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "archived"}}
+        assert check_published_criterion([claim], fms) == []
+
+
 class TestPublishedReviewSignoff:
     def test_draft_with_no_sidecar_no_issue(self):
         claim = _p("research/claims/foo/bar.md")
@@ -80,32 +113,34 @@ class TestPublishedReviewSignoff:
         sidecars = {str(claim): {"human_review": {"reviewed_at": datetime.date.today()}}}
         assert check_published_review_signoff([claim], fms, sidecars) == []
 
-    def test_published_without_sidecar_raises_error(self):
+    def test_published_without_sidecar_raises_warning(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): None}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
-        assert issues[0].severity == "error"
+        assert issues[0].severity == "warning"
         assert "no audit sidecar" in issues[0].message
 
-    def test_published_with_null_reviewed_at_raises_error(self):
+    def test_published_with_null_reviewed_at_raises_warning(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): {"human_review": {"reviewed_at": None}}}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
+        assert issues[0].severity == "warning"
         assert "human_review.reviewed_at" in issues[0].message
 
-    def test_published_with_missing_human_review_block_raises_error(self):
+    def test_published_with_missing_human_review_block_raises_warning(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): {"schema_version": 1}}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
+        assert issues[0].severity == "warning"
 
     def test_archived_published_status_not_checked(self):
         claim = _p("research/claims/foo/bar.md")

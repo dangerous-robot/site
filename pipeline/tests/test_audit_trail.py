@@ -461,17 +461,18 @@ class TestDrReviewPromotion:
         slug: str = "test-claim",
         entity: str = "test-entity",
         include_sidecar: bool = True,
+        criteria_slug: str | None = "test-criterion",
     ) -> tuple[Path, Path]:
         entity_dir = tmp_path / "research" / "claims" / entity
         entity_dir.mkdir(parents=True, exist_ok=True)
         claim_md = entity_dir / f"{slug}.md"
-        if status is None:
-            claim_md.write_text("---\ntitle: Test\n---\nBody.\n", encoding="utf-8")
-        else:
-            claim_md.write_text(
-                f"---\ntitle: Test\nstatus: {status}\n---\nBody.\n",
-                encoding="utf-8",
-            )
+        lines = ["---", "title: Test"]
+        if status is not None:
+            lines.append(f"status: {status}")
+        if criteria_slug is not None:
+            lines.append(f"criteria_slug: {criteria_slug}")
+        lines.extend(["---", "Body.", ""])
+        claim_md.write_text("\n".join(lines), encoding="utf-8")
         sidecar = entity_dir / f"{slug}.audit.yaml"
         if include_sidecar:
             _write_minimal_sidecar(sidecar)
@@ -708,10 +709,10 @@ class TestDrReviewPromotion:
         def _boom(*args, **kwargs):
             raise OSError("simulated disk failure mid-flight")
 
-        # Patch at the cli import site: `set_claim_status` is imported at
-        # module top, so the cli function looks it up in its own module.
-        import orchestrator.cli as cli_mod
-        monkeypatch.setattr(cli_mod, "set_claim_status", _boom)
+        # Patch at the review-module import site: `approve_claim` is the
+        # caller of set_claim_status now (extracted from the cli handler).
+        import orchestrator.review as review_mod
+        monkeypatch.setattr(review_mod, "set_claim_status", _boom)
 
         runner = CliRunner()
         result = runner.invoke(main, [
@@ -728,6 +729,106 @@ class TestDrReviewPromotion:
         assert sidecar_data["human_review"]["reviewed_at"] == datetime.date.today().isoformat()
         assert sidecar.read_bytes() != sidecar_before_bytes
         # .md was not modified (status still draft).
+        assert "status: draft" in claim_md.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# approve_claim — direct callable (also exercised via dr review CLI above)
+# ---------------------------------------------------------------------------
+
+class TestApproveClaimCallable:
+    """`approve_claim` is the shared entry point that `dr review` and
+    `dr review-queue` both call. The CLI tests above exercise it via Click;
+    these tests pin the direct call so the queue's `a` action has a
+    regression guard that does not depend on Click's runner."""
+
+    def _setup(
+        self,
+        tmp_path: Path,
+        status: str = "draft",
+        *,
+        criteria_slug: str | None = "test-criterion",
+    ) -> tuple[Path, Path]:
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True)
+        claim_md = entity_dir / "test-claim.md"
+        lines = ["---", "title: Test", f"status: {status}"]
+        if criteria_slug is not None:
+            lines.append(f"criteria_slug: {criteria_slug}")
+        lines.extend(["---", "Body.", ""])
+        claim_md.write_text("\n".join(lines), encoding="utf-8")
+        sidecar = entity_dir / "test-claim.audit.yaml"
+        _write_minimal_sidecar(sidecar)
+        return claim_md, sidecar
+
+    def test_review_mode_writes_sidecar_only(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = self._setup(tmp_path)
+        approve_claim(claim_md, reviewer="test@example.com", mode="review")
+
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["reviewer"] == "test@example.com"
+        assert data["human_review"]["reviewed_at"] == datetime.date.today().isoformat()
+        # status untouched
+        assert "status: draft" in claim_md.read_text(encoding="utf-8")
+
+    def test_approve_mode_flips_status(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = self._setup(tmp_path, status="draft")
+        approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+
+        assert "status: published" in claim_md.read_text(encoding="utf-8")
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["reviewer"] == "test@example.com"
+        assert data["human_review"]["reviewed_at"] == datetime.date.today().isoformat()
+
+    def test_approve_rejects_already_published(self, tmp_path):
+        import click
+
+        from orchestrator.review import approve_claim
+
+        claim_md, _ = self._setup(tmp_path, status="published")
+        with pytest.raises(click.ClickException):
+            approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+
+    def test_missing_sidecar_raises_click_exception(self, tmp_path):
+        import click
+
+        from orchestrator.review import approve_claim
+
+        entity_dir = tmp_path / "research" / "claims" / "test-entity"
+        entity_dir.mkdir(parents=True)
+        claim_md = entity_dir / "no-sidecar.md"
+        claim_md.write_text("---\ntitle: T\nstatus: draft\n---\n", encoding="utf-8")
+
+        with pytest.raises(click.ClickException, match="no audit sidecar"):
+            approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+
+    def test_approve_rejects_missing_criterion(self, tmp_path):
+        """Publish gate: approve mode refuses a draft that lacks criteria_slug."""
+        import click
+
+        from orchestrator.review import approve_claim
+
+        claim_md, _ = self._setup(tmp_path, status="draft", criteria_slug=None)
+
+        with pytest.raises(click.ClickException, match="criteria_slug"):
+            approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+        # Status untouched.
+        assert "status: draft" in claim_md.read_text(encoding="utf-8")
+
+    def test_review_mode_does_not_require_criterion(self, tmp_path):
+        """review-only (no flip) doesn't enforce the publish gate."""
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = self._setup(tmp_path, status="draft", criteria_slug=None)
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="review")
+        # Sidecar updated; claim status unchanged.
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["reviewer"] == "test@example.com"
         assert "status: draft" in claim_md.read_text(encoding="utf-8")
 
 

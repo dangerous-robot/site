@@ -77,6 +77,16 @@ def strip_frontmatter(text: str) -> str:
     return body
 
 
+def has_criterion(fm: dict) -> bool:
+    """True if the claim frontmatter declares a non-empty `criteria_slug`."""
+    slug = fm.get("criteria_slug")
+    if not slug:
+        return False
+    if isinstance(slug, str) and not slug.strip():
+        return False
+    return True
+
+
 def _clean_for_serialize(obj: Any) -> Any:
     """Recursively remove keys with None values from dicts.
 
