@@ -33,6 +33,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 import dataclasses
 
+from pydantic_ai import capture_run_messages
+
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
@@ -78,6 +80,11 @@ class VerificationResult(BaseModel):
     # verify_claim runs that don't persist.
     claim_path: str | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
+    # Researcher-step trace: planner queries+rationale and scorer rationale
+    # for the decomposed mode; just the classic researcher's reasoning string
+    # for classic mode. Persisted to the audit sidecar so reviewers can see
+    # how the source set was assembled.
+    research_trace: dict | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -140,7 +147,11 @@ class VerifyConfig:
     auditor_model: str | None = None
     ingestor_model: str | None = None
     max_sources: int = 12
-    skip_wayback: bool = True  # default True for faster POC runs
+    # Interim default: wayback ON. The wayback-archive-job plan envisions
+    # archival as a background job with skip_wayback=True in-pipeline, but
+    # until that job lands we want primary sources behind paywalls/blocks
+    # rescued via web.archive.org during the synchronous run.
+    skip_wayback: bool = False
     repo_root: str = ""
     # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
     # ``__post_init__`` can pick a default based on ``skip_wayback``. Callers
@@ -212,8 +223,9 @@ async def verify_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/4: Searching for sources...")
-            urls, research_errors = await _research(client, entity_name, claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, entity_name, claim_text, cfg, _sem)
             result.urls_found = urls
+            result.research_trace = trace
 
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
@@ -314,24 +326,36 @@ async def _research(
     claim_text: str,
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
-) -> tuple[list[str], list[StepError]]:
+) -> tuple[list[str], list[StepError], dict]:
+    """Run the configured researcher and return ``(urls, errors, trace)``.
+
+    ``trace`` is a dict suitable for the audit sidecar's ``research:`` block.
+    Always populated with at least ``mode``; further fields depend on the
+    researcher path and how far it got before any error.
+    """
     if cfg.researcher_mode == "decomposed":
         from researcher.decomposed import decomposed_research
         try:
-            raw_urls, errors = await asyncio.wait_for(
+            raw_urls, errors, trace = await asyncio.wait_for(
                 decomposed_research(claim_text, entity_name, cfg, sem, client),
                 timeout=cfg.research_timeout_s,
             )
         except asyncio.TimeoutError:
             logger.error("Decomposed researcher timed out")
-            return [], [StepError(step="research", error_type="timeout", message="Decomposed research timed out")]
+            return (
+                [],
+                [StepError(step="research", error_type="timeout", message="Decomposed research timed out")],
+                {"mode": "decomposed", "timed_out": True},
+            )
         urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
         logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.max_sources)
-        return urls, errors
+        trace["urls_after_blocklist"] = len(urls)
+        return urls, errors, trace
 
     # Classic path
     deps = ResearchDeps(http_client=client)
     prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
+    trace: dict = {"mode": "classic"}
 
     try:
         async with sem:
@@ -341,6 +365,9 @@ async def _research(
                 )
         raw_urls = res.output.urls
         urls, errors = _apply_blocklist_cap(raw_urls, cfg)
+        trace["urls_raw"] = len(raw_urls)
+        trace["urls_after_blocklist"] = len(urls)
+        trace["reasoning"] = res.output.reasoning
         logger.info(
             "Research: %d raw, %d blocked, %d kept (cap=%d). Reasoning: %s",
             len(raw_urls),
@@ -349,16 +376,17 @@ async def _research(
             cfg.max_sources,
             res.output.reasoning,
         )
-        return urls, errors
+        return urls, errors, trace
     except asyncio.TimeoutError:
         err = StepError(step="research", error_type="timeout", message="Research timed out")
         logger.error("Researcher timed out")
-        return [], [err]
+        trace["timed_out"] = True
+        return [], [err], trace
     except Exception as exc:
         error_type = "api_key_missing" if "API key" in str(exc) else "model_error"
         err = StepError(step="research", error_type=error_type, message=str(exc))
         logger.error("Researcher agent failed: %s", exc)
-        return [], [err]
+        return [], [err], trace
 
 
 async def _ingest_one(
@@ -442,15 +470,22 @@ async def _analyse_claim(
 ) -> AnalystOutput | None:
     prompt = build_analyst_prompt(entity_name, claim_text, sources)
 
-    try:
-        with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
-            res = await asyncio.wait_for(
-                analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
-            )
-        return res.output
-    except Exception as exc:
-        logger.error("Analyst failed: %s", exc)
-        return None
+    with capture_run_messages() as messages:
+        try:
+            with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
+                res = await asyncio.wait_for(
+                    analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
+                )
+            return res.output
+        except Exception as exc:
+            # On retry-exhaustion, the bare exception string ("Exceeded maximum
+            # retries (2) for output validation") loses the validation detail.
+            # Dump the captured run messages so the failing tool-call args and
+            # any retry feedback are visible in logs.
+            logger.exception("Analyst failed: %s", exc)
+            for i, msg in enumerate(messages):
+                logger.error("Analyst run message [%d]: %r", i, msg)
+            return None
 
 
 async def _audit_claim(
@@ -535,8 +570,9 @@ async def research_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/5: Searching for sources...")
-            urls, research_errors = await _research(client, "", claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, "", claim_text, cfg, _sem)
             result.urls_found = urls
+            result.research_trace = trace
 
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
@@ -626,13 +662,16 @@ async def research_claim(
 
             # Write audit sidecar after auditor step
             sidecar_sources = _build_sources_consulted(result.source_files)
+            agents_run = ["researcher", "ingestor", "analyst", "auditor"]
             _write_audit_sidecar(
                 claim_path=claim_path,
                 comparison=comparison,
                 model=cfg.model,
                 ran_at=datetime.datetime.now(datetime.timezone.utc),
                 sources_consulted=sidecar_sources,
-                agents_run=["researcher", "ingestor", "analyst", "auditor"],
+                agents_run=agents_run,
+                models_used={a: cfg.model_for(a) for a in agents_run},
+                research_trace=result.research_trace,
             )
 
             # Checkpoint: review disagreement
@@ -733,7 +772,7 @@ async def onboard_entity(
                     source_files, _ = await _ingest_urls(client, [_url], cfg, sem)
                 else:
                     query = f"{entity_name} official website"
-                    urls, _ = await _research(client, entity_name, query, cfg, sem)
+                    urls, _, _ = await _research(client, entity_name, query, cfg, sem)
                     if urls:
                         entity_website = urls[0]
                     source_files, _ = await _ingest_urls(client, urls[:1], cfg, sem) if urls else ([], [])
@@ -919,13 +958,16 @@ async def onboard_entity(
 
                     # Write audit sidecar after auditor step
                     sidecar_sources = _build_sources_consulted(vr.source_files)
+                    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
                     _write_audit_sidecar(
                         claim_path=claim_path,
                         comparison=vr.consistency,
                         model=iter_cfg.model,
                         ran_at=datetime.datetime.now(datetime.timezone.utc),
                         sources_consulted=sidecar_sources,
-                        agents_run=["researcher", "ingestor", "analyst", "auditor"],
+                        agents_run=agents_run,
+                        models_used={a: iter_cfg.model_for(a) for a in agents_run},
+                        research_trace=vr.research_trace,
                     )
 
                     progress("[%d/%d] Done: %s", idx, total, slug)

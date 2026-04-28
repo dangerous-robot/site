@@ -203,6 +203,8 @@ def _write_audit_sidecar(
     ran_at: datetime.datetime,
     sources_consulted: list[dict],
     agents_run: list[str],
+    models_used: dict[str, str] | None = None,
+    research_trace: dict | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -247,7 +249,13 @@ def _write_audit_sidecar(
         except yaml.YAMLError as exc:
             logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
 
-    models_used = {agent: model for agent in agents_run}
+    if models_used is None:
+        models_used = {agent: model for agent in agents_run}
+    else:
+        # Defensive: ensure every agent that ran has an entry, falling back to
+        # the default model. Drop any extras so the recorded dict mirrors the
+        # agents this run actually invoked.
+        models_used = {agent: models_used.get(agent, model) for agent in agents_run}
 
     sidecar_data = {
         "schema_version": 1,
@@ -257,6 +265,7 @@ def _write_audit_sidecar(
             "agents": agents_run,
         },
         "models_used": models_used,
+        "research": research_trace,
         "sources_consulted": sources_consulted,
         "audit": audit_block,
         "human_review": human_review,

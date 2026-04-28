@@ -139,7 +139,7 @@ class TestResearchBlocklist:
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
                 sem = asyncio.Semaphore(8)
-                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
+                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == ["https://example.com/b"]
         blocked = [e for e in errors if e.error_type == "blocked_host"]
@@ -169,7 +169,7 @@ class TestResearchBlocklist:
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
                 sem = asyncio.Semaphore(8)
-                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
+                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == []
         assert errors[0].error_type == "all_blocked"
@@ -196,7 +196,7 @@ class TestResearchBlocklist:
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
                 sem = asyncio.Semaphore(8)
-                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
+                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == ["https://linkedin.com/a", "https://example.com/b"]
         assert errors == []
@@ -222,9 +222,14 @@ class TestVerifyConfigPerAgentModels:
 
 class TestVerifyConfigTimeouts:
     def test_verify_config_defaults(self) -> None:
-        """Default VerifyConfig exposes the four timeout knobs at 60s."""
+        """Default VerifyConfig exposes the four timeout knobs.
+
+        Wayback is on by default, so ingest_timeout_s is auto-bumped to the
+        wayback-inclusive budget; the other three stay at 60s.
+        """
         cfg = VerifyConfig()
-        assert cfg.ingest_timeout_s == 60.0
+        assert cfg.skip_wayback is False
+        assert cfg.ingest_timeout_s >= 85
         assert cfg.research_timeout_s == 60.0
         assert cfg.analyst_timeout_s == 60.0
         assert cfg.auditor_timeout_s == 60.0
@@ -336,7 +341,7 @@ class TestThresholdEnforcement:
         )
 
         async def _fake_research(client, entity, claim, cfg, sem):
-            return ["https://example.com/one"], []
+            return ["https://example.com/one"], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
             return [("https://example.com/one", sf)], []
@@ -371,7 +376,7 @@ class TestThresholdEnforcement:
     ) -> None:
         """When zero sources ingest and all errors are terminal HTTP, mark it so."""
         async def _fake_research(client, entity, claim, cfg, sem):
-            return ["https://a", "https://b"], []
+            return ["https://a", "https://b"], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
             errors = [
@@ -417,7 +422,7 @@ class TestThresholdEnforcement:
         )
 
         async def _fake_research(client, entity, claim, cfg, sem):
-            return ["https://example.com/a", "https://example.com/b"], []
+            return ["https://example.com/a", "https://example.com/b"], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
             return [

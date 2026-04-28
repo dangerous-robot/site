@@ -192,6 +192,121 @@ class TestWriteAuditSidecar:
         assert data["human_review"]["notes"] is None
         assert data["human_review"]["pr_url"] is None
 
+    def test_models_used_defaults_to_single_model(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["models_used"] == {
+            "researcher": "claude-haiku-4-5",
+            "ingestor": "claude-haiku-4-5",
+            "analyst": "claude-haiku-4-5",
+            "auditor": "claude-haiku-4-5",
+        }
+
+    def test_models_used_records_per_agent_overrides(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+
+        per_agent = {
+            "researcher": "infomaniak:openai/gpt-oss-120b",
+            "ingestor": "infomaniak:mistral3",
+            "analyst": "infomaniak:openai/gpt-oss-120b",
+            "auditor": "anthropic:claude-sonnet-4-6",
+        }
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="infomaniak:openai/gpt-oss-120b",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+            models_used=per_agent,
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["models_used"] == per_agent
+        # pipeline_run.model still records the run's default model
+        assert data["pipeline_run"]["model"] == "infomaniak:openai/gpt-oss-120b"
+
+    def test_research_block_persists_planner_and_scorer_trace(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+
+        trace = {
+            "mode": "decomposed",
+            "queries": ["q1", "q2", "q3"],
+            "planner_rationale": "why these queries",
+            "candidates_seen": 21,
+            "urls_kept": 20,
+            "urls_dropped": 1,
+            "scorer_rationale": "why these scores",
+            "urls_after_blocklist": 12,
+        }
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+            research_trace=trace,
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["research"] == trace
+
+    def test_research_block_absent_when_no_trace(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        # Key is present but null when no trace was provided; readers should
+        # treat null and missing the same way.
+        assert data["research"] is None
+
+    def test_models_used_falls_back_for_missing_agent(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher", "ingestor", "analyst", "auditor"],
+            models_used={"auditor": "anthropic:claude-sonnet-4-6"},
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["models_used"] == {
+            "researcher": "claude-haiku-4-5",
+            "ingestor": "claude-haiku-4-5",
+            "analyst": "claude-haiku-4-5",
+            "auditor": "anthropic:claude-sonnet-4-6",
+        }
+
     def test_comparison_none_writes_audit_null(self, tmp_path):
         claim_path = tmp_path / "test-claim.md"
         claim_path.touch()

@@ -57,9 +57,16 @@ async def decomposed_research(
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
     client: httpx.AsyncClient,
-) -> tuple[list[str], list[StepError]]:
-    """Run the 3-step decomposed researcher and return (urls, errors)."""
+) -> tuple[list[str], list[StepError], dict]:
+    """Run the 3-step decomposed researcher.
+
+    Returns ``(urls, errors, trace)`` where ``trace`` is a dict suitable
+    for direct YAML serialisation into the audit sidecar's ``research:``
+    block. Trace fields are populated as each step succeeds; partial
+    traces are returned on early-exit error paths.
+    """
     errors: list[StepError] = []
+    trace: dict = {"mode": "decomposed"}
 
     planner_prompt = (
         f"Entity: {entity_name or '(unknown)'}\n"
@@ -76,25 +83,28 @@ async def decomposed_research(
         plan: QueryPlan = planner_res.output
         # Belt-and-suspenders: hard-truncate even if the model ignores the prompt cap
         queries = plan.queries[: cfg.max_initial_queries]
+        trace["queries"] = list(queries)
+        trace["planner_rationale"] = plan.rationale
         logger.info("Query planner: %d queries (rationale: %s)", len(queries), plan.rationale)
     except asyncio.TimeoutError:
         errors.append(_research_err("timeout", "Query planner timed out"))
-        return [], errors
+        return [], errors, trace
     except Exception as exc:
         errors.append(_research_err("model_error", str(exc)))
         logger.error("Query planner failed: %s", exc)
-        return [], errors
+        return [], errors, trace
 
     if not queries:
         errors.append(_research_err("no_queries", "Query planner returned no queries"))
-        return [], errors
+        return [], errors, trace
 
     candidates = await execute_searches(queries, client)
+    trace["candidates_seen"] = len(candidates)
     logger.info("Search executor: %d unique candidates from %d queries", len(candidates), len(queries))
 
     if not candidates:
         errors.append(_research_err("no_results", "Search returned no results"))
-        return [], errors
+        return [], errors, trace
 
     candidate_text = "\n".join(
         f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\n"
@@ -113,16 +123,19 @@ async def decomposed_research(
                     timeout=cfg.research_timeout_s,
                 )
         scored: ScoredURLs = scorer_res.output
+        trace["urls_kept"] = len(scored.kept)
+        trace["urls_dropped"] = len(scored.dropped)
+        trace["scorer_rationale"] = scored.rationale
         logger.info(
             "URL scorer: %d kept, %d dropped (rationale: %s)",
             len(scored.kept), len(scored.dropped), scored.rationale,
         )
-        return scored.kept, errors
+        return scored.kept, errors, trace
     except asyncio.TimeoutError:
         errors.append(_research_err("timeout", "URL scorer timed out"))
         # Fall back to all candidates rather than returning nothing
-        return [c.url for c in candidates], errors
+        return [c.url for c in candidates], errors, trace
     except Exception as exc:
         errors.append(_research_err("model_error", str(exc)))
         logger.error("URL scorer failed: %s", exc)
-        return [c.url for c in candidates], errors
+        return [c.url for c in candidates], errors, trace

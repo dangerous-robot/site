@@ -90,7 +90,7 @@ async def test_query_planner_cap_enforcement() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            urls, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
     # The planner returned 6 queries; hard-truncation must cap them at 3.
     assert len(captured_queries) == 1
@@ -171,7 +171,7 @@ async def test_decomposed_research_step_sequencing() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            urls, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
     assert isinstance(urls, list)
     assert all(isinstance(u, str) for u in urls)
