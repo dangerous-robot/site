@@ -25,7 +25,7 @@ python tester.py probe greenpt mistral-small-3.2-24b-instruct-2506
 | Infomaniak | gemma3n | ✅ | ✅ | ❌ | ❌ | BLK | 2026-04-28 | alias → google/gemma-3n-E4B-it; tool use not enabled at gateway |
 | Infomaniak | mistral24b | ✅ | ✅ | ✅ | ✅ | ❌ | 2026-04-28 | T5 now hard 500 (was fixable ⚠ with reasoning_content strip) |
 | Infomaniak | swiss-ai/Apertus-70B-Instruct-2509 | ✅ | ✅ | ✅ | ✅ | ❌ | 2026-04-25 | server-side template crash on T5 |
-| Infomaniak | openai/gpt-oss-120b | — | — | — | — | — | 2026-04-28 | T1 fails with max_tokens=8 (chain-of-thought burns budget); use max_tokens≥200 |
+| Infomaniak | openai/gpt-oss-120b | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-28 | chain-of-thought model; requires max_tokens≥200 or T1 burns budget before output |
 | Infomaniak | google/gemma-4-31B-it | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-27 | clean across all five |
 | GreenPT (router) | mistral-small-3.2-24b-instruct-2506 | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-25 | |
 | GreenPT (router) | gemma-3-27b-it | ✅ | ✅ | ✅ | ✅ | ⚠ | 2026-04-25 | re-emits tool call as plain text |
