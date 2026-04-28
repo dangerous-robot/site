@@ -196,6 +196,32 @@ class TestResearchBlocklist:
         assert errors == []
 
 
+class TestVerifyConfigPerAgentModels:
+    def test_model_for_falls_back_to_base(self) -> None:
+        cfg = VerifyConfig(model="anthropic:claude")
+        for agent in ("researcher", "analyst", "auditor", "ingestor"):
+            assert cfg.model_for(agent) == "anthropic:claude"
+
+    def test_model_for_per_agent_override_wins(self) -> None:
+        cfg = VerifyConfig(
+            model="anthropic:claude",
+            analyst_model="infomaniak:openai/gpt-oss-120b",
+            auditor_model="infomaniak:mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+        )
+        assert cfg.model_for("researcher") == "anthropic:claude"
+        assert cfg.model_for("analyst") == "infomaniak:openai/gpt-oss-120b"
+        assert cfg.model_for("auditor") == "infomaniak:mistralai/Mistral-Small-3.2-24B-Instruct-2506"
+        assert cfg.model_for("ingestor") == "anthropic:claude"
+
+    def test_all_models_deduplicates(self) -> None:
+        cfg = VerifyConfig(
+            model="anthropic:claude",
+            analyst_model="anthropic:claude",  # duplicate of base
+            auditor_model="infomaniak:openai/gpt-oss-120b",
+        )
+        assert cfg.all_models() == ["anthropic:claude", "infomaniak:openai/gpt-oss-120b"]
+
+
 class TestVerifyConfigTimeouts:
     def test_verify_config_defaults(self) -> None:
         """Default VerifyConfig exposes the four timeout knobs at 60s."""

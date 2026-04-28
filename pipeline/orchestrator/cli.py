@@ -6,6 +6,7 @@ import asyncio
 import logging
 import os
 import sys
+from collections.abc import Iterable
 from pathlib import Path
 
 import click
@@ -33,33 +34,121 @@ def _safe_repo_root() -> Path | None:
     return None
 
 
-def _check_provider_api_keys(model: str) -> None:
-    """Exit with code 2 if the env vars required by `model`'s provider are missing.
+def _required_env_for_model(model: str) -> tuple[str, ...]:
+    """Env vars required to make a request against `model`'s provider.
 
-    `infomaniak:...` requires both INFOMANIAK_API_KEY and INFOMANIAK_PRODUCT_ID
-    so resolve_model cannot raise mid-run. Specs containing "test" skip the
-    check (used by TestModel paths). Everything else requires ANTHROPIC_API_KEY.
+    Specs containing "test" return an empty tuple (used by TestModel paths).
     """
     if "test" in model:
-        return
+        return ()
     if model.startswith("infomaniak:"):
-        required = ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
-    else:
-        required = ("ANTHROPIC_API_KEY",)
-    missing = [name for name in required if not os.environ.get(name)]
+        return ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
+    return ("ANTHROPIC_API_KEY",)
+
+
+def _check_provider_api_keys(models: str | Iterable[str]) -> None:
+    """Exit with code 2 if the env vars required by the given models' providers are missing.
+
+    Accepts a single model spec or an iterable so per-agent overrides can be
+    validated as a union: a run that uses `anthropic:...` for the analyst and
+    `infomaniak:...` for the auditor must have both providers' keys set.
+    """
+    if isinstance(models, str):
+        models = [models]
+    required: set[str] = set()
+    for m in models:
+        required.update(_required_env_for_model(m))
+    missing = sorted(name for name in required if not os.environ.get(name))
     if missing:
         click.echo(f"Error: {', '.join(missing)} not set.", err=True)
         sys.exit(2)
 
 
-@click.group()
+def _agent_models_from_ctx(ctx: click.Context) -> list[str]:
+    """All resolved model specs for the four agents in this CLI run."""
+    base = ctx.obj["model"]
+    seen: list[str] = []
+    for agent in ("researcher", "analyst", "auditor", "ingestor"):
+        m = ctx.obj.get(f"{agent}_model") or base
+        if m not in seen:
+            seen.append(m)
+    return seen
+
+
+def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
+    """Per-agent model fields ready to splat into ``VerifyConfig(...)``."""
+    return {
+        f"{agent}_model": ctx.obj.get(f"{agent}_model")
+        for agent in ("researcher", "analyst", "auditor", "ingestor")
+    }
+
+
+# Subcommand groups for `dr --help`, ordered safest -> most destructive.
+# New commands not listed here fall into the "Other" bucket so they stay visible.
+_COMMAND_GROUPS: list[tuple[str, list[str]]] = [
+    ("Read-only", ["lint", "reassess", "verify"]),
+    ("Creates new files (--force to overwrite existing)",
+     ["ingest", "onboard", "verify-claim"]),
+    ("Modifies existing files in place",
+     ["publish", "review", "review-queue"]),
+]
+
+
+class _CategorizedGroup(click.Group):
+    """`click.Group` that organizes `dr --help` by write semantics."""
+
+    def format_commands(self, ctx: click.Context, formatter) -> None:
+        seen: set[str] = set()
+        for heading, names in _COMMAND_GROUPS:
+            rows = []
+            for name in names:
+                cmd = self.get_command(ctx, name)
+                if cmd is None or getattr(cmd, "hidden", False):
+                    continue
+                rows.append((name, cmd.get_short_help_str(limit=120)))
+                seen.add(name)
+            if rows:
+                with formatter.section(heading):
+                    formatter.write_dl(rows)
+
+        # Catch-all so a newly-added command isn't silently hidden.
+        leftovers = []
+        for name in self.list_commands(ctx):
+            if name in seen:
+                continue
+            cmd = self.get_command(ctx, name)
+            if cmd is None or getattr(cmd, "hidden", False):
+                continue
+            leftovers.append((name, cmd.get_short_help_str(limit=70)))
+        if leftovers:
+            with formatter.section("Other"):
+                formatter.write_dl(leftovers)
+
+
+@click.group(cls=_CategorizedGroup)
 @click.option("--verbose", is_flag=True, help="Enable verbose logging (INFO on console; DEBUG always written to logs/debug.log)")
-@click.option("--model", default=DEFAULT_MODEL, help="LLM model to use", envvar="DR_MODEL")
+@click.option("--model", default=DEFAULT_MODEL, help="Default LLM model for all agents", envvar="DR_MODEL")
+@click.option("--researcher-model", default=None, help="Override model for the researcher agent (falls back to --model)", envvar="DR_RESEARCHER_MODEL")
+@click.option("--analyst-model", default=None, help="Override model for the analyst agent (falls back to --model)", envvar="DR_ANALYST_MODEL")
+@click.option("--auditor-model", default=None, help="Override model for the auditor agent (falls back to --model)", envvar="DR_AUDITOR_MODEL")
+@click.option("--ingestor-model", default=None, help="Override model for the ingestor agent (falls back to --model)", envvar="DR_INGESTOR_MODEL")
 @click.pass_context
-def main(ctx: click.Context, verbose: bool, model: str) -> None:
+def main(
+    ctx: click.Context,
+    verbose: bool,
+    model: str,
+    researcher_model: str | None,
+    analyst_model: str | None,
+    auditor_model: str | None,
+    ingestor_model: str | None,
+) -> None:
     """dr -- dangerousrobot.org research pipeline."""
     ctx.ensure_object(dict)
     ctx.obj["model"] = model
+    ctx.obj["researcher_model"] = researcher_model
+    ctx.obj["analyst_model"] = analyst_model
+    ctx.obj["auditor_model"] = auditor_model
+    ctx.obj["ingestor_model"] = ingestor_model
     ctx.obj["verbose"] = verbose
     # Skip logging setup for the bare `dr` / `dr --help` paths so we don't
     # open file handles when the user is just inspecting usage.
@@ -145,24 +234,29 @@ def _print_verify_result(result) -> None:
 @main.command()
 @click.argument("entity")
 @click.argument("claim")
-@click.option("--max-sources", default=4, type=int, help="Max sources to ingest")
+@click.option("--max-sources", default=12, type=int, help="Max sources to ingest")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.pass_context
 def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_wayback: bool, interactive: bool) -> None:
-    """Verify a claim about an entity using web research.
+    """Run the full pipeline (researcher -> ingestor -> analyst -> auditor) in memory and print the verdict; nothing is written to disk.
 
     Example:
         dr verify "Ecosia" "Ecosia's AI chat runs on renewable energy"
     """
     logger.info("dr verify: entity=%s claim=%s", entity, claim)
-    _check_provider_api_keys(ctx.obj["model"])
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.pipeline import VerifyConfig, verify_claim
 
     model = ctx.obj["model"]
-    config = VerifyConfig(model=model, max_sources=max_sources, skip_wayback=skip_wayback)
+    config = VerifyConfig(
+        model=model,
+        max_sources=max_sources,
+        skip_wayback=skip_wayback,
+        **_ctx_per_agent_kwargs(ctx),
+    )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     result = asyncio.run(verify_claim(entity, claim, config, checkpoint))
@@ -170,25 +264,25 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
 
 
 # --------------------------------------------------------------------------- #
-# dr research                                                                   #
+# dr verify-claim                                                               #
 # --------------------------------------------------------------------------- #
 
-@main.command()
+@main.command("verify-claim")
 @click.argument("claim_text")
-@click.option("--max-sources", default=4, type=int, help="Max sources to ingest")
+@click.option("--max-sources", default=12, type=int, help="Max sources to ingest")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--force", is_flag=True, help="Overwrite existing claim file if present")
 @click.pass_context
-def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool) -> None:
-    """Research a claim: find sources, evaluate verdict, write everything to disk.
+def verify_claim(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool) -> None:
+    """Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk.
 
     Example:
-        dr research "iPhone 20 will support Neuralink"
+        dr verify-claim "iPhone 20 will support Neuralink"
     """
-    logger.info("dr research: claim=%s", claim_text)
-    _check_provider_api_keys(ctx.obj["model"])
+    logger.info("dr verify-claim: claim=%s", claim_text)
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     if not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
         click.echo("Error: BRAVE_WEB_SEARCH_API_KEY not set.", err=True)
@@ -204,13 +298,14 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
+        **_ctx_per_agent_kwargs(ctx),
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     result = asyncio.run(research_claim(claim_text, config, checkpoint))
 
     click.echo("=" * 60)
-    click.echo("Research Report")
+    click.echo("Verify-Claim Report")
     click.echo("=" * 60)
     click.echo(f"Entity:  {result.entity}")
     click.echo(f"Claim:   {result.claim_text}")
@@ -222,6 +317,12 @@ def research(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback
         click.echo(f"Verdict:    {a.verdict.verdict.value} ({a.verdict.confidence.value})")
         click.echo(f"Title:      {a.verdict.title}")
         click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
+    if result.claim_path:
+        from common.sidecar import sidecar_path_for
+        sidecar_rel = str(sidecar_path_for(Path(result.claim_path)))
+        click.echo("")
+        click.echo(f"Claim:   {result.claim_path}")
+        click.echo(f"Audit:   {sidecar_rel}")
     if result.errors:
         click.echo("Errors:")
         for e in result.errors:
@@ -250,7 +351,7 @@ def reassess(
     dry_run: bool,
     repo_root: str | None,
 ) -> None:
-    """Run auditor checks on research claims.
+    """Re-run the auditor on existing claim file(s) and report verdict/confidence disagreements; no files are written.
 
     Example:
         dr reassess --entity ecosia
@@ -271,7 +372,8 @@ def reassess(
     from auditor.models import ClaimBundle, EntityContext, SourceContext
     from auditor.report import format_json_report, format_text_report
 
-    model = ctx.obj["model"]
+    auditor_model = ctx.obj.get("auditor_model") or ctx.obj["model"]
+    _check_provider_api_keys(auditor_model)
     verbose = ctx.obj.get("verbose", False)
     root = Path(repo_root) if repo_root else resolve_repo_root()
 
@@ -340,7 +442,7 @@ def reassess(
 
             progress("Checking: %s ...", claim_id)
             prompt = build_auditor_prompt(bundle)
-            with auditor_agent.override(model=resolve_model(model)):
+            with auditor_agent.override(model=resolve_model(auditor_model)):
                 res = await auditor_agent.run(prompt)
             result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
 
@@ -370,9 +472,10 @@ def reassess(
 @click.option("--repo-root", default=None, help="Repository root path.")
 @click.option("--dry-run", is_flag=True, help="Print output without writing.")
 @click.option("--skip-wayback", is_flag=True, help="Skip Wayback Machine lookup.")
+@click.option("--force", is_flag=True, help="Overwrite existing source file if present.")
 @click.pass_context
-def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, skip_wayback: bool) -> None:
-    """Ingest a URL and produce a source file.
+def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, skip_wayback: bool, force: bool) -> None:
+    """Fetch a URL, structure its content via the ingestor agent, and write a source file to research/sources/<year>/<slug>.md.
 
     Example:
         dr ingest https://example.com/article
@@ -383,7 +486,8 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
         click.echo(f"Error: invalid URL: {url}", err=True)
         sys.exit(1)
 
-    _check_provider_api_keys(ctx.obj["model"])
+    ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
+    _check_provider_api_keys(ingestor_model)
 
     import datetime
     import httpx
@@ -392,8 +496,6 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
     from common.source_classification import classify_source_type
     from ingestor.agent import IngestorDeps, ingestor_agent
     from ingestor.validation import validate_source_file
-
-    model = ctx.obj["model"]
 
     try:
         root = repo_root or str(resolve_repo_root())
@@ -416,7 +518,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
             )
 
             try:
-                with ingestor_agent.override(model=resolve_model(model)):
+                with ingestor_agent.override(model=resolve_model(ingestor_model)):
                     res = await asyncio.wait_for(
                         ingestor_agent.run(prompt, deps=deps), timeout=120
                     )
@@ -452,11 +554,15 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
             target_dir.mkdir(parents=True, exist_ok=True)
             target_path = target_dir / f"{sf.slug}.md"
 
+            mode = "w" if force else "x"
             try:
-                with open(target_path, "x", encoding="utf-8") as f:
+                with open(target_path, mode, encoding="utf-8") as f:
                     f.write(markdown)
             except FileExistsError:
-                click.echo(f"Error: file already exists: {target_path}", err=True)
+                click.echo(
+                    f"Error: file already exists: {target_path} (use --force to overwrite)",
+                    err=True,
+                )
                 return 1
 
             click.echo(f"Wrote {target_path}")
@@ -494,7 +600,7 @@ def onboard(
     only: str | None,
     force: bool,
 ) -> None:
-    """Onboard an entity using claim templates.
+    """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
 
     HOMEPAGE_URL is optional. If provided, it is used directly for entity
     light research instead of searching for the homepage.
@@ -510,7 +616,7 @@ def onboard(
         homepage_url,
         only,
     )
-    _check_provider_api_keys(ctx.obj["model"])
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
@@ -522,6 +628,7 @@ def onboard(
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
+        **_ctx_per_agent_kwargs(ctx),
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
@@ -596,7 +703,7 @@ def review(
     archive: bool,
     repo_root: str | None,
 ) -> None:
-    """Mark a claim as human-reviewed in its audit sidecar.
+    """Record human sign-off in one claim's audit sidecar; --approve also flips status draft->published, --archive flips published->archived.
 
     With no flag, writes only the sidecar. With ``--approve`` flips
     ``status: draft`` to ``status: published``; with ``--archive`` flips
@@ -613,12 +720,9 @@ def review(
         archive,
     )
 
-    import datetime
-    import subprocess
-
-    import yaml
     from common.content_loader import resolve_repo_root
-    from common.frontmatter import parse_frontmatter
+    from common.sidecar import sidecar_path_for
+    from orchestrator.review import approve_claim
 
     if approve and archive:
         raise click.ClickException("--approve and --archive are mutually exclusive")
@@ -647,7 +751,6 @@ def review(
             )
             sys.exit(1)
         claim_path = matches[0]
-    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
 
     if not claim_path.exists():
         click.echo(
@@ -655,100 +758,22 @@ def review(
             err=True,
         )
         sys.exit(1)
-    if not sidecar_path.exists():
+    if not sidecar_path_for(claim_path).exists():
         click.echo(
-            f"No audit sidecar found at {sidecar_path.relative_to(root)}. "
+            f"No audit sidecar found at {sidecar_path_for(claim_path).relative_to(root)}. "
             f"Run the pipeline first.",
             err=True,
         )
         sys.exit(1)
 
-    # Pre-flight runs before any write so a bad state aborts cleanly,
-    # leaving both files untouched.
-    expected_current: str | None = None
-    new_status: str | None = None
-    if approve or archive:
-        try:
-            fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-        except FileNotFoundError as exc:
-            raise click.ClickException(f"claim file not found: {claim_path}") from exc
-        except ValueError as exc:
-            raise click.ClickException(
-                f"malformed frontmatter in {claim_path}: {exc}"
-            ) from exc
-
-        current_status = fm.get("status")
-        if approve:
-            # Missing status field is treated as draft (older pre-stub claims).
-            effective_current = current_status if current_status is not None else "draft"
-            if effective_current == "archived":
-                raise click.ClickException("cannot approve an archived claim")
-            if effective_current == "blocked":
-                blocked_reason = fm.get("blocked_reason", "<unset>")
-                raise click.ClickException(
-                    f"Cannot approve blocked claim {claim_path.relative_to(root)}; "
-                    f"address blocked_reason={blocked_reason!r} first."
-                )
-            if effective_current != "draft":
-                raise click.ClickException(
-                    f"claim already {effective_current}; use --archive to retire"
-                )
-            expected_current = current_status  # may be None (key absent)
-            new_status = "published"
-        else:  # archive
-            if current_status is None:
-                raise click.ClickException(
-                    "cannot archive: claim has no status field; publish first or edit the file manually"
-                )
-            if current_status not in ("published", "blocked"):
-                raise click.ClickException(
-                    f"cannot archive a claim with status {current_status!r}; "
-                    f"only published or blocked claims can be archived"
-                )
-            expected_current = current_status
-            new_status = "archived"
-
-    # Resolve reviewer
-    effective_reviewer = reviewer
-    if not effective_reviewer:
-        proc = subprocess.run(
-            ["git", "config", "user.email"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
-        git_email = proc.stdout.strip()
-        if git_email:
-            effective_reviewer = git_email
-        else:
-            click.echo(
-                "Error: --reviewer not provided and git config user.email is empty.",
-                err=True,
-            )
-            sys.exit(1)
-
-    sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    sidecar_data["human_review"]["reviewed_at"] = datetime.date.today().isoformat()
-    sidecar_data["human_review"]["reviewer"] = effective_reviewer
-    effective_notes = notes
-    if archive and not effective_notes:
-        effective_notes = "archived"
-    sidecar_data["human_review"]["notes"] = effective_notes
-    sidecar_data["human_review"]["pr_url"] = pr_url
-
-    sidecar_path.write_text(
-        yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
+    mode = "approve" if approve else "archive" if archive else "review"
+    approve_claim(
+        claim_path,
+        reviewer=reviewer,
+        notes=notes,
+        pr_url=pr_url,
+        mode=mode,
     )
-
-    # Sidecar is the commit point: if the .md flip raises, the sidecar is
-    # already updated and rerunning the same flag re-detects the pre-flip
-    # status to complete the transition.
-    if new_status is not None:
-        try:
-            set_claim_status(claim_path, new_status, expected_current)
-        except ValueError as exc:
-            raise click.ClickException(str(exc)) from exc
 
     if approve:
         click.echo(
@@ -760,6 +785,69 @@ def review(
         )
     else:
         click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
+
+
+# --------------------------------------------------------------------------- #
+# dr review-queue                                                               #
+# --------------------------------------------------------------------------- #
+
+
+@main.command("review-queue")
+@click.option(
+    "--format", "output_format", default=None, type=click.Choice(["text", "json"]),
+    help=(
+        "Print the queue and exit instead of starting the interactive walkthrough. "
+        "`text` is a tab-separated table; `json` is a JSON array. "
+        "Matches the convention set by `dr lint --format`."
+    ),
+)
+@click.option("--filter-entity", default=None, help="Restrict the queue to one entity directory (e.g. 'openai').")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def review_queue(
+    ctx: click.Context,
+    output_format: str | None,
+    filter_entity: str | None,
+    repo_root: str | None,
+) -> None:
+    """Walk through draft claims awaiting human review (a/s/p/o/q keys); --format text|json prints the queue for CI/scripting.
+
+    Default (no --format): interactive loop over draft claims with completed
+    research. Single-key actions: [a]pprove, [s]kip, [p]review, [o]pen in
+    editor, [q]uit. Approve delegates to the same `approve_claim` callable as
+    `dr review --approve`.
+
+    With --format: prints the queue and exits. Always exits 0 regardless of
+    queue size; this is informational.
+
+    \b
+    Examples:
+      dr review-queue
+      dr review-queue --format text
+      dr review-queue --format json | jq '.[].claim_slug'
+      dr review-queue --filter-entity openai
+    """
+    import json as _json
+
+    from common.content_loader import resolve_repo_root as _resolve_root
+    from orchestrator.review_queue import (
+        find_publication_queue,
+        format_table,
+        run_interactive,
+        to_json_records,
+    )
+
+    root = Path(repo_root) if repo_root else _resolve_root()
+    items = find_publication_queue(root, filter_entity=filter_entity)
+
+    if output_format == "json":
+        click.echo(_json.dumps(to_json_records(items), indent=2))
+        return
+    if output_format == "text":
+        click.echo(format_table(items))
+        return
+
+    run_interactive(items, root)
 
 
 # --------------------------------------------------------------------------- #
@@ -823,7 +911,7 @@ def publish(
     continue_on_error: bool,
     repo_root: str | None,
 ) -> None:
-    """Bulk-flip drafts to published WITHOUT recording human review.
+    """Bulk-flip draft claims to published, filling sidecar with an auto-publish marker (no reviewer recorded); supports --dry-run.
 
     Claims processed by this command render as "Unreviewed" on the site.
     Use `dr review --approve` for human-reviewed publication.
@@ -856,7 +944,8 @@ def publish(
 
     import yaml
     from common.content_loader import list_claims, resolve_repo_root
-    from common.frontmatter import parse_frontmatter
+    from common.frontmatter import has_criterion, parse_frontmatter
+    from common.sidecar import sidecar_path_for
 
     # Mode selection: exactly one of {--claim, --entity, --all}.
     selectors = sum(1 for s in (claim, entity, all_) if s)
@@ -897,6 +986,7 @@ def publish(
     skipped_archived: list[Path] = []
     skipped_blocked: list[tuple[Path, str]] = []  # (path, blocked_reason)
     skipped_missing_sidecar: list[Path] = []
+    skipped_missing_criterion: list[Path] = []
     classify_errors: list[tuple[Path, str]] = []
 
     for claim_path in candidate_paths:
@@ -926,9 +1016,14 @@ def publish(
             continue
 
         # Draft: still need a sidecar to update.
-        sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+        sidecar_path = sidecar_path_for(claim_path)
         if not sidecar_path.exists():
             skipped_missing_sidecar.append(claim_path)
+            continue
+
+        # Publish gate: criteria_slug is required for the public artifact.
+        if not has_criterion(fm):
+            skipped_missing_criterion.append(claim_path)
             continue
 
         to_publish.append((claim_path, current_status))
@@ -961,6 +1056,10 @@ def publish(
         click.echo(f"Skipped (no audit sidecar): {len(skipped_missing_sidecar)}")
         for path in skipped_missing_sidecar:
             click.echo(f"  ! missing sidecar: {_rel(path)}", err=True)
+    if skipped_missing_criterion:
+        click.echo(f"Skipped (no criteria_slug): {len(skipped_missing_criterion)}")
+        for path in skipped_missing_criterion:
+            click.echo(f"  ! missing criteria_slug: {_rel(path)}", err=True)
     if classify_errors:
         click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
         for path, msg in classify_errors:
@@ -973,8 +1072,9 @@ def publish(
     if not to_publish:
         click.echo("Nothing to publish.")
         # Per-claim errors during classification (e.g. unparseable frontmatter)
-        # still count as failures even if no claim was eligible to publish.
-        sys.exit(1 if classify_errors else 0)
+        # and missing-criterion skips both count as failures: criterion is a
+        # hard publish requirement, so a partial-completion run should signal.
+        sys.exit(1 if (classify_errors or skipped_missing_criterion) else 0)
 
     # Confirmation prompt unless --yes.
     if not yes:
@@ -985,10 +1085,14 @@ def publish(
 
     today_iso = datetime.date.today().isoformat()
     published_count = 0
-    publish_errors: list[tuple[Path, str]] = list(classify_errors)
+    # Missing-criterion skips count as errors: the operator asked us to publish,
+    # we couldn't, that's a partial-completion signal that should fail loud.
+    publish_errors: list[tuple[Path, str]] = list(classify_errors) + [
+        (p, "missing criteria_slug") for p in skipped_missing_criterion
+    ]
 
     for claim_path, current_status in to_publish:
-        sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+        sidecar_path = sidecar_path_for(claim_path)
         try:
             sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
             sidecar_data["human_review"]["reviewed_at"] = today_iso
@@ -1031,7 +1135,7 @@ def publish(
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
 def lint(ctx: click.Context, entity: str | None, output_format: str, severity: str, repo_root: str | None) -> None:
-    """Run static content checks — no LLM, no network.
+    """Static content checks against research/ (frontmatter schema, source refs, criteria slugs, sign-off); no LLM, no network.
 
     Exits 1 if any errors are found.
 

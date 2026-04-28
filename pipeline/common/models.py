@@ -86,6 +86,23 @@ class VerdictSeverity(str, Enum):
 DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
 
 
+def _model_needs_reasoning_strip(model_id: str) -> bool:
+    """True for models that reject ``reasoning_content`` on input messages.
+
+    Mistral-Small-3.2 emits ``reasoning_content`` on assistant turns and 400s
+    when it appears in conversation history. By default PydanticAI's
+    auto-detect path puts the field back on outgoing messages, which breaks
+    multi-turn tool loops on Infomaniak. Forcing
+    ``openai_chat_send_back_thinking_parts=False`` drops thinking parts from
+    history entirely, which is the smallest behavior change that keeps the
+    tool loop alive.
+
+    Keyed on the lowercased model_id substring so future Mistral tiers and
+    HF-style slugs stay covered without a registry rewrite.
+    """
+    return "mistral" in model_id.lower()
+
+
 @lru_cache(maxsize=None)
 def resolve_model(spec: str) -> "Model | str":
     """Map a model spec string to a PydanticAI Model or pass it through.
@@ -95,6 +112,9 @@ def resolve_model(spec: str) -> "Model | str":
     model names) is returned unchanged so PydanticAI's native string
     handling continues to work.
 
+    For Mistral variants on Infomaniak, applies a thinking-parts scrubber
+    via the model profile (see ``_model_needs_reasoning_strip``).
+
     Cached per-spec so a process reuses one provider/httpx client across
     overrides; `Agent.override` is a sync context manager that does not
     enter the provider, so a fresh `OpenAIProvider` per call would leak
@@ -103,6 +123,7 @@ def resolve_model(spec: str) -> "Model | str":
     """
     if spec.startswith("infomaniak:"):
         from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.profiles.openai import OpenAIModelProfile
         from pydantic_ai.providers.openai import OpenAIProvider
 
         model_id = spec.split(":", 1)[1]
@@ -116,5 +137,9 @@ def resolve_model(spec: str) -> "Model | str":
             raise RuntimeError(f"Infomaniak provider requires {e.args[0]}") from e
         ver = os.environ.get("INFOMANIAK_API_VERSION", "2")
         base = f"https://api.infomaniak.com/{ver}/ai/{pid}/openai/v1"
-        return OpenAIModel(model_id, provider=OpenAIProvider(base_url=base, api_key=api_key))
+        provider = OpenAIProvider(base_url=base, api_key=api_key)
+        profile: "OpenAIModelProfile | None" = None
+        if _model_needs_reasoning_strip(model_id):
+            profile = OpenAIModelProfile(openai_chat_send_back_thinking_parts=False)
+        return OpenAIModel(model_id, provider=provider, profile=profile)
     return spec

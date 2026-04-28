@@ -72,6 +72,11 @@ class VerificationResult(BaseModel):
     # files (research_claim, onboard_entity) inspect this to write a
     # blocked claim file instead of skipping.
     blocked_reason: BlockedReason | None = None
+    # Repo-relative path of the written claim file (e.g.
+    # "research/claims/microsoft/renewable-energy-pledges.md"). Set by
+    # research_claim after the claim file lands; left None for in-memory
+    # verify_claim runs that don't persist.
+    claim_path: str | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -127,7 +132,14 @@ def _record_threshold_block(
 @dataclass
 class VerifyConfig:
     model: str = DEFAULT_MODEL
-    max_sources: int = 4
+    # Per-agent overrides; each falls back to ``model`` when None. Keeps the
+    # single-model path unchanged while letting `dr` mix providers per agent
+    # (e.g. analyst on Infomaniak gpt-oss, auditor on Mistral-Small).
+    researcher_model: str | None = None
+    analyst_model: str | None = None
+    auditor_model: str | None = None
+    ingestor_model: str | None = None
+    max_sources: int = 12
     skip_wayback: bool = True  # default True for faster POC runs
     repo_root: str = ""
     # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
@@ -148,6 +160,32 @@ class VerifyConfig:
             self.ingest_timeout_s = (
                 ingest_budget_with_wayback_s() if not self.skip_wayback else 60.0
             )
+
+    def model_for(self, agent: str) -> str:
+        """Resolve the model spec for a given agent, falling back to ``model``.
+
+        ``agent`` is one of "researcher", "analyst", "auditor", "ingestor".
+        """
+        per_agent = {
+            "researcher": self.researcher_model,
+            "analyst": self.analyst_model,
+            "auditor": self.auditor_model,
+            "ingestor": self.ingestor_model,
+        }
+        return per_agent.get(agent) or self.model
+
+    def all_models(self) -> list[str]:
+        """All distinct resolved model specs in use across the four agents.
+
+        Used by callers (notably the CLI) to enumerate which providers' env
+        vars are required for a given run.
+        """
+        seen: list[str] = []
+        for agent in ("researcher", "analyst", "auditor", "ingestor"):
+            m = self.model_for(agent)
+            if m not in seen:
+                seen.append(m)
+        return seen
 
 
 async def verify_claim(
@@ -257,7 +295,7 @@ async def _research(
     prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
 
     try:
-        with research_agent.override(model=resolve_model(cfg.model)):
+        with research_agent.override(model=resolve_model(cfg.model_for("researcher"))):
             res = await asyncio.wait_for(
                 research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
             )
@@ -327,7 +365,7 @@ async def _ingest_one(
         f"Today's date: {today.isoformat()}\n"
     )
     try:
-        with ingestor_agent.override(model=resolve_model(cfg.model)):
+        with ingestor_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
             res = await asyncio.wait_for(
                 ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
             )
@@ -387,7 +425,7 @@ async def _analyse_claim(
     prompt = build_analyst_prompt(entity_name, claim_text, sources)
 
     try:
-        with analyst_agent.override(model=resolve_model(cfg.model)):
+        with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
             res = await asyncio.wait_for(
                 analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
             )
@@ -416,7 +454,7 @@ async def _audit_claim(
     prompt = build_auditor_prompt(bundle)
 
     try:
-        with auditor_agent.override(model=resolve_model(cfg.model)):
+        with auditor_agent.override(model=resolve_model(cfg.model_for("auditor"))):
             res = await asyncio.wait_for(
                 auditor_agent.run(prompt), timeout=cfg.auditor_timeout_s
             )
@@ -552,6 +590,12 @@ async def research_claim(
                 repo_root=repo_root,
                 force=cfg.force_overwrite,
             )
+            try:
+                result.claim_path = str(claim_path.relative_to(Path(repo_root)))
+            except ValueError:
+                # Claim path lies outside repo_root (unusual but possible
+                # in tests with mocked roots); fall back to the absolute path.
+                result.claim_path = str(claim_path)
 
             # Step 5: Auditor check
             logger.info("Step 5/5: Running auditor check...")
