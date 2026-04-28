@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import TYPE_CHECKING
 
 import httpx
 
@@ -12,7 +13,14 @@ from researcher.agent import search_brave
 from researcher.planner import QueryPlan, query_planner_agent
 from researcher.scorer import SearchCandidate, ScoredURLs, url_scorer_agent
 
+if TYPE_CHECKING:
+    from orchestrator.pipeline import VerifyConfig
+
 logger = logging.getLogger(__name__)
+
+
+def _research_err(error_type: str, message: str) -> StepError:
+    return StepError(step="research", error_type=error_type, message=message)
 
 
 async def execute_searches(
@@ -46,14 +54,13 @@ async def execute_searches(
 async def decomposed_research(
     claim_text: str,
     entity_name: str,
-    cfg,  # VerifyConfig — imported locally to avoid circular imports
+    cfg: VerifyConfig,
     sem: asyncio.Semaphore,
     client: httpx.AsyncClient,
 ) -> tuple[list[str], list[StepError]]:
     """Run the 3-step decomposed researcher and return (urls, errors)."""
     errors: list[StepError] = []
 
-    # Step 1: Query Planner (LLM call, guarded by semaphore)
     planner_prompt = (
         f"Entity: {entity_name or '(unknown)'}\n"
         f"Claim: {claim_text}\n"
@@ -71,26 +78,24 @@ async def decomposed_research(
         queries = plan.queries[: cfg.max_initial_queries]
         logger.info("Query planner: %d queries (rationale: %s)", len(queries), plan.rationale)
     except asyncio.TimeoutError:
-        errors.append(StepError(step="research", error_type="timeout", message="Query planner timed out"))
+        errors.append(_research_err("timeout", "Query planner timed out"))
         return [], errors
     except Exception as exc:
-        errors.append(StepError(step="research", error_type="model_error", message=str(exc)))
+        errors.append(_research_err("model_error", str(exc)))
         logger.error("Query planner failed: %s", exc)
         return [], errors
 
     if not queries:
-        errors.append(StepError(step="research", error_type="no_queries", message="Query planner returned no queries"))
+        errors.append(_research_err("no_queries", "Query planner returned no queries"))
         return [], errors
 
-    # Step 2: Search Executor (pure HTTP, no semaphore)
     candidates = await execute_searches(queries, client)
     logger.info("Search executor: %d unique candidates from %d queries", len(candidates), len(queries))
 
     if not candidates:
-        errors.append(StepError(step="research", error_type="no_results", message="Search returned no results"))
+        errors.append(_research_err("no_results", "Search returned no results"))
         return [], errors
 
-    # Step 3: URL Scorer (LLM call, guarded by semaphore)
     candidate_text = "\n".join(
         f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\n"
         for c in candidates
@@ -114,10 +119,10 @@ async def decomposed_research(
         )
         return scored.kept, errors
     except asyncio.TimeoutError:
-        errors.append(StepError(step="research", error_type="timeout", message="URL scorer timed out"))
+        errors.append(_research_err("timeout", "URL scorer timed out"))
         # Fall back to all candidates rather than returning nothing
         return [c.url for c in candidates], errors
     except Exception as exc:
-        errors.append(StepError(step="research", error_type="model_error", message=str(exc)))
+        errors.append(_research_err("model_error", str(exc)))
         logger.error("URL scorer failed: %s", exc)
         return [c.url for c in candidates], errors

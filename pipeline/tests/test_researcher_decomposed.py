@@ -15,6 +15,12 @@ from researcher.scorer import SearchCandidate, ScoredURLs, url_scorer_agent
 from researcher.decomposed import execute_searches, decomposed_research
 
 
+class _AgentResult:
+    """Minimal stand-in for pydantic_ai RunResult when patching agent.run."""
+    def __init__(self, output):
+        self.output = output
+
+
 # --------------------------------------------------------------------------- #
 # Helpers                                                                       #
 # --------------------------------------------------------------------------- #
@@ -69,11 +75,7 @@ async def test_query_planner_cap_enforcement() -> None:
     six_queries = [f"query_{i}" for i in range(6)]
     cfg = _make_cfg(max_initial_queries=3)
 
-    # Use patch.object on agent.run to bypass the internal override in decomposed_research.
     six_plan = QueryPlan(queries=six_queries, rationale="many queries")
-
-    class _FakePlannerResult:
-        output = six_plan
 
     # Track how many queries were passed to execute_searches.
     captured_queries: list[list[str]] = []
@@ -83,7 +85,7 @@ async def test_query_planner_cap_enforcement() -> None:
         return []  # no candidates; keeps the test focused on truncation
 
     with (
-        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_FakePlannerResult())),
+        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(six_plan))),
         patch("researcher.decomposed.execute_searches", side_effect=fake_execute_searches),
     ):
         sem = asyncio.Semaphore(8)
@@ -158,20 +160,13 @@ async def test_decomposed_research_step_sequencing() -> None:
     ]
     kept_urls = ["https://a.com", "https://b.com"]
 
-    # decomposed_research calls agent.override(model=resolve_model(...)) internally,
-    # so we patch .run directly on each agent to return controlled mock results.
+    # decomposed_research applies its own agent.override internally, so patch .run directly.
     fake_plan = QueryPlan(queries=["q1", "q2"], rationale="good queries")
     fake_scored = ScoredURLs(kept=kept_urls, dropped=["https://c.com"], rationale="a and b are better")
 
-    class _FakePlannerResult:
-        output = fake_plan
-
-    class _FakeScorerResult:
-        output = fake_scored
-
     with (
-        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_FakePlannerResult())),
-        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_FakeScorerResult())),
+        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
         patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
     ):
         sem = asyncio.Semaphore(8)
@@ -202,14 +197,7 @@ async def test_semaphore_bounds_concurrency() -> None:
         SearchCandidate(url="https://x.com", title="X", snippet="x", from_query="q1"),
     ]
 
-    class _FakePlannerResult:
-        output = fake_plan
-
-    class _FakeScorerResult:
-        output = fake_scored
-
     async def counting_planner_run(*args, **kwargs):
-        """Increments concurrent counter, holds briefly, then returns a plan."""
         nonlocal max_concurrent, current_concurrent
         async with lock:
             current_concurrent += 1
@@ -218,10 +206,9 @@ async def test_semaphore_bounds_concurrency() -> None:
         await asyncio.sleep(0.05)  # hold so concurrent entries overlap
         async with lock:
             current_concurrent -= 1
-        return _FakePlannerResult()
+        return _AgentResult(fake_plan)
 
     async def counting_scorer_run(*args, **kwargs):
-        """Increments concurrent counter, holds briefly, then returns scores."""
         nonlocal max_concurrent, current_concurrent
         async with lock:
             current_concurrent += 1
@@ -230,7 +217,7 @@ async def test_semaphore_bounds_concurrency() -> None:
         await asyncio.sleep(0.05)
         async with lock:
             current_concurrent -= 1
-        return _FakeScorerResult()
+        return _AgentResult(fake_scored)
 
     cfg = _make_cfg(max_initial_queries=2)
     sem = asyncio.Semaphore(3)

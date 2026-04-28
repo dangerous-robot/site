@@ -6,6 +6,7 @@ in-tool retry-once behavior for 429. See docs/plans/ingestor-fail-fast-403.md.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 from contextlib import contextmanager
 from unittest.mock import patch
@@ -256,9 +257,8 @@ class TestOrchestratorMapping:
                         "orchestrator.pipeline.ingestor_agent.override",
                         side_effect=lambda **kw: _noop_ctx(),
                     ):
-                        import asyncio as _asyncio
                         outcome = await _ingest_one(
-                            client, url, cfg, datetime.date(2026, 4, 19), _asyncio.Semaphore(8)
+                            client, url, cfg, datetime.date(2026, 4, 19), asyncio.Semaphore(8)
                         )
         # StepError (not a success tuple)
         assert not isinstance(outcome, tuple)

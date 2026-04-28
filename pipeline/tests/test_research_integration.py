@@ -107,6 +107,7 @@ async def test_research_claim_writes_artifacts(tmp_path):
             max_sources=2,
             skip_wayback=True,
             repo_root=str(tmp_path),
+            researcher_mode="classic",
         )
         result = await research_claim("TestCorp uses renewable energy", config)
 

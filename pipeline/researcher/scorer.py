@@ -31,7 +31,7 @@ Scoring scale:
 Rules:
 - Score only on the title and snippet — do not assume body content.
 - Keep all candidates with score >= 3 in the `kept` list.
-- Put candidates with score < 2 in the `dropped` list.
+- Put candidates with score < 3 in the `dropped` list.
 - Every input URL must appear in either `kept` or `dropped` (no omissions).
 - Return URLs as-is (exact strings from input).
 - Include a brief `rationale` summarizing the scoring decisions.

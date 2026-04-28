@@ -127,6 +127,7 @@ class TestResearchBlocklist:
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
+            researcher_mode="classic",
         )
         async with httpx.AsyncClient() as client:
             with (
@@ -156,6 +157,7 @@ class TestResearchBlocklist:
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
+            researcher_mode="classic",
         )
         async with httpx.AsyncClient() as client:
             with (
@@ -182,6 +184,7 @@ class TestResearchBlocklist:
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
+            researcher_mode="classic",
         )
         async with httpx.AsyncClient() as client:
             with (

@@ -274,6 +274,40 @@ async def verify_claim(
     return result
 
 
+def _apply_blocklist_cap(
+    raw_urls: list[str],
+    cfg: VerifyConfig,
+    errors: list[StepError] | None = None,
+) -> tuple[list[str], list[StepError]]:
+    """Filter raw_urls through the blocklist, cap at max_sources, and append
+    blocked_host / all_blocked errors. Returns (kept_urls, error_list)."""
+    out_errors: list[StepError] = list(errors) if errors else []
+    repo_root_str = cfg.repo_root or str(resolve_repo_root())
+    entries = load_blocklist(Path(repo_root_str))
+    kept, dropped = filter_urls(raw_urls, entries)
+    urls = kept[: cfg.max_sources]
+    for d in dropped:
+        out_errors.append(
+            StepError(
+                step="research",
+                url=d.url,
+                error_type="blocked_host",
+                message=f"Dropped by blocklist (host={d.host}): {d.reason}",
+                retryable=False,
+            )
+        )
+    if not urls and dropped:
+        out_errors.insert(
+            0,
+            StepError(
+                step="research",
+                error_type="all_blocked",
+                message=f"All {len(dropped)} researcher URLs matched blocklist; returning empty.",
+            ),
+        )
+    return urls, out_errors
+
+
 async def _research(
     client: httpx.AsyncClient,
     entity_name: str,
@@ -283,22 +317,15 @@ async def _research(
 ) -> tuple[list[str], list[StepError]]:
     if cfg.researcher_mode == "decomposed":
         from researcher.decomposed import decomposed_research
-        raw_urls, errors = await decomposed_research(claim_text, entity_name, cfg, sem, client)
-        # Apply blocklist + max_sources cap (same as classic path)
-        repo_root_str = cfg.repo_root or str(resolve_repo_root())
-        entries = load_blocklist(Path(repo_root_str))
-        kept, dropped = filter_urls(raw_urls, entries)
-        urls = kept[:cfg.max_sources]
-        for d in dropped:
-            errors.append(StepError(
-                step="research", url=d.url, error_type="blocked_host",
-                message=f"Dropped by blocklist (host={d.host}): {d.reason}", retryable=False,
-            ))
-        if not urls and dropped:
-            errors.insert(0, StepError(
-                step="research", error_type="all_blocked",
-                message=f"All {len(dropped)} researcher URLs matched blocklist; returning empty.",
-            ))
+        try:
+            raw_urls, errors = await asyncio.wait_for(
+                decomposed_research(claim_text, entity_name, cfg, sem, client),
+                timeout=cfg.research_timeout_s,
+            )
+        except asyncio.TimeoutError:
+            logger.error("Decomposed researcher timed out")
+            return [], [StepError(step="research", error_type="timeout", message="Decomposed research timed out")]
+        urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
         logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.max_sources)
         return urls, errors
 
@@ -313,36 +340,11 @@ async def _research(
                     research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
                 )
         raw_urls = res.output.urls
-
-        repo_root_str = cfg.repo_root or str(resolve_repo_root())
-        entries = load_blocklist(Path(repo_root_str))
-        kept, dropped = filter_urls(raw_urls, entries)
-        urls = kept[:cfg.max_sources]
-
-        errors: list[StepError] = []
-        for d in dropped:
-            errors.append(
-                StepError(
-                    step="research",
-                    url=d.url,
-                    error_type="blocked_host",
-                    message=f"Dropped by blocklist (host={d.host}): {d.reason}",
-                    retryable=False,
-                )
-            )
-        if not urls and dropped:
-            errors.insert(
-                0,
-                StepError(
-                    step="research",
-                    error_type="all_blocked",
-                    message=f"All {len(dropped)} researcher URLs matched blocklist; returning empty.",
-                ),
-            )
+        urls, errors = _apply_blocklist_cap(raw_urls, cfg)
         logger.info(
             "Research: %d raw, %d blocked, %d kept (cap=%d). Reasoning: %s",
             len(raw_urls),
-            len(dropped),
+            len(raw_urls) - len(urls),
             len(urls),
             cfg.max_sources,
             res.output.reasoning,
