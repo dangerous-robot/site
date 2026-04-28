@@ -5,7 +5,7 @@ topics:
 - ai-safety
 verdict: 'true'
 confidence: high
-status: published
+status: draft
 as_of: '2026-04-26'
 sources:
 - 2024/introducing-the-next-generation-of-claude

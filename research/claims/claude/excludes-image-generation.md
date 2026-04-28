@@ -5,7 +5,7 @@ topics:
 - environmental-impact
 verdict: 'true'
 confidence: high
-status: published
+status: draft
 as_of: '2026-04-26'
 sources:
 - 2026/can-claude-produce-images

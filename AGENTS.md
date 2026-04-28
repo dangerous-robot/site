@@ -96,7 +96,7 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 
-Pass `--interactive` to `dr verify`, `dr research`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
+Pass `--interactive` to `dr verify`, `dr verify-claim`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
 
 ### Tooling: dr vs inv
 
@@ -104,14 +104,14 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, research, evaluate, ingest |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, verify-claim, evaluate, ingest |
 | `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
 
 ```
 uv run dr verify "Entity" "claim text"
-uv run dr research "claim text"
+uv run dr verify-claim "claim text"
 uv run dr reassess --entity ecosia
 uv run dr ingest https://example.com/article
 uv run dr onboard "Ecosia AI" --type product
@@ -121,8 +121,8 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 
 Commands:
 
-- `dr verify` -- Verify a claim about an entity using web research
-- `dr research` -- Research a claim: find sources, evaluate verdict, write everything to disk
+- `dr verify` -- Verify a claim about an entity using web research (read-only; no disk writes)
+- `dr verify-claim` -- Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk
 - `dr reassess` -- Run evaluator checks on research claims
 - `dr ingest` -- Ingest a URL and produce a source file
 - `dr onboard` -- Onboard an entity using claim templates

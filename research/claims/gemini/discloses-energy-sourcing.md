@@ -5,7 +5,7 @@ topics:
 - environmental-impact
 verdict: unverified
 confidence: low
-status: published
+status: draft
 as_of: '2026-04-26'
 sources:
 - 2025/measuring-the-environmental-impact-of-ai-inference

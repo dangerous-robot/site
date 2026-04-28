@@ -25,7 +25,7 @@ audit:
   confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-26'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

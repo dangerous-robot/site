@@ -14,18 +14,18 @@ Sections:
 
 ## 1. Claim lifecycle
 
-Every claim moves through the same set of states regardless of how it was initiated (`dr research`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
+Every claim moves through the same set of states regardless of how it was initiated (`dr verify-claim`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft: dr research / dr onboard / manual edit
+    [*] --> draft: dr verify-claim / dr onboard / manual edit
     draft --> blocked: pipeline threshold gate (< 2 sources or terminal fetch error)
     blocked --> archived: dr review --archive
     draft --> under_review: PR opened
     under_review --> draft: PR closed without merge
     under_review --> published: dr review --approve (status flip) + PR merged
     published --> stale: recheck_cadence_days elapsed
-    stale --> under_review: dr research re-run, PR opened
+    stale --> under_review: dr verify-claim re-run, PR opened
     published --> archived: dr review --archive (entity retired or claim superseded)
     archived --> [*]
 ```
@@ -49,7 +49,7 @@ flowchart LR
     A([Human or agent]) -->|adds URL or topic| B[research/QUEUE.md]
     B -->|operator picks item| C{Item type}
     C -->|URL| D[dr ingest URL]
-    C -->|claim text| E[dr research claim-text]
+    C -->|claim text| E[dr verify-claim claim-text]
     C -->|new entity| F[dr onboard entity type]
     D --> G[Source file written to research/sources/]
     E --> H[Source + claim files written]

@@ -6,7 +6,7 @@ topics:
 - environmental-impact
 verdict: 'false'
 confidence: high
-status: published
+status: draft
 as_of: '2026-04-26'
 sources:
 - 2025/gemini-3-flash-preview
