@@ -34,4 +34,4 @@ __pycache__/
 uv.lock
 
 # Multi-provider POC scratch (keys, ad-hoc scripts, reports)
-scripts/poc-multi-provider/
+scripts/llm-tester/
