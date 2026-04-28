@@ -23,6 +23,8 @@ from ingestor.tools.web_fetch import (
 
 logger = logging.getLogger(__name__)
 
+_BINARY_CONTENT_TYPES = ("application/pdf", "application/octet-stream", "application/msword")
+
 _SYSTEM_PROMPT = load_instructions(Path(__file__).resolve().parent)
 
 
@@ -80,6 +82,9 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
             _raise_if_terminal(resp, url)
 
         resp.raise_for_status()
+        ct = resp.headers.get("content-type", "")
+        if any(t in ct for t in _BINARY_CONTENT_TYPES):
+            return {"error": f"Unsupported content type: {ct}", "url": url}
         return extract_page_data(resp.text, url)
     except httpx.HTTPError as exc:
         logger.error("Failed to fetch %s: %s", url, exc)
