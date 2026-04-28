@@ -29,28 +29,27 @@ const navLinks = [
   { href: '/faq', label: 'FAQ' },
 ];
 
-const featuredVerdicts = new Set(['false', 'mostly-false', 'unverified', 'mixed']);
 const pool = allClaims
-  .filter((c) => featuredVerdicts.has(c.data.verdict))
+  .filter((c) => c.data.status === 'published' && c.data.tags.includes('highlight'))
   .sort((a, b) => a.id.localeCompare(b.id))
-  .map((c) => ({ verdict: c.data.verdict as string, title: c.data.title as string }));
+  .map((c) => ({ verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}` }));
 
 const manualClaim = {
   verdict: 'false',
   title: 'At least one major AI company scores a C or higher on existential threats',
+  href: '/claims',
 };
 
 const fmtVerdict = (v: string) => VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
 
 const fallback = [
-  { verdict: 'unverified', title: 'ChatGPT is hosted on renewable energy' },
-  { verdict: 'mixed', title: 'Google publishes a sustainability or ESG report' },
-  { verdict: 'mostly-false', title: 'Anthropic publishes detailed training-data disclosures' },
-  { verdict: 'false', title: 'OpenAI discloses cumulative model training compute' },
+  { verdict: 'unverified', title: 'ChatGPT is hosted on renewable energy', href: '/claims' },
+  { verdict: 'mixed', title: 'Google publishes a sustainability or ESG report', href: '/claims' },
+  { verdict: 'mostly-false', title: 'Anthropic publishes detailed training-data disclosures', href: '/claims' },
+  { verdict: 'false', title: 'OpenAI discloses cumulative model training compute', href: '/claims' },
 ];
 const src = [manualClaim, ...pool, ...fallback];
 
-// TODO: wire real claim slugs into card hrefs
 const scatterItems = src.slice(0, 5);
 
 function rnd(min: number, max: number): number {
@@ -122,7 +121,7 @@ const cardPositions = [
           return (
             <a
               class="claim-card"
-              href="#"
+              href={c.href}
               style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${p.z}`}
             >
               <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>

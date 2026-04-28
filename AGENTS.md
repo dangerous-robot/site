@@ -50,6 +50,16 @@ to `topics`) and cardinality (single value to array) were changed. See
 | `industry-analysis` | Corporate structure, business models, ownership |
 | `regulation-policy` | Government oversight, AI policy landscape |
 
+## Claim Tags
+
+Each claim may carry an optional `tags:` array of free-form strings. Tags are operator-set and are not produced by the pipeline. The following tags have behavioral meaning:
+
+| Tag | Effect |
+|-----|--------|
+| `highlight` | Claim appears in the homepage scatter |
+
+Any other tag is accepted and stored. New behavioral tags should be added to this table when introduced.
+
 ## Content Rules
 
 - Never edit a claim without citing at least one source

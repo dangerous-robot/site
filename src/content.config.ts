@@ -174,6 +174,8 @@ const claims = defineCollection({
     sources: z.array(z.string()),
     recheck_cadence_days: z.number().default(60),
     next_recheck_due: z.coerce.date().optional(),
+    // Free-form operator-set tags. Behavioral tags are documented in AGENTS.md.
+    tags: z.array(z.string()).default([]),
     audit: auditSchema.optional(),
   }),
 });
