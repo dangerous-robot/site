@@ -256,8 +256,9 @@ class TestOrchestratorMapping:
                         "orchestrator.pipeline.ingestor_agent.override",
                         side_effect=lambda **kw: _noop_ctx(),
                     ):
+                        import asyncio as _asyncio
                         outcome = await _ingest_one(
-                            client, url, cfg, datetime.date(2026, 4, 19)
+                            client, url, cfg, datetime.date(2026, 4, 19), _asyncio.Semaphore(8)
                         )
         # StepError (not a success tuple)
         assert not isinstance(outcome, tuple)

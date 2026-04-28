@@ -150,6 +150,14 @@ class VerifyConfig:
     analyst_timeout_s: float = 60.0
     auditor_timeout_s: float = 60.0
     force_overwrite: bool = False
+    # Temporary validation scaffold: switches between "classic" tool-using agent
+    # and the new 3-step decomposed pipeline. Removed post-validation.
+    researcher_mode: Literal["classic", "decomposed"] = "decomposed"
+    # Effort lever for decomposed researcher: more queries = wider net.
+    max_initial_queries: int = 3
+    # Integer cap for the shared asyncio.Semaphore created at each call site.
+    # Never store the Semaphore itself here — it is loop-bound.
+    llm_concurrency: int = 8
     # Correlates every log record (and future token-usage record) emitted
     # during one top-level pipeline invocation. Inherits a CLI-bound id if
     # set; onboard's per-template loop overrides via dataclasses.replace.
@@ -171,6 +179,7 @@ async def verify_claim(
     claim_text: str,
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
+    sem: asyncio.Semaphore | None = None,
 ) -> VerificationResult:
     """Run the full verification pipeline.
 
@@ -185,6 +194,8 @@ async def verify_claim(
     """
     cfg = config or VerifyConfig()
     gate = checkpoint or AutoApproveCheckpointHandler()
+    # Semaphore MUST be created inside the coroutine driven by asyncio.run (loop-bound).
+    _sem = sem if sem is not None else asyncio.Semaphore(cfg.llm_concurrency)
 
     result = VerificationResult(
         entity=entity_name,
@@ -201,7 +212,7 @@ async def verify_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/4: Searching for sources...")
-            urls, research_errors = await _research(client, entity_name, claim_text, cfg)
+            urls, research_errors = await _research(client, entity_name, claim_text, cfg, _sem)
             result.urls_found = urls
 
             if not urls:
@@ -210,7 +221,7 @@ async def verify_claim(
 
             # Step 2: Ingest
             logger.info("Step 2/4: Ingesting %d sources...", len(urls))
-            source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+            source_files, ingest_errors = await _ingest_urls(client, urls, cfg, _sem)
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -268,15 +279,39 @@ async def _research(
     entity_name: str,
     claim_text: str,
     cfg: VerifyConfig,
+    sem: asyncio.Semaphore,
 ) -> tuple[list[str], list[StepError]]:
+    if cfg.researcher_mode == "decomposed":
+        from researcher.decomposed import decomposed_research
+        raw_urls, errors = await decomposed_research(claim_text, entity_name, cfg, sem, client)
+        # Apply blocklist + max_sources cap (same as classic path)
+        repo_root_str = cfg.repo_root or str(resolve_repo_root())
+        entries = load_blocklist(Path(repo_root_str))
+        kept, dropped = filter_urls(raw_urls, entries)
+        urls = kept[:cfg.max_sources]
+        for d in dropped:
+            errors.append(StepError(
+                step="research", url=d.url, error_type="blocked_host",
+                message=f"Dropped by blocklist (host={d.host}): {d.reason}", retryable=False,
+            ))
+        if not urls and dropped:
+            errors.insert(0, StepError(
+                step="research", error_type="all_blocked",
+                message=f"All {len(dropped)} researcher URLs matched blocklist; returning empty.",
+            ))
+        logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.max_sources)
+        return urls, errors
+
+    # Classic path
     deps = ResearchDeps(http_client=client)
     prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
 
     try:
-        with research_agent.override(model=resolve_model(cfg.model_for("researcher"))):
-            res = await asyncio.wait_for(
-                research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
-            )
+        async with sem:
+            with research_agent.override(model=resolve_model(cfg.model_for("researcher"))):
+                res = await asyncio.wait_for(
+                    research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
+                )
         raw_urls = res.output.urls
 
         repo_root_str = cfg.repo_root or str(resolve_repo_root())
@@ -329,6 +364,7 @@ async def _ingest_one(
     url: str,
     cfg: VerifyConfig,
     today: datetime.date,
+    sem: asyncio.Semaphore,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError."""
     deps = IngestorDeps(
@@ -344,9 +380,10 @@ async def _ingest_one(
     )
     try:
         with ingestor_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
-            res = await asyncio.wait_for(
-                ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
-            )
+            async with sem:
+                res = await asyncio.wait_for(
+                    ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
+                )
         logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
         return (url, res.output)
     except asyncio.TimeoutError:
@@ -371,11 +408,12 @@ async def _ingest_urls(
     client: httpx.AsyncClient,
     urls: list[str],
     cfg: VerifyConfig,
+    sem: asyncio.Semaphore,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Run the ingestor agent on all URLs concurrently. Returns (successes, errors)."""
     today = datetime.date.today()
     outcomes = await asyncio.gather(
-        *[_ingest_one(client, url, cfg, today) for url in urls]
+        *[_ingest_one(client, url, cfg, today, sem) for url in urls]
     )
     results = [o for o in outcomes if isinstance(o, tuple)]
     errors = [o for o in outcomes if isinstance(o, StepError)]
@@ -454,6 +492,7 @@ async def research_claim(
     claim_text: str,
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
+    sem: asyncio.Semaphore | None = None,
 ) -> VerificationResult:
     """Research a claim, persist sources/entity/claim to disk, and run auditor.
 
@@ -476,6 +515,7 @@ async def research_claim(
         cfg.repo_root = str(resolve_repo_root())
 
     gate = checkpoint or AutoApproveCheckpointHandler()
+    _sem = sem if sem is not None else asyncio.Semaphore(cfg.llm_concurrency)
     repo_root = Path(cfg.repo_root)
 
     result = VerificationResult(
@@ -493,7 +533,7 @@ async def research_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/5: Searching for sources...")
-            urls, research_errors = await _research(client, "", claim_text, cfg)
+            urls, research_errors = await _research(client, "", claim_text, cfg, _sem)
             result.urls_found = urls
 
             if not urls:
@@ -502,7 +542,7 @@ async def research_claim(
 
             # Step 2: Ingest
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
-            source_files, ingest_errors = await _ingest_urls(client, urls, cfg)
+            source_files, ingest_errors = await _ingest_urls(client, urls, cfg, _sem)
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -660,6 +700,8 @@ async def onboard_entity(
     gate = checkpoint or AutoApproveCheckpointHandler()
     repo_root = Path(cfg.repo_root)
     et = EntityType(entity_type)
+    # One semaphore shared across light research AND all per-template verify_claim calls.
+    sem = asyncio.Semaphore(cfg.llm_concurrency)
 
     result = OnboardResult(
         entity_name=entity_name,
@@ -686,13 +728,13 @@ async def onboard_entity(
                     _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
                     entity_website = _url
                     logger.info("Onboard step 1: ingesting seed URL %s", _url)
-                    source_files, _ = await _ingest_urls(client, [_url], cfg)
+                    source_files, _ = await _ingest_urls(client, [_url], cfg, sem)
                 else:
                     query = f"{entity_name} official website"
-                    urls, _ = await _research(client, entity_name, query, cfg)
+                    urls, _ = await _research(client, entity_name, query, cfg, sem)
                     if urls:
                         entity_website = urls[0]
-                    source_files, _ = await _ingest_urls(client, urls[:1], cfg) if urls else ([], [])
+                    source_files, _ = await _ingest_urls(client, urls[:1], cfg, sem) if urls else ([], [])
                 if source_files:
                     _u, sf = source_files[0]
                     entity_description = sf.frontmatter.summary or ""
@@ -782,7 +824,7 @@ async def onboard_entity(
                 logger.info("Onboard: researching template %s -> %s", slug, claim_text)
 
                 try:
-                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate)
+                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate, sem=sem)
 
                     if vr.errors:
                         result.errors.extend(f"{slug}: {e}" for e in vr.errors)

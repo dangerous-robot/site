@@ -70,6 +70,13 @@ Claims carry a `recheck_cadence_days` field (default: 60 days) that signals when
 
 There is no automated scheduling for reviews today. The Citation Auditor role is intended to flag stale claims, but this is manual. Automated scheduling is a backlog item (see `docs/UNSCHEDULED.md`).
 
+## Pipeline configuration knobs
+
+Two operator-visible fields on `VerifyConfig` control researcher effort and LLM call concurrency:
+
+- **`max_initial_queries`** -- how many search queries the Researcher's query planner generates per claim (default: 3). Lower values reduce API cost and latency; higher values improve recall.
+- **`llm_concurrency`** -- cap on concurrent LLM calls across the pipeline (default: 8), enforced via `asyncio.Semaphore`. Relevant during `dr onboard`, which runs multiple claim templates concurrently.
+
 ## Quality Gates
 
 PRs to `main` run a CI workflow (`.github/workflows/ci.yml`) with four checks across two jobs:

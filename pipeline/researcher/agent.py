@@ -43,13 +43,13 @@ research_agent = Agent(
 async def web_search(ctx: RunContext[ResearchDeps], query: str) -> list[dict]:
     """Search the web and return results with title, url, and snippet."""
     try:
-        return await _search_brave(ctx.deps.http_client, query)
+        return await search_brave(ctx.deps.http_client, query)
     except Exception as exc:
         logger.warning("Search failed for '%s': %s", query, exc)
         return [{"error": f"Search failed: {exc}"}]
 
 
-async def _search_brave(
+async def search_brave(
     client: httpx.AsyncClient, query: str, max_results: int = 8
 ) -> list[dict]:
     """Search using the Brave Web Search API.

@@ -76,7 +76,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
 | **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
-| **Researcher** | Finds relevant URLs for a given claim topic |
+| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Produces an independent evaluation of the analyst's output |
@@ -101,6 +101,8 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
 | **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
+| **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. |
+| **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`verify_claim`, `research_claim`, `onboard_entity`). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
 
 ## Agent tasks
 

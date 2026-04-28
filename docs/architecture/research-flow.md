@@ -228,3 +228,39 @@ Notes:
 
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 - A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in.
+
+---
+
+## 6. Researcher internals (decomposed path)
+
+When `researcher_mode=decomposed`, the Researcher participant in diagram 3 internally runs this 3-step sequence. All LLM calls are guarded by the `llm_concurrency` semaphore.
+
+```mermaid
+sequenceDiagram
+    participant Orchestrator
+    participant QueryPlanner as Query Planner (Haiku)
+    participant BraveAPI as Brave Search API
+    participant URLScorer as URL Scorer (Haiku)
+
+    Orchestrator->>QueryPlanner: claim text + entity name
+    Note over QueryPlanner: structured output, no tools
+    QueryPlanner-->>Orchestrator: QueryPlan (queries list, rationale)
+
+    Note over Orchestrator: hard-truncate to max_initial_queries
+
+    par per query (asyncio.gather)
+        Orchestrator->>BraveAPI: query 1
+        BraveAPI-->>Orchestrator: results 1
+    and
+        Orchestrator->>BraveAPI: query N
+        BraveAPI-->>Orchestrator: results N
+    end
+
+    Note over Orchestrator: deduplicate by exact URL string
+
+    Orchestrator->>URLScorer: claim + candidates (title + snippet only)
+    Note over URLScorer: structured output, no tools
+    URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 3, dropped < 3)
+
+    Orchestrator-->>Orchestrator: apply max_sources cap, blocklist filter
+```

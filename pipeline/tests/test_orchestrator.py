@@ -137,7 +137,8 @@ class TestResearchBlocklist:
                 ),
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
-                urls, errors = await _research(client, "Ent", "claim", cfg)
+                sem = asyncio.Semaphore(8)
+                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == ["https://example.com/b"]
         blocked = [e for e in errors if e.error_type == "blocked_host"]
@@ -165,7 +166,8 @@ class TestResearchBlocklist:
                 ),
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
-                urls, errors = await _research(client, "Ent", "claim", cfg)
+                sem = asyncio.Semaphore(8)
+                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == []
         assert errors[0].error_type == "all_blocked"
@@ -190,7 +192,8 @@ class TestResearchBlocklist:
                 ),
                 patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             ):
-                urls, errors = await _research(client, "Ent", "claim", cfg)
+                sem = asyncio.Semaphore(8)
+                urls, errors = await _research(client, "Ent", "claim", cfg, sem)
 
         assert urls == ["https://linkedin.com/a", "https://example.com/b"]
         assert errors == []
@@ -258,8 +261,9 @@ class TestVerifyConfigTimeouts:
                     Agent, "override", side_effect=lambda **kw: _noop(**kw)
                 ),
             ):
+                sem = asyncio.Semaphore(8)
                 outcome = await _ingest_one(
-                    client, url, cfg, datetime.date(2026, 4, 19)
+                    client, url, cfg, datetime.date(2026, 4, 19), sem
                 )
 
         assert isinstance(outcome, StepError)
@@ -328,10 +332,10 @@ class TestThresholdEnforcement:
             year=2026,
         )
 
-        async def _fake_research(client, entity, claim, cfg):
+        async def _fake_research(client, entity, claim, cfg, sem):
             return ["https://example.com/one"], []
 
-        async def _fake_ingest(client, urls, cfg):
+        async def _fake_ingest(client, urls, cfg, sem):
             return [("https://example.com/one", sf)], []
 
         analyst_called = False
@@ -363,10 +367,10 @@ class TestThresholdEnforcement:
         self, monkeypatch
     ) -> None:
         """When zero sources ingest and all errors are terminal HTTP, mark it so."""
-        async def _fake_research(client, entity, claim, cfg):
+        async def _fake_research(client, entity, claim, cfg, sem):
             return ["https://a", "https://b"], []
 
-        async def _fake_ingest(client, urls, cfg):
+        async def _fake_ingest(client, urls, cfg, sem):
             errors = [
                 StepError(step="ingest", url="https://a", error_type="http_403",
                           message="forbidden", retryable=False),
@@ -409,10 +413,10 @@ class TestThresholdEnforcement:
             body="Body.", slug="b", year=2026,
         )
 
-        async def _fake_research(client, entity, claim, cfg):
+        async def _fake_research(client, entity, claim, cfg, sem):
             return ["https://example.com/a", "https://example.com/b"], []
 
-        async def _fake_ingest(client, urls, cfg):
+        async def _fake_ingest(client, urls, cfg, sem):
             return [
                 ("https://example.com/a", sf1),
                 ("https://example.com/b", sf2),

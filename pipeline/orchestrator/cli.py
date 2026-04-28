@@ -234,8 +234,11 @@ def _print_verify_result(result) -> None:
 @click.option("--max-sources", default=12, type=int, help="Max sources to ingest")
 @click.option("--skip-wayback/--wayback", default=True, help="Skip Wayback Machine")
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
+@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
+@click.option("--max-initial-queries", default=3, type=int, help="Max search queries for decomposed researcher (ignored in classic mode)")
+@click.option("--llm-concurrency", default=8, type=int, help="Max concurrent LLM calls (used by decomposed researcher)")
 @click.pass_context
-def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_wayback: bool, interactive: bool) -> None:
+def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_wayback: bool, interactive: bool, researcher_mode: str, max_initial_queries: int, llm_concurrency: int) -> None:
     """Run the full pipeline (researcher -> ingestor -> analyst -> auditor) in memory and print the verdict; nothing is written to disk.
 
     Example:
@@ -252,6 +255,9 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
         model=model,
         max_sources=max_sources,
         skip_wayback=skip_wayback,
+        researcher_mode=researcher_mode,
+        max_initial_queries=max_initial_queries,
+        llm_concurrency=llm_concurrency,
         **_ctx_per_agent_kwargs(ctx),
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
@@ -271,8 +277,11 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int, skip_w
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--force", is_flag=True, help="Overwrite existing claim file if present")
+@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
+@click.option("--max-initial-queries", default=3, type=int, help="Max search queries for decomposed researcher (ignored in classic mode)")
+@click.option("--llm-concurrency", default=8, type=int, help="Max concurrent LLM calls (used by decomposed researcher)")
 @click.pass_context
-def verify_claim(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool) -> None:
+def verify_claim(ctx: click.Context, claim_text: str, max_sources: int, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int, llm_concurrency: int) -> None:
     """Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk.
 
     Example:
@@ -295,6 +304,9 @@ def verify_claim(ctx: click.Context, claim_text: str, max_sources: int, skip_way
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
+        researcher_mode=researcher_mode,
+        max_initial_queries=max_initial_queries,
+        llm_concurrency=llm_concurrency,
         **_ctx_per_agent_kwargs(ctx),
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
@@ -584,6 +596,9 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
 @click.option("--force", is_flag=True, help="Overwrite existing claim files if present")
+@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
+@click.option("--max-initial-queries", default=3, type=int, help="Max search queries for decomposed researcher (ignored in classic mode)")
+@click.option("--llm-concurrency", default=8, type=int, help="Max concurrent LLM calls (used by decomposed researcher)")
 @click.pass_context
 def onboard(
     ctx: click.Context,
@@ -596,6 +611,9 @@ def onboard(
     interactive: bool,
     only: str | None,
     force: bool,
+    researcher_mode: str,
+    max_initial_queries: int,
+    llm_concurrency: int,
 ) -> None:
     """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
 
@@ -625,6 +643,9 @@ def onboard(
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
+        researcher_mode=researcher_mode,
+        max_initial_queries=max_initial_queries,
+        llm_concurrency=llm_concurrency,
         **_ctx_per_agent_kwargs(ctx),
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
