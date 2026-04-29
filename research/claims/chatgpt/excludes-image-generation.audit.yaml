@@ -1,0 +1,65 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-29T09:58:31.411818+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - ChatGPT limitations text vs image generation OpenAI
+  - OpenAI ChatGPT API documentation image capabilities
+  - independent analysis ChatGPT text-only functionality
+  planner_rationale: These queries aim to verify if ChatGPT explicitly states it does
+    not include image generation, examine the official API documentation for confirmation,
+    and find unbiased analyses of the model's capabilities, specifically focusing
+    on its text-only nature.
+  candidates_seen: 24
+  urls_kept: 23
+  urls_dropped: 1
+  scorer_rationale: The claim is that ChatGPT excludes image generation. Several articles
+    discuss ChatGPT's image generation capabilities, including limitations and improvements
+    to image generation models (GPT-4o, GPT-4, GPT Image 2). Some articles detail
+    API access, usage limits, and the technical aspects of image generation within
+    ChatGPT. One article discusses limitations on image generation requests. Another
+    details its use for text analysis. The LinkedIn article is about limitations and
+    does not directly relate to the claim.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/chatgpt-vs-gpt-image-1-quality
+  url: https://community.openai.com/t/chatgpt-image-generation-vs-openai-gpt-image-1-quality-and-text/1252035
+  title: Chatgpt image generation vs openai gpt-image-1 quality and text?
+  ingested: true
+- id: 2026/openai-chatgpt-images-2-0
+  url: https://www.wired.com/story/openai-beefs-up-chatgpts-image-generation-model/
+  title: OpenAI Beefs Up ChatGPT’s Image Generation Model
+  ingested: true
+- id: 2026/chatgpt-images-2-text-generation
+  url: https://techcrunch.com/2026/04/21/chatgpts-new-images-2-0-model-is-surprisingly-good-at-generating-text/
+  title: ChatGPT's new Images 2.0 model is surprisingly good at generating text
+  ingested: true
+- id: 2025/chatgpt-plus-image-generation-limits
+  url: https://www.glbgpt.com/hub/how-many-images-can-i-generate-with-chatgpt-5-1-5-0-plus-2025-full-guide/
+  title: How Many Images Can I Generate with ChatGPT 5.1 / 5.0 Plus?
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

@@ -1,0 +1,61 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-29T09:57:22.068980+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"ChatGPT" energy consumption sources report'
+  - independent analysis ChatGPT carbon footprint
+  - OpenAI "ChatGPT" energy usage data transparency
+  planner_rationale: These queries aim to find reports, analyses, and data releases
+    regarding ChatGPT's energy consumption. The queries target OpenAI directly, independent
+    analysis of the carbon footprint, and transparency efforts related to energy usage.
+  candidates_seen: 20
+  urls_kept: 18
+  urls_dropped: 0
+  scorer_rationale: The candidates directly address the claim about ChatGPT's energy
+    sourcing, providing figures, estimates, and related discussions on energy consumption,
+    carbon footprint, and transparency. The titles and snippets contain specific details
+    and data points relevant to the claim.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/chatgpt-energy-consumption-visualized
+  url: https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/
+  title: ChatGPT Energy Consumption Visualized
+  ingested: true
+- id: 2026/chatgpt-energy-water-usage-reddit
+  url: https://www.reddit.com/r/energy/comments/1l9372g/we_finally_know_officially_how_much_energy_and/
+  title: We finally know officially how much energy and water a ChatGPT query uses
+  ingested: true
+- id: 2025/ai-energy-use
+  url: https://spectrum.ieee.org/ai-energy-use
+  title: How Much Energy Does It Take to Power Billions of AI Queries?
+  ingested: true
+- id: 2025/chatgpt-energy-usage-034-wh
+  url: https://www.devsustainability.com/p/chatgpt-energy-usage-is-034-wh-per
+  title: ChatGPT energy usage is 0.34 Wh per query
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

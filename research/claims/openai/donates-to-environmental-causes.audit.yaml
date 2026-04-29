@@ -1,0 +1,62 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-29T09:55:14.820260+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"OpenAI" environmental donations report'
+  - '"OpenAI" philanthropic giving environmental initiatives'
+  - '"OpenAI" sustainability investments impact analysis'
+  planner_rationale: These queries aim to find official reports, news articles, and
+    independent analyses regarding OpenAI's financial contributions to environmental
+    causes. The queries vary in their phrasing to capture different types of information,
+    from direct donation reports to broader sustainability investments and impact
+    assessments. Using quotes ensures the search engine looks for the exact phrase,
+    focusing on OpenAI's involvement.
+  candidates_seen: 18
+  urls_kept: 17
+  urls_dropped: 0
+  scorer_rationale: The prompt asks to score the relevance of search result candidates
+    to the claim 'OpenAI donates to environmental causes'. I have scored each candidate
+    based on the title and snippet only. The scoring scale is 5 (directly addresses),
+    4 (clearly relevant), 3 (possibly relevant), 2 (tangentially related), and 1 (not
+    relevant). I have kept all URLs with a score of 3 or higher, and dropped the rest.
+    All URLs are present in either the kept or dropped list.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/ai-energy-environment-democracy
+  url: https://www.greenpeace.org/international/story/82486/ai-energy-environment-democracy/
+  title: The energy and environmental impact of AI and how it undermines democracy
+  ingested: true
+- id: 2023/sustainable-development-and-ai
+  url: https://community.openai.com/t/sustainable-development-and-ai/377448
+  title: Sustainable development and AI
+  ingested: true
+- id: 2024/hidden-environmental-costs-ai-investments
+  url: https://blogs.cfainstitute.org/investor/2024/10/31/the-hidden-environmental-costs-of-tech-giants-ai-investments/
+  title: The Hidden Environmental Costs of Tech Giants’ AI Investments
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

@@ -1,0 +1,61 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-29T09:56:46.720569+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - ChatGPT model disclosure transparency OpenAI
+  - ChatGPT which models are used technical documentation
+  - OpenAI ChatGPT model version history release notes
+  planner_rationale: The claim states ChatGPT discloses its models. The queries target
+    OpenAI's official documentation, release notes, and transparency reports to find
+    evidence of model disclosures. They also use keywords like 'technical documentation'
+    and 'model version history' to prioritize sources that would provide factual details
+    rather than opinion.
+  candidates_seen: 24
+  urls_kept: 17
+  urls_dropped: 6
+  scorer_rationale: The claim asks which models ChatGPT uses. Several candidates discuss
+    different ChatGPT models (GPT-4o, GPT-4, o3, o4-mini, GPT-5, gpt-oss-120b, gpt-oss-20b,
+    gpt-5.3-chat-latest). The candidates from OpenAI's documentation, release notes,
+    and blog posts directly address the models available. The other candidates discuss
+    privacy policies, legal cases, or model evolution timelines, which are related
+    but not directly answering which models are used.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/all-models
+  url: https://developers.openai.com/api/docs/models/all
+  title: All models
+  ingested: true
+- id: 2025/chatgpt-models-guide-2026
+  url: https://datanorth.ai/blog/chatgpt-models-what-are-the-models-and-when-should-they-be-used
+  title: 'ChatGPT models: What are the models and when to use them?'
+  ingested: true
+- id: 2025/openai-chatgpt-model-guide
+  url: https://www.bleepingcomputer.com/news/artificial-intelligence/openai-document-explains-when-to-use-each-chatgpt-model/
+  title: OpenAI document explains when to use each ChatGPT model
+  ingested: true
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: mixed
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
