@@ -1,5 +1,76 @@
 ---
 import Base from '../../layouts/Base.astro';
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is this site?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Dangerous Robot is a structured research project that routes human questions through a Python pipeline using LLM agents to find sources, fetch content, evaluate evidence, and draft a verdict. Every published claim is reviewed and approved by a human operator before appearing on the site. The goal is to verify what AI companies and products actually do, especially around environmental impact, safety practices, and transparency.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What topics are covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claims made by or about AI companies and AI products regarding environmental impact, energy use, carbon footprint, sustainability practices, safety claims, transparency disclosures, and responsible AI practices. Any AI company or product where a verifiable claim can be evaluated against publicly accessible sources.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What is not covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Financial or investment advice, legal or regulatory interpretation, non-AI technology companies, claims about individuals, claims relying solely on paywalled sources with no accessible backup, and general technology product reviews unrelated to environmental impact, energy use, sustainability, safety, or responsible AI practices.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What methodology is used for research?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claims move through a pipeline: (1) Research — an AI agent searches for sources. (2) Analysis — an analyst agent evaluates evidence and drafts a verdict; an auditor agent checks for consistency. (3) Human review — an operator approves, rejects, or requests revision. Nothing publishes without human sign-off. (4) Schema validation — all data is validated by Zod schemas at build time.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "How does work enter this site?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Six channels put new research in the queue: a new criterion (fans out drafts to all applicable entities), a new company or product (fans out drafts across active criteria), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What types of sources are used?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sources are classified into three tiers: Primary (company disclosures, official documentation, regulatory filings), Secondary (journalism, academic papers, analyst reports), and Tertiary (advocacy, opinion, consumer guides). Every source is linked from the claim page that cites it.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What is the content license?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Research content is published under CC-BY-4.0. Site code is MIT licensed.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What conflicts of interest exist?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Dangerous Robot and TreadLightly AI share the same founder. Many claims here back assertions on the TreadLightly site, which shapes what gets researched. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.",
+      },
+    },
+  ],
+};
 ---
 <Base title="FAQ" layout="reading">
   <article class="reading">
@@ -228,6 +299,7 @@ import Base from '../../layouts/Base.astro';
       </div>
     </details>
 
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   </article>
 </Base>
 

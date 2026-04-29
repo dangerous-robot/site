@@ -163,6 +163,9 @@ const claims = defineCollection({
     // claim page. Optional during v1; the analyst pipeline doesn't yet generate it,
     // so operators add it by hand during review. Capped to keep it scannable.
     takeaway: z.string().max(200).optional(),
+    // Short title for <title> tags (≤42 chars, leaving room for " - Dangerous Robot").
+    // Falls back to `title` when absent. Useful when the research label exceeds SERP limits.
+    seo_title: z.string().max(42).optional(),
     criteria_slug: z.string().optional(),
     status: z.enum(['draft', 'published', 'archived', 'blocked']).default('draft'),
     // Pipeline phase advanced by the Orchestrator while a claim is in

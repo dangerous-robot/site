@@ -16,6 +16,7 @@
     "node": ">=22"
   },
   "dependencies": {
+    "@astrojs/sitemap": "^3.7.2",
     "astro": "^6.1.8",
     "js-yaml": "^4.1.1"
   },

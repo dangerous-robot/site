@@ -72,9 +72,15 @@ const entityCrumbs = [
   ...(typeParent ? [typeParent] : []),
   { label: entity.data.name },
 ];
+
+const entityPageTitle = (entity.data.type === 'company' || entity.data.type === 'product')
+  ? `${entity.data.name} AI ${entity.data.type === 'company' ? 'Company' : 'Product'} Claims`
+  : entity.data.name;
+
+const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entity.data.type} claims. ${entity.data.description}`.slice(0, 155);
 ---
 
-<Base title={entity.data.name}>
+<Base title={entityPageTitle} description={entityDescription}>
   <article class="entity-detail">
     <Breadcrumb crumbs={entityCrumbs} />
     <header>

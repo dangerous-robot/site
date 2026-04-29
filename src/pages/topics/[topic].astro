@@ -41,8 +41,11 @@ const entityGroups = [...byEntity.entries()].map(([entityId, entityClaims]) => {
 // list, so each entry contributes one verdict to this topic's overall.
 const allVerdicts = claims.map(c => c.data.verdict);
 const uniqueClaimCount = claims.length;
+
+const topicPageTitle = `AI ${label} Claims`;
+const topicDescription = `Browse AI ${label} claims on Dangerous Robot. ${uniqueClaimCount} claim${uniqueClaimCount !== 1 ? 's' : ''} across ${entityGroups.length} entit${entityGroups.length !== 1 ? 'ies' : 'y'}, with verdict and sourcing for each.`;
 ---
-<Base title={label} layout="wide">
+<Base title={topicPageTitle} layout="wide" description={topicDescription}>
   <header class="topic-header">
     <p class="breadcrumb"><a href="/topics">Topics</a></p>
     <h1>{label}</h1>

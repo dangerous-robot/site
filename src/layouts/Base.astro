@@ -1,10 +1,11 @@
 ---
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import "../styles/tokens.css";
 import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
 
-const siteVersion = readFileSync(new URL('../../VERSION.md', import.meta.url), 'utf-8').split('\n')[0].trim();
+const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
 
 interface Props {
   title: string;
@@ -13,14 +14,28 @@ interface Props {
   layout?: 'reading' | 'wide' | 'bare';
   /** 'standard' (default): render the top site-nav. 'minimal': page provides its own chrome. */
   chrome?: 'standard' | 'minimal';
+  ogImage?: string;
 }
 
 const {
   title,
-  description = "Structured research backing claims about AI products and companies.",
+  description = "Dangerous Robot is a structured research hub tracking AI company environmental and safety claims. Built for journalists, researchers, and policy teams.",
   layout = 'reading',
   chrome = 'standard',
+  ogImage = '/dr-logo.png',
 } = Astro.props;
+
+const ogTitle = `${title} - Dangerous Robot`;
+const ogImageAbsolute = new URL(ogImage, Astro.site).href;
+
+const orgSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Dangerous Robot",
+  "url": "https://dangerousrobot.org",
+  "logo": "https://dangerousrobot.org/dr-logo.png",
+  "sameAs": ["https://github.com/dangerous-robot/site"],
+};
 ---
 
 <!doctype html>
@@ -33,9 +48,29 @@ const {
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="canonical" href={Astro.url.href} />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url.href} />
+    <meta property="og:title" content={ogTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageAbsolute} />
+    <!-- Twitter/X card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={ogTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageAbsolute} />
+    <!-- Organization structured data -->
+    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preload" as="style"
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript>
+      <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap" />
+    </noscript>
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
          Storage keys and font-size values mirror A11yControl.astro. -->

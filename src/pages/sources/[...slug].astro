@@ -58,9 +58,12 @@ const sourceCrumbs = [
   { label: "Sources", href: "/sources" },
   { label: source.data.title },
 ];
+
+const sourceDescription = source.data.summary
+  ?? `${source.data.publisher} — ${source.data.kind}: ${source.data.title}`.slice(0, 155);
 ---
 
-<Base title={source.data.title}>
+<Base title={source.data.title} description={sourceDescription}>
   <article class="source-detail">
     <Breadcrumb crumbs={sourceCrumbs} />
     <header>

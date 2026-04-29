@@ -52,6 +52,22 @@ const src = [manualClaim, ...pool, ...fallback];
 
 const scatterItems = src.slice(0, 5);
 
+const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": "Dangerous Robot",
+  "url": "https://dangerousrobot.org",
+  "description": "Dangerous Robot is a structured research hub tracking AI company environmental and safety claims. Built for journalists, researchers, and policy teams.",
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://dangerousrobot.org/claims?q={search_term_string}",
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
 function rnd(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
@@ -66,7 +82,7 @@ const cardPositions = [
 ];
 ---
 
-<Base title="Dangerous Robot — AI transparency research" chrome="minimal" layout="bare">
+<Base title="AI Transparency Research" chrome="minimal" layout="bare">
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-logo-wrap" id="hero-logo-wrap" aria-hidden="true">
       <img src="/dr-logo.png" alt="" class="hero-logo hero-logo--base" id="hero-logo" />
@@ -172,6 +188,7 @@ const cardPositions = [
       </nav>
     </div>
   </div>
+  <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
 </Base>
 
 <style>

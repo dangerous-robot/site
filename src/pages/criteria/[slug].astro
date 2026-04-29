@@ -62,8 +62,18 @@ const criteriaCrumbs = [
   { label: 'Criteria', href: '/criteria' },
   { label: std.data.text },
 ];
+
+const criteriaPageTitle = std.data.text
+  .replace('COMPANY', 'AI Company')
+  .replace('PRODUCT', 'AI Product')
+  .replace(/\s+[A-Z_]+\s+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .slice(0, 42);
+
+const criteriaDescription = `Dangerous Robot evaluates whether ${std.data.text.replace('COMPANY', 'an AI company').replace('PRODUCT', 'an AI product').replace(/\s+[A-Z_]+\s+/g, ' ').replace(/\s+/g, ' ').trim()}. Coverage across ${matchingEntities.length} entit${matchingEntities.length !== 1 ? 'ies' : 'y'} with sourced verdicts.`.slice(0, 155);
 ---
-<Base title={std.data.text} layout="wide">
+<Base title={criteriaPageTitle} layout="wide" description={criteriaDescription}>
   <Breadcrumb crumbs={criteriaCrumbs} />
   <header class="std-header">
     <p class="std-category">{std.data.topics.map(t => t.replace(/-/g, ' ')).join(', ')}</p>
