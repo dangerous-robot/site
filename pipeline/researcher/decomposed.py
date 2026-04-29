@@ -11,7 +11,7 @@ from common.models import resolve_model
 from orchestrator.checkpoints import StepError
 from researcher.agent import search_brave
 from researcher.planner import QueryPlan, query_planner_agent
-from researcher.scorer import SearchCandidate, ScoredURLs, url_scorer_agent
+from researcher.scorer import SearchCandidate, ScoredURLs, build_scorer_prompt, url_scorer_agent
 
 if TYPE_CHECKING:
     from orchestrator.pipeline import VerifyConfig
@@ -106,15 +106,7 @@ async def decomposed_research(
         errors.append(_research_err("no_results", "Search returned no results"))
         return [], errors, trace
 
-    candidate_text = "\n".join(
-        f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\n"
-        for c in candidates
-    )
-    scorer_prompt = (
-        f"Entity: {entity_name or '(unknown)'}\n"
-        f"Claim: {claim_text}\n\n"
-        f"Candidates:\n{candidate_text}"
-    )
+    scorer_prompt = build_scorer_prompt(entity_name, claim_text, candidates)
     try:
         async with sem:
             with url_scorer_agent.override(model=resolve_model(cfg.model_for("researcher"))):
@@ -130,6 +122,9 @@ async def decomposed_research(
             "URL scorer: %d kept, %d dropped (rationale: %s)",
             len(scored.kept), len(scored.dropped), scored.rationale,
         )
+        if not scored.kept and candidates:
+            logger.warning("URL scorer dropped all %d candidates; falling back to all", len(candidates))
+            return [c.url for c in candidates], errors, trace
         return scored.kept, errors, trace
     except asyncio.TimeoutError:
         errors.append(_research_err("timeout", "URL scorer timed out"))

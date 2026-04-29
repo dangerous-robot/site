@@ -43,3 +43,19 @@ url_scorer_agent = Agent(
     system_prompt=_SCORER_INSTRUCTIONS,
     retries=2,
 )
+
+
+def build_scorer_prompt(
+    entity: str | None,
+    claim: str,
+    candidates: list[SearchCandidate],
+) -> str:
+    candidate_text = "\n".join(
+        f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\n"
+        for c in candidates
+    )
+    return (
+        f"Entity: {entity or '(unknown)'}\n"
+        f"Claim: {claim}\n\n"
+        f"Candidates:\n{candidate_text}"
+    )

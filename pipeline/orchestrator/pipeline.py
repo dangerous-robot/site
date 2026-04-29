@@ -157,9 +157,9 @@ class VerifyConfig:
     # ``__post_init__`` can pick a default based on ``skip_wayback``. Callers
     # that pass any float (including 60.0) keep that value verbatim.
     ingest_timeout_s: float | None = None
-    research_timeout_s: float = 60.0
-    analyst_timeout_s: float = 60.0
-    auditor_timeout_s: float = 60.0
+    research_timeout_s: float = 120.0
+    analyst_timeout_s: float = 120.0
+    auditor_timeout_s: float = 120.0
     force_overwrite: bool = False
     # Temporary validation scaffold: switches between "classic" tool-using agent
     # and the new 3-step decomposed pipeline. Removed post-validation.
@@ -335,18 +335,7 @@ async def _research(
     """
     if cfg.researcher_mode == "decomposed":
         from researcher.decomposed import decomposed_research
-        try:
-            raw_urls, errors, trace = await asyncio.wait_for(
-                decomposed_research(claim_text, entity_name, cfg, sem, client),
-                timeout=cfg.research_timeout_s,
-            )
-        except asyncio.TimeoutError:
-            logger.error("Decomposed researcher timed out")
-            return (
-                [],
-                [StepError(step="research", error_type="timeout", message="Decomposed research timed out")],
-                {"mode": "decomposed", "timed_out": True},
-            )
+        raw_urls, errors, trace = await decomposed_research(claim_text, entity_name, cfg, sem, client)
         urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
         logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.max_sources)
         trace["urls_after_blocklist"] = len(urls)
