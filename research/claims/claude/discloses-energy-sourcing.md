@@ -4,7 +4,7 @@ entity: products/claude
 topics: [environmental-impact]
 verdict: unverified
 confidence: low
-status: draft
+status: published
 blocked_reason: insufficient_sources
 as_of: '2026-04-26'
 sources:
