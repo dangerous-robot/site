@@ -140,6 +140,65 @@ def t2_structured(client, base_url, api_key, model) -> dict:
     }
 
 
+def t2b_json_schema(client, base_url, api_key, model) -> dict:
+    """T2b: response_format json_schema (native structured output, no tool calling)."""
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": "You classify relevance of search results to a claim."},
+            {"role": "user", "content": (
+                "Claim: 'Google reports annual CO2 emissions'. "
+                "URL: https://sustainability.google/reports/ "
+                "Title: Google Environmental Report "
+                "Snippet: Annual carbon emissions and sustainability goals. "
+                "Is this result relevant to the claim?"
+            )},
+        ],
+        "max_tokens": 150,
+        "temperature": 0,
+        "response_format": {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "relevance",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "relevant": {"type": "boolean"},
+                        "reason": {"type": "string"},
+                    },
+                    "required": ["relevant", "reason"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+    }
+    status, body, elapsed = _post(client, base_url, api_key, payload)
+    content = _content_of(body) if isinstance(body, dict) else None
+    parsed = None
+    parse_ok = False
+    shape_ok = False
+    if content:
+        try:
+            parsed = json.loads(content.strip())
+            parse_ok = True
+        except Exception:
+            pass
+        if parse_ok and isinstance(parsed, dict):
+            shape_ok = isinstance(parsed.get("relevant"), bool) and isinstance(parsed.get("reason"), str)
+    return {
+        "name": "T2b json_schema response_format",
+        "status": status,
+        "elapsed": round(elapsed, 2),
+        "pass": status == 200 and parse_ok and shape_ok,
+        "content": content,
+        "parsed": parsed,
+        "parse_ok": parse_ok,
+        "shape_ok": shape_ok,
+        "raw_excerpt": _excerpt(body),
+    }
+
+
 def _web_search_tool_def() -> dict:
     return {
         "type": "function",
@@ -319,6 +378,7 @@ def main() -> int:
             return 0
 
         results.append(t2_structured(client, base_url, api_key, args.model))
+        results.append(t2b_json_schema(client, base_url, api_key, args.model))
         results.append(t3_tool_def(client, base_url, api_key, args.model))
         t4 = t4_tool_call(client, base_url, api_key, args.model)
         results.append(t4)

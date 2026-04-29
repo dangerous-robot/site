@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 
-TESTS = ("T1", "T2", "T3", "T4", "T5")
+TESTS = ("T1", "T2", "T2b", "T3", "T4", "T5")
 
-TABLE_HEADER = "| Provider | Model | T1 | T2 | T3 | T4 | T5 | Last tested |"
-TABLE_SEP    = "|---|---|---|---|---|---|---|---|"
+TABLE_HEADER = "| Provider | Model | T1 | T2 | T2b | T3 | T4 | T5 | Last tested |"
+TABLE_SEP    = "|---|---|---|---|---|---|---|---|---|"
 
 
 def score_results(results: list[dict]) -> dict[str, str]:

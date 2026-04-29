@@ -62,7 +62,15 @@ def clean(ctx):
 
 @task
 def _test_unit(ctx):
-    """Run pipeline unit tests (excludes acceptance)."""
+    """Run pipeline unit tests (excludes acceptance).
+
+    Subtasks:
+      inv test           (= inv test.unit)  unit tests only
+      inv test.all                          unit + acceptance
+      inv test.acceptance                   acceptance only (live APIs)
+        -k <substring>   filter by test name (pytest substring match)
+        --log            stream pipeline log output live
+    """
     with ctx.cd("pipeline"):
         ctx.run(
             "uv run python -m pytest -m 'not acceptance'",
@@ -78,12 +86,23 @@ def _test_all(ctx):
         ctx.run("uv run python -m pytest", pty=True, in_stream=False)
 
 
-@task
-def _test_acceptance(ctx):
-    """Run only acceptance tests (live APIs; needs ANTHROPIC_API_KEY + BRAVE_WEB_SEARCH_API_KEY)."""
+@task(positional=[])
+def _test_acceptance(ctx, k="", log=False):
+    """Run only acceptance tests (live APIs; needs ANTHROPIC_API_KEY + BRAVE_WEB_SEARCH_API_KEY).
+
+    -k does pytest substring matching on test names, e.g.:
+      inv test.acceptance -k smoke        # matches test_full_pipeline_false_claim_smoke
+      inv test.acceptance -k scorer       # matches test_scorer_obvious_split
+    --log streams pipeline log output live (uses --log-cli-level=INFO).
+    """
+    extra = ""
+    if k:
+        extra += f" -k {k!r}"
+    if log:
+        extra += " --log-cli-level=INFO"
     with ctx.cd("pipeline"):
         ctx.run(
-            "uv run python -m pytest -m acceptance",
+            f"uv run python -m pytest -m acceptance{extra}",
             pty=True,
             in_stream=False,
         )
