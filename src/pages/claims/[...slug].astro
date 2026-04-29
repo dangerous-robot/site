@@ -4,6 +4,7 @@ import { getCollection, render } from "astro:content";
 import Breadcrumb from "../../components/Breadcrumb.astro";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
+import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
 
 export async function getStaticPaths() {
   const claims = await getCollection("claims");
@@ -73,26 +74,6 @@ const claimDescription = claim.data.takeaway
 
 const claimPageTitle = claim.data.seo_title ?? claim.data.title;
 
-const verdictRatingMap: Record<string, number> = {
-  "true": 5,
-  "mostly-true": 4,
-  "mixed": 3,
-  "mostly-false": 2,
-  "false": 1,
-  "unverified": 3,
-  "not-applicable": 3,
-};
-
-const verdictLabelMap: Record<string, string> = {
-  "true": "True",
-  "mostly-true": "Mostly true",
-  "mixed": "Mixed",
-  "mostly-false": "Mostly false",
-  "false": "False",
-  "unverified": "Unverified",
-  "not-applicable": "Not applicable",
-};
-
 const claimReview = {
   "@context": "https://schema.org",
   "@type": "ClaimReview",
@@ -106,10 +87,10 @@ const claimReview = {
   },
   "reviewRating": {
     "@type": "Rating",
-    "ratingValue": verdictRatingMap[claim.data.verdict] ?? 3,
+    "ratingValue": VERDICT_RATINGS[claim.data.verdict as Verdict] ?? 3,
     "bestRating": 5,
     "worstRating": 1,
-    "alternateName": verdictLabelMap[claim.data.verdict] ?? claim.data.verdict,
+    "alternateName": VERDICT_LABELS[claim.data.verdict as Verdict] ?? claim.data.verdict,
   },
 };
 ---

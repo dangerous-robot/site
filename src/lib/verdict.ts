@@ -35,6 +35,16 @@ export const VERDICT_KIND: Record<Verdict, string> = {
   'not-applicable': 'not-applicable',
 };
 
+export const VERDICT_RATINGS: Record<Verdict, number> = {
+  'true': 5,
+  'mostly-true': 4,
+  'mixed': 3,
+  'mostly-false': 2,
+  'false': 1,
+  'unverified': 3,
+  'not-applicable': 3,
+};
+
 export function sortByVerdict<T>(items: T[], getVerdict: (item: T) => Verdict): T[] {
   return [...items].sort((a, b) =>
     VERDICT_ORDER.indexOf(getVerdict(a)) - VERDICT_ORDER.indexOf(getVerdict(b))
