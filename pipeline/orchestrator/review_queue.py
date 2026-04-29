@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
@@ -103,8 +104,26 @@ def find_publication_queue(
 # Interactive loop                                                            #
 # --------------------------------------------------------------------------- #
 
-_ACTIONS = ["a", "s", "p", "o", "q"]
-_PROMPT = "[a]pprove  [s]kip  [p]review  [o]pen in editor  [q]uit"
+_ACTIONS = ["a", "d", "s", "p", "o", "q"]
+_PROMPT = "[a]pprove  [d]elete  [s]kip  [p]review  [o]pen in editor  [q]uit"
+
+
+def _delete_files(claim_path: Path, sidecar_path: Path, trash_dir: Path | None = None) -> None:
+    """Delete claim and sidecar. On macOS, moves to Trash; elsewhere, hard-deletes."""
+    if sys.platform == "darwin":
+        dest = trash_dir if trash_dir is not None else Path.home() / ".Trash"
+        dest.mkdir(parents=True, exist_ok=True)
+        for path in (claim_path, sidecar_path):
+            target = dest / path.name
+            if target.exists():
+                target = dest / f"{path.stem}_{time.time_ns()}{path.suffix}"
+            try:
+                shutil.move(str(path), target)
+            except FileNotFoundError:
+                pass
+    else:
+        for path in (claim_path, sidecar_path):
+            path.unlink(missing_ok=True)
 
 
 def _format_header(item: QueueItem, index: int, total: int) -> str:
@@ -158,8 +177,14 @@ def _open_in_editor(claim_path: Path) -> None:
         click.echo(f"Could not launch editor {cmd[0]!r}: {exc}", err=True)
 
 
-def run_interactive(items: list[QueueItem], repo_root: Path) -> None:
+def run_interactive(
+    items: list[QueueItem],
+    repo_root: Path,
+    *,
+    trash_dir: Path | None = None,
+) -> None:
     """Walk the operator through the queue. Returns when they quit or the queue empties."""
+    from common.sidecar import sidecar_path_for
     from orchestrator.review import approve_claim
 
     if not items:
@@ -198,6 +223,17 @@ def run_interactive(items: list[QueueItem], repo_root: Path) -> None:
                 click.echo(f"Could not approve: {exc.message}", err=True)
                 continue  # re-prompt the same item
             click.echo(f"Approved {item.claim_slug}")
+            i += 1
+            continue
+        if action == "d":
+            confirmed = click.confirm(
+                f"Delete? {item.path} (+ .audit.yaml)",
+                default=False,
+            )
+            if not confirmed:
+                continue  # re-prompt the same item
+            _delete_files(claim_path, sidecar_path_for(claim_path), trash_dir)
+            click.echo(f"Deleted: {item.claim_slug}")
             i += 1
             continue
 

@@ -14,8 +14,9 @@ import pytest
 import yaml
 from click.testing import CliRunner
 
+import orchestrator.review_queue as review_queue_mod
 from orchestrator.cli import main
-from orchestrator.review_queue import find_publication_queue
+from orchestrator.review_queue import _delete_files, find_publication_queue
 
 
 # --------------------------------------------------------------------------- #
@@ -363,3 +364,101 @@ class TestReviewQueueInteractive:
         sidecar = c.with_name(c.stem + ".audit.yaml")
         data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
         assert data["human_review"]["reviewed_at"] is None
+
+    def test_delete_confirmed_removes_files(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="sierra")
+        _write_sidecar(c)
+        sidecar = c.with_name(c.stem + ".audit.yaml")
+
+        deleted: list[tuple[Path, Path]] = []
+
+        def fake_delete(claim_path, sidecar_path, trash_dir=None):
+            deleted.append((claim_path, sidecar_path))
+            claim_path.unlink(missing_ok=True)
+            sidecar_path.unlink(missing_ok=True)
+
+        monkeypatch.setattr(review_queue_mod, "_delete_files", fake_delete)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="d\ny\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert not c.exists()
+        assert not sidecar.exists()
+        assert "Deleted: ent-a/sierra" in result.output
+        assert len(deleted) == 1
+
+    def test_delete_declined_leaves_files(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="tango")
+        _write_sidecar(c)
+
+        deleted: list = []
+        monkeypatch.setattr(review_queue_mod, "_delete_files", lambda *a, **kw: deleted.append(a))
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="d\nn\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert c.exists()
+        assert not deleted
+
+
+class TestDeleteFiles:
+    def test_on_macos_moves_to_trash_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        claim = tmp_path / "claim.md"
+        sidecar = tmp_path / "claim.audit.yaml"
+        claim.write_text("content")
+        sidecar.write_text("sidecar")
+        trash = tmp_path / "trash"
+
+        _delete_files(claim, sidecar, trash_dir=trash)
+
+        assert not claim.exists()
+        assert not sidecar.exists()
+        assert (trash / "claim.md").exists()
+        assert (trash / "claim.audit.yaml").exists()
+
+    def test_on_non_macos_hard_deletes(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.platform", "linux")
+        claim = tmp_path / "claim.md"
+        sidecar = tmp_path / "claim.audit.yaml"
+        claim.write_text("content")
+        sidecar.write_text("sidecar")
+
+        _delete_files(claim, sidecar)
+
+        assert not claim.exists()
+        assert not sidecar.exists()
+
+    def test_skips_missing_sidecar(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        claim = tmp_path / "claim.md"
+        claim.write_text("content")
+        missing_sidecar = tmp_path / "claim.audit.yaml"
+        trash = tmp_path / "trash"
+
+        _delete_files(claim, missing_sidecar, trash_dir=trash)
+
+        assert not claim.exists()
+        assert (trash / "claim.md").exists()
+
+    def test_macos_deduplicates_on_name_collision(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("sys.platform", "darwin")
+        claim = tmp_path / "claim.md"
+        claim.write_text("first")
+        trash = tmp_path / "trash"
+        trash.mkdir()
+        (trash / "claim.md").write_text("already there")
+
+        _delete_files(claim, tmp_path / "no-sidecar.yaml", trash_dir=trash)
+
+        assert not claim.exists()
+        trashed = list(trash.glob("claim*.md"))
+        assert len(trashed) == 2
