@@ -19,20 +19,37 @@ logger = logging.getLogger(__name__)
 
 
 async def _log_infomaniak_response(response: httpx.Response) -> None:
-    """Only safe for non-streaming completions; aread() buffers before the SDK reads.
+    """Log Infomaniak response bodies for diagnostics.
 
-    Captures x-request-id so null-body failures can be correlated with Infomaniak support tickets.
+    Only safe for non-streaming completions; aread() buffers before the SDK reads.
+    Null/empty bodies log at WARNING regardless of log level so gateway blips
+    are always visible. Full bodies log at DEBUG only.
     """
-    if not logger.isEnabledFor(logging.DEBUG):
-        return
-    await response.aread()
     req_id = response.headers.get("x-request-id", "-")
-    logger.debug(
-        "infomaniak raw response [%s] status=%d body=%s",
-        req_id,
-        response.status_code,
-        response.content.decode("utf-8", errors="replace"),
-    )
+    try:
+        await response.aread()
+        body = response.content.decode("utf-8", errors="replace")
+    except Exception as exc:
+        logger.warning(
+            "infomaniak raw response [%s] status=%d body=<aread error: %s>",
+            req_id,
+            response.status_code,
+            exc,
+        )
+        return
+    if not body or body.strip() in ("null", "{}"):
+        logger.warning(
+            "infomaniak raw response [%s] status=%d null/empty body",
+            req_id,
+            response.status_code,
+        )
+    elif logger.isEnabledFor(logging.DEBUG):
+        logger.debug(
+            "infomaniak raw response [%s] status=%d body=%s",
+            req_id,
+            response.status_code,
+            body,
+        )
 
 
 AgentName = Literal["researcher", "analyst", "auditor", "ingestor"]

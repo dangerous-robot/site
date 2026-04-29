@@ -34,6 +34,7 @@ from pydantic import BaseModel, ConfigDict, Field
 import dataclasses
 
 from pydantic_ai import capture_run_messages
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
 from auditor.agent import auditor_agent, build_auditor_prompt
@@ -55,6 +56,10 @@ from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHan
 from researcher.agent import ResearchDeps, research_agent
 
 logger = logging.getLogger(__name__)
+
+_NULL_RESPONSE_MSG = "Invalid response from"
+_NULL_BODY_RETRIES = 2
+_NULL_BODY_RETRY_DELAY_S = 45.0
 
 
 class VerificationResult(BaseModel):
@@ -451,6 +456,43 @@ def _build_source_dict(sf: SourceFile) -> dict:
     }
 
 
+async def _run_with_null_retry(
+    agent,
+    prompt: str,
+    timeout_s: float,
+    *,
+    retries: int = _NULL_BODY_RETRIES,
+    delay_s: float = _NULL_BODY_RETRY_DELAY_S,
+) -> tuple:
+    """Run an agent, retrying on Infomaniak null-body responses.
+
+    Returns (output, messages). output is None on final failure.
+    The retry loop sits outside asyncio.wait_for so each call gets its own
+    timeout and the retry window is additive — no timeout budget conflict.
+    """
+    for attempt in range(retries + 1):
+        with capture_run_messages() as messages:
+            try:
+                res = await asyncio.wait_for(agent.run(prompt), timeout=timeout_s)
+                return res.output, messages
+            except Exception as exc:
+                if (
+                    isinstance(exc, UnexpectedModelBehavior)
+                    and _NULL_RESPONSE_MSG in str(exc)
+                    and attempt < retries
+                ):
+                    logger.warning(
+                        "null-body response (attempt %d/%d); retrying in %.0fs",
+                        attempt + 1, retries + 1, delay_s,
+                    )
+                    await asyncio.sleep(delay_s)
+                    continue
+                logger.exception("Agent failed: %s", exc)
+                for i, msg in enumerate(messages):
+                    logger.error("Agent run message [%d]: %r", i, msg)
+                return None, messages
+
+
 async def _analyse_claim(
     entity_name: str,
     claim_text: str,
@@ -458,23 +500,9 @@ async def _analyse_claim(
     cfg: VerifyConfig,
 ) -> AnalystOutput | None:
     prompt = build_analyst_prompt(entity_name, claim_text, sources)
-
-    with capture_run_messages() as messages:
-        try:
-            with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
-                res = await asyncio.wait_for(
-                    analyst_agent.run(prompt), timeout=cfg.analyst_timeout_s
-                )
-            return res.output
-        except Exception as exc:
-            # On retry-exhaustion, the bare exception string ("Exceeded maximum
-            # retries (2) for output validation") loses the validation detail.
-            # Dump the captured run messages so the failing tool-call args and
-            # any retry feedback are visible in logs.
-            logger.exception("Analyst failed: %s", exc)
-            for i, msg in enumerate(messages):
-                logger.error("Analyst run message [%d]: %r", i, msg)
-            return None
+    with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
+        output, _ = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
+    return output
 
 
 async def _audit_claim(
@@ -495,23 +523,19 @@ async def _audit_claim(
 
     prompt = build_auditor_prompt(bundle)
 
-    try:
-        with auditor_agent.override(model=resolve_model(cfg.model_for("auditor"))):
-            res = await asyncio.wait_for(
-                auditor_agent.run(prompt), timeout=cfg.auditor_timeout_s
-            )
-        assessment = res.output
+    with auditor_agent.override(model=resolve_model(cfg.model_for("auditor"))):
+        assessment, _ = await _run_with_null_retry(auditor_agent, prompt, cfg.auditor_timeout_s)
 
-        return compare(
-            analyst_out.verdict.verdict,
-            analyst_out.verdict.confidence,
-            assessment,
-            bundle.claim_id,
-            "(draft -- not yet saved)",
-        )
-    except Exception as exc:
-        logger.error("Auditor check failed: %s", exc)
+    if assessment is None:
         return None
+
+    return compare(
+        analyst_out.verdict.verdict,
+        analyst_out.verdict.confidence,
+        assessment,
+        bundle.claim_id,
+        "(draft -- not yet saved)",
+    )
 
 
 async def research_claim(
