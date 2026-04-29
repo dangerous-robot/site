@@ -50,6 +50,13 @@ RULES:
 - Base your verdict ONLY on the provided source materials
 - The narrative should be factual and balanced, not advocacy
 - Cite sources by title when making specific claims in the narrative
-- If the sources don't address the claim, use verdict "unverified"
+- Use `unverified` only when sources discuss the topic area but fail to engage
+  with the claim's central assertion at all -- they circle it without touching it.
+- Use `mixed` when sources do engage and reveal that the claim is partly supported
+  and partly contradicted, or that a reader acting on the claim would be materially
+  misled. This includes claims with unverifiable quantifiers ("majority", "primarily",
+  "most") where evidence shows the reality is a mix: if sources confirm the thing
+  happens but also confirm a substantial countervailing reality, the claim misleads
+  and the verdict is `mixed`.
 - Do not inflate confidence -- "medium" is the right default for most claims
   with limited sourcing
