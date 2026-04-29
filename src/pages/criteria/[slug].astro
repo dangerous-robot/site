@@ -63,15 +63,12 @@ const criteriaCrumbs = [
   { label: std.data.text },
 ];
 
-const criteriaPageTitle = std.data.text
-  .replace('COMPANY', 'AI Company')
-  .replace('PRODUCT', 'AI Product')
-  .replace(/\s+[A-Z_]+\s+/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim()
-  .slice(0, 42);
+const normCriteriaText = (text: string, company: string, product: string) =>
+  text.replace('COMPANY', company).replace('PRODUCT', product)
+    .replace(/\s+[A-Z_]+\s+/g, ' ').replace(/\s+/g, ' ').trim();
 
-const criteriaDescription = `Dangerous Robot evaluates whether ${std.data.text.replace('COMPANY', 'an AI company').replace('PRODUCT', 'an AI product').replace(/\s+[A-Z_]+\s+/g, ' ').replace(/\s+/g, ' ').trim()}. Coverage across ${matchingEntities.length} entit${matchingEntities.length !== 1 ? 'ies' : 'y'} with sourced verdicts.`.slice(0, 155);
+const criteriaPageTitle = normCriteriaText(std.data.text, 'AI Company', 'AI Product').slice(0, 42);
+const criteriaDescription = `Dangerous Robot evaluates whether ${normCriteriaText(std.data.text, 'an AI company', 'an AI product')}. Coverage across ${matchingEntities.length} entit${matchingEntities.length !== 1 ? 'ies' : 'y'} with sourced verdicts.`.slice(0, 155);
 ---
 <Base title={criteriaPageTitle} layout="wide" description={criteriaDescription}>
   <Breadcrumb crumbs={criteriaCrumbs} />
