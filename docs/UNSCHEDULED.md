@@ -171,7 +171,7 @@ From architectural review (2026-04-18) and TODO.md:
 - **Homepage entity name resolution** -- Homepage displays raw entity slugs instead of human-readable names.
 - **`recheck_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
 - **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`). Pin by full SHA for supply chain security.
-- **SEO basics** -- No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.
+- **SEO basics** -- ~~No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.~~ Done (2026-04-29): robots.txt, sitemap, canonical, OG tags, per-page descriptions, Organization/ClaimReview/FAQPage/BreadcrumbList/WebSite JSON-LD. Remaining: (1) `og:image` asset -- code accepts an `ogImage` prop but `/dr-logo.png` is a narrow logo; a proper 1200×630 `og-default.png` is needed for social sharing previews. (2) `SearchAction` wiring -- the WebSite JSON-LD declares a `SearchAction` at `/claims?q={search_term_string}` but `FilterBar.astro` doesn't read `?q=` from the URL on load; a small JS change is needed to make the schema functional.
 - **Accessibility** -- No skip-to-content link, no `aria-label` on nav, no `<header>` wrapper.
 
 ### Opportunities
