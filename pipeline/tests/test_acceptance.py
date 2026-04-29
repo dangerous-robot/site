@@ -1,276 +1,231 @@
-"""Live acceptance tests that hit real APIs.
+"""Targeted live tests and one full-pipeline smoke test.
+
+Stage tests (query_planner, scorer, analyst) call the LLM directly with
+controlled inputs -- no web search, no fetch. Only ANTHROPIC_API_KEY required.
+
+The smoke test requires both ANTHROPIC_API_KEY and BRAVE_WEB_SEARCH_API_KEY.
+
+Model selection mirrors the CLI: DR_MODEL sets the base model for all agents;
+DR_RESEARCHER_MODEL, DR_ANALYST_MODEL, DR_AUDITOR_MODEL, DR_INGESTOR_MODEL
+override per-agent. Values are loaded from .env before tests run.
 
 Run with: uv run pytest -m acceptance
 Skipped by default in plain `uv run pytest`.
-
-Requires BRAVE_WEB_SEARCH_API_KEY and ANTHROPIC_API_KEY in .env or environment.
 """
 
 from __future__ import annotations
 
 import os
-import re
-import subprocess
-import sys
-from pathlib import Path
 
 import pytest
-import yaml
 from dotenv import load_dotenv
 
-from common.content_loader import resolve_repo_root
-from common.models import Verdict
+from analyst.agent import analyst_agent, build_analyst_prompt
+from common.models import DEFAULT_MODEL, Confidence, Verdict, resolve_model
+from orchestrator.checkpoints import AutoApproveCheckpointHandler
 from orchestrator.pipeline import VerifyConfig, verify_claim
+from researcher.planner import query_planner_agent
+from researcher.scorer import SearchCandidate, build_scorer_prompt, url_scorer_agent
 
 load_dotenv()
 
-_has_keys = bool(
-    os.environ.get("BRAVE_WEB_SEARCH_API_KEY")
-    and os.environ.get("ANTHROPIC_API_KEY")
+_has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
+_has_all_keys = bool(_has_anthropic and os.environ.get("BRAVE_WEB_SEARCH_API_KEY"))
+
+_skip_stage = pytest.mark.skipif(not _has_anthropic, reason="ANTHROPIC_API_KEY not set")
+_skip_e2e = pytest.mark.skipif(
+    not _has_all_keys,
+    reason="ANTHROPIC_API_KEY and BRAVE_WEB_SEARCH_API_KEY required",
 )
 
 
-@pytest.mark.acceptance
-@pytest.mark.skipif(not _has_keys, reason="API keys not available")
-@pytest.mark.skip(reason="multi-topic rename: baseline tuples need rebuild, see docs/plans/multi-topic.md")
-class TestLiveVerification:
+def _cfg_from_env(**overrides) -> VerifyConfig:
+    """Build a VerifyConfig from DR_* env vars, mirroring CLI model selection.
 
-    @pytest.mark.asyncio
-    async def test_false_claim_gets_false_verdict(self) -> None:
-        """A knowingly false claim should produce a false or mostly-false verdict.
-
-        Anthropic does not exclusively use models trained on 100%
-        renewable energy -- no major LLM provider makes that guarantee.
-        The pipeline should research this and reach that conclusion.
-        """
-        from orchestrator.checkpoints import AutoApproveCheckpointHandler
-
-        result = await verify_claim(
-            entity_name="Anthropic",
-            claim_text=(
-                "Anthropic only uses models that were trained "
-                "on 100% renewable energy"
-            ),
-            config=VerifyConfig(max_sources=3),
-            checkpoint=AutoApproveCheckpointHandler(),
-        )
-
-        # Pipeline should complete without fatal errors
-        assert not result.errors, f"Pipeline errors: {result.errors}"
-
-        # Research should find at least one source
-        assert len(result.urls_found) > 0, "Research found no URLs"
-
-        # At least one source should ingest successfully
-        assert len(result.urls_ingested) > 0, "No sources ingested"
-
-        # Analyst should produce a verdict
-        assert result.analyst_output is not None, "No analyst output produced"
-
-        assert result.analyst_output.verdict.verdict in (
-            Verdict.FALSE,
-            Verdict.MOSTLY_FALSE,
-            Verdict.MIXED,
-            Verdict.UNVERIFIED,
-        ), f"Expected false-ish or unverified verdict, got: {result.analyst_output.verdict.verdict}"
-
-        # The claim should NOT be rated as true
-        assert result.analyst_output.verdict.verdict not in (
-            Verdict.TRUE,
-            Verdict.MOSTLY_TRUE,
-        ), f"False claim rated as true: {result.analyst_output.verdict.verdict}"
-
-
-# Baseline captured 2026-04-24 from the post-cleanup run. After re-running
-# `dr onboard` the test compares the resulting research/ state to these values.
-# LLM non-determinism: pin the deterministic fields (slug, topics) and lock
-# verdict/confidence to current values so drift is visible (test fails -> review
-# the change and either accept the new baseline or treat it as a regression).
-#
-# After the multi-topic rename (docs/plans/multi-topic.md) `topics` is a list;
-# the assertion compares list-equality. The single-topic baselines below are
-# the strawman shape (mirroring research/templates.yaml at the time of the
-# rename) and will need a follow-up curation pass once the operator expands
-# templates to multi-topic.
-
-ANTHROPIC_ENTITY_BASELINE = {
-    "name": "Anthropic",
-    "type": "company",
-    "website": "https://anthropic.com",
-}
-
-CLAUDE_ENTITY_BASELINE = {
-    "name": "Claude",
-    "type": "product",
-    "website": "https://claude.ai",
-}
-
-# slug -> expected (verdict, confidence, topics, min_sources)
-ANTHROPIC_CLAIM_BASELINE = {
-    "corporate-structure": ("true", "high", ["industry-analysis"], 2),
-    "donates-to-ai-safety": ("true", "high", ["ai-safety"], 2),
-    "donates-to-environmental-causes": (
-        "unverified",
-        "low",
-        ["environmental-impact"],
-        2,
-    ),
-    "publishes-sustainability-report": (
-        "unverified",
-        "high",
-        ["industry-analysis"],
-        2,
-    ),
-}
-
-CLAUDE_CLAIM_BASELINE = {
-    "discloses-energy-sourcing": (
-        "unverified",
-        "medium",
-        ["environmental-impact"],
-        3,
-    ),
-    "discloses-models-used": (("true", "mostly-true"), "high", ["ai-literacy"], 3),
-    "excludes-frontier-models": ("mostly-true", "high", ["ai-literacy"], 4),
-    "excludes-image-generation": (
-        "mostly-false",
-        "high",
-        ["product-comparison"],
-        4,
-    ),
-    "no-training-on-user-data": ("mostly-true", "high", ["data-privacy"], 4),
-    "realtime-energy-display": ("false", "high", ["product-comparison"], 4),
-    "renewable-energy-hosting": (
-        "unverified",
-        "low",
-        ["environmental-impact"],
-        4,
-    ),
-}
-
-REQUIRED_SIDECAR_KEYS = {
-    "schema_version",
-    "pipeline_run",
-    "sources_consulted",
-    "audit",
-    "human_review",
-}
-
-
-def _parse_frontmatter(path: Path) -> dict:
-    text = path.read_text()
-    m = re.search(r"^---\s*\n(.*?)\n---\s*\n", text, re.S)
-    assert m, f"No frontmatter in {path}"
-    return yaml.safe_load(m.group(1)) or {}
-
-
-@pytest.mark.acceptance
-@pytest.mark.skipif(not _has_keys, reason="API keys not available")
-@pytest.mark.skip(reason="multi-topic rename: baseline tuples need rebuild, see docs/plans/multi-topic.md")
-class TestLiveCliCommands:
-    """End-to-end CLI walkthrough for the Anthropic / Claude fixture.
-
-    Runs the operator-facing commands against the real repo so resulting
-    research/ files can be inspected by hand. ``--force`` is passed on
-    onboard so the test is rerunnable without manual cleanup.
-
-    After the commands complete, the resulting research/ state is asserted
-    against the 2026-04-24 baseline captured at module top. A failing
-    assertion means either (a) the LLM produced a different verdict and
-    the baseline should be updated, or (b) the pipeline regressed.
+    Keyword overrides take precedence over env-var defaults.
     """
+    defaults: dict = dict(
+        model=os.environ.get("DR_MODEL", DEFAULT_MODEL),
+        researcher_model=os.environ.get("DR_RESEARCHER_MODEL"),
+        analyst_model=os.environ.get("DR_ANALYST_MODEL"),
+        auditor_model=os.environ.get("DR_AUDITOR_MODEL"),
+        ingestor_model=os.environ.get("DR_INGESTOR_MODEL"),
+    )
+    defaults.update(overrides)
+    return VerifyConfig(**defaults)
 
-    def test_anthropic_claude_walkthrough(self) -> None:
-        repo_root = resolve_repo_root()
 
-        commands = [
-            ["dr", "onboard", "Anthropic", "anthropic.com", "--type", "company", "--force"],
-            ["dr", "review", "--claim", "anthropic/publishes-sustainability-report"],
-            ["dr", "onboard", "Claude", "claude.ai", "--type", "product", "--force"],
-        ]
+def _stage_model():
+    """Model for stage tests (scorer, planner, analyst).
 
-        for cmd in commands:
-            result = subprocess.run(
-                cmd,
-                cwd=repo_root,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            sys.stdout.write(result.stdout)
-            sys.stderr.write(result.stderr)
-            assert result.returncode == 0, (
-                f"Command failed ({result.returncode}): {' '.join(cmd)}"
-            )
+    Uses DR_STAGE_MODEL if set, otherwise DEFAULT_MODEL. Stage tests require
+    structured output support -- don't inherit DR_RESEARCHER_MODEL or
+    DR_ANALYST_MODEL, which may be set to models that don't support it.
+    """
+    return resolve_model(os.environ.get("DR_STAGE_MODEL", DEFAULT_MODEL))
 
-        self._assert_entity(repo_root, "companies/anthropic", ANTHROPIC_ENTITY_BASELINE)
-        self._assert_entity(repo_root, "products/claude", CLAUDE_ENTITY_BASELINE)
 
-        self._assert_claims(repo_root, "anthropic", ANTHROPIC_CLAIM_BASELINE)
-        self._assert_claims(repo_root, "claude", CLAUDE_CLAIM_BASELINE)
+# ---------------------------------------------------------------------------
+# Stage: url_scorer_agent
+# ---------------------------------------------------------------------------
 
-    @staticmethod
-    def _assert_entity(repo_root: Path, ref: str, baseline: dict) -> None:
-        path = repo_root / "research" / "entities" / f"{ref}.md"
-        assert path.exists(), f"Missing entity file: {path}"
-        fm = _parse_frontmatter(path)
-        for field, expected in baseline.items():
-            assert fm.get(field) == expected, (
-                f"{ref}: expected {field}={expected!r}, got {fm.get(field)!r}"
-            )
 
-    @staticmethod
-    def _assert_claims(
-        repo_root: Path,
-        entity_dir: str,
-        baseline: dict[
-            str,
-            tuple[str | tuple[str, ...], str | tuple[str, ...], list[str], int],
-        ],
-    ) -> None:
-        claim_dir = repo_root / "research" / "claims" / entity_dir
-        assert claim_dir.is_dir(), f"Missing claim directory: {claim_dir}"
+@pytest.mark.acceptance
+@_skip_stage
+async def test_scorer_obvious_split() -> None:
+    """Scorer puts clearly relevant candidates in kept and off-topic ones in dropped."""
+    entity = "Google"
+    claim = "Google publicly reports annual greenhouse gas emissions"
 
-        actual_slugs = {p.stem for p in claim_dir.glob("*.md")}
-        expected_slugs = set(baseline)
-        assert actual_slugs == expected_slugs, (
-            f"{entity_dir} claim set differs.\n"
-            f"  missing:  {expected_slugs - actual_slugs}\n"
-            f"  extra:    {actual_slugs - expected_slugs}"
+    relevant = [
+        SearchCandidate(
+            url="https://sustainability.google/reports/2023/",
+            title="Google 2023 Environmental Report",
+            snippet="Annual greenhouse gas emissions and carbon reduction targets for Google operations.",
+            from_query="q1",
+        ),
+        SearchCandidate(
+            url="https://alphabet.com/sustainability",
+            title="Alphabet Sustainability Commitments",
+            snippet="Detailed breakdown of Alphabet CO2 emissions and renewable energy procurement.",
+            from_query="q1",
+        ),
+    ]
+    irrelevant = [
+        SearchCandidate(
+            url="https://recipes.example.com/pasta",
+            title="Best Italian Pasta Recipes",
+            snippet="Easy weeknight dinner ideas for the whole family.",
+            from_query="q2",
+        ),
+        SearchCandidate(
+            url="https://sports.example.com/scores",
+            title="Today's Sports Scores",
+            snippet="Latest results from the NFL, NBA, and MLB.",
+            from_query="q2",
+        ),
+    ]
+    all_candidates = relevant + irrelevant
+
+    prompt = build_scorer_prompt(entity, claim, all_candidates)
+
+    with url_scorer_agent.override(model=_stage_model()):
+        result = await url_scorer_agent.run(prompt)
+
+    scored = result.output
+    all_returned = set(scored.kept) | set(scored.dropped)
+    all_input = {c.url for c in all_candidates}
+    assert all_input == all_returned, f"URLs missing from output: {all_input - all_returned}"
+
+    for c in relevant:
+        assert c.url in scored.kept, f"Expected {c.url!r} in kept, got kept={scored.kept}"
+    for c in irrelevant:
+        assert c.url in scored.dropped, f"Expected {c.url!r} in dropped, got dropped={scored.dropped}"
+
+
+# ---------------------------------------------------------------------------
+# Stage: query_planner_agent
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.acceptance
+@_skip_stage
+async def test_query_planner_structure() -> None:
+    """Query planner returns entity-grounded, non-duplicate queries with a rationale."""
+    entity = "Google"
+    claim = "Google publicly reports annual greenhouse gas emissions in a sustainability report"
+    prompt = (
+        f"Entity: {entity}\n"
+        f"Claim: {claim}\n"
+        "Generate up to 4 search queries."
+    )
+
+    with query_planner_agent.override(model=_stage_model()):
+        result = await query_planner_agent.run(prompt)
+
+    plan = result.output
+    assert len(plan.queries) >= 2, f"Expected >= 2 queries, got {len(plan.queries)}"
+    assert len(plan.queries) == len(set(plan.queries)), "Duplicate queries returned"
+    assert plan.rationale.strip(), "Rationale is empty"
+
+    entity_terms = {"google", "alphabet"}
+    for q in plan.queries:
+        assert any(t in q.lower() for t in entity_terms), (
+            f"Query not entity-grounded: {q!r}"
         )
 
-        def _matches(actual, expected) -> bool:
-            # Accept a single value or a tuple/list of acceptable values
-            # so baselines can tolerate LLM nondeterminism on a per-field basis.
-            if isinstance(expected, (tuple, list)):
-                return actual in expected
-            return actual == expected
 
-        for slug, (verdict, confidence, topics, min_sources) in baseline.items():
-            claim_path = claim_dir / f"{slug}.md"
-            fm = _parse_frontmatter(claim_path)
-            assert _matches(fm.get("verdict"), verdict), (
-                f"{entity_dir}/{slug}: verdict drift "
-                f"(expected {verdict!r}, got {fm.get('verdict')!r})"
-            )
-            assert _matches(fm.get("confidence"), confidence), (
-                f"{entity_dir}/{slug}: confidence drift "
-                f"(expected {confidence!r}, got {fm.get('confidence')!r})"
-            )
-            assert fm.get("topics") == topics, (
-                f"{entity_dir}/{slug}: topics mismatch "
-                f"(expected {topics!r}, got {fm.get('topics')!r})"
-            )
-            sources = fm.get("sources") or []
-            assert len(sources) >= min_sources, (
-                f"{entity_dir}/{slug}: expected >= {min_sources} sources, "
-                f"got {len(sources)}"
-            )
+# ---------------------------------------------------------------------------
+# Stage: analyst_agent -- unambiguous false verdict
+# ---------------------------------------------------------------------------
 
-            sidecar = claim_path.with_suffix(".audit.yaml")
-            assert sidecar.exists(), f"Missing audit sidecar: {sidecar}"
-            sidecar_data = yaml.safe_load(sidecar.read_text()) or {}
-            missing_keys = REQUIRED_SIDECAR_KEYS - set(sidecar_data)
-            assert not missing_keys, (
-                f"{entity_dir}/{slug} sidecar missing keys: {missing_keys}"
-            )
+
+@pytest.mark.acceptance
+@_skip_stage
+async def test_analyst_false_from_unambiguous_source() -> None:
+    """Analyst returns false+high when a canned source directly contradicts the claim."""
+    claim = "ExampleCorp runs all inference on 100% renewable energy"
+    sources = [
+        {
+            "title": "ExampleCorp Annual Report 2024",
+            "publisher": "ExampleCorp",
+            "summary": "Details ExampleCorp data center energy sourcing.",
+            "key_quotes": [
+                "All ExampleCorp data centers operate exclusively on coal and natural gas.",
+                "The company has no renewable energy procurement agreements in place.",
+                "No net-zero or carbon-neutral commitments have been made.",
+            ],
+            "body": (
+                "ExampleCorp Annual Report 2024: Energy & Infrastructure.\n\n"
+                "All data center operations rely entirely on coal and natural gas supplied "
+                "by regional utilities. ExampleCorp has not entered any power purchase "
+                "agreements for renewable energy and has made no public commitments toward "
+                "carbon neutrality or renewable energy procurement."
+            ),
+        }
+    ]
+
+    prompt = build_analyst_prompt("ExampleCorp", claim, sources)
+    with analyst_agent.override(model=_stage_model()):
+        result = await analyst_agent.run(prompt)
+
+    out = result.output
+    assert out.verdict.verdict == Verdict.FALSE, (
+        f"Expected false, got {out.verdict.verdict!r}"
+    )
+    assert out.verdict.confidence == Confidence.HIGH, (
+        f"Expected high confidence, got {out.verdict.confidence!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Full pipeline smoke test
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.acceptance
+@_skip_e2e
+async def test_full_pipeline_false_claim_smoke() -> None:
+    """A knowingly false claim should not produce a true or mostly-true verdict.
+
+    Anthropic does not exclusively use models trained on 100% renewable energy.
+    Assertions are loose: pipeline completes, finds sources, and doesn't call
+    the claim true.
+    """
+    result = await verify_claim(
+        entity_name="Anthropic",
+        claim_text=(
+            "Anthropic only uses models that were trained on 100% renewable energy"
+        ),
+        config=_cfg_from_env(max_sources=3),
+        checkpoint=AutoApproveCheckpointHandler(),
+    )
+
+    assert not result.errors, f"Pipeline errors: {result.errors}"
+    assert len(result.urls_found) > 0, "Research found no URLs"
+    assert len(result.urls_ingested) > 0, "No sources ingested"
+    assert result.analyst_output is not None, "No analyst output"
+    assert result.analyst_output.verdict.verdict not in (
+        Verdict.TRUE,
+        Verdict.MOSTLY_TRUE,
+    ), f"False claim rated as true: {result.analyst_output.verdict.verdict}"
