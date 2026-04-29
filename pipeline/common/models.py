@@ -111,6 +111,19 @@ def _model_needs_reasoning_strip(model_id: str) -> bool:
     return "mistral" in model_id.lower()
 
 
+def _model_needs_native_output(model_id: str) -> bool:
+    """True for Infomaniak-hosted models that don't support tool calling at the gateway.
+
+    These models fail T3/T4 (tool definition / tool call) but pass T2b
+    (response_format: json_schema). PydanticAI's default structured-output
+    mode uses tool calling; switching to 'native' tells it to use
+    response_format: json_schema instead.
+
+    gemma3n (google/gemma-3n-E4B-it): tool use not enabled at Infomaniak gateway.
+    """
+    return "gemma3n" in model_id.lower()
+
+
 @lru_cache(maxsize=None)
 def resolve_model(spec: str) -> "Model | str":
     """Map a model spec string to a PydanticAI Model or pass it through.
@@ -130,7 +143,7 @@ def resolve_model(spec: str) -> "Model | str":
     if env vars change at runtime (e.g. between tests).
     """
     if spec.startswith("infomaniak:"):
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.profiles.openai import OpenAIModelProfile
         from pydantic_ai.providers.openai import OpenAIProvider
 
@@ -146,8 +159,12 @@ def resolve_model(spec: str) -> "Model | str":
         ver = os.environ.get("INFOMANIAK_API_VERSION", "2")
         base = f"https://api.infomaniak.com/{ver}/ai/{pid}/openai/v1"
         provider = OpenAIProvider(base_url=base, api_key=api_key)
-        profile: "OpenAIModelProfile | None" = None
+        profile_kwargs: dict = {}
         if _model_needs_reasoning_strip(model_id):
-            profile = OpenAIModelProfile(openai_chat_send_back_thinking_parts=False)
-        return OpenAIModel(model_id, provider=provider, profile=profile)
+            profile_kwargs["openai_chat_send_back_thinking_parts"] = False
+        if _model_needs_native_output(model_id):
+            profile_kwargs["default_structured_output_mode"] = "native"
+            profile_kwargs["supports_json_schema_output"] = True
+        profile: "OpenAIModelProfile | None" = OpenAIModelProfile(**profile_kwargs) if profile_kwargs else None
+        return OpenAIChatModel(model_id, provider=provider, profile=profile)
     return spec
