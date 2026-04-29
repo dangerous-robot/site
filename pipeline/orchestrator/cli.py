@@ -83,7 +83,7 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
 # Subcommand groups for `dr --help`, ordered safest -> most destructive.
 # New commands not listed here fall into the "Other" bucket so they stay visible.
 _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
-    ("Read-only", ["lint", "reassess", "verify"]),
+    ("Read-only", ["lint", "reassess", "step-research", "verify"]),
     ("Creates new files (--force to overwrite existing)",
      ["ingest", "onboard", "verify-claim"]),
     ("Modifies existing files in place",
@@ -154,6 +154,97 @@ def main(
         # Bare set() rather than bind_run_id(): the id must outlive this
         # callback frame to reach the subcommand body.
         run_id_var.set(new_run_id())
+
+
+# --------------------------------------------------------------------------- #
+# dr step-research                                                              #
+# --------------------------------------------------------------------------- #
+
+def _print_research_trace(
+    entity: str, claim: str, urls: list[str], errors: list[str], trace: dict
+) -> None:
+    click.echo(f"Entity:  {entity}")
+    click.echo(f"Claim:   {claim}")
+    click.echo("")
+
+    queries = trace.get("queries", [])
+    planner_rationale = trace.get("planner_rationale", "")
+    candidates_seen = trace.get("candidates_seen", 0)
+    urls_kept = trace.get("urls_kept", 0)
+    urls_dropped = trace.get("urls_dropped", 0)
+    scorer_rationale = trace.get("scorer_rationale", "")
+
+    click.echo("Step 1 — Query planning")
+    click.echo(f"  Queries ({len(queries)}):")
+    for q in queries:
+        click.echo(f'    "{q}"')
+    if planner_rationale:
+        click.echo(f"  Rationale: {planner_rationale}")
+    click.echo("")
+
+    click.echo("Step 2 — Search")
+    query_word = "query" if len(queries) == 1 else "queries"
+    click.echo(f"  {candidates_seen} candidates from {len(queries)} {query_word}")
+    click.echo("")
+
+    click.echo("Step 3 — URL scoring")
+    click.echo(f"  {urls_kept} kept  {urls_dropped} dropped")
+    if scorer_rationale:
+        click.echo(f"  Rationale: {scorer_rationale}")
+    click.echo("")
+
+    if urls:
+        click.echo(f"URLs to ingest ({len(urls)}):")
+        for i, url in enumerate(urls, 1):
+            click.echo(f"  {i}. {url}")
+        click.echo("")
+        click.echo("  (blocklist not applied — use `dr verify` for production results)")
+    else:
+        click.echo("No URLs returned.")
+
+    if errors:
+        click.echo("")
+        click.echo("--- Errors ---")
+        for err in errors:
+            click.echo(f"  ! {err}")
+
+
+@main.command("step-research")
+@click.argument("entity")
+@click.argument("claim")
+@click.option("--llm-concurrency", default=8, type=int, help="Max concurrent LLM calls")
+@click.pass_context
+def step_research(ctx: click.Context, entity: str, claim: str, llm_concurrency: int) -> None:
+    """Run only the researcher step and print what it found; nothing is written to disk.
+
+    Runs the decomposed researcher (planner → search → scorer) and prints
+    each step's output. Useful for inspecting source discovery without
+    running the full pipeline.
+
+    Example:
+        dr step-research "Microsoft" "Microsoft's climate pledges rely on carbon credits"
+    """
+    logger.info("dr step-research: entity=%s claim=%s", entity, claim)
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
+
+    from orchestrator.pipeline import VerifyConfig
+    from researcher.decomposed import decomposed_research
+
+    config = VerifyConfig(
+        model=ctx.obj["model"],
+        llm_concurrency=llm_concurrency,
+        **_ctx_per_agent_kwargs(ctx),
+    )
+
+    async def _run():
+        import httpx
+        sem = asyncio.Semaphore(llm_concurrency)
+        async with httpx.AsyncClient() as client:
+            return await decomposed_research(claim, entity, config, sem, client)
+
+    urls, errors, trace = asyncio.run(_run())
+    error_msgs = [f"{e.step}/{e.error_type}: {e.message}" for e in errors]
+    _print_research_trace(entity, claim, urls, error_msgs, trace)
 
 
 # --------------------------------------------------------------------------- #
