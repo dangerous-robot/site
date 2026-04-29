@@ -4,13 +4,35 @@ Also exposes `resolve_model` for mapping provider-prefixed spec strings to
 PydanticAI Model instances when needed.
 """
 
+import logging
 import os
 from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
 
+import httpx
+
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
+
+logger = logging.getLogger(__name__)
+
+
+async def _log_infomaniak_response(response: httpx.Response) -> None:
+    """Only safe for non-streaming completions; aread() buffers before the SDK reads.
+
+    Captures x-request-id so null-body failures can be correlated with Infomaniak support tickets.
+    """
+    if not logger.isEnabledFor(logging.DEBUG):
+        return
+    await response.aread()
+    req_id = response.headers.get("x-request-id", "-")
+    logger.debug(
+        "infomaniak raw response [%s] status=%d body=%s",
+        req_id,
+        response.status_code,
+        response.content.decode("utf-8", errors="replace"),
+    )
 
 
 AgentName = Literal["researcher", "analyst", "auditor", "ingestor"]
@@ -158,7 +180,11 @@ def resolve_model(spec: str) -> "Model | str":
             raise RuntimeError(f"Infomaniak provider requires {e.args[0]}") from e
         ver = os.environ.get("INFOMANIAK_API_VERSION", "2")
         base = f"https://api.infomaniak.com/{ver}/ai/{pid}/openai/v1"
-        provider = OpenAIProvider(base_url=base, api_key=api_key)
+        provider = OpenAIProvider(
+            base_url=base,
+            api_key=api_key,
+            http_client=httpx.AsyncClient(event_hooks={"response": [_log_infomaniak_response]}),
+        )
         profile_kwargs: dict = {}
         if _model_needs_reasoning_strip(model_id):
             profile_kwargs["openai_chat_send_back_thinking_parts"] = False
