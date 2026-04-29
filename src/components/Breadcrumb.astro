@@ -2,7 +2,7 @@
 interface Props { crumbs: { label: string; href?: string }[] }
 const { crumbs } = Astro.props;
 
-const siteOrigin = "https://dangerousrobot.org";
+const siteOrigin = Astro.site?.origin ?? "https://dangerousrobot.org";
 
 const breadcrumbList = {
   "@context": "https://schema.org",
