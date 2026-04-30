@@ -1,0 +1,90 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Page not found (404)"
+  description="The page you were looking for could not be found on Dangerous Robot."
+  noindex
+>
+  <section class="not-found">
+    <p class="eyebrow">Error 404</p>
+    <h1>Page not found</h1>
+    <p class="lede">
+      That page is missing, moved, or never existed. Try one of these instead:
+    </p>
+    <ul class="nav-list">
+      <li><a href="/">Home</a></li>
+      <li><a href="/companies">Companies</a></li>
+      <li><a href="/products">Products</a></li>
+      <li><a href="/topics">Topics</a></li>
+      <li><a href="/claims">Claims</a></li>
+      <li><a href="/sources">Sources</a></li>
+      <li><a href="/criteria">Criteria</a></li>
+      <li><a href="/faq">FAQ</a></li>
+    </ul>
+    <p class="hint">
+      If you followed a link from elsewhere and reached this page,
+      <a href="https://github.com/dangerous-robot/site/issues">open an issue on GitHub</a>
+      so we can fix it.
+    </p>
+  </section>
+</Base>
+
+<style>
+  .not-found {
+    padding: var(--space-xl) 0;
+    max-width: 42rem;
+  }
+  .eyebrow {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+  h1 {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-heading);
+    font-size: clamp(2rem, 5vw, 3rem);
+    line-height: 1.1;
+    color: var(--color-text-heading);
+  }
+  .lede {
+    margin: 0 0 var(--space-lg);
+    font-size: 1.1rem;
+    color: var(--color-text);
+  }
+  .nav-list {
+    list-style: none;
+    margin: 0 0 var(--space-xl);
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm) var(--space-md);
+  }
+  .nav-list a {
+    color: var(--color-accent);
+    text-decoration: none;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color 0.2s;
+  }
+  .nav-list a:hover,
+  .nav-list a:focus-visible {
+    border-bottom-color: var(--color-accent);
+  }
+  .hint {
+    margin: 0;
+    color: var(--color-text-faint);
+    font-size: var(--font-size-sm);
+  }
+  .hint a {
+    color: var(--color-accent);
+  }
+</style>

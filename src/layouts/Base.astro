@@ -15,6 +15,8 @@ interface Props {
   /** 'standard' (default): render the top site-nav. 'minimal': page provides its own chrome. */
   chrome?: 'standard' | 'minimal';
   ogImage?: string;
+  /** When true, emit `noindex,nofollow`. Default false (indexable). */
+  noindex?: boolean;
 }
 
 const {
@@ -23,6 +25,7 @@ const {
   layout = 'reading',
   chrome = 'standard',
   ogImage = '/dr-logo.png',
+  noindex = false,
 } = Astro.props;
 
 const ogTitle = `${title} - Dangerous Robot`;
@@ -49,12 +52,24 @@ const orgSchema = {
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="canonical" href={Astro.url.href} />
+    <meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large'} />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#fafafa" media="(prefers-color-scheme: light)" />
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Dangerous Robot" />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:url" content={Astro.url.href} />
     <meta property="og:title" content={ogTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageAbsolute} />
+    <meta property="og:image:alt" content="Dangerous Robot logo" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={ogTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageAbsolute} />
     <!-- Organization structured data -->
     <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
