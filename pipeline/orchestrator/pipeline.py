@@ -705,6 +705,7 @@ class OnboardResult:
     status: Literal["accepted", "rejected"]
     entity_ref: str | None
     claims_created: list[str] = field(default_factory=list)
+    claims_skipped: list[str] = field(default_factory=list)
     claims_failed: list[str] = field(default_factory=list)
     templates_applied: list[str] = field(default_factory=list)
     templates_excluded: list[tuple[str, str]] = field(default_factory=list)
@@ -876,6 +877,18 @@ async def onboard_entity(
 
                 claim_text = render_claim_text(template, entity_name)
                 logger.info("Onboard: researching template %s -> %s", slug, claim_text)
+
+                # Skip before running the pipeline if a claim file already
+                # exists for this entity + criterion. Avoids duplicate claims
+                # and wasted pipeline compute on re-onboards.
+                entity_slug = slugify(entity_name)
+                existing_claim_path = (
+                    repo_root / "research" / "claims" / entity_slug / f"{slugify(slug)}.md"
+                )
+                if existing_claim_path.exists() and not iter_cfg.force_overwrite:
+                    progress("[%d/%d] Skipped (exists): %s", idx, total, slug)
+                    result.claims_skipped.append(str(existing_claim_path.relative_to(repo_root)))
+                    continue
 
                 try:
                     vr = await verify_claim(entity_name, claim_text, iter_cfg, gate, sem=sem)

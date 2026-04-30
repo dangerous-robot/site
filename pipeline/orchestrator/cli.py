@@ -762,6 +762,7 @@ def onboard(
         click.echo("")
         click.echo(f"Templates applied: {len(result.templates_applied)}")
         click.echo(f"Claims created:    {len(result.claims_created)}")
+        click.echo(f"Claims skipped:    {len(result.claims_skipped)}")
         click.echo(f"Claims failed:     {len(result.claims_failed)}")
 
         if result.claims_created:
@@ -769,6 +770,12 @@ def onboard(
             click.echo("Created:")
             for path in result.claims_created:
                 click.echo(f"  + {path}")
+
+        if result.claims_skipped:
+            click.echo("")
+            click.echo("Skipped (already exist):")
+            for path in result.claims_skipped:
+                click.echo(f"  = {path}")
 
     if result.templates_excluded:
         click.echo("")

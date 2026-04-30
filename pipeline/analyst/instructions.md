@@ -43,8 +43,15 @@ TITLE:
   "lacks", "fails to"). The verdict carries the truth polarity; a negative title
   combined with a "false" verdict creates a double negative that reads as the
   opposite of the intended meaning.
+- This rule bans grammatical negation words only. Semantically negative verbs
+  like "excludes", "limits", or "restricts" are grammatically affirmative and
+  are permitted -- do not flip them to positive alternatives.
+- The title should restate the claim as given. Do not rephrase the core assertion,
+  invert its meaning, or add qualifiers not present in the claim text.
 - Good: "Ecosia's AI chat runs on renewable energy" (verdict: false)
 - Bad:  "Ecosia's AI chat does not run on renewable energy" (verdict: false)
+- Bad:  "ChatGPT offers image generation with tiered limits" (inverted polarity from
+  "excludes image generation" + added qualifier not in the claim)
 
 RULES:
 - Base your verdict ONLY on the provided source materials
