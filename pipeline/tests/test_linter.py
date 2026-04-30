@@ -16,6 +16,7 @@ from linter.checks import (
     check_legacy_field_name,
     check_missing_criteria_slug,
     check_missing_required_fields,
+    check_missing_seo_title,
     check_orphaned_claims,
     check_placeholder_website,
     check_published_criterion,
@@ -249,6 +250,26 @@ class TestMissingCriteriaSlug:
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"criteria_slug": "some-slug"}}
         assert check_missing_criteria_slug([claim], fms) == []
+
+
+class TestMissingSeoTitle:
+    def test_published_without_seo_title_raises_info(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "published"}}
+        issues = check_missing_seo_title([claim], fms)
+        assert len(issues) == 1
+        assert issues[0].severity == "info"
+        assert issues[0].check_id == "missing-seo-title"
+
+    def test_published_with_seo_title_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "published", "seo_title": "Short title"}}
+        assert check_missing_seo_title([claim], fms) == []
+
+    def test_draft_without_seo_title_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"status": "draft"}}
+        assert check_missing_seo_title([claim], fms) == []
 
 
 class TestStaleRecheck:

@@ -14,7 +14,7 @@ CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
     "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
-    "audit",
+    "audit", "seo_title",
 }
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
@@ -318,6 +318,26 @@ def check_missing_criteria_slug(
                 severity="info",
                 message='no criteria_slug set — claim is matched by filename stem only',
                 hint='add `criteria_slug:` to improve traceability',
+            ))
+    return issues
+
+
+def check_missing_seo_title(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if fm.get("status") != "published":
+            continue
+        if not fm.get("seo_title"):
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="missing-seo-title",
+                severity="info",
+                message="published claim has no `seo_title`; SERP title falls back to the full claim title",
+                hint="add `seo_title:` (max 42 chars) to control how this claim appears in search results",
             ))
     return issues
 

@@ -19,6 +19,7 @@ from .checks import (
     check_legacy_field_name,
     check_missing_criteria_slug,
     check_missing_required_fields,
+    check_missing_seo_title,
     check_orphaned_claims,
     check_placeholder_website,
     check_published_criterion,
@@ -113,6 +114,7 @@ def run_all_checks(
     issues += check_legacy_field_name(claim_files, claim_fms)
     issues += check_unknown_frontmatter_keys(claim_files, claim_fms, entity_files, entity_fms)
     issues += check_missing_criteria_slug(claim_files, claim_fms)
+    issues += check_missing_seo_title(claim_files, claim_fms)
     issues += check_stale_recheck(claim_files, claim_fms, today)
     issues += check_future_as_of(claim_files, claim_fms, today)
     issues += check_entity_type_dir_mismatch(entity_files, entity_fms)

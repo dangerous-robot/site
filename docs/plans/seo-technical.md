@@ -2,10 +2,10 @@
 
 | Milestone | Status |
 |-----------|--------|
-| Crawlability | `[ ] ready to implement` |
-| Meta tags | `[ ] ready to implement` |
-| Structured data | `[ ] ready to implement` |
-| Performance | `[ ] ready to implement` |
+| Crawlability | `[x] done` |
+| Meta tags | `[ ] in progress` |
+| Structured data | `[x] done` |
+| Performance | `[x] done` |
 
 ---
 
@@ -19,7 +19,7 @@ The site is Astro 6.x, statically generated, deployed to `dangerousrobot.org`. C
 
 ## Milestone: Crawlability
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done`
 
 ### 1. robots.txt
 
@@ -126,7 +126,7 @@ If the host requires a different behavior (e.g., always-trailing), use `trailing
 
 ## Milestone: Meta tags
 
-**Status:** `[ ] ready to implement`
+**Status:** `[ ] in progress` — canonical, OG tags, and `ogImage` prop are done; dynamic per-page descriptions remain (see `seo-copy.md`); Twitter/X cards are a non-goal
 
 ### 4. Canonical URL
 
@@ -284,7 +284,7 @@ Update the `<Base>` call:
 
 ## Milestone: Structured data
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done`
 
 All structured data uses JSON-LD in `<script type="application/ld+json">` blocks. Inline in components and pages using Astro's `set:html` directive on a `<script>` tag, or as a raw `<script>` in the component's template section. The latter is simpler and avoids the `set:html` escaping concern for static data.
 
@@ -562,7 +562,7 @@ The `sameAs` array uses the GitHub repo URL. If the project acquires social medi
 
 ## Milestone: Performance
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done`
 
 ### 13. Font loading
 

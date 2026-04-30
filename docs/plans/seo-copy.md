@@ -2,8 +2,8 @@
 
 | Milestone | Status |
 |-----------|--------|
-| Title strategy | `[ ] ready to implement` |
-| Meta description templates | `[ ] ready to implement` |
+| Title strategy | `[x] done` |
+| Meta description templates | `[x] done` |
 | og:image strategy | `[ ] planned` |
 | Content depth guidance | `[ ] editorial / ongoing` |
 | Keyword targeting guidance | `[ ] editorial / ongoing` |
