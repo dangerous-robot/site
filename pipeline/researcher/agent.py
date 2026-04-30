@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from dataclasses import dataclass
@@ -14,6 +15,9 @@ from pydantic_ai import Agent, RunContext
 from common.instructions import load_instructions
 
 logger = logging.getLogger(__name__)
+
+_BRAVE_SEARCH_URL = "https://api.search.brave.com/res/v1/web/search"
+_BRAVE_RATE_LIMIT_RETRY_DELAY_S = 30.0
 
 
 class ResearchResult(BaseModel):
@@ -60,16 +64,28 @@ async def search_brave(
     if not api_key:
         raise RuntimeError("BRAVE_WEB_SEARCH_API_KEY is not set")
 
-    resp = await client.get(
-        "https://api.search.brave.com/res/v1/web/search",
-        params={"q": query, "count": max_results},
-        headers={
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-            "X-Subscription-Token": api_key,
-        },
-        timeout=15.0,
-    )
+    async def _fetch() -> httpx.Response:
+        return await client.get(
+            _BRAVE_SEARCH_URL,
+            params={"q": query, "count": max_results},
+            headers={
+                "Accept": "application/json",
+                "Accept-Encoding": "gzip",
+                "X-Subscription-Token": api_key,
+            },
+            timeout=15.0,
+        )
+
+    resp = await _fetch()
+    if resp.status_code == 429:
+        header_val = resp.headers.get("retry-after")
+        try:
+            wait = float(header_val) if header_val else _BRAVE_RATE_LIMIT_RETRY_DELAY_S
+        except ValueError:
+            wait = _BRAVE_RATE_LIMIT_RETRY_DELAY_S
+        logger.warning("Brave 429 rate limit; retrying in %.0fs", wait)
+        await asyncio.sleep(wait)
+        resp = await _fetch()
     resp.raise_for_status()
 
     data = resp.json()

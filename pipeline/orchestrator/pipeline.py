@@ -29,6 +29,7 @@ from typing import Literal
 
 import click
 import httpx
+import openai
 from pydantic import BaseModel, ConfigDict, Field
 
 import dataclasses
@@ -60,6 +61,7 @@ logger = logging.getLogger(__name__)
 _NULL_RESPONSE_MSG = "Invalid response from"
 _NULL_BODY_RETRIES = 2
 _NULL_BODY_RETRY_DELAY_S = 45.0
+_RATE_LIMIT_RETRY_DELAY_S = 90.0
 
 
 class VerificationResult(BaseModel):
@@ -486,6 +488,18 @@ async def _run_with_null_retry(
                         attempt + 1, retries + 1, delay_s,
                     )
                     await asyncio.sleep(delay_s)
+                    continue
+                if isinstance(exc, openai.RateLimitError) and attempt < retries:
+                    header_val = exc.response.headers.get("retry-after")
+                    try:
+                        wait = float(header_val) if header_val else _RATE_LIMIT_RETRY_DELAY_S
+                    except ValueError:
+                        wait = _RATE_LIMIT_RETRY_DELAY_S
+                    logger.warning(
+                        "rate limit (attempt %d/%d); retrying in %.0fs",
+                        attempt + 1, retries + 1, wait,
+                    )
+                    await asyncio.sleep(wait)
                     continue
                 logger.exception("Agent failed: %s", exc)
                 for i, msg in enumerate(messages):
