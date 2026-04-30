@@ -1,0 +1,61 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:40:57.753812+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Brave Browser" data training policy'
+  - independent audit Brave Browser data usage
+  - Brave Foundation data privacy report
+  planner_rationale: These queries aim to find official documentation from Brave Browser
+    regarding their data training practices, independent security audits that might
+    have examined this, and reports published by the Brave Foundation, which could
+    offer insights into their data handling policies.
+  candidates_seen: 19
+  urls_kept: 6
+  urls_dropped: 13
+  scorer_rationale: The claim is whether Brave Leo uses user data for training. Several
+    snippets directly state that Brave does not use conversations for model training,
+    or does not log conversations. Some snippets mention Brave's overall privacy policy
+    and data collection practices, which are relevant but less direct. A few snippets
+    discuss potential data breaches or privacy concerns, but do not directly address
+    the training question. The Cambridge Analytica article suggests Brave collects
+    less data than Google but has some concerns. The other URLs are less relevant.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/browser-privacy-policy
+  url: https://brave.com/privacy/browser/
+  title: Browser Privacy Policy
+  ingested: true
+- id: 2025/is-brave-browser-safe
+  url: https://www.expressvpn.com/blog/is-brave-browser-safe/
+  title: Is Brave browser safe? A practical guide to secure browsing
+  ingested: true
+- id: 2026/see-and-delete-your-data
+  url: https://brave.com/data-access/
+  title: See and delete your data
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

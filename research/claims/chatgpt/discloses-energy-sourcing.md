@@ -4,14 +4,14 @@ entity: products/chatgpt
 topics:
 - environmental-impact
 verdict: unverified
-confidence: medium
+confidence: high
 criteria_slug: discloses-energy-sourcing
 status: published
-as_of: '2026-04-29'
+as_of: '2026-04-30'
 sources:
 - 2025/chatgpt-energy-consumption-visualized
 - 2025/how-much-energy-does-chatgpt-use
 - 2025/ai-energy-use
-- 2023/uw-chatgpt-energy-consumption
+- 2024/chatgpt-power-consumption-electric-cars
 ---
-The supplied sources (Business Energy UK, Epoch AI, IEEE Spectrum, University of Washington) all discuss estimates of electricity and water usage for ChatGPT‑4 or GPT‑4o, but none address whether OpenAI publicly reports the *source* of that electricity (e.g., renewable versus fossil‑fuel generation) or any policy of disclosure about energy sourcing. Because the claim’s central assertion is not engaged by any source, there is no evidence to confirm or refute it. The appropriate classification is **unverified** with **medium** confidence, reflecting a reasonable breadth of source material that nevertheless does not speak to the specific claim.
+The four sources examined all focus on estimating how much electricity and water ChatGPT consumes during inference and training. Business Energy UK’s visualisation, Epoch AI’s query‑level analysis, IEEE Spectrum’s industry overview, and Balkan Green Energy News’s yearly‑consumption comparison each provide external calculations of energy use (e.g., 39.98 M kWh per day, 0.3 Wh per query, 226.8 GWh per year) but none contain a statement from OpenAI that the service publicly reports where that electricity is sourced (renewable vs. fossil, grid mix, etc.). Because the sources discuss the magnitude of consumption without addressing any explicit disclosure from OpenAI about its energy sourcing, there is no direct evidence either confirming or denying the claim. Consequently, the claim that "ChatGPT discloses its energy sourcing" remains unverified despite a thorough search of relevant material.

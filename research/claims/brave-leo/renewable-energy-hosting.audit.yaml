@@ -1,0 +1,57 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:40:27.854508+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Brave Leo" hosting infrastructure renewable energy sources'
+  - '"Brave Leo" sustainability report renewable energy usage'
+  - independent analysis "Brave Leo" energy consumption carbon footprint
+  planner_rationale: These queries aim to find direct confirmation from Brave Leo
+    about their energy sources (first query), look for official reports detailing
+    sustainability practices including energy (second query), and search for unbiased
+    evaluations of Brave Leo's environmental impact (third query).
+  candidates_seen: 13
+  urls_kept: 7
+  urls_dropped: 6
+  scorer_rationale: The claim states Brave Leo is hosted on renewable energy. None
+    of the snippets explicitly mention renewable energy. However, several snippets
+    highlight that Brave Leo is hosted through Brave's own secure infrastructure,
+    which could imply a commitment to sustainable practices, though it is not directly
+    stated. I am scoring these as 4 as it is clearly relevant, and may lead to the
+    answer. The rest of the articles are either tangentially related or irrelevant.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2023/brave-leo-release
+  url: https://brave.com/blog/leo-release/
+  title: Leo, Brave’s browser-native AI assistant, is now available in Nightly version
+    for testing
+  ingested: true
+- id: 2024/leo-android
+  url: https://brave.com/blog/leo-android/
+  title: Leo—Brave’s privacy-preserving AI assistant—now available on Android
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

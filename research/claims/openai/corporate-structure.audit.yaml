@@ -1,0 +1,50 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:04:41.960135+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"OpenAI" corporate structure legal documents'
+  - OpenAI organizational structure publicly available information
+  - OpenAI ownership model analysis independent report
+  planner_rationale: The claim asserts a specific corporate structure for OpenAI.
+    The queries aim to directly find legal documents or official statements outlining
+    the structure. The second query searches for publicly available information about
+    the structure. The third query seeks independent analyses/reports that have examined
+    and potentially verified or refuted the claim about OpenAI's ownership model.
+  candidates_seen: 20
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/openai-california-ag-mou
+  url: https://oag.ca.gov/system/files/attachments/press-docs/Final%20Executed%20MOU%20Between%20OpenAI%20and%20California%20AG%20re%20Notice%20of%20Conditions%20of%20Non-Objection%20(10.27.2025)%20(Signed%20by%20OpenAI)%20(Signed%20by%20CA%20DOJ).pdf
+  title: MOU Between OpenAI and California AG re Notice of Conditions of Non-Objection
+  ingested: true
+- id: 2025/openai-corporate-structure-legal-future
+  url: https://www.pymnts.com/artificial-intelligence-2/2025/openais-new-corporate-structure-sets-up-a-tangled-legal-future
+  title: OpenAI’s New Corporate Structure Sets Up a Tangled Legal Future, Experts
+    Say
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

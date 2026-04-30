@@ -1,0 +1,68 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:36:46.740677+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - brave software ai safety donations report
+  - brave software philanthropic activities artificial intelligence
+  - brave software ai safety involvement independent analysis
+  planner_rationale: These queries aim to find verifiable information about Brave
+    Software's financial contributions to AI safety. The first query searches for
+    official reports, the second broadens the search to philanthropic activities including
+    AI, and the third seeks independent analyses of their involvement to avoid biased
+    sources.
+  candidates_seen: 21
+  urls_kept: 9
+  urls_dropped: 12
+  scorer_rationale: The claim is about Brave Software's donations to AI safety causes.
+    Candidates 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are relevant
+    as they discuss Brave's AI initiatives, including the Brave AI Lab and AI browsing
+    features, and some touch upon security aspects. Candidates 16 and 17 are relevant
+    as they discuss AI and philanthropy, which is a potential area for donations.
+    The remaining candidates are less relevant as they focus on browser security,
+    general AI trends, or the company's overall safety practices rather than specific
+    donation activities.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/ai-safety-scam-tactics-threat-mitigation
+  url: https://brave.com/podcast/e83/
+  title: AI Safety, Scam Tactics and Threat Mitigation
+  ingested: true
+- id: 2024/harmonizing-ai-and-philanthropy
+  url: https://www.geofunders.org/news/harmonizing-ai-and-philanthropy-running-to-or-running-from-a-brave-new-world/
+  title: 'Harmonizing AI and Philanthropy: Running To or Running From a Brave New
+    World'
+  ingested: true
+- id: 2026/brave-ai
+  url: https://brave.com/ai/
+  title: Brave AI
+  ingested: true
+- id: 2026/brave-ai-lab
+  url: https://braveailab.com/
+  title: Brave AI Lab
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

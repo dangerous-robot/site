@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T01:44:24.451454+00:00'
+  ran_at: '2026-04-30T07:35:36.154995+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,23 +15,14 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - ChatGPT limitations text generation image capabilities
-  - OpenAI ChatGPT official documentation image generation
-  - independent analysis ChatGPT image generation functionality
-  planner_rationale: These queries aim to verify if ChatGPT has inherent limitations
-    in image generation. The first targets official documentation for a definitive
-    answer. The second searches for independent analysis which may provide a broader
-    perspective. The third uses 'independent analysis' to avoid OpenAI-centric results
-    and focus on objective evaluations.
-  candidates_seen: 22
-  urls_kept: 17
-  urls_dropped: 1
-  scorer_rationale: The claim is that ChatGPT excludes image generation. Several articles
-    discuss ChatGPT's image generation capabilities, limits, and updates to the image
-    generation model. Some articles directly mention limits on image generation (e.g.,
-    number of images per day/month). Others announce new image generation models and
-    improvements. One article discusses the limitations of DALL-E. The LinkedIn article
-    does not seem relevant to the claim.
+  - '"ChatGPT" limitations text generation image capabilities'
+  - independent analysis ChatGPT image generation features
+  - ChatGPT developer documentation text-only functionality
+  planner_rationale: These queries aim to verify if ChatGPT intentionally limits image
+    generation capabilities. The first targets limitations directly. The second seeks
+    analysis from sources outside OpenAI. The third looks for technical documentation
+    to confirm the stated functionality.
+  candidates_seen: 24
   urls_after_blocklist: 4
 sources_consulted:
 - id: 2026/chatgpt-image-generation-limit-query
@@ -42,7 +33,7 @@ sources_consulted:
   url: https://yingtu.ai/en/blog/chatgpt-free-image-generation-limit-complete-guide
   title: 'ChatGPT Free Plan Image Generation Limit: Complete 2025 Guide'
   ingested: true
-- id: 2025/openai-gpu-limits-image-generation
+- id: 2025/openai-gpu-limits-image-creation
   url: https://www.techradar.com/computing/artificial-intelligence/our-gpus-are-melting-openai-puts-limits-on-image-creation-and-delays-rollout-to-free-accounts
   title: ‘Our GPUs are melting’ – OpenAI puts limits on image creation and delays
     rollout to free accounts
@@ -53,14 +44,14 @@ sources_consulted:
   ingested: true
 audit:
   analyst_verdict: 'false'
-  auditor_verdict: mostly-true
+  auditor_verdict: 'false'
   analyst_confidence: high
-  auditor_confidence: medium
-  verdict_agrees: false
-  confidence_agrees: false
-  needs_review: true
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
 human_review:
-  reviewed_at: '2026-04-29'
-  reviewer: null
-  notes: '[auto-publish] bulk publish, no human review'
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
   pr_url: null

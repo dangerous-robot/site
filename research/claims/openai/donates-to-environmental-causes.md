@@ -7,9 +7,10 @@ verdict: unverified
 confidence: medium
 criteria_slug: donates-to-environmental-causes
 status: published
-as_of: '2026-04-29'
+as_of: '2026-04-30'
 sources:
-- 2025/environmental-impact-of-ai
-- 2026/ai-energy-environment-democracy
+- 2026/openai-nonprofit-commission-report
+- 2026/openai-inc-nonprofit-explorer
+- 2023/sustainable-development-and-ai
 ---
-The two supplied sources address OpenAI’s environmental footprint and broader critiques of AI’s energy use, but neither source provides any information about OpenAI making donations to environmental causes. The OpenAI Academy article focuses on efficiency gains in model inference ("Environmental Impact of AI"), while the Greenpeace report critiques the ecological costs of AI infrastructure without mentioning charitable contributions ("The energy and environmental impact of AI and how it undermines democracy"). Because the claim’s central assertion—whether OpenAI donates to environmental causes—is not addressed in either source, the claim remains unverified based on the available evidence.
+The three sources provided do not contain any information about OpenAI making donations to environmental causes. The OpenAI Nonprofit Commission Report focuses on the organization’s governance structure and does not discuss charitable giving. The ProPublica filing of OpenAI Inc.’s IRS Form 990 lists revenue, expenses, and executive compensation but includes no line‑item or narrative about environmental donations. The community forum thread on "Sustainable development and AI" debates the carbon footprint of AI services and mentions Azure’s carbon‑neutral claims, but it does not address whether OpenAI itself contributes financially to environmental initiatives. Because no source directly confirms or refutes the claim, it remains unverified.

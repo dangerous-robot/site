@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T01:43:25.741544+00:00'
+  ran_at: '2026-04-30T07:32:37.613106+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,19 +15,15 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"ChatGPT" energy consumption sources'
+  - '"ChatGPT" energy consumption sourcing report'
   - independent analysis ChatGPT energy usage
-  - OpenAI ChatGPT energy footprint report
-  planner_rationale: These queries aim to find information about ChatGPT's energy
-    usage from multiple angles. The first directly asks about sources. The second
-    seeks independent analyses, avoiding potential bias from OpenAI. The third targets
-    specific reports, implying a data-driven overview of the energy footprint.
-  candidates_seen: 18
-  urls_kept: 18
-  urls_dropped: 0
-  scorer_rationale: All URLs provide information about ChatGPT's energy consumption,
-    with varying levels of detail and different reporting periods. They all appear
-    to be relevant to the claim.
+  - OpenAI ChatGPT environmental impact data
+  planner_rationale: 'These queries aim to find reports and analyses from independent
+    sources (not OpenAI directly) regarding ChatGPT''s energy consumption and how
+    that energy is sourced. The queries vary in their focus: one looks for comprehensive
+    reports, another for analyses, and the third specifically asks for environmental
+    impact data, which would likely include sourcing information.'
+  candidates_seen: 19
   urls_after_blocklist: 4
 sources_consulted:
 - id: 2025/chatgpt-energy-consumption-visualized
@@ -42,20 +38,21 @@ sources_consulted:
   url: https://spectrum.ieee.org/ai-energy-use
   title: How Much Energy Does It Take to Power Billions of AI Queries?
   ingested: true
-- id: 2023/uw-chatgpt-energy-consumption
-  url: https://www.washington.edu/news/2023/07/27/how-much-energy-does-chatgpt-use/
-  title: 'Q&A: UW researcher discusses just how much energy ChatGPT uses'
+- id: 2024/chatgpt-power-consumption-electric-cars
+  url: https://balkangreenenergynews.com/chatgpt-consumes-enough-power-in-one-year-to-charge-over-three-million-electric-cars/
+  title: ChatGPT consumes enough power in one year to charge over three million electric
+    cars
   ingested: true
 audit:
   analyst_verdict: unverified
   auditor_verdict: unverified
-  analyst_confidence: medium
-  auditor_confidence: medium
+  analyst_confidence: high
+  auditor_confidence: high
   verdict_agrees: true
   confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-29'
-  reviewer: null
-  notes: '[auto-publish] bulk publish, no human review'
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
   pr_url: null

@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T01:39:46.228155+00:00'
+  ran_at: '2026-04-30T07:07:36.838463+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,45 +15,53 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"OpenAI" environmental donations report'
-  - OpenAI philanthropic giving environmental initiatives
-  - '"OpenAI" sustainability investments and partnerships'
-  planner_rationale: These queries aim to find direct evidence of OpenAI's financial
-    contributions to environmental causes. The first query searches for official reports,
-    the second focuses on their philanthropic activities, and the third looks for
-    specific investments and partnerships related to sustainability. Using quotes
-    ensures that the search engine looks for the exact phrase 'OpenAI'.
-  candidates_seen: 20
-  urls_kept: 11
-  urls_dropped: 9
+  - '"OpenAI" environmental donations financial reports'
+  - OpenAI sustainability initiatives independent analysis
+  - OpenAI environmental impact funding projects
+  planner_rationale: These queries aim to find verifiable information about OpenAI's
+    environmental contributions. The first query searches for official financial reports
+    that might detail donations. The second looks for independent analyses of OpenAI's
+    sustainability efforts, potentially uncovering details beyond what OpenAI publishes
+    itself. The third focuses on specific funding projects, searching for evidence
+    of OpenAI's involvement in environmental initiatives.
+  candidates_seen: 16
+  urls_kept: 12
+  urls_dropped: 3
   scorer_rationale: The claim is about OpenAI's donations to environmental causes.
-    Several articles discuss OpenAI's philanthropic initiatives, particularly the
-    $50 million People-First AI Fund and the OpenAI Foundation's commitment to nonprofits.
-    Other articles mention partnerships related to sustainable data centers and green
-    energy initiatives. Some articles touch on OpenAI's financial contributions to
-    political causes, but these are not directly relevant to environmental donations.
-    I've prioritized articles that explicitly discuss funding or initiatives related
-    to environmental efforts.
+    Candidates 1, 2, 3, 4, 5, 9, 10, 11, 12, 13, 14, and 15 directly mention OpenAI's
+    sustainability initiatives, charitable giving, or environmental impact, making
+    them relevant. Candidate 6 discusses the environmental impact of OpenAI's AI models.
+    Candidate 7 discusses OpenAI's financial sustainability which is tangentially
+    related. Candidate 8 discusses OpenAI's environmental responsibility. Candidate
+    16 discusses reducing AI's carbon footprint, which is relevant to environmental
+    impact. Candidate 17 is about OpenAI's newly launched Sora 2 and its environmental
+    impact which is directly relevant. Candidate 18 discusses OpenAI's green initiatives
+    which is relevant. Candidate 19 is a general article about reducing the carbon
+    footprint of AI including OpenAI, Apple, and Google.
   urls_after_blocklist: 4
 sources_consulted:
-- id: 2025/environmental-impact-of-ai
-  url: https://academy.openai.com/public/clubs/higher-education-05x4z/resources/environmental-impact-of-ai
-  title: Environmental Impact of AI
+- id: 2026/openai-nonprofit-commission-report
+  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
+  title: The OpenAI Nonprofit Commission Report
   ingested: true
-- id: 2026/ai-energy-environment-democracy
-  url: https://www.greenpeace.org/international/story/82486/ai-energy-environment-democracy/
-  title: The energy and environmental impact of AI and how it undermines democracy
+- id: 2026/openai-inc-nonprofit-explorer
+  url: https://projects.propublica.org/nonprofits/organizations/810861541
+  title: Openai Inc
+  ingested: true
+- id: 2023/sustainable-development-and-ai
+  url: https://community.openai.com/t/sustainable-development-and-ai/377448
+  title: Sustainable development and AI
   ingested: true
 audit:
   analyst_verdict: unverified
-  auditor_verdict: unverified
+  auditor_verdict: 'true'
   analyst_confidence: medium
   auditor_confidence: high
-  verdict_agrees: true
+  verdict_agrees: false
   confidence_agrees: false
-  needs_review: false
+  needs_review: true
 human_review:
-  reviewed_at: '2026-04-29'
-  reviewer: null
-  notes: '[auto-publish] bulk publish, no human review'
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
   pr_url: null

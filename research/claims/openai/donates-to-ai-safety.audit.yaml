@@ -1,0 +1,54 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:06:53.242258+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"OpenAI" "AI safety donations" report'
+  - OpenAI funding AI safety initiatives independent analysis
+  - OpenAI philanthropic giving AI safety
+  planner_rationale: These queries aim to find evidence of OpenAI's financial contributions
+    to AI safety. The first query looks for official reports, the second seeks independent
+    analysis of their funding, and the third uses 'philanthropic giving' as a broader
+    term to capture potential donations.
+  candidates_seen: 16
+  urls_kept: 16
+  urls_dropped: 0
+  scorer_rationale: The query asks if OpenAI donates to AI safety causes. All the
+    URLs mention OpenAI funding or initiatives related to AI safety research, fellowships,
+    grants, or the OpenAI Safety Fellowship. Therefore, all candidates are relevant.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/openai-safety-fellowship-2026
+  url: https://blockchain.news/ainews/openai-safety-fellowship-announced-funding-independent-ai-safety-and-alignment-research-in-2026
+  title: 'OpenAI Safety Fellowship Announced: Funding Independent AI Safety and Alignment
+    Research in 2026'
+  ingested: true
+- id: 2026/openai-safety-fellowship
+  url: https://thenextweb.com/news/openai-safety-fellowship
+  title: OpenAI launched a safety fellowship
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

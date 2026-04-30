@@ -1,0 +1,61 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:37:22.036764+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - Brave Software environmental donations report
+  - Brave Software sustainability initiatives
+  - Brave Software charitable giving environmental impact
+  planner_rationale: 'These queries aim to find official reports or articles detailing
+    Brave Software''s financial contributions and environmental programs. The variations
+    target different aspects of the claim: a direct report, general sustainability
+    efforts, and the impact of charitable donations.'
+  candidates_seen: 21
+  urls_kept: 12
+  urls_dropped: 8
+  scorer_rationale: The claim is that Brave Software donates to environmental causes.
+    Several candidates mention donations or environmental initiatives, such as Brave's
+    partnership with Ecosia, donations from users of Brave Rewards, and Brave's sustainability
+    reports. Other candidates are related to Brave's funding, technology, or other
+    aspects of the company, making them less relevant. I've included those with clear
+    mentions of donations, sustainability reports, or environmental impact in the
+    'kept' list.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/brave-new-software-project-inc
+  url: https://projects.propublica.org/nonprofits/organizations/273272909
+  title: Brave New Software Project Inc
+  ingested: true
+- id: 2026/transparency-data-feed
+  url: https://brave.com/transparency/
+  title: Transparency Data Feed
+  ingested: true
+- id: 2022/crypto-philanthropy-force-for-good
+  url: https://brave.com/podcast/s4-e5/
+  title: 'Crypto Philanthropy: Using Crypto as a Force for Good'
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

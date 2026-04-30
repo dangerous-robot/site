@@ -1,0 +1,67 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:42:40.493905+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Brave Leo" energy sourcing transparency report'
+  - Independent analysis of "Brave Leo" energy sources
+  - '"Brave Leo" renewable energy certifications and data'
+  planner_rationale: These queries aim to find direct disclosures from Brave Leo about
+    their energy sources (first query), analyses conducted by external organizations
+    regarding their energy practices (second query), and verifiable data related to
+    their energy usage, specifically focusing on renewable sources and certifications
+    (third query).
+  candidates_seen: 18
+  urls_kept: 18
+  urls_dropped: 0
+  scorer_rationale: The task is to score the relevance of each candidate to the claim
+    "Brave Leo discloses its energy sourcing". The claim asks about the energy source
+    used by Brave Leo. Several candidates discuss the technology used, specifically
+    Trusted Execution Environments (TEEs) and the use of Near AI, but none directly
+    state the energy source. Some candidates mention the underlying models (Mixtral
+    8x7B), but not its energy consumption. The best candidates provide the most detail
+    about the underlying technology and the providers involved. Therefore, scores
+    range from 3 to 4 for candidates mentioning TEEs and providers like Near AI.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/browser-ai-tee
+  url: https://brave.com/blog/browser-ai-tee/
+  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
+  ingested: true
+- id: 2025/brave-leo-cryptographic-privacy
+  url: https://cyberinsider.com/braves-ai-assistant-leo-now-offers-cryptographically-proven-privacy/
+  title: Brave’s AI assistant Leo now offers cryptographically proven privacy
+  ingested: true
+- id: 2025/brave-leo-trusted-execution-environments
+  url: https://www.theregister.com/2025/11/22/brave_leo_trusted_execution_environment/
+  title: Brave AI assistant Leo adds Trusted Execution Environments
+  ingested: true
+- id: 2025/brave-leo-deep-dive
+  url: https://www.eesel.ai/blog/brave-leo
+  title: 'Brave Leo: A deep dive into the browser AI assistant'
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

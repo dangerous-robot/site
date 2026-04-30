@@ -1,14 +1,15 @@
 ---
-title: OpenAI has one of (publicly-traded, privately-held, non-profit, B-corp, employee-owned,
-  steward-ownership, cooperative) corporate structure
+title: OpenAI is a privately‑held public benefit corporation
 entity: companies/openai
-topics: [industry-analysis]
-verdict: unverified
-confidence: low
+topics:
+- industry-analysis
+verdict: 'true'
+confidence: medium
 criteria_slug: corporate-structure
-status: blocked
-blocked_reason: terminal_fetch_error
-as_of: '2026-04-29'
-sources: []
+status: published
+as_of: '2026-04-30'
+sources:
+- 2025/openai-california-ag-mou
+- 2025/openai-corporate-structure-legal-future
 ---
-This claim is blocked: `terminal_fetch_error`. The pipeline halted before the Analyst could produce a verdict. Re-run the pipeline once more usable sources are available, or archive this claim if it cannot be verified.
+OpenAI’s current corporate form is a public benefit corporation (PBC), a type of for‑profit entity that is privately held and includes a statutory public‑benefit purpose. This structure is explicitly described in the analysis "OpenAI’s New Corporate Structure Sets Up a Tangled Legal Future, Experts Say," which notes that OpenAI transitioned from a capped‑profit LLC to a PBC to attract investment while retaining its mission focus. As a PBC, OpenAI is not publicly traded, nor is it a non‑profit, B‑Corp certification, employee‑owned cooperative, steward‑ownership model, or traditional cooperative. Therefore, among the listed categories, OpenAI fits the "privately‑held" classification.

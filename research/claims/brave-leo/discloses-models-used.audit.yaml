@@ -1,0 +1,63 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T07:41:42.383095+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Brave Leo" model disclosure policy'
+  - Brave Leo transparency report models
+  - Independent analysis of Brave Leo's model usage
+  planner_rationale: These queries aim to find official disclosures from Brave Leo
+    regarding the models it utilizes. The first query searches for a specific policy
+    document. The second targets a transparency report, which often details technical
+    aspects like model usage. The third seeks independent evaluations or analyses
+    of Brave Leo's model choices, potentially uncovering information not readily available
+    from the company itself.
+  candidates_seen: 17
+  urls_kept: 10
+  urls_dropped: 5
+  scorer_rationale: The claim is 'Brave Leo discloses which models it uses'. Several
+    articles directly address the models used (Mixtral, LLaMA 2, Claude). Articles
+    on privacy and transparency also mention the model selection process. Articles
+    about the roadmap also indicate different models are used. The rest of the articles
+    are either too general (how to use), focus on privacy without mentioning models,
+    or are about related but not directly relevant aspects.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/verifiable-privacy-transparency-brave-ai
+  url: 'https://brave.com/blog/Verifiable Privacy and Transparency: A new frontier
+    for Brave AI privacy | Brave'
+  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
+  ingested: true
+- id: 2024/leo-android
+  url: https://brave.com/blog/leo-android/
+  title: Leo—Brave’s privacy-preserving AI assistant—now available on Android
+  ingested: true
+- id: 2025/brave-leo-cryptographic-privacy
+  url: https://cyberinsider.com/braves-ai-assistant-leo-now-offers-cryptographically-proven-privacy/
+  title: Brave’s AI assistant Leo now offers cryptographically proven privacy
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-04-30'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
