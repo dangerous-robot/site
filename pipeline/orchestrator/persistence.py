@@ -40,12 +40,14 @@ def _entity_frontmatter(
     aliases: list[str] | None = None,
     status: str | None = None,
 ) -> dict:
+    # Ensure description is never empty -- the linter rejects blank required strings.
+    description = entity_description.strip() or f"{entity_name} ({entity_type.value})."
     return {
         "name": entity_name,
         "type": entity_type,
         "website": website,
         "aliases": aliases or None,
-        "description": entity_description,
+        "description": description,
         "status": status,
     }
 

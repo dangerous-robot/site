@@ -90,10 +90,12 @@ async function walkMdFiles(dir: string, base: string = dir): Promise<string[]> {
 const claims = defineCollection({
   loader: {
     name: 'claims-with-audit',
-    load: async ({ store, parseData, generateDigest, renderMarkdown }) => {
+    load: async ({ store, parseData, generateDigest, renderMarkdown, watcher }) => {
       store.clear();
 
       const claimsBase = nodePath.resolve('research/claims');
+
+      watcher?.add(claimsBase);
       const mdFiles = await walkMdFiles(claimsBase);
 
       for (const relPath of mdFiles) {
@@ -172,7 +174,7 @@ const claims = defineCollection({
     // progress; absent on terminal states. See docs/plans/claim-lifecycle-states.md.
     phase: z.enum(['researching', 'ingesting', 'analyzing', 'evaluating']).optional(),
     // Set together with status='blocked' to record why the pipeline halted.
-    blocked_reason: z.enum(['insufficient_sources', 'terminal_fetch_error']).optional(),
+    blocked_reason: z.enum(['insufficient_sources', 'terminal_fetch_error', 'analyst_error']).optional(),
     as_of: z.coerce.date(),
     sources: z.array(z.string()),
     recheck_cadence_days: z.number().default(60),
