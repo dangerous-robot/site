@@ -93,6 +93,7 @@ class Phase(str, Enum):
 class BlockedReason(str, Enum):
     INSUFFICIENT_SOURCES = "insufficient_sources"
     TERMINAL_FETCH_ERROR = "terminal_fetch_error"
+    ANALYST_ERROR = "analyst_error"
 
 
 class Category(str, Enum):

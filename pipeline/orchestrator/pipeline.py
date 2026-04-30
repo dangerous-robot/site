@@ -930,8 +930,50 @@ async def onboard_entity(
                         )
                         continue
 
+                    # Analyst-failure branch: persist a placeholder so the
+                    # operator has a discoverable artifact to re-run or archive.
                     if not vr.analyst_output:
-                        result.claims_failed.append(slug)
+                        source_ids = (
+                            _write_source_files(vr.source_files, repo_root)
+                            if vr.source_files
+                            else []
+                        )
+                        try:
+                            inherited_topics = [Category(t) for t in template.topics]
+                        except ValueError:
+                            inherited_topics = []
+                        blocked_body = (
+                            f"This claim is blocked: `{BlockedReason.ANALYST_ERROR.value}`. "
+                            f"The Analyst agent failed to produce a valid assessment after "
+                            f"exhausting retries. Re-run the pipeline to attempt again, "
+                            f"or archive this claim if it consistently fails.\n"
+                        )
+                        blocked_path = _write_claim_file(
+                            title=claim_text,
+                            entity_name=entity_name,
+                            entity_ref=entity_ref,
+                            topics=inherited_topics,
+                            verdict=Verdict.UNVERIFIED,
+                            confidence=Confidence.LOW,
+                            narrative=blocked_body,
+                            claim_slug=slug,
+                            source_ids=source_ids,
+                            repo_root=repo_root,
+                            force=iter_cfg.force_overwrite,
+                            status="blocked",
+                            blocked_reason=BlockedReason.ANALYST_ERROR,
+                            criteria_slug=slug,
+                        )
+                        result.claims_created.append(
+                            str(blocked_path.relative_to(repo_root))
+                        )
+                        progress(
+                            "[%d/%d] Blocked: %s (%s)",
+                            idx,
+                            total,
+                            slug,
+                            BlockedReason.ANALYST_ERROR.value,
+                        )
                         continue
 
                     # Write sources (reuse verify_claim's already-ingested sources)

@@ -34,7 +34,7 @@ Confidence describes the strength of the evidence base, independent of which ver
 
 For `unverified` specifically: confidence reflects how thoroughly the search circled the claim. `unverified + high` = broad search, lots of related material, the gap in dispositive evidence is real. `unverified + low` = search was thin or sources were weak; a deeper rerun might still resolve it.
 
-CATEGORIES:
+TOPICS:
 - ai-safety, environmental-impact, product-comparison, consumer-guide,
   ai-literacy, data-privacy, industry-analysis, regulation-policy
 
