@@ -1,10 +1,10 @@
 ---
-title: ChatGPT discloses which models it uses
-entity: products/chatgpt
+title: OpenAI donates to AI safety causes
+entity: companies/openai
 topics: [ai-safety]
 verdict: unverified
 confidence: low
-criteria_slug: discloses-models-used
+criteria_slug: donates-to-ai-safety
 status: blocked
 blocked_reason: terminal_fetch_error
 as_of: '2026-04-29'

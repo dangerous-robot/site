@@ -1,10 +1,11 @@
 ---
-title: ChatGPT discloses which models it uses
-entity: products/chatgpt
-topics: [ai-safety]
+title: OpenAI has one of (publicly-traded, privately-held, non-profit, B-corp, employee-owned,
+  steward-ownership, cooperative) corporate structure
+entity: companies/openai
+topics: [industry-analysis]
 verdict: unverified
 confidence: low
-criteria_slug: discloses-models-used
+criteria_slug: corporate-structure
 status: blocked
 blocked_reason: terminal_fetch_error
 as_of: '2026-04-29'

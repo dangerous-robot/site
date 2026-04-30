@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-29T09:55:14.820260+00:00'
+  ran_at: '2026-04-30T01:39:46.228155+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -16,47 +16,44 @@ research:
   mode: decomposed
   queries:
   - '"OpenAI" environmental donations report'
-  - '"OpenAI" philanthropic giving environmental initiatives'
-  - '"OpenAI" sustainability investments impact analysis'
-  planner_rationale: These queries aim to find official reports, news articles, and
-    independent analyses regarding OpenAI's financial contributions to environmental
-    causes. The queries vary in their phrasing to capture different types of information,
-    from direct donation reports to broader sustainability investments and impact
-    assessments. Using quotes ensures the search engine looks for the exact phrase,
-    focusing on OpenAI's involvement.
-  candidates_seen: 18
-  urls_kept: 17
-  urls_dropped: 0
-  scorer_rationale: The prompt asks to score the relevance of search result candidates
-    to the claim 'OpenAI donates to environmental causes'. I have scored each candidate
-    based on the title and snippet only. The scoring scale is 5 (directly addresses),
-    4 (clearly relevant), 3 (possibly relevant), 2 (tangentially related), and 1 (not
-    relevant). I have kept all URLs with a score of 3 or higher, and dropped the rest.
-    All URLs are present in either the kept or dropped list.
+  - OpenAI philanthropic giving environmental initiatives
+  - '"OpenAI" sustainability investments and partnerships'
+  planner_rationale: These queries aim to find direct evidence of OpenAI's financial
+    contributions to environmental causes. The first query searches for official reports,
+    the second focuses on their philanthropic activities, and the third looks for
+    specific investments and partnerships related to sustainability. Using quotes
+    ensures that the search engine looks for the exact phrase 'OpenAI'.
+  candidates_seen: 20
+  urls_kept: 11
+  urls_dropped: 9
+  scorer_rationale: The claim is about OpenAI's donations to environmental causes.
+    Several articles discuss OpenAI's philanthropic initiatives, particularly the
+    $50 million People-First AI Fund and the OpenAI Foundation's commitment to nonprofits.
+    Other articles mention partnerships related to sustainable data centers and green
+    energy initiatives. Some articles touch on OpenAI's financial contributions to
+    political causes, but these are not directly relevant to environmental donations.
+    I've prioritized articles that explicitly discuss funding or initiatives related
+    to environmental efforts.
   urls_after_blocklist: 4
 sources_consulted:
+- id: 2025/environmental-impact-of-ai
+  url: https://academy.openai.com/public/clubs/higher-education-05x4z/resources/environmental-impact-of-ai
+  title: Environmental Impact of AI
+  ingested: true
 - id: 2026/ai-energy-environment-democracy
   url: https://www.greenpeace.org/international/story/82486/ai-energy-environment-democracy/
   title: The energy and environmental impact of AI and how it undermines democracy
   ingested: true
-- id: 2023/sustainable-development-and-ai
-  url: https://community.openai.com/t/sustainable-development-and-ai/377448
-  title: Sustainable development and AI
-  ingested: true
-- id: 2024/hidden-environmental-costs-ai-investments
-  url: https://blogs.cfainstitute.org/investor/2024/10/31/the-hidden-environmental-costs-of-tech-giants-ai-investments/
-  title: The Hidden Environmental Costs of Tech Giants’ AI Investments
-  ingested: true
 audit:
   analyst_verdict: unverified
-  auditor_verdict: 'true'
+  auditor_verdict: unverified
   analyst_confidence: medium
   auditor_confidence: high
-  verdict_agrees: false
+  verdict_agrees: true
   confidence_agrees: false
-  needs_review: true
+  needs_review: false
 human_review:
-  reviewed_at: null
+  reviewed_at: '2026-04-29'
   reviewer: null
-  notes: null
+  notes: '[auto-publish] bulk publish, no human review'
   pr_url: null

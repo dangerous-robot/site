@@ -1,0 +1,67 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-04-30T01:40:30.958680+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - ChatGPT hosting renewable energy sources
+  - OpenAI ChatGPT infrastructure energy consumption renewable
+  - ChatGPT environmental impact energy source report
+  planner_rationale: These queries aim to find information about the energy sources
+    used to host ChatGPT. The first is a general search, the second focuses on OpenAI's
+    infrastructure and mentions renewable energy directly. The third seeks reports
+    that analyze ChatGPT's environmental impact with a specific focus on its energy
+    source.
+  candidates_seen: 23
+  urls_kept: 21
+  urls_dropped: 0
+  scorer_rationale: The prompt asks to score the relevance of search results to the
+    claim that ChatGPT is hosted on renewable energy. I've analyzed each candidate
+    based on its title and snippet, focusing on whether it directly addresses or provides
+    evidence related to the hosting of ChatGPT on renewable energy sources. Candidates
+    discussing the use of renewable energy in AI generally, or the environmental impact
+    of ChatGPT, are considered relevant. Candidates focusing on specific details like
+    energy consumption, water usage, or carbon footprint are also relevant. The candidates
+    that are not directly relevant are dropped.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/renewable-energy-gpt
+  url: https://chatgpt.com/g/g-WvMVuNHoF-renewable-energy
+  title: Renewable Energy
+  ingested: true
+- id: 2023/chatgpt-energy-industry-efficiency
+  url: https://aicontentfy.com/en/blog/chatgpt-in-energy-industry-efficiency-and-sustainability
+  title: 'ChatGPT in the Energy Industry: Efficiency and Sustainability'
+  ingested: true
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
+  ingested: true
+- id: 2026/chatgpt-energy-ethics-discussion
+  url: https://www.reddit.com/r/OpenAI/comments/1dqm7bu/is_it_ethical_to_use_chatgpt_despite_its_energy/
+  title: Is it Ethical to Use ChatGPT Despite Its Energy Consumption?
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-04-29'
+  reviewer: null
+  notes: '[auto-publish] bulk publish, no human review'
+  pr_url: null

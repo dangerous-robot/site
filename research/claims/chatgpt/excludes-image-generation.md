@@ -1,16 +1,17 @@
 ---
-title: ChatGPT includes built-in image generation
+title: ChatGPT offers image generation with tiered limits
 entity: products/chatgpt
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'false'
 confidence: high
 criteria_slug: excludes-image-generation
-status: draft
+status: published
 as_of: '2026-04-29'
 sources:
-- 2025/chatgpt-vs-gpt-image-1-quality
-- 2026/openai-chatgpt-images-2-0
-- 2026/chatgpt-images-2-text-generation
-- 2025/chatgpt-plus-image-generation-limits
+- 2026/chatgpt-image-generation-limit-query
+- 2025/chatgpt-free-image-generation-limit
+- 2025/openai-gpu-limits-image-generation
+- 2024/chatgpt-free-account-limits
 ---
-Multiple independent sources confirm that ChatGPT can generate images. OpenAI announced the release of **ChatGPT Images 2.0**, which adds multi-image generation, customizable aspect ratios, and improved text rendering within the ChatGPT interface【OpenAI Beefs Up ChatGPT’s Image Generation Model】. TechCrunch also reports that the Images 2.0 model is integrated into ChatGPT and can produce accurate text and complex layouts【ChatGPT's new Images 2.0 model is surprisingly good at generating text】. A usage guide for ChatGPT Plus documents explicit daily and per-window image generation limits, indicating that the feature is actively available to users【How Many Images Can I Generate with ChatGPT 5.1 / 5.0 Plus?】. Although Source 1 discusses quality differences between the web UI and the API, it still references image generation via the **gpt-image-1** model, confirming the capability exists. Therefore, the claim that "ChatGPT excludes image generation" is contradicted by the evidence.
+The claim that ChatGPT excludes image generation is contradicted by multiple sources. Both the free and paid tiers of ChatGPT provide access to DALL·E 3 image generation, though usage is limited. The free plan allows roughly two to three images per 24‑hour rolling window (YingTu, "ChatGPT Free Plan Image Generation Limit: Complete 2025 Guide"). TechRadar reports a temporary limit of three images per day for free‑tier users due to GPU constraints (TechRadar, "‘Our GPUs are melting’ – OpenAI puts limits on image creation and delays rollout to free accounts"). An OpenAI Developer Community post also notes free users can create up to two images per day (OpenAI Developer Community, "Image and Text Message Limits on ChatGPT Free account"). Thus, image generation is a supported feature of ChatGPT, not excluded.

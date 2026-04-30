@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-29T09:58:31.411818+00:00'
+  ran_at: '2026-04-30T01:44:24.451454+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,51 +15,52 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - ChatGPT limitations text vs image generation OpenAI
-  - OpenAI ChatGPT API documentation image capabilities
-  - independent analysis ChatGPT text-only functionality
-  planner_rationale: These queries aim to verify if ChatGPT explicitly states it does
-    not include image generation, examine the official API documentation for confirmation,
-    and find unbiased analyses of the model's capabilities, specifically focusing
-    on its text-only nature.
-  candidates_seen: 24
-  urls_kept: 23
+  - ChatGPT limitations text generation image capabilities
+  - OpenAI ChatGPT official documentation image generation
+  - independent analysis ChatGPT image generation functionality
+  planner_rationale: These queries aim to verify if ChatGPT has inherent limitations
+    in image generation. The first targets official documentation for a definitive
+    answer. The second searches for independent analysis which may provide a broader
+    perspective. The third uses 'independent analysis' to avoid OpenAI-centric results
+    and focus on objective evaluations.
+  candidates_seen: 22
+  urls_kept: 17
   urls_dropped: 1
   scorer_rationale: The claim is that ChatGPT excludes image generation. Several articles
-    discuss ChatGPT's image generation capabilities, including limitations and improvements
-    to image generation models (GPT-4o, GPT-4, GPT Image 2). Some articles detail
-    API access, usage limits, and the technical aspects of image generation within
-    ChatGPT. One article discusses limitations on image generation requests. Another
-    details its use for text analysis. The LinkedIn article is about limitations and
-    does not directly relate to the claim.
+    discuss ChatGPT's image generation capabilities, limits, and updates to the image
+    generation model. Some articles directly mention limits on image generation (e.g.,
+    number of images per day/month). Others announce new image generation models and
+    improvements. One article discusses the limitations of DALL-E. The LinkedIn article
+    does not seem relevant to the claim.
   urls_after_blocklist: 4
 sources_consulted:
-- id: 2025/chatgpt-vs-gpt-image-1-quality
-  url: https://community.openai.com/t/chatgpt-image-generation-vs-openai-gpt-image-1-quality-and-text/1252035
-  title: Chatgpt image generation vs openai gpt-image-1 quality and text?
+- id: 2026/chatgpt-image-generation-limit-query
+  url: https://www.reddit.com/r/ChatGPTPro/comments/1jv20nh/whats_the_image_generation_limit_in_chatgpt_with/
+  title: What's the image generation limit in ChatGPT with the $20 plan?
   ingested: true
-- id: 2026/openai-chatgpt-images-2-0
-  url: https://www.wired.com/story/openai-beefs-up-chatgpts-image-generation-model/
-  title: OpenAI Beefs Up ChatGPT’s Image Generation Model
+- id: 2025/chatgpt-free-image-generation-limit
+  url: https://yingtu.ai/en/blog/chatgpt-free-image-generation-limit-complete-guide
+  title: 'ChatGPT Free Plan Image Generation Limit: Complete 2025 Guide'
   ingested: true
-- id: 2026/chatgpt-images-2-text-generation
-  url: https://techcrunch.com/2026/04/21/chatgpts-new-images-2-0-model-is-surprisingly-good-at-generating-text/
-  title: ChatGPT's new Images 2.0 model is surprisingly good at generating text
+- id: 2025/openai-gpu-limits-image-generation
+  url: https://www.techradar.com/computing/artificial-intelligence/our-gpus-are-melting-openai-puts-limits-on-image-creation-and-delays-rollout-to-free-accounts
+  title: ‘Our GPUs are melting’ – OpenAI puts limits on image creation and delays
+    rollout to free accounts
   ingested: true
-- id: 2025/chatgpt-plus-image-generation-limits
-  url: https://www.glbgpt.com/hub/how-many-images-can-i-generate-with-chatgpt-5-1-5-0-plus-2025-full-guide/
-  title: How Many Images Can I Generate with ChatGPT 5.1 / 5.0 Plus?
+- id: 2024/chatgpt-free-account-limits
+  url: https://community.openai.com/t/image-and-text-message-limits-on-chatgpt-free-account/950207
+  title: Image and Text Message Limits on ChatGPT Free account
   ingested: true
 audit:
   analyst_verdict: 'false'
-  auditor_verdict: 'false'
+  auditor_verdict: mostly-true
   analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
 human_review:
-  reviewed_at: null
+  reviewed_at: '2026-04-29'
   reviewer: null
-  notes: null
+  notes: '[auto-publish] bulk publish, no human review'
   pr_url: null

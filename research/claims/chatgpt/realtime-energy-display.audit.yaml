@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-29T09:57:58.285115+00:00'
+  ran_at: '2026-04-30T01:43:54.499369+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,22 +15,20 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - ChatGPT energy consumption real-time data source
-  - ChatGPT power usage analysis independent report
-  - ChatGPT energy efficiency benchmark comparison
-  planner_rationale: These queries aim to find data or analyses regarding ChatGPT's
-    energy usage. The first focuses on direct data sources. The second looks for independent
-    reports/analyses to potentially offer verification or refute claims about real-time
-    energy usage. The third searches for comparative benchmarks to understand how
-    ChatGPT's energy efficiency stacks up against other models.
-  candidates_seen: 14
-  urls_kept: 13
-  urls_dropped: 1
-  scorer_rationale: The provided list includes articles discussing ChatGPT's energy
-    consumption. The URLs with scores 3 and above directly address the claim of ChatGPT
-    displaying real-time energy usage or provide data/estimates related to its energy
-    consumption per query or training. The URLs that were dropped do not directly
-    address the claim, or are too tangential.
+  - ChatGPT energy consumption real-time data
+  - ChatGPT OpenAI energy usage metrics
+  - Independent analysis ChatGPT computational cost
+  planner_rationale: The queries aim to find verifiable data about ChatGPT's energy
+    usage. The first query seeks direct data or reports on real-time energy consumption.
+    The second targets OpenAI, the developer, looking for official metrics or disclosures.
+    The third seeks independent analysis to provide an unbiased assessment of the
+    computational resources required to run ChatGPT, which can be inferred as energy
+    usage.
+  candidates_seen: 17
+  urls_kept: 17
+  urls_dropped: 0
+  scorer_rationale: All the provided URLs discuss the energy consumption and cost
+    of running ChatGPT, directly addressing the claim. Therefore, all URLs are kept.
   urls_after_blocklist: 4
 sources_consulted:
 - id: 2025/chatgpt-energy-consumption-visualized
@@ -45,21 +43,16 @@ sources_consulted:
   url: https://spectrum.ieee.org/ai-energy-use
   title: How Much Energy Does It Take to Power Billions of AI Queries?
   ingested: true
-- id: 2024/chatgpt-electricity-consumption-analysis
-  url: https://www.bestbrokers.com/forex-brokers/ais-power-demand-calculating-chatgpts-electricity-consumption-for-handling-over-78-billion-user-queries-every-year/
-  title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption for handling
-    1.17 trillion user queries every year'
-  ingested: true
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: high
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
   auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
 human_review:
-  reviewed_at: null
+  reviewed_at: '2026-04-29'
   reviewer: null
-  notes: null
+  notes: '[auto-publish] bulk publish, no human review'
   pr_url: null
