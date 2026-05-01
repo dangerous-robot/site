@@ -10,6 +10,7 @@ from common.templates import (
     TemplateRecord,
     get_template,
     load_templates,
+    render_blocked_title,
     render_claim_text,
     templates_for_entity_type,
 )
@@ -156,6 +157,58 @@ class TestRenderClaimText:
         assert "STRUCTURE" in t.vocabulary
         assert "B-corp" in t.vocabulary["STRUCTURE"]
 
+class TestRenderBlockedTitle:
+    def test_substitutes_entity_name(self) -> None:
+        template = TemplateRecord(
+            slug="corporate-structure",
+            text="COMPANY has STRUCTURE corporate structure",
+            entity_type="company",
+            topics=["industry-analysis"],
+            core=True,
+            notes="test",
+            vocabulary={"STRUCTURE": ["publicly-traded", "non-profit", "B-corp"]},
+        )
+        result = render_blocked_title(template, "Microsoft")
+        assert result == "Microsoft has STRUCTURE corporate structure"
+
+    def test_leaves_vocabulary_slot_unexpanded(self) -> None:
+        template = TemplateRecord(
+            slug="corporate-structure",
+            text="COMPANY has STRUCTURE corporate structure",
+            entity_type="company",
+            topics=["industry-analysis"],
+            core=True,
+            notes="test",
+            vocabulary={"STRUCTURE": ["publicly-traded", "non-profit"]},
+        )
+        result = render_blocked_title(template, "OpenAI")
+        assert "one of" not in result
+        assert "STRUCTURE" in result
+
+    def test_no_vocabulary_behaves_like_render_claim_text(self) -> None:
+        template = TemplateRecord(
+            slug="publishes-sustainability-report",
+            text="COMPANY publishes a sustainability or ESG report",
+            entity_type="company",
+            topics=["environmental-impact"],
+            core=True,
+            notes="test",
+        )
+        assert render_blocked_title(template, "Anthropic") == render_claim_text(template, "Anthropic")
+
+    def test_product_entity_type(self) -> None:
+        template = TemplateRecord(
+            slug="renewable-energy-hosting",
+            text="PRODUCT is hosted on renewable energy",
+            entity_type="product",
+            topics=["environmental-impact"],
+            core=True,
+            notes="test",
+        )
+        assert render_blocked_title(template, "ChatGPT") == "ChatGPT is hosted on renewable energy"
+
+
+class TestTemplateIsFrozen:
     def test_template_is_frozen(self) -> None:
         template = TemplateRecord(
             slug="test",

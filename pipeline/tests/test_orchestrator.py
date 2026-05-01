@@ -225,14 +225,14 @@ class TestVerifyConfigTimeouts:
         """Default VerifyConfig exposes the four timeout knobs.
 
         Wayback is on by default, so ingest_timeout_s is auto-bumped to the
-        wayback-inclusive budget; the other three stay at 60s.
+        wayback-inclusive budget; the other three default to 120s.
         """
         cfg = VerifyConfig()
         assert cfg.skip_wayback is False
         assert cfg.ingest_timeout_s >= 85
-        assert cfg.research_timeout_s == 60.0
-        assert cfg.analyst_timeout_s == 60.0
-        assert cfg.auditor_timeout_s == 60.0
+        assert cfg.research_timeout_s == 120.0
+        assert cfg.analyst_timeout_s == 120.0
+        assert cfg.auditor_timeout_s == 120.0
 
     def test_verify_config_autobumps_ingest_when_wayback_enabled(self) -> None:
         """With skip_wayback=False and no explicit ingest_timeout_s, auto-bump to >=85s.
@@ -289,11 +289,17 @@ class TestThresholdEnforcement:
     def test_below_threshold_returns_true_for_one_source(self) -> None:
         assert below_threshold(["only-one"]) is True
 
-    def test_below_threshold_returns_false_for_two_sources(self) -> None:
-        assert below_threshold(["a", "b"]) is False
+    def test_below_threshold_returns_true_for_two_sources(self) -> None:
+        assert below_threshold(["a", "b"]) is True
+
+    def test_below_threshold_returns_true_for_three_sources(self) -> None:
+        assert below_threshold(["a", "b", "c"]) is True
+
+    def test_below_threshold_returns_false_for_four_sources(self) -> None:
+        assert below_threshold(["a", "b", "c", "d"]) is False
 
     def test_below_threshold_returns_false_for_many_sources(self) -> None:
-        assert below_threshold(["a", "b", "c", "d"]) is False
+        assert below_threshold(["a", "b", "c", "d", "e"]) is False
 
     def test_classify_blocked_reason_terminal_when_all_http_errors(self) -> None:
         errors = [
@@ -321,7 +327,7 @@ class TestThresholdEnforcement:
     async def test_verify_claim_halts_when_one_source_ingested(
         self, monkeypatch
     ) -> None:
-        """With < 2 usable sources, verify_claim sets blocked_reason and skips Analyst.
+        """With < 4 usable sources, verify_claim sets blocked_reason and skips Analyst.
 
         We patch the internal _research and _ingest_urls helpers so the test
         exercises the threshold gate without hitting any model providers.
@@ -400,34 +406,37 @@ class TestThresholdEnforcement:
         assert result.analyst_output is None
 
     @pytest.mark.asyncio
-    async def test_verify_claim_does_not_halt_with_two_sources(
+    async def test_verify_claim_does_not_halt_with_four_sources(
         self, monkeypatch
     ) -> None:
-        """At threshold (>= 2 sources), the gate does not fire."""
-        sf1 = SourceFile(
-            frontmatter=SourceFrontmatter(
-                url="https://example.com/a", title="A", publisher="Ex",
-                accessed_date=datetime.date(2026, 4, 26), kind="article",
-                summary="A summary.",
-            ),
-            body="Body.", slug="a", year=2026,
-        )
-        sf2 = SourceFile(
-            frontmatter=SourceFrontmatter(
-                url="https://example.com/b", title="B", publisher="Ex",
-                accessed_date=datetime.date(2026, 4, 26), kind="article",
-                summary="A summary.",
-            ),
-            body="Body.", slug="b", year=2026,
-        )
+        """At threshold (>= 4 sources), the gate does not fire."""
+        def _make_sf(slug: str, url: str) -> SourceFile:
+            return SourceFile(
+                frontmatter=SourceFrontmatter(
+                    url=url, title=slug.upper(), publisher="Ex",
+                    accessed_date=datetime.date(2026, 4, 26), kind="article",
+                    summary="A summary.",
+                ),
+                body="Body.", slug=slug, year=2026,
+            )
+
+        sf1 = _make_sf("a", "https://example.com/a")
+        sf2 = _make_sf("b", "https://example.com/b")
+        sf3 = _make_sf("c", "https://example.com/c")
+        sf4 = _make_sf("d", "https://example.com/d")
 
         async def _fake_research(client, entity, claim, cfg, sem):
-            return ["https://example.com/a", "https://example.com/b"], [], {"mode": "test"}
+            return [
+                "https://example.com/a", "https://example.com/b",
+                "https://example.com/c", "https://example.com/d",
+            ], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
             return [
                 ("https://example.com/a", sf1),
                 ("https://example.com/b", sf2),
+                ("https://example.com/c", sf3),
+                ("https://example.com/d", sf4),
             ], []
 
         analyst_called = False

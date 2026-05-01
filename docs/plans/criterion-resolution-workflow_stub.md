@@ -2,7 +2,7 @@
 
 **Status**: Stub
 **Priority**: Follow-on to the publish-time criterion gate
-**Last updated**: 2026-04-27
+**Last updated**: 2026-04-30
 
 ## Context
 
@@ -45,6 +45,28 @@ A hybrid worth keeping in mind: the `c` action could call the normalizer in the 
 ## Singleton escape (manual only)
 
 Some claims genuinely don't generalize (one-off observations like "Anthropic published the Constitutional AI paper in Dec 2022"). For those, the operator should be able to set `criteria_slug: singleton` (or a named singleton like `singleton:anthropic-cai-paper-2022`) by hand — but no command should *offer* to set this for them. Automating singleton creation defeats the gate's purpose. Manual edit only; if the lint check needs special handling for singletons later, design that explicitly when the case actually arises.
+
+## Vocabulary claims: unresolvable placeholder → blocked
+
+Some criteria use a vocabulary placeholder in the claim text: "one of (A, B, C ...)". The analyst is expected to resolve the placeholder to whichever option the evidence supports and write the title accordingly. When no option can be supported, the current instructions have no defined behavior -- the analyst either invents a vacuous title ("has an undetermined X") or outputs the raw template form. Both are wrong.
+
+**Decision needed:** an unresolvable vocabulary claim should become `status: blocked`, not a drafted claim with a bad title.
+
+### Required pieces
+
+1. **Analyst signal.** The analyst instructions should tell the analyst to output a structured "unresolvable" flag (e.g., a boolean `vocabulary_unresolvable: true` on the assessment, or a sentinel string as the title) rather than attempting to write a title when no option is supported.
+
+2. **Orchestrator handling.** The orchestrator's `_handle_analyst_output` (or equivalent) checks for this flag and calls `_mark_claim_blocked(reason="vocabulary placeholder could not be resolved")` instead of writing a drafted claim file.
+
+3. **Review queue surfacing.** `dr review-queue` should show blocked vocabulary claims with their `blocked_reason` so the operator can decide: add more sources and re-run, or manually resolve the placeholder and re-queue.
+
+### What "unresolvable" means here
+
+This is distinct from `verdict: unverified`. `unverified` means sources were found, analyzed, and don't engage with the claim's central assertion -- a meaningful output. An unresolvable vocabulary claim means the analyst cannot produce a valid title at all, so no draft should be written. The blocking is about the *form* of the output, not the epistemic state of the evidence.
+
+### Out of scope for this section
+
+- The broader question of analyst authority to rewrite other parts of claim text (narrative wording, topic drift). That belongs in `analyst-decomposition_stub.md` under the narrative + title writer sub-decision.
 
 ## Out of scope for this stub
 

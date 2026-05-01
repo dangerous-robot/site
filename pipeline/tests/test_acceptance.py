@@ -217,7 +217,7 @@ async def test_full_pipeline_false_claim_smoke() -> None:
         claim_text=(
             "Anthropic only uses models that were trained on 100% renewable energy"
         ),
-        config=_cfg_from_env(max_sources=3),
+        config=_cfg_from_env(max_sources=5),
         checkpoint=AutoApproveCheckpointHandler(),
     )
 

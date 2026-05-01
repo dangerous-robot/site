@@ -83,9 +83,10 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
 # Subcommand groups for `dr --help`, ordered safest -> most destructive.
 # New commands not listed here fall into the "Other" bucket so they stay visible.
 _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
-    ("Read-only", ["lint", "reassess", "step-research", "verify"]),
+    ("Read-only (default) / --write to persist",
+     ["lint", "step-research", "step-ingest", "step-analyze", "step-audit", "verify"]),
     ("Creates new files (--force to overwrite existing)",
-     ["ingest", "onboard", "verify-claim"]),
+     ["onboard", "verify-claim"]),
     ("Modifies existing files in place",
      ["publish", "review", "review-queue"]),
 ]
@@ -245,6 +246,238 @@ def step_research(ctx: click.Context, entity: str, claim: str, llm_concurrency: 
     urls, errors, trace = asyncio.run(_run())
     error_msgs = [f"{e.step}/{e.error_type}: {e.message}" for e in errors]
     _print_research_trace(entity, claim, urls, error_msgs, trace)
+
+
+# --------------------------------------------------------------------------- #
+# dr step-ingest                                                                #
+# --------------------------------------------------------------------------- #
+
+@main.command("step-ingest")
+@click.argument("url")
+@click.option("--write", "do_write", is_flag=True, help="Write source file to disk (default: read-only, prints markdown)")
+@click.option("--force", is_flag=True, help="Overwrite existing source file; implies --write")
+@click.option("--skip-wayback", is_flag=True, help="Skip Wayback Machine lookup")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_wayback: bool, repo_root: str | None) -> None:
+    """Fetch a URL, structure via the ingestor agent, and print the result.
+
+    Default: read-only (prints Markdown). Use --write (or --force) to persist
+    to research/sources/<year>/<slug>.md.
+
+    Example:
+        dr step-ingest https://example.com/article
+        dr step-ingest https://example.com/article --write
+    """
+    logger.info("dr step-ingest: url=%s do_write=%s", url, do_write)
+
+    if not url.startswith(("http://", "https://")):
+        click.echo(f"Error: invalid URL: {url}", err=True)
+        sys.exit(1)
+
+    ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
+    _check_provider_api_keys(ingestor_model)
+
+    import datetime
+    import httpx
+    from common.content_loader import resolve_repo_root
+    from common.frontmatter import serialize_frontmatter
+    from common.source_classification import classify_source_type
+    from ingestor.agent import IngestorDeps, ingestor_agent
+    from ingestor.validation import validate_source_file
+
+    root_str: str
+    try:
+        root_str = repo_root or str(resolve_repo_root())
+    except Exception as exc:
+        click.echo(f"Error: Cannot determine repo root: {exc}", err=True)
+        sys.exit(2)
+
+    async def _run():
+        async with httpx.AsyncClient() as client:
+            deps = IngestorDeps(http_client=client, repo_root=root_str, skip_wayback=skip_wayback)
+            prompt = f"Ingest this URL and produce a SourceFile:\n\nURL: {url}\nToday's date: {deps.today.isoformat()}\n"
+            try:
+                with ingestor_agent.override(model=resolve_model(ingestor_model)):
+                    res = await asyncio.wait_for(ingestor_agent.run(prompt, deps=deps), timeout=120)
+            except asyncio.TimeoutError:
+                click.echo("Error: agent timed out after 120 seconds.", err=True)
+                return 1
+            except Exception as exc:
+                click.echo(f"Error: agent failed: {exc}", err=True)
+                return 1
+
+            sf = res.output
+            validation = validate_source_file(sf, url, root_str)
+            for w in validation.warnings:
+                click.echo(f"Warning: {w}", err=True)
+            if not validation.ok:
+                for e in validation.errors:
+                    click.echo(f"Validation error: {e}", err=True)
+                return 1
+
+            fm_dict = sf.frontmatter.model_dump(mode="python")
+            fm_dict["source_type"] = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
+            markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
+
+            if not (do_write or force):
+                click.echo(markdown)
+                return 0
+
+            target_dir = Path(root_str) / "research" / "sources" / str(sf.year)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_path = target_dir / f"{sf.slug}.md"
+            mode = "w" if force else "x"
+            try:
+                with open(target_path, mode, encoding="utf-8") as f:
+                    f.write(markdown)
+            except FileExistsError:
+                click.echo(f"Error: file already exists: {target_path} (use --force to overwrite)", err=True)
+                return 1
+
+            click.echo(f"Wrote {target_path}")
+            return 0
+
+    exit_code = asyncio.run(_run())
+    if exit_code:
+        sys.exit(exit_code)
+
+
+# --------------------------------------------------------------------------- #
+# dr step-analyze                                                               #
+# --------------------------------------------------------------------------- #
+
+@main.command("step-analyze")
+@click.option("--claim", "claim_ref", required=True,
+    help="Claim to re-analyze: entity/slug (e.g. microsoft/corporate-structure)")
+@click.option("--write", "do_write", is_flag=True,
+    help="Write analyst output to the claim file (default: read-only)")
+@click.option("--force", is_flag=True,
+    help="Overwrite existing claim file; implies --write")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def step_analyze(
+    ctx: click.Context,
+    claim_ref: str,
+    do_write: bool,
+    force: bool,
+    repo_root: str | None,
+) -> None:
+    """Re-run the analyst on an existing claim using its already-ingested sources.
+
+    Default: read-only (prints analyst output). Use --write (or --force) to
+    overwrite the claim file on disk.
+
+    Example:
+        dr step-analyze --claim microsoft/corporate-structure
+        dr step-analyze --claim microsoft/corporate-structure --write --force
+    """
+    logger.info("dr step-analyze: claim=%s do_write=%s force=%s", claim_ref, do_write, force)
+
+    analyst_model = ctx.obj.get("analyst_model") or ctx.obj["model"]
+    _check_provider_api_keys(analyst_model)
+
+    from common.content_loader import load_entity, load_source, resolve_repo_root
+    from common.frontmatter import parse_frontmatter
+    from common.templates import get_template, load_templates, render_claim_text
+    from orchestrator.pipeline import VerifyConfig, _analyse_claim
+    from orchestrator.persistence import _write_claim_file
+
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+    claims_dir = root / "research" / "claims"
+    claim_path = _resolve_claim_path(claim_ref, claims_dir)
+
+    if not claim_path.exists():
+        click.echo(f"Error: claim file not found: {claim_path}", err=True)
+        sys.exit(1)
+
+    text = claim_path.read_text(encoding="utf-8")
+    fm, _narrative = parse_frontmatter(text)
+
+    # Resolve entity
+    entity_fm, _ = load_entity(fm["entity"], root)
+    entity_name = entity_fm["name"]
+
+    # Reconstruct claim text: prefer re-rendering the template; fall back to title
+    claim_text: str
+    criteria_slug = fm.get("criteria_slug")
+    if criteria_slug:
+        try:
+            templates = load_templates(root)
+            template = get_template(templates, criteria_slug)
+            claim_text = render_claim_text(template, entity_name)
+        except (KeyError, ValueError):
+            claim_text = fm["title"]
+    else:
+        claim_text = fm["title"]
+
+    # Load sources
+    source_dicts: list[dict] = []
+    for sid in fm.get("sources") or []:
+        try:
+            src_fm, src_body = load_source(sid, root)
+            source_dicts.append({
+                "title": src_fm["title"],
+                "publisher": src_fm["publisher"],
+                "summary": src_fm["summary"],
+                "key_quotes": src_fm.get("key_quotes") or [],
+                "body": src_body,
+                "slug": sid.split("/")[-1],
+                "url": src_fm.get("url", ""),
+            })
+        except FileNotFoundError:
+            click.echo(f"Warning: source '{sid}' not found, skipping", err=True)
+
+    cfg = VerifyConfig(model=ctx.obj["model"], **_ctx_per_agent_kwargs(ctx))
+
+    async def _run():
+        return await _analyse_claim(entity_name, claim_text, source_dicts, cfg)
+
+    analyst_out = asyncio.run(_run())
+
+    if analyst_out is None:
+        click.echo("Error: analyst agent failed to produce output.", err=True)
+        sys.exit(1)
+
+    # Always print the result
+    a = analyst_out
+    click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
+    click.echo(f"Title:      {a.verdict.title}")
+    click.echo(f"Topics:     {', '.join(t.value for t in a.verdict.topics)}")
+    click.echo(f"Verdict:    {a.verdict.verdict.value}")
+    click.echo(f"Confidence: {a.verdict.confidence.value}")
+    click.echo(f"Narrative:")
+    for line in a.verdict.narrative.strip().split("\n"):
+        click.echo(f"  {line}")
+
+    if not (do_write or force):
+        return
+
+    # Write claim file
+    entity_ref = fm["entity"]
+    claim_slug = claim_path.stem
+    source_ids = fm.get("sources") or []
+
+    try:
+        written_path = _write_claim_file(
+            title=a.verdict.title,
+            entity_name=entity_fm["name"],
+            entity_ref=entity_ref,
+            topics=a.verdict.topics,
+            verdict=a.verdict.verdict,
+            confidence=a.verdict.confidence,
+            narrative=a.verdict.narrative,
+            claim_slug=claim_slug,
+            source_ids=source_ids,
+            repo_root=root,
+            force=force,
+            status=fm.get("status", "draft"),
+            criteria_slug=criteria_slug,
+        )
+        click.echo(f"Wrote {written_path}")
+    except FileExistsError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
 
 
 # --------------------------------------------------------------------------- #
@@ -431,38 +664,44 @@ def verify_claim(ctx: click.Context, claim_text: str, max_sources: int, skip_way
 
 
 # --------------------------------------------------------------------------- #
-# dr reassess                                                                   #
+# dr step-audit  (formerly reassess)                                            #
 # --------------------------------------------------------------------------- #
 
-@main.command()
-@click.option("--claim", default=None, help="Check a single claim file")
-@click.option("--entity", default=None, help="Check all claims for an entity")
-@click.option("--topic", default=None, help="Check all claims with a given topic")
+@main.command("step-audit")
+@click.option("--claim", default=None, help="Audit a single claim file (entity/slug)")
+@click.option("--entity", default=None, help="Audit all claims for an entity")
+@click.option("--topic", default=None, help="Audit all claims with a given topic")
 @click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
-@click.option("--dry-run", is_flag=True, help="Show what would be checked without calling LLM")
+@click.option("--dry-run", is_flag=True, help="Show what would be audited without calling LLM")
+@click.option("--write", "do_write", is_flag=True,
+    help="Write auditor results to .audit.yaml sidecar (default: read-only)")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
-def reassess(
+def step_audit(
     ctx: click.Context,
     claim: str | None,
     entity: str | None,
     topic: str | None,
     output_format: str,
     dry_run: bool,
+    do_write: bool,
     repo_root: str | None,
 ) -> None:
-    """Re-run the auditor on existing claim file(s) and report verdict/confidence disagreements; no files are written.
+    """Re-run the auditor on existing claim file(s) and report verdict/confidence disagreements.
+
+    Default: read-only (prints report). Use --write to update .audit.yaml sidecars.
 
     Example:
-        dr reassess --entity ecosia
-        dr reassess --claim ecosia/renewable-energy-hosting
+        dr step-audit --entity ecosia
+        dr step-audit --claim ecosia/renewable-energy-hosting
+        dr step-audit --claim ecosia/renewable-energy-hosting --write
     """
+    import datetime
+    import yaml as _yaml
+
     logger.info(
-        "dr reassess: claim=%s entity=%s topic=%s dry_run=%s",
-        claim,
-        entity,
-        topic,
-        dry_run,
+        "dr step-audit: claim=%s entity=%s topic=%s dry_run=%s do_write=%s",
+        claim, entity, topic, dry_run, do_write,
     )
     from common.content_loader import list_claims, load_entity, load_source, resolve_repo_root
     from common.frontmatter import parse_frontmatter
@@ -476,16 +715,10 @@ def reassess(
     _check_provider_api_keys(auditor_model)
     verbose = ctx.obj.get("verbose", False)
     root = Path(repo_root) if repo_root else resolve_repo_root()
+    claims_dir = root / "research" / "claims"
 
     if claim:
-        slug = claim if claim.endswith(".md") else f"{claim}.md"
-        path = Path(slug)
-        if not path.is_absolute():
-            path = root / "research" / "claims" / slug
-        if not path.exists():
-            click.echo(f"Error: claim file not found: {path}", err=True)
-            sys.exit(1)
-        claim_paths = [path]
+        claim_paths = [_resolve_claim_path(claim, claims_dir)]
     else:
         claim_paths = list_claims(root, entity=entity, topic=topic)
 
@@ -495,14 +728,13 @@ def reassess(
 
     async def _run():
         from auditor.compare import compare as _compare
+        from orchestrator.persistence import _write_audit_sidecar
         results = []
         for path in claim_paths:
             text = path.read_text(encoding="utf-8")
             fm, body = parse_frontmatter(text)
 
-            claims_dir = root / "research" / "claims"
             claim_id = str(path.relative_to(claims_dir).with_suffix(""))
-
             actual_verdict = Verdict(fm["verdict"])
             actual_confidence = Confidence(fm["confidence"])
 
@@ -513,11 +745,12 @@ def reassess(
                 description=entity_fm["description"],
             )
 
-            sources = []
+            source_contexts = []
+            sources_consulted = []
             for sid in fm.get("sources", []):
                 try:
                     src_fm, src_body = load_source(sid, root)
-                    sources.append(SourceContext(
+                    source_contexts.append(SourceContext(
                         id=sid,
                         title=src_fm["title"],
                         publisher=src_fm["publisher"],
@@ -525,6 +758,12 @@ def reassess(
                         key_quotes=src_fm.get("key_quotes", []) or [],
                         body=src_body,
                     ))
+                    sources_consulted.append({
+                        "id": sid,
+                        "url": src_fm.get("url", ""),
+                        "title": src_fm["title"],
+                        "ingested": True,
+                    })
                 except FileNotFoundError:
                     click.echo(f"Warning: source '{sid}' not found", err=True)
 
@@ -533,14 +772,14 @@ def reassess(
                 entity=ent,
                 topics=[Category(t) for t in fm["topics"]],
                 narrative=body,
-                sources=sources,
+                sources=source_contexts,
             )
 
             if dry_run:
-                click.echo(f"[dry-run] Would check: {claim_id}")
+                click.echo(f"[dry-run] Would audit: {claim_id}")
                 continue
 
-            progress("Checking: %s ...", claim_id)
+            progress("Auditing: %s ...", claim_id)
             prompt = build_auditor_prompt(bundle)
             with auditor_agent.override(model=resolve_model(auditor_model)):
                 res = await auditor_agent.run(prompt)
@@ -554,6 +793,28 @@ def reassess(
                 )
             results.append(result)
 
+            if do_write:
+                from common.sidecar import sidecar_path_for
+                sidecar_path = sidecar_path_for(path)
+                research_trace = None
+                if sidecar_path.exists():
+                    try:
+                        existing = _yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
+                        research_trace = existing.get("research")
+                    except _yaml.YAMLError:
+                        pass
+                _write_audit_sidecar(
+                    claim_path=path,
+                    comparison=result,
+                    model=auditor_model,
+                    ran_at=datetime.datetime.now(tz=datetime.timezone.utc),
+                    sources_consulted=sources_consulted,
+                    agents_run=["auditor"],
+                    models_used={"auditor": auditor_model},
+                    research_trace=research_trace,
+                )
+                click.echo(f"Wrote {sidecar_path}")
+
         if results:
             if output_format == "json":
                 click.echo(format_json_report(results))
@@ -563,114 +824,38 @@ def reassess(
     asyncio.run(_run())
 
 
+@main.command("reassess", hidden=True)
+@click.option("--claim", default=None)
+@click.option("--entity", default=None)
+@click.option("--topic", default=None)
+@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
+@click.option("--dry-run", is_flag=True)
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def reassess(ctx, claim, entity, topic, output_format, dry_run, repo_root):
+    """Deprecated: use `dr step-audit` instead."""
+    click.echo("Note: `dr reassess` is deprecated; use `dr step-audit`.", err=True)
+    ctx.invoke(step_audit, claim=claim, entity=entity, topic=topic,
+               output_format=output_format, dry_run=dry_run, do_write=False,
+               repo_root=repo_root)
+
+
 # --------------------------------------------------------------------------- #
 # dr ingest                                                                     #
 # --------------------------------------------------------------------------- #
 
-@main.command()
+@main.command(hidden=True)
 @click.argument("url")
-@click.option("--repo-root", default=None, help="Repository root path.")
-@click.option("--dry-run", is_flag=True, help="Print output without writing.")
-@click.option("--skip-wayback", is_flag=True, help="Skip Wayback Machine lookup.")
-@click.option("--force", is_flag=True, help="Overwrite existing source file if present.")
+@click.option("--repo-root", default=None)
+@click.option("--dry-run", is_flag=True)
+@click.option("--skip-wayback", is_flag=True)
+@click.option("--force", is_flag=True)
 @click.pass_context
 def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, skip_wayback: bool, force: bool) -> None:
-    """Fetch a URL, structure its content via the ingestor agent, and write a source file to research/sources/<year>/<slug>.md.
-
-    Example:
-        dr ingest https://example.com/article
-    """
-    logger.info("dr ingest: url=%s dry_run=%s", url, dry_run)
-
-    if not url.startswith(("http://", "https://")):
-        click.echo(f"Error: invalid URL: {url}", err=True)
-        sys.exit(1)
-
-    ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
-    _check_provider_api_keys(ingestor_model)
-
-    import datetime
-    import httpx
-    from common.content_loader import resolve_repo_root
-    from common.frontmatter import serialize_frontmatter
-    from common.source_classification import classify_source_type
-    from ingestor.agent import IngestorDeps, ingestor_agent
-    from ingestor.validation import validate_source_file
-
-    try:
-        root = repo_root or str(resolve_repo_root())
-    except Exception as exc:
-        click.echo(f"Error: Cannot determine repo root: {exc}", err=True)
-        sys.exit(2)
-
-    async def _run():
-        async with httpx.AsyncClient() as client:
-            deps = IngestorDeps(
-                http_client=client,
-                repo_root=root,
-                skip_wayback=skip_wayback,
-            )
-            today = deps.today.isoformat()
-            prompt = (
-                f"Ingest this URL and produce a SourceFile:\n\n"
-                f"URL: {url}\n"
-                f"Today's date: {today}\n"
-            )
-
-            try:
-                with ingestor_agent.override(model=resolve_model(ingestor_model)):
-                    res = await asyncio.wait_for(
-                        ingestor_agent.run(prompt, deps=deps), timeout=120
-                    )
-            except asyncio.TimeoutError:
-                click.echo("Error: agent timed out after 120 seconds.", err=True)
-                return 1
-            except Exception as exc:
-                click.echo(f"Error: agent failed: {exc}", err=True)
-                return 1
-
-            sf = res.output
-            validation = validate_source_file(sf, url, root)
-
-            for w in validation.warnings:
-                click.echo(f"Warning: {w}", err=True)
-
-            if not validation.ok:
-                for e in validation.errors:
-                    click.echo(f"Validation error: {e}", err=True)
-                return 1
-
-            fm_dict = sf.frontmatter.model_dump(mode="python")
-            fm_dict["source_type"] = classify_source_type(
-                sf.frontmatter.publisher, sf.frontmatter.kind.value
-            )
-            markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
-
-            if dry_run:
-                click.echo(markdown)
-                return 0
-
-            target_dir = Path(root) / "research" / "sources" / str(sf.year)
-            target_dir.mkdir(parents=True, exist_ok=True)
-            target_path = target_dir / f"{sf.slug}.md"
-
-            mode = "w" if force else "x"
-            try:
-                with open(target_path, mode, encoding="utf-8") as f:
-                    f.write(markdown)
-            except FileExistsError:
-                click.echo(
-                    f"Error: file already exists: {target_path} (use --force to overwrite)",
-                    err=True,
-                )
-                return 1
-
-            click.echo(f"Wrote {target_path}")
-            return 0
-
-    exit_code = asyncio.run(_run())
-    if exit_code:
-        sys.exit(exit_code)
+    """Deprecated: use `dr step-ingest` instead."""
+    click.echo("Note: `dr ingest` is deprecated; use `dr step-ingest`.", err=True)
+    ctx.invoke(step_ingest, url=url, do_write=not dry_run, force=force,
+               skip_wayback=skip_wayback, repo_root=repo_root)
 
 
 # --------------------------------------------------------------------------- #

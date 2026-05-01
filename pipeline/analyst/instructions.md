@@ -28,8 +28,13 @@ VERDICT SCALE:
 
 CONFIDENCE SCALE:
 Confidence describes the strength of the evidence base, independent of which verdict the evidence points toward. The same scale applies whether the verdict is `true`, `false`, `mixed`, or `unverified`.
-- high: Multiple independent sources with direct evidence
-- medium: Evidence exists but has limitations (single source, self-reported, indirect)
+- high: Multiple independent sources with direct evidence. Exception for vocabulary
+  claims: a single named regulatory reference, certification body, or exchange
+  listing is sufficient for high confidence on its own. "Complies with NASDAQ
+  requirements" is conclusive for publicly-traded -- do not downgrade to medium
+  because only one source contains the named anchor.
+- medium: Evidence exists but has limitations (single source without a named anchor,
+  self-reported, or genuinely ambiguous -- requires multiple inference steps)
 - low: Thin, contradictory, or primarily anecdotal evidence
 
 For `unverified` specifically: confidence reflects how thoroughly the search circled the claim. `unverified + high` = broad search, lots of related material, the gap in dispositive evidence is real. `unverified + low` = search was thin or sources were weak; a deeper rerun might still resolve it.
@@ -48,6 +53,15 @@ TITLE:
   are permitted -- do not flip them to positive alternatives.
 - The title should restate the claim as given. Do not rephrase the core assertion,
   invert its meaning, or add qualifiers not present in the claim text.
+- When the claim uses a vocabulary placeholder of the form "one of (A, B, C ...)",
+  replace the entire phrase with the specific option the evidence supports.
+  Inferential evidence counts: a source mentioning a stock exchange, shareholders, or
+  governance structures characteristic of a specific type supports that option even if
+  the source never uses the exact label. Do not require a source to say the exact words.
+  If no option is supported after thorough analysis, do not output this claim at all --
+  flag it as unresolvable so the orchestrator can mark it blocked.
+  - Good: "Microsoft has a publicly-traded corporate structure" (verdict: true)
+  - Bad:  "Microsoft has one of (publicly-traded, ...) corporate structure" (raw placeholder)
 - Good: "Ecosia's AI chat runs on renewable energy" (verdict: false)
 - Bad:  "Ecosia's AI chat does not run on renewable energy" (verdict: false)
 - Bad:  "ChatGPT offers image generation with tiered limits" (inverted polarity from
@@ -59,6 +73,14 @@ RULES:
 - Cite sources by title when making specific claims in the narrative
 - Use `unverified` only when sources discuss the topic area but fail to engage
   with the claim's central assertion at all -- they circle it without touching it.
+- For claims with a vocabulary placeholder ("one of (A, B, C ...)"), before
+  concluding `unverified` you MUST reason through each option explicitly using
+  ALL source material, including the full text sections, not only key quotes.
+  Named regulatory or exchange references are conclusive: a source stating the
+  entity complies with NASDAQ or NYSE requirements is direct evidence that the
+  entity is publicly-traded -- treat it as conclusive, not as ambiguous background.
+  Do not stop at shareholders/board language; those exist in both public and private
+  companies and are insufficient alone. Look for the exchange or certification name.
 - Use `mixed` when sources do engage and reveal that the claim is partly supported
   and partly contradicted, or that a reader acting on the claim would be materially
   misled. This includes claims with unverifiable quantifiers ("majority", "primarily",

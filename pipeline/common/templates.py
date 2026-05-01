@@ -18,6 +18,11 @@ from pathlib import Path
 
 import yaml
 
+# Prefix used when rendering vocabulary slots into claim text. The analyst is
+# expected to replace this entire phrase with the specific option it supports.
+# pipeline.py checks for this prefix to detect unresolved titles post-analysis.
+VOCABULARY_HINT_PREFIX = "one of "
+
 
 @dataclass(frozen=True)
 class TemplateRecord:
@@ -70,15 +75,30 @@ def get_template(
     return None
 
 
+def _substitute_entity(template: TemplateRecord, entity_name: str) -> str:
+    text = template.text
+    if template.entity_type == "product":
+        return text.replace("PRODUCT", entity_name)
+    if template.entity_type == "company":
+        return text.replace("COMPANY", entity_name)
+    return text
+
+
 def render_claim_text(template: TemplateRecord, entity_name: str) -> str:
     """Replace PRODUCT/COMPANY placeholder with entity_name and expand any
     controlled-vocabulary slots to a "one of (...)" hint."""
-    text = template.text
-    if template.entity_type == "product":
-        text = text.replace("PRODUCT", entity_name)
-    elif template.entity_type == "company":
-        text = text.replace("COMPANY", entity_name)
+    text = _substitute_entity(template, entity_name)
     for placeholder, values in template.vocabulary.items():
-        hint = f"one of ({', '.join(values)})"
+        hint = f"{VOCABULARY_HINT_PREFIX}({', '.join(values)})"
         text = text.replace(placeholder, hint)
     return text
+
+
+def render_blocked_title(template: TemplateRecord, entity_name: str) -> str:
+    """Render with entity name substituted but vocabulary slots left unexpanded.
+
+    Used for blocked claim titles where the analyst never resolved the
+    vocabulary. Produces e.g. "Microsoft has STRUCTURE corporate structure"
+    instead of "Microsoft has one of (publicly-traded, ...) corporate structure".
+    """
+    return _substitute_entity(template, entity_name)

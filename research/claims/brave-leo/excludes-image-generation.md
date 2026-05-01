@@ -1,11 +1,12 @@
 ---
 title: Brave Leo excludes image generation
 entity: products/brave-leo
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: mostly-true
 confidence: medium
 criteria_slug: excludes-image-generation
-status: draft
+status: published
 as_of: '2026-04-30'
 sources:
 - 2026/brave-leo-ai

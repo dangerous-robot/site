@@ -54,7 +54,7 @@ async def web_search(ctx: RunContext[ResearchDeps], query: str) -> list[dict]:
 
 
 async def search_brave(
-    client: httpx.AsyncClient, query: str, max_results: int = 8
+    client: httpx.AsyncClient, query: str, max_results: int = 10
 ) -> list[dict]:
     """Search using the Brave Web Search API.
 

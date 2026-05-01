@@ -24,15 +24,17 @@ def _noop(**kwargs):
 
 
 def _research_model() -> TestModel:
-    # Two URLs so research_claim clears the >=2 usable-source threshold the
+    # Four URLs so research_claim clears the >=4 usable-source threshold the
     # Orchestrator enforces post-ingest (docs/plans/claim-lifecycle-states.md).
     return TestModel(
         custom_output_args={
             "urls": [
                 "https://example.com/report",
                 "https://example.com/second-report",
+                "https://example.com/third-report",
+                "https://example.com/fourth-report",
             ],
-            "reasoning": "Found a relevant report.",
+            "reasoning": "Found several relevant reports.",
         },
         call_tools=[],
     )
@@ -104,7 +106,7 @@ async def test_research_claim_writes_artifacts(tmp_path):
     ):
         config = VerifyConfig(
             model="test",
-            max_sources=2,
+            max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
             researcher_mode="classic",

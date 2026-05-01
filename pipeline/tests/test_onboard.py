@@ -258,18 +258,11 @@ class TestOnboardEntitySeedUrl:
 class TestOnboardErrorAttribution:
     @pytest.mark.asyncio
     async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path) -> None:
-        """Every result.errors entry must start with `<slug>: ` so the CLI can
-        render a single unified "Failed:" block instead of two parallel lists.
+        """Every result.errors entry must start with `<slug>: `.
 
-        Regression history:
-        - First bug: pipeline.py did `result.errors.extend(vr.errors)` with no
-          slug context, so operators saw "Failed: <slug>" + "Errors: <reason>"
-          with no mapping between them.
-        - Second bug: even after slug-prefixing, the CLI rendered two parallel
-          blocks ("Failed:" + "Errors:") that mostly duplicated each other,
-          and the three error-population sites used three different formats.
-          This test locks the canonical format: `f"{slug}: {reason}"` at every
-          site (lines 726, 737, 835 of pipeline.py).
+        When the researcher finds no URLs, claims land in claims_created as
+        blocked (not claims_failed), but errors are still attributed with the
+        canonical `slug: reason` format so the CLI can render them correctly.
         """
         _setup_tmp_repo(tmp_path)
 
@@ -299,30 +292,21 @@ class TestOnboardErrorAttribution:
             )
 
         assert result.status == "accepted"
-        assert len(result.claims_failed) > 0, "expected at least one failed template"
-        assert len(result.errors) >= len(result.claims_failed), (
-            "invariant: every claims_failed entry must produce at least one "
-            f"errors entry; got {len(result.claims_failed)} failures and "
-            f"{len(result.errors)} errors"
-        )
-
-        failed_set = set(result.claims_failed)
-        attributed_slugs: set[str] = set()
+        # Empty researcher causes claims to land as blocked (claims_created),
+        # not claims_failed -- but errors must still be slug-attributed.
+        assert len(result.errors) > 0, "expected per-template errors"
+        known_slugs = {
+            t.split("/")[-1].replace(".md", "")
+            for t in result.claims_created
+        }
         for err in result.errors:
             slug, sep, _reason = err.partition(": ")
             assert sep == ": ", (
                 f"error {err!r} not in canonical `<slug>: <reason>` format"
             )
-            assert slug in failed_set, (
-                f"error slug {slug!r} not in claims_failed={result.claims_failed}"
+            assert slug in known_slugs, (
+                f"error slug {slug!r} not in any known claim slug: {sorted(known_slugs)}"
             )
-            attributed_slugs.add(slug)
-
-        unattributed = failed_set - attributed_slugs
-        assert not unattributed, (
-            f"failures with no error message would silently disappear from "
-            f"the unified 'Failed:' rendering: {sorted(unattributed)}"
-        )
 
 
 class TestOnboardEntityRejection:
@@ -374,3 +358,92 @@ class TestOnboardEntityRejection:
 
         # Checkpoint was recorded
         assert "review_onboard" in handler.calls
+
+
+class TestOnboardVocabularyResolution:
+    @pytest.mark.asyncio
+    async def test_unresolved_vocabulary_title_is_blocked(self, tmp_path: Path) -> None:
+        """When the analyst returns a title containing the raw 'one of (...)' hint,
+        the claim is blocked with analyst_error and written with a clean title."""
+        _setup_tmp_repo(tmp_path)
+
+        # Analyst returns the raw vocabulary placeholder as the title
+        unresolved_analyst = TestModel(
+            custom_output_args={
+                "entity": {
+                    "entity_name": "TestCorp",
+                    "entity_type": "company",
+                    "entity_description": "A test company",
+                },
+                "verdict": {
+                    "title": "TestCorp has one of (publicly-traded, privately-held, non-profit, B-corp) corporate structure",
+                    "topics": ["industry-analysis"],
+                    "verdict": "unverified",
+                    "confidence": "low",
+                    "narrative": "No sources address ownership structure.",
+                },
+            },
+        )
+
+        from orchestrator import pipeline as pipeline_mod
+
+        async def fake_ingest(client, urls, cfg, sem):
+            from ingestor.models import SourceFile, SourceFrontmatter
+            import datetime
+            sources = []
+            for url in urls:
+                suffix = url.split("/")[-1]
+                sf = SourceFile(
+                    frontmatter=SourceFrontmatter(
+                        url=url,
+                        title=f"Source {suffix}",
+                        publisher="Ex",
+                        accessed_date=datetime.date(2026, 4, 30),
+                        kind="article",
+                        summary="A summary.",
+                    ),
+                    body="Body.",
+                    slug=suffix,
+                    year=2026,
+                )
+                sources.append((url, sf))
+            return sources, []
+
+        async def fake_research(client, entity, claim, cfg, sem):
+            return [
+                "https://example.com/a",
+                "https://example.com/b",
+                "https://example.com/c",
+                "https://example.com/d",
+            ], [], {"mode": "test"}
+
+        with (
+            analyst_agent.override(model=unresolved_analyst),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+            patch.object(pipeline_mod, "_research", side_effect=fake_research),
+            patch.object(pipeline_mod, "_ingest_urls", side_effect=fake_ingest),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=8,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config, only=["corporate-structure"]
+            )
+
+        assert result.status == "accepted"
+        assert len(result.claims_created) == 1
+        assert len(result.claims_failed) == 0
+
+        # The blocked claim file must have a clean title (no "one of (")
+        claim_path = tmp_path / result.claims_created[0]
+        assert claim_path.exists()
+        fm, _ = parse_frontmatter(claim_path.read_text())
+        assert "one of (" not in fm["title"], (
+            f"blocked claim title must not contain raw vocabulary hint: {fm['title']!r}"
+        )
+        assert fm["status"] == "blocked"
+        assert fm["blocked_reason"] == "analyst_error"

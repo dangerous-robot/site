@@ -43,7 +43,7 @@ from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
-from common.templates import get_template, load_templates, render_claim_text, templates_for_entity_type
+from common.templates import VOCABULARY_HINT_PREFIX, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slugify
 from auditor.bundle import build_bundle
@@ -97,14 +97,14 @@ class VerificationResult(BaseModel):
 
 
 def below_threshold(usable_sources: list) -> bool:
-    """True when fewer than two usable sources are available.
+    """True when fewer than four usable sources are available.
 
     A "usable" source is one that ingested successfully (parsed body,
     not blocked, not a terminal HTTP error). The Orchestrator calls this
     after the Ingestor returns and halts the claim with status='blocked'
     when it returns True. See docs/plans/claim-lifecycle-states.md.
     """
-    return len(usable_sources) < 2
+    return len(usable_sources) < 4
 
 
 def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
@@ -128,10 +128,10 @@ def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
 def _record_threshold_block(
     result: VerificationResult, ingest_errors: list[StepError]
 ) -> None:
-    """Mark `result` as blocked by the < 2 source threshold and emit logs."""
+    """Mark `result` as blocked by the < 4 source threshold and emit logs."""
     result.blocked_reason = _classify_blocked_reason(ingest_errors)
     msg = (
-        f"Claim halted: < 2 usable sources "
+        f"Claim halted: < 4 usable sources "
         f"(blocked_reason={result.blocked_reason.value})"
     )
     click.echo(msg, err=True)
@@ -153,7 +153,7 @@ class VerifyConfig:
     analyst_model: str | None = None
     auditor_model: str | None = None
     ingestor_model: str | None = None
-    max_sources: int = 12
+    max_sources: int = 16
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
     # until that job lands we want primary sources behind paywalls/blocks
@@ -172,7 +172,7 @@ class VerifyConfig:
     # and the new 3-step decomposed pipeline. Removed post-validation.
     researcher_mode: Literal["classic", "decomposed"] = "decomposed"
     # Effort lever for decomposed researcher: more queries = wider net.
-    max_initial_queries: int = 3
+    max_initial_queries: int = 4
     # Integer cap for the shared asyncio.Semaphore created at each call site.
     # Never store the Semaphore itself here — it is loop-bound.
     llm_concurrency: int = 8
@@ -932,7 +932,7 @@ async def onboard_entity(
                             f"verified.\n"
                         )
                         blocked_path = _write_claim_file(
-                            title=claim_text,
+                            title=render_blocked_title(template, entity_name),
                             entity_name=entity_name,
                             entity_ref=entity_ref,
                             topics=inherited_topics,
@@ -976,7 +976,7 @@ async def onboard_entity(
                             f"or archive this claim if it consistently fails.\n"
                         )
                         blocked_path = _write_claim_file(
-                            title=claim_text,
+                            title=render_blocked_title(template, entity_name),
                             entity_name=entity_name,
                             entity_ref=entity_ref,
                             topics=inherited_topics,
@@ -1003,6 +1003,49 @@ async def onboard_entity(
                         )
                         continue
 
+                    ao = vr.analyst_output
+                    if template.vocabulary and VOCABULARY_HINT_PREFIX in ao.verdict.title:
+                        source_ids = (
+                            _write_source_files(vr.source_files, repo_root)
+                            if vr.source_files
+                            else []
+                        )
+                        try:
+                            inherited_topics = [Category(t) for t in template.topics]
+                        except ValueError:
+                            inherited_topics = []
+                        blocked_body = (
+                            f"This claim is blocked: `{BlockedReason.ANALYST_ERROR.value}`. "
+                            f"The Analyst did not resolve the vocabulary placeholder in the "
+                            f"title. Re-run the pipeline with better sources, or resolve "
+                            f"the vocabulary manually.\n"
+                        )
+                        blocked_path = _write_claim_file(
+                            title=render_blocked_title(template, entity_name),
+                            entity_name=entity_name,
+                            entity_ref=entity_ref,
+                            topics=inherited_topics,
+                            verdict=Verdict.UNVERIFIED,
+                            confidence=Confidence.LOW,
+                            narrative=blocked_body,
+                            claim_slug=slug,
+                            source_ids=source_ids,
+                            repo_root=repo_root,
+                            force=iter_cfg.force_overwrite,
+                            status="blocked",
+                            blocked_reason=BlockedReason.ANALYST_ERROR,
+                            criteria_slug=slug,
+                        )
+                        result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        progress(
+                            "[%d/%d] Blocked: %s (%s, unresolved vocabulary)",
+                            idx,
+                            total,
+                            slug,
+                            BlockedReason.ANALYST_ERROR.value,
+                        )
+                        continue
+
                     # Write sources (reuse verify_claim's already-ingested sources)
                     source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
 
@@ -1011,7 +1054,6 @@ async def onboard_entity(
                     # docs/plans/multi-topic.md §"Pipeline output"). The
                     # operator can hand-edit a claim's topics
                     # post-pipeline if specialization is needed.
-                    ao = vr.analyst_output
                     try:
                         inherited_topics = [Category(t) for t in template.topics]
                     except ValueError as exc:

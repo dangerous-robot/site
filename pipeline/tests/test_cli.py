@@ -27,10 +27,10 @@ class TestIngestCli:
 
     def test_help_flag(self):
         runner = CliRunner()
-        result = runner.invoke(main, ["ingest", "--help"])
+        result = runner.invoke(main, ["step-ingest", "--help"])
         assert result.exit_code == 0
         assert "Fetch a URL" in result.output
-        assert "--dry-run" in result.output
+        assert "--write" in result.output
         assert "--skip-wayback" in result.output
         assert "--force" in result.output
 

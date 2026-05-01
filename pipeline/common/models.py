@@ -160,8 +160,11 @@ def _model_needs_native_output(model_id: str) -> bool:
     response_format: json_schema instead.
 
     gemma3n (google/gemma-3n-E4B-it): tool use not enabled at Infomaniak gateway.
+    gpt-oss-120b (openai/gpt-oss-120b): returns markdown prose instead of JSON
+      when using tool-calling mode; native json_schema mode resolves this.
     """
-    return "gemma3n" in model_id.lower()
+    lower = model_id.lower()
+    return "gemma3n" in lower or "gpt-oss-120b" in lower
 
 
 @lru_cache(maxsize=None)
