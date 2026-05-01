@@ -4,6 +4,7 @@ import { getCollection, render } from "astro:content";
 import { buildCitationIndex } from "../../lib/citations";
 import ClaimRow from "../../components/ClaimRow.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
+import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
   const sources = await getCollection("sources");
@@ -66,7 +67,7 @@ const combinedTitle = `${source.data.title} — ${source.data.publisher}`;
 const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data.title;
 ---
 
-<Base title={sourcePageTitle} description={sourceDescription}>
+<Base title={sourcePageTitle} description={sourceDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="source-detail">
     <Breadcrumb crumbs={sourceCrumbs} />
     <header>

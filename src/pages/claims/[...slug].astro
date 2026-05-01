@@ -5,6 +5,7 @@ import Breadcrumb from "../../components/Breadcrumb.astro";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
+import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
   const claims = await getCollection("claims");
@@ -95,7 +96,7 @@ const claimReview = {
 };
 ---
 
-<Base title={claimPageTitle} description={claimDescription}>
+<Base title={claimPageTitle} description={claimDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="claim-detail">
     <Breadcrumb crumbs={claimCrumbs} />
 

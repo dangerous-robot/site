@@ -7,6 +7,7 @@ import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
 import Breadcrumb from "../../components/Breadcrumb.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
+import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
   const entities = await getCollection("entities");
@@ -80,7 +81,7 @@ const entityPageTitle = (entity.data.type === 'company' || entity.data.type === 
 const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entity.data.type} claims. ${entity.data.description}`.slice(0, 155);
 ---
 
-<Base title={entityPageTitle} description={entityDescription}>
+<Base title={entityPageTitle} description={entityDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="entity-detail">
     <Breadcrumb crumbs={entityCrumbs} />
     <header>

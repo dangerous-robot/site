@@ -1,5 +1,6 @@
 import { defineConfig } from "astro/config";
 import sitemap from "@astrojs/sitemap";
+import { isAlphaDetailPath, INDEX_ALPHA_DETAIL_PAGES } from "./src/lib/seo";
 
 export default defineConfig({
   site: "https://dangerousrobot.org",
@@ -8,6 +9,15 @@ export default defineConfig({
     sitemap({
       changefreq: "weekly",
       priority: 0.7,
+      // Exclude alpha-stage detail pages while INDEX_ALPHA_DETAIL_PAGES is false.
+      // Pages still ship with <meta name="robots" content="noindex,nofollow">,
+      // but skipping them in the sitemap saves Googlebot crawl budget. Flip the
+      // flag in src/lib/seo.ts when alpha ends to re-include them.
+      filter: (page) => {
+        if (INDEX_ALPHA_DETAIL_PAGES) return true;
+        const pathname = new URL(page).pathname;
+        return !isAlphaDetailPath(pathname);
+      },
       serialize(item) {
         if (item.url.includes("/claims/")) {
           return { ...item, changefreq: "monthly", priority: 0.9 };
