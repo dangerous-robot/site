@@ -7,7 +7,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
-from common.instructions import load_instructions
+from common.instructions import common, load_instructions
 from common.models import Category, Confidence, EntityType, Verdict
 from common.utils import slugify
 
@@ -45,7 +45,7 @@ class AnalystOutput(BaseModel):
     verdict: VerdictAssessment
 
 
-_INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent)
+_INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent, common("verdict-scale.md"))
 
 analyst_agent = Agent(
     "test",

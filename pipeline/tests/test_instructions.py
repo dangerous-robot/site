@@ -46,14 +46,16 @@ class TestAgentInstructionsWiring:
 
     def test_analyst_loads_instructions(self):
         from analyst.agent import analyst_agent
+        from common.instructions import common
         agent_dir = Path(__file__).resolve().parent.parent / "analyst"
-        expected = load_instructions(agent_dir)
+        expected = load_instructions(agent_dir, common("verdict-scale.md"))
         assert analyst_agent._system_prompts[0] == expected
 
     def test_auditor_loads_instructions(self):
         from auditor.agent import auditor_agent
+        from common.instructions import common
         agent_dir = Path(__file__).resolve().parent.parent / "auditor"
-        expected = load_instructions(agent_dir)
+        expected = load_instructions(agent_dir, common("verdict-scale.md"))
         assert auditor_agent._system_prompts[0] == expected
 
     def test_ingestor_loads_instructions(self):

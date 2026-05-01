@@ -6,11 +6,11 @@ from pathlib import Path
 
 from pydantic_ai import Agent
 
-from common.instructions import load_instructions
+from common.instructions import common, load_instructions
 from .models import ClaimBundle, IndependentAssessment
 
 
-_INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent)
+_INSTRUCTIONS = load_instructions(Path(__file__).resolve().parent, common("verdict-scale.md"))
 
 auditor_agent = Agent(
     "test",
