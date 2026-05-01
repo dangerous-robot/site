@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import functools
 import subprocess
 from pathlib import Path
 
 from common.frontmatter import parse_frontmatter
 
 
+@functools.cache
 def resolve_repo_root() -> Path:
     """Find the repository root via git."""
     result = subprocess.run(
