@@ -44,7 +44,7 @@ Goal: Split the Analyst's frontier-model call into smaller sub-decisions so chea
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Full 4-step decomposition (entity resolver, per-source stance, verdict synthesizer, narrative+title writer) | [analyst-decomposition_stub.md](plans/drafts/analyst-decomposition_stub.md) | Stub draft; needs token-usage baseline before committing. Keeps verdict+confidence on frontier; pushes the rest to Haiku-class. Biggest win is feeding frontier structured stances instead of raw source bodies (~10x smaller prompt). |
+| Full 4-step decomposition (entity resolver, per-source stance, verdict synthesizer, narrative+title writer) | [analyst-decomposition_stub.md](plans/drafts/analyst-decomposition_stub.md) | Stub draft; needs token-usage baseline before committing. Keeps verdict+confidence on frontier; pushes the rest to Haiku-class. Biggest win is feeding frontier structured stances instead of raw source bodies (~10x smaller prompt). Source-trust Phase 2 (COI/independence weighting in analyst reasoning) is a forcing function: adding conditional source weighting further complicates analyst instructions and makes decomposition more urgent. |
 | Narrative + title writer extraction (smallest slice) | (to be drafted from the stub) | Once verdict is fixed, this is structured writing with a mechanical title-polarity rule. Most defensibly Haiku-class sub-decision; could be promoted out of the broader plan as a single-step extraction. |
 
 ---
