@@ -84,3 +84,11 @@ class TestPerAgentModelOptions:
         assert result.exit_code == 0
         for opt in ("--researcher-model", "--analyst-model", "--auditor-model", "--ingestor-model"):
             assert opt in result.output
+
+
+class TestVerifyOptions:
+    def test_verify_help_lists_candidate_pool_size(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["verify", "--help"])
+        assert result.exit_code == 0
+        assert "--candidate-pool-size" in result.output

@@ -555,14 +555,15 @@ def _print_verify_result(result) -> None:
 @main.command()
 @click.argument("entity")
 @click.argument("claim")
-@click.option("--max-sources", default=None, type=int, help="Max sources to ingest (default: VerifyConfig.max_sources)")
+@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
+@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
-def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None, skip_wayback: bool, interactive: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
+def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, interactive: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
     """Run the full pipeline (researcher -> ingestor -> analyst -> auditor) in memory and print the verdict; nothing is written to disk.
 
     Example:
@@ -575,7 +576,7 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
     from orchestrator.pipeline import VerifyConfig, verify_claim
 
     model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
+    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
     config = VerifyConfig(
         model=model,
         skip_wayback=skip_wayback,
@@ -595,7 +596,8 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
 
 @main.command("verify-claim")
 @click.argument("claim_text")
-@click.option("--max-sources", default=None, type=int, help="Max sources to ingest (default: VerifyConfig.max_sources)")
+@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
+@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
@@ -604,7 +606,7 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
-def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
+def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
     """Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk.
 
     Example:
@@ -621,7 +623,7 @@ def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, s
     from orchestrator.pipeline import VerifyConfig, research_claim
 
     model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
+    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
     config = VerifyConfig(
         model=model,
         skip_wayback=skip_wayback,
@@ -864,7 +866,8 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
 @click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product", "sector"]), help="Entity type")
-@click.option("--max-sources", default=None, type=int, help="Max sources to ingest per template (default: VerifyConfig.max_sources)")
+@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst per template (default: VerifyConfig.max_sources)")
+@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
@@ -880,6 +883,7 @@ def onboard(
     homepage_url: str | None,
     entity_type: str,
     max_sources: int | None,
+    candidate_pool_size: int | None,
     skip_wayback: bool,
     repo_root: str | None,
     interactive: bool,
@@ -911,7 +915,7 @@ def onboard(
     from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
 
     model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
+    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
     config = VerifyConfig(
         model=model,
         skip_wayback=skip_wayback,

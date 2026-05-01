@@ -153,7 +153,9 @@ class VerifyConfig:
     analyst_model: str | None = None
     auditor_model: str | None = None
     ingestor_model: str | None = None
-    max_sources: int = 8
+    # target successes to pass to the analyst
+    max_sources: int = 6
+    candidate_pool_size: int = 24
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
     # until that job lands we want primary sources behind paywalls/blocks
@@ -185,6 +187,10 @@ class VerifyConfig:
         if self.ingest_timeout_s is None:
             self.ingest_timeout_s = (
                 ingest_budget_with_wayback_s() if not self.skip_wayback else 60.0
+            )
+        if self.candidate_pool_size < self.max_sources:
+            raise ValueError(
+                f"candidate_pool_size ({self.candidate_pool_size}) must be >= max_sources ({self.max_sources})"
             )
 
     def model_for(self, agent: AgentName) -> str:
@@ -304,10 +310,10 @@ def _apply_blocklist_cap(
     repo_root_str = cfg.repo_root or str(resolve_repo_root())
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
-    urls = kept[: cfg.max_sources]
+    urls = kept[: cfg.candidate_pool_size]
     # DEBUG
-    for u in kept[cfg.max_sources:]:
-        click.echo(f"[drop:cap] {u}  reason: over max_sources={cfg.max_sources}", err=True)
+    for u in kept[cfg.candidate_pool_size:]:
+        click.echo(f"[drop:cap] {u}  reason: over candidate_pool_size={cfg.candidate_pool_size}", err=True)  # noqa: E501
     # END DEBUG
     for d in dropped:
         out_errors.append(
@@ -348,7 +354,7 @@ async def _research(
         from researcher.decomposed import decomposed_research
         raw_urls, errors, trace = await decomposed_research(claim_text, entity_name, cfg, sem, client)
         urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
-        logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.max_sources)
+        logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
         trace["urls_after_blocklist"] = len(urls)
         return urls, errors, trace
 
@@ -373,7 +379,7 @@ async def _research(
             len(raw_urls),
             len(raw_urls) - len(urls),
             len(urls),
-            cfg.max_sources,
+            cfg.candidate_pool_size,
             res.output.reasoning,
         )
         return urls, errors, trace
@@ -440,14 +446,37 @@ async def _ingest_urls(
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
-    """Run the ingestor agent on all URLs concurrently. Returns (successes, errors)."""
+    """Waterfall: attempt up to candidate_pool_size URLs in score order,
+    stopping once max_sources successes are collected (~2 concurrent)."""
     today = datetime.date.today()
-    outcomes = await asyncio.gather(
-        *[_ingest_one(client, url, cfg, today, sem) for url in urls]
-    )
-    results = [o for o in outcomes if isinstance(o, tuple)]
-    errors = [o for o in outcomes if isinstance(o, StepError)]
-    return results, errors
+    target = cfg.max_sources
+    pool = urls[: cfg.candidate_pool_size]
+    dispatch_sem = asyncio.Semaphore(2)
+
+    results: list[tuple[str, SourceFile]] = []
+    errors: list[StepError] = []
+    stop = asyncio.Event()
+
+    async def _worker(url: str) -> None:
+        if stop.is_set():
+            return
+        async with dispatch_sem:
+            if stop.is_set():
+                return
+            outcome = await _ingest_one(client, url, cfg, today, sem)
+            if isinstance(outcome, tuple):
+                results.append(outcome)
+                if len(results) >= target:
+                    logger.info(
+                        "Reached target %d successes; stopping waterfall", target
+                    )
+                    stop.set()
+            else:
+                errors.append(outcome)
+
+    tasks = [asyncio.create_task(_worker(url)) for url in pool]
+    await asyncio.gather(*tasks, return_exceptions=True)
+    return results[:target], errors
 
 
 def _build_source_dict(sf: SourceFile) -> dict:
