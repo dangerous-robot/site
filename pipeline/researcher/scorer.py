@@ -13,8 +13,8 @@ class SearchCandidate(BaseModel):
 
 
 class ScoredURLs(BaseModel):
-    kept: list[str] = Field(description="URLs with relevance score >= 3, ordered best-first")
-    dropped: list[str] = Field(description="URLs with relevance score < 3")
+    kept: list[str] = Field(description="URLs with relevance score >= 4, ordered best-first")
+    dropped: list[str] = Field(description="URLs with relevance score < 4")
     rationale: str = Field(description="Brief explanation of scoring decisions")
 
 
@@ -30,8 +30,8 @@ Scoring scale:
 
 Rules:
 - Score only on the title and snippet — do not assume body content.
-- Keep all candidates with score >= 3 in the `kept` list.
-- Put candidates with score < 3 in the `dropped` list.
+- Keep all candidates with score >= 4 in the `kept` list.
+- Put candidates with score < 4 in the `dropped` list.
 - Every input URL must appear in either `kept` or `dropped` (no omissions).
 - Return URLs as-is (exact strings from input).
 - Include a brief `rationale` summarizing the scoring decisions.
