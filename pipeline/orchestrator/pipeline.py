@@ -153,7 +153,7 @@ class VerifyConfig:
     analyst_model: str | None = None
     auditor_model: str | None = None
     ingestor_model: str | None = None
-    max_sources: int = 16
+    max_sources: int = 12
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
     # until that job lands we want primary sources behind paywalls/blocks
@@ -305,6 +305,10 @@ def _apply_blocklist_cap(
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
     urls = kept[: cfg.max_sources]
+    # DEBUG
+    for u in kept[cfg.max_sources:]:
+        click.echo(f"[drop:cap] {u}  reason: over max_sources={cfg.max_sources}", err=True)
+    # END DEBUG
     for d in dropped:
         out_errors.append(
             StepError(
@@ -948,6 +952,16 @@ async def onboard_entity(
                             criteria_slug=slug,
                         )
                         result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        _write_audit_sidecar(
+                            claim_path=blocked_path,
+                            comparison=None,
+                            model=iter_cfg.model,
+                            ran_at=datetime.datetime.now(datetime.timezone.utc),
+                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            agents_run=["researcher", "ingestor"],
+                            models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor"]},
+                            research_trace=vr.research_trace,
+                        )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",
                             idx,
@@ -994,6 +1008,16 @@ async def onboard_entity(
                         result.claims_created.append(
                             str(blocked_path.relative_to(repo_root))
                         )
+                        _write_audit_sidecar(
+                            claim_path=blocked_path,
+                            comparison=None,
+                            model=iter_cfg.model,
+                            ran_at=datetime.datetime.now(datetime.timezone.utc),
+                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            agents_run=["researcher", "ingestor", "analyst"],
+                            models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
+                            research_trace=vr.research_trace,
+                        )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",
                             idx,
@@ -1037,6 +1061,16 @@ async def onboard_entity(
                             criteria_slug=slug,
                         )
                         result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        _write_audit_sidecar(
+                            claim_path=blocked_path,
+                            comparison=None,
+                            model=iter_cfg.model,
+                            ran_at=datetime.datetime.now(datetime.timezone.utc),
+                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            agents_run=["researcher", "ingestor", "analyst"],
+                            models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
+                            research_trace=vr.research_trace,
+                        )
                         progress(
                             "[%d/%d] Blocked: %s (%s, unresolved vocabulary)",
                             idx,
