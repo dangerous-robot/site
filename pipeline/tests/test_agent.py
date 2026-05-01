@@ -1,4 +1,4 @@
-"""Integration tests for the ingestor agent using TestModel."""
+"""Integration tests for the ingestor agent using TestModel, and unit tests for the analyst prompt builder."""
 
 from __future__ import annotations
 
@@ -10,7 +10,9 @@ from pydantic_ai.models.test import TestModel
 
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile, SourceFrontmatter
-from common.models import SourceKind
+from common.models import EntityType, SourceKind
+from analyst.agent import build_analyst_prompt
+from orchestrator.entity_resolution import ResolvedEntity
 
 
 @pytest.fixture
@@ -71,3 +73,40 @@ class TestIngestorAgent:
         tool_names = set(ingestor_agent._function_toolset.tools.keys())
         assert "web_fetch" in tool_names
         assert "wayback_check" in tool_names
+
+
+class TestBuildAnalystPrompt:
+    def _make_resolved(self) -> ResolvedEntity:
+        return ResolvedEntity(
+            entity_ref="products/chatgpt",
+            entity_name="ChatGPT",
+            entity_type=EntityType.PRODUCT,
+            entity_description="A conversational AI product.",
+            aliases=["GPT"],
+            parent_company="OpenAI",
+        )
+
+    def test_with_resolved_entity_emits_pre_resolved_block(self) -> None:
+        resolved = self._make_resolved()
+        prompt = build_analyst_prompt(None, "ChatGPT is safe", [], resolved_entity=resolved)
+        assert "## Entity (pre-resolved — do not infer)" in prompt
+        assert "Name: ChatGPT" in prompt
+        assert "Type: product" in prompt
+        assert "Description: A conversational AI product." in prompt
+        assert "Aliases: GPT" in prompt
+        assert "Parent company: OpenAI" in prompt
+
+    def test_with_resolved_entity_no_inference_instruction(self) -> None:
+        resolved = self._make_resolved()
+        prompt = build_analyst_prompt(None, "ChatGPT is safe", [], resolved_entity=resolved)
+        assert "Produce only a VerdictAssessment" in prompt
+        assert "## Entity: " not in prompt
+
+    def test_without_resolved_entity_output_unchanged(self) -> None:
+        prompt_with_name = build_analyst_prompt("ChatGPT", "ChatGPT is safe", [])
+        assert "## Entity: ChatGPT" in prompt_with_name
+        assert "pre-resolved" not in prompt_with_name
+
+        prompt_no_name = build_analyst_prompt(None, "Something is safe", [])
+        assert "## Entity:" not in prompt_no_name
+        assert "pre-resolved" not in prompt_no_name

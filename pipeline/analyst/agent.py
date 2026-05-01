@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
@@ -10,6 +11,9 @@ from pydantic_ai import Agent
 from common.instructions import common, load_instructions
 from common.models import Category, Confidence, EntityType, Verdict
 from common.utils import slugify
+
+if TYPE_CHECKING:
+    from orchestrator.entity_resolution import ResolvedEntity
 
 
 class EntityResolution(BaseModel):
@@ -54,18 +58,39 @@ analyst_agent = Agent(
     retries=2,
 )
 
+verdict_only_agent = Agent(
+    "test",
+    output_type=VerdictAssessment,
+    system_prompt=_INSTRUCTIONS,
+    retries=2,
+)
+
 
 def build_analyst_prompt(
     entity_name: str | None,
     claim_text: str,
     sources: list[dict],
+    resolved_entity: "ResolvedEntity | None" = None,
 ) -> str:
     """Build the user prompt for the analyst agent."""
     parts: list[str] = []
 
-    if entity_name:
-        parts.append(f"## Entity: {entity_name}")
+    if resolved_entity is not None:
+        aliases_str = ", ".join(resolved_entity.aliases) if resolved_entity.aliases else "none"
+        parent_str = resolved_entity.parent_company or "none"
+        parts.append("## Entity (pre-resolved — do not infer)")
         parts.append("")
+        parts.append(f"Name: {resolved_entity.entity_name}")
+        parts.append(f"Type: {resolved_entity.entity_type.value}")
+        parts.append(f"Description: {resolved_entity.entity_description}")
+        parts.append(f"Aliases: {aliases_str}")
+        parts.append(f"Parent company: {parent_str}")
+        parts.append("")
+        parts.append("The entity above is authoritative. Produce only a VerdictAssessment.")
+    elif entity_name:
+        parts.append(f"## Entity: {entity_name}")
+
+    parts.append("")
     parts.append(f"## Claim to evaluate: {claim_text}")
     parts.append("")
 

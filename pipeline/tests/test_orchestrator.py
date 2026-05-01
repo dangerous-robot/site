@@ -463,3 +463,249 @@ class TestThresholdEnforcement:
         assert result.blocked_reason is None
         # Analyst was reached (then returned None, hitting a different branch).
         assert analyst_called is True
+
+
+class TestVerifyClaimWithResolvedEntity:
+    def _make_resolved(self):
+        from orchestrator.entity_resolution import ResolvedEntity
+        from common.models import EntityType
+        return ResolvedEntity(
+            entity_ref="products/chatgpt",
+            entity_name="ChatGPT",
+            entity_type=EntityType.PRODUCT,
+            entity_description="A conversational AI product.",
+        )
+
+    @pytest.mark.asyncio
+    async def test_resolved_entity_passed_to_analyse_claim(self, monkeypatch) -> None:
+        """_analyse_claim receives resolved_entity kwarg when provided to verify_claim."""
+        resolved = self._make_resolved()
+        received_kwargs: dict = {}
+
+        async def _fake_research(*args, **kwargs):
+            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+
+        async def _fake_ingest(*args, **kwargs):
+            sf = SourceFile(
+                frontmatter=SourceFrontmatter(
+                    url="https://example.com/a",
+                    title="Src",
+                    publisher="Pub",
+                    accessed_date=datetime.date(2026, 1, 1),
+                    kind="article",
+                    summary="Summary.",
+                ),
+                body="",
+                slug="src",
+                year=2026,
+            )
+            return [("https://example.com/a", sf)] * 4, []
+
+        async def _fake_analyse(*args, **kwargs):
+            received_kwargs.update(kwargs)
+            return None
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+
+        await verify_claim(
+            entity_name="ChatGPT",
+            claim_text="ChatGPT is safe",
+            config=VerifyConfig(model="test", skip_wayback=True),
+            resolved_entity=resolved,
+        )
+
+        assert received_kwargs.get("resolved_entity") is resolved
+
+    @pytest.mark.asyncio
+    async def test_resolved_entity_skips_write_entity_file(self, monkeypatch) -> None:
+        """verify_claim never calls _write_entity_file (it is a read-only function)."""
+        from orchestrator import pipeline as _pipeline_mod
+        write_entity_called = []
+
+        original = getattr(_pipeline_mod, "_write_entity_file", None)
+
+        def _spy_write_entity(*args, **kwargs):
+            write_entity_called.append(True)
+            if original:
+                return original(*args, **kwargs)
+
+        async def _fake_research(*args, **kwargs):
+            return [], [], {"mode": "classic"}
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+
+        await verify_claim(
+            entity_name="ChatGPT",
+            claim_text="ChatGPT is safe",
+            config=VerifyConfig(model="test", skip_wayback=True),
+            resolved_entity=self._make_resolved(),
+        )
+
+        assert write_entity_called == [], "verify_claim must not write entity files"
+
+
+class TestResearchClaimWithResolvedEntity:
+    def _make_resolved(self):
+        from orchestrator.entity_resolution import ResolvedEntity
+        from common.models import EntityType
+        return ResolvedEntity(
+            entity_ref="products/chatgpt",
+            entity_name="ChatGPT",
+            entity_type=EntityType.PRODUCT,
+            entity_description="A conversational AI product.",
+        )
+
+    @pytest.mark.asyncio
+    async def test_entity_ref_flows_to_write_claim_file(self, monkeypatch, tmp_path) -> None:
+        """When resolved_entity is provided, entity_ref from it is passed to _write_claim_file."""
+        resolved = self._make_resolved()
+        write_claim_kwargs: dict = {}
+
+        async def _fake_research(*args, **kwargs):
+            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+
+        async def _fake_ingest(*args, **kwargs):
+            sf = SourceFile(
+                frontmatter=SourceFrontmatter(
+                    url="https://example.com/a",
+                    title="Src",
+                    publisher="Pub",
+                    accessed_date=datetime.date(2026, 1, 1),
+                    kind="article",
+                    summary="Summary.",
+                ),
+                body="",
+                slug="src",
+                year=2026,
+            )
+            return [("https://example.com/a", sf)] * 4, []
+
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.models import Confidence, EntityType, Verdict, Category
+
+        async def _fake_analyse(*args, **kwargs):
+            return AnalystOutput(
+                entity=EntityResolution(
+                    entity_name="ChatGPT",
+                    entity_type=EntityType.PRODUCT,
+                    entity_description="desc",
+                ),
+                verdict=VerdictAssessment(
+                    title="ChatGPT trains on data",
+                    verdict=Verdict.TRUE,
+                    confidence=Confidence.HIGH,
+                    narrative="narrative",
+                    topics=[Category("data-privacy")],
+                ),
+            )
+
+        async def _fake_audit(*args, **kwargs):
+            return None
+
+        def _fake_write_source_files(*args, **kwargs):
+            return ["sources/2026/src"]
+
+        def _fake_write_claim_file(**kwargs):
+            write_claim_kwargs.update(kwargs)
+            return tmp_path / "research" / "claims" / "chatgpt" / "claim.md"
+
+        def _fake_write_audit_sidecar(**kwargs):
+            pass
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+        monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+        monkeypatch.setattr("orchestrator.persistence._write_source_files", _fake_write_source_files)
+        monkeypatch.setattr("orchestrator.persistence._write_claim_file", _fake_write_claim_file)
+        monkeypatch.setattr("orchestrator.persistence._write_audit_sidecar", _fake_write_audit_sidecar)
+        monkeypatch.setattr("orchestrator.persistence._build_sources_consulted", lambda *a, **k: [])
+
+        from orchestrator.pipeline import research_claim
+        await research_claim(
+            claim_text="ChatGPT trains on data",
+            config=VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path)),
+            resolved_entity=resolved,
+        )
+
+        assert write_claim_kwargs.get("entity_ref") == "products/chatgpt"
+
+    @pytest.mark.asyncio
+    async def test_write_entity_file_not_called(self, monkeypatch, tmp_path) -> None:
+        """When resolved_entity is provided, _write_entity_file is NOT called."""
+        write_entity_called = []
+
+        async def _fake_research(*args, **kwargs):
+            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+
+        async def _fake_ingest(*args, **kwargs):
+            sf = SourceFile(
+                frontmatter=SourceFrontmatter(
+                    url="https://example.com/a",
+                    title="Src",
+                    publisher="Pub",
+                    accessed_date=datetime.date(2026, 1, 1),
+                    kind="article",
+                    summary="Summary.",
+                ),
+                body="",
+                slug="src",
+                year=2026,
+            )
+            return [("https://example.com/a", sf)] * 4, []
+
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.models import Confidence, EntityType, Verdict, Category
+
+        async def _fake_analyse(*args, **kwargs):
+            return AnalystOutput(
+                entity=EntityResolution(
+                    entity_name="ChatGPT",
+                    entity_type=EntityType.PRODUCT,
+                    entity_description="desc",
+                ),
+                verdict=VerdictAssessment(
+                    title="ChatGPT trains on data",
+                    verdict=Verdict.TRUE,
+                    confidence=Confidence.HIGH,
+                    narrative="narrative",
+                    topics=[Category("data-privacy")],
+                ),
+            )
+
+        async def _fake_audit(*args, **kwargs):
+            return None
+
+        def _spy_write_entity_file(*args, **kwargs):
+            write_entity_called.append(True)
+            return "products/chatgpt"
+
+        def _fake_write_source_files(*args, **kwargs):
+            return ["sources/2026/src"]
+
+        def _fake_write_claim_file(**kwargs):
+            return tmp_path / "research" / "claims" / "chatgpt" / "claim.md"
+
+        def _fake_write_audit_sidecar(**kwargs):
+            pass
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+        monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+        monkeypatch.setattr("orchestrator.persistence._write_entity_file", _spy_write_entity_file)
+        monkeypatch.setattr("orchestrator.persistence._write_source_files", _fake_write_source_files)
+        monkeypatch.setattr("orchestrator.persistence._write_claim_file", _fake_write_claim_file)
+        monkeypatch.setattr("orchestrator.persistence._write_audit_sidecar", _fake_write_audit_sidecar)
+        monkeypatch.setattr("orchestrator.persistence._build_sources_consulted", lambda *a, **k: [])
+
+        from orchestrator.pipeline import research_claim
+        await research_claim(
+            claim_text="ChatGPT trains on data",
+            config=VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path)),
+            resolved_entity=self._make_resolved(),
+        )
+
+        assert write_entity_called == [], "_write_entity_file must not be called when entity is pre-resolved"

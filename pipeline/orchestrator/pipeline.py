@@ -37,7 +37,9 @@ import dataclasses
 from pydantic_ai import capture_run_messages
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
-from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
+from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
+from analyst.agent import EntityResolution
+from orchestrator.entity_resolution import ResolvedEntity
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
@@ -204,6 +206,7 @@ async def verify_claim(
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
     sem: asyncio.Semaphore | None = None,
+    resolved_entity: ResolvedEntity | None = None,
 ) -> VerificationResult:
     """Run the full verification pipeline.
 
@@ -231,12 +234,14 @@ async def verify_claim(
         errors=[],
     )
 
+    research_entity = resolved_entity.entity_name if resolved_entity is not None else entity_name
+
     with bind_run_id(cfg.run_id):
         logger.info("verify_claim entry: entity=%s claim=%s", entity_name, claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/4: Searching for sources...")
-            urls, research_errors, trace = await _research(client, entity_name, claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, research_entity, claim_text, cfg, _sem)
             result.urls_found = urls
             result.research_trace = trace
 
@@ -276,7 +281,7 @@ async def verify_claim(
 
             # Step 3: Analyst
             logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
-            analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg)
+            analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg, resolved_entity=resolved_entity)
             result.analyst_output = analyst_out
 
             if not analyst_out:
@@ -541,15 +546,31 @@ async def _run_with_null_retry(
 
 
 async def _analyse_claim(
-    entity_name: str,
+    entity_name: str | None,
     claim_text: str,
     sources: list[dict],
     cfg: VerifyConfig,
+    resolved_entity: ResolvedEntity | None = None,
 ) -> AnalystOutput | None:
-    prompt = build_analyst_prompt(entity_name, claim_text, sources)
-    with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
-        output, _ = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
-    return output
+    prompt = build_analyst_prompt(entity_name, claim_text, sources, resolved_entity=resolved_entity)
+    if resolved_entity is not None:
+        with verdict_only_agent.override(model=resolve_model(cfg.model_for("analyst"))):
+            verdict_assessment, _ = await _run_with_null_retry(
+                verdict_only_agent, prompt, cfg.analyst_timeout_s
+            )
+        if verdict_assessment is None:
+            return None
+        entity_resolution = EntityResolution(
+            entity_name=resolved_entity.entity_name,
+            entity_type=resolved_entity.entity_type,
+            entity_description=resolved_entity.entity_description,
+            aliases=resolved_entity.aliases,
+        )
+        return AnalystOutput(entity=entity_resolution, verdict=verdict_assessment)
+    else:
+        with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
+            output, _ = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
+        return output
 
 
 async def _audit_claim(
@@ -590,6 +611,7 @@ async def research_claim(
     config: VerifyConfig | None = None,
     checkpoint: CheckpointHandler | None = None,
     sem: asyncio.Semaphore | None = None,
+    resolved_entity: ResolvedEntity | None = None,
 ) -> VerificationResult:
     """Research a claim, persist sources/entity/claim to disk, and run auditor.
 
@@ -625,12 +647,14 @@ async def research_claim(
         errors=[],
     )
 
+    research_entity_hint = resolved_entity.entity_name if resolved_entity is not None else ""
+
     with bind_run_id(cfg.run_id):
         logger.info("research_claim entry: claim=%s", claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/5: Searching for sources...")
-            urls, research_errors, trace = await _research(client, "", claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, research_entity_hint, claim_text, cfg, _sem)
             result.urls_found = urls
             result.research_trace = trace
 
@@ -675,7 +699,7 @@ async def research_claim(
 
             # Step 4: Analyse claim (analyst identifies entity)
             logger.info("Step 4/5: Analysing claim...")
-            analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg)
+            analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg, resolved_entity=resolved_entity)
             result.analyst_output = analyst_out
 
             if not analyst_out:
@@ -685,13 +709,17 @@ async def research_claim(
             result.entity = analyst_out.entity.entity_name
 
             # Write entity and claim to disk
-            entity_ref = _write_entity_file(
-                entity_name=analyst_out.entity.entity_name,
-                entity_type=analyst_out.entity.entity_type,
-                entity_description=analyst_out.entity.entity_description,
-                repo_root=repo_root,
-                aliases=analyst_out.entity.aliases or None,
-            )
+            # Skip when entity is pre-resolved (file already exists on disk).
+            if resolved_entity is None:
+                entity_ref = _write_entity_file(
+                    entity_name=analyst_out.entity.entity_name,
+                    entity_type=analyst_out.entity.entity_type,
+                    entity_description=analyst_out.entity.entity_description,
+                    repo_root=repo_root,
+                    aliases=analyst_out.entity.aliases or None,
+                )
+            else:
+                entity_ref = resolved_entity.entity_ref
             claim_slug = slugify(analyst_out.verdict.title)
             claim_path = _write_claim_file(
                 title=analyst_out.verdict.title,

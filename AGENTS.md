@@ -121,7 +121,8 @@ Two CLIs exist with different scopes:
 
 ```
 uv run dr verify "Entity" "claim text"
-uv run dr verify-claim "claim text"
+uv run dr verify-claim products/chatgpt "ChatGPT excludes frontier models from user data training"
+uv run dr verify-claim - "Some AI company makes a sustainability claim"
 uv run dr reassess --entity ecosia
 uv run dr ingest https://example.com/article
 uv run dr onboard "Ecosia AI" --type product
@@ -132,7 +133,7 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 Commands:
 
 - `dr verify` -- Verify a claim about an entity using web research (read-only; no disk writes)
-- `dr verify-claim` -- Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk
+- `dr verify-claim` -- Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk. First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
 - `dr reassess` -- Run evaluator checks on research claims
 - `dr ingest` -- Ingest a URL and produce a source file
 - `dr onboard` -- Onboard an entity using claim templates

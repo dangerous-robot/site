@@ -586,7 +586,16 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
-    result = asyncio.run(verify_claim(entity, claim, config, checkpoint))
+    resolved_entity = None
+    if "/" in entity:
+        from orchestrator.entity_resolution import parse_entity_ref
+        from common.content_loader import resolve_repo_root
+        try:
+            resolved_entity = parse_entity_ref(entity, resolve_repo_root())
+        except ValueError:
+            pass  # fall back to bare name hint; not an error for dr verify
+
+    result = asyncio.run(verify_claim(entity, claim, config, checkpoint, resolved_entity=resolved_entity))
     _print_verify_result(result)
 
 
@@ -595,6 +604,7 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
 # --------------------------------------------------------------------------- #
 
 @main.command("verify-claim")
+@click.argument("entity_ref")
 @click.argument("claim_text")
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
@@ -606,13 +616,19 @@ def verify(ctx: click.Context, entity: str, claim: str, max_sources: int | None,
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
-def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
+def verify_claim_cmd(ctx: click.Context, entity_ref: str, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
     """Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk.
 
-    Example:
-        dr verify-claim "iPhone 20 will support Neuralink"
+    ENTITY_REF is required. Use 'products/chatgpt' to pre-resolve entity from disk
+    (deterministic claim path, skips LLM entity inference), or '-' to let the analyst
+    infer and create the entity.
+
+    \b
+    Examples:
+        dr verify-claim products/chatgpt "ChatGPT excludes frontier models from user data training"
+        dr verify-claim - "Some AI company makes a sustainability claim"
     """
-    logger.info("dr verify-claim: claim=%s", claim_text)
+    logger.info("dr verify-claim: entity_ref=%s claim=%s", entity_ref, claim_text)
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     if not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
@@ -621,6 +637,19 @@ def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, c
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.pipeline import VerifyConfig, research_claim
+
+    resolved_entity = None
+    if entity_ref != "-":
+        from orchestrator.entity_resolution import parse_entity_ref
+        from common.content_loader import resolve_repo_root
+        repo_root_path = Path(repo_root) if repo_root else resolve_repo_root()
+        try:
+            resolved_entity = parse_entity_ref(entity_ref, repo_root_path)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+
+    if resolved_entity is not None:
+        click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
 
     model = ctx.obj["model"]
     overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
@@ -635,7 +664,7 @@ def verify_claim(ctx: click.Context, claim_text: str, max_sources: int | None, c
     )
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
-    result = asyncio.run(research_claim(claim_text, config, checkpoint))
+    result = asyncio.run(research_claim(claim_text, config, checkpoint, resolved_entity=resolved_entity))
 
     click.echo("=" * 60)
     click.echo("Verify-Claim Report")
