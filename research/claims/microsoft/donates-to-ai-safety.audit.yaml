@@ -1,0 +1,77 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-01T05:47:42.959569+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Microsoft" AI safety donations report'
+  - Microsoft AI safety initiatives funding
+  - Independent analysis Microsoft AI safety efforts
+  - Microsoft AI safety partnerships organizations
+  planner_rationale: These queries aim to find concrete evidence of Microsoft's financial
+    contributions to AI safety. The first query seeks official reports from Microsoft.
+    The second focuses on funding details. The third looks for unbiased evaluations
+    of Microsoft's work in this area, and the fourth targets specific organizations
+    Microsoft collaborates with on AI safety, which could reveal donation patterns.
+  candidates_seen: 23
+  urls_kept: 10
+  urls_dropped: 10
+  scorer_rationale: The claim asks about Microsoft's donations to AI safety causes.
+    Several articles discuss Microsoft's Responsible AI principles, transparency reports,
+    and investments in AI safety and security.  Some articles detail specific initiatives
+    like the Societal Resilience Grants and collaborations to ensure safe AI development.  Articles
+    about AI investments in Australia are also included as it's part of responsible
+    AI development.  Articles focusing on general AI strategies or security tools
+    are less directly relevant. I have prioritized articles that explicitly mention
+    safety, responsible AI, and related initiatives.
+  urls_after_blocklist: 8
+sources_consulted:
+- id: 2026/microsoft-ai-impact
+  url: https://www.microsoft.com/en-us/corporate-responsibility/ai
+  title: AI Impact
+  ingested: true
+- id: 2026/nonprofits-and-giving
+  url: https://www.microsoft.com/en-us/corporate-responsibility/giving-nonprofits
+  title: Nonprofits and Giving
+  ingested: true
+- id: 2025/microsoft-eu-disinformation-code-report-5
+  url: https://disinfocode.eu/reports/microsoft/5?commitmentId=234&chapterId=47&signatorie=24&report=5
+  title: Microsoft Fifth Report on Compliance with the 2022 EU Code of Practice on
+    Disinformation
+  ingested: true
+- id: 2026/ai-powered-defense-threat-landscape
+  url: https://www.microsoft.com/en-us/security/blog/2026/04/22/ai-powered-defense-for-an-ai-accelerated-threat-landscape/
+  title: AI-powered defense for an AI-accelerated threat landscape
+  ingested: true
+- id: 2023/microsoft-ai-red-team-safer-ai
+  url: https://www.microsoft.com/en-us/security/blog/2023/08/07/microsoft-ai-red-team-building-future-of-safer-ai/
+  title: Microsoft AI Red Team building future of safer AI
+  ingested: true
+- id: 2026/ai-as-tradecraft-threat-actors
+  url: https://www.microsoft.com/en-us/security/blog/2026/03/06/ai-as-tradecraft-how-threat-actors-operationalize-ai/
+  title: 'AI as tradecraft: How threat actors operationalize AI'
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

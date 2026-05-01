@@ -7,21 +7,13 @@ verdict: 'false'
 confidence: high
 criteria_slug: excludes-image-generation
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-01'
 sources:
-- 2026/chatgpt-image-generation-limit-query
-- 2025/chatgpt-free-image-generation-limit
-- 2025/openai-gpu-limits-image-creation
-- 2024/chatgpt-free-account-limits
+- 2026/image-generation
+- 2026/gpt-image-1-api
+- 2026/images-and-vision
+- 2026/gpt-image-1-model
+- 2026/gpt-image-2-api
+- 2026/openai-chatgpt-images-2-0
 ---
-The claim that **ChatGPT excludes image generation** is false. Multiple independent sources confirm that ChatGPT does include image‑generation functionality, though access is limited by tier and daily caps.
-
-* The Reddit thread "What's the image generation limit in ChatGPT with the $20 plan?" records a user asking about the daily image‑generation allowance for the paid $20 “ChatGPT Pro” subscription, indicating that images can be generated under that plan.
-* The YingTu guide "ChatGPT Free Plan Image Generation Limit: Complete 2025 Guide" details that even on the free tier users can generate 2‑3 images per 24‑hour rolling window using GPT‑4o or DALL‑E 3.
-* TechRadar’s article "‘Our GPUs are melting’ – OpenAI puts limits on image creation and delays rollout to free accounts" reports that OpenAI has introduced a limit of three images per day for free‑tier users, explicitly acknowledging that image generation is a feature of ChatGPT.
-* The OpenAI Developer Community post "Image and Text Message Limits on ChatGPT Free account" cites the official FAQ stating that free users are allowed "2 images every 24 hours," again confirming the existence of the feature.
-
-These sources collectively show that ChatGPT does **provide** image generation, albeit with usage caps that vary by subscription level. Therefore, the assertion that ChatGPT excludes image generation is contradicted by the evidence.
-
-**Verdict:** false
-**Confidence:** high
+The claim that ChatGPT excludes image generation is contradicted by multiple official OpenAI documents and independent coverage. OpenAI’s own Image API documentation states that “The OpenAI API lets you generate and edit images from text prompts using GPT Image models, including our latest, gpt-image-2”【Source 1】. The “Images and vision” guide notes that “GPT Image models can use text and image inputs to create new images or edit existing ones”【Source 3】, and the technical specs for GPT‑Image‑1 describe it as a “natively multimodal language model … produces image outputs”【Source 4】. Further, the GPT‑Image‑2 API (also referred to as “ChatGPT Images 2.0”) is explicitly marketed as an image‑generation model, with WIRED reporting on its capabilities to generate multiple images and render text within scenes【Source 5】【Source 6】. Third‑party integration documentation (e.g., Kie.ai) also advertises the “OpenAI’s 4o image generation model” as a feature of ChatGPT’s multimodal offering【Source 2】. Collectively, these sources demonstrate that ChatGPT **includes** image‑generation functionality, not excludes it. Therefore, the statement is false.

@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:30:06.583280+00:00'
+  ran_at: '2026-05-01T13:17:18.733884+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,52 +15,67 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"ChatGPT" model disclosure transparency OpenAI'
-  - ChatGPT model architecture independent analysis
-  - OpenAI ChatGPT model versioning history
-  planner_rationale: These queries aim to find information about ChatGPT's model usage
-    from various angles. The first query directly asks about model disclosure and
-    transparency, targeting OpenAI as the entity. The second targets independent analyses
-    of the model architecture, seeking technical details. The third focuses on the
-    history of model versions to understand how ChatGPT's underlying models have evolved,
-    potentially revealing usage information.
-  candidates_seen: 24
-  urls_kept: 21
-  urls_dropped: 2
-  scorer_rationale: The prompt asks to score the relevance of each candidate to the
-    claim 'ChatGPT discloses which models it uses'. The candidates range from privacy
-    policies to technical specifications and timelines of model releases. Candidates
-    3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 are highly relevant as they
-    directly mention or discuss the models used by ChatGPT, including their architecture,
-    releases, and capabilities. Candidates 1, 2 are about general privacy practices
-    and are tangentially related. Candidates 5, 6, 7, 8 are more technical and provide
-    details about the model's architecture, but still relevant to the claim. Candidates
-    21, 22, 23, 24, 25 are also relevant as they provide timelines and updates on
-    different versions of ChatGPT models. Therefore, all candidates are kept.
-  urls_after_blocklist: 4
+  - ChatGPT model disclosure OpenAI
+  - OpenAI ChatGPT model version transparency
+  - ChatGPT model architecture details research paper
+  - Independent analysis ChatGPT model usage
+  planner_rationale: These queries aim to find information about the models powering
+    ChatGPT from multiple angles. The first two directly ask about model disclosure
+    from OpenAI. The third searches for technical details in research papers, which
+    are likely to be primary sources. The fourth seeks independent analyses that might
+    evaluate or comment on ChatGPT's model usage, potentially revealing discrepancies
+    or limitations in OpenAI's disclosures.
+  candidates_seen: 32
+  urls_kept: 19
+  urls_dropped: 9
+  scorer_rationale: The claim asks about which models ChatGPT uses. Candidates 1-10
+    directly address the architecture, specific models (GPT-4, GPT-5.1, GPT-5.3),
+    and related technologies like Transformers used in ChatGPT. Candidates 11-18 discuss
+    usage patterns, data analysis capabilities, and adoption rates of ChatGPT. Candidates
+    19-22 mention privacy, policy and data controls, which are related but not directly
+    about the models themselves.  Candidates 23-25 are either Wikipedia entry or a
+    general overview of ChatGPT.  Candidates 26-27 discuss the model's limitations
+    and progress. Candidates 28-30 discuss the use of ChatGPT in research, not the
+    specific models. I have included candidates 1-30 as they all provide different
+    facets of information related to the prompt.
+  urls_after_blocklist: 19
 sources_consulted:
-- id: 2026/audit-chatgpt-data-privacy
-  url: https://www.techbuzz.ai/articles/how-to-audit-what-chatgpt-knows-about-you-and-reclaim-your-data-privacy
-  title: How to audit what ChatGPT knows about you - and reclaim your data privacy
+- id: 2026/openai-api-models
+  url: https://developers.openai.com/api/docs/models
+  title: Models
   ingested: true
-- id: 2025/openai-model-spec-2025-12-18
-  url: https://model-spec.openai.com/2025-12-18.html
-  title: OpenAI Model Spec
+- id: 2025/analysis-llm-transparency-accessibility
+  url: https://arxiv.org/html/2502.18505v1
+  title: Comprehensive Analysis of Transparency and Accessibility of ChatGPT, DeepSeek,
+    and other SoTA Large Language Models
   ingested: true
-- id: 2026/is-chatgpt-private-lawyer-guide
-  url: https://www.spellbook.legal/learn/is-chatgpt-private
-  title: Is ChatGPT Private? A Lawyer’s Guide to Securing Confidential Client Data
+- id: 2026/all-models
+  url: https://developers.openai.com/api/docs/models/all
+  title: All models
+  ingested: true
+- id: 2024/chatgpts-architecture
+  url: https://www.geeksforgeeks.org/nlp/chatgpts-architecture/
+  title: ChatGPT's Architecture
+  ingested: true
+- id: 2026/chatgpt-architecture-llm-life-sciences
+  url: https://intuitionlabs.ai/articles/chatgpt-understanding-architecture-llm
+  title: 'Understanding ChatGPT: Architecture, Function, and Generative AI'
+  ingested: true
+- id: 2023/chatgpt-architecture-exploration
+  url: https://link.springer.com/chapter/10.1007/978-1-4842-9994-4_4
+  title: 'The ChatGPT Architecture: An In-Depth Exploration of OpenAI’s Conversational
+    Language Model'
   ingested: true
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: medium
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: high
   auditor_confidence: medium
-  verdict_agrees: true
-  confidence_agrees: true
+  verdict_agrees: false
+  confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
+  reviewed_at: '2026-05-01'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

@@ -7,11 +7,13 @@ verdict: unverified
 confidence: high
 criteria_slug: renewable-energy-hosting
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-01'
 sources:
 - 2026/viro-ai
+- 2026/renewable-energy-gpt
 - 2023/chatgpt-energy-industry-efficiency-sustainability
-- 2023/chatgpt-servers-energy-sources
-- 2025/chatgpt-environmental-cost
+- 2025/greenpt
+- 2026/chatgpt-energy-ethics-discussion
+- 2024/custom-gpt-renewable-energy-guide
 ---
-The claim that ChatGPT is hosted on renewable energy is not directly addressed by the available sources. Viro AI promotes its own service as a "sustainable, climate‑friendly ChatGPT alternative" and emphasizes clean‑energy powering of its platform, but this refers to Viro AI’s hosting, not to OpenAI’s ChatGPT service itself (Viro AI). A Hacker News discussion notes that OpenAI runs ChatGPT on Microsoft Azure infrastructure, yet provides no information about the energy mix of those data centers (Ask HN: ChatGPT servers locations and energy sources). An analysis of ChatGPT’s environmental impact quantifies electricity and water use per query but does not state whether the electricity comes from renewable sources (ChatGPT Hits 700M Weekly Users, But at What Environmental Cost?). Consequently, there is no source confirming or refuting that OpenAI’s ChatGPT is hosted on renewable energy, leaving the claim unverified despite a thorough search of the provided materials.
+The sources provided do not contain any statement that OpenAI powers the ChatGPT service with renewable energy. The Viro AI landing page (Source 1) promotes a *sustainable* alternative to ChatGPT, but it describes its own offering, not OpenAI’s infrastructure. The OpenAI‑hosted ‘Renewable Energy’ landing page (Source 2) is a custom‑GPT interface and contains only standard navigation and legal links; it makes no claim about the energy mix used for the underlying ChatGPT service. The AIContentfy article (Source 3) discusses how ChatGPT can be applied to improve efficiency in power‑plant operations, but it does not address how the model itself is powered. GreenPT (Source 4) describes its own European‑hosted, renewable‑energy‑powered AI platform, again unrelated to OpenAI. A Reddit discussion (Source 5) notes users’ concern that “ChatGPT … uses more energy than regular search functions” and implies a carbon‑heavy footprint, but it does not provide concrete data on the energy source. Finally, the guide on custom GPT for renewable‑energy applications (Source 6) focuses on industry use‑cases, not on OpenAI’s hosting practices. Because none of the material directly confirms that ChatGPT is run on renewable energy, the claim remains unverified despite a thorough search of the supplied sources.

@@ -1,0 +1,66 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-01T05:50:12.382175+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Microsoft" environmental donations report'
+  - Microsoft sustainability initiatives independent analysis
+  - Microsoft environmental funding data transparency
+  - Microsoft environmental grants recipient list
+  planner_rationale: These queries aim to find verifiable information about Microsoft's
+    environmental donations. The first query seeks official reports, the second aims
+    for independent assessments of their sustainability work, the third focuses on
+    transparency regarding funding, and the fourth specifically targets a list of
+    grant recipients to provide concrete evidence.
+  candidates_seen: 25
+  urls_after_blocklist: 8
+sources_consulted:
+- id: 2026/reports-hub
+  url: https://www.microsoft.com/en-us/corporate-responsibility/reports-hub
+  title: Reports Hub
+  ingested: true
+- id: 2026/microsoft-sustainability
+  url: https://www.microsoft.com/en-us/corporate-responsibility/sustainability
+  title: Sustainability
+  ingested: true
+- id: 2026/microsoft-nature-conservancy
+  url: https://www.nature.org/en-us/about-us/who-we-are/how-we-work/working-with-companies/companies-investing-in-nature1/microsoft/
+  title: Microsoft and The Nature Conservancy
+  ingested: true
+- id: 2026/nonprofits-and-giving
+  url: https://www.microsoft.com/en-us/corporate-responsibility/giving-nonprofits
+  title: Nonprofits and Giving
+  ingested: true
+- id: 2026/microsoft-sustainability
+  url: https://www.microsoft.com/en-us/sustainability
+  title: Sustainability - Products for a Sustainable Future
+  ingested: true
+- id: 2026/microsoft-impact-summary
+  url: https://www.microsoft.com/en-us/corporate-responsibility/impact-summary
+  title: The Microsoft Impact Summary
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

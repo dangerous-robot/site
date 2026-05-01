@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:35:36.154995+00:00'
+  ran_at: '2026-05-01T13:23:07.957294+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,32 +15,50 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"ChatGPT" limitations text generation image capabilities'
-  - independent analysis ChatGPT image generation features
-  - ChatGPT developer documentation text-only functionality
-  planner_rationale: These queries aim to verify if ChatGPT intentionally limits image
-    generation capabilities. The first targets limitations directly. The second seeks
-    analysis from sources outside OpenAI. The third looks for technical documentation
-    to confirm the stated functionality.
-  candidates_seen: 24
-  urls_after_blocklist: 4
+  - ChatGPT API documentation image generation capabilities
+  - OpenAI ChatGPT limitations text vs. image
+  - independent analysis ChatGPT image generation roadmap
+  - ChatGPT developer forum image generation discussions
+  planner_rationale: These queries aim to verify the claim by looking at the official
+    documentation (API), understanding the inherent limitations outlined by OpenAI,
+    finding independent assessments of ChatGPT's capabilities, and exploring developer
+    discussions to gauge the current state of image generation within the ChatGPT
+    ecosystem.
+  candidates_seen: 27
+  urls_kept: 19
+  urls_dropped: 2
+  scorer_rationale: The prompt asks to score the relevance of each candidate to the
+    claim that ChatGPT excludes image generation. The claim is false. All candidates
+    discuss ChatGPT's image generation capabilities, either current or new, so all
+    are relevant. The score is based on the level of detail and directness of the
+    relevance. Candidates with titles and snippets explicitly mentioning image generation,
+    new models, and capabilities receive higher scores. Those discussing limitations
+    or technical details are also relevant.
+  urls_after_blocklist: 19
 sources_consulted:
-- id: 2026/chatgpt-image-generation-limit-query
-  url: https://www.reddit.com/r/ChatGPTPro/comments/1jv20nh/whats_the_image_generation_limit_in_chatgpt_with/
-  title: What's the image generation limit in ChatGPT with the $20 plan?
+- id: 2026/image-generation
+  url: https://developers.openai.com/api/docs/guides/image-generation
+  title: Image generation
   ingested: true
-- id: 2025/chatgpt-free-image-generation-limit
-  url: https://yingtu.ai/en/blog/chatgpt-free-image-generation-limit-complete-guide
-  title: 'ChatGPT Free Plan Image Generation Limit: Complete 2025 Guide'
+- id: 2026/gpt-image-1-api
+  url: https://kie.ai/4o-image-api
+  title: 'Affordable GPT-Image-1 API: Integrate OpenAI’s 4o Image Generation Model'
   ingested: true
-- id: 2025/openai-gpu-limits-image-creation
-  url: https://www.techradar.com/computing/artificial-intelligence/our-gpus-are-melting-openai-puts-limits-on-image-creation-and-delays-rollout-to-free-accounts
-  title: ‘Our GPUs are melting’ – OpenAI puts limits on image creation and delays
-    rollout to free accounts
+- id: 2026/images-and-vision
+  url: https://developers.openai.com/api/docs/guides/images-vision
+  title: Images and vision
   ingested: true
-- id: 2024/chatgpt-free-account-limits
-  url: https://community.openai.com/t/image-and-text-message-limits-on-chatgpt-free-account/950207
-  title: Image and Text Message Limits on ChatGPT Free account
+- id: 2026/gpt-image-1-model
+  url: https://developers.openai.com/api/docs/models/gpt-image-1
+  title: GPT Image 1 Model
+  ingested: true
+- id: 2026/gpt-image-2-api
+  url: https://www.fal.ai/models/openai/gpt-image-2
+  title: GPT Image 2 API
+  ingested: true
+- id: 2026/openai-chatgpt-images-2-0
+  url: https://www.wired.com/story/openai-beefs-up-chatgpts-image-generation-model/
+  title: OpenAI Beefs Up ChatGPT’s Image Generation Model
   ingested: true
 audit:
   analyst_verdict: 'false'
@@ -51,7 +69,7 @@ audit:
   confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
+  reviewed_at: '2026-05-01'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

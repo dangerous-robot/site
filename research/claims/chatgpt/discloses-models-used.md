@@ -3,14 +3,17 @@ title: ChatGPT discloses which models it uses
 entity: products/chatgpt
 topics:
 - ai-safety
-verdict: unverified
-confidence: medium
+verdict: 'true'
+confidence: high
 criteria_slug: discloses-models-used
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-01'
 sources:
-- 2026/audit-chatgpt-data-privacy
-- 2025/openai-model-spec-2025-12-18
-- 2026/is-chatgpt-private-lawyer-guide
+- 2026/openai-api-models
+- 2025/analysis-llm-transparency-accessibility
+- 2026/all-models
+- 2024/chatgpts-architecture
+- 2026/chatgpt-architecture-llm-life-sciences
+- 2023/chatgpt-architecture-exploration
 ---
-The claim that **ChatGPT discloses which models it uses** is not addressed by any of the provided sources. The Tech Buzz article focuses on user‑privacy controls and data‑training settings, but never mentions whether OpenAI tells users the underlying model (e.g., GPT‑4, GPT‑3.5) for a given session. The OpenAI Model Spec describes governance, safety principles, and the hierarchical chain of command for OpenAI’s models, yet it does not indicate that ChatGPT communicates model identifiers to end users. The Spellbook guide discusses data‑storage and training policies across different subscription tiers, without any reference to model‑type disclosure. Because none of the sources engage with the specific question of model‑type transparency, the claim remains **unverified**. Further evidence from official OpenAI documentation or user‑interface screenshots would be needed to confirm or refute the assertion.
+Multiple OpenAI‑produced and third‑party sources explicitly state the model family that powers ChatGPT.  The OpenAI‑maintained “Models” and “All models” pages list the available model identifiers (e.g., GPT‑5.5, GPT‑5.4) that developers can select for the API, indicating OpenAI’s practice of publishing model information publicly【Models】, 【All models】.  Technical overviews also name the specific version employed by the ChatGPT product: GeeksforGeeks notes that “ChatGPT is based on GPT‑3.5”【ChatGPT's Architecture】, while IntuitionLabs reports a later transition to the “GPT‑5 series (specifically GPT‑5.2)” as of January 2026【Understanding ChatGPT: Architecture, Function, and Generative AI】.  Together these sources show that OpenAI does disclose the underlying model versions used by ChatGPT, even if the exact version evolves over time.

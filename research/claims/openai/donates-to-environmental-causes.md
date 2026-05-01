@@ -4,13 +4,16 @@ entity: companies/openai
 topics:
 - environmental-impact
 verdict: unverified
-confidence: medium
+confidence: high
 criteria_slug: donates-to-environmental-causes
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-01'
 sources:
-- 2026/openai-nonprofit-commission-report
-- 2026/openai-inc-nonprofit-explorer
+- 2025/environmental-impact-of-ai
+- 2026/open-ai-sustainability
+- 2026/ai-energy-environment-democracy
 - 2023/sustainable-development-and-ai
+- 2026/president-openai-donor-maga
+- 2025/irdo-2025-poster-63
 ---
-The three sources provided do not contain any information about OpenAI making donations to environmental causes. The OpenAI Nonprofit Commission Report focuses on the organization’s governance structure and does not discuss charitable giving. The ProPublica filing of OpenAI Inc.’s IRS Form 990 lists revenue, expenses, and executive compensation but includes no line‑item or narrative about environmental donations. The community forum thread on "Sustainable development and AI" debates the carbon footprint of AI services and mentions Azure’s carbon‑neutral claims, but it does not address whether OpenAI itself contributes financially to environmental initiatives. Because no source directly confirms or refutes the claim, it remains unverified.
+The claim that OpenAI donates to environmental causes is not addressed by any of the supplied sources.  The material focuses on OpenAI’s energy consumption, efficiency improvements, sustainability goals, and criticisms of its reporting transparency (Source 1 – *Environmental Impact of AI*; Source 2 – *Open AI Sustainability*).  None of the articles mention direct financial contributions, grant‑making, or other charitable activities aimed at environmental organizations.  A separate source (Source 5) discusses political donations by OpenAI’s president, but it does not speak to environmental philanthropy, and Source 3, Source 4, and Source 6 are unrelated to OpenAI’s charitable activities.  Because the available evidence neither confirms nor explicitly denies OpenAI’s donation practices, the claim remains unverified despite a thorough search of the provided material.  Accordingly, the appropriate verdict is **unverified** with **high** confidence that the claim is not supported by the sources at hand.

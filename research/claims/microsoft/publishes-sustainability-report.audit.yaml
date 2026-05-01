@@ -1,0 +1,58 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-01T05:44:37.158809+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - site:microsoft.com sustainability report
+  - Microsoft ESG report 2023
+  - independent analysis Microsoft sustainability initiatives
+  - Microsoft environmental, social, and governance report
+  planner_rationale: These queries target Microsoft's official website for their sustainability
+    reports, specifically looking for the most recent reports. The second query specifies
+    a year to narrow down results. The third query seeks independent analysis to avoid
+    relying solely on Microsoft's self-reporting. The fourth query uses the full acronym
+    ESG to broaden the search and capture potentially different report titles.
+  candidates_seen: 23
+  urls_after_blocklist: 8
+sources_consulted:
+- id: 2026/sustainability-reporting-standards
+  url: https://www.microsoft.com/en-us/sustainability/learning-center/sustainability-reporting-standards
+  title: Sustainability Reporting Standards
+  ingested: true
+- id: 2026/generate-quantitative-report
+  url: https://learn.microsoft.com/en-us/industry/sustainability/report-quantitative-preparation-report
+  title: Generate a report
+  ingested: true
+- id: 2025/business-central-sustainability-reports
+  url: https://learn.microsoft.com/en-us/dynamics365/business-central/sustainability-reports
+  title: Sustainability reports and analytics
+  ingested: true
+- id: 2024/microsoft-2024-environmental-sustainability-report
+  url: https://cdn-dynmedia-1.microsoft.com/is/content/microsoftcorp/microsoft/msc/documents/presentations/CSR/Microsoft-2024-Environmental-Sustainability-Report.pdf
+  title: 2024 Environmental Sustainability Report
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

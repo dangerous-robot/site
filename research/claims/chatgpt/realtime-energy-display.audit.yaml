@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:33:07.762767+00:00'
+  ran_at: '2026-05-01T13:21:36.197346+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,24 +15,23 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - ChatGPT energy consumption data analysis
-  - ChatGPT real-time resource usage metrics
-  - Independent audit ChatGPT energy costs
-  planner_rationale: These queries aim to find verifiable data or independent assessments
-    regarding ChatGPT's energy usage. The first query searches for analyses of existing
-    data. The second specifically targets real-time metrics if they exist. The third
-    seeks independent verification of energy costs, avoiding potentially biased sources.
-  candidates_seen: 17
-  urls_kept: 14
-  urls_dropped: 2
-  scorer_rationale: The provided URLs cover a range of topics related to ChatGPT's
-    energy consumption, including calculations, estimates, comparisons to other technologies,
-    and practical considerations for tracking and validating usage.  The URLs kept
-    focus on energy usage numbers and related analysis. The dropped URLs focus on
-    usage dashboards and enterprise analytics, which are related but not directly
-    about the core claim of real-time energy usage.
-  urls_after_blocklist: 4
+  - ChatGPT energy consumption real-time data
+  - ChatGPT API resource usage metrics
+  - Independent analysis ChatGPT energy costs
+  - OpenAI ChatGPT server energy footprint report
+  planner_rationale: 'The claim asserts that ChatGPT displays real-time energy usage.
+    The queries are designed to find: 1) Direct data or reports on ChatGPT''s energy
+    consumption. 2) Technical details about API resource usage, which might indirectly
+    indicate energy consumption. 3) Independent analyses of ChatGPT''s energy footprint
+    by researchers or journalists. 4) Reports from OpenAI or third parties regarding
+    the energy used to run ChatGPT''s servers.'
+  candidates_seen: 21
+  urls_after_blocklist: 21
 sources_consulted:
+- id: 2025/how-much-energy-does-chatgpt-use
+  url: https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use
+  title: How much energy does ChatGPT use?
+  ingested: true
 - id: 2025/chatgpt-energy-consumption-visualized
   url: https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/
   title: ChatGPT Energy Consumption Visualized
@@ -41,20 +40,29 @@ sources_consulted:
   url: https://spectrum.ieee.org/ai-energy-use
   title: How Much Energy Does It Take to Power Billions of AI Queries?
   ingested: true
-- id: 2025/how-much-energy-does-chatgpt-use
-  url: https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use
-  title: How much energy does ChatGPT use?
+- id: 2024/chatgpt-electricity-consumption-analysis
+  url: https://www.bestbrokers.com/forex-brokers/ais-power-demand-calculating-chatgpts-electricity-consumption-for-handling-over-78-billion-user-queries-every-year/
+  title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption for handling
+    1.17 trillion user queries every year'
+  ingested: true
+- id: 2025/chatgpt-energy-usage-0-34-wh
+  url: https://www.devsustainability.com/p/chatgpt-energy-usage-is-034-wh-per
+  title: ChatGPT energy usage is 0.34 Wh per query
+  ingested: true
+- id: 2026/chatgpt-energy-water-usage-reddit
+  url: https://www.reddit.com/r/energy/comments/1l9372g/we_finally_know_officially_how_much_energy_and/
+  title: We finally know officially how much energy and water a ChatGPT query uses
   ingested: true
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: high
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: medium
   auditor_confidence: high
   verdict_agrees: true
-  confidence_agrees: true
+  confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
+  reviewed_at: '2026-05-01'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

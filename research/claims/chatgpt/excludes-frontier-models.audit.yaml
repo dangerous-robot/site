@@ -1,0 +1,77 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-01T13:24:38.648303+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"ChatGPT" model size limitations technical specifications'
+  - independent analysis ChatGPT model architecture
+  - research paper ChatGPT model capabilities scale
+  - OpenAI ChatGPT model size comparison with other LLMs
+  planner_rationale: These queries aim to verify the claim that ChatGPT excludes frontier-scale
+    models. The first query focuses on technical details about ChatGPT's model size.
+    The second seeks independent analysis of the model's architecture, potentially
+    revealing limitations. The third targets research papers that might discuss the
+    scale of the model. The fourth compares ChatGPT to other large language models,
+    providing context on its relative scale.
+  candidates_seen: 32
+  urls_kept: 19
+  urls_dropped: 0
+  scorer_rationale: The prompt asks to score candidates for relevance to the claim
+    that ChatGPT excludes frontier-scale models. All listed candidates discuss model
+    sizes, limitations, and the progression of ChatGPT models. Several explicitly
+    mention models like GPT-4, GPT-5, and their capabilities. Some discussion of models
+    such as LLaMA is also present. The candidates are all highly relevant to the claim.
+  urls_after_blocklist: 19
+sources_consulted:
+- id: 2026/chatgpt-model-size-understanding-scope-scale
+  url: https://itexus.com/what-is-chatgpt-model-size-understanding-the-scope-and-scale-of-ai-language-models/
+  title: 'What is ChatGPT Model Size: Understanding the Scope and Scale of AI Language
+    Models'
+  ingested: true
+- id: 2026/how-big-is-the-model
+  url: https://www.reddit.com/r/ChatGPT/comments/zhzjpq/how_big_is_the_model/
+  title: How big is the model?
+  ingested: true
+- id: 2025/chatgpt-context-window-token-limits-memory
+  url: https://www.datastudios.org/post/chatgpt-context-window-token-limits-memory-models-features-settings-etc
+  title: 'ChatGPT Context Window, Token Limits, Memory: models, features, settings,
+    etc'
+  ingested: true
+- id: 2024/unlocking-potential-chatgpt-exploration
+  url: https://arxiv.org/html/2304.02017v11
+  title: 'Unlocking the Potential of ChatGPT: A Comprehensive Exploration of its Applications,
+    Advantages, Limitations, and Future Directions in Natural Language Processing'
+  ingested: true
+- id: 2024/survey-real-power-chatgpt
+  url: https://arxiv.org/html/2405.00704v1
+  title: A Survey on the Real Power of ChatGPT
+  ingested: true
+- id: 2024/best-chatgpt-coding-models-2026
+  url: https://teamai.com/blog/large-language-models-llms/understanding-different-chatgpt-models/
+  title: 'Best ChatGPT Model for Coding (2026): Codex, Spark & Thinking'
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

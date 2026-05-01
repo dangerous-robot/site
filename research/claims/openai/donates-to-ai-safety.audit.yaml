@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:06:53.242258+00:00'
+  ran_at: '2026-05-01T12:50:00.677339+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,40 +15,59 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"OpenAI" "AI safety donations" report'
-  - OpenAI funding AI safety initiatives independent analysis
+  - OpenAI AI safety donations reports
+  - OpenAI funding AI safety research
+  - Independent analysis OpenAI AI safety initiatives
   - OpenAI philanthropic giving AI safety
-  planner_rationale: These queries aim to find evidence of OpenAI's financial contributions
-    to AI safety. The first query looks for official reports, the second seeks independent
-    analysis of their funding, and the third uses 'philanthropic giving' as a broader
-    term to capture potential donations.
-  candidates_seen: 16
-  urls_kept: 16
+  planner_rationale: 'These queries aim to find evidence of OpenAI''s financial contributions
+    to AI safety. The queries vary in focus: one looks for direct reports from OpenAI,
+    another seeks independent analysis of their funding, and the last targets philanthropic
+    data which often includes charitable giving.'
+  candidates_seen: 29
+  urls_kept: 29
   urls_dropped: 0
-  scorer_rationale: The query asks if OpenAI donates to AI safety causes. All the
-    URLs mention OpenAI funding or initiatives related to AI safety research, fellowships,
-    grants, or the OpenAI Safety Fellowship. Therefore, all candidates are relevant.
-  urls_after_blocklist: 4
+  scorer_rationale: The prompt asks to score each candidate for relevance to the claim
+    "OpenAI donates to AI safety causes". All candidates discuss OpenAI's involvement
+    in AI safety, ranging from fellowships and grants to broader safety initiatives
+    and philanthropic efforts. The scoring is based on the title and snippet only.
+    All candidates are relevant, and a score of 3 or higher is given to them.
+  urls_after_blocklist: 24
 sources_consulted:
-- id: 2026/openai-safety-fellowship-2026
-  url: https://blockchain.news/ainews/openai-safety-fellowship-announced-funding-independent-ai-safety-and-alignment-research-in-2026
-  title: 'OpenAI Safety Fellowship Announced: Funding Independent AI Safety and Alignment
-    Research in 2026'
+- id: 2026/openai-nonprofit-child-safety
+  url: https://futurism.com/artificial-intelligence/openai-nonprofit-child-safety
+  title: Nonprofit Research Groups Disturbed to Learn That OpenAI Has Secretly Been
+    Funding Their Work
   ingested: true
-- id: 2026/openai-safety-fellowship
-  url: https://thenextweb.com/news/openai-safety-fellowship
-  title: OpenAI launched a safety fellowship
+- id: 2026/donate-less-to-ai-safety
+  url: https://thecounterfactual.substack.com/p/donate-less-to-ai-safety
+  title: Donate Less to AI Safety*
+  ingested: true
+- id: 2026/openai-nonprofit-commission-report
+  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
+  title: The OpenAI Nonprofit Commission Report
+  ingested: true
+- id: 2026/openai-ai-safety-fellowship
+  url: https://www.ai-daily.news/articles/openai-introduces-ai-safety-fellowship-with-15000-compute-st
+  title: OpenAI Introduces AI Safety Fellowship
+  ingested: true
+- id: 2026/openai-safety-fellowship-applications
+  url: https://www.helpnetsecurity.com/2026/04/07/openai-safety-fellowship-applications/
+  title: OpenAI opens applications for an external AI safety research fellowship
+  ingested: true
+- id: 2026/openai-external-ai-safety-fellowship
+  url: https://thejournal.com/articles/2026/04/16/openai-launches-fellowship-to-fund-external-ai-safety-research.aspx
+  title: OpenAI Launches Fellowship to Fund External AI Safety Research
   ingested: true
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
-  analyst_confidence: medium
+  analyst_confidence: high
   auditor_confidence: high
   verdict_agrees: true
-  confidence_agrees: false
+  confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
+  reviewed_at: '2026-05-01'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
