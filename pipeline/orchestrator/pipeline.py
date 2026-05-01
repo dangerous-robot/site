@@ -153,7 +153,7 @@ class VerifyConfig:
     analyst_model: str | None = None
     auditor_model: str | None = None
     ingestor_model: str | None = None
-    max_sources: int = 12
+    max_sources: int = 8
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
     # until that job lands we want primary sources behind paywalls/blocks
