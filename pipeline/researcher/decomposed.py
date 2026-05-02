@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING
 import httpx
 
 from common.models import resolve_model
+from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
-from orchestrator.entity_resolution import ResolvedEntity, build_entity_context
+from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, _resolve_parent_name
 from researcher.agent import search_brave
 from researcher.planner import QueryPlan, query_planner_agent
 from researcher.scorer import SearchCandidate, ScoredURLs, build_scorer_prompt, url_scorer_agent
@@ -48,6 +49,7 @@ async def execute_searches(
                     title=item.get("title", ""),
                     snippet=item.get("snippet", ""),
                     from_query=query,
+                    publisher_quality=classify_url_publisher_quality(url),
                 ))
     return candidates
 
@@ -109,7 +111,8 @@ async def decomposed_research(
         errors.append(_research_err("no_results", "Search returned no results"))
         return [], errors, trace
 
-    scorer_prompt = build_scorer_prompt(entity_name, claim_text, candidates)
+    parent_name = _resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
+    scorer_prompt = build_scorer_prompt(entity_name, claim_text, candidates, parent_company=parent_name)
     try:
         async with sem:
             with url_scorer_agent.override(model=resolve_model(cfg.model_for("researcher"))):
@@ -126,8 +129,10 @@ async def decomposed_research(
             len(scored.kept), len(scored.dropped), scored.rationale,
         )
         if not scored.kept and candidates:
-            logger.warning("URL scorer dropped all %d candidates; falling back to all", len(candidates))
-            return [c.url for c in candidates], errors, trace
+            logger.warning("URL scorer dropped all %d candidates; returning empty", len(candidates))
+            trace["scorer_dropped_all"] = True
+            errors.append(_research_err("scorer_dropped_all", f"URL scorer dropped all {len(candidates)} candidates"))
+            return [], errors, trace
         return scored.kept, errors, trace
     except asyncio.TimeoutError:
         errors.append(_research_err("timeout", "URL scorer timed out"))

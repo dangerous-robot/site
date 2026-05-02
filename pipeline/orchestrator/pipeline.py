@@ -248,6 +248,8 @@ async def verify_claim(
             result.errors.extend(e.message for e in research_errors)
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
+                if any(e.error_type == "scorer_dropped_all" for e in research_errors):
+                    result.blocked_reason = BlockedReason.INSUFFICIENT_SOURCES
                 return result
 
             # Step 2: Ingest
@@ -664,6 +666,8 @@ async def research_claim(
             result.errors.extend(e.message for e in research_errors)
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
+                if any(e.error_type == "scorer_dropped_all" for e in research_errors):
+                    result.blocked_reason = BlockedReason.INSUFFICIENT_SOURCES
                 return result
 
             # Step 2: Ingest

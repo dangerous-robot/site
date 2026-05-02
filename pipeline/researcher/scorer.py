@@ -10,6 +10,7 @@ class SearchCandidate(BaseModel):
     title: str
     snippet: str
     from_query: str
+    publisher_quality: str = "secondary"
 
 
 class ScoredURLs(BaseModel):
@@ -35,6 +36,9 @@ Rules:
 - Every input URL must appear in either `kept` or `dropped` (no omissions).
 - Return URLs as-is (exact strings from input).
 - Include a brief `rationale` summarizing the scoring decisions.
+- When parent company is provided, sources about the parent company are relevant to claims about the subsidiary.
+- Each candidate has a `publisher_quality` label: `primary` (company or regulatory), `secondary` (academic, research, news), `tertiary` (advocacy, community), or `forum` (Reddit, Quora, HN, etc.).
+- Use publisher quality as a tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 3 unless no higher-quality alternatives exist in this candidate set.
 """
 
 url_scorer_agent = Agent(
@@ -49,13 +53,17 @@ def build_scorer_prompt(
     entity: str | None,
     claim: str,
     candidates: list[SearchCandidate],
+    parent_company: str | None = None,
 ) -> str:
+    entity_block = f"Entity: {entity or '(unknown)'}\n"
+    if parent_company:
+        entity_block += f"Parent company: {parent_company}\n"
     candidate_text = "\n".join(
-        f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\n"
+        f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\nPublisher quality: {c.publisher_quality}\n"
         for c in candidates
     )
     return (
-        f"Entity: {entity or '(unknown)'}\n"
+        f"{entity_block}"
         f"Claim: {claim}\n\n"
         f"Candidates:\n{candidate_text}"
     )

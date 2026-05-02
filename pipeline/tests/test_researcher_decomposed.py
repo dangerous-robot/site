@@ -13,6 +13,9 @@ from researcher.agent import ResearchResult, research_agent
 from researcher.planner import QueryPlan, query_planner_agent
 from researcher.scorer import SearchCandidate, ScoredURLs, url_scorer_agent
 from researcher.decomposed import execute_searches, decomposed_research
+from orchestrator.checkpoints import StepError
+from orchestrator.entity_resolution import ResolvedEntity, SearchHints
+from common.models import BlockedReason, EntityType
 
 
 class _AgentResult:
@@ -246,3 +249,139 @@ async def test_semaphore_bounds_concurrency() -> None:
 async def test_existing_researcher_tests_still_pass() -> None:
     """research_agent and ResearchResult remain importable; output_type is correct."""
     assert research_agent.output_type is ResearchResult
+
+
+# --------------------------------------------------------------------------- #
+# Item A tests: scorer fallback behavior                                        #
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+async def test_scorer_drops_all_returns_empty() -> None:
+    """When the scorer returns kept=[], decomposed_research returns ([], errors, trace)
+    with a scorer_dropped_all StepError and trace["scorer_dropped_all"] == True."""
+    cfg = _make_cfg(max_initial_queries=3)
+
+    fake_candidates = [
+        SearchCandidate(url="https://a.com", title="A", snippet="a", from_query="q1"),
+        SearchCandidate(url="https://b.com", title="B", snippet="b", from_query="q1"),
+    ]
+    fake_plan = QueryPlan(queries=["q1"], rationale="ok")
+    # Scorer drops everything
+    fake_scored = ScoredURLs(kept=[], dropped=["https://a.com", "https://b.com"], rationale="all irrelevant")
+
+    with (
+        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            urls, errors, trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+
+    assert urls == [], f"Expected empty URL list, got {urls}"
+    assert trace.get("scorer_dropped_all") is True, "trace['scorer_dropped_all'] should be True"
+    scorer_drop_errors = [e for e in errors if e.error_type == "scorer_dropped_all"]
+    assert len(scorer_drop_errors) == 1, f"Expected one scorer_dropped_all error, got {scorer_drop_errors}"
+    assert "2" in scorer_drop_errors[0].message, "Error message should reference candidate count"
+
+
+@pytest.mark.asyncio
+async def test_scorer_drops_all_sets_blocked_reason() -> None:
+    """When _research returns ([], [scorer_dropped_all error], {}), verify_claim
+    sets blocked_reason=INSUFFICIENT_SOURCES (not None, not ANALYST_ERROR)."""
+    from orchestrator.pipeline import verify_claim, VerifyConfig
+
+    scorer_error = StepError(step="research", error_type="scorer_dropped_all", message="URL scorer dropped all 5 candidates")
+
+    with patch("orchestrator.pipeline._research", return_value=([], [scorer_error], {})):
+        result = await verify_claim("TestEntity", "test claim", VerifyConfig())
+
+    assert result.blocked_reason == BlockedReason.INSUFFICIENT_SOURCES, (
+        f"Expected INSUFFICIENT_SOURCES, got {result.blocked_reason}"
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Item C tests: parent_company injected into prompts                            #
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+async def test_parent_company_injected_into_prompts() -> None:
+    """When resolved_entity has parent_company='companies/anthropic', both the
+    planner prompt and scorer prompt should contain 'Anthropic' (not the raw ref)."""
+    cfg = _make_cfg(max_initial_queries=2)
+
+    resolved = ResolvedEntity(
+        entity_ref="products/claude",
+        entity_name="Claude",
+        entity_type=EntityType.PRODUCT,
+        entity_description="An AI assistant by Anthropic",
+        parent_company="companies/anthropic",
+    )
+
+    fake_candidates = [
+        SearchCandidate(url="https://anthropic.com/claude", title="Claude", snippet="info", from_query="q1"),
+    ]
+    fake_plan = QueryPlan(queries=["q1", "q2"], rationale="ok")
+    fake_scored = ScoredURLs(kept=["https://anthropic.com/claude"], dropped=[], rationale="relevant")
+
+    captured: dict = {}
+
+    async def capture_planner(prompt, *args, **kwargs):
+        captured["planner"] = prompt
+        return _AgentResult(fake_plan)
+
+    async def capture_scorer(prompt, *args, **kwargs):
+        captured["scorer"] = prompt
+        return _AgentResult(fake_scored)
+
+    with (
+        patch.object(query_planner_agent, "run", side_effect=capture_planner),
+        patch.object(url_scorer_agent, "run", side_effect=capture_scorer),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            urls, errors, _trace = await decomposed_research("test claim", "Claude", cfg, sem, client, resolved_entity=resolved)
+
+    assert "Anthropic" in captured.get("planner", ""), (
+        f"'Anthropic' not found in planner prompt: {captured.get('planner', '')!r}"
+    )
+    assert "Anthropic" in captured.get("scorer", ""), (
+        f"'Anthropic' not found in scorer prompt: {captured.get('scorer', '')!r}"
+    )
+    assert "companies/anthropic" not in captured.get("planner", ""), "Raw ref should not appear in planner prompt"
+    assert "companies/anthropic" not in captured.get("scorer", ""), "Raw ref should not appear in scorer prompt"
+
+
+# --------------------------------------------------------------------------- #
+# Item B tests: publisher quality hints                                         #
+# --------------------------------------------------------------------------- #
+
+def test_forum_domain_scores_low() -> None:
+    """classify_url_publisher_quality returns 'forum' for a Reddit URL."""
+    from common.publisher_quality import classify_url_publisher_quality
+    result = classify_url_publisher_quality("https://reddit.com/r/MachineLearning/comments/abc123")
+    assert result == "forum", f"Expected 'forum', got {result!r}"
+
+
+def test_primary_domain_classification() -> None:
+    """classify_url_publisher_quality returns 'primary' for anthropic.com."""
+    from common.publisher_quality import classify_url_publisher_quality
+    result = classify_url_publisher_quality("https://anthropic.com/news/something")
+    assert result == "primary", f"Expected 'primary', got {result!r}"
+
+
+def test_publisher_quality_in_scorer_prompt() -> None:
+    """build_scorer_prompt includes publisher_quality in the per-candidate text."""
+    from researcher.scorer import build_scorer_prompt
+
+    candidates = [
+        SearchCandidate(url="https://reddit.com/r/ml/abc", title="Reddit post", snippet="discussion", from_query="q1", publisher_quality="forum"),
+        SearchCandidate(url="https://anthropic.com/paper", title="Anthropic paper", snippet="research", from_query="q1", publisher_quality="primary"),
+    ]
+    prompt = build_scorer_prompt("TestEntity", "test claim", candidates)
+    assert "publisher_quality" not in prompt.lower() or "Publisher quality:" in prompt, \
+        "Expected the literal 'Publisher quality:' label in prompt"
+    assert "Publisher quality: forum" in prompt, f"Expected 'Publisher quality: forum' in prompt:\n{prompt}"
+    assert "Publisher quality: primary" in prompt, f"Expected 'Publisher quality: primary' in prompt:\n{prompt}"
