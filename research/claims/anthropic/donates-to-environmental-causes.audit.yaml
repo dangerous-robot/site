@@ -1,0 +1,73 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-02T02:21:38.026074+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - Anthropic environmental donations reports
+  - Anthropic sustainability initiatives program
+  - Anthropic philanthropic giving environmental
+  - Anthropic climate action investments
+  - Anthropic environmental impact statements
+  planner_rationale: These queries aim to find direct evidence of Anthropic's financial
+    contributions to environmental causes. They vary by searching for reports, specific
+    program details, philanthropic giving, climate investments, and official statements
+    related to their environmental impact. The queries are designed to prioritize
+    official communications and publicly available data.
+  candidates_seen: 31
+  urls_kept: 15
+  urls_dropped: 10
+  scorer_rationale: The candidates were scored based on whether they directly address
+    the claim that Anthropic donates to environmental causes. Candidates with explicit
+    mentions of donations, funding for environmental initiatives, or statements about
+    environmental responsibility received higher scores. Candidates discussing energy
+    efficiency, sustainability, and AI's impact on the environment were also considered
+    relevant. Candidates focusing on other aspects of Anthropic, such as lobbying,
+    settlements, or general company news, received lower scores.
+  urls_after_blocklist: 15
+sources_consulted:
+- id: 2025/investing-energy-america-ai-future
+  url: https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
+  title: Investing in energy to secure America's AI future
+  ingested: true
+- id: 2026/voluntary-commitments
+  url: https://www.anthropic.com/transparency/voluntary-commitments
+  title: Voluntary Commitments
+  ingested: true
+- id: 2026/nonprofits
+  url: https://claude.com/solutions/nonprofits
+  title: Nonprofits
+  ingested: true
+- id: 2025/vera-solutions-anthropic-claude-nonprofits
+  url: https://verasolutions.org/vera-solutions-partners-with-anthropic-as-ai-provider-launches-claude-for-nonprofits/
+  title: Vera Solutions Partners with Anthropic, as AI provider launches Claude for
+    Nonprofits
+  ingested: true
+- id: 2026/anthropic-funding-investors
+  url: https://tracxn.com/d/companies/anthropic/__SzoxXDMin-NK5tKB7ks8yHr6S9Mz68pjVCzFEcGFZ08/funding-and-investors
+  title: Anthropic Funding Rounds & List of Investors
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

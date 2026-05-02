@@ -1,0 +1,82 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-02T02:19:17.711989+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - Anthropic corporate structure details
+  - Anthropic ownership model information
+  - Anthropic organizational structure publicly available
+  planner_rationale: These queries aim to directly identify and describe Anthropic's
+    corporate structure using various keywords related to ownership and organization.
+    They prioritize finding official information or analyses about how Anthropic is
+    structured.
+  candidates_seen: 19
+  urls_kept: 18
+  urls_dropped: 0
+  scorer_rationale: The question asks for Anthropic's corporate structure. Several
+    articles discuss this directly, including its Public Benefit Corporation status,
+    the role of the Long-Term Benefit Trust, and ownership details.  The Wikipedia
+    and Clay articles provide summaries of the company.  The YouTube video discusses
+    the structure from a founder's perspective. Other articles discuss ownership details
+    like founders, employees, and investors. The Wikimedia file shows a corporate
+    structure flowchart. All of these sources provide relevant information to the
+    claim.
+  urls_after_blocklist: 17
+sources_consulted:
+- id: 2026/anthropic-company
+  url: https://www.anthropic.com/company
+  title: Company
+  ingested: true
+- id: 2023/long-term-benefit-trust
+  url: https://www.anthropic.com/news/the-long-term-benefit-trust
+  title: The Long-Term Benefit Trust
+  ingested: true
+- id: 2024/anthropic-structure-openai-incentives
+  url: https://time.com/6983420/anthropic-structure-openai-incentives/
+  title: How Anthropic Designed Itself to Avoid OpenAI’s Mistakes
+  ingested: true
+- id: 2024/anthropic-executives-org-chart
+  url: https://www.clay.com/dossier/anthropic-executives
+  title: List of Anthropic Executives & Org Chart
+  ingested: true
+- id: 2026/corporate-structure-ethical-ai-daniela-amodei
+  url: https://www.youtube.com/watch?v=UMF1nf3Iy3Q
+  title: Corporate Structure for Ethical AI - Daniela Amodei
+  ingested: true
+- id: 2026/who-owns-anthropic
+  url: https://www.revenuememo.com/p/who-owns-anthropic
+  title: Who owns Anthropic? Ownership structure explained (2026)
+  ingested: true
+- id: 2026/anthropic-ownership
+  url: https://businessmodelcanvastemplate.com/blogs/owners/anthropic-who-owns
+  title: Who Owns Anthropic Company?
+  ingested: true
+- id: 2026/who-owns-anthropic-2026
+  url: https://www.rankred.com/who-owns-anthropic/
+  title: Who Owns Anthropic in 2026? [Shareholders & Ownership Details]
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

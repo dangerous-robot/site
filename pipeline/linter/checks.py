@@ -14,7 +14,7 @@ CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
     "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
-    "audit", "seo_title",
+    "audit", "seo_title", "tags",
 }
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}

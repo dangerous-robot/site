@@ -1,0 +1,76 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-02T03:05:38.039791+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - AI companies frontier safety commitments
+  - Large language model providers safety pledges
+  - Foundation model companies safety agreements
+  - AI safety commitments industry report
+  - Leading AI firms safety initiatives
+  planner_rationale: These queries aim to find evidence of AI/LLM producers committing
+    to safety standards. They vary by using different combinations of the entity name
+    and key terms ('frontier safety commitments', 'safety pledges', 'safety agreements',
+    'safety initiatives') and explore broader search terms like 'industry report'
+    to find aggregated data. The queries target news reports, industry publications,
+    and potentially company statements.
+  candidates_seen: 39
+  urls_after_blocklist: 24
+sources_consulted:
+- id: 2024/components-of-frontier-ai-safety-frameworks
+  url: https://www.frontiermodelforum.org/updates/issue-brief-components-of-frontier-ai-safety-frameworks/
+  title: 'Issue Brief: Components of Frontier AI Safety Frameworks'
+  ingested: true
+- id: 2025/common-elements-frontier-ai-safety-policies
+  url: https://metr.org/common-elements
+  title: Common Elements of Frontier AI Safety Policies
+  ingested: true
+- id: 2025/common-elements-frontier-ai-safety-policies
+  url: https://metr.org/blog/2025-12-09-common-elements-of-frontier-ai-safety-policies/
+  title: Common Elements of Frontier AI Safety Policies (December 2025 Update)
+  ingested: true
+- id: 2024/frontier-ai-safety-commitments-seoul-2024
+  url: https://www.gov.uk/government/publications/frontier-ai-safety-commitments-ai-seoul-summit-2024/frontier-ai-safety-commitments-ai-seoul-summit-2024
+  title: Frontier AI Safety Commitments, AI Seoul Summit 2024
+  ingested: true
+- id: 2025/evaluating-ai-frontier-safety-frameworks
+  url: https://arxiv.org/abs/2512.01166
+  title: Evaluating AI Providers' Frontier Safety Frameworks
+  ingested: true
+- id: 2026/ai-lab-commitments
+  url: https://ailabwatch.org/resources/commitments
+  title: Commitments
+  ingested: true
+- id: 2024/big-tech-ai-safety-commitments
+  url: https://www.cio.com/article/2119325/big-tech-companies-commit-to-new-safety-practices-for-ai.html
+  title: Big tech companies commit to new safety practices for AI
+  ingested: true
+- id: 2026/emerging-processes-frontier-ai-safety
+  url: https://assets.publishing.service.gov.uk/media/653aabbd80884d000df71bdc/emerging-processes-frontier-ai-safety.pdf
+  title: Emerging Processes for Frontier AI Safety
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-01'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
