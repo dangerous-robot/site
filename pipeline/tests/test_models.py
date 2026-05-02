@@ -122,10 +122,10 @@ class TestResolveModel:
         monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
         monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
         resolve_model.cache_clear()
-        from pydantic_ai.models.openai import OpenAIModel
+        from pydantic_ai.models.openai import OpenAIChatModel
 
         model = resolve_model("infomaniak:openai/gpt-oss-120b")
-        assert isinstance(model, OpenAIModel)
+        assert isinstance(model, OpenAIChatModel)
         assert model.model_name == "openai/gpt-oss-120b"
 
     def test_infomaniak_missing_keys_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:

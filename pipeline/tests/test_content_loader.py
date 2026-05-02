@@ -29,10 +29,10 @@ class TestResolveRepoRoot:
 
 class TestLoadSource:
     def test_load_existing_source(self, repo_root: Path) -> None:
-        data, body = load_source("2026/anthropic-voluntary-commitments", repo_root)
-        assert data["title"] == "Voluntary Commitments"
-        assert data["publisher"] == "Anthropic"
-        assert data["kind"] == "documentation"
+        data, body = load_source("test/load-source-fixture", repo_root)
+        assert data["title"] == "Test Source Fixture"
+        assert data["publisher"] == "Test Publisher"
+        assert data["kind"] == "article"
         assert "url" in data
         assert len(body) > 0
 
