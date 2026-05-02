@@ -112,6 +112,7 @@ def find_publication_queue(
 
 _ACTIONS = ["a", "d", "s", "p", "o", "q"]
 _PROMPT = "[a]pprove  [d]elete  [s]kip  [p]review  [o]pen in editor  [q]uit"
+_EMPTY = click.style("—", dim=True)
 
 
 def _delete_files(claim_path: Path, sidecar_path: Path, trash_dir: Path | None = None) -> None:
@@ -133,11 +134,9 @@ def _delete_files(claim_path: Path, sidecar_path: Path, trash_dir: Path | None =
 
 
 def _format_header(item: QueueItem, index: int, total: int) -> str:
-    # Separator with slug
     prefix = f"── [{index}/{total}] {item.claim_slug} "
     sep = prefix + "─" * max(4, 72 - len(prefix))
 
-    # Verdict line: verdict + agreement + needs_review flag
     verdict_upper = item.verdict.upper()
     agreement = ""
     if item.analyst_verdict or item.auditor_verdict:
@@ -153,9 +152,9 @@ def _format_header(item: QueueItem, index: int, total: int) -> str:
         sep,
         row("Verdict", verdict_line),
         row("Title", item.title),
-        row("Takeaway", item.takeaway or click.style("—", dim=True)),
-        row("SEO title", item.seo_title or click.style("—", dim=True)),
-        row("Tags", ", ".join(item.tags) if item.tags else click.style("—", dim=True)),
+        row("Takeaway", item.takeaway or _EMPTY),
+        row("SEO title", item.seo_title or _EMPTY),
+        row("Tags", ", ".join(item.tags) if item.tags else _EMPTY),
         row("Sources", f"{item.sources_count} cited · {item.sources_ingested} ingested"),
         "",
     ])

@@ -41,7 +41,7 @@ class ResolvedEntity:
 def build_entity_context(resolved_entity: ResolvedEntity | None, fallback_name: str = "") -> str:
     """Build a plain-text entity context block for researcher prompts."""
     if resolved_entity is None:
-        return f"Entity: {fallback_name}\n" if fallback_name else ""
+        return f"Entity: {fallback_name or '(unknown)'}\n"
     lines = [f"Entity: {resolved_entity.entity_name}"]
     if resolved_entity.entity_description:
         lines.append(f"Description: {resolved_entity.entity_description}")
