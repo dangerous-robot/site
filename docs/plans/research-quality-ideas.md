@@ -64,14 +64,16 @@ The researcher generates candidate URLs from web search. If a URL already exists
 
 ### Negative site signals in search results
 
-Some publishers are structurally weak for research: content farms, vendor-sponsored analysis, PR wire services. Today these pass the scorer unless the title/snippet is obviously irrelevant.
+Some publishers are structurally weak for research: content farms, vendor-sponsored analysis, PR wire services, and community discussion forums. Today these pass the scorer unless the title/snippet is obviously irrelevant.
 
 **Ideas**:
 - Extend the researcher host blocklist (`researcher-host-blocklist.md`) to cover not just paywalled sites but low-trust source categories.
-- The scorer prompt could note known-problematic source patterns (press release wires, vendor white papers presented as independent research).
+- The scorer prompt could note known-problematic source patterns (press release wires, vendor white papers presented as independent research, community forum posts).
+- Community forums (Reddit, Quora, HN) are a specific failure case: a topically on-point thread title scores ≥4 for relevance even when the post is from a deleted user with 21 upvotes. The social-quality signals (author standing, vote count, thread age) are invisible to the scorer.
+- `common/source_classification.py` already classifies sources as primary/secondary/tertiary from domain/publisher patterns, but this runs post-hoc (after ingestion). Its domain patterns could be used earlier: either as a pre-scorer filter (drop `tertiary` candidates before scoring) or as a signal injected into the scorer prompt so it can discount low-credibility domains before spending an ingest slot on them.
 
 **Research impact**: Medium. Reduces noise in the source pool; most valuable for claims that attract a lot of PR coverage.  
-**Cost**: Low for blocklist extension; medium for scorer-prompt adjustments.
+**Cost**: Low for blocklist extension; medium for scorer-prompt adjustments or pre-scorer tertiary filter.
 
 ---
 
@@ -144,3 +146,4 @@ See `docs/plans/source-trust-metadata_stub.md`. Covers: site trustworthiness, do
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-05-01 | human (Brandon) | iterated | Refactored from `arch-docs-pipeline-improvements.md`; restructured as ranked idea backlog; cross-referenced existing plans |
+| 2026-05-02 | agent (claude-sonnet-4-6) | update | Expanded "Negative site signals" to cover community forums (Reddit/Quora) as a specific scorer blind spot; added note on `source_classification.py` tertiary patterns being post-hoc only and the option to use them as a pre-scorer filter |
