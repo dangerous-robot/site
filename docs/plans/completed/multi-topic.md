@@ -1,6 +1,6 @@
 # Multi-topic on criteria and claims (rename + regenerate)
 
-**Status**: Ready
+**Status**: Done (commit 1394bc6 — `category` → `topics` rename, array cardinality 1–3, pipeline output updated, launch claim set regenerated 2026-04-27)
 **v1.0.0 surface**: full scope (cardinality change is atomic; cannot half-ship)
 **Last updated**: 2026-04-26
 

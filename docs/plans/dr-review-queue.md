@@ -1,6 +1,6 @@
 # Plan: `dr review-queue`
 
-**Status**: Phase 1 shipped (2026-04-27). Phase 2 (`c`/`r`/`b`/`e` actions, filters, polish) and Phase 3 (pluggable queue types) not yet started.
+**Status**: Phase 1 done (2026-04-27, commits f64adc3 + 3abd112). Phases 2–3 post-v1.
 
 ## Context
 

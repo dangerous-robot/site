@@ -1,5 +1,7 @@
 # Plan: Tighten HTTP and agent timeouts in the ingestor path
 
+**Status**: Done (already implemented — `pipeline/common/timeouts.py` in place)
+
 ## Problem
 
 Slow hosts eat 30s per fetch in `pipeline/ingestor/agent.py:45` (`web_fetch`). With 4 URLs x 6 templates during onboarding, one sluggish host can delay a run by minutes without producing usable pages. The ingestor agent's 90s wrapper in `pipeline/orchestrator/pipeline.py:197` is generous enough that the slow HTTP is the binding constraint, not the LLM.

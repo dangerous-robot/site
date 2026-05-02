@@ -1,6 +1,6 @@
 # Router and Orchestrator (Item 3 (a) split)
 
-**Status**: Ready
+**Status**: Done — v1 surface (commit 020409f: Orchestrator docstring naming + threshold-in-Orchestrator wiring). Full Router remains post-v1.
 **v1.0.0 surface**: docstring-only naming + threshold-in-Orchestrator (operator confirmed 2026-04-26). Full Router deferred to post-v1.
 **Last updated**: 2026-04-26
 

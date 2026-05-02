@@ -1,6 +1,6 @@
 # Claim lifecycle states (blocked, threshold, phase)
 
-**Status**: Ready
+**Status**: Done (commit df7537e — `phase` field, `blocked_reason` field, `blocked` status enum, `>= 2` threshold)
 **v1.0.0 surface**: full schema work lands in v1 per operator 2026-04-26 (`phase` frontmatter field, `blocked` status enum value, `blocked_reason` top-level frontmatter); only auto-recheck is post-v1.
 **Last updated**: 2026-04-26
 

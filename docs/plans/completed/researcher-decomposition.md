@@ -1,5 +1,7 @@
 # Plan: Decompose the Researcher into small, effort-controlled agent calls
 
+**Status**: Done (commits 0f2a33d, 211b752, 6409918 — planner → search executor → scorer, tool-free LLM steps, `llm_concurrency` semaphore)
+
 ## Context
 
 The Researcher agent (`pipeline/researcher/agent.py`) is currently a single PydanticAI agent that runs a free-form `web_search` tool loop internally. The LLM decides how many queries to run, when to stop, and which URLs to return — all invisible to the operator. Effort is controlled only by the system prompt instruction ("try 2-3 more queries if you find fewer than 6"), which fires non-deterministically.

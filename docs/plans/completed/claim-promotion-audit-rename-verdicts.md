@@ -1,6 +1,6 @@
 # Plan: Claim Promotion, `dr audit` Rename, Verdict Definitions
 
-**Status**: `[ ] in progress`
+**Status**: Done (commit 73f9360 — `dr review --approve/--archive`, `dr reassess` rename, verdict definitions tightened)
 **Created**: 2026-04-23
 **Promoted**: 2026-04-23
 **Supersedes**: items 2 and 4 in `docs/architecture/open-issues.md`; validates the "Verdict definitions" section in `docs/architecture/glossary.md`.

@@ -1,5 +1,7 @@
 # Plan: Refactor `scripts/poc-multi-provider/` into a durable LLM tester toolset
 
+**Status**: Done (commits 244ac22, e0a4501 — harnesses promoted to tracked scripts; `gpt-oss-120b` T1–T5 all pass per commit ae50419)
+
 ## Context
 
 `scripts/poc-multi-provider/` was the working directory for the multi-provider evaluation that produced [`docs/plans/multi-provider.md`](multi-provider.md) and [`docs/reports/API-PROVIDER-FINAL-REPORT.md`](../reports/API-PROVIDER-FINAL-REPORT.md). The directory is gitignored (`.gitignore:37`) and contains a mix of: two reusable harnesses (`run_tests.py` for Infomaniak, `run_greenpt.py` for GreenPT), a wire tracer (`trace_infomaniak.py`), seven one-off `probe_*.py` spikes, three rollup `SUMMARY-*.md` docs, eight `results-*.md` per-model reports, four `trace-*.json` dumps, an Infomaniak support ticket, and a shared `.env.poc`.

@@ -1,5 +1,7 @@
 # Plan: Multi-provider support (Infomaniak first, GreenPT considered)
 
+**Status**: Parts 1 and 2 done (Part 1 verified 2026-04-26; Part 2 commit 54702c8, 2026-04-27). Part 3 (global fallback + second provider) is post-v1.
+
 Phased plan to run the `dr` pipeline against non-Anthropic providers. The pure POC framing has been retired -- the [API provider evaluation report](../reports/API-PROVIDER-FINAL-REPORT.md) (2026-04-26) supplied the empirical groundwork; this plan now lays out shippable parts.
 
 **Primary motivation:** Infomaniak's data centres reuse waste heat to warm Swiss buildings, which aligns directly with TreadLightly's environmental-transparency brand. That's why Infomaniak leads in Part 1 even though the GreenPT path scored marginally cleaner on raw test results.

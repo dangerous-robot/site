@@ -1,5 +1,7 @@
 # Plan: Eliminate duplicate research+ingest in onboard flow
 
+**Status**: Done (already implemented — source dedup in onboard flow)
+
 ## Problem
 
 `onboard_entity` (pipeline/orchestrator/pipeline.py:563-609) iterates templates, calls `verify_claim` (runs researcher + ingestor + analyst + auditor), then immediately re-runs `_research()` + `_ingest_urls()` at lines 587-590 solely to recover `list[tuple[str, SourceFile]]` for `_write_source_files`. This doubles LLM calls, web fetches, and 403 retries per template.

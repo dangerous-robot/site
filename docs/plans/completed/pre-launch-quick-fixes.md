@@ -1,6 +1,6 @@
 # Pre-launch quick fixes
 
-**Status**: Mostly landed — `S5` deferred as stretch, `ST5` dropped, `S3` reopened
+**Status**: Done — closed 2026-04-27. S5 (pipeline diagram) deferred as stretch; ST5 dropped (no /methodology page).
 **Last updated**: 2026-04-27
 
 A bundle of small reader-facing and operator-vocabulary fixes generated from the 2026-04-24 pre-launch triage. Each item is shippable in under a day. Larger items from the same triage are tracked in their own stub plans (see Cross-references).

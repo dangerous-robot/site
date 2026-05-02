@@ -1,6 +1,6 @@
 # Claim status field
 
-**Status**: Ready
+**Status**: Done (landed in commits 73f40d2, 9d242ab — schema, pipeline, all page filters, status notice, verdict updates)
 **Last updated**: 2026-04-22
 
 A `status` field needs to be added to the claims schema to support a draft/published/archived workflow.

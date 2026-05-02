@@ -1,5 +1,7 @@
 # Plan: Ingestor fail-fast on terminal HTTP responses
 
+**Status**: Done (already implemented — `TerminalFetchError` path in place)
+
 ## Problem
 
 `web_fetch` (pipeline/ingestor/agent.py:42) returns `{"error": ...}` on any `HTTPError`, so the LLM interprets 401/403/451 identically to a transient failure: it calls `wayback_check` (which rarely helps for auth walls), and PydanticAI's `retries=2` may re-drive the agent loop. Each dead URL burns ~30-60s during onboarding.
