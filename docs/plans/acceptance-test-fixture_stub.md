@@ -42,7 +42,7 @@ A repeatable test that: (1) takes a fixed claim text + Anthropic-or-Claude entit
 
 - Decide acceptable verdict range (e.g., {`true`, `mostly-true`} for an Anthropic sustainability claim).
 - Confidence band (e.g., not `low`).
-- Sidecar invariants (e.g., source count >= 2; `models_used` populated; no error fields).
+- Sidecar invariants (e.g., source count >= 4; `models_used` populated; no error fields).
 
 ## Out of scope
 

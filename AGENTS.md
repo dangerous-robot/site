@@ -236,6 +236,7 @@ Three mutually exclusive work states:
 | Suffix | Meaning |
 |---|---|
 | `_stub` | Scaffolded from a description; not yet fully implementable |
+| `_survey` | Research report on what types of plans could be written; not an implementation plan; must be rewritten before implementation |
 | `_completed` | Fully implemented; use in `completed/` to distinguish from abandoned/superseded |
 
 No suffix = plan is complete and reviewable. Keep the set small.
