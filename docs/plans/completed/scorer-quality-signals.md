@@ -1,6 +1,6 @@
 # Scorer quality signals
 
-**Status**: `ready`
+**Status**: `done`
 **Derived from**: [`plans/drafts/source-quality-do-now.md`](drafts/source-quality-do-now.md) Groups 1 and 3a
 **Survey**: [`plans/source-quality_survey.md`](source-quality_survey.md) §1, §4, §6
 
@@ -138,3 +138,4 @@ All three can be implemented and tested independently and shipped together.
 |------|----------|-------|---------|
 | 2026-05-02 | operator | Initial draft | — |
 | 2026-05-02 | pipeline-engineer | Code-grounded review | Fixed file path (orchestrator → researcher); identified three fallback paths, scoped Item A to drop-all branch only; corrected blocked_reason mislabeling issue on early-exit path; rewrote Item B "extract" claim (no pre-ingest classifier exists; draw on publisher substrings for new hostname heuristic); corrected `parent_company` format (entity ref, not display name), named exact prompt construction sites, flagged scorer signature change needed; added Risks and edge cases section; tightened acceptance criteria |
+| 2026-05-02 | operator | Implementation complete | Commits `9083746` (Items B + C), `a9d833c` (Item A). All three items shipped; plan moved to `docs/plans/completed/`. |

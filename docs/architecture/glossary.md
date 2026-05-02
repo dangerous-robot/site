@@ -76,7 +76,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
 | **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
-| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. |
+| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Produces an independent evaluation of the analyst's output |
@@ -97,12 +97,13 @@ Implementation-level concepts that surface in operator workflows and audit artif
 |---|---|
 | **Audit sidecar** / `.audit.yaml` | Paired YAML file at the same path as a claim `.md`. Records the pipeline run (model, agents), sources consulted, analyst/evaluator verdicts, and human review state. Merged into the claim's `audit` field by the `claims-with-audit` content loader. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
 | **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
-| **Threshold gate** | Post-ingest check in the orchestrator: if fewer than two usable sources are available, the claim is halted with `status: blocked` and a `blocked_reason`, and the Analyst is not invoked. (`pipeline/orchestrator/pipeline.py`) |
+| **Threshold gate** | Post-ingest check in the orchestrator: if fewer than four usable sources are available, the claim is halted with `status: blocked` and a `blocked_reason`, and the Analyst is not invoked. (`pipeline/orchestrator/pipeline.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
 | **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
 | **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. |
 | **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`verify_claim`, `research_claim`, `onboard_entity`). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
+| **`publisher_quality`** | Pre-ingest domain quality label on `SearchCandidate`: `primary`, `secondary`, `tertiary`, or `forum`. Classified from the URL hostname by `pipeline/common/publisher_quality.py` during `execute_searches`; injected into the scorer prompt as a tiebreaker signal. Not persisted. Contrast with `source_type` (post-ingest, written to source frontmatter). |
 
 ## Agent tasks
 

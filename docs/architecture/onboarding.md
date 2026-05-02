@@ -70,7 +70,7 @@ The active template set lives in `research/templates.yaml`. Refer to that file f
 
 ## Company–product relationships
 
-Companies and products onboard independently. The entity schema does not enforce a parent relationship. When onboarding a product, the ingestor notes the parent company in the entity description; if the parent entity does not yet exist, the ingestor flags it in the onboard report but does not create it automatically — the operator decides whether to onboard the company separately.
+Companies and products onboard independently. The entity schema does not enforce a parent relationship. When onboarding a product, the ingestor notes the parent company in the entity description; if the parent entity does not yet exist, the ingestor flags it in the onboard report but does not create it automatically — the operator decides whether to onboard the company separately. When `parent_company` is set on an entity file, the pipeline resolves it to a display name and injects it into both the Researcher's planner and scorer prompts, so queries and scoring account for the parent company relationship.
 
 ## Topic origin
 

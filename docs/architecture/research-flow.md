@@ -242,7 +242,7 @@ sequenceDiagram
     participant BraveAPI as Brave Search API
     participant URLScorer as URL Scorer (Haiku)
 
-    Orchestrator->>QueryPlanner: claim text + entity name
+    Orchestrator->>QueryPlanner: claim text + entity context (name, parent_company if set)
     Note over QueryPlanner: structured output, no tools
     QueryPlanner-->>Orchestrator: QueryPlan (queries list, rationale)
 
@@ -256,11 +256,13 @@ sequenceDiagram
         BraveAPI-->>Orchestrator: results N
     end
 
-    Note over Orchestrator: deduplicate by exact URL string
+    Note over Orchestrator: deduplicate by exact URL string; classify each candidate with publisher_quality label (primary/secondary/tertiary/forum)
 
-    Orchestrator->>URLScorer: claim + candidates (title + snippet only)
+    Orchestrator->>URLScorer: claim + entity context (name, parent_company if set) + candidates (title, snippet, publisher_quality)
     Note over URLScorer: structured output, no tools
-    URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 3, dropped < 3)
+    URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 4, dropped < 4)
+
+    Note over Orchestrator: if kept=[] (drop-all), return empty URL list; claim blocked as insufficient_sources
 
     Orchestrator-->>Orchestrator: apply max_sources cap, blocklist filter
 ```

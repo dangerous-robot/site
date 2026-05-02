@@ -16,7 +16,7 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 
 1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
-3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The orchestrator halts the claim with `status: blocked` and a `blocked_reason` if fewer than two usable sources were obtained.
+3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The orchestrator halts the claim with `status: blocked` and a `blocked_reason` if fewer than four usable sources were obtained.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
 6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
