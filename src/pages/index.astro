@@ -29,17 +29,24 @@ const navLinks = [
   { href: '/faq', label: 'FAQ' },
 ];
 
-const highlighted = allClaims
-  .filter((c) => c.data.status === 'published' && c.data.tags.includes('highlight'))
+const sectorHighlights = allClaims
+  .filter((c) => c.data.tags.includes('highlight') && c.id.startsWith('sectors/'))
   .sort((a, b) => a.id.localeCompare(b.id));
 
-const others = allClaims
-  .filter((c) => c.data.status === 'published' && !c.data.tags.includes('highlight'))
+const otherHighlights = allClaims
+  .filter((c) => c.data.tags.includes('highlight') && !c.id.startsWith('sectors/'))
   .sort((a, b) => a.id.localeCompare(b.id));
 
-const scatterItems = [...highlighted, ...others]
-  .slice(0, 5)
-  .map((c) => ({ verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}` }));
+const otherSlots = Math.max(0, 5 - sectorHighlights.length);
+
+const scatterItems = [
+  ...otherHighlights.slice(0, otherSlots).map((c) => ({
+    verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}`, isSector: false,
+  })),
+  ...sectorHighlights.map((c) => ({
+    verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}`, isSector: true,
+  })),
+];
 
 const fmtVerdict = (v: string) => VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
 
@@ -129,7 +136,7 @@ const cardPositions = [
             <a
               class="claim-card"
               href={c.href}
-              style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${p.z}`}
+              style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${c.isSector ? 6 : p.z}`}
             >
               <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
               <span class="claim-card__body">{c.title}</span>
@@ -522,19 +529,23 @@ const cardPositions = [
     align-items: center;
     align-self: flex-start;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
-    border: 1px solid currentColor;
+    border: 2px solid currentColor;
     border-radius: 3px;
-    padding: 0.1em 0.45em;
+    padding: 0.1em 0.35em;
     line-height: 1;
   }
-  .claim-card__verdict--false        { color: var(--color-verdict-false); }
-  .claim-card__verdict--mostly-false { color: var(--color-verdict-mostly-false); }
-  .claim-card__verdict--unverified   { color: var(--color-verdict-unverified); }
-  .claim-card__verdict--mixed        { color: var(--color-verdict-mixed); }
+  /* Card-context verdict colors: vivid against the cream (#f8f5ea) card background */
+  .claim-card__verdict--true          { color: #0b8c42; }
+  .claim-card__verdict--mostly-true   { color: #2da862; }
+  .claim-card__verdict--mixed         { color: #cc7800; }
+  .claim-card__verdict--mostly-false  { color: #dd3f2f; }
+  .claim-card__verdict--false         { color: #c81010; }
+  .claim-card__verdict--unverified    { color: #6060a0; }
+  .claim-card__verdict--not-applicable { color: #888899; }
 
   .claim-card__body {
     font-family: var(--font-body);
