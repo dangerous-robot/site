@@ -171,11 +171,14 @@ def _write_claim_file(
         "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
+        "takeaway": "",
+        "seo_title": "",
         "criteria_slug": criteria_slug,
         "status": status,
         "blocked_reason": blocked_reason,
         "as_of": datetime.date.today(),
         "sources": source_ids,
+        "tags": [],
     }
     claim_path.write_text(
         serialize_frontmatter(fm, narrative.rstrip() + "\n"),
