@@ -99,7 +99,6 @@ templates:
     entity_type: sector
     topics: [ai-safety]
     core: true
-    notes:
 
 
 # Deferred: post-v0.1.0

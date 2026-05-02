@@ -213,7 +213,7 @@ const criteria = defineCollection({
   schema: z.object({
     slug: z.string(),
     text: z.string(),
-    entity_type: z.enum(['company', 'product']),
+    entity_type: z.enum(['company', 'product', 'sector']),
     topics: z.array(z.enum([
       'ai-safety',
       'environmental-impact',
