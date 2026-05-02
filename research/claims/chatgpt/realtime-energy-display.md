@@ -1,19 +1,23 @@
 ---
 title: ChatGPT displays real-time energy usage
 entity: products/chatgpt
-topics:
-- environmental-impact
-verdict: 'false'
-confidence: medium
+topics: [environmental-impact]
+verdict: unverified
+confidence: high
+takeaway: ''
+seo_title: ''
 criteria_slug: realtime-energy-display
-status: published
-as_of: '2026-05-01'
+status: draft
+as_of: '2026-05-02'
 sources:
-- 2025/how-much-energy-does-chatgpt-use
+- 2025/chatgpt-energy-usage
 - 2025/chatgpt-energy-consumption-visualized
-- 2025/ai-energy-use-queries
-- 2024/chatgpt-electricity-consumption-analysis
 - 2025/chatgpt-energy-usage-0-34-wh
-- 2026/chatgpt-energy-water-usage-reddit
+- 2025/ai-energy-use-queries
+- 2023/uw-chatgpt-energy-use
+- 2023/chat-gpt-energy-consumption-discussion
+- 2024/chatgpt-electricity-consumption-analysis
+- 2026/chatgpt-query-energy-water-reddit
+tags: []
 ---
-All of the reviewed sources provide external estimates of the electricity and water used per ChatGPT query (e.g., ~0.3 Wh per query in "How much energy does ChatGPT use?" — Epoch AI, and 0.34 Wh per query in "/dev/sustainability"), daily or annual totals (e.g., 39.98 M kWh per day in "ChatGPT Energy Consumption Visualized" — Business Energy UK, 22 TWh per year in "AI’s Power Demand" — BestBrokers.com), and projections of future demand. None of the articles mention a user‑facing feature in ChatGPT that reports energy consumption in real time, nor do they cite any official statement from OpenAI that such a display exists. The absence of any reference to a real‑time energy‑usage display, combined with multiple sources discussing only external, post‑hoc calculations, indicates that the claim is not supported. Therefore, the claim that ChatGPT displays real‑time energy usage is false.
+A number of independent analyses estimate how much electricity a ChatGPT query consumes (e.g., 0.3 Wh per query in *How much energy does ChatGPT use?*【How much energy does ChatGPT use?】, 0.34 Wh in */dev/sustainability*【ChatGPT energy usage is 0.34 Wh per query】, and daily totals of tens of millions of kWh in *ChatGPT Energy Consumption Visualized*【ChatGPT Energy Consumption Visualized】 and *AI’s Power Demand: Calculating ChatGPT’s electricity consumption*【AI’s Power Demand: Calculating ChatGPT’s electricity consumption】).  These sources discuss aggregate or per‑query energy estimates, training‑phase consumption, and projected industry‐wide demand, but none mention that the ChatGPT service itself presents a live, per‑query energy‑usage read‑out to end users.  Consequently, there is no evidence that ChatGPT “displays real‑time energy usage.”  The claim is therefore unverified: the available material engages with the topic of ChatGPT’s energy footprint but does not address whether the product shows such information to users.

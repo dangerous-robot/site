@@ -1,73 +1,67 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-01T12:50:00.677339+00:00'
+  ran_at: '2026-05-02T21:46:13.734050+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
   - ingestor
   - analyst
-  - auditor
 models_used:
   researcher: infomaniak:gemma3n
   ingestor: infomaniak:google/gemma-4-31B-it
   analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
   queries:
-  - OpenAI AI safety donations reports
-  - OpenAI funding AI safety research
-  - Independent analysis OpenAI AI safety initiatives
-  - OpenAI philanthropic giving AI safety
-  planner_rationale: 'These queries aim to find evidence of OpenAI''s financial contributions
-    to AI safety. The queries vary in focus: one looks for direct reports from OpenAI,
-    another seeks independent analysis of their funding, and the last targets philanthropic
-    data which often includes charitable giving.'
-  candidates_seen: 29
-  urls_kept: 29
-  urls_dropped: 0
-  scorer_rationale: The prompt asks to score each candidate for relevance to the claim
-    "OpenAI donates to AI safety causes". All candidates discuss OpenAI's involvement
-    in AI safety, ranging from fellowships and grants to broader safety initiatives
-    and philanthropic efforts. The scoring is based on the title and snippet only.
-    All candidates are relevant, and a score of 3 or higher is given to them.
+  - OpenAI AI safety donations
+  - OpenAI funding AI safety initiatives
+  - OpenAI's commitment AI safety
+  - OpenAI partnerships AI safety organizations
+  - OpenAI transparency AI safety funding
+  planner_rationale: These queries aim to find evidence of OpenAI's financial contributions
+    to AI safety. They vary in their approach, checking for direct donation information,
+    funding of specific initiatives, general commitments, partnerships, and transparency
+    reports related to funding.
+  candidates_seen: 34
   urls_after_blocklist: 24
 sources_consulted:
+- id: 2026/openai-safety-fellowship-compute-stipend
+  url: https://www.businessinsider.com/openai-safety-fellowship-sam-altman-ai-compute-stipend-2026-4
+  title: OpenAI's newest fellowship includes up to $15,000 in AI compute a month
+  ingested: true
+- id: 2026/openai-nonprofit-mission-lawsuit
+  url: https://www.vox.com/future-perfect/482653/openai-nonprofit-foundation-philanthropy
+  title: Elon Musk is suing OpenAI for betraying its mission. He has a point.
+  ingested: true
 - id: 2026/openai-nonprofit-child-safety
   url: https://futurism.com/artificial-intelligence/openai-nonprofit-child-safety
   title: Nonprofit Research Groups Disturbed to Learn That OpenAI Has Secretly Been
     Funding Their Work
   ingested: true
+- id: 2023/ai-safety-funding-overview
+  url: https://www.lesswrong.com/posts/WGpFFJo2uFe5ssgEb/an-overview-of-the-ai-safety-funding-situation
+  title: An Overview of the AI Safety Funding Situation
+  ingested: true
 - id: 2026/donate-less-to-ai-safety
   url: https://thecounterfactual.substack.com/p/donate-less-to-ai-safety
   title: Donate Less to AI Safety*
-  ingested: true
-- id: 2026/openai-nonprofit-commission-report
-  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
-  title: The OpenAI Nonprofit Commission Report
-  ingested: true
-- id: 2026/openai-ai-safety-fellowship
-  url: https://www.ai-daily.news/articles/openai-introduces-ai-safety-fellowship-with-15000-compute-st
-  title: OpenAI Introduces AI Safety Fellowship
   ingested: true
 - id: 2026/openai-safety-fellowship-applications
   url: https://www.helpnetsecurity.com/2026/04/07/openai-safety-fellowship-applications/
   title: OpenAI opens applications for an external AI safety research fellowship
   ingested: true
-- id: 2026/openai-external-ai-safety-fellowship
+- id: 2026/openai-safety-fellowship
   url: https://thejournal.com/articles/2026/04/16/openai-launches-fellowship-to-fund-external-ai-safety-research.aspx
   title: OpenAI Launches Fellowship to Fund External AI Safety Research
   ingested: true
-audit:
-  analyst_verdict: 'true'
-  auditor_verdict: 'true'
-  analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+- id: 2026/openai-launches-safety-fellowship
+  url: https://pureai.com/articles/2026/04/15/openai-launches-safety-fellowship.aspx
+  title: OpenAI Launches Safety Fellowship Amid Wider Industry Shift Toward External
+    AI Research
+  ingested: true
+audit: null
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

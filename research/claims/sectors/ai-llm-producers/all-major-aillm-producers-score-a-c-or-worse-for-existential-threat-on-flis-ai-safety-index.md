@@ -2,12 +2,16 @@
 title: All major AI/LLM producers score a C or worse for Existential Threat on FLI's
   AI Safety Index
 entity: sectors/ai-llm-producers
-topics: [ai-safety, industry-analysis, product-comparison]
-tags: [highlight]
+topics:
+- ai-safety
+- industry-analysis
+- product-comparison
+tags:
+- highlight
 verdict: 'true'
 confidence: high
 criteria_slug: fli-safety-index-existential-score
-status: draft
+status: published
 as_of: '2026-05-02'
 sources:
 - 2025/ai-safety-index-winter-2025

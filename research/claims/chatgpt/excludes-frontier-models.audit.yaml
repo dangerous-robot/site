@@ -1,0 +1,82 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-02T21:05:23.209988+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - ChatGPT model size limitations
+  - OpenAI frontier models availability
+  - ChatGPT access model restrictions
+  - ChatGPT capabilities comparison models
+  - ChatGPT developer model tiers
+  planner_rationale: These queries aim to determine if ChatGPT intentionally limits
+    access to the most advanced ('frontier-scale') models. They explore model size,
+    availability, access restrictions for developers, and comparisons of different
+    capabilities within the ChatGPT ecosystem. The queries also address tiered access
+    models which are a common way to control access to more powerful models.
+  candidates_seen: 35
+  urls_kept: 27
+  urls_dropped: 0
+  scorer_rationale: The prompt asks to score candidates for relevance to the claim
+    that ChatGPT excludes frontier-scale models. I have assessed each candidate's
+    title and snippet and scored them accordingly. I have also noted the publisher
+    quality for each candidate.
+  urls_after_blocklist: 24
+sources_consulted:
+- id: 2026/openai-gpt-5-5-cyber-defenders
+  url: https://www.nextgov.com/artificial-intelligence/2026/04/openai-makes-frontier-model-available-critical-cyber-defenders/413234/?oref=ng-homepage-river
+  title: OpenAI makes frontier model available to critical cyber defenders
+  ingested: true
+- id: 2026/all-models
+  url: https://developers.openai.com/api/docs/models/all
+  title: All models
+  ingested: true
+- id: 2026/how-big-is-the-model
+  url: https://www.reddit.com/r/ChatGPT/comments/zhzjpq/how_big_is_the_model/
+  title: How big is the model?
+  ingested: true
+- id: 2026/openai-models-documentation
+  url: https://developers.openai.com/api/docs/models
+  title: Models
+  ingested: true
+- id: 2026/gpt-5-5-microsoft-foundry
+  url: https://azure.microsoft.com/en-us/blog/openais-gpt-5-5-in-microsoft-foundry-frontier-intelligence-on-an-enterprise-ready-platform/
+  title: 'OpenAI’s GPT-5.5 in Microsoft Foundry: Frontier intelligence on an enterprise
+    ready platform'
+  ingested: true
+- id: 2026/compare-models
+  url: https://developers.openai.com/api/docs/models/compare
+  title: Compare models
+  ingested: true
+- id: 2024/chatgpt-coding-models-2026
+  url: https://teamai.com/blog/large-language-models-llms/understanding-different-chatgpt-models/
+  title: 'Best ChatGPT Model for Coding (2026): Codex, Spark & Thinking'
+  ingested: true
+- id: 2026/chatgpt-models-comparison-2026
+  url: https://www.ai-toolbox.co/chatgpt-models/chatgpt-models-explained-complete-comparison-2026
+  title: 'ChatGPT Models Explained: Complete Comparison Guide (2026)'
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-05-02'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

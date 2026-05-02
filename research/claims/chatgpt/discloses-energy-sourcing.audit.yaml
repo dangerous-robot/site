@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-01T13:18:39.443488+00:00'
+  ran_at: '2026-05-02T20:58:49.274222+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,26 +15,25 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"ChatGPT" energy consumption report OpenAI'
-  - OpenAI "ChatGPT" carbon footprint analysis
-  - independent audit "ChatGPT" energy usage
-  - '"ChatGPT" energy sourcing transparency report'
-  planner_rationale: 'These queries aim to find official reports from OpenAI about
-    ChatGPT''s energy usage, independent analyses of the carbon footprint, and any
-    publicly available audits or transparency reports related to the energy sources
-    powering the model. They vary in their approach: one targets OpenAI directly,
-    another looks for independent assessments, and the others seek specific types
-    of reports.'
-  candidates_seen: 21
-  urls_kept: 21
+  - ChatGPT energy consumption sources
+  - OpenAI ChatGPT energy usage details
+  - ChatGPT carbon footprint disclosure
+  - ChatGPT environmental impact report
+  - OpenAI sustainability energy practices
+  planner_rationale: These queries aim to find information about ChatGPT's energy
+    consumption by directly searching for details on its energy sources, consumption
+    patterns, and environmental impact. They also target OpenAI, the creator of ChatGPT,
+    to find their official sustainability reports and practices.
+  candidates_seen: 32
+  urls_kept: 32
   urls_dropped: 0
-  scorer_rationale: The prompt asks to score the relevance of each search result candidate
-    to the claim "ChatGPT discloses its energy sourcing". The scoring is based on
-    the title and snippet only.  I've focused on whether the snippet indicates that
-    the candidate provides information about how ChatGPT uses energy, either in terms
-    of electricity consumption, water consumption, carbon footprint, or other related
-    metrics. All URLs contain relevant information and are therefore kept.
-  urls_after_blocklist: 21
+  scorer_rationale: The prompt asks to score the relevance of search results to the
+    claim that ChatGPT discloses its energy sourcing. I've scored each candidate based
+    on the title and snippet, using the provided scoring scale and rules.  I prioritized
+    candidates that directly discuss ChatGPT's energy consumption and related environmental
+    impacts.  The publisher quality was used as a tiebreaker when relevance was similar.
+    All URLs are included in either the kept or dropped list.
+  urls_after_blocklist: 24
 sources_consulted:
 - id: 2025/how-much-energy-does-chatgpt-use
   url: https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use
@@ -44,22 +43,31 @@ sources_consulted:
   url: https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/
   title: ChatGPT Energy Consumption Visualized
   ingested: true
-- id: 2024/chatgpt-electricity-consumption-demand
+- id: 2025/ai-energy-use-queries
+  url: https://spectrum.ieee.org/ai-energy-use
+  title: How Much Energy Does It Take to Power Billions of AI Queries?
+  ingested: true
+- id: 2024/chatgpt-electricity-consumption-analysis
   url: https://www.bestbrokers.com/forex-brokers/ais-power-demand-calculating-chatgpts-electricity-consumption-for-handling-over-78-billion-user-queries-every-year/
-  title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption'
+  title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption for handling
+    1.17 trillion user queries every year'
   ingested: true
-- id: 2026/chatgpt-energy-use-study
-  url: https://www.statesman.com/business/technology/article/chatgpt-energy-use-us-cost-study-22197784.php
-  title: How much electricity is needed to power OpenAI's ChatGPT?
+- id: 2024/chatgpt-energy-consumption-electric-cars
+  url: https://balkangreenenergynews.com/chatgpt-consumes-enough-power-in-one-year-to-charge-over-three-million-electric-cars
+  title: ChatGPT consumes enough power in one year to charge over three million electric
+    cars
   ingested: true
-- id: 2026/ai-energy-consumption-environmental-impact
-  url: https://toolpod.dev/blog/ai-energy-consumption-environmental-impact
-  title: 'AI Energy Consumption: How Much Power Does AI Use?'
+- id: 2026/chatgpt-energy-ethics-discussion
+  url: https://www.reddit.com/r/OpenAI/comments/1dqm7bu/is_it_ethical_to_use_chatgpt_despite_its_energy/
+  title: Is it Ethical to Use ChatGPT Despite Its Energy Consumption?
   ingested: true
-- id: 2026/ai-power-demand-chatgpt
-  url: https://www.globalsecuritymag.com/ai-s-power-demand-calculating-chatgpt-s-electricity-consumption-for-handling-over-912.5-billion-user-queries-every-year
-    –
-  title: 'AI''s Power Demand: Calculating ChatGPT''s Electricity Consumption'
+- id: 2025/chatgpt-energy-usage-0-34-wh
+  url: https://www.devsustainability.com/p/chatgpt-energy-usage-is-034-wh-per
+  title: ChatGPT energy usage is 0.34 Wh per query
+  ingested: true
+- id: 2025/openai-gpt5-energy-use
+  url: https://www.theguardian.com/technology/2025/aug/09/open-ai-chat-gpt5-energy-use
+  title: OpenAI will not disclose GPT-5’s energy use
   ingested: true
 audit:
   analyst_verdict: unverified
@@ -70,7 +78,7 @@ audit:
   confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-05-01'
+  reviewed_at: '2026-05-02'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

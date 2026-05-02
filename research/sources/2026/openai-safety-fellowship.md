@@ -4,15 +4,16 @@ archived_url: https://web.archive.org/web/https://thejournal.com/articles/2026/0
 title: OpenAI Launches Fellowship to Fund External AI Safety Research
 publisher: THE Journal
 published_date: '2026-04-16'
-accessed_date: '2026-05-01'
+accessed_date: '2026-05-02'
 kind: article
 summary: OpenAI has introduced a six-month Safety Fellowship to fund external researchers
-  studying AI risks, including agentic oversight and high-severity misuse domains.
+  studying AI risks, focusing on agentic oversight and high-severity misuse domains.
 key_quotes:
-- OpenAI is expanding safety efforts beyond its walls with a Safety Fellowship program
-  that will fund external researchers to study AI risks.
+- OpenAI's new Safety Fellowship funds external researchers to study AI risks, signaling
+  a move to broaden participation in alignment and safety work.
 - priority areas for its fellowship include "agentic oversight" and "high-severity
-  misuse domains"
+  misuse domains," reflecting concerns about systems capable of taking multi-step
+  actions
 source_type: secondary
 ---
-The fellowship runs from September 2026 to February 2027. It provides stipends and model access to external practitioners to research technical safety challenges.
+The program runs from September 2026 to February 2027. It provides external researchers with stipends, model access, and technical support to study alignment and safety.

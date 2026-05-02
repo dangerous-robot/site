@@ -5,15 +5,15 @@ title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption for
   1.17 trillion user queries every year'
 publisher: BestBrokers.com
 published_date: '2024-08-29'
-accessed_date: '2026-05-01'
+accessed_date: '2026-05-02'
 kind: article
-summary: An analysis estimating ChatGPT's annual electricity consumption at 22.15
-  billion kWh to process 1.17 trillion queries, costing approximately $3.019 billion
-  annually.
+summary: Calculates ChatGPT's annual electricity consumption and cost for processing
+  over a trillion queries, comparing energy usage to households, electric vehicles,
+  and national power demands.
 key_quotes:
 - ChatGPT consumes 60.7GWh every day or more than 22TWh a year
-- the power consumed by ChatGPT on an annual basis could easily satisfy the electricity
-  demands of 2.11 million households
+- ChatGPT’s yearly energy usage to handle prompts could power Brazil, which consumed
+  760.83 terra-watt-hours in 2024, for over 10 days.
 source_type: secondary
 ---
-The article uses data from the University of Rhode Island’s AI lab and the U.S. Energy Information Administration to estimate energy costs. It compares AI power usage to electric vehicle charging and national energy consumption.
+The article estimates the energy requirements for GPT-5 and subsequent iterations, contrasting the power consumption of AI inference with traditional search engines. It also analyzes OpenAI's potential subscription revenue relative to these energy costs.

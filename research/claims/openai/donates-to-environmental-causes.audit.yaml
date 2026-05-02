@@ -1,66 +1,54 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-01T12:53:27.995661+00:00'
+  ran_at: '2026-05-02T21:47:12.429349+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
   - ingestor
-  - analyst
-  - auditor
 models_used:
   researcher: infomaniak:gemma3n
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
   queries:
-  - '"OpenAI" environmental donations report'
-  - OpenAI sustainability initiatives and funding
-  - Independent analysis of OpenAI's environmental impact
-  - OpenAI philanthropic giving environmental causes
-  planner_rationale: These queries aim to find evidence of OpenAI's charitable contributions
-    to environmental organizations. The first query targets official reports, the
-    second focuses on broader sustainability efforts, the third seeks independent
-    assessments (to avoid biased OpenAI-provided information), and the fourth uses
-    'philanthropic giving' to cast a wider net for relevant donations.
-  candidates_seen: 24
-  urls_after_blocklist: 24
+  - OpenAI environmental donations record
+  - OpenAI philanthropic giving environmental
+  - OpenAI sustainability initiatives impact
+  - OpenAI environmental policy commitments
+  - OpenAI climate action funding transparency
+  planner_rationale: 'These queries aim to find information about OpenAI''s financial
+    contributions to environmental causes. The queries vary in their focus: one seeks
+    a general record, another targets philanthropic activities, a third examines the
+    impact of their sustainability efforts, a fourth looks for specific policy commitments,
+    and the last focuses on transparency regarding climate action funding.'
+  candidates_seen: 30
+  urls_kept: 8
+  urls_dropped: 20
+  scorer_rationale: The claim is about OpenAI's donations to environmental causes.
+    I'm scoring based on whether the snippets indicate donations or environmental
+    initiatives.  Candidates 1, 2, 3, 4, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    20, and 21 all mention OpenAI's environmental efforts or funding for environmental
+    causes, making them relevant. Candidates 5, 6, 7, 8, and 22 are not relevant as
+    they mention other topics or do not contain information about OpenAI's donations
+    to environmental causes. The forum sources are lower quality and therefore, the
+    higher quality sources are preferred.
+  urls_after_blocklist: 8
 sources_consulted:
-- id: 2025/environmental-impact-of-ai
-  url: https://academy.openai.com/public/clubs/higher-education-05x4z/resources/environmental-impact-of-ai
-  title: Environmental Impact of AI
-  ingested: true
-- id: 2026/open-ai-sustainability
-  url: https://thesustainableinnovation.com/open-ai/
-  title: Open AI Sustainability
-  ingested: true
-- id: 2026/ai-energy-environment-democracy
-  url: https://www.greenpeace.org/international/story/82486/ai-energy-environment-democracy/
-  title: The energy and environmental impact of AI and how it undermines democracy
-  ingested: true
 - id: 2023/sustainable-development-and-ai
   url: https://community.openai.com/t/sustainable-development-and-ai/377448
   title: Sustainable development and AI
   ingested: true
-- id: 2026/president-openai-donor-maga
-  url: https://www.reddit.com/r/sanfrancisco/comments/1q2de49/president_of_openai_is_the_largest_donor_to_maga/
-  title: President of OpenAI is the largest donor to MAGA
+- id: 2025/openai-ostp-rfi-oct-27-2025
+  url: https://cdn.openai.com/pdf/21b88bb5-10a3-4566-919d-f9a6b9c3e632/openai-ostp-rfi-oct-27-2025.pdf
+  title: OpenAI Response to OSTP RFI
   ingested: true
-- id: 2025/irdo-2025-poster-63
-  url: https://www.irdo.si/irdo2025/posters/63.pdf
-  title: IRDO 2025 Poster 63
+- id: 2026/openai-nonprofit-commission-report
+  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
+  title: The OpenAI Nonprofit Commission Report
   ingested: true
-audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+audit: null
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null
