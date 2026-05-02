@@ -142,10 +142,21 @@ def _write_claim_file(
     ``narrative`` and ``verdict``/``confidence`` since the Analyst did
     not run.
     """
-    entity_slug = slugify(entity_name)
     claim_slug_clean = slugify(claim_slug)
 
-    claim_dir = repo_root / "research" / "claims" / entity_slug
+    # Derive slug and claim dir from entity_ref when available.
+    # Companies and products use a flat layout (research/claims/<slug>/) for
+    # backward compat; all other types (sectors, …) include the type prefix.
+    if entity_ref and "/" in entity_ref:
+        ref_parts = entity_ref.split("/")
+        entity_slug = ref_parts[-1]
+        if ref_parts[0] in ("companies", "products") and len(ref_parts) == 2:
+            claim_dir = repo_root / "research" / "claims" / entity_slug
+        else:
+            claim_dir = repo_root / "research" / "claims" / Path(*ref_parts)
+    else:
+        entity_slug = slugify(entity_name)
+        claim_dir = repo_root / "research" / "claims" / entity_slug
     claim_dir.mkdir(parents=True, exist_ok=True)
     claim_path = claim_dir / f"{claim_slug_clean}.md"
 

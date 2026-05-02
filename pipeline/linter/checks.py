@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from .models import LintIssue
 
 REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
-CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description", "parent_company"}
+CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description", "parent_company", "search_hints"}
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
