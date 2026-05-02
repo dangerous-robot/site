@@ -1,8 +1,7 @@
 """Pre-ingest publisher quality classification based on URL hostname."""
 from __future__ import annotations
 
-from urllib.parse import urlparse
-
+from common.blocklist import _host_matches, _normalised_host
 from common.source_classification import (
     _PRIMARY_PUBLISHERS,
     _SECONDARY_PUBLISHERS,
@@ -24,16 +23,12 @@ def classify_url_publisher_quality(url: str) -> str:
     Less accurate than post-ingest classify_source_type (no kind signal),
     but sufficient as a scoring hint.
     """
-    try:
-        hostname = urlparse(url).hostname or ""
-    except Exception:
+    hostname = _normalised_host(url)
+    if not hostname:
         return "secondary"
-    hostname = hostname.lower().removeprefix("www.")
 
-    # Forum check first (exact match or subdomain)
-    for domain in _FORUM_DOMAINS:
-        if hostname == domain or hostname.endswith("." + domain):
-            return "forum"
+    if any(_host_matches(hostname, domain) for domain in _FORUM_DOMAINS):
+        return "forum"
 
     if any(term in hostname for term in _PRIMARY_PUBLISHERS):
         return "primary"

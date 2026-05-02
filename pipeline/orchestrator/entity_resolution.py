@@ -38,7 +38,7 @@ class ResolvedEntity:
     search_hints: SearchHints | None = None
 
 
-def _resolve_parent_name(raw: str | None) -> str | None:
+def resolve_parent_name(raw: str | None) -> str | None:
     """Convert a parent_company ref like 'companies/anthropic' to a display name like 'Anthropic'.
 
     Strips the type prefix and titlecases the slug. No file I/O.
@@ -59,7 +59,7 @@ def build_entity_context(resolved_entity: ResolvedEntity | None, fallback_name: 
     if resolved_entity.aliases:
         lines.append(f"Also known as: {', '.join(resolved_entity.aliases)}")
     if resolved_entity.parent_company:
-        parent_name = _resolve_parent_name(resolved_entity.parent_company)
+        parent_name = resolve_parent_name(resolved_entity.parent_company)
         if parent_name:
             lines.append(f"Parent company: {parent_name}")
     if resolved_entity.search_hints:

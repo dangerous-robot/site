@@ -63,7 +63,7 @@ def build_scorer_prompt(
         for c in candidates
     )
     return (
-        f"{entity_block}"
-        f"Claim: {claim}\n\n"
+        entity_block
+        + f"Claim: {claim}\n\n"
         f"Candidates:\n{candidate_text}"
     )

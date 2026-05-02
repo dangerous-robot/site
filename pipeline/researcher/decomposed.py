@@ -10,7 +10,7 @@ import httpx
 from common.models import resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
-from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, _resolve_parent_name
+from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
 from researcher.agent import search_brave
 from researcher.planner import QueryPlan, query_planner_agent
 from researcher.scorer import SearchCandidate, ScoredURLs, build_scorer_prompt, url_scorer_agent
@@ -111,7 +111,7 @@ async def decomposed_research(
         errors.append(_research_err("no_results", "Search returned no results"))
         return [], errors, trace
 
-    parent_name = _resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
+    parent_name = resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
     scorer_prompt = build_scorer_prompt(entity_name, claim_text, candidates, parent_company=parent_name)
     try:
         async with sem:
