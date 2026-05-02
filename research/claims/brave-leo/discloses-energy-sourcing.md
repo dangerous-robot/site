@@ -17,6 +17,7 @@ sources:
 The supplied sources focus on Brave Leo’s privacy and transparency mechanisms—such as Trusted Execution Environments, cryptographic attestation, and confidential LLM computing—but none mention how the service obtains or reports its energy supply. Because there is no information about energy sourcing or any disclosure thereof in any of the cited articles, the claim that "Brave Leo discloses its energy sourcing" cannot be confirmed nor refuted. Consequently, the claim remains unverified.
 
 Sources consulted:
+
 - "Verifiable Privacy and Transparency: A new frontier for Brave AI privacy" (Brave) – discusses privacy architecture, no reference to energy.
 - "Brave’s AI assistant Leo now offers cryptographically proven privacy" (CyberInsider) – describes TEEs and privacy, silent on energy.
 - "Brave AI assistant Leo adds Trusted Execution Environments" (The Register) – covers TEEs and privacy, no energy details.

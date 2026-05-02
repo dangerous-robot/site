@@ -87,6 +87,7 @@ When a claim is added, removed, or changes target:
      echo "$rel | status=${st:-unset} | sidecar=$has_audit | signoff=$reviewed"
    done
    ```
+
 3. Update the "Last refreshed" date at the top.
 
 A future `dr lint` rule could enforce parity automatically; tracked under [`docs/plans/dr-lint.md`](../docs/plans/dr-lint.md) Phase 3.

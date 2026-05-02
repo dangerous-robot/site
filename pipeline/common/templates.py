@@ -33,7 +33,7 @@ class TemplateRecord:
     entity_type: str  # "company" or "product"
     topics: list[str]  # 1-3 kebab-case topic slugs
     core: bool
-    notes: str
+    notes: str = ""
     vocabulary: dict[str, list[str]] = field(default_factory=dict)
 
 
@@ -49,7 +49,7 @@ def load_templates(repo_root: Path) -> list[TemplateRecord]:
             entity_type=entry["entity_type"],
             topics=list(entry["topics"]),
             core=entry["core"],
-            notes=entry["notes"],
+            notes=entry.get("notes") or "",
             vocabulary=entry.get("vocabulary") or {},
         )
         for entry in data["templates"]
