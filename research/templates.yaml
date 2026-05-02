@@ -92,6 +92,15 @@ templates:
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
 
+  # --- AI/LLM Producers (Sector) ---
+
+  - slug: ai-producers-signed-safety-commitments
+    text: "ENTITY has signed AI safety commitments"
+    entity_type: sector
+    topics: [ai-safety]
+    core: true
+    notes:
+
 
 # Deferred: post-v0.1.0
 # To reactivate, move entries back into `templates` above.
@@ -181,3 +190,5 @@ inactive_templates:
     topics: [ai-safety]
     core: true
     notes: "Meta-transparency: why these models and not others?"
+
+

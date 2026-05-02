@@ -3,6 +3,7 @@ title: OpenAI has a privately‑held corporate structure
 entity: companies/openai
 topics:
 - industry-analysis
+tags: [highlight]
 verdict: 'true'
 confidence: high
 criteria_slug: corporate-structure

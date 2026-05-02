@@ -8,11 +8,11 @@ tags:
 - highlight
 verdict: 'true'
 confidence: high
-status: draft
+criteria_slug: ai-producers-signed-safety-commitments
+status: published
 as_of: '2026-05-01'
 sources:
 - 2024/components-of-frontier-ai-safety-frameworks
-- 2025/common-elements-frontier-ai-safety-policies
 - 2025/common-elements-frontier-ai-safety-policies
 - 2024/frontier-ai-safety-commitments-seoul-2024
 - 2025/evaluating-ai-frontier-safety-frameworks

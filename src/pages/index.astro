@@ -29,28 +29,19 @@ const navLinks = [
   { href: '/faq', label: 'FAQ' },
 ];
 
-const pool = allClaims
+const highlighted = allClaims
   .filter((c) => c.data.status === 'published' && c.data.tags.includes('highlight'))
-  .sort((a, b) => a.id.localeCompare(b.id))
+  .sort((a, b) => a.id.localeCompare(b.id));
+
+const others = allClaims
+  .filter((c) => c.data.status === 'published' && !c.data.tags.includes('highlight'))
+  .sort((a, b) => a.id.localeCompare(b.id));
+
+const scatterItems = [...highlighted, ...others]
+  .slice(0, 5)
   .map((c) => ({ verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}` }));
 
-const manualClaim = {
-  verdict: 'false',
-  title: 'At least one major AI company scores a C or higher on existential threats',
-  href: '/claims',
-};
-
 const fmtVerdict = (v: string) => VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
-
-const fallback = [
-  { verdict: 'unverified', title: 'ChatGPT is hosted on renewable energy', href: '/claims' },
-  { verdict: 'mixed', title: 'Google publishes a sustainability or ESG report', href: '/claims' },
-  { verdict: 'mostly-false', title: 'Anthropic publishes detailed training-data disclosures', href: '/claims' },
-  { verdict: 'false', title: 'OpenAI discloses cumulative model training compute', href: '/claims' },
-];
-const src = [manualClaim, ...pool, ...fallback];
-
-const scatterItems = src.slice(0, 5);
 
 const websiteSchema = {
   "@context": "https://schema.org",
@@ -195,10 +186,11 @@ const cardPositions = [
   .hero {
     position: relative;
     min-height: 100vh;
+    min-height: 100svh;
     overflow: hidden;
     padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
     padding-top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px);
-    padding-bottom: clamp(var(--space-md), 3vh, var(--space-xl));
+    padding-bottom: clamp(var(--space-xl), 5vh, var(--space-2xl));
     display: flex;
     flex-direction: column;
     gap: clamp(var(--space-sm), 1.5vh, var(--space-md));
@@ -561,8 +553,8 @@ const cardPositions = [
   .site-index {
     position: relative;
     z-index: 3;
-    padding-top: clamp(var(--space-sm), 1.5vh, var(--space-md));
-    border-top: 1px solid rgba(128, 128, 128, 0.2);
+    padding-top: clamp(var(--space-md), 2vh, var(--space-lg));
+    border-top: 1px solid rgba(128, 128, 128, 0.4);
   }
   .site-index__list {
     list-style: none;
@@ -570,22 +562,32 @@ const cardPositions = [
     padding: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem clamp(1.5rem, 3vw, 3rem);
+    gap: 0.5rem clamp(1.5rem, 3vw, 3rem);
   }
   .site-index__link {
     display: inline-flex;
-    gap: 0.6rem;
+    gap: 0.55rem;
     align-items: baseline;
     text-decoration: none;
-    color: var(--color-text-faint);
+    color: var(--color-text);
     font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
+    font-size: var(--font-size-xs);
     text-transform: uppercase;
-    letter-spacing: 0.2em;
+    letter-spacing: 0.18em;
+    font-weight: 500;
     transition: color 0.2s;
   }
   .site-index__link:hover { color: var(--color-accent); }
-  .site-index__num { opacity: 0.55; }
+  .site-index__num { color: var(--color-accent); opacity: 0.8; font-size: 0.7rem; }
+
+  @media (max-width: 680px) {
+    .site-index__list { gap: 0.4rem 0.75rem; }
+    .site-index__link {
+      font-size: var(--font-size-2xs);
+      font-weight: 600;
+      letter-spacing: 0.2em;
+    }
+  }
 
   /* -------- nav overlay -------- */
   .hero-nav {
@@ -746,15 +748,15 @@ const cardPositions = [
       grid-template-columns: 1fr;
     }
     .claim-scatter {
-      min-height: 310px;
+      min-height: 290px;
       margin-right: 0;
     }
     .claim-card { width: clamp(190px, 55vw, 260px); }
 
-    /* Triangle cluster of 3 */
-    .claim-card:nth-child(1) { top: 16px;  right: auto; left: 3vw;                    transform: rotate(-3.5deg); z-index: 2; }
-    .claim-card:nth-child(2) { top:  6px;  right: auto; left: calc(3vw + 55vw - 20px); transform: rotate(2.5deg);  z-index: 3; }
-    .claim-card:nth-child(3) { top: 144px; right: auto; left: calc(3vw + 25vw);        transform: rotate(-4deg);   z-index: 4; }
+    /* Triangle cluster of 3: left, right, center-bottom; corners may clip viewport edges */
+    .claim-card:nth-child(1) { top: 10px;  left: -2vw;  right: auto; transform: rotate(-3.5deg); z-index: 2; }
+    .claim-card:nth-child(2) { top:  4px;  left: auto;  right: -3vw; transform: rotate(2.5deg);  z-index: 3; }
+    .claim-card:nth-child(3) { top: 155px; left: calc(50% - 27.5vw); right: auto; transform: rotate(-4deg); z-index: 4; }
 
     .claim-card:nth-child(4),
     .claim-card:nth-child(5) { display: none; }
