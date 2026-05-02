@@ -19,7 +19,7 @@ Every claim moves through the same set of states regardless of how it was initia
 ```mermaid
 stateDiagram-v2
     [*] --> draft: dr verify-claim / dr onboard / manual edit
-    draft --> blocked: pipeline threshold gate (< 2 sources or terminal fetch error)
+    draft --> blocked: pipeline threshold gate (< 4 sources or terminal fetch error)
     blocked --> archived: dr review --archive
     draft --> under_review: PR opened
     under_review --> draft: PR closed without merge
@@ -92,7 +92,7 @@ sequenceDiagram
     Operator->>Human: checkpoint review_sources
     Human-->>Operator: proceed or halt
 
-    alt below_threshold (< 2 usable sources)
+    alt below_threshold (< 4 usable sources)
         Operator-->>Operator: status=blocked + blocked_reason; return
     else proceed
         Operator->>Analyst: sources

@@ -75,7 +75,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 |---|---|
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
-| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
 | **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
@@ -135,7 +135,7 @@ Claim states. Schema source of truth: `src/content.config.ts` § claims (`status
 |---|---|---|---|
 | **queued** | Intake recorded, pipeline not yet run | `QUEUE.md` | (no schema field; `QUEUE.md` only) |
 | **in-progress** | Pipeline is working it | (transient frontmatter) | `phase` ∈ {researching, ingesting, analyzing, evaluating} |
-| **blocked** | Pipeline halted before Analyst: < 2 usable sources or terminal fetch error | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error} |
+| **blocked** | Pipeline halted before Analyst: < 4 usable sources or terminal fetch error | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error} |
 | **draft** | Pipeline produced a draft verdict; awaiting review | `status: draft` | `status: draft` |
 | **published** | Operator approved | `status: published` | `status: published` |
 | **archived** | Retired | `status: archived` | `status: archived` |
