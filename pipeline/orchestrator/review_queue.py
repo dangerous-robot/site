@@ -38,6 +38,9 @@ class QueueItem:
     needs_review: bool       # auditor flagged disagreement / quality concerns
     sources_count: int       # number of sources_consulted in sidecar
     sources_ingested: int    # number where ingested=True
+    tags: list[str]          # operator tags, e.g. ["highlight"]
+    takeaway: str            # one-sentence reader takeaway (empty if not yet written)
+    seo_title: str           # short title for SERP (empty if not yet written)
 
 
 def _slug_for(claim_path: Path, claims_root: Path) -> str:
@@ -82,6 +85,9 @@ def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueIt
         needs_review=bool(audit.get("needs_review")),
         sources_count=len(sources),
         sources_ingested=sum(1 for s in sources if isinstance(s, dict) and s.get("ingested")),
+        tags=list(fm.get("tags") or []),
+        takeaway=str(fm.get("takeaway") or ""),
+        seo_title=str(fm.get("seo_title") or ""),
     )
 
 
@@ -127,15 +133,32 @@ def _delete_files(claim_path: Path, sidecar_path: Path, trash_dir: Path | None =
 
 
 def _format_header(item: QueueItem, index: int, total: int) -> str:
-    needs_review_tag = "  [needs_review]" if item.needs_review else ""
-    return (
-        f"\n[{index}/{total}] {item.path}\n"
-        f"  Title:    {item.title}\n"
-        f"  Verdict:  {item.verdict} "
-        f"(analyst: {item.analyst_verdict}, auditor: {item.auditor_verdict}){needs_review_tag}\n"
-        f"  Status:   {item.status}\n"
-        f"  Sources:  {item.sources_count} cited, {item.sources_ingested} ingested\n"
-    )
+    # Separator with slug
+    prefix = f"── [{index}/{total}] {item.claim_slug} "
+    sep = prefix + "─" * max(4, 72 - len(prefix))
+
+    # Verdict line: verdict + agreement + needs_review flag
+    verdict_upper = item.verdict.upper()
+    agreement = ""
+    if item.analyst_verdict or item.auditor_verdict:
+        agreement = f"  (analyst: {item.analyst_verdict} / auditor: {item.auditor_verdict})"
+    flag = click.style("  ⚠ needs review", fg="yellow") if item.needs_review else ""
+    verdict_line = click.style(verdict_upper, bold=True) + agreement + flag
+
+    def row(label: str, value: str) -> str:
+        return f"  {label:<9} {value}"
+
+    return "\n".join([
+        "",
+        sep,
+        row("Verdict", verdict_line),
+        row("Title", item.title),
+        row("Takeaway", item.takeaway or click.style("—", dim=True)),
+        row("SEO title", item.seo_title or click.style("—", dim=True)),
+        row("Tags", ", ".join(item.tags) if item.tags else click.style("—", dim=True)),
+        row("Sources", f"{item.sources_count} cited · {item.sources_ingested} ingested"),
+        "",
+    ])
 
 
 def _resolve_editor() -> list[str]:
