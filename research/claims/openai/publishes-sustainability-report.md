@@ -3,6 +3,8 @@ title: OpenAI publishes a sustainability or ESG report
 entity: companies/openai
 topics:
 - environmental-impact
+tags:
+- highlight
 verdict: 'false'
 confidence: medium
 criteria_slug: publishes-sustainability-report
