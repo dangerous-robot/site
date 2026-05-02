@@ -20,6 +20,12 @@ Rules:
 - Prefer queries that would surface primary sources or independent journalism over opinion pieces.
 - Do not repeat the same query with minor word changes.
 - Return queries in the `queries` field. Include a brief `rationale` explaining why these queries cover the claim.
+
+Brave Search query format (important — these run on Brave, not Google):
+- Do NOT use Google-specific operators: no `site:`, `source:`, `date:`, `filetype:`, `intitle:`, `inurl:`.
+- Do NOT chain multiple quoted phrases. Use at most one short quoted phrase per query, reserved for exact proper nouns or document titles. Multiple quoted phrases chained together nearly always return zero results.
+- Keep queries short: 3–7 words. Natural keyword combinations outperform complex boolean syntax on Brave.
+- For sector-level or abstract entities (e.g. "AI/LLM producers", "cloud providers"), skip the entity name and query by the concrete subject matter directly (e.g. "Bletchley Park AI safety commitments" rather than "AI/LLM producers safety pledges").
 """
 
 query_planner_agent = Agent(

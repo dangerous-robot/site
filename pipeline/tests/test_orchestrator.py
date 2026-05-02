@@ -346,7 +346,7 @@ class TestThresholdEnforcement:
             year=2026,
         )
 
-        async def _fake_research(client, entity, claim, cfg, sem):
+        async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
             return ["https://example.com/one"], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
@@ -381,7 +381,7 @@ class TestThresholdEnforcement:
         self, monkeypatch
     ) -> None:
         """When zero sources ingest and all errors are terminal HTTP, mark it so."""
-        async def _fake_research(client, entity, claim, cfg, sem):
+        async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
             return ["https://a", "https://b"], [], {"mode": "test"}
 
         async def _fake_ingest(client, urls, cfg, sem):
@@ -425,7 +425,7 @@ class TestThresholdEnforcement:
         sf3 = _make_sf("c", "https://example.com/c")
         sf4 = _make_sf("d", "https://example.com/d")
 
-        async def _fake_research(client, entity, claim, cfg, sem):
+        async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
             return [
                 "https://example.com/a", "https://example.com/b",
                 "https://example.com/c", "https://example.com/d",

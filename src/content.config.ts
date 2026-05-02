@@ -196,6 +196,10 @@ const entities = defineCollection({
     parent_company: z.string().regex(/^companies\/[a-z0-9-]+$/, {
       message: 'parent_company must be a slug ref of the form "companies/<slug>"',
     }).optional(),
+    search_hints: z.object({
+      include: z.array(z.string()).optional(),
+      exclude: z.array(z.string()).optional(),
+    }).optional(),
   }),
 });
 

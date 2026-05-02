@@ -9,6 +9,7 @@ import httpx
 
 from common.models import resolve_model
 from orchestrator.checkpoints import StepError
+from orchestrator.entity_resolution import ResolvedEntity, build_entity_context
 from researcher.agent import search_brave
 from researcher.planner import QueryPlan, query_planner_agent
 from researcher.scorer import SearchCandidate, ScoredURLs, build_scorer_prompt, url_scorer_agent
@@ -57,6 +58,7 @@ async def decomposed_research(
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
     client: httpx.AsyncClient,
+    resolved_entity: ResolvedEntity | None = None,
 ) -> tuple[list[str], list[StepError], dict]:
     """Run the 3-step decomposed researcher.
 
@@ -68,8 +70,9 @@ async def decomposed_research(
     errors: list[StepError] = []
     trace: dict = {"mode": "decomposed"}
 
+    entity_ctx = build_entity_context(resolved_entity, entity_name)
     planner_prompt = (
-        f"Entity: {entity_name or '(unknown)'}\n"
+        f"{entity_ctx}"
         f"Claim: {claim_text}\n"
         f"Generate up to {cfg.max_initial_queries} search queries."
     )

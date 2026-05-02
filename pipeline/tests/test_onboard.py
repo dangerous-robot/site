@@ -409,7 +409,7 @@ class TestOnboardVocabularyResolution:
                 sources.append((url, sf))
             return sources, []
 
-        async def fake_research(client, entity, claim, cfg, sem):
+        async def fake_research(client, entity, claim, cfg, sem, **kwargs):
             return [
                 "https://example.com/a",
                 "https://example.com/b",

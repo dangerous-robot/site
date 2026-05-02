@@ -39,7 +39,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution
-from orchestrator.entity_resolution import ResolvedEntity
+from orchestrator.entity_resolution import ResolvedEntity, build_entity_context
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
@@ -156,7 +156,7 @@ class VerifyConfig:
     auditor_model: str | None = None
     ingestor_model: str | None = None
     # target successes to pass to the analyst
-    max_sources: int = 6
+    max_sources: int = 8
     candidate_pool_size: int = 24
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
@@ -176,7 +176,7 @@ class VerifyConfig:
     # and the new 3-step decomposed pipeline. Removed post-validation.
     researcher_mode: Literal["classic", "decomposed"] = "decomposed"
     # Effort lever for decomposed researcher: more queries = wider net.
-    max_initial_queries: int = 4
+    max_initial_queries: int = 5
     # Integer cap for the shared asyncio.Semaphore created at each call site.
     # Never store the Semaphore itself here — it is loop-bound.
     llm_concurrency: int = 8
@@ -241,10 +241,11 @@ async def verify_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/4: Searching for sources...")
-            urls, research_errors, trace = await _research(client, research_entity, claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             result.urls_found = urls
             result.research_trace = trace
 
+            result.errors.extend(e.message for e in research_errors)
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
                 return result
@@ -348,6 +349,7 @@ async def _research(
     claim_text: str,
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
+    resolved_entity: "ResolvedEntity | None" = None,
 ) -> tuple[list[str], list[StepError], dict]:
     """Run the configured researcher and return ``(urls, errors, trace)``.
 
@@ -357,7 +359,7 @@ async def _research(
     """
     if cfg.researcher_mode == "decomposed":
         from researcher.decomposed import decomposed_research
-        raw_urls, errors, trace = await decomposed_research(claim_text, entity_name, cfg, sem, client)
+        raw_urls, errors, trace = await decomposed_research(claim_text, entity_name, cfg, sem, client, resolved_entity=resolved_entity)
         urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
         logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
         trace["urls_after_blocklist"] = len(urls)
@@ -365,7 +367,8 @@ async def _research(
 
     # Classic path
     deps = ResearchDeps(http_client=client)
-    prompt = f"Entity: {entity_name}\nClaim to verify: {claim_text}"
+    entity_ctx = build_entity_context(resolved_entity, entity_name)
+    prompt = f"{entity_ctx}Claim to verify: {claim_text}"
     trace: dict = {"mode": "classic"}
 
     try:
@@ -654,10 +657,11 @@ async def research_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/5: Searching for sources...")
-            urls, research_errors, trace = await _research(client, research_entity_hint, claim_text, cfg, _sem)
+            urls, research_errors, trace = await _research(client, research_entity_hint, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             result.urls_found = urls
             result.research_trace = trace
 
+            result.errors.extend(e.message for e in research_errors)
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
                 return result

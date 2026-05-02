@@ -21,6 +21,12 @@ _DIR_ENTITY_TYPE: dict[str, EntityType] = {
 
 
 @dataclass
+class SearchHints:
+    include: list[str] = field(default_factory=list)
+    exclude: list[str] = field(default_factory=list)
+
+
+@dataclass
 class ResolvedEntity:
     entity_ref: str
     entity_name: str
@@ -29,6 +35,24 @@ class ResolvedEntity:
     aliases: list[str] = field(default_factory=list)
     parent_company: str | None = None
     website: str | None = None
+    search_hints: SearchHints | None = None
+
+
+def build_entity_context(resolved_entity: ResolvedEntity | None, fallback_name: str = "") -> str:
+    """Build a plain-text entity context block for researcher prompts."""
+    if resolved_entity is None:
+        return f"Entity: {fallback_name}\n" if fallback_name else ""
+    lines = [f"Entity: {resolved_entity.entity_name}"]
+    if resolved_entity.entity_description:
+        lines.append(f"Description: {resolved_entity.entity_description}")
+    if resolved_entity.aliases:
+        lines.append(f"Also known as: {', '.join(resolved_entity.aliases)}")
+    if resolved_entity.search_hints:
+        if resolved_entity.search_hints.include:
+            lines.append(f"Prefer queries including: {', '.join(resolved_entity.search_hints.include)}")
+        if resolved_entity.search_hints.exclude:
+            lines.append(f"Avoid results about: {', '.join(resolved_entity.search_hints.exclude)}")
+    return "\n".join(lines) + "\n"
 
 
 def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
@@ -62,6 +86,12 @@ def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
             f"Entity file research/entities/{entity_ref}.md missing required field 'name'"
         )
 
+    raw_hints = fm.get("search_hints")
+    search_hints = SearchHints(
+        include=raw_hints.get("include") or [],
+        exclude=raw_hints.get("exclude") or [],
+    ) if raw_hints else None
+
     return ResolvedEntity(
         entity_ref=entity_ref,
         entity_name=fm["name"],
@@ -70,4 +100,5 @@ def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
         aliases=fm.get("aliases") or [],
         parent_company=fm.get("parent_company") or None,
         website=fm.get("website") or None,
+        search_hints=search_hints,
     )
