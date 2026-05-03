@@ -109,6 +109,21 @@ def _write_entity_file(
     return entity_ref
 
 
+def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) -> Path:
+    """Return the claims directory for an entity.
+
+    Companies and products use a flat layout (research/claims/<slug>/) for
+    backward compat; all other types (sectors, …) include the type prefix.
+    """
+    if entity_ref and "/" in entity_ref:
+        ref_parts = entity_ref.split("/")
+        slug = ref_parts[-1]
+        if ref_parts[0] in ("companies", "products") and len(ref_parts) == 2:
+            return repo_root / "research" / "claims" / slug
+        return repo_root / "research" / "claims" / Path(*ref_parts)
+    return repo_root / "research" / "claims" / slugify(entity_name)
+
+
 def _write_claim_file(
     title: str,
     entity_name: str,
@@ -144,19 +159,7 @@ def _write_claim_file(
     """
     claim_slug_clean = slugify(claim_slug)
 
-    # Derive slug and claim dir from entity_ref when available.
-    # Companies and products use a flat layout (research/claims/<slug>/) for
-    # backward compat; all other types (sectors, …) include the type prefix.
-    if entity_ref and "/" in entity_ref:
-        ref_parts = entity_ref.split("/")
-        entity_slug = ref_parts[-1]
-        if ref_parts[0] in ("companies", "products") and len(ref_parts) == 2:
-            claim_dir = repo_root / "research" / "claims" / entity_slug
-        else:
-            claim_dir = repo_root / "research" / "claims" / Path(*ref_parts)
-    else:
-        entity_slug = slugify(entity_name)
-        claim_dir = repo_root / "research" / "claims" / entity_slug
+    claim_dir = _claim_dir_for(entity_ref, entity_name, repo_root)
     claim_dir.mkdir(parents=True, exist_ok=True)
     claim_path = claim_dir / f"{claim_slug_clean}.md"
 

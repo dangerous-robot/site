@@ -812,6 +812,7 @@ async def onboard_entity(
     checkpoint: CheckpointHandler | None = None,
     seed_url: str | None = None,
     only: list[str] | None = None,
+    entity_ref: str | None = None,
 ) -> OnboardResult:
     """Onboard an entity by running claim templates through the research pipeline.
 
@@ -824,6 +825,7 @@ async def onboard_entity(
     """
     from orchestrator.persistence import (
         _build_sources_consulted,
+        _claim_dir_for,
         _write_audit_sidecar,
         _write_claim_file,
         _write_draft_entity_file,
@@ -927,14 +929,14 @@ async def onboard_entity(
 
         result.templates_applied = applicable_slugs
 
-        # Step 4: Write entity file
-        entity_ref = _write_entity_file(
-            entity_name=entity_name,
-            entity_type=et,
-            entity_description=entity_description,
-            repo_root=repo_root,
-            website=entity_website,
-        )
+        if entity_ref is None:
+            entity_ref = _write_entity_file(
+                entity_name=entity_name,
+                entity_type=et,
+                entity_description=entity_description,
+                repo_root=repo_root,
+                website=entity_website,
+            )
         result.entity_ref = entity_ref
 
         # Step 5: Per-template research pipeline. Each template gets its own
@@ -964,9 +966,8 @@ async def onboard_entity(
                 # Skip before running the pipeline if a claim file already
                 # exists for this entity + criterion. Avoids duplicate claims
                 # and wasted pipeline compute on re-onboards.
-                entity_slug = slugify(entity_name)
                 existing_claim_path = (
-                    repo_root / "research" / "claims" / entity_slug / f"{slugify(slug)}.md"
+                    _claim_dir_for(entity_ref, entity_name, repo_root) / f"{slugify(slug)}.md"
                 )
                 if existing_claim_path.exists() and not iter_cfg.force_overwrite:
                     progress("[%d/%d] Skipped (exists): %s", idx, total, slug)

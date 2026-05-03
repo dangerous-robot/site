@@ -894,7 +894,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @main.command()
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
-@click.option("--type", "entity_type", required=True, type=click.Choice(["company", "product", "sector"]), help="Entity type")
+@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(["company", "product", "sector"]), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst per template (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
@@ -910,7 +910,7 @@ def onboard(
     ctx: click.Context,
     entity_name: str,
     homepage_url: str | None,
-    entity_type: str,
+    entity_type: str | None,
     max_sources: int | None,
     candidate_pool_size: int | None,
     skip_wayback: bool,
@@ -924,17 +924,37 @@ def onboard(
 ) -> None:
     """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
 
+    ENTITY_NAME can be a bare display name (requires --type) or a type/slug ref like
+    sectors/ai-llm-producers (type inferred; skips entity-file creation).
+
     HOMEPAGE_URL is optional. If provided, it is used directly for entity
     light research instead of searching for the homepage.
 
     Example:
         dr onboard "Ecosia AI" --type product
         dr onboard "TreadLightlyAI" treadlightly.ai --type company --interactive
+        dr onboard sectors/ai-llm-producers
     """
+    resolved_entity_ref: str | None = None
+    if "/" in entity_name:
+        from common.content_loader import resolve_repo_root as _resolve_repo_root
+        from orchestrator.entity_resolution import parse_entity_ref
+        repo_root_path = Path(repo_root) if repo_root else _resolve_repo_root()
+        try:
+            resolved = parse_entity_ref(entity_name, repo_root_path)
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
+        resolved_entity_ref = entity_name
+        entity_name = resolved.entity_name
+        entity_type = resolved.entity_type.value
+    elif entity_type is None:
+        raise click.UsageError("--type is required when ENTITY_NAME is not a type/slug ref")
+
     logger.info(
-        "dr onboard: name=%s type=%s seed_url=%s only=%s",
+        "dr onboard: name=%s type=%s ref=%s seed_url=%s only=%s",
         entity_name,
         entity_type,
+        resolved_entity_ref,
         homepage_url,
         only,
     )
@@ -957,7 +977,7 @@ def onboard(
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     only_slugs = [s.strip() for s in only.split(",") if s.strip()] if only else None
-    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url, only=only_slugs))
+    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url, only=only_slugs, entity_ref=resolved_entity_ref))
 
     click.echo("=" * 60)
     click.echo("Onboard Report")
