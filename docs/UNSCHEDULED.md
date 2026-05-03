@@ -49,6 +49,44 @@ Goal: Split the Analyst's frontier-model call into smaller sub-decisions so chea
 
 ---
 
+## Existing duplicate source files (25 URL collisions)
+
+Goal: Remove the 25 pairs of source files that share the same URL (different slugs, same content). These predate the URL-derived slug feature shipped 2026-05-03 that prevents new duplicates.
+
+For each pair: keep the better-named file, delete the other, update any claim `sources:` frontmatter that references the deleted source ID.
+
+Full list of collisions (as of 2026-05-03):
+
+| URL | File A | File B |
+|-----|--------|--------|
+| ailabwatch.org/resources/commitments | 2026/commitments.md | 2026/ai-lab-commitments.md |
+| arxiv.org/abs/2512.01166 | 2025/evaluating-ai-frontier-safety-frameworks.md | 2025/evaluating-ai-providers-frontier-safety-frameworks.md |
+| blogs.cfainstitute.org/…hidden-environmental-costs… | 2024/hidden-environmental-costs-ai-investments.md | 2024/hidden-environmental-costs-tech-ai-investments.md |
+| disinfocode.eu/reports/microsoft/5… | 2025/microsoft-transparency-center-report-2025.md | 2025/microsoft-eu-code-disinformation-report-2025.md |
+| epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use | 2025/chatgpt-energy-usage.md | 2025/how-much-energy-does-chatgpt-use.md |
+| esgnews.com/microsoft-…-sustainability-report/ | 2024/microsoft-2024-sustainability-report-suppliers.md | 2024/microsoft-2024-sustainability-report.md |
+| greenpt.com/government/ | 2025/greenpt-government.md | 2025/greenpt-government-ai.md |
+| kie.ai/4o-image-api | 2026/gpt-image-1-api.md | 2026/gpt-image-1-api-kie.md |
+| owasp.org/www-project-top-10-for-large-language-model-applications/ | 2026/owasp-top-10-llm-applications.md | 2026/owasp-top-10-llm.md |
+| panmore.com/microsoft-corporation-organizational-structure… | 2024/microsoft-organizational-structure-analysis.md | 2016/microsoft-organizational-structure-analysis.md |
+| spectrum.ieee.org/ai-energy-use | 2025/ai-energy-use.md | 2025/ai-energy-use-queries.md |
+| teamai.com/blog/…understanding-different-chatgpt-models/ | 2024/chatgpt-coding-models-2026.md | 2024/best-chatgpt-coding-models-2026.md |
+| brookings.edu/…bletchley-park-process… | 2024/bletchley-park-ai-safety-cooperation.md | 2024/bletchley-park-process-ai-safety.md |
+| eesel.ai/blog/brave-leo | 2025/brave-leo-browser-ai-assistant.md | 2025/brave-leo-deep-dive.md |
+| gov.uk/…ai-safety-summit-2023-the-bletchley-declaration | 2023/ai-safety-summit-bletchley-declaration.md | 2023/ai-safety-summit-2023-bletchley-declaration.md |
+| microsoft.com/…/corporate-responsibility/ai | 2026/ai-impact.md | 2026/microsoft-ai-impact.md |
+| microsoft.com/…/corporate-responsibility/reports-hub | 2026/reports-hub.md | 2026/microsoft-reports-hub.md |
+| microsoft.com/…/corporate-responsibility/sustainability | 2026/sustainability.md | 2026/microsoft-sustainability.md |
+| microsoft.com/…/investor/corporate-governance/framework | 2026/corporate-governance-framework.md | 2026/microsoft-corporate-governance-framework.md |
+| microsoft.com/…/investor/corporate-governance/policies | 2026/microsoft-corporate-governance-policies.md | 2026/corporate-governance-policies.md |
+| nature.org/…/microsoft/ | 2026/microsoft-nature-conservancy-partnership.md | 2026/microsoft-nature-conservancy.md |
+| oneplacesolutions.com/…sharepoint… | 2022/legal-matter-management-sharepoint-m365.md | 2022/legal-matter-management-sharepoint-microsoft-365.md |
+| pymnts.com/…openais-new-corporate-structure… | 2025/openai-corporate-structure-legal-future.md | 2025/openais-new-corporate-structure.md |
+| vox.com/…/openai-nonprofit-foundation-philanthropy | 2026/openai-nonprofit-foundation-philanthropy.md | 2026/openai-nonprofit-mission-lawsuit.md |
+| washington.edu/…how-much-energy-does-chatgpt-use/ | 2023/uw-chatgpt-energy-use.md | 2023/uw-chatgpt-energy-consumption.md |
+
+---
+
 ## Dedup detection on URL ingest and claim creation
 
 Goal: Stop creating duplicate sources/claims when the pipeline encounters a URL or claim that already exists. Today the pipeline writes a new file or fails on a path collision rather than reusing the existing object.

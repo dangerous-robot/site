@@ -1,7 +1,7 @@
 # Sector-wide claims
 
-**Status**: Partially done — schema change complete (`sector` added to entity `type` enum, commit 33c8ad3). No sector entity files or sector claims exist on disk as of 2026-05-01. The `/sectors/` route and any sector claims are post-v1. A separate agent is handling this plan.
-**Last updated**: 2026-05-01
+**Status**: Implementation complete. All four steps done as of 2026-05-03. This plan is now a future-work tracker.
+**Last updated**: 2026-05-03
 
 The entity `type` enum needs to be extended to include `'sector'` to support sector-wide claims. The immediate use case is moving the `existential-safety-score` claim from `anthropic/` to a new `sectors/ai-llm-producers/` entity, as that criterion applies across the AI/LLM industry rather than to a single company.
 
@@ -81,24 +81,65 @@ No new route is needed for v0.1.0. Verify that:
 
 ---
 
-## Future work (post-v0.1.0)
+## Future work
 
 **Total estimate**: ~3-6 hours, mostly frontend scaffolding. The data model already supports sectors.
 
 ### Dedicated `/sectors/` route (~2-4 hours)
 
+The entity schema (`content.config.ts`, line 193) and content collection already support `type: sector`. This is a page scaffolding task only.
+
 - Create `src/pages/sectors/index.astro` -- sector list page, mirrors `src/pages/companies/index.astro`
 - Create `src/pages/sectors/[...slug].astro` -- sector entity page, mirrors `src/pages/entities/[...slug].astro`
-- Register routes in any navigation/sitemap config
-- The Astro content collection and entity schema already support sector entities; this is purely a page scaffolding task
+- Register routes in nav and sitemap config
 - Verdict distribution and claim list components already work generically -- wire up the sector entity slug
+
+Acceptance bar: `/sectors/ai-llm-producers` renders with its claim list and verdict distribution. The sector appears in the `/sectors/` index. Navigation links to it from relevant company pages.
 
 ### Sector-scoped criteria templates (~1-2 hours)
 
-- Add `entity_type: sector` entries to `research/templates.yaml` under `active_templates`
-- Update `src/content.config.ts` (criteria collection, `entity_type` enum at the `z.enum(['company', 'product'])` line) to add `'sector'`
-- One starter template: sector-level safety commitments or sustainability transparency claim
-- Requires deciding which criteria make sense at sector level vs. company level before writing templates
+Two sector templates are already active in `research/templates.yaml`: `ai-producers-signed-safety-commitments` and `fli-2025-safety-index-existential-score`. The `entity_type: sector` value is already in the `criteria` collection schema (`content.config.ts`, line 216). No schema change is needed.
+
+Remaining work:
+
+- Decide which criteria make sense at sector level vs. company level before adding more templates
+- Add templates to `research/templates.yaml` under `templates` (not `inactive_templates`) as new sectors are created
+- Consider a sector-level sustainability transparency claim (does the sector have a shared reporting standard?) as a next candidate
+
+Acceptance bar: at least one new sector template is active and generates a claim via the pipeline.
+
+---
+
+## New sectors to consider
+
+Candidates for future sector entities, evaluated against the `ai-llm-producers` precedent.
+
+### Hyperscaler data centers
+
+Companies operating massive cloud and AI compute infrastructure: AWS, Azure, Google Cloud, Oracle Cloud, CoreWeave.
+
+- What makes it a sector: these companies share infrastructure-level responsibility for AI energy and water consumption regardless of which AI products run on top
+- Relevant claim topics: energy use and renewable energy pledges (`environmental-impact`), water consumption and water stress (`environmental-impact`), embodied carbon in hardware (`environmental-impact`), PUE (power usage effectiveness) disclosure
+- Overlap with `ai-llm-producers`: some companies (Google, Microsoft/Azure) appear in both; claims at the hyperscaler level are about infrastructure, not model behavior
+- Content collection note: claims would live under `research/claims/sectors/hyperscaler-data-centers/`; entity file at `research/entities/sectors/hyperscaler-data-centers.md`
+
+### Frontier models
+
+Large foundation models offered via API or consumer product: GPT-4/4o, Claude 3/4, Gemini 1.5/2, Grok, Command R+.
+
+- What makes it a sector: frontier-scale capability and safety properties apply across models regardless of which company built them; the `fli-2025-safety-index-existential-score` template already targets this scope
+- Relevant claim topics: safety commitments and evaluations (`ai-safety`), training energy and compute (`environmental-impact`), capability evaluation disclosure (`ai-safety`, `industry-analysis`)
+- Overlap with `ai-llm-producers`: significant -- `ai-llm-producers` covers the companies; `frontier-models` would cover the models as a class; keep them separate only if you have claims that apply to models-as-artifacts rather than companies-as-actors
+- Content collection note: consider whether this is better handled as a `topic` entity or a `sector` entity; `sector` fits if you want verdict distributions across frontier models as a class
+
+### Open weight models
+
+Model families with publicly released weights: Llama, Mistral, Falcon, Qwen, Gemma.
+
+- What makes it a sector: shared property (public weights) creates shared claim space around auditability, dual-use risk, and downstream energy cost
+- Relevant claim topics: safety evaluations and red-teaming disclosure (`ai-safety`), dual-use risk documentation (`ai-safety`, `regulation-policy`), training energy and dataset transparency (`environmental-impact`, `ai-safety`)
+- Overlap with `ai-llm-producers`: most open weight producers are also `ai-llm-producers`; the sector claim is about the open-weight release decision, not the company's overall product portfolio
+- Content collection note: claims would sit alongside frontier-model claims structurally; `research/claims/sectors/open-weight-models/`
 
 ---
 
@@ -120,3 +161,4 @@ Verdict: true, confidence: medium. Sources the UK Frontier AI Safety Commitments
 | 2026-04-22 | agent (stub creation) | initial | Stub scaffolded from v0.1.0-roadmap.md §4 |
 | 2026-04-22 | agent | expansion | Expanded from industry-claims_stub.md; renamed to sector-claims.md |
 | 2026-05-01 | agent | status update | Updated status; rewrote Step 3 (migration moot); expanded Future work with estimates; added Demo implementation section |
+| 2026-05-03 | agent | expansion | Reflected completed implementation; expanded future work with acceptance bars; added new sector candidates section |
