@@ -56,10 +56,10 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Research Lead** | (human; no agent) | — |
 | **Orchestrator** | `pipeline/orchestrator/` | the `dr` CLI itself; entry point for every pipeline command |
 | **Router** | planned (`pipeline/router/`); deferred via [`triage-agent.md`](../plans/triage-agent.md) | — |
-| **Researcher** | `pipeline/researcher/` | invoked by `dr verify-claim`, `dr verify`, `dr onboard` |
-| **Ingestor** | `pipeline/ingestor/` | invoked by `dr verify-claim`, `dr verify`, `dr onboard`; standalone via `dr ingest` |
-| **Analyst** | `pipeline/analyst/` | invoked by `dr verify-claim`, `dr verify`, `dr onboard` |
-| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr verify-claim`, `dr verify`, `dr onboard`, `dr reassess` |
+| **Researcher** | `pipeline/researcher/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard` |
+| **Ingestor** | `pipeline/ingestor/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr ingest` |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`, `dr reassess` |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
 | (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording) |
 
@@ -149,8 +149,10 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
 | **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr ingest`. |
 | **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then loops `verify_claim` per applicable template. See [onboarding.md](onboarding.md) |
-| **Verify** | Run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim. CLI: `dr verify`. |
-| **Verify-claim** | Like `verify`, but runs the full pipeline and writes outputs to disk (sources, claim file, audit sidecar). CLI: `dr verify-claim`. |
+| **Claim-probe** | Dry-run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim; no disk writes. CLI: `dr claim-probe`. |
+| **Claim-draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. CLI: `dr claim-draft`. |
+| **Claim-refresh** | Re-run the full pipeline on an existing template-backed claim file (requires `criteria_slug`). CLI: `dr claim-refresh`. |
+| **Claim-promote** | Promote an ad-hoc claim draft to a reusable template entry in `research/templates.yaml`. Edits only the templates file; does not invoke any pipeline agent. CLI: `dr claim-promote`. |
 | **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr reassess`. |
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
 | **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). |

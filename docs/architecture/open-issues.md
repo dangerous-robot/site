@@ -55,8 +55,8 @@ The recheck loop is described architecturally but has no operational owner. With
 
 `verify_claim()`, `research_claim()`, and the per-template loop in `onboard_entity()` implement the same four-step pipeline (researcher, ingestor, checkpoint, analyst, evaluator) with small variations. The primary variation is whether files are written to disk.
 
-A shared pipeline core with a `persist: bool` flag (or persistence callback) would reduce duplication. The risk is that `dr verify` (no writes, safe for dry-run use) and `dr verify-claim` (file-writing) would share a code path where a single conditional separates the two behaviors. A bug in the conditional could cause `dr verify` to write files unexpectedly.
+A shared pipeline core with a `persist: bool` flag (or persistence callback) would reduce duplication. The risk is that `dr claim-probe` (no writes, safe for dry-run use) and `dr claim-draft` (file-writing) would share a code path where a single conditional separates the two behaviors. A bug in the conditional could cause `dr claim-probe` to write files unexpectedly.
 
 This is not a blocker for any current work. The existing structure is redundant but safe. Refactoring here should happen only after the v0.1.0 milestone is stable, when the behavior of all three paths is well-tested and the refactor risk is lower.
 
-**The question**: Is there appetite to refactor this before or after v0.1.0? If before, a clear test harness verifying `dr verify` produces zero file writes is a prerequisite.
+**The question**: Is there appetite to refactor this before or after v0.1.0? If before, a clear test harness verifying `dr claim-probe` produces zero file writes is a prerequisite.

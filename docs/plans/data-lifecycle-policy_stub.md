@@ -15,7 +15,7 @@ Define how research data is overwritten, partially fixed, and skipped during rep
 
 | Scenario | Current behavior | Desired behavior |
 |---|---|---|
-| Re-run `dr research` (post-rename: `dr verify-claim`) on an existing claim | Overwrites the claim file | Configurable: skip-if-exists (default), force-overwrite, or write to `*.next.md` for diff review |
+| Re-run `dr claim-draft` on an existing claim | Overwrites the claim file | Configurable: skip-if-exists (default), force-overwrite, or write to `*.next.md` for diff review |
 | Run `dr ingest` on a URL with an existing source file | TBD | Skip (idempotent) or force-refresh based on flag |
 | Run `dr onboard` on an existing entity | TBD | Skip claims already published; only run for missing templates |
 | Fix one specific claim error without re-running the full pipeline | Manual edit only | Targeted command: `dr fix --claim <slug>` or similar |

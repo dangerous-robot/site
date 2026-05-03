@@ -10,7 +10,7 @@
 
 - Use `asyncio.Semaphore(cfg.concurrency)` created inside `onboard_entity`, scoping it to Step 5 only (light research, screening, checkpoint, and entity-file write remain sequential).
 - Add `concurrency: int = 3` to `VerifyConfig` in `pipeline/orchestrator/pipeline.py`. Validate `concurrency >= 1`.
-- Add CLI flag `--concurrency N` (default 3) to `dr onboard` in `pipeline/orchestrator/cli.py` and thread into `VerifyConfig`. Do NOT add to `dr verify` / `dr research` (single-claim commands); single-claim already parallelizes ingest via `_ingest_urls`.
+- Add CLI flag `--concurrency N` (default 3) to `dr onboard` in `pipeline/orchestrator/cli.py` and thread into `VerifyConfig`. Do NOT add to `dr claim-probe` / `dr claim-draft` (single-claim commands); single-claim already parallelizes ingest via `_ingest_urls`.
 
 ### 2. Per-template worker
 

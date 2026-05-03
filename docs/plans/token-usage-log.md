@@ -320,8 +320,8 @@ Fixtures use `pydantic_ai.usage.RunUsage(input_tokens=..., output_tokens=..., to
 > the id at the wrapper call.
 
 1. **Wrapper and schema.** Add `pipeline/common/token_log.py` with `run_with_logging`, `_append_record`, `iter_records`, the schema constants, and unit tests for the wrapper.
-2. **Migrate analyst.** Wrap the analyst call in `pipeline.py:_analyse_claim` first; it is the lowest-risk call site (no concurrency, no tools, fastest path to a real record on disk). Run `dr verify` once on a canned claim and inspect the JSONL.
-3. **Migrate the rest.** Wrap researcher, ingestor (twice: pipeline.py and cli.py), and auditor (twice). Verify `run_id` propagation by running a full `dr verify` and confirming all four agent runs share one id.
+2. **Migrate analyst.** Wrap the analyst call in `pipeline.py:_analyse_claim` first; it is the lowest-risk call site (no concurrency, no tools, fastest path to a real record on disk). Run `dr claim-probe` once on a canned claim and inspect the JSONL.
+3. **Migrate the rest.** Wrap researcher, ingestor (twice: pipeline.py and cli.py), and auditor (twice). Verify `run_id` propagation by running a full `dr claim-probe` and confirming all four agent runs share one id.
 4. **Add `inv tokens.summary`.** Implement the `tasks.py` namespace and the `__main__` block in `pipeline/common/token_log.py`. Add aggregation tests.
 5. **Gitignore + docs.** Add `/logs/` to `.gitignore`; add a one-paragraph note in `AGENTS.md` § "Tooling: dr vs inv" pointing at `inv tokens.summary`.
 6. **Optional sidecar rollup (deferred).** If/when option (c) is wanted, write a follow-on plan to add a `token_usage` block to `.audit.yaml` derived from the JSONL on every audit-sidecar write. Bump `schema_version` to `2` at that point.

@@ -81,6 +81,8 @@ def _substitute_entity(template: TemplateRecord, entity_name: str) -> str:
         return text.replace("PRODUCT", entity_name)
     if template.entity_type == "company":
         return text.replace("COMPANY", entity_name)
+    if template.entity_type == "sector":
+        return text.replace("ENTITY", entity_name)
     return text
 
 

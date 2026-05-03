@@ -106,7 +106,7 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 
-Pass `--interactive` to `dr verify`, `dr verify-claim`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
+Pass `--interactive` to `dr claim-probe`, `dr claim-draft`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
 
 ### Tooling: dr vs inv
 
@@ -114,15 +114,15 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: verify, verify-claim, evaluate, ingest |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: claim-probe, claim-draft, claim-refresh, claim-promote, evaluate, ingest |
 | `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
 
 ```
-uv run dr verify "Entity" "claim text"
-uv run dr verify-claim products/chatgpt "ChatGPT excludes frontier models from user data training"
-uv run dr verify-claim - "Some AI company makes a sustainability claim"
+uv run dr claim-probe "Entity" "claim text"
+uv run dr claim-draft products/chatgpt "ChatGPT excludes frontier models from user data training"
+uv run dr claim-draft - "Some AI company makes a sustainability claim"
 uv run dr reassess --entity ecosia
 uv run dr ingest https://example.com/article
 uv run dr onboard "Ecosia AI" --type product
@@ -132,8 +132,10 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 
 Commands:
 
-- `dr verify` -- Verify a claim about an entity using web research (read-only; no disk writes)
-- `dr verify-claim` -- Run the full pipeline for a claim: find sources, evaluate verdict, write everything to disk. First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
+- `dr claim-probe` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes
+- `dr claim-draft` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
+- `dr claim-refresh` -- Re-run the full pipeline on an existing template-backed claim file (must have `criteria_slug`; use `dr claim-promote` first for ad-hoc drafts)
+- `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
 - `dr reassess` -- Run evaluator checks on research claims
 - `dr ingest` -- Ingest a URL and produce a source file
 - `dr onboard` -- Onboard an entity using claim templates

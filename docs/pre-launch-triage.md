@@ -30,7 +30,7 @@ This file replaces an earlier longer triage synthesis with a slim ledger. Goal: 
 | ID | Item | Destination |
 |---|---|---|
 | P1 | Rename Citation Auditor → citation check | [pre-launch-quick-fixes.md](plans/pre-launch-quick-fixes.md) |
-| P2 | Rename `dr research` → `dr verify-claim` | [pre-launch-quick-fixes.md](plans/pre-launch-quick-fixes.md) |
+| P2 | Rename `dr research` → `dr verify-claim` → `dr claim-draft` | [pre-launch-quick-fixes.md](plans/pre-launch-quick-fixes.md) |
 | P3 | Document model-tier discipline | [pre-launch-quick-fixes.md](plans/pre-launch-quick-fixes.md) |
 | P4 | Acceptance test fixture (Anthropic/Claude per Q8) | [acceptance-test-fixture_stub.md](plans/acceptance-test-fixture_stub.md) |
 | P5 | Roadmap cleanup | [pre-launch-quick-fixes.md](plans/pre-launch-quick-fixes.md) |

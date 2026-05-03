@@ -200,7 +200,7 @@ This distinguishes "researcher returned nothing" from "researcher returned only 
 - `common/blocklist.py` exists; unit tests cover www-stripping, suffix-on-dot-boundary, no false positives.
 - `_research` applies filter before `max_sources` slicing; each drop becomes `StepError(error_type="blocked_host")`.
 - Integration test proves a fake LinkedIn URL is dropped from `_research` output and appears in the error list.
-- Live `dr verify` / `dr onboard` run surfaces blocked URLs in `review_sources` checkpoint and in `OnboardResult.errors`.
+- Live `dr claim-probe` / `dr onboard` run surfaces blocked URLs in `review_sources` checkpoint and in `OnboardResult.errors`.
 - `pipeline/README.md` documents the file and matching rule.
 - `"blocked_host"` and `"all_blocked"` added to canonical `error_type` vocabulary.
 
