@@ -17,8 +17,9 @@ _MAX_TEXT_LENGTH = 50_000
 # - 401: auth required (origin wants credentials)
 # - 402: payment required (paywall)
 # - 403: forbidden (bot block / geo / Cloudflare)
+# - 404: resource does not exist at this URL (researcher found a dead link)
 # - 451: legally unavailable
-TERMINAL_STATUS_CODES = frozenset({401, 402, 403, 451})
+TERMINAL_STATUS_CODES = frozenset({401, 402, 403, 404, 451})
 
 
 class TerminalFetchError(Exception):

@@ -55,7 +55,7 @@ def _raise_if_terminal(resp: httpx.Response, url: str) -> None:
 async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """Fetch a web page and extract its title, metadata, and text content.
 
-    Terminal statuses (401/402/403/451) raise ``TerminalFetchError`` so the
+    Terminal statuses (401/402/403/404/451) raise ``TerminalFetchError`` so the
     agent run short-circuits without calling ``wayback_check`` or consuming
     the agent retry budget. 429 gets one in-tool retry after a short sleep;
     still-429 also raises. All other HTTP errors fall through to the

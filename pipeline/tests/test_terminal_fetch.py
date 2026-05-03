@@ -45,7 +45,7 @@ def _make_ctx(client: httpx.AsyncClient) -> RunContext[IngestorDeps]:
 
 class TestTerminalStatusCodes:
     def test_set_contains_expected_codes(self) -> None:
-        assert TERMINAL_STATUS_CODES == frozenset({401, 402, 403, 451})
+        assert TERMINAL_STATUS_CODES == frozenset({401, 402, 403, 404, 451})
 
     @pytest.mark.asyncio
     async def test_terminal_403_raises(self) -> None:
@@ -91,6 +91,18 @@ class TestTerminalStatusCodes:
                 with pytest.raises(TerminalFetchError) as exc_info:
                     await web_fetch(ctx, url)
         assert exc_info.value.status_code == 402
+
+    @pytest.mark.asyncio
+    async def test_terminal_404_raises(self) -> None:
+        url = "https://example.com/missing"
+        with respx.mock:
+            respx.get(url).mock(return_value=httpx.Response(404))
+            async with httpx.AsyncClient() as client:
+                ctx = _make_ctx(client)
+                with pytest.raises(TerminalFetchError) as exc_info:
+                    await web_fetch(ctx, url)
+        assert exc_info.value.status_code == 404
+        assert exc_info.value.url == url
 
 
 class Test429Handling:
@@ -139,18 +151,6 @@ class Test429Handling:
 
 
 class TestSoftStatuses:
-    @pytest.mark.asyncio
-    async def test_404_still_soft(self) -> None:
-        """404 should return an error dict (unchanged behavior) so wayback_check is tried."""
-        url = "https://example.com/missing"
-        with respx.mock:
-            respx.get(url).mock(return_value=httpx.Response(404))
-            async with httpx.AsyncClient() as client:
-                ctx = _make_ctx(client)
-                result = await web_fetch(ctx, url)
-        assert "error" in result
-        assert result["url"] == url
-
     @pytest.mark.asyncio
     async def test_500_still_soft(self) -> None:
         """5xx should return an error dict (unchanged)."""

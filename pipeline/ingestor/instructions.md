@@ -37,7 +37,6 @@ You must return a SourceFile with these fields:
 - Do not include the site name in the title.
 
 ## Terminal fetch failures:
-If `web_fetch` raises or returns an error indicating an auth wall or paywall
-(HTTP 401, 402, 403, or 451), do NOT call `wayback_check` -- these pages are
-not archived. Abort the ingestion. The orchestrator will record this as a
-skipped source.
+If `web_fetch` raises or returns an error indicating a terminal HTTP status
+(HTTP 401, 402, 403, 404, or 451), do NOT call `wayback_check`. Abort the
+ingestion. The orchestrator will record this as a skipped source.
