@@ -1,0 +1,46 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+import EntityCard from '../../components/EntityCard.astro';
+import EmptyState from '../../components/EmptyState.astro';
+
+const entities = await getCollection('entities', e => e.data.type === 'sector');
+const claims = await getCollection('claims', ({ data }) => data.status === 'published');
+
+const cards = entities.map(entity => {
+  const entityClaims = claims.filter(c => c.data.entity === entity.id);
+  return {
+    id: entity.id,
+    name: entity.data.name,
+    slug: entity.id.split('/').pop()!,
+    description: entity.data.description,
+    verdicts: entityClaims.map(c => c.data.verdict),
+    claimCount: entityClaims.length,
+  };
+}).sort((a, b) => a.name.localeCompare(b.name));
+---
+<Base title="Sectors" layout="wide">
+  <h1>Sectors</h1>
+  <div class="entity-grid" id="entity-grid">
+    {cards.length > 0
+      ? cards.map(card => (
+          <EntityCard
+            name={card.name}
+            slug={card.slug}
+            entityType="sector"
+            description={card.description}
+            verdicts={card.verdicts}
+            claimCount={card.claimCount}
+          />
+        ))
+      : <EmptyState message="No sectors tracked yet." />
+    }
+  </div>
+</Base>
+<style>
+.entity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-lg);
+}
+</style>

@@ -7,26 +7,40 @@ import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
 const allSources = await getCollection('sources');
+const allCriteria = await getCollection('criteria');
+
+// Build criteria slug → flat list of vocabulary terms.
+const criteriaVocab = new Map<string, string[]>();
+for (const c of allCriteria) {
+  if (c.data.vocabulary) {
+    criteriaVocab.set(c.data.slug, Object.values(c.data.vocabulary).flat());
+  }
+}
 
 const companies = entities.filter((e) => e.data.type === 'company');
 const products = entities.filter((e) => e.data.type === 'product');
+const sectorEntities = entities.filter((e) => e.data.type === 'sector');
 
 const sections = [
-  { n: '01', label: 'Companies', meta: `${companies.length} tracked`, href: '/companies' },
-  { n: '02', label: 'Products', meta: `${products.length} tracked`, href: '/products' },
-  { n: '03', label: 'Topics', meta: `${CATEGORIES.length} areas`, href: '/topics' },
-  { n: '04', label: 'Claims', meta: `${allClaims.length} assessed`, href: '/claims' },
-  { n: '05', label: 'Sources', meta: `${allSources.length} indexed`, href: '/sources' },
+  { n: '01', label: 'Sectors',   meta: `${sectorEntities.length} tracked`,  href: '/sectors' },
+  { n: '02', label: 'Companies', meta: `${companies.length} tracked`,        href: '/companies' },
+  { n: '03', label: 'Products',  meta: `${products.length} tracked`,         href: '/products' },
+  { n: '04', label: 'Topics',    meta: `${CATEGORIES.length} areas`,         href: '/topics' },
+  { n: '05', label: 'Claims',    meta: `${allClaims.length} assessed`,       href: '/claims' },
+  { n: '06', label: 'Sources',   meta: `${allSources.length} indexed`,       href: '/sources' },
+  { n: '07', label: 'Criteria',  meta: '',                                   href: '/criteria' },
+  { n: '08', label: 'FAQ',       meta: '',                                   href: '/faq' },
 ];
 
 const navLinks = [
+  { href: '/sectors',   label: 'Sectors' },
   { href: '/companies', label: 'Companies' },
-  { href: '/products', label: 'Products' },
-  { href: '/topics', label: 'Topics' },
-  { href: '/claims', label: 'Claims' },
-  { href: '/sources', label: 'Sources' },
-  { href: '/criteria', label: 'Criteria' },
-  { href: '/faq', label: 'FAQ' },
+  { href: '/products',  label: 'Products' },
+  { href: '/topics',    label: 'Topics' },
+  { href: '/claims',    label: 'Claims' },
+  { href: '/sources',   label: 'Sources' },
+  { href: '/criteria',  label: 'Criteria' },
+  { href: '/faq',       label: 'FAQ' },
 ];
 
 const sectorHighlights = allClaims
@@ -39,12 +53,47 @@ const otherHighlights = allClaims
 
 const otherSlots = Math.max(0, 5 - sectorHighlights.length);
 
+// Build entity name lookup for bolding entity names in claim titles.
+const entityNameMap = new Map<string, { name: string; aliases: string[] }>();
+for (const e of entities) {
+  entityNameMap.set(e.id, { name: e.data.name, aliases: e.data.aliases ?? [] });
+}
+
+function boldInTitle(title: string, entityId: string, criteriaSlug?: string): string {
+  let result = title;
+  // Entity name and aliases
+  const entry = entityNameMap.get(entityId);
+  if (entry) {
+    for (const term of [entry.name, ...entry.aliases]) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      result = result.replace(new RegExp(`(${escaped})`, 'gi'), '<strong>$1</strong>');
+    }
+  }
+  // Criteria vocabulary terms (hyphenated terms also match with spaces)
+  const vocabTerms = criteriaSlug ? criteriaVocab.get(criteriaSlug) : undefined;
+  if (vocabTerms) {
+    for (const term of vocabTerms) {
+      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/-/g, '[\\s\\-]');
+      result = result.replace(new RegExp(`\\b(${escaped})\\b`, 'gi'), '<strong>$1</strong>');
+    }
+  }
+  return result;
+}
+
 const scatterItems = [
   ...otherHighlights.slice(0, otherSlots).map((c) => ({
-    verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}`, isSector: false,
+    verdict: c.data.verdict as string,
+    title: c.data.title as string,
+    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
+    href: `/claims/${c.id}`,
+    isSector: false,
   })),
   ...sectorHighlights.map((c) => ({
-    verdict: c.data.verdict as string, title: c.data.title as string, href: `/claims/${c.id}`, isSector: true,
+    verdict: c.data.verdict as string,
+    title: c.data.title as string,
+    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
+    href: `/claims/${c.id}`,
+    isSector: true,
   })),
 ];
 
@@ -138,8 +187,10 @@ const cardPositions = [
               href={c.href}
               style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${c.isSector ? 6 : p.z}`}
             >
-              <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
-              <span class="claim-card__body">{c.title}</span>
+              <span class="claim-card__header">
+                <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
+              </span>
+              <span class="claim-card__body" set:html={c.titleHtml} />
             </a>
           );
         })}
@@ -197,7 +248,7 @@ const cardPositions = [
     overflow: hidden;
     padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
     padding-top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px);
-    padding-bottom: clamp(var(--space-xl), 5vh, var(--space-2xl));
+    padding-bottom: clamp(var(--space-2xl), 10vh, 5rem);
     display: flex;
     flex-direction: column;
     gap: clamp(var(--space-sm), 1.5vh, var(--space-md));
@@ -455,7 +506,7 @@ const cardPositions = [
     display: flex;
     flex-direction: column;
     gap: 0;
-    padding: 15px 14px 0;
+    padding: 0 14px 0;
     overflow: hidden;
     /*
      * Layered background:
@@ -524,10 +575,16 @@ const cardPositions = [
     z-index: 10;
   }
 
+  .claim-card__header {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
   .claim-card__verdict {
     display: inline-flex;
     align-items: center;
-    align-self: flex-start;
     font-family: var(--font-mono);
     font-size: 1.25rem;
     font-weight: 700;
@@ -549,28 +606,32 @@ const cardPositions = [
 
   .claim-card__body {
     font-family: var(--font-body);
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     line-height: 26px; /* matches ruled-line spacing */
     color: #2a2520;
     font-weight: 500;
-    margin-top: 12px; /* 15px top-pad + ~13px badge + 12px = ~40px → just below red rule */
+    margin-top: 0;
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
+  .claim-card__body strong {
+    font-weight: 700;
+  }
+
   /* -------- site index: horizontal strip at bottom of hero -------- */
   .site-index {
     position: relative;
     z-index: 3;
-    padding-top: clamp(var(--space-md), 2vh, var(--space-lg));
+    padding-top: var(--space-2xs);
     border-top: 1px solid rgba(128, 128, 128, 0.4);
   }
   .site-index__list {
     list-style: none;
     margin: 0;
-    padding: 0;
+    padding: 0 0 0 clamp(2.5rem, 6vw, 4rem); /* clear the fixed a11y icon (~62px from left) */
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem clamp(1.5rem, 3vw, 3rem);
