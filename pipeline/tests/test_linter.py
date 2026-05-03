@@ -114,34 +114,34 @@ class TestPublishedReviewSignoff:
         sidecars = {str(claim): {"human_review": {"reviewed_at": datetime.date.today()}}}
         assert check_published_review_signoff([claim], fms, sidecars) == []
 
-    def test_published_without_sidecar_raises_warning(self):
+    def test_published_without_sidecar_raises_error(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): None}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
-        assert issues[0].severity == "warning"
+        assert issues[0].severity == "error"
         assert "no audit sidecar" in issues[0].message
 
-    def test_published_with_null_reviewed_at_raises_warning(self):
+    def test_published_with_null_reviewed_at_raises_error(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): {"human_review": {"reviewed_at": None}}}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
-        assert issues[0].severity == "warning"
+        assert issues[0].severity == "error"
         assert "human_review.reviewed_at" in issues[0].message
 
-    def test_published_with_missing_human_review_block_raises_warning(self):
+    def test_published_with_missing_human_review_block_raises_error(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"status": "published"}}
         sidecars = {str(claim): {"schema_version": 1}}
         issues = check_published_review_signoff([claim], fms, sidecars)
         assert len(issues) == 1
         assert issues[0].check_id == "published-without-review"
-        assert issues[0].severity == "warning"
+        assert issues[0].severity == "error"
 
     def test_archived_published_status_not_checked(self):
         claim = _p("research/claims/foo/bar.md")

@@ -114,7 +114,7 @@ def check_published_review_signoff(
             issues.append(LintIssue(
                 path=str(path),
                 check_id="published-without-review",
-                severity="warning",
+                severity="error",
                 message="published claim has no audit sidecar; reviewer sign-off is missing",
                 hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
             ))
@@ -124,7 +124,7 @@ def check_published_review_signoff(
             issues.append(LintIssue(
                 path=str(path),
                 check_id="published-without-review",
-                severity="warning",
+                severity="error",
                 message="published claim's audit sidecar has no `human_review.reviewed_at`",
                 hint="run `dr review --approve <claim>` to record sign-off, or set `status: draft`",
             ))
