@@ -47,7 +47,7 @@ from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
 from common.templates import VOCABULARY_HINT_PREFIX, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type
 from common.timeouts import ingest_budget_with_wayback_s
-from common.utils import slugify
+from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
@@ -56,6 +56,7 @@ from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
+from orchestrator.persistence import build_source_url_index, load_source_dict
 from researcher.agent import ResearchDeps, research_agent
 
 logger = logging.getLogger(__name__)
@@ -207,6 +208,7 @@ async def verify_claim(
     checkpoint: CheckpointHandler | None = None,
     sem: asyncio.Semaphore | None = None,
     resolved_entity: ResolvedEntity | None = None,
+    url_index: dict[str, str] | None = None,
 ) -> VerificationResult:
     """Run the full verification pipeline.
 
@@ -254,7 +256,20 @@ async def verify_claim(
 
             # Step 2: Ingest
             logger.info("Step 2/4: Ingesting %d sources...", len(urls))
-            source_files, ingest_errors = await _ingest_urls(client, urls, cfg, _sem)
+            repo_root = Path(cfg.repo_root or str(resolve_repo_root()))
+            if url_index is None:
+                url_index = build_source_url_index(repo_root)
+            urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
+
+            remaining = max(0, cfg.max_sources - len(cached_sources))
+            if remaining > 0:
+                source_files, ingest_errors = await _ingest_urls(client, urls_to_ingest, cfg, _sem, target=remaining)
+            else:
+                source_files, ingest_errors = [], []
+
+            for url, _sid, sd in cached_sources:
+                result.urls_ingested.append(url)
+                result.sources.append(sd)
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -345,6 +360,30 @@ def _apply_blocklist_cap(
     return urls, out_errors
 
 
+def _apply_url_dedup(
+    urls: list[str],
+    url_index: dict[str, str],
+    repo_root: Path,
+) -> tuple[list[str], list[tuple[str, str, dict]]]:
+    """Partition urls into those to ingest and those already on disk.
+
+    Returns (to_ingest, cached) where cached is a list of
+    (url, source_id, source_dict) triples.
+    """
+    to_ingest: list[str] = []
+    cached: list[tuple[str, str, dict]] = []
+    for url in urls:
+        source_id = url_index.get(url)
+        if source_id:
+            sd = load_source_dict(source_id, repo_root)
+            if sd is not None:
+                logger.info("dedup-hit: %s -> %s", url, source_id)
+                cached.append((url, source_id, sd))
+                continue
+        to_ingest.append(url)
+    return to_ingest, cached
+
+
 async def _research(
     client: httpx.AsyncClient,
     entity_name: str,
@@ -430,8 +469,12 @@ async def _ingest_one(
                 res = await asyncio.wait_for(
                     ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
                 )
-        logger.info("Ingested: %s -> %s", url, res.output.frontmatter.title)
-        return (url, res.output)
+        sf = res.output
+        derived = slug_from_url(url)
+        if derived:
+            sf.slug = derived
+        logger.info("Ingested: %s -> %s", url, sf.frontmatter.title)
+        return (url, sf)
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
         return StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out")
@@ -455,11 +498,13 @@ async def _ingest_urls(
     urls: list[str],
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
+    *,
+    target: int | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
     stopping once max_sources successes are collected (~2 concurrent)."""
     today = datetime.date.today()
-    target = cfg.max_sources
+    target = target if target is not None else cfg.max_sources
     pool = urls[: cfg.candidate_pool_size]
     dispatch_sem = asyncio.Semaphore(2)
 
@@ -672,7 +717,20 @@ async def research_claim(
 
             # Step 2: Ingest
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
-            source_files, ingest_errors = await _ingest_urls(client, urls, cfg, _sem)
+            url_index = build_source_url_index(repo_root)
+            urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
+
+            remaining = max(0, cfg.max_sources - len(cached_sources))
+            if remaining > 0:
+                source_files, ingest_errors = await _ingest_urls(client, urls_to_ingest, cfg, _sem, target=remaining)
+            else:
+                source_files, ingest_errors = [], []
+
+            cached_map = {url: sid for url, sid, _ in cached_sources}
+
+            for url, _sid, sd in cached_sources:
+                result.urls_ingested.append(url)
+                result.sources.append(sd)
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -703,7 +761,15 @@ async def research_claim(
 
             # Step 3: Write sources to disk
             logger.info("Step 3/5: Writing %d source files...", len(source_files))
-            source_ids = _write_source_files(source_files, repo_root)
+            fresh_ids = _write_source_files(source_files, repo_root)
+            fresh_map = {url: sid for (url, _sf), sid in zip(source_files, fresh_ids)}
+            seen: set[str] = set()
+            source_ids = []
+            for url in urls:
+                sid = cached_map.get(url) or fresh_map.get(url)
+                if sid and sid not in seen:
+                    source_ids.append(sid)
+                    seen.add(sid)
 
             # Step 4: Analyse claim (analyst identifies entity)
             logger.info("Step 4/5: Analysing claim...")
@@ -943,6 +1009,7 @@ async def onboard_entity(
         # run_id so the per-claim agent runs (researcher/ingestor/analyst/
         # auditor) in verify_claim group cleanly under one id. Token-usage
         # records inherit this id via cfg.run_id.
+        onboard_url_index = build_source_url_index(repo_root)
         total = len(applicable_slugs)
         for idx, slug in enumerate(applicable_slugs, 1):
             iter_cfg = dataclasses.replace(cfg, run_id=new_run_id())
@@ -975,7 +1042,7 @@ async def onboard_entity(
                     continue
 
                 try:
-                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate, sem=sem)
+                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate, sem=sem, url_index=onboard_url_index)
 
                     if vr.errors:
                         result.errors.extend(f"{slug}: {e}" for e in vr.errors)

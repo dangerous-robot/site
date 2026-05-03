@@ -52,6 +52,54 @@ def _entity_frontmatter(
     }
 
 
+def build_source_url_index(repo_root: Path) -> dict[str, str]:
+    """Scan research/sources/*/*.md and return a url -> source_id mapping.
+
+    source_id is in the format "{year}/{slug}" matching what _write_source_files
+    returns. Files that are unreadable, lack frontmatter, or have no url field
+    are silently skipped.
+    """
+    sources_dir = repo_root / "research" / "sources"
+    index: dict[str, str] = {}
+    if not sources_dir.exists():
+        return index
+    for path in sources_dir.glob("*/*.md"):
+        try:
+            fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        except (ValueError, yaml.YAMLError, OSError):
+            continue
+        url = fm.get("url")
+        if not url:
+            continue
+        source_id = f"{path.parent.name}/{path.stem}"
+        index[url] = source_id
+    return index
+
+
+def load_source_dict(source_id: str, repo_root: Path) -> dict | None:
+    """Read a source file from disk and return a dict in _build_source_dict shape.
+
+    The returned dict keys must stay in sync with _build_source_dict in pipeline.py.
+    Returns None if the file cannot be read or parsed, so callers can fall back
+    to normal ingestion.
+    """
+    path = repo_root / "research" / "sources" / f"{source_id}.md"
+    try:
+        fm, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+    except (ValueError, yaml.YAMLError, OSError):
+        return None
+    slug = path.stem
+    return {
+        "title": fm.get("title", ""),
+        "publisher": fm.get("publisher", ""),
+        "summary": fm.get("summary", ""),
+        "key_quotes": fm.get("key_quotes") or [],
+        "body": body,
+        "slug": slug,
+        "url": fm.get("url", ""),
+    }
+
+
 def _write_source_files(
     source_files: list[tuple[str, SourceFile]],
     repo_root: Path,

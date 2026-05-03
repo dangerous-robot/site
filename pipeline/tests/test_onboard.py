@@ -387,7 +387,7 @@ class TestOnboardVocabularyResolution:
 
         from orchestrator import pipeline as pipeline_mod
 
-        async def fake_ingest(client, urls, cfg, sem):
+        async def fake_ingest(client, urls, cfg, sem, **kwargs):
             from ingestor.models import SourceFile, SourceFrontmatter
             import datetime
             sources = []

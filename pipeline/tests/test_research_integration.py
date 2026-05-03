@@ -117,7 +117,10 @@ async def test_research_claim_writes_artifacts(tmp_path):
     assert not result.errors, f"Unexpected errors: {result.errors}"
 
     # -- Source file written with valid frontmatter --
-    source_path = tmp_path / "research" / "sources" / "2026" / "test-report.md"
+    # Slug is derived from the URL path segment ("report"), not the ingestor's
+    # LLM-generated slug ("test-report"), per the URL-derived slug override in
+    # _ingest_one.
+    source_path = tmp_path / "research" / "sources" / "2026" / "report.md"
     assert source_path.exists(), f"Source file not found at {source_path}"
     fm, _ = parse_frontmatter(source_path.read_text())
     assert fm["title"] == "Test Report"
@@ -137,7 +140,7 @@ async def test_research_claim_writes_artifacts(tmp_path):
     fm, _ = parse_frontmatter(claim_path.read_text())
     assert fm["verdict"] == "mixed"
     assert fm["confidence"] == "medium"
-    assert "2026/test-report" in fm["sources"]
+    assert "2026/report" in fm["sources"]
 
     # -- Result fields populated --
     assert result.entity == "TestCorp"

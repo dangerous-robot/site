@@ -349,7 +349,7 @@ class TestThresholdEnforcement:
         async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
             return ["https://example.com/one"], [], {"mode": "test"}
 
-        async def _fake_ingest(client, urls, cfg, sem):
+        async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             return [("https://example.com/one", sf)], []
 
         analyst_called = False
@@ -384,7 +384,7 @@ class TestThresholdEnforcement:
         async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
             return ["https://a", "https://b"], [], {"mode": "test"}
 
-        async def _fake_ingest(client, urls, cfg, sem):
+        async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             errors = [
                 StepError(step="ingest", url="https://a", error_type="http_403",
                           message="forbidden", retryable=False),
@@ -431,7 +431,7 @@ class TestThresholdEnforcement:
                 "https://example.com/c", "https://example.com/d",
             ], [], {"mode": "test"}
 
-        async def _fake_ingest(client, urls, cfg, sem):
+        async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             return [
                 ("https://example.com/a", sf1),
                 ("https://example.com/b", sf2),
