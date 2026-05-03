@@ -1,0 +1,87 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:08:56.309782+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - FLI 2025 AI Safety Index existential threat
+  - AI safety index LLM existential risk 2025
+  - Bletchley Park AI safety commitments 2025
+  - Existential threat AI risk assessment 2025
+  - FLI AI Safety Index methodology 2025
+  planner_rationale: These queries aim to find the FLI's 2025 AI Safety Index report
+    directly, or independent analyses of it. They also target Bletchley Park specifically
+    to find their commitments related to AI safety, and broader AI safety assessments
+    for 2025. The final query seeks to understand the methodology used by FLI to evaluate
+    existential threat risks, providing context for interpreting the index.
+  candidates_seen: 28
+  urls_kept: 23
+  urls_dropped: 0
+  scorer_rationale: The claim asks about ENTITY's score on FLI's 2025 AI Safety Index
+    for Existential Threat. I have scored each candidate based on whether it directly
+    addresses this, is clearly relevant, possibly relevant, tangentially related,
+    or not relevant. I have prioritized candidates that explicitly mention the AI
+    Safety Index, FLI, and existential safety. Candidates that discuss the results
+    of the index, or the methodology behind it, are highly relevant. I have also considered
+    the publisher quality, favoring primary and secondary sources. All URLs are included
+    in either 'kept' or 'dropped'.
+  urls_after_blocklist: 23
+sources_consulted:
+- id: 2025/ai-safety-index-summer-2025
+  url: https://futureoflife.org/ai-safety-index-summer-2025/
+  title: 2025 AI Safety Index
+  ingested: true
+- id: 2025/ai-safety-index-report-summer-2025
+  url: https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
+  title: AI Safety Index Report Summer 2025
+  ingested: true
+- id: 2025/ai-safety-index-fli-summer-2025
+  url: https://blog.biocomm.ai/2025/07/17/ai-safety-index-by-fli-summer-2025/
+  title: AI Safety Index by FLI Summer 2025
+  ingested: true
+- id: 2025/ai-firms-unprepared-human-level-systems
+  url: https://www.theguardian.com/technology/2025/jul/17/ai-firms-unprepared-for-dangers-of-building-human-level-systems-report-warns
+  title: AI firms ‘unprepared’ for dangers of building human-level systems, report
+    warns
+  ingested: true
+- id: 2025/ai-safety-future-of-life-institute-risk-mitigation
+  url: https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
+  title: 'AI Safety Report: Top 3 Companies Outpace Rivals In Risk'
+  ingested: true
+- id: 2024/bletchley-park-ai-safety-cooperation
+  url: https://www.brookings.edu/articles/the-bletchley-park-process-could-be-a-building-block-for-global-cooperation-on-ai-safety/
+  title: The Bletchley Park process could be a building block for global cooperation
+    on AI safety
+  ingested: true
+- id: 2025/ai-safety-index-report
+  url: https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf
+  title: AI Safety Index Report
+  ingested: true
+- id: 2023/ai-safety-summit-2023-bletchley-declaration
+  url: https://www.gov.uk/government/publications/ai-safety-summit-2023-the-bletchley-declaration
+  title: 'AI Safety Summit 2023: The Bletchley Declaration'
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-02'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

@@ -4,8 +4,7 @@ entity: sectors/ai-llm-producers
 topics:
 - ai-safety
 - industry-analysis
-tags:
-- highlight
+tags: []
 verdict: 'true'
 confidence: high
 criteria_slug: ai-producers-signed-safety-commitments

@@ -1,0 +1,76 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:07:23.133983+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - AI safety commitments LLM producers
+  - Bletchley Park AI safety commitments
+  - LLM producers AI safety pledges
+  - AI safety guidelines LLM developers
+  - Responsible AI initiatives LLM companies
+  planner_rationale: These queries target AI/LLM producers by searching for specific
+    AI safety commitments, pledges, and guidelines. They also include the entity name
+    (Bletchley Park) to find related information and broaden the search to include
+    broader initiatives from various LLM companies.
+  candidates_seen: 31
+  urls_after_blocklist: 24
+sources_consulted:
+- id: 2026/owasp-top-10-llm-applications
+  url: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+  title: Top 10 for Large Language Model Applications
+  ingested: true
+- id: 2024/comprehensive-llm-safety-guide
+  url: https://www.confident-ai.com/blog/the-comprehensive-llm-safety-guide-navigate-ai-regulations-and-best-practices-for-llm-safety
+  title: 'The Comprehensive LLM Safety Guide: Navigate AI regulations and Best Practices
+    for LLM Safety'
+  ingested: true
+- id: 2024/if-then-commitments-ai-risk-reduction
+  url: https://carnegieendowment.org/research/2024/09/if-then-commitments-for-ai-risk-reduction
+  title: If-Then Commitments for AI Risk Reduction
+  ingested: true
+- id: 2025/ai-safety-vs-security
+  url: https://www.promptfoo.dev/blog/ai-safety-vs-security/
+  title: 'AI Safety vs AI Security in LLM Applications: What Teams Must Know'
+  ingested: true
+- id: 2026/ai-safety
+  url: https://www.tigera.io/learn/guides/llm-security/ai-safety/
+  title: AI Safety
+  ingested: true
+- id: 2026/llm-security-protecting-models-rag-data-pipelines
+  url: https://www.wiz.io/academy/ai-security/llm-security
+  title: 'LLM Security: Protecting Models, RAG & Data Pipelines'
+  ingested: true
+- id: 2024/bletchley-park-process-ai-safety
+  url: https://www.brookings.edu/articles/the-bletchley-park-process-could-be-a-building-block-for-global-cooperation-on-ai-safety/
+  title: The Bletchley Park process could be a building block for global cooperation
+    on AI safety
+  ingested: true
+- id: 2023/global-superpowers-ai-safety-bletchley-park
+  url: https://www.twobirds.com/en/insights/2023/uk/global-superpowers-sign-agreement-on-ai-safety-at-bletchley-park
+  title: Global superpowers sign agreement on AI safety at Bletchley Park
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

@@ -100,10 +100,12 @@ templates:
     topics: [ai-safety]
     core: true
 
-  - slug: fli-safety-index-existential-score
-    text: "ENTITY scores C or worse on FLI's AI Safety Index for Existential Threat"
+  - slug: fli-2025-safety-index-existential-score
+    text: "ENTITY scores D or worse on FLI's 2025 AI Safety Index for Existential Threat"
     entity_type: sector
     topics: [ai-safety, industry-analysis]
+    tags:
+    - highlight
     core: true
 
 
