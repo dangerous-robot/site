@@ -748,7 +748,7 @@ def claim_refresh(
 
     from common.content_loader import resolve_repo_root
     from common.frontmatter import parse_frontmatter
-    from common.models import BlockedReason, Category, Confidence, Verdict
+    from common.models import BlockedReason, Category, ClaimStatus, Confidence, Verdict
     from common.templates import (
         VOCABULARY_HINT_PREFIX,
         get_template,
@@ -769,10 +769,7 @@ def claim_refresh(
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
 
-    # Step 1: Resolve claim path.
     claim_path = _resolve_claim_path(claim_ref, claims_dir)
-
-    # Step 2: Fail if not found.
     if not claim_path.exists():
         click.echo(
             f"Error: claim file not found: {claim_path}. "
@@ -781,7 +778,6 @@ def claim_refresh(
         )
         sys.exit(1)
 
-    # Step 3: Check criteria_slug is present.
     raw_text = claim_path.read_text(encoding="utf-8")
     fm, _narrative = parse_frontmatter(raw_text)
     criteria_slug = fm.get("criteria_slug")
@@ -794,7 +790,6 @@ def claim_refresh(
         )
         sys.exit(1)
 
-    # Step 4: Load entity.
     entity_ref = fm.get("entity", "")
     resolved_entity = None
     if entity_ref:
@@ -809,7 +804,6 @@ def claim_refresh(
         else claim_path.parent.name.replace("-", " ").title()
     )
 
-    # Step 5: Reconstruct claim text from the template.
     try:
         templates = load_templates(root)
         template = get_template(templates, criteria_slug)
@@ -822,10 +816,8 @@ def claim_refresh(
     else:
         claim_text = fm.get("title") or fm.get("claim") or claim_path.stem
 
-    # Step 6: Record the claim slug for deterministic filename.
     claim_slug_for_write = claim_path.stem
 
-    # Step 7: Build VerifyConfig; force_overwrite is always True for refresh.
     model = ctx.obj["model"]
     overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
     cfg = VerifyConfig(
@@ -839,7 +831,7 @@ def claim_refresh(
     )
     gate = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
-    # Step 8: Run the full pipeline (no writes; we handle writes below).
+    # Run full pipeline; writes are handled below per branch.
     vr = asyncio.run(verify_claim(entity_name, claim_text, cfg, gate, resolved_entity=resolved_entity))
 
     if vr.errors:
@@ -852,7 +844,7 @@ def claim_refresh(
     # directory path relative to claims_dir if frontmatter entity is absent.
     write_entity_ref = entity_ref or str(claim_path.parent.relative_to(claims_dir))
 
-    # Step 9: Mirror onboard's write pattern (four branches).
+    # Mirror onboard's write pattern (four branches).
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
@@ -879,19 +871,19 @@ def claim_refresh(
             source_ids=source_ids,
             repo_root=root,
             force=True,
-            status="blocked",
+            status=ClaimStatus.BLOCKED,
             blocked_reason=vr.blocked_reason,
             criteria_slug=criteria_slug,
         )
-        agents_run_a = ["researcher", "ingestor"]
+        agents_run = ["researcher", "ingestor"]
         _write_audit_sidecar(
             claim_path=blocked_path,
             comparison=None,
             model=model,
             ran_at=ran_at,
             sources_consulted=_build_sources_consulted(vr.source_files),
-            agents_run=agents_run_a,
-            models_used={a: cfg.model_for(a) for a in agents_run_a},
+            agents_run=agents_run,
+            models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
         )
         click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
@@ -922,19 +914,19 @@ def claim_refresh(
             source_ids=source_ids,
             repo_root=root,
             force=True,
-            status="blocked",
+            status=ClaimStatus.BLOCKED,
             blocked_reason=BlockedReason.ANALYST_ERROR,
             criteria_slug=criteria_slug,
         )
-        agents_run_b = ["researcher", "ingestor", "analyst"]
+        agents_run = ["researcher", "ingestor", "analyst"]
         _write_audit_sidecar(
             claim_path=blocked_path,
             comparison=None,
             model=model,
             ran_at=ran_at,
             sources_consulted=_build_sources_consulted(vr.source_files),
-            agents_run=agents_run_b,
-            models_used={a: cfg.model_for(a) for a in agents_run_b},
+            agents_run=agents_run,
+            models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
         )
         click.echo(f"Blocked (analyst_error): {blocked_path}")
@@ -966,19 +958,19 @@ def claim_refresh(
             source_ids=source_ids,
             repo_root=root,
             force=True,
-            status="blocked",
+            status=ClaimStatus.BLOCKED,
             blocked_reason=BlockedReason.ANALYST_ERROR,
             criteria_slug=criteria_slug,
         )
-        agents_run_c = ["researcher", "ingestor", "analyst"]
+        agents_run = ["researcher", "ingestor", "analyst"]
         _write_audit_sidecar(
             claim_path=blocked_path,
             comparison=None,
             model=model,
             ran_at=ran_at,
             sources_consulted=_build_sources_consulted(vr.source_files),
-            agents_run=agents_run_c,
-            models_used={a: cfg.model_for(a) for a in agents_run_c},
+            agents_run=agents_run,
+            models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
         )
         click.echo(f"Blocked (unresolved vocabulary): {blocked_path}")
@@ -1004,20 +996,19 @@ def claim_refresh(
         source_ids=source_ids,
         repo_root=root,
         force=True,
-        status="draft",
+        status=ClaimStatus.DRAFT,
         criteria_slug=criteria_slug,
     )
 
-    sidecar_sources = _build_sources_consulted(vr.source_files)
-    agents_run_d = ["researcher", "ingestor", "analyst", "auditor"]
+    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
     _write_audit_sidecar(
         claim_path=claim_path_written,
         comparison=vr.consistency,
         model=model,
         ran_at=ran_at,
-        sources_consulted=sidecar_sources,
-        agents_run=agents_run_d,
-        models_used={a: cfg.model_for(a) for a in agents_run_d},
+        sources_consulted=_build_sources_consulted(vr.source_files),
+        agents_run=agents_run,
+        models_used={a: cfg.model_for(a) for a in agents_run},
         research_trace=vr.research_trace,
     )
 
@@ -1058,7 +1049,6 @@ def claim_promote(
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
 
-    # Resolve and parse claim file.
     claim_path = _resolve_claim_path(claim_ref, claims_dir)
     if not claim_path.exists():
         click.echo(f"Error: claim file not found: {claim_path}", err=True)
@@ -1067,7 +1057,6 @@ def claim_promote(
     raw_text = claim_path.read_text(encoding="utf-8")
     fm, _narrative = parse_frontmatter(raw_text)
 
-    # Step 1: Fail if already template-backed.
     existing_criteria = fm.get("criteria_slug")
     if existing_criteria:
         click.echo(
@@ -1076,7 +1065,7 @@ def claim_promote(
         )
         sys.exit(1)
 
-    # Step 2: Load entity for entity_name (best-effort; fall back to directory name).
+    # Best-effort entity resolution; falls back to directory name.
     entity_ref = fm.get("entity", "")
     entity_name: str | None = None
     if entity_ref:
@@ -1091,10 +1080,8 @@ def claim_promote(
         # Fall back to title-casing the entity directory name.
         entity_name = claim_path.parent.name.replace("-", " ").title()
 
-    # Step 3: Get the claim title (support both 'title' and legacy 'claim' keys).
-    claim_title = fm.get("title") or fm.get("claim") or ""
+    claim_title = fm.get("title") or fm.get("claim") or ""  # 'claim' is the legacy key
 
-    # Step 4: Print proposed template fields.
     click.echo("")
     click.echo("Proposed template fields:")
     click.echo(f"  Entity name:  {entity_name}")
@@ -1102,7 +1089,6 @@ def claim_promote(
     click.echo(f"  Topics:       {fm.get('topics', [])}")
     click.echo("")
 
-    # Step 5: Prompt for template fields.
     template_slug = click.prompt("Template slug (e.g. publishes-sustainability-report)")
     entity_type_input = click.prompt(
         "Entity type",
@@ -1120,9 +1106,8 @@ def claim_promote(
     topics_list = [t.strip() for t in topics_input.split(",") if t.strip()]
     core_bool = core_input.strip().lower() not in ("n", "no", "false", "0")
 
-    # Step 6: Validate slug uniqueness. Handle both dict-under-"templates:" format
-    # (production file) and bare-list format (test fixtures). Detect format for
-    # the write step as well so appending doesn't produce invalid YAML.
+    # Handle both dict-under-"templates:" format (production) and bare-list format
+    # (test fixtures). Detect format here for the write step so appending stays valid.
     import yaml as _yaml
 
     templates_path = root / "research" / "templates.yaml"
@@ -1148,26 +1133,10 @@ def claim_promote(
             click.echo(f"Warning: could not validate slug uniqueness: {exc}", err=True)
             existing_entries = []
 
-    # Step 7: Write the new template entry to research/templates.yaml.
     # For dict-format (production) files, append as a text fragment to preserve
-    # comments and ordering. For bare-list-format files (test fixtures), do a
-    # read-modify-write so the YAML stays valid.
-    new_entry = {
-        "slug": template_slug,
-        "text": template_text,
-        "entity_type": entity_type_input,
-        "topics": topics_list,
-        "core": core_bool,
-    }
-    if notes_input:
-        new_entry["notes"] = notes_input
-
-    # Build the text fragment for the new entry. Used by both dict-format
-    # (text-append) and bare-list-format (line-by-line rebuild) writes.
-    notes_line = f'    notes: "{notes_input}"\n' if notes_input else ""
+    # comments and field ordering. For bare-list-format files (test fixtures),
+    # do a read-modify-write so the YAML stays valid.
     topics_yaml = "[" + ", ".join(topics_list) + "]"
-    # Indented fragment suitable for appending under "templates:" or as a
-    # bare list item at the same indent level.
     entry_fragment = (
         f"- slug: {template_slug}\n"
         f'  text: "{template_text}"\n'

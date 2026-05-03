@@ -123,7 +123,7 @@ class TestClaimDraftCLI:
             )
 
         monkeypatch.setattr("orchestrator.pipeline.research_claim", _fake_research_claim)
-        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.get_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
+        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
 
         from orchestrator.cli import main
         runner = CliRunner()
@@ -153,7 +153,7 @@ class TestClaimDraftCLI:
             )
 
         monkeypatch.setattr("orchestrator.pipeline.research_claim", _fake_research_claim)
-        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.get_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
+        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
 
         from orchestrator.cli import main
@@ -216,7 +216,6 @@ class TestClaimRefreshCLI:
     """Tests for dr claim-refresh <entity/claim-slug>."""
 
     def _write_claim(self, tmp_path, entity_dir: str, claim_slug: str, frontmatter: dict) -> None:
-        """Write a minimal claim file with the given frontmatter fields."""
         import yaml
 
         claim_dir = tmp_path / "research" / "claims" / entity_dir
@@ -263,15 +262,12 @@ class TestClaimRefreshCLI:
         assert "claim-promote" in output.lower()
 
     def _write_templates_yaml(self, tmp_path, entries: list | None = None) -> None:
-        """Write a minimal templates.yaml so load_templates does not fail."""
+        import yaml
+
         templates_dir = tmp_path / "research"
         templates_dir.mkdir(parents=True, exist_ok=True)
-        entries_yaml = ""
-        for e in (entries or []):
-            import yaml
-            entries_yaml += "  - " + yaml.dump(e, default_flow_style=True).strip() + "\n"
         (templates_dir / "templates.yaml").write_text(
-            f"templates:\n{entries_yaml}",
+            yaml.dump({"templates": entries or []}, default_flow_style=False),
             encoding="utf-8",
         )
 
@@ -303,7 +299,7 @@ class TestClaimRefreshCLI:
         monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
         monkeypatch.setattr(
             "asyncio.run",
-            lambda coro: asyncio.get_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
         )
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
         monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
@@ -343,7 +339,7 @@ class TestClaimRefreshCLI:
         monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
         monkeypatch.setattr(
             "asyncio.run",
-            lambda coro: asyncio.get_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
         )
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
         monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
@@ -388,7 +384,7 @@ class TestClaimRefreshCLI:
         monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
         monkeypatch.setattr(
             "asyncio.run",
-            lambda coro: asyncio.get_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
         )
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
         monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
@@ -396,9 +392,8 @@ class TestClaimRefreshCLI:
 
         runner = CliRunner()
         result = runner.invoke(main, ["claim-refresh", "sectors/ai-llm-producers/signed-ai-safety-commitments"])
-        # The test encodes the contract: when claim-refresh runs, the pipeline should receive substituted text.
-        if result.exit_code == 0 and received.get("claim_text"):
-            assert "ENTITY" not in received["claim_text"]
+        assert result.exit_code == 0
+        assert "ENTITY" not in received["claim_text"]
 
 
 class TestRemovedCommands:
@@ -448,7 +443,6 @@ class TestClaimPromoteCLI:
         )
 
     def test_already_template_backed_rejected(self, monkeypatch, tmp_path) -> None:
-        """A claim that already has a criteria_slug should be rejected as already template-backed."""
         from click.testing import CliRunner
         from orchestrator.cli import main
 
@@ -469,7 +463,6 @@ class TestClaimPromoteCLI:
         assert "already template-backed" in output.lower() or "criteria_slug" in output.lower()
 
     def test_slug_collision_rejected(self, monkeypatch, tmp_path) -> None:
-        """If the target slug already exists in templates.yaml, the promote should be rejected."""
         from click.testing import CliRunner
         from orchestrator.cli import main
 
