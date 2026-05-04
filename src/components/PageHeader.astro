@@ -1,0 +1,85 @@
+---
+import Breadcrumb from './Breadcrumb.astro';
+import ObjectTypeIcon from './ObjectTypeIcon.astro';
+
+interface Props {
+  crumbs: { label: string; href?: string }[];
+  type: string;
+  title: string;
+}
+
+const { crumbs, type, title } = Astro.props;
+
+const typeLabels: Record<string, string> = {
+  sector: "Sector",
+  company: "Company",
+  product: "Product",
+  topic: "Topic",
+  claim: "Claim",
+  source: "Source",
+  criterion: "Criterion",
+};
+---
+
+<header class="page-header">
+  <div class="breadcrumb-row">
+    <Breadcrumb crumbs={crumbs} />
+  </div>
+  <div class="icon-col">
+    <div class="icon-box">
+      <ObjectTypeIcon type={type} size={28} />
+    </div>
+    <span class="type-label">{typeLabels[type] ?? type}</span>
+  </div>
+  <div class="content-col">
+    <h1>{title}</h1>
+    <slot />
+  </div>
+</header>
+
+<style>
+  header.page-header {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    column-gap: var(--space-md);
+    margin-bottom: var(--space-xl);
+  }
+
+  .breadcrumb-row {
+    grid-column: 1 / -1;
+    margin-bottom: var(--space-sm);
+  }
+
+  .icon-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    padding-top: 3px;
+  }
+
+  .icon-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+
+  .type-label {
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .content-col h1 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+</style>

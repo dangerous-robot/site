@@ -5,7 +5,7 @@ import { buildCriteriaIndex } from "../../lib/criteria";
 import { CATEGORY_LABELS } from "../../lib/research";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
-import Breadcrumb from "../../components/Breadcrumb.astro";
+import PageHeader from "../../components/PageHeader.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 import { shouldNoindex } from "../../lib/seo";
 
@@ -57,21 +57,10 @@ for (const std of applicableCriteria) {
 }
 const critCategoriesSorted = [...critByCategory.keys()].sort();
 
-const kindLabels: Record<string, string> = {
-  company: "Company",
-  product: "Product",
-  topic: "Topic",
-};
-
-// Breadcrumb. Omit type-parent crumb when the parent index does not exist (currently /sectors).
-const PARENT_ROUTES_AVAILABLE = new Set(["company", "product", "topic"]);
-const typeParent = PARENT_ROUTES_AVAILABLE.has(entity.data.type)
-  ? ENTITY_TYPE_PARENTS[entity.data.type]
-  : null;
+const typeParent = ENTITY_TYPE_PARENTS[entity.data.type as keyof typeof ENTITY_TYPE_PARENTS] ?? null;
 const entityCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),
-  { label: entity.data.name },
 ];
 
 const entityPageTitle = (entity.data.type === 'company' || entity.data.type === 'product')
@@ -83,24 +72,14 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
 
 <Base title={entityPageTitle} description={entityDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="entity-detail">
-    <Breadcrumb crumbs={entityCrumbs} />
-    <header>
-      <h1>{entity.data.name}</h1>
-
-      <div class="meta">
-        <span class="kind-label">
-          {kindLabels[entity.data.type] || entity.data.type}
-        </span>
-
-        {entity.data.website && (
-          <a href={entity.data.website} target="_blank" rel="noopener noreferrer" class="website-link">
-            {entity.data.website} &#8599;
-          </a>
-        )}
-      </div>
-
+    <PageHeader crumbs={entityCrumbs} type={entity.data.type} title={entity.data.name}>
+      {entity.data.website && (
+        <a href={entity.data.website} target="_blank" rel="noopener noreferrer" class="website-link">
+          {entity.data.website} &#8599;
+        </a>
+      )}
       <p class="description">{entity.data.description}</p>
-    </header>
+    </PageHeader>
 
     <section class="body-content">
       <Content />
@@ -166,40 +145,16 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
 </Base>
 
 <style>
-  .entity-detail header {
-    margin-bottom: var(--space-xl);
-  }
-
-  .entity-detail h1 {
-    margin-bottom: 0.75rem;
-  }
-
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    align-items: center;
-    margin-bottom: var(--space-md);
-  }
-
-  .kind-label {
-    background: var(--color-surface);
-    color: var(--color-text-muted);
-    border: 1px solid var(--color-border);
-    padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    font-weight: bold;
-  }
-
   .website-link {
     font-size: var(--font-size-sm);
+    display: block;
+    margin-bottom: var(--space-sm);
   }
 
   .description {
     color: var(--color-text-muted);
     font-size: var(--font-size-base);
+    margin: 0;
   }
 
   .body-content {

@@ -22,7 +22,7 @@ const breadcrumbList = {
       const isLast = i === crumbs.length - 1;
       return (
         <li>
-          {(isLast || !c.href)
+          {!c.href
             ? <span aria-current={isLast ? "page" : undefined}>{c.label}</span>
             : <a href={c.href}>{c.label}</a>}
         </li>

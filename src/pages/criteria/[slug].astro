@@ -4,7 +4,7 @@ import { getCollection } from 'astro:content';
 import { buildCriteriaIndex, logDerivationMisses } from '../../lib/criteria';
 import type { CriteriaMiss } from '../../lib/criteria';
 import CriteriaMatrix from '../../components/CriteriaMatrix.astro';
-import Breadcrumb from '../../components/Breadcrumb.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 export async function getStaticPaths() {
   const criteria = await getCollection('criteria');
@@ -60,7 +60,6 @@ logDerivationMisses(misses);
 const criteriaCrumbs = [
   { label: 'Home', href: '/' },
   { label: 'Criteria', href: '/criteria' },
-  { label: std.data.text },
 ];
 
 const normCriteriaText = (text: string, company: string, product: string) =>
@@ -71,12 +70,10 @@ const criteriaPageTitle = normCriteriaText(std.data.text, 'AI Company', 'AI Prod
 const criteriaDescription = `Dangerous Robot evaluates whether ${normCriteriaText(std.data.text, 'an AI company', 'an AI product')}. Coverage across ${matchingEntities.length} entit${matchingEntities.length !== 1 ? 'ies' : 'y'} with sourced verdicts.`.slice(0, 155);
 ---
 <Base title={criteriaPageTitle} layout="wide" description={criteriaDescription}>
-  <Breadcrumb crumbs={criteriaCrumbs} />
-  <header class="std-header">
-    <p class="std-category">{std.data.topics.map(t => t.replace(/-/g, ' ')).join(', ')}</p>
-    <h1>{std.data.text}</h1>
+  <PageHeader crumbs={criteriaCrumbs} type="criterion" title={std.data.text}>
+    <p class="std-category">{std.data.topics.map((t: string) => t.replace(/-/g, ' ')).join(', ')}</p>
     {std.data.notes && <p class="std-notes">{std.data.notes}</p>}
-  </header>
+  </PageHeader>
   <section>
     <CriteriaMatrix rows={rows} />
   </section>
@@ -89,7 +86,6 @@ const criteriaDescription = `Dangerous Robot evaluates whether ${normCriteriaTex
   )}
 </Base>
 <style>
-.std-header { margin-bottom: var(--space-xl); }
 .std-category { font-size: var(--font-size-xs); text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-text-faint); margin-bottom: var(--space-xs); }
 .std-notes { color: var(--color-text-muted); font-size: var(--font-size-sm); }
 .also-ref { margin-top: var(--space-2xl, 4rem); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); }

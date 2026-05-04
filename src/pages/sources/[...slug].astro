@@ -3,7 +3,7 @@ import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
 import { buildCitationIndex } from "../../lib/citations";
 import ClaimRow from "../../components/ClaimRow.astro";
-import Breadcrumb from "../../components/Breadcrumb.astro";
+import PageHeader from "../../components/PageHeader.astro";
 import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
@@ -57,7 +57,6 @@ const publishedDate = source.data.published_date instanceof Date
 const sourceCrumbs = [
   { label: "Home", href: "/" },
   { label: "Sources", href: "/sources" },
-  { label: source.data.title },
 ];
 
 const sourceDescription = source.data.summary
@@ -69,10 +68,7 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
 
 <Base title={sourcePageTitle} description={sourceDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="source-detail">
-    <Breadcrumb crumbs={sourceCrumbs} />
-    <header>
-      <h1>{source.data.title}</h1>
-
+    <PageHeader crumbs={sourceCrumbs} type="source" title={source.data.title}>
       <div class="meta">
         {source.data.source_type && (
           <span
@@ -108,7 +104,7 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
           </a>
         )}
       </div>
-    </header>
+    </PageHeader>
 
     <section class="summary">
       <h2>Summary</h2>
@@ -148,14 +144,6 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
 </Base>
 
 <style>
-  .source-detail header {
-    margin-bottom: var(--space-xl);
-  }
-
-  .source-detail h1 {
-    margin-bottom: var(--space-md);
-  }
-
   .meta {
     display: flex;
     flex-wrap: wrap;

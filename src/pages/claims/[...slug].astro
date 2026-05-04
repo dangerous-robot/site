@@ -1,7 +1,7 @@
 ---
 import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
-import Breadcrumb from "../../components/Breadcrumb.astro";
+import PageHeader from "../../components/PageHeader.astro";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
@@ -24,12 +24,11 @@ const stem = claim.id.split("/").pop() ?? claim.id;
 const criteriaSlug = claim.data.criteria_slug ?? stem;
 const matchedCriteria = criteria.find(s => s.id === criteriaSlug);
 
-// Entity lookup for breadcrumb. Omit type parent crumb when the parent index does not exist (currently /sectors).
+// Entity lookup for breadcrumb.
 const entities = await getCollection("entities");
 const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
-const PARENT_ROUTES_AVAILABLE = new Set(["company", "product", "topic"]);
-const typeParent = entityEntry && PARENT_ROUTES_AVAILABLE.has(entityEntry.data.type)
-  ? ENTITY_TYPE_PARENTS[entityEntry.data.type]
+const typeParent = entityEntry
+  ? (ENTITY_TYPE_PARENTS[entityEntry.data.type as keyof typeof ENTITY_TYPE_PARENTS] ?? null)
   : null;
 const entityLabel = entityEntry?.data.name ?? claim.data.entity;
 
@@ -37,7 +36,6 @@ const claimCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),
   { label: entityLabel, href: `/entities/${claim.data.entity}` },
-  { label: claim.data.title },
 ];
 
 const confidenceLabels: Record<string, string> = {
@@ -98,16 +96,12 @@ const claimReview = {
 
 <Base title={claimPageTitle} description={claimDescription} noindex={shouldNoindex(Astro.url.pathname)}>
   <article class="claim-detail">
-    <Breadcrumb crumbs={claimCrumbs} />
-
-    <header>
-      {showNotice && (
-        <p class="status-notice">
-          {isDraft ? 'This claim is a draft and has not been published.' : 'This claim is archived and may be outdated.'}
-        </p>
-      )}
-      <h1>{claim.data.title}</h1>
-
+    {showNotice && (
+      <p class="status-notice">
+        {isDraft ? 'This claim is a draft and has not been published.' : 'This claim is archived and may be outdated.'}
+      </p>
+    )}
+    <PageHeader crumbs={claimCrumbs} type="claim" title={claim.data.title}>
       <div class="meta">
         <VerdictBadge verdict={claim.data.verdict} />
         <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
@@ -119,7 +113,7 @@ const claimReview = {
       {claim.data.takeaway && (
         <p class="takeaway">{claim.data.takeaway}</p>
       )}
-    </header>
+    </PageHeader>
 
     <section class="rationale">
       <Content />
@@ -223,10 +217,6 @@ const claimReview = {
 </Base>
 
 <style>
-  .claim-detail header {
-    margin-bottom: var(--space-xl);
-  }
-
   .status-notice {
     background: var(--color-surface);
     border: 1px solid var(--color-border);
@@ -252,10 +242,6 @@ const claimReview = {
 
   .criterion-ref a:hover {
     text-decoration: underline;
-  }
-
-  .claim-detail h1 {
-    margin-bottom: var(--space-md);
   }
 
   .meta {
