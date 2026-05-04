@@ -807,6 +807,8 @@ async def research_claim(
                 source_ids=source_ids,
                 repo_root=repo_root,
                 force=cfg.force_overwrite,
+                seo_title=analyst_out.verdict.seo_title,
+                takeaway=analyst_out.verdict.takeaway,
             )
             try:
                 result.claim_path = str(claim_path.relative_to(Path(repo_root)))
@@ -1244,6 +1246,8 @@ async def onboard_entity(
                         repo_root=repo_root,
                         force=iter_cfg.force_overwrite,
                         criteria_slug=slug,
+                        seo_title=ao.verdict.seo_title,
+                        takeaway=ao.verdict.takeaway,
                     )
                     result.claims_created.append(str(claim_path.relative_to(repo_root)))
 

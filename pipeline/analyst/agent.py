@@ -40,6 +40,26 @@ class VerdictAssessment(BaseModel):
         max_length=3,
         description="One to three topic slugs that classify the claim. Mirror the source criterion's topics by default.",
     )
+    seo_title: str | None = Field(
+        default=None,
+        description=(
+            "Short page title for search results (max 42 chars). Only provide when "
+            "`title` exceeds ~60 characters and a shorter version conveys the same "
+            "finding. Omit if the full title already fits or if shortening would "
+            "lose the core finding."
+        ),
+        max_length=42,
+    )
+    takeaway: str | None = Field(
+        default=None,
+        description=(
+            "One sentence a reader would want to repeat (max 200 chars). Only "
+            "include when the finding is striking, counterintuitive, or unusually "
+            "significant — e.g., an industry-wide failure or direct contradiction "
+            "of public claims. Do not paraphrase the title. Default: omit."
+        ),
+        max_length=200,
+    )
 
 
 class AnalystOutput(BaseModel):

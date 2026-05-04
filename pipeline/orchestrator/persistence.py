@@ -187,6 +187,8 @@ def _write_claim_file(
     status: str = "draft",
     blocked_reason: BlockedReason | None = None,
     criteria_slug: str | None = None,
+    seo_title: str | None = None,
+    takeaway: str | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -216,14 +218,26 @@ def _write_claim_file(
             f"claim file already exists: {claim_path} (pass force=True to overwrite)"
         )
 
+    # Preserve operator-edited takeaway/seo_title when force-overwriting an
+    # existing file and the analyst didn't suggest a new value.
+    existing_takeaway = ""
+    existing_seo_title = ""
+    if claim_path.exists() and force:
+        try:
+            existing_fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+            existing_takeaway = existing_fm.get("takeaway", "") or ""
+            existing_seo_title = existing_fm.get("seo_title", "") or ""
+        except Exception as exc:
+            logger.warning("Could not read existing claim for field preservation: %s", exc)
+
     fm = {
         "title": title,
         "entity": entity_ref,
         "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
-        "takeaway": "",
-        "seo_title": "",
+        "takeaway": takeaway if takeaway is not None else existing_takeaway,
+        "seo_title": seo_title if seo_title is not None else existing_seo_title,
         "criteria_slug": criteria_slug,
         "status": status,
         "blocked_reason": blocked_reason,

@@ -47,6 +47,19 @@ TITLE:
 - Bad:  "ChatGPT offers image generation with tiered limits" (inverted polarity from
   "excludes image generation" + added qualifier not in the claim)
 
+SEO_TITLE:
+- Only provide when `title` exceeds ~60 characters and you can express the same
+  finding in 42 characters or fewer. Omit otherwise — the full title is fine.
+- Good: 95-char title → supply a 40-char version that keeps the core finding
+- Bad:  55-char title → omit (already fits in search results)
+
+TAKEAWAY:
+- One sentence a reader would want to repeat or share. Include only when the
+  finding is striking, counterintuitive, or unusually significant — e.g., an
+  industry-wide failure, a surprising gap, a direct contradiction of public claims.
+- Do not paraphrase the title. The takeaway should add meaning, not echo it.
+- Default: omit. Include selectively; most claims don't need one.
+
 RULES:
 - Base your verdict ONLY on the provided source materials
 - The narrative should be factual and balanced, not advocacy
