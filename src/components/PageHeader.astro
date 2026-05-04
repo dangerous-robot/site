@@ -22,9 +22,6 @@ const typeLabels: Record<string, string> = {
 ---
 
 <header class="page-header">
-  <div class="breadcrumb-row">
-    <Breadcrumb crumbs={crumbs} />
-  </div>
   <div class="icon-col">
     <div class="icon-box">
       <ObjectTypeIcon type={type} size={28} />
@@ -32,6 +29,9 @@ const typeLabels: Record<string, string> = {
     <span class="type-label">{typeLabels[type] ?? type}</span>
   </div>
   <div class="content-col">
+    <div class="breadcrumb-row">
+      <Breadcrumb crumbs={crumbs} />
+    </div>
     <h1>{title}</h1>
     <slot />
   </div>
@@ -45,17 +45,24 @@ const typeLabels: Record<string, string> = {
     margin-bottom: var(--space-xl);
   }
 
-  .breadcrumb-row {
-    grid-column: 1 / -1;
-    margin-bottom: var(--space-sm);
-  }
-
   .icon-col {
+    grid-column: 1;
+    grid-row: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: var(--space-xs);
-    padding-top: 3px;
+    padding-top: 2px;
+  }
+
+  .content-col {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .breadcrumb-row {
+    margin-bottom: var(--space-sm);
   }
 
   .icon-box {
