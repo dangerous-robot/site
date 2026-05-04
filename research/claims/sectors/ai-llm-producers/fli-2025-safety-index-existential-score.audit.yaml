@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-03T01:08:56.309782+00:00'
+  ran_at: '2026-05-04T06:18:57.940309+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,73 +15,41 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - FLI 2025 AI Safety Index existential threat
-  - AI safety index LLM existential risk 2025
+  - FLI 2025 AI Safety Index results
+  - AI safety index existential threat producers
   - Bletchley Park AI safety commitments 2025
-  - Existential threat AI risk assessment 2025
-  - FLI AI Safety Index methodology 2025
-  planner_rationale: These queries aim to find the FLI's 2025 AI Safety Index report
-    directly, or independent analyses of it. They also target Bletchley Park specifically
-    to find their commitments related to AI safety, and broader AI safety assessments
-    for 2025. The final query seeks to understand the methodology used by FLI to evaluate
-    existential threat risks, providing context for interpreting the index.
-  candidates_seen: 28
-  urls_kept: 23
+  - Seoul AI summit existential risk commitments
+  - AI producer safety scores 2025
+  planner_rationale: These queries aim to directly find the FLI 2025 AI Safety Index
+    results to verify the claim about producer scores. The queries also explore commitments
+    from influential AI safety summits (Bletchley Park, Seoul) and a broader search
+    for AI producer safety scores to provide context.
+  candidates_seen: 34
+  urls_kept: 21
   urls_dropped: 0
-  scorer_rationale: The claim asks about ENTITY's score on FLI's 2025 AI Safety Index
-    for Existential Threat. I have scored each candidate based on whether it directly
-    addresses this, is clearly relevant, possibly relevant, tangentially related,
-    or not relevant. I have prioritized candidates that explicitly mention the AI
-    Safety Index, FLI, and existential safety. Candidates that discuss the results
-    of the index, or the methodology behind it, are highly relevant. I have also considered
-    the publisher quality, favoring primary and secondary sources. All URLs are included
-    in either 'kept' or 'dropped'.
-  urls_after_blocklist: 23
-sources_consulted:
-- id: 2025/ai-safety-index-summer-2025
-  url: https://futureoflife.org/ai-safety-index-summer-2025/
-  title: 2025 AI Safety Index
-  ingested: true
-- id: 2025/ai-safety-index-report-summer-2025
-  url: https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
-  title: AI Safety Index Report Summer 2025
-  ingested: true
-- id: 2025/ai-safety-index-fli-summer-2025
-  url: https://blog.biocomm.ai/2025/07/17/ai-safety-index-by-fli-summer-2025/
-  title: AI Safety Index by FLI Summer 2025
-  ingested: true
-- id: 2025/ai-firms-unprepared-human-level-systems
-  url: https://www.theguardian.com/technology/2025/jul/17/ai-firms-unprepared-for-dangers-of-building-human-level-systems-report-warns
-  title: AI firms ‘unprepared’ for dangers of building human-level systems, report
-    warns
-  ingested: true
-- id: 2025/ai-safety-future-of-life-institute-risk-mitigation
-  url: https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
-  title: 'AI Safety Report: Top 3 Companies Outpace Rivals In Risk'
-  ingested: true
-- id: 2024/bletchley-park-ai-safety-cooperation
-  url: https://www.brookings.edu/articles/the-bletchley-park-process-could-be-a-building-block-for-global-cooperation-on-ai-safety/
-  title: The Bletchley Park process could be a building block for global cooperation
-    on AI safety
-  ingested: true
-- id: 2025/ai-safety-index-report
-  url: https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf
-  title: AI Safety Index Report
-  ingested: true
-- id: 2023/ai-safety-summit-2023-bletchley-declaration
-  url: https://www.gov.uk/government/publications/ai-safety-summit-2023-the-bletchley-declaration
-  title: 'AI Safety Summit 2023: The Bletchley Declaration'
-  ingested: true
+  scorer_rationale: The claim asks about leading AI/LLM producers scoring D or worse
+    on FLI's 2025 AI Safety Index for Existential Threat. I've scored each candidate
+    based on whether it directly addresses this claim or provides relevant information.
+    Candidates 1-5 are directly relevant as they are reports from the Future of Life
+    Institute. Candidates 6-10 are news articles discussing the results of the index.
+    Candidates 11-16 discuss the AI Safety Summit and related declarations which provide
+    context for the index. Candidates 17-20 are articles reporting on the grades given
+    to AI companies by the index. All these candidates are relevant.  Publisher quality
+    is secondary for most, except for the Future of Life Institute reports which are
+    secondary. The AI Safety Summit related articles are also secondary. The top scores
+    are given to the direct reports from FLI and the articles reporting on the grades.
+  urls_after_blocklist: 21
+sources_consulted: []
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: 'true'
+  auditor_verdict: mixed
   analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
 human_review:
-  reviewed_at: '2026-05-02'
+  reviewed_at: '2026-05-03'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

@@ -1,0 +1,49 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:47:30.636482+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+research:
+  mode: decomposed
+  queries:
+  - GreenPT environmental donations reports
+  - GreenPT philanthropic activities transparency
+  - GreenPT corporate social responsibility initiatives
+  - GreenPT funding environmental organizations
+  - GreenPT environmental impact investments
+  planner_rationale: These queries aim to find information directly from GreenPT about
+    their donations, or from independent sources analyzing their CSR activities and
+    environmental investments. They vary in focus, targeting reports, transparency
+    information, specific initiatives, funding activities, and investment impact.
+    They also avoid general terms and focus on actionable keywords relevant to the
+    claim.
+  candidates_seen: 40
+  urls_kept: 4
+  urls_dropped: 30
+  scorer_rationale: The claim is about GreenPT's donation to environmental causes.  The
+    most relevant candidate is https://www.greenpt.com/ because it is GreenPT's official
+    website and mentions transparency and green energy.  https://www.vox.com/future-perfect/2019/12/2/20976180/climate-change-best-charities-effective-philanthropy
+    mentions Giving Green Fund, which is related. https://www.sciencedirect.com/science/article/abs/pii/S0921344922004438
+    discusses donations for environmental sustainability. The other candidates are
+    less directly related or are about broader environmental philanthropy.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2025/greenpt
+  url: https://www.greenpt.com/
+  title: GreenPT
+  ingested: true
+- id: 2019/climate-change-best-charities-effective-philanthropy
+  url: https://www.vox.com/future-perfect/2019/12/2/20976180/climate-change-best-charities-effective-philanthropy
+  title: Want to fight climate change effectively? Here’s where to donate your money.
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

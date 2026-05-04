@@ -1,13 +1,14 @@
 ---
 title: AI/LLM Producers have signed AI safety commitments
 entity: sectors/ai-llm-producers
-topics: [ai-safety]
+topics:
+- ai-safety
 verdict: unverified
 confidence: high
 takeaway: ''
 seo_title: ''
 criteria_slug: ai-producers-signed-safety-commitments
-status: draft
+status: published
 as_of: '2026-05-02'
 sources:
 - 2026/owasp-top-10-llm-applications

@@ -1,0 +1,83 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:46:58.316736+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - GreenPT AI safety donations
+  - GreenPT philanthropic activities AI
+  - GreenPT commitment AI safety
+  - GreenPT funding AI safety initiatives
+  - GreenPT statement AI safety support
+  planner_rationale: These queries aim to find direct evidence of GreenPT's donations
+    to AI safety causes. They vary in approach, using keywords like 'donations,' 'philanthropic
+    activities,' and 'funding,' as well as more direct phrasing like 'commitment'
+    and 'statement.' The queries also try different combinations of terms to capture
+    various ways this information might be presented.
+  candidates_seen: 32
+  urls_kept: 13
+  urls_dropped: 17
+  scorer_rationale: The query asks whether GreenPT donates to AI safety causes. I'm
+    scoring each candidate based on whether it directly addresses this claim. Candidates
+    with a score of 4 or 5 are kept. Candidates with a score of 3 or below are dropped.
+    Publisher quality is used as a tiebreaker.  The Google Play store listing for
+    the app is kept as it contains a link to the privacy policy, and the documentation
+    link is kept because it pertains to the product.
+  urls_after_blocklist: 13
+sources_consulted:
+- id: 2026/donate-ai-safety
+  url: https://safe.ai/donate
+  title: Donate to support AI Safety
+  ingested: true
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
+  ingested: true
+- id: 2025/greenpt-government
+  url: https://greenpt.com/government/
+  title: Secure & Sustainable AI chat for governments
+  ingested: true
+- id: 2026/greenpt
+  url: https://whataicandotoday.com/tool/G902/greenpt
+  title: GreenPT
+  ingested: true
+- id: 2026/greenpt-google-play
+  url: https://play.google.com/store/apps/details?id=ai.greenpt.app
+  title: GreenPT
+  ingested: true
+- id: 2026/european-ai
+  url: https://greenpt.com/european-ai/
+  title: European AI
+  ingested: true
+- id: 2026/funding
+  url: https://aisafety.com/funding
+  title: Funding
+  ingested: true
+- id: 2026/ai-safety-and-governance-fund
+  url: https://aisgf.us/
+  title: AI Safety and Governance Fund
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-05-02'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

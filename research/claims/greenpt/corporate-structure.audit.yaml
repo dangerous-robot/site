@@ -1,0 +1,59 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:45:51.110589+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - GreenPT corporate structure details
+  - GreenPT ownership model information
+  - GreenPT B-corp certification verification
+  - GreenPT employee ownership structure
+  - GreenPT organizational structure overview
+  planner_rationale: These queries aim to directly identify GreenPT's corporate structure
+    by using various terms related to ownership and organizational models. They prioritize
+    finding official descriptions or verifiable certifications (like B-corp) rather
+    than opinions or analyses. The queries vary in phrasing to capture different potential
+    descriptions of the structure.
+  candidates_seen: 39
+  urls_kept: 4
+  urls_dropped: 27
+  scorer_rationale: The claim asks about the corporate structure of GreenPT. Candidates
+    with a primary publisher quality and mentioning B Corp certification or employee
+    ownership are highly relevant. Candidates mentioning GreenPT's use of renewable
+    energy and sustainability initiatives are also relevant.  Candidates with secondary
+    publisher quality are considered if not higher quality options exist. I dropped
+    articles that were general overviews of green companies or corporate governance
+    without specific mention of GreenPT's structure.
+  urls_after_blocklist: 4
+sources_consulted:
+- id: 2026/greenpt-api-models
+  url: https://docs.greenpt.ai/api/models
+  title: Developer and API documentation
+  ingested: true
+- id: 2025/greenpt-government-ai
+  url: https://greenpt.com/government/
+  title: Secure & Sustainable AI chat for governments
+  ingested: true
+- id: 2026/b-corporation-home
+  url: https://www.bcorporation.net/en-us/
+  title: B Corporation Home
+  ingested: true
+- id: 2025/greenpt-b-corp-ai
+  url: https://www.greenpt.com/b-corp/
+  title: The B Corp AI chat for sustainable innovation
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

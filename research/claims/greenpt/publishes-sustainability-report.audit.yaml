@@ -1,0 +1,84 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-03T01:45:01.499995+00:00'
+  model: infomaniak:openai/gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:gemma3n
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - GreenPT sustainability report
+  - GreenPT ESG report availability
+  - GreenPT environmental impact disclosure
+  - GreenPT corporate responsibility documentation
+  - GreenPT investor relations sustainability
+  planner_rationale: These queries aim to directly locate GreenPT's published sustainability
+    or ESG reports. They also explore related documentation like environmental impact
+    disclosures and corporate responsibility reports, which could serve as alternatives
+    or supplementary information. The investor relations angle targets reports specifically
+    designed for stakeholders.
+  candidates_seen: 40
+  urls_kept: 33
+  urls_dropped: 0
+  scorer_rationale: The claim is about GreenPT publishing a sustainability or ESG
+    report. Several candidates directly address this, either explicitly mentioning
+    sustainability reporting or focusing on ESG aspects.  Candidates from GreenFi
+    are highly relevant. Other candidates discuss broader ESG topics, corporate social
+    responsibility, or specific aspects like green innovation or investor relations,
+    which are tangentially related but worth noting. I prioritized candidates that
+    mention 'sustainability reporting' or 'ESG reporting'.
+  urls_after_blocklist: 24
+sources_consulted:
+- id: 2025/ai-powered-esg-software-sustainability-reporting
+  url: https://greenfi.ai/ai-esg-software-sustainability-reporting/
+  title: AI-Powered ESG Software for Enhanced Sustainability Performance and Reporting
+  ingested: true
+- id: 2024/sustainability-report-2024
+  url: https://www.greenfi.com/resources/sustainability-report-2024
+  title: 2024 Impact Report
+  ingested: true
+- id: 2026/blog-and-resources
+  url: https://www.greenfi.com/resources
+  title: Blog and Resources
+  ingested: true
+- id: 2025/greenfi-free-sustainability-reporting
+  url: https://greenfi.ai/news/greenfi-introduces-free-sustainability-reporting-to-simplify-esg-compliance/
+  title: GreenFi Introduces Free Sustainability Reporting to Simplify ESG Compliance
+  ingested: true
+- id: 2026/greenfi-climate-banking
+  url: https://www.greenfi.com/
+  title: Climate-Focused Checking, Savings, and Investment Accounts
+  ingested: true
+- id: 2026/greenfi-financial-firm
+  url: https://funds.greenfi.com/
+  title: Financial Firm Built For The Planet
+  ingested: true
+- id: 2026/top-sustainable-investing-strategies-2026
+  url: https://www.greenfi.com/resources/top-sustainable-investing-strategies-2026
+  title: Top Sustainable Investing Strategies 2026
+  ingested: true
+- id: 2024/esg100-review-2024
+  url: https://www.positiongreen.com/esg100/
+  title: 2024 ESG100 Review
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-02'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

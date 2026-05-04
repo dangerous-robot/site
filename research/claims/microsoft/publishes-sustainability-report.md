@@ -3,6 +3,7 @@ title: Microsoft publishes a sustainability or ESG report
 entity: companies/microsoft
 topics:
 - environmental-impact
+tags: [highlight]
 verdict: 'true'
 confidence: high
 criteria_slug: publishes-sustainability-report

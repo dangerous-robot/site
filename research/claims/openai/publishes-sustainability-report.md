@@ -19,7 +19,7 @@ sources:
 - 2026/openai-nonprofit-commission-report
 - 2025/openai-public-benefit-corporation-2025
 - 2025/paris-summit-voluntary-commitments-update
-tags: []
+tags: [highlight]
 ---
 A review of the supplied sources finds extensive discussion of OpenAI’s environmental impact and related governance topics, but none of the materials constitute a formal sustainability or ESG report issued by OpenAI.
 

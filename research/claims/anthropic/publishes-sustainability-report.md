@@ -3,6 +3,7 @@ title: Anthropic publishes a sustainability or ESG report
 entity: companies/anthropic
 topics:
 - environmental-impact
+tags: [highlight]
 verdict: 'true'
 confidence: medium
 criteria_slug: publishes-sustainability-report
