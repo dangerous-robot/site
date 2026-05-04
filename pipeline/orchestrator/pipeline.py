@@ -90,6 +90,8 @@ class VerificationResult(BaseModel):
     # verify_claim runs that don't persist.
     claim_path: str | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
+    # IDs of sources already on disk and reused via URL dedup (not re-ingested).
+    cached_source_ids: list[str] = Field(default_factory=list)
     # Researcher-step trace: planner queries+rationale and scorer rationale
     # for the decomposed mode; just the classic researcher's reasoning string
     # for classic mode. Persisted to the audit sidecar so reviewers can see
@@ -267,9 +269,10 @@ async def verify_claim(
             else:
                 source_files, ingest_errors = [], []
 
-            for url, _sid, sd in cached_sources:
+            for url, sid, sd in cached_sources:
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
+                result.cached_source_ids.append(sid)
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)

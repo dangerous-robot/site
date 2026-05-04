@@ -286,6 +286,7 @@ def _write_audit_sidecar(
     agents_run: list[str],
     models_used: dict[str, str] | None = None,
     research_trace: dict | None = None,
+    reset_review: bool = False,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -309,17 +310,16 @@ def _write_audit_sidecar(
     else:
         audit_block = None
 
-    # Preserve human_review across reruns. The pipeline re-runs analyst/auditor
-    # but must not wipe an operator's review decision. Staleness between the new
-    # audit block and the preserved review is surfaced by the build-time staleness
-    # check (see docs/plans/audit-trail.md), not by clobbering here.
+    # Preserve human_review across mid-pipeline reruns, but reset it when the
+    # operator explicitly refreshes a claim (reset_review=True). The claim-refresh
+    # command sets reset_review=True because a full re-run invalidates prior signoff.
     human_review = {
         "reviewed_at": None,
         "reviewer": None,
         "notes": None,
         "pr_url": None,
     }
-    if sidecar_path.exists():
+    if not reset_review and sidecar_path.exists():
         try:
             existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
             existing_review = existing.get("human_review")

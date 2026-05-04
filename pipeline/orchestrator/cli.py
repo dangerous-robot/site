@@ -848,7 +848,7 @@ def claim_refresh(
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
-        source_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
+        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -885,13 +885,14 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            reset_review=True,
         )
         click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
         return
 
     # Branch B: analyst failed (no blocked_reason, no analyst_output).
     if vr.analyst_output is None:
-        source_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
+        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -928,6 +929,7 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            reset_review=True,
         )
         click.echo(f"Blocked (analyst_error): {blocked_path}")
         return
@@ -936,7 +938,7 @@ def claim_refresh(
 
     # Branch C: vocabulary-unresolved (template has vocab slots, title still contains hint prefix).
     if template and template.vocabulary and VOCABULARY_HINT_PREFIX in ao.verdict.title:
-        source_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
+        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
         try:
             inherited_topics = [Category(t) for t in template.topics]
         except ValueError:
@@ -972,12 +974,14 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            reset_review=True,
         )
         click.echo(f"Blocked (unresolved vocabulary): {blocked_path}")
         return
 
     # Branch D: success.
-    source_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
+    fresh_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
+    source_ids = list(dict.fromkeys(vr.cached_source_ids + fresh_ids))
     try:
         inherited_topics = [Category(t) for t in template.topics] if template else list(ao.verdict.topics)
     except ValueError as exc:
@@ -998,6 +1002,8 @@ def claim_refresh(
         force=True,
         status=ClaimStatus.DRAFT,
         criteria_slug=criteria_slug,
+        seo_title=ao.verdict.seo_title,
+        takeaway=ao.verdict.takeaway,
     )
 
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
@@ -1010,6 +1016,7 @@ def claim_refresh(
         agents_run=agents_run,
         models_used={a: cfg.model_for(a) for a in agents_run},
         research_trace=vr.research_trace,
+        reset_review=True,
     )
 
     click.echo(f"Refreshed: {claim_path_written}")
