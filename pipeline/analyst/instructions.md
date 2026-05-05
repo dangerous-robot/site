@@ -91,15 +91,22 @@ Each source comes with `independence` (first-party | independent | unknown), `ki
 
 1. `verification_level` (required): a five-level scale describing the *diversity* of the
    source pool. It does not measure whether the claim is correct; it measures whether
-   the evidence comes from independent origins.
+   the evidence comes from independent origins. Evaluate from strongest to weakest --
+   the first level whose derivation matches the pool wins.
 
-   - `claimed` -- All `first-party` sources have `kind` in {blog, index, video, article};
-     no `independent` sources.
-   - `self-reported` -- At least one `first-party` source with `kind` in
-     {report, documentation, dataset}; no `independent` sources.
-   - `partially-verified` -- Both `first-party` and `independent` sources are present.
-   - `independently-verified` -- At least one `independent` source.
-   - `multiply-verified` -- Two or more `independent` sources.
+   - `multiply-verified` -- The pool contains two or more `independent` sources.
+   - `independently-verified` -- The pool contains at least one `independent` source
+     (may also contain `first-party` sources). Default for any pool with at least one
+     independent source unless `partially-verified` applies (next).
+   - `partially-verified` -- Use only when the pool contains at least one `first-party`
+     source and exactly one `independent` source AND that independent source provides
+     supplementary context rather than corroboration of the claim's central assertion.
+     Mechanically this row is a subset of `independently-verified`; pick it only on a
+     deliberate judgment about corroboration quality, not pool composition alone.
+   - `self-reported` -- The pool has zero `independent` sources and at least one
+     `first-party` source whose `kind` is in {report, documentation, dataset}.
+   - `claimed` -- The pool has zero `independent` sources and every `first-party`
+     source has `kind` in {blog, index, video, article}.
 
    FIRST-PARTY ARTICLE BOUNDARY: a `first-party` source with `kind: article` defaults to
    `claimed`. Upgrade to `self-reported` ONLY when the article contains methodology,
