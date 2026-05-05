@@ -1,8 +1,10 @@
 # Source trust metadata
 
-**Status**: Ready
-**Priority**: v1 (schema + display + launch-source backfill); v1.x (full backfill + agent classifier)
-**Last updated**: 2026-05-01
+> **Superseded (v1 scope)**: the v1 source-quality scope is defined in [`source-quality-robust-roadmap.md`](source-quality-robust-roadmap.md) (2026-05-05). The v1 schema reduces to a single new `independence` field plus claim-level `verification_level` / `cap_rationale` / `source_overrides`. The full trust block proposed here (`document_type`, `authority`, `coi_with_subject`, `coi_notes`, detailed `publisher_group` spec, agent classifier for full backfill) is retained as v1.x scope. Phases 6–8 of this plan remain valid v1.x cross-references.
+
+**Status**: Superseded (v1 scope) — v1.x reference for full trust block
+**Priority**: v1.x (full backfill + agent classifier + extended schema)
+**Last updated**: 2026-05-05
 
 Add structured trust metadata to source files so a skeptical reader can judge source quality without leaving the page, and so the analyst agent can weight sources appropriately when building verdicts.
 
