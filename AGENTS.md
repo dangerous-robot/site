@@ -174,6 +174,10 @@ All plans live under `docs/plans/`. Lifecycle determines subdirectory:
 
 Release roadmaps are a separate object: they live at the top level of `docs/` (`docs/v{semver}.md`) and are governed by the [Release planning](#release-planning) section. The lifecycle rules below apply equally to release docs and sub-plans; the only difference is the active-state location.
 
+### File naming
+
+`_stub.md` suffix marks a placeholder plan. Stubs always live in `docs/plans/drafts/` and contain only an outline or sketch -- enough context for someone to start writing the full plan later. They may optionally include design notes or decisions, but they are not implementation-ready. Do not promote a stub directly to `docs/plans/`; flesh it out first.
+
 Rules:
 
 1. **Drafts stay local.** Write WIP plans to `docs/plans/drafts/`. Never commit a plan until its design is reviewed and final.
