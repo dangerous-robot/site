@@ -85,9 +85,9 @@ RULES:
 
 SOURCE QUALITY (full reference: docs/architecture/source-quality.md):
 
-Each source comes with `independence` (first-party | independent | unknown), `kind`
-(report, article, documentation, dataset, blog, video, index), and `source_type`
-(primary, secondary, tertiary). You produce TWO derived signals:
+Each source comes with `independence` (first-party | independent | unknown) and
+`kind` (report, article, documentation, dataset, blog, video, index). You produce
+TWO derived signals:
 
 1. `verification_level` (required): a five-level scale describing the *diversity* of the
    source pool. It does not measure whether the claim is correct; it measures whether

@@ -56,6 +56,7 @@ from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
+from common.source_classification import classify_source_type, independence_for_source_type
 from orchestrator.persistence import build_source_url_index, load_source_dict
 from researcher.agent import ResearchDeps, research_agent
 
@@ -538,8 +539,6 @@ async def _ingest_urls(
 
 
 def _build_source_dict(sf: SourceFile) -> dict:
-    from common.source_classification import classify_source_type, independence_for_source_type
-
     source_type = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
     independence = (
         sf.frontmatter.independence.value
@@ -556,7 +555,6 @@ def _build_source_dict(sf: SourceFile) -> dict:
         "url": sf.frontmatter.url,
         "source_id": f"{sf.year}/{sf.slug}",
         "kind": sf.frontmatter.kind.value,
-        "source_type": source_type,
         "independence": independence,
     }
 
@@ -692,6 +690,7 @@ async def research_claim(
         _write_claim_file,
         _write_entity_file,
         _write_source_files,
+        verdict_write_kwargs,
     )
 
     cfg = config or VerifyConfig()
@@ -824,15 +823,7 @@ async def research_claim(
                 force=cfg.force_overwrite,
                 seo_title=analyst_out.verdict.seo_title,
                 takeaway=analyst_out.verdict.takeaway,
-                verification_level=(
-                    analyst_out.verdict.verification_level.value
-                    if analyst_out.verdict.verification_level is not None else None
-                ),
-                cap_rationale=analyst_out.verdict.cap_rationale,
-                source_overrides=(
-                    [o.model_dump(mode="python", exclude_none=True) for o in analyst_out.verdict.source_overrides]
-                    if analyst_out.verdict.source_overrides else None
-                ),
+                **verdict_write_kwargs(analyst_out.verdict),
             )
             try:
                 result.claim_path = str(claim_path.relative_to(Path(repo_root)))
@@ -923,6 +914,7 @@ async def onboard_entity(
         _write_draft_entity_file,
         _write_entity_file,
         _write_source_files,
+        verdict_write_kwargs,
     )
 
     cfg = config or VerifyConfig()
@@ -1272,15 +1264,7 @@ async def onboard_entity(
                         criteria_slug=slug,
                         seo_title=ao.verdict.seo_title,
                         takeaway=ao.verdict.takeaway,
-                        verification_level=(
-                            ao.verdict.verification_level.value
-                            if ao.verdict.verification_level is not None else None
-                        ),
-                        cap_rationale=ao.verdict.cap_rationale,
-                        source_overrides=(
-                            [o.model_dump(mode="python", exclude_none=True) for o in ao.verdict.source_overrides]
-                            if ao.verdict.source_overrides else None
-                        ),
+                        **verdict_write_kwargs(ao.verdict),
                     )
                     result.claims_created.append(str(claim_path.relative_to(repo_root)))
 

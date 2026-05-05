@@ -384,7 +384,7 @@ def step_analyze(
     from common.frontmatter import parse_frontmatter
     from common.templates import get_template, load_templates, render_claim_text
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
-    from orchestrator.persistence import _write_claim_file
+    from orchestrator.persistence import _write_claim_file, verdict_write_kwargs
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -476,15 +476,7 @@ def step_analyze(
             force=force,
             status=fm.get("status", "draft"),
             criteria_slug=criteria_slug,
-            verification_level=(
-                a.verdict.verification_level.value
-                if a.verdict.verification_level is not None else None
-            ),
-            cap_rationale=a.verdict.cap_rationale,
-            source_overrides=(
-                [o.model_dump(mode="python", exclude_none=True) for o in a.verdict.source_overrides]
-                if a.verdict.source_overrides else None
-            ),
+            **verdict_write_kwargs(a.verdict),
         )
         click.echo(f"Wrote {written_path}")
     except FileExistsError as exc:
@@ -775,6 +767,7 @@ def claim_refresh(
         _write_audit_sidecar,
         _write_claim_file,
         _write_source_files,
+        verdict_write_kwargs,
     )
     from orchestrator.pipeline import VerifyConfig, verify_claim
 
@@ -1016,15 +1009,7 @@ def claim_refresh(
         criteria_slug=criteria_slug,
         seo_title=ao.verdict.seo_title,
         takeaway=ao.verdict.takeaway,
-        verification_level=(
-            ao.verdict.verification_level.value
-            if ao.verdict.verification_level is not None else None
-        ),
-        cap_rationale=ao.verdict.cap_rationale,
-        source_overrides=(
-            [o.model_dump(mode="python", exclude_none=True) for o in ao.verdict.source_overrides]
-            if ao.verdict.source_overrides else None
-        ),
+        **verdict_write_kwargs(ao.verdict),
     )
 
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]

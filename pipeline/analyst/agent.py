@@ -169,8 +169,6 @@ def build_analyst_prompt(
             parts.append(f"Publisher: {src['publisher']}")
             if src.get("kind"):
                 parts.append(f"Kind: {src['kind']}")
-            if src.get("source_type"):
-                parts.append(f"Source type: {src['source_type']}")
             if src.get("independence"):
                 parts.append(f"Independence: {src['independence']}")
             parts.append(f"Summary: {src['summary']}")

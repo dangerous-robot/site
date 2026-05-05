@@ -5,11 +5,15 @@ from __future__ import annotations
 import datetime
 import logging
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
 from auditor.models import ComparisonResult
 from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
+
+if TYPE_CHECKING:
+    from analyst.agent import VerdictAssessment
 from common.models import (
     BlockedReason,
     Category,
@@ -103,7 +107,6 @@ def load_source_dict(source_id: str, repo_root: Path) -> dict | None:
         "url": fm.get("url", ""),
         "source_id": source_id,
         "kind": kind,
-        "source_type": source_type,
         "independence": independence,
     }
 
@@ -181,6 +184,23 @@ def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) ->
             return repo_root / "research" / "claims" / slug
         return repo_root / "research" / "claims" / Path(*ref_parts)
     return repo_root / "research" / "claims" / slugify(entity_name)
+
+
+def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
+    """Pull source-quality fields off a VerdictAssessment in the shape expected
+    by `_write_claim_file`. Centralizes the enum unwrap and override dump so
+    each call site can spread `**verdict_write_kwargs(ao.verdict)`.
+    """
+    level = verdict.verification_level
+    overrides = verdict.source_overrides
+    return {
+        "verification_level": level.value if level is not None else None,
+        "cap_rationale": verdict.cap_rationale,
+        "source_overrides": (
+            [o.model_dump(mode="python", exclude_none=True) for o in overrides]
+            if overrides else None
+        ),
+    }
 
 
 def _write_claim_file(

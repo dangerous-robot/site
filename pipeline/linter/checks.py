@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from common.models import Confidence, VerificationLevel
+
 from .models import LintIssue
 
 REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
@@ -18,8 +20,8 @@ CANONICAL_CLAIM_KEYS = {
     "audit", "seo_title", "tags",
 }
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
-CAPPED_VERIFICATION_LEVELS = {"claimed", "self-reported"}
-CAPPED_CONFIDENCE_VALUES = {"medium", "high"}
+CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}
+CAPPED_CONFIDENCE_VALUES = {Confidence.MEDIUM.value, Confidence.HIGH.value}
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 ENTITY_DIR_TO_TYPE = {
