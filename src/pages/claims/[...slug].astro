@@ -6,6 +6,14 @@ import VerdictBadge from "../../components/VerdictBadge.astro";
 import { getEntityParent } from "../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
 import { shouldNoindex } from "../../lib/seo";
+import {
+  CAPPED_VERIFICATION_LEVELS,
+  VERIFICATION_LEVEL_GLOSS,
+  VERIFICATION_LEVEL_LABELS,
+  countSourcesByIndependence,
+  formatSourceCounts,
+  type VerificationLevel,
+} from "../../lib/sourceQuality";
 
 export async function getStaticPaths() {
   const claims = await getCollection("claims");
@@ -63,6 +71,18 @@ const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 
 const sourceMap = new Map(allSources.map(s => [s.id, s]));
 
+const verificationLevel = claim.data.verification_level as VerificationLevel | undefined;
+const verificationLabel = verificationLevel ? VERIFICATION_LEVEL_LABELS[verificationLevel] : null;
+const verificationGloss = verificationLevel ? VERIFICATION_LEVEL_GLOSS[verificationLevel] : null;
+const isCapped = !!verificationLevel && CAPPED_VERIFICATION_LEVELS.has(verificationLevel);
+const capRationale = isCapped ? claim.data.cap_rationale : null;
+const sourceCounts = countSourcesByIndependence(
+  claim.data.sources ?? [],
+  sourceMap,
+  claim.data.source_overrides,
+);
+const sourceCountText = formatSourceCounts(sourceCounts);
+
 const isReviewed = !!(audit?.human_review.reviewer);
 
 const claimDescription = claim.data.takeaway
@@ -111,6 +131,25 @@ const claimReview = {
         <p class="takeaway">{claim.data.takeaway}</p>
       )}
     </PageHeader>
+
+    {(verificationLabel || sourceCounts.total > 0) && (
+      <section class="source-quality" aria-label="Source quality">
+        {verificationLabel && (
+          <div class="verification">
+            <span class={`verification-label level-${verificationLevel}`}>{verificationLabel}</span>
+            {verificationGloss && (
+              <span class="verification-gloss">{verificationGloss}</span>
+            )}
+          </div>
+        )}
+        {sourceCounts.total > 0 && (
+          <p class="source-count">{sourceCountText}</p>
+        )}
+        {capRationale && (
+          <p class="cap-rationale">{capRationale}</p>
+        )}
+      </section>
+    )}
 
     <section class="rationale">
       <Content />
@@ -257,6 +296,61 @@ const claimReview = {
     border-left: 3px solid var(--color-accent);
     padding-left: var(--space-sm);
     margin: var(--space-sm) 0 var(--space-md);
+  }
+
+  .source-quality {
+    margin: 0 0 var(--space-md);
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+  }
+
+  .verification {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm);
+    align-items: baseline;
+    margin-bottom: 0.4rem;
+  }
+
+  .verification-label {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.05em 0.55em;
+    border-radius: 3px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+  }
+
+  .verification-label.level-claimed,
+  .verification-label.level-self-reported {
+    border-color: var(--color-text-faint);
+    color: var(--color-text-muted);
+  }
+
+  .verification-gloss {
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  .source-count {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+
+  .cap-rationale {
+    margin: 0.5rem 0 0;
+    padding: var(--space-xs) var(--space-sm);
+    border-left: 2px solid var(--color-text-faint);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    background: var(--color-bg);
   }
 
   .review-state { font-size: var(--font-size-sm); }
