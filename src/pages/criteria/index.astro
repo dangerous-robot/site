@@ -5,6 +5,7 @@ import { buildCriteriaIndex } from '../../lib/criteria';
 import { CATEGORY_LABELS } from '../../lib/research';
 import EmptyState from '../../components/EmptyState.astro';
 import FilterBar from '../../components/FilterBar.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 const criteria = await getCollection('criteria');
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -38,7 +39,7 @@ const coreFacet = {
 };
 ---
 <Base title="Criteria" layout="wide">
-  <h1>Criteria</h1>
+  <PageHeader variant="index" type="criterion" title="Criteria" />
   <p class="disclaimer">Criteria are the questions we ask of every company and product. Each criterion links to the claims filed against it across all entities.</p>
   <FilterBar
     total={rows.length}

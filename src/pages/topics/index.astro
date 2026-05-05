@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
 import VerdictDistribution from '../../components/VerdictDistribution.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
@@ -23,7 +24,7 @@ const topicStats = CATEGORIES.map(cat => {
 });
 ---
 <Base title="Topics" layout="wide">
-  <h1>Topics</h1>
+  <PageHeader variant="index" type="topic" title="Topics" />
   <div class="topics-grid">
     {topicStats.map(stat => (
       <a href={`/topics/${stat.topic}`} class="topic-card">

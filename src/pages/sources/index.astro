@@ -3,6 +3,7 @@ import Base from '../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import FilterBar from '../../components/FilterBar.astro';
 import EmptyState from '../../components/EmptyState.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 const sources = await getCollection('sources');
 
@@ -69,7 +70,7 @@ const kindCssVar: Record<string, string> = {
 };
 ---
 <Base title="Sources" layout="wide">
-  <h1>Sources</h1>
+  <PageHeader variant="index" type="source" title="Sources" />
   <p class="disclaimer">Every source cited across Dangerous Robot research. Each entry links to a detail page with summary, key quotes, and the claims that reference it.</p>
   <FilterBar
     total={rows.length}

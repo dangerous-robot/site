@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import EntityCard from '../../components/EntityCard.astro';
 import FilterBar from '../../components/FilterBar.astro';
 import EmptyState from '../../components/EmptyState.astro';
+import PageHeader from '../../components/PageHeader.astro';
 
 const entities = await getCollection('entities', e => e.data.type === 'company');
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -21,7 +22,7 @@ const cards = entities.map(entity => {
 }).sort((a, b) => a.name.localeCompare(b.name));
 ---
 <Base title="Companies" layout="wide">
-  <h1>Companies</h1>
+  <PageHeader variant="index" type="company" title="Companies" />
   <FilterBar
     total={cards.length}
     searchPlaceholder="Search companies…"
