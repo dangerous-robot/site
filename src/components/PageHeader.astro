@@ -1,6 +1,7 @@
 ---
 import Breadcrumb from './Breadcrumb.astro';
 import ObjectTypeIcon from './ObjectTypeIcon.astro';
+import { ENTITY_TYPE_LABELS } from '../lib/entityTypes';
 
 interface Props {
   crumbs: { label: string; href?: string }[];
@@ -9,16 +10,6 @@ interface Props {
 }
 
 const { crumbs, type, title } = Astro.props;
-
-const typeLabels: Record<string, string> = {
-  sector: "Sector",
-  company: "Company",
-  product: "Product",
-  topic: "Topic",
-  claim: "Claim",
-  source: "Source",
-  criterion: "Criterion",
-};
 ---
 
 <header class="page-header">
@@ -26,34 +17,37 @@ const typeLabels: Record<string, string> = {
     <Breadcrumb crumbs={crumbs} />
   </div>
   <h1 class="page-title">{title}</h1>
-  <div class="icon-col">
-    <div class="icon-box">
-      <ObjectTypeIcon type={type} size={28} />
+  <div class="item-meta">
+    <div class="icon-col">
+      <div class="icon-box">
+        <ObjectTypeIcon type={type} size={28} />
+      </div>
+      <span class="type-label">{ENTITY_TYPE_LABELS[type] ?? type}</span>
     </div>
-    <span class="type-label">{typeLabels[type] ?? type}</span>
-  </div>
-  <div class="meta-col">
-    <slot />
+    <div class="meta-col">
+      <slot />
+    </div>
   </div>
 </header>
 
 <style>
   header.page-header {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    column-gap: var(--space-md);
     margin-bottom: var(--space-xl);
   }
 
   .breadcrumb-row {
-    grid-column: 1 / -1;
     margin-bottom: var(--space-sm);
   }
 
   h1.page-title {
-    grid-column: 1 / -1;
     margin-top: 0;
     margin-bottom: 0.75rem;
+  }
+
+  .item-meta {
+    display: grid;
+    grid-template-columns: 60px 1fr;
+    column-gap: var(--space-md);
   }
 
   .icon-col {

@@ -1,9 +1,12 @@
 ---
+import { ENTITY_TYPE_LABELS } from '../lib/entityTypes';
+
 interface Props {
   type: string;
   size?: number;
 }
 const { type, size = 28 } = Astro.props;
+const KNOWN_TYPES = Object.keys(ENTITY_TYPE_LABELS);
 ---
 
 <svg
@@ -66,7 +69,7 @@ const { type, size = 28 } = Astro.props;
       <path d="M9 14l2 2 4-4" />
     </>
   )}
-  {!["sector","company","product","topic","claim","source","criterion"].includes(type) && (
+  {!KNOWN_TYPES.includes(type) && (
     <circle cx="12" cy="12" r="9" />
   )}
 </svg>

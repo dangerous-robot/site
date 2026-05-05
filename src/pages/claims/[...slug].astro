@@ -3,7 +3,7 @@ import Base from "../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
 import PageHeader from "../../components/PageHeader.astro";
 import VerdictBadge from "../../components/VerdictBadge.astro";
-import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
+import { getEntityParent } from "../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
 import { shouldNoindex } from "../../lib/seo";
 
@@ -18,18 +18,17 @@ export async function getStaticPaths() {
 const { claim } = Astro.props;
 const { Content } = await render(claim);
 
-// Resolve matching criterion
-const criteria = await getCollection("criteria");
+const [criteria, entities, allSources] = await Promise.all([
+  getCollection("criteria"),
+  getCollection("entities"),
+  getCollection("sources"),
+]);
 const stem = claim.id.split("/").pop() ?? claim.id;
 const criteriaSlug = claim.data.criteria_slug ?? stem;
 const matchedCriteria = criteria.find(s => s.id === criteriaSlug);
 
-// Entity lookup for breadcrumb.
-const entities = await getCollection("entities");
 const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
-const typeParent = entityEntry
-  ? (ENTITY_TYPE_PARENTS[entityEntry.data.type as keyof typeof ENTITY_TYPE_PARENTS] ?? null)
-  : null;
+const typeParent = entityEntry ? getEntityParent(entityEntry.data.type) : null;
 const entityLabel = entityEntry?.data.name ?? claim.data.entity;
 
 const claimCrumbs = [
@@ -62,8 +61,6 @@ const audit = claim.data.audit ?? null;
 const ranAt = audit ? isoDate(audit.pipeline_run.ran_at) : null;
 const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
 
-// Source collection lookup for the audit trail. Items not in the collection render as external links.
-const allSources = await getCollection("sources");
 const sourceMap = new Map(allSources.map(s => [s.id, s]));
 
 const isReviewed = !!(audit?.human_review.reviewer);

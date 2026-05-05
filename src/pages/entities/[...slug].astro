@@ -6,7 +6,7 @@ import { CATEGORY_LABELS } from "../../lib/research";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
 import PageHeader from "../../components/PageHeader.astro";
-import { ENTITY_TYPE_PARENTS } from "../../lib/entityTypes";
+import { getEntityParent } from "../../lib/entityTypes";
 import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
@@ -20,7 +20,10 @@ export async function getStaticPaths() {
 const { entity } = Astro.props;
 const { Content } = await render(entity);
 
-const allClaims = await getCollection("claims", ({ data }) => data.status === "published");
+const [allClaims, criteria] = await Promise.all([
+  getCollection("claims", ({ data }) => data.status === "published"),
+  getCollection("criteria"),
+]);
 const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
@@ -38,7 +41,6 @@ for (const claim of relatedClaims) {
 const categoriesWithClaims = [...claimsByCategory.keys()].sort();
 
 // Criteria-applied section
-const criteria = await getCollection("criteria");
 const criteriaIndex = buildCriteriaIndex(allClaims);
 
 // Filter criteria matching this entity's type
@@ -57,7 +59,7 @@ for (const std of applicableCriteria) {
 }
 const critCategoriesSorted = [...critByCategory.keys()].sort();
 
-const typeParent = ENTITY_TYPE_PARENTS[entity.data.type as keyof typeof ENTITY_TYPE_PARENTS] ?? null;
+const typeParent = getEntityParent(entity.data.type);
 const entityCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),

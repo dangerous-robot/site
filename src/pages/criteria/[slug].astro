@@ -71,7 +71,7 @@ const criteriaDescription = `Dangerous Robot evaluates whether ${normCriteriaTex
 ---
 <Base title={criteriaPageTitle} layout="wide" description={criteriaDescription}>
   <PageHeader crumbs={criteriaCrumbs} type="criterion" title={std.data.text}>
-    <p class="std-category">{std.data.topics.map((t: string) => t.replace(/-/g, ' ')).join(', ')}</p>
+    <p class="std-category">{std.data.topics.map(t => t.replace(/-/g, ' ')).join(', ')}</p>
     {std.data.notes && <p class="std-notes">{std.data.notes}</p>}
   </PageHeader>
   <section>
