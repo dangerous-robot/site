@@ -6,6 +6,7 @@ import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
 
 const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
+const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@600&display=swap";
 
 interface Props {
   title: string;
@@ -75,11 +76,10 @@ const orgSchema = {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" as="style"
-      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap"
+      href={googleFontsUrl}
       onload="this.onload=null;this.rel='stylesheet'" />
     <noscript>
-      <link rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&display=swap" />
+      <link rel="stylesheet" href={googleFontsUrl} />
     </noscript>
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
