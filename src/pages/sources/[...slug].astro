@@ -81,7 +81,7 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
 
         <span
           class="kind-badge"
-          style={`background: ${kindCssVar[source.data.kind] || "var(--color-text-faint)"}`}
+          style={`--kind-color: ${kindCssVar[source.data.kind] || "var(--color-text-faint)"}`}
         >
           {source.data.kind}
         </span>
@@ -157,22 +157,23 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
     padding: 0.15rem 0.5rem;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
     text-transform: uppercase;
     cursor: default;
+    background: color-mix(in srgb, var(--source-type-color, var(--color-text-faint)) 15%, transparent);
+    border: 1px solid var(--source-type-color, var(--color-text-faint));
+    color: var(--source-type-color, var(--color-text-faint));
   }
 
   .source-type-primary {
-    background: hsl(210 55% 32%);
+    --source-type-color: hsl(210 55% 50%);
   }
 
   .source-type-secondary {
-    background: hsl(220 18% 36%);
+    --source-type-color: hsl(220 18% 55%);
   }
 
   .source-type-tertiary {
-    background: hsl(220 10% 28%);
+    --source-type-color: hsl(220 10% 50%);
   }
 
   .kind-badge {
@@ -180,9 +181,10 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
     padding: 0.15rem 0.5rem;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
     text-transform: uppercase;
+    background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
+    border: 1px solid var(--kind-color, var(--color-text-faint));
+    color: var(--kind-color, var(--color-text-faint));
   }
 
   .publisher {

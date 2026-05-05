@@ -89,7 +89,7 @@ const kindCssVar: Record<string, string> = {
       >
         <span class="source-title">{row.title}</span>
         <span class="source-meta">
-          <span class="kind-badge" style={`background: ${kindCssVar[row.kind] ?? 'var(--color-text-faint)'}`}>
+          <span class="kind-badge" style={`--kind-color: ${kindCssVar[row.kind] ?? 'var(--color-text-faint)'}`}>
             {KIND_LABELS[row.kind] ?? row.kind}
           </span>
           <span class="publisher">{row.publisher}</span>
@@ -133,9 +133,10 @@ const kindCssVar: Record<string, string> = {
     padding: 0.1rem 0.4rem;
     border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    font-weight: bold;
-    color: var(--color-on-badge);
     text-transform: uppercase;
+    background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
+    border: 1px solid var(--kind-color, var(--color-text-faint));
+    color: var(--kind-color, var(--color-text-faint));
   }
   .publisher { color: var(--color-text-muted); }
   .date { color: var(--color-text-faint); }

@@ -36,16 +36,20 @@ const { id, title, publisher, kind, year, citationCount } = Astro.props;
   display: inline-block;
   padding: 2px var(--space-xs);
   border-radius: var(--radius-sm);
-  font-size: var(--font-size-2xs); font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.04em; color: var(--color-on-badge);
+  font-size: var(--font-size-2xs);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
+  border: 1px solid var(--kind-color, var(--color-text-faint));
+  color: var(--kind-color, var(--color-text-faint));
 }
-.kind-report      { background: var(--color-kind-report); }
-.kind-article     { background: var(--color-kind-article); }
-.kind-documentation { background: var(--color-kind-documentation); }
-.kind-dataset     { background: var(--color-kind-dataset); }
-.kind-blog        { background: var(--color-kind-blog); }
-.kind-video       { background: var(--color-kind-video); }
-.kind-index       { background: var(--color-kind-index); }
+.kind-report      { --kind-color: var(--color-kind-report); }
+.kind-article     { --kind-color: var(--color-kind-article); }
+.kind-documentation { --kind-color: var(--color-kind-documentation); }
+.kind-dataset     { --kind-color: var(--color-kind-dataset); }
+.kind-blog        { --kind-color: var(--color-kind-blog); }
+.kind-video       { --kind-color: var(--color-kind-video); }
+.kind-index       { --kind-color: var(--color-kind-index); }
 .source-info { display: flex; flex-direction: column; gap: 2px; }
 .publisher { font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .source-title { font-weight: 500; color: var(--color-text); }
