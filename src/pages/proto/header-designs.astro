@@ -1,0 +1,715 @@
+---
+import Base from "../../layouts/Base.astro";
+import ObjectTypeIcon from "../../components/ObjectTypeIcon.astro";
+
+// Sample data — mirrors a real source detail page so badge/meta clutter is realistic.
+const sample = {
+  type: "source",
+  typeLabel: "Source",
+  title: "AI Fluency for Nonprofits",
+  publisher: "TechSoup",
+  sourceType: "secondary",
+  sourceTypeLabel: "Secondary",
+  kind: "article",
+  kindColorVar: "var(--color-kind-article)",
+  published: "2025-08-14",
+  accessed: "2026-04-22",
+  url: "https://example.com/ai-fluency-for-nonprofits",
+  archived: "https://web.archive.org/example",
+};
+
+// Long-title variant for stress-testing wrap behavior.
+const longTitle = "How small nonprofit teams are quietly adopting AI tools without policy guardrails or training budgets";
+---
+
+<Base title="Header design prototype" layout="reading" noindex={true}>
+  <div class="proto-intro">
+    <h1 class="proto-h1">Page-header design prototype</h1>
+    <p>
+      Four anchoring strategies for the page-identity icon. Same source data in each.
+      Viewport: resize to see how each handles narrow widths.
+    </p>
+    <ul class="proto-toc">
+      <li><a href="#d1">1. Outdented icon (icon outside body, left of H1)</a></li>
+      <li><a href="#d2">2. Bounded header card (icon anchored inside a tinted panel)</a></li>
+      <li><a href="#d3">3. Chip above title (icon+label stacked over H1)</a></li>
+      <li><a href="#d4">4. Outdented icon + vertical rail (hybrid)</a></li>
+    </ul>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- DESIGN 1: OUTDENTED ICON                                     -->
+  <!-- Icon sits outside the body column, anchored to the title's   -->
+  <!-- left edge. Title is not shifted. On narrow viewports the     -->
+  <!-- icon stacks above the title.                                 -->
+  <!-- ============================================================ -->
+  <section id="d1" class="proto-section">
+    <h2 class="proto-section-h">1. Outdented icon</h2>
+    <p class="proto-note">
+      Icon lives in the page gutter, left of the body column. Title's left edge unchanged.
+      Below ~900px viewport, icon stacks above the title.
+    </p>
+
+    <header class="d1-header">
+      <nav class="d1-crumbs">Home / Sources</nav>
+      <div class="d1-title-block">
+        <div class="d1-icon-outdent">
+          <div class="d1-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d1-type-label">{sample.typeLabel}</span>
+        </div>
+        <h1 class="d1-title">{sample.title}</h1>
+      </div>
+      <div class="d1-meta">
+        <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+        <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+        <span class="publisher">{sample.publisher}</span>
+      </div>
+      <div class="d1-dates">
+        <span>Published: {sample.published}</span>
+        <span>Accessed: {sample.accessed}</span>
+      </div>
+      <div class="d1-links">
+        <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+        <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+      </div>
+    </header>
+
+    <h3 class="proto-stress">Stress test: long title + full metadata</h3>
+    <header class="d1-header">
+      <nav class="d1-crumbs">Home / Sources</nav>
+      <div class="d1-title-block">
+        <div class="d1-icon-outdent">
+          <div class="d1-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d1-type-label">{sample.typeLabel}</span>
+        </div>
+        <h1 class="d1-title">{longTitle}</h1>
+      </div>
+      <div class="d1-meta">
+        <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+        <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+        <span class="publisher">{sample.publisher}</span>
+      </div>
+      <div class="d1-dates">
+        <span>Published: {sample.published}</span>
+        <span>Accessed: {sample.accessed}</span>
+      </div>
+      <div class="d1-links">
+        <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+        <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+      </div>
+    </header>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- DESIGN 2: BOUNDED HEADER CARD                                -->
+  <!-- All header content sits inside a tinted panel with subtle    -->
+  <!-- border. Icon top-left, full size, acts as the "stamp" of the -->
+  <!-- card. Title and metadata flow inside the card.               -->
+  <!-- ============================================================ -->
+  <section id="d2" class="proto-section">
+    <h2 class="proto-section-h">2. Bounded header card</h2>
+    <p class="proto-note">
+      Containment, not promotion. Icon stays full size top-left. The card frame is what
+      anchors it; the badges' visual loudness is muted by the surrounding surface.
+    </p>
+
+    <header class="d2-card">
+      <nav class="d2-crumbs">Home / Sources</nav>
+      <div class="d2-grid">
+        <div class="d2-icon-col">
+          <div class="d2-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d2-type-label">{sample.typeLabel}</span>
+        </div>
+        <div class="d2-content">
+          <h1 class="d2-title">{sample.title}</h1>
+          <div class="d2-meta">
+            <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+            <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+            <span class="publisher">{sample.publisher}</span>
+          </div>
+          <div class="d2-dates">
+            <span>Published: {sample.published}</span>
+            <span>Accessed: {sample.accessed}</span>
+          </div>
+          <div class="d2-links">
+            <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+            <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <h3 class="proto-stress">Stress test: long title + full metadata</h3>
+    <header class="d2-card">
+      <nav class="d2-crumbs">Home / Sources</nav>
+      <div class="d2-grid">
+        <div class="d2-icon-col">
+          <div class="d2-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d2-type-label">{sample.typeLabel}</span>
+        </div>
+        <div class="d2-content">
+          <h1 class="d2-title">{longTitle}</h1>
+          <div class="d2-meta">
+            <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+            <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+            <span class="publisher">{sample.publisher}</span>
+          </div>
+          <div class="d2-dates">
+            <span>Published: {sample.published}</span>
+            <span>Accessed: {sample.accessed}</span>
+          </div>
+          <div class="d2-links">
+            <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+            <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+          </div>
+        </div>
+      </div>
+    </header>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- DESIGN 3: CHIP ABOVE TITLE                                   -->
+  <!-- Icon + label as a horizontal chip above H1. Does not shift   -->
+  <!-- the title. Most conservative. Icon is full-size but visually -->
+  <!-- modest because it pairs inline with its label.               -->
+  <!-- ============================================================ -->
+  <section id="d3" class="proto-section">
+    <h2 class="proto-section-h">3. Chip above title</h2>
+    <p class="proto-note">
+      Icon + label as a horizontal chip above the H1. Title alignment unchanged.
+      Honest assessment: this does not deliver the prominence you want — included for comparison.
+    </p>
+
+    <header class="d3-header">
+      <nav class="d3-crumbs">Home / Sources</nav>
+      <div class="d3-chip">
+        <ObjectTypeIcon type={sample.type} size={32} />
+        <span class="d3-type-label">{sample.typeLabel}</span>
+      </div>
+      <h1 class="d3-title">{sample.title}</h1>
+      <div class="d3-meta">
+        <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+        <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+        <span class="publisher">{sample.publisher}</span>
+      </div>
+      <div class="d3-dates">
+        <span>Published: {sample.published}</span>
+        <span>Accessed: {sample.accessed}</span>
+      </div>
+      <div class="d3-links">
+        <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+        <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+      </div>
+    </header>
+
+    <h3 class="proto-stress">Stress test: long title + full metadata</h3>
+    <header class="d3-header">
+      <nav class="d3-crumbs">Home / Sources</nav>
+      <div class="d3-chip">
+        <ObjectTypeIcon type={sample.type} size={32} />
+        <span class="d3-type-label">{sample.typeLabel}</span>
+      </div>
+      <h1 class="d3-title">{longTitle}</h1>
+      <div class="d3-meta">
+        <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+        <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+        <span class="publisher">{sample.publisher}</span>
+      </div>
+      <div class="d3-dates">
+        <span>Published: {sample.published}</span>
+        <span>Accessed: {sample.accessed}</span>
+      </div>
+      <div class="d3-links">
+        <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+        <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+      </div>
+    </header>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- DESIGN 4: OUTDENTED ICON + VERTICAL RAIL                     -->
+  <!-- Same outdent as Design 1, but a thin vertical rule extends   -->
+  <!-- from beneath the icon down past the metadata, visually       -->
+  <!-- tethering the icon to the entire header block.               -->
+  <!-- ============================================================ -->
+  <section id="d4" class="proto-section">
+    <h2 class="proto-section-h">4. Outdented icon + vertical rail</h2>
+    <p class="proto-note">
+      Hybrid. Icon outside body (Design 1) plus a hairline rail that ties the icon to
+      the metadata block. Solves the floating problem without a full card frame.
+    </p>
+
+    <header class="d4-header">
+      <nav class="d4-crumbs">Home / Sources</nav>
+      <div class="d4-body">
+        <div class="d4-icon-outdent">
+          <div class="d4-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d4-type-label">{sample.typeLabel}</span>
+          <div class="d4-rail" aria-hidden="true"></div>
+        </div>
+        <div class="d4-content">
+          <h1 class="d4-title">{sample.title}</h1>
+          <div class="d4-meta">
+            <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+            <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+            <span class="publisher">{sample.publisher}</span>
+          </div>
+          <div class="d4-dates">
+            <span>Published: {sample.published}</span>
+            <span>Accessed: {sample.accessed}</span>
+          </div>
+          <div class="d4-links">
+            <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+            <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <h3 class="proto-stress">Stress test: long title + full metadata</h3>
+    <header class="d4-header">
+      <nav class="d4-crumbs">Home / Sources</nav>
+      <div class="d4-body">
+        <div class="d4-icon-outdent">
+          <div class="d4-icon-box">
+            <ObjectTypeIcon type={sample.type} size={44} />
+          </div>
+          <span class="d4-type-label">{sample.typeLabel}</span>
+          <div class="d4-rail" aria-hidden="true"></div>
+        </div>
+        <div class="d4-content">
+          <h1 class="d4-title">{longTitle}</h1>
+          <div class="d4-meta">
+            <span class={`badge source-type-${sample.sourceType}`}>{sample.sourceTypeLabel}</span>
+            <span class="badge kind-badge" style={`background:${sample.kindColorVar}`}>{sample.kind}</span>
+            <span class="publisher">{sample.publisher}</span>
+          </div>
+          <div class="d4-dates">
+            <span>Published: {sample.published}</span>
+            <span>Accessed: {sample.accessed}</span>
+          </div>
+          <div class="d4-links">
+            <a href={sample.url} target="_blank" rel="noopener noreferrer">Original source &#8599;</a>
+            <a href={sample.archived} target="_blank" rel="noopener noreferrer">Archived copy &#8599;</a>
+          </div>
+        </div>
+      </div>
+    </header>
+  </section>
+</Base>
+
+<style>
+  /* ---- Shared scaffolding ---- */
+  .proto-intro {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px dashed var(--color-border);
+  }
+  .proto-h1 {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-sm);
+  }
+  .proto-toc {
+    margin-top: var(--space-md);
+    padding-left: var(--space-lg);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+  .proto-section {
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-2xl);
+    border-bottom: 1px dashed var(--color-border);
+  }
+  .proto-section-h {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-sm);
+  }
+  .proto-note {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-lg);
+    max-width: 36rem;
+  }
+  .proto-stress {
+    margin-top: var(--space-xl);
+    margin-bottom: var(--space-md);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+  }
+
+  /* ---- Shared badge / meta primitives (mirrors site styles) ---- */
+  .badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-2xs);
+    font-weight: bold;
+    color: var(--color-on-badge);
+    text-transform: uppercase;
+  }
+  .source-type-primary { background: hsl(210 55% 32%); }
+  .source-type-secondary { background: hsl(220 18% 36%); }
+  .source-type-tertiary { background: hsl(220 10% 28%); }
+  .publisher {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  /* ============================================================ */
+  /* DESIGN 1: OUTDENTED ICON                                     */
+  /* ============================================================ */
+  .d1-header {
+    position: relative;
+    margin-bottom: var(--space-xl);
+  }
+  .d1-crumbs {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .d1-title-block {
+    position: relative;
+  }
+  .d1-icon-outdent {
+    /* Pull out of flow to the left of the title. */
+    position: absolute;
+    right: calc(100% + var(--space-md));
+    top: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 72px;
+    flex-shrink: 0;
+  }
+  .d1-icon-box {
+    width: 64px;
+    height: 64px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+  .d1-type-label {
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    text-align: center;
+  }
+  .d1-title {
+    font-size: 2rem;
+    margin: 0 0 var(--space-md);
+    line-height: 1.2;
+  }
+  .d1-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    align-items: center;
+    margin-bottom: var(--space-sm);
+  }
+  .d1-dates {
+    display: flex;
+    gap: var(--space-lg);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: var(--space-sm);
+  }
+  .d1-links {
+    display: flex;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+  }
+  .d1-links a {
+    font-size: var(--font-size-sm);
+  }
+
+  /* Narrow viewport: stack icon above title (Brandon-approved fallback). */
+  @media (max-width: 900px) {
+    .d1-icon-outdent {
+      position: static;
+      flex-direction: row;
+      align-items: center;
+      width: auto;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+    .d1-icon-box {
+      width: 48px;
+      height: 48px;
+    }
+    .d1-icon-box :global(svg) {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  /* ============================================================ */
+  /* DESIGN 2: BOUNDED HEADER CARD                                */
+  /* ============================================================ */
+  .d2-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
+  .d2-crumbs {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-md);
+  }
+  .d2-grid {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    column-gap: var(--space-lg);
+    align-items: start;
+  }
+  .d2-icon-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+  }
+  .d2-icon-box {
+    width: 64px;
+    height: 64px;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+  }
+  .d2-type-label {
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    text-align: center;
+  }
+  .d2-content {
+    min-width: 0;
+  }
+  .d2-title {
+    font-size: 1.75rem;
+    margin: 0 0 var(--space-md);
+    line-height: 1.2;
+  }
+  .d2-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    align-items: center;
+    margin-bottom: var(--space-sm);
+  }
+  .d2-dates {
+    display: flex;
+    gap: var(--space-lg);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: var(--space-sm);
+  }
+  .d2-links {
+    display: flex;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+  }
+  .d2-links a {
+    font-size: var(--font-size-sm);
+  }
+
+  @media (max-width: 600px) {
+    .d2-grid {
+      grid-template-columns: 1fr;
+      row-gap: var(--space-md);
+    }
+    .d2-icon-col {
+      flex-direction: row;
+      gap: var(--space-sm);
+      align-items: center;
+    }
+  }
+
+  /* ============================================================ */
+  /* DESIGN 3: CHIP ABOVE TITLE                                   */
+  /* ============================================================ */
+  .d3-header {
+    margin-bottom: var(--space-xl);
+  }
+  .d3-crumbs {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .d3-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+  }
+  .d3-type-label {
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+  }
+  .d3-title {
+    font-size: 2rem;
+    margin: 0 0 var(--space-md);
+    line-height: 1.2;
+  }
+  .d3-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    align-items: center;
+    margin-bottom: var(--space-sm);
+  }
+  .d3-dates {
+    display: flex;
+    gap: var(--space-lg);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: var(--space-sm);
+  }
+  .d3-links {
+    display: flex;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+  }
+  .d3-links a {
+    font-size: var(--font-size-sm);
+  }
+
+  /* ============================================================ */
+  /* DESIGN 4: OUTDENTED ICON + VERTICAL RAIL                     */
+  /* ============================================================ */
+  .d4-header {
+    position: relative;
+    margin-bottom: var(--space-xl);
+  }
+  .d4-crumbs {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .d4-body {
+    position: relative;
+  }
+  .d4-icon-outdent {
+    position: absolute;
+    right: calc(100% + var(--space-md));
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-xs);
+    width: 72px;
+  }
+  .d4-icon-box {
+    width: 64px;
+    height: 64px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+  .d4-type-label {
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-faint);
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .d4-rail {
+    flex: 1 1 auto;
+    width: 1px;
+    background: var(--color-border);
+    margin-top: var(--space-xs);
+  }
+  .d4-content {
+    min-width: 0;
+  }
+  .d4-title {
+    font-size: 2rem;
+    margin: 0 0 var(--space-md);
+    line-height: 1.2;
+  }
+  .d4-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    align-items: center;
+    margin-bottom: var(--space-sm);
+  }
+  .d4-dates {
+    display: flex;
+    gap: var(--space-lg);
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+    margin-bottom: var(--space-sm);
+  }
+  .d4-links {
+    display: flex;
+    gap: var(--space-lg);
+    flex-wrap: wrap;
+  }
+  .d4-links a {
+    font-size: var(--font-size-sm);
+  }
+
+  @media (max-width: 900px) {
+    .d4-icon-outdent {
+      position: static;
+      flex-direction: row;
+      align-items: center;
+      width: auto;
+      gap: var(--space-sm);
+      margin-bottom: var(--space-sm);
+    }
+    .d4-icon-box {
+      width: 48px;
+      height: 48px;
+    }
+    .d4-icon-box :global(svg) {
+      width: 32px;
+      height: 32px;
+    }
+    .d4-rail {
+      display: none;
+    }
+  }
+</style>
