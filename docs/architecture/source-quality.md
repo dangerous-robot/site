@@ -16,15 +16,15 @@ Single claim-level field, set by the analyst. Each row's "Derivation" describes 
 
 **Selection rule**: evaluate strongest to weakest; the first row whose derivation matches the pool wins. The rules overlap by design (a pool with two independent sources matches both `independently-verified` and `multiply-verified`); the cascade picks the strongest accurate label.
 
-| Level (strongest first) | Plain-language meaning (display copy) | Derivation |
+| Schema value (strongest first) | Display copy: **label** — gloss | Derivation |
 |-------|----------------------------------------|------------|
-| `multiply-verified` (display: **Cross-verified**) | Multiple independent sources corroborate this claim. | The pool contains two or more `independent` sources. |
-| `independently-verified` | At least one independent source corroborates this claim. | The pool contains at least one `independent` source. The pool may also contain `first-party` sources. |
-| `partially-verified` | A mix of entity documentation and independent sources. | The pool contains at least one `first-party` source and at least one `independent` source. (Mechanically a subset of `independently-verified`; the cascade routes mixed pools to the stronger label, so this row is selected only when the analyst judges the independent source provides supplementary context rather than corroboration.) |
-| `self-reported` | The entity has published formal documentation; no independent source was found to corroborate. | The pool has zero `independent` sources and at least one `first-party` source whose `kind` is in {report, documentation, dataset}. |
-| `claimed` | The entity asserts this; no formal documentation or independent source was found. | The pool has zero `independent` sources and every `first-party` source has `kind` in {blog, index, video, article}. |
+| `multiply-verified` | **Cross-verified** — Multiple independent sources corroborate this claim. | The pool contains two or more `independent` sources. |
+| `independently-verified` | **Independently verified** — At least one independent source corroborates this claim. | The pool contains at least one `independent` source. The pool may also contain `first-party` sources. |
+| `partially-verified` | **Partially verified** — A mix of entity documentation and independent sources. | The pool contains at least one `first-party` source and at least one `independent` source. (Mechanically a subset of `independently-verified`; the cascade routes mixed pools to the stronger label, so this row is selected only when the analyst judges the independent source provides supplementary context rather than corroboration.) |
+| `self-reported` | **Self-reported** — The entity has published formal documentation; no independent source was found to corroborate. | The pool has zero `independent` sources and at least one `first-party` source whose `kind` is in {report, documentation, dataset}. |
+| `claimed` | **Claimed** — The entity asserts this; no formal documentation or independent source was found. | The pool has zero `independent` sources and every `first-party` source has `kind` in {blog, index, video, article}. |
 
-The plain-language column is what the claim page shows readers under each level. Editing those strings here means editing them on the site too.
+The display-copy column is what the claim page shows readers under each level. Both the label and the gloss are mirrored from `src/lib/sourceQuality.ts`; editing those strings here means editing them on the site too.
 
 ### `claimed` vs `self-reported` boundary
 
