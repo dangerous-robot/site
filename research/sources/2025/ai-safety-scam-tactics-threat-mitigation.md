@@ -18,5 +18,6 @@ key_quotes:
 - You’re not solving this, the police is not solving crime. You are making it harder
   for them to do it more expensive and more costly.
 source_type: secondary
+independence: independent
 ---
 This episode of The Brave Technologist Podcast features an interview with Assaf Kipnis, an AI safety investigator at ElevenLabs. The conversation covers the transition from account removal to holistic threat mitigation and the rise of large-scale scam complexes.

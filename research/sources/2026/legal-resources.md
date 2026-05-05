@@ -12,5 +12,6 @@ key_quotes:
 - Our Standards of Business Conduct, our Trust Code, reflects our culture, values,
   and the principles that guide our behavior.
 source_type: primary
+independence: first-party
 ---
 This page serves as a central directory for Microsoft's legal and regulatory documentation. It includes links to software license lookups, environmental compliance, and corporate governance.

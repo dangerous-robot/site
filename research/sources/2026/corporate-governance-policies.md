@@ -8,5 +8,6 @@ kind: index
 summary: A directory of Microsoft's corporate governance documents, including Articles
   of Incorporation, Bylaws, and various committee charters and conduct standards.
 source_type: primary
+independence: first-party
 ---
 The page serves as a central hub for Microsoft's governing documents and policies. It includes links to the company's Finance Code of Professional Conduct and Standards of Business Conduct.

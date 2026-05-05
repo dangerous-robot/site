@@ -15,5 +15,6 @@ key_quotes:
   when its outputs are verified through up-to-date, expert, and location-specific
   sources.
 source_type: secondary
+independence: independent
 ---
 The research utilizes a handcrafted dataset of 63 prompts to compare AI-generated responses with human expert data. It employs Word2Vec embeddings and Gemini as an independent assessor to determine semantic alignment.

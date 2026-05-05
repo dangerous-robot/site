@@ -8,5 +8,6 @@ accessed_date: '2026-05-02'
 kind: report
 summary: An update regarding voluntary commitments established during the Paris Summit.
 source_type: primary
+independence: first-party
 ---
 This document provides an update on the voluntary commitments related to the Paris Summit. The content is hosted as a PDF by OpenAI's global affairs division.

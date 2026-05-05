@@ -11,5 +11,6 @@ key_quotes:
   and ongoing impact of the Brave Browser, the Brave Rewards program, and the associated
   Basic Attention Token.
 source_type: secondary
+independence: independent
 ---
 The page provides real-time or regularly updated data on monthly and daily active users. It also details the distribution of BAT rewards to users and creators.

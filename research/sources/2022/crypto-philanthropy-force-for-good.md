@@ -13,5 +13,6 @@ key_quotes:
   your boat, you can actually, Not pay the capital gains that are going to be triggered
 - the bigger story here is that we’re actually showing that crypto is used for good
 source_type: secondary
+independence: independent
 ---
 This episode of The Brave Marketer podcast explores the intersection of blockchain technology and charitable giving. It specifically highlights the role of The Giving Block in facilitating crypto donations for various non-profit organizations.

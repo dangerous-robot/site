@@ -14,5 +14,6 @@ key_quotes:
 - Chats with Leo are private and secure. Leo never uses your chats for model training
   and no account or login is required to use Leo.
 source_type: tertiary
+independence: unknown
 ---
 The post details how the integration allows the AI to answer queries about current events and provides information on the privacy-preserving architecture, including reverse proxies and non-persistence of conversations.

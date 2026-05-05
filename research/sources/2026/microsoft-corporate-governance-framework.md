@@ -13,5 +13,6 @@ key_quotes:
   authority and practices in place to review and evaluate our business operations
   and to make decisions independent of management.
 source_type: primary
+independence: first-party
 ---
 This document outlines the structural approach Microsoft uses to manage board composition, risk oversight, and executive accountability. It specifies the board's purpose in promoting business goals and maintaining integrity.

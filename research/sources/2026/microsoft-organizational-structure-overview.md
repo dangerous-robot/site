@@ -12,5 +12,6 @@ key_quotes:
 - Microsoft has a product divisional organizational structure with divisions based
   on computer hardware and software products.
 source_type: secondary
+independence: independent
 ---
 The document describes the leadership and divisional arrangement of Microsoft. It details the roles of executive vice presidents and the role of corporate groups in managing cross-cutting functions.

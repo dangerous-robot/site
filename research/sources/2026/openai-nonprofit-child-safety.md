@@ -16,5 +16,6 @@ key_quotes:
   fact, a front group founded by lawyers working for OpenAI
 - I don’t want OpenAI to write their own rules for how they interact with children
 source_type: secondary
+independence: independent
 ---
 The article describes how OpenAI used a front organization to influence child safety policy and avoid liability. Several nonprofits withdrew their support upon discovering OpenAI's involvement.

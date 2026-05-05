@@ -14,5 +14,6 @@ key_quotes:
 - The Schneider Electric report estimates that all generative AI queries consume 15
   TWh in 2025 and will use 347 TWh by 2030
 source_type: secondary
+independence: independent
 ---
 The article examines the energy requirements of AI inference, comparing OpenAI's reported figures with external research from Schneider Electric. It discusses the potential need for massive 'Stargate-class' data centers to support projected growth.

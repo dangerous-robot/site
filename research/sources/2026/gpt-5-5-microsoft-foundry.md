@@ -15,5 +15,6 @@ key_quotes:
   execution, improved computer-use accuracy, and greater token efficiency—designed
   for sustained, high-stakes professional workflows.
 source_type: primary
+independence: first-party
 ---
 The post introduces GPT-5.5 and its premium variant, GPT-5.5 Pro, as part of the Microsoft Foundry platform. It emphasizes the model's capabilities in autonomous execution, complex reasoning, and integration with the Foundry Agent Service for enterprise-scale deployment.

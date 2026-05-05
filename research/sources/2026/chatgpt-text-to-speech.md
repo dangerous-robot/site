@@ -11,5 +11,6 @@ key_quotes:
 - ChatGPT’s text to speech feature brings responses to life by converting text into
   spoken words, enhancing accessibility and engagement.
 source_type: tertiary
+independence: unknown
 ---
 The article explains how to use ChatGPT's built-in voice features and outlines the technical capabilities of OpenAI's TTS model. It also promotes Murf AI as a professional alternative for high-quality voiceovers.

@@ -13,5 +13,6 @@ key_quotes:
   which give it the ability to search the web, make multiple images from one prompt,
   and double-check its creations
 source_type: secondary
+independence: independent
 ---
 The article discusses the release of OpenAI's Images 2.0, noting its ability to generate accurate text and multi-paneled layouts. It highlights the model's improved handling of non-Latin text and its 2K resolution capabilities.

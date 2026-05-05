@@ -12,5 +12,6 @@ key_quotes:
 - It’s not currently out, but it’s definitely on the drawing board as a potential
   move in the future.
 source_type: secondary
+independence: independent
 ---
 A user inquired about image generation plans for Leo AI. A Brave team member confirmed the feature is not yet available but is under consideration for the future.

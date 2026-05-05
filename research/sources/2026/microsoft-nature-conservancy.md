@@ -12,5 +12,6 @@ key_quotes:
 - Microsoft aims to replenish more water than it consumes by 2030.
 - Microsoft plans to protect more land than it uses by 2030.
 source_type: secondary
+independence: independent
 ---
 The page outlines specific collaborative projects in South Africa, China, USA, Chile, and Belize, as well as technological initiatives like the Marxan Planning Platform and Global Renewables Watch. It also mentions public engagement efforts through Minecraft and Microsoft Rewards.

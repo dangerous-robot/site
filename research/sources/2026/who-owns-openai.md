@@ -16,5 +16,6 @@ key_quotes:
   entity
 - CEO Sam Altman has publicly stated he holds no equity in the company
 source_type: secondary
+independence: independent
 ---
 The article details the corporate evolution of OpenAI from a pure non-profit to a hybrid 'capped-profit' model to attract necessary capital for AI development. It describes the relationship between OpenAI Inc. and OpenAI LP.

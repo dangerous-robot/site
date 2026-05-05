@@ -17,5 +17,6 @@ key_quotes:
   helping ensure the company’s leadership and decisions stay aligned with its long-term
   mission.
 source_type: secondary
+independence: independent
 ---
 The article details the financial backing and governance of Anthropic, noting a valuation of $380 billion by early 2026. It outlines the specific roles of strategic partners and the impact of its Long-Term Benefit Trust.

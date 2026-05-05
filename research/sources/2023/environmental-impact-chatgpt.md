@@ -15,5 +15,6 @@ key_quotes:
 - Microsoft used approximately 700,000 litres of freshwater during GPT-3’s training
   in its data centres
 source_type: secondary
+independence: independent
 ---
 The article details the energy and water requirements for AI data centers. It highlights a University of California, Riverside study regarding the water footprint of GPT models.

@@ -14,5 +14,6 @@ key_quotes:
 - Philanthropy can be a powerful disruptor in the current ecosystem of AI development
   to be ethical, inclusive, and beneficial
 source_type: tertiary
+independence: unknown
 ---
 Written by Jo Z. Carcedo, this piece argues that philanthropy should move beyond suspicion of AI to actively shape its governance and application. It highlights the risk of AI perpetuating systemic inequalities and suggests specific ways funders can intervene.

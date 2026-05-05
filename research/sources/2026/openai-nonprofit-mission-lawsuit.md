@@ -15,5 +15,6 @@ key_quotes:
 - The unspoken truth here is that they’re never going to make a decision that is bad
   for the company
 source_type: secondary
+independence: independent
 ---
 The article examines the tension between OpenAI's original charitable mission and its current corporate structure, including the creation of the OpenAI Foundation. It details legal challenges and criticisms regarding the company's shift toward a for-profit model.

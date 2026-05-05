@@ -12,5 +12,6 @@ key_quotes:
 - Leo doesn’t retain or share chats, or use them for model training. No account or
   login is required.
 source_type: secondary
+independence: independent
 ---
 The page details various AI integration levels within the Brave ecosystem, ranging from consumer browser tools to developer APIs. It highlights a focus on privacy and independence from 'Big Tech' search indices.

@@ -14,5 +14,6 @@ key_quotes:
 - The OpenAI fellowship runs from September 14, 2026, through February 5, 2027, and
   pays a weekly stipend of $3,850.
 source_type: secondary
+independence: independent
 ---
 The fellowship program was announced shortly after a New Yorker report questioned CEO Sam Altman's commitment to safety. The program targets research in safety evaluation, ethics, robustness, and agentic oversight.

@@ -11,5 +11,6 @@ key_quotes:
 - Brave Software, Inc. has 25 total employees across all of its locations and generates
   $2.51 million in sales (USD).
 source_type: secondary
+independence: independent
 ---
 The profile lists Brendan Eich as the President and identifies the company's primary industry as Computer Systems Design and Related Services. It provides corporate contact information and a founding date of 2014.

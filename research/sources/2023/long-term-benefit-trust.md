@@ -15,5 +15,6 @@ key_quotes:
 - The Trust is an independent body of five financially disinterested members with
   an authority to select and remove a portion of our Board
 source_type: primary
+independence: first-party
 ---
 The article details the legal and organizational structure of the LTBT, including its relationship to Anthropic's status as a Public Benefit Corporation and the phase-in process for board control.

@@ -16,5 +16,6 @@ key_quotes:
   partners to test Claude Mythos Preview, identify and mitigate vulnerabilities earlier,
   and coordinate defensive response.
 source_type: primary
+independence: first-party
 ---
 The post outlines Microsoft's strategy to integrate advanced AI models into its Security Development Lifecycle and introduces the 'Secure Now' guidance for reducing exposure.

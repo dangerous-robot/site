@@ -13,5 +13,6 @@ key_quotes:
 - The simplified structure will allow investors and corporate partners to more easily
   reap returns from their investments and pave the way to an envisioned public offering.
 source_type: secondary
+independence: independent
 ---
 The article details the equity distribution of the new OpenAI Group, including stakes for Microsoft, employees, and the OpenAI Foundation. It also discusses the legal and ethical critiques of the transition from a nonprofit-led model.

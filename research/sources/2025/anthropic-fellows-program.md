@@ -13,5 +13,6 @@ key_quotes:
 - The Anthropic Fellows program provides funding and mentorship for a small cohort
   of AI safety researchers.
 source_type: primary
+independence: first-party
 ---
 This social media post from Anthropic introduces their fellows program for AI safety research and shares a link to recent publications produced by the cohort.

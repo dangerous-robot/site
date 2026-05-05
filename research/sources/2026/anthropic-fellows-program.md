@@ -12,5 +12,6 @@ key_quotes:
   talent. We provide funding and mentorship to promising technical talent - regardless
   of previous experience.
 source_type: primary
+independence: first-party
 ---
 The page details the requirements, workstreams, and compensation for a 4-month full-time fellowship. It lists specific research areas such as Scalable Oversight and Mechanistic Interpretability.

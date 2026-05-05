@@ -15,5 +15,6 @@ key_quotes:
 - Founders and initial investors structured ownership to protect mission and ensure
   technical continuity while providing capital to scale.
 source_type: secondary
+independence: independent
 ---
 The article details the evolution of Anthropic's equity from its 2021 founding by former OpenAI employees to its 2026 valuation. It explains the company's dual-class share structure and its status as a Public Benefit Corporation.

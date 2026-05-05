@@ -13,5 +13,6 @@ key_quotes:
 - Over the next five years, we’ll invest $4 billion through Microsoft Elevate in cash
   and AI cloud technology to K-12 schools, community and technical colleges, and nonprofits.
 source_type: primary
+independence: first-party
 ---
 The page outlines Microsoft's strategic goals across four main pillars: expanding opportunity, earning trust, protecting fundamental rights, and advancing sustainability. It maps these commitments to specific United Nations Sustainable Development Goals.

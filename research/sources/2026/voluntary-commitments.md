@@ -13,5 +13,6 @@ key_quotes:
   as well as considerable overlap in their core requirements around safety, security,
   and responsible development.
 source_type: primary
+independence: first-party
 ---
 The page details Anthropic's risk assessment, cybersecurity practices, and societal impact initiatives. It maps specific company activities to various international and domestic voluntary AI commitments.

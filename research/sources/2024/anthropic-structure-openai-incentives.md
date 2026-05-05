@@ -14,5 +14,6 @@ key_quotes:
 - the LTBT, whose members have no equity in the company, currently elects one out
   of the board’s five members.
 source_type: secondary
+independence: independent
 ---
 The article details how Anthropic utilizes a Public Benefit Corporation structure and a Long Term Benefit Trust to maintain safety goals. It compares these mechanisms to the governance failures experienced by OpenAI.

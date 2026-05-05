@@ -13,5 +13,6 @@ key_quotes:
   else is electromagnetic radiation... and electrons.
 - ChatGPT never gets the text questions online users type. All it gets is electrons.
 source_type: secondary
+independence: independent
 ---
 The thread features a user arguing that AI cannot understand text because it only processes electrons rather than visual shapes. Respondents critique this as a category mistake, distinguishing between physical substrates and informational content.

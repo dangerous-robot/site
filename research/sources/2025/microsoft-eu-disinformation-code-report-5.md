@@ -17,5 +17,6 @@ key_quotes:
 - Microsoft is committed to advancing information integrity and believes that including
   content credentials is an important driver for this.
 source_type: primary
+independence: first-party
 ---
 The report covers the period from July 1, 2024, to December 31, 2024. It details technical implementations across Bing, LinkedIn, and Microsoft Advertising, as well as participation in the EU Code of Practice Task-force.

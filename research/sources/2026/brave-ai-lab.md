@@ -10,5 +10,6 @@ summary: The homepage of Brave AI Lab, a service provider offering AI developmen
 key_quotes:
 - We offer comprehensive and continuous development and research for your SaaS.
 source_type: secondary
+independence: independent
 ---
 The page outlines various AI-driven solutions including GPT agent development, data enrichment, and custom search engines. It also lists a portfolio of projects ranging from social media scraping to body language understanding.

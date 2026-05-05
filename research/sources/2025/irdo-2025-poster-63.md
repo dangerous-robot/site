@@ -7,5 +7,6 @@ accessed_date: '2026-05-01'
 kind: report
 summary: A poster presentation from the IRDO 2025 conference.
 source_type: secondary
+independence: independent
 ---
 This is a PDF document containing a research poster from the IRDO 2025 conference. The specific content is inaccessible due to file format limitations of the fetch tool.

@@ -14,5 +14,6 @@ key_quotes:
   unmatched verifiable privacy and transparency in AI assistants... transitioning
   from the 'trust me bro' process to the privacy-by-design approach
 source_type: secondary
+independence: independent
 ---
 The implementation utilizes TEEs provided by Near AI, leveraging Intel TDX and Nvidia TEE technologies. Currently, this feature is available for the DeepSeek V3.1 model within Brave Nightly.

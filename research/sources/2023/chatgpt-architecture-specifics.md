@@ -20,5 +20,6 @@ key_quotes:
 
   Number of parameters: 175B'
 source_type: secondary
+independence: independent
 ---
 This Stack Exchange thread discusses the specific model architecture of the public version of ChatGPT. The top answer suggests it shares the architecture of GPT-3/3.5.

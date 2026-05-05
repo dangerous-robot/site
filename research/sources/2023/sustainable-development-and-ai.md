@@ -12,5 +12,6 @@ key_quotes:
 - Measuring and calculating carbon emissions are a can of worms
 - Azure might be carbon-neutral, but I doubt their entire supply chain is
 source_type: primary
+independence: first-party
 ---
 This is a forum thread from the OpenAI Developer Community where users discuss the sustainability of Large Language Models. The conversation touches upon data center emissions, Scope 1-3 reporting, and practical ways to reduce energy consumption when using APIs.

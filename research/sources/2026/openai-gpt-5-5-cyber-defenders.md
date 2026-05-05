@@ -13,5 +13,6 @@ key_quotes:
 - We believe the better path is responsible, trusted access for defenders so they
   can move faster than adversaries can adapt.
 source_type: secondary
+independence: independent
 ---
 The release of GPT-5.5-Cyber occurs alongside a similar move by Anthropic with its Mythos AI. It follows a new Cybersecurity Action Plan aimed at securing critical infrastructure.

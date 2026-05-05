@@ -14,5 +14,6 @@ key_quotes:
 - GPT-5.4 Pro is the highest-capability ChatGPT model, built for the hardest tasks
   and long-running agentic workflows
 source_type: secondary
+independence: independent
 ---
 The article provides a detailed breakdown of OpenAI's model lineup in 2026, focusing on the transition to the GPT-5 family and the retirement of GPT-4 series models. It outlines a task-first decision framework for selecting between Instant, Thinking, and Pro models.

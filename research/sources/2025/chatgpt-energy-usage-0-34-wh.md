@@ -15,5 +15,6 @@ key_quotes:
 - This is several orders of magnitude less than most estimates we’ve seen in the media
   (mainstream and academic)
 source_type: tertiary
+independence: unknown
 ---
 The author examines a blog post by OpenAI CEO Sam Altman regarding the energy and water consumption of ChatGPT queries. It questions the lack of detail regarding model versions, multi-modal usage, and total energy scale.

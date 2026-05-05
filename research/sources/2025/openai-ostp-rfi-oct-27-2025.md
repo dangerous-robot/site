@@ -9,5 +9,6 @@ kind: report
 summary: OpenAI's formal response to a Request for Information (RFI) from the Office
   of Science and Technology Policy (OSTP).
 source_type: primary
+independence: first-party
 ---
 This document contains OpenAI's perspectives and recommendations provided to the OSTP. It focuses on the governance and development of artificial intelligence.

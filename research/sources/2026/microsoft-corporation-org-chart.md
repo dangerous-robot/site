@@ -12,5 +12,6 @@ key_quotes:
   and leadership team, including key executives such as Satya Nadella (Chairman &
   CEO), Mustafa Suleyman (CEO, Microsoft AI), and Carolina Dybeck Happe (COO).
 source_type: secondary
+independence: independent
 ---
 The source provides a detailed list of Microsoft's executive leadership, including roles in AI, Cloud, Gaming, and Finance. It includes brief biographical summaries for several top executives.

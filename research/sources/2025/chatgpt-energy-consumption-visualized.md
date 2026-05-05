@@ -15,5 +15,6 @@ key_quotes:
 - ChatGPT uses around 39.16 million gallons daily, the equivalent of everyone in Taiwan
   flushing their toilet at once.
 source_type: secondary
+independence: independent
 ---
 The article calculates the environmental footprint of ChatGPT by combining Washington Post data on per-prompt resource use with user growth statistics. It highlights the strain on power grids and fresh water supplies.

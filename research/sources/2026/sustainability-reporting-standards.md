@@ -13,5 +13,6 @@ key_quotes:
   and disclosing the overall impact of an organization's environmental, social, and
   economic activities on the planet.
 source_type: primary
+independence: first-party
 ---
 The page serves as a learning resource for organizations to understand environmental, social, and governance (ESG) reporting frameworks. It discusses the evolution of these standards and provides guidance on choosing a framework based on organization size and audience.

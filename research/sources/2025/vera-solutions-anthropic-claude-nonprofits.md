@@ -16,5 +16,6 @@ key_quotes:
 - Vera Solutions joins Slalom, Idealist Consulting, and The Bridgespan Group as Anthropic’s
   four inaugural strategic integration partners
 source_type: secondary
+independence: independent
 ---
 The partnership aims to democratize access to frontier AI for the social sector through accessible pricing and specialized integrations. Vera Solutions will provide AI strategy, implementation, and change management services.

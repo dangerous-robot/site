@@ -11,5 +11,6 @@ key_quotes:
 - 'GPT-5.5: A new class of intelligence for coding and professional work.'
 - 'gpt-oss-120b: Most powerful open-weight model, fits into an H100 GPU'
 source_type: primary
+independence: first-party
 ---
 This page serves as a directory of all models available on the OpenAI Platform. It categorizes models by function, such as frontier reasoning, multimodal capabilities, and specialized coding tools.

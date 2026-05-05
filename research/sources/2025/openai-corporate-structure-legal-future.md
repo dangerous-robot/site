@@ -14,5 +14,6 @@ key_quotes:
   a complex relationship between its nonprofit parent and for-profit subsidiary that
   could be the subject of future litigation.
 source_type: secondary
+independence: independent
 ---
 The article discusses OpenAI's shift from a capped-profit LLC to a public benefit corporation to facilitate larger capital raises. It highlights ongoing legal disputes involving Elon Musk and inquiries from California and Delaware attorneys general.

@@ -14,5 +14,6 @@ key_quotes:
 - Without legislation, every safety advance is effectively optional— a recommendation
   companies can take or leave depending on competitive pressure.
 source_type: tertiary
+independence: unknown
 ---
 The post compares the funding levels of AI safety research versus political advocacy, highlighting a significant asymmetry between safety-aligned lobbying and industry spending. It provides a mathematical framework for donors to calculate the personal cost equivalent of switching from c3 to c4 donations.

@@ -15,5 +15,6 @@ key_quotes:
 - This many queries can cost around 1 GWh each day, which is the equivalent of the
   daily energy consumption for about 33,000 U.S. households.
 source_type: secondary
+independence: independent
 ---
 The article details the computational intensity of LLMs compared to conventional cloud computing. It discusses potential hardware and networking optimizations to reduce data center energy consumption.

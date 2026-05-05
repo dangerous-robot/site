@@ -11,5 +11,6 @@ key_quotes:
 - Start with gpt-5.5 for complex reasoning and coding, or choose gpt-5.4-mini and
   gpt-5.4-nano for lower-latency, lower-cost workloads.
 source_type: primary
+independence: first-party
 ---
 The page provides a comparative overview of current OpenAI models, including pricing, context windows, and knowledge cutoffs. It categorizes models into frontier and specialized types.

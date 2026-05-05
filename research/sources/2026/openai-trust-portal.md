@@ -12,5 +12,6 @@ key_quotes:
   independent third-party auditor to confirm that our controls align with industry
   standards for security, confidentiality, privacy and availability.
 source_type: primary
+independence: first-party
 ---
 The portal provides access to compliance certificates, security whitepapers, and system cards for models such as o3-mini, Deep Research, and GPT 4.5. It includes a list of certifications including ISO/IEC 27001 and PCI DSS.

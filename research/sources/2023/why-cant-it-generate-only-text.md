@@ -12,5 +12,6 @@ key_quotes:
 - LLM are genuinely terrible at dealing with negatives.
 - If you use the word logo, it will create one. ONLY say the things you want.
 source_type: tertiary
+independence: unknown
 ---
 The thread contains various user suggestions for achieving text-only image generation, such as using terms like 'wordmark' or 'logotype' instead of 'logo'. Users also discuss the stylistic nuances of black metal typography and the limitations of DALL-E's prompt interpretation.

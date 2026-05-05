@@ -14,5 +14,6 @@ key_quotes:
 - The default should be privacy. Making users hunt for these controls is a dark pattern
   that serves the company, not the user.
 source_type: secondary
+independence: independent
 ---
 The article explains the mechanisms OpenAI uses to store user data and the specific settings users can adjust to limit this collection. It contrasts consumer privacy controls with stronger guarantees provided to enterprise customers.

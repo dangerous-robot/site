@@ -12,5 +12,6 @@ key_quotes:
   transform and address society’s biggest challenges through its corporate and employee
   giving.
 source_type: primary
+independence: first-party
 ---
 The page outlines Microsoft's strategic investments and technology provisions for NGOs. It details specific programs for social entrepreneurs and disaster response services.

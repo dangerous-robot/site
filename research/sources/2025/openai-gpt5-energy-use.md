@@ -10,5 +10,6 @@ summary: Experts estimate GPT-5's energy consumption is significantly higher tha
   previous models, potentially requiring electricity equivalent to 1.5 million US
   homes daily, despite OpenAI's lack of official'
 source_type: secondary
+independence: independent
 ---
 Researchers from the University of Rhode Island benchmarked GPT-5's energy use, finding it averages over 18 watt-hours per medium response. The article discusses the correlation between model size and resource consumption.

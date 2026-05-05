@@ -18,5 +18,6 @@ key_quotes:
 - Chats in Leo cannot be used for training purposes, and no one can review those conversations,
   as they’re not persisted on Brave’s servers
 source_type: tertiary
+independence: unknown
 ---
 The announcement details Leo's integration into the Brave browser sidebar, allowing users to summarize articles and interact with web pages. It emphasizes anonymity through a reverse-proxy and the absence of persistent storage for chat history.

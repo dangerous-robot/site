@@ -15,5 +15,6 @@ key_quotes:
 - Spark is your whole-team model. It’s what every engineer uses all day, every day,
   inside their editor.
 source_type: tertiary
+independence: unknown
 ---
 The article provides a technical and managerial breakdown of specialized GPT-5 models tailored for different software engineering workflows in 2026. It contrasts these models against competitors like Claude 4 and Gemini 3.

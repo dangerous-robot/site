@@ -14,5 +14,6 @@ key_quotes:
 - Open Phil spent about $46 million on AI safety making it probably the largest funder
   of AI safety in the world.
 source_type: secondary
+independence: independent
 ---
 The article provides a detailed breakdown of funding for AI safety research focusing on existential risks. It estimates contributions from philanthropic funds, industry labs, and government grants in the US and UK.

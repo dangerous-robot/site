@@ -12,5 +12,6 @@ key_quotes:
 - We are committed to improving our world and reporting our progress. Find key Microsoft
   reports in one place, alongside related disclosures and resources.
 source_type: primary
+independence: first-party
 ---
 The Reports Hub serves as a directory for Microsoft's corporate responsibility documentation. It categorizes disclosures into sustainability, trusted technology, and additional impact reports.

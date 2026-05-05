@@ -11,5 +11,6 @@ key_quotes:
 - Leo doesn’t retain or share chats, or use them for additional model training.
 - Your conversations are not persisted for model training.
 source_type: primary
+independence: first-party
 ---
 The page describes the features and privacy policies of Brave Leo, including its ability to summarize webpages and integrate with various LLMs. It details the 'Bring Your Own Model' (BYOM) feature and the distinction between free and premium tiers.

@@ -16,5 +16,6 @@ key_quotes:
 - Anthropic uses a unique corporate structure — a public benefit corporation with
   a Long-Term Benefit Trust
 source_type: secondary
+independence: independent
 ---
 The article details the financial backing and governance of Anthropic, noting a valuation of approximately $61.5 billion as of March 2025. It emphasizes the company's efforts to maintain independence through its Long-Term Benefit Trust.

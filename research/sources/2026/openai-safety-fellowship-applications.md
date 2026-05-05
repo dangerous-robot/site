@@ -13,5 +13,6 @@ key_quotes:
   mitigations, privacy-preserving safety methods, agentic oversight, and high-severity
   misuse domains.
 source_type: secondary
+independence: independent
 ---
 The fellowship provides external researchers with compute support, a monthly stipend, and workspace in Berkeley at Constellation. Applicants are evaluated based on research ability and technical judgment regardless of specific academic credentials.

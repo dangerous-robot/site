@@ -17,5 +17,6 @@ key_quotes:
 - Training the GPT-4 model, with over a trillion parameters, consumed some 62.3 GWh
   of electricity over 100 days.
 source_type: secondary
+independence: independent
 ---
 The article references a report by BestBrokers to quantify the energy requirements of large language models. It provides specific metrics for both the inference phase and the initial training of GPT-3 and GPT-4.

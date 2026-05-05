@@ -17,5 +17,6 @@ key_quotes:
   creating or deploying CBRN weapons, we require enhanced security and deployment
   safeguards (ASL-3 standards).
 source_type: primary
+independence: first-party
 ---
 The post outlines the evolution of Anthropic's risk governance framework, focusing on AI Safety Level (ASL) standards. It specifically identifies autonomous AI R&D and CBRN weapons assistance as key capability thresholds.

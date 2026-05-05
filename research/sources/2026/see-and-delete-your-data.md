@@ -11,5 +11,6 @@ key_quotes:
 - If you have linked your Brave Rewards wallet to an Uphold account, it is Uphold,
   not Brave, that stores personal data about your Uphold account.
 source_type: primary
+independence: first-party
 ---
 The page provides step-by-step guides for managing data across different Brave services, including the browser, creator accounts, and community forums. It also directs users to third-party custodial partners for specific wallet data.

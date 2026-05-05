@@ -12,5 +12,6 @@ key_quotes:
 - The program will provide funding and mentorship for a small cohort of 10-15 Fellows
   to work full-time on AI safety research.
 source_type: primary
+independence: first-party
 ---
 The fellowship focuses on areas including Scalable Oversight, Adversarial Robustness, and Model Internals. It targets mid-career technical professionals transitioning into AI safety research.

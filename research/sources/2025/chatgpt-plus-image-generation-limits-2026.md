@@ -12,5 +12,6 @@ key_quotes:
 - You can generate about 50 images every 3 hours and roughly 180–200 images per day
   with ChatGPT Plus (GPT-5.1 / GPT-5.0).
 source_type: secondary
+independence: independent
 ---
 The article outlines the usage quotas for ChatGPT Plus users in 2026 and explains how to monitor remaining image credits. It compares these limits to the offerings of GlobalGPT.

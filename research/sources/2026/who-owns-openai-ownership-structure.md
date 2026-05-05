@@ -17,5 +17,6 @@ key_quotes:
 - Sam Altman, OpenAI's co-founder and CEO, received a 10% equity stake as part of
   the for-profit restructuring.
 source_type: secondary
+independence: independent
 ---
 The article details OpenAI's evolution from a 501(c)(3) nonprofit to a Delaware Public Benefit Corporation. It highlights the 2025 restructuring and a $40 billion funding round that valued the company at $300 billion.

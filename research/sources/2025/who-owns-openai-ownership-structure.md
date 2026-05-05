@@ -14,5 +14,6 @@ key_quotes:
 - Microsoft invested around $13.75 billion in OpenAI, but this huge investment doesn’t
   give them direct ownership.
 source_type: secondary
+independence: independent
 ---
 The article details the separation between profit rights and governance at OpenAI, noting that a nonprofit board maintains control despite significant investments from Microsoft and others.

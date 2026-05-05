@@ -15,5 +15,6 @@ key_quotes:
 - we project that 2GW and 5GW data centers will be needed to develop single advanced
   AI models for Anthropic in 2027 and 2028, respectively.
 source_type: primary
+independence: first-party
 ---
 The report outlines two strategic pillars for AI infrastructure: building large-scale training facilities and creating broad-based innovation infrastructure. It emphasizes the need to accelerate permitting for nuclear, geothermal, and natural gas energy.

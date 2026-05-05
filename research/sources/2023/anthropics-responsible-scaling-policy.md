@@ -14,5 +14,6 @@ key_quotes:
 - Our RSP defines a framework called AI Safety Levels (ASL) for addressing catastrophic
   risks, modeled loosely after the US government’s biosafety level (BSL) standards.
 source_type: primary
+independence: first-party
 ---
 The policy outlines a tiered system (ASL-1 through ASL-4+) to ensure safety and security standards keep pace with model capabilities. It mandates board approval for policy changes and identifies current LLMs as ASL-2.

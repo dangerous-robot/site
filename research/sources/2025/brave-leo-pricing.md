@@ -13,5 +13,6 @@ key_quotes:
   a full year
 - Brave is very clear that your conversations are anonymous and secure.
 source_type: tertiary
+independence: unknown
 ---
 The article analyzes the cost and utility of the Brave Leo AI assistant for individual users and businesses. It contrasts the consumer-focused browser tool with integrated business AI platforms like eesel AI.

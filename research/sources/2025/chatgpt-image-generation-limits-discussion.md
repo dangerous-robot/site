@@ -12,5 +12,6 @@ key_quotes:
 - I get the message that “I have reached the daily maximum number of images.”
 - it told me the cut is not, in fact, at 200 — but 100 images per day.
 source_type: primary
+independence: first-party
 ---
 Users share conflicting information regarding image generation limits for paid subscribers. Some reports indicate a daily cap of 100 to 200 images in addition to the three-hour window limits.

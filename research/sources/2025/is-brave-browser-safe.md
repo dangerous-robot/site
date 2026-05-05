@@ -14,5 +14,6 @@ key_quotes:
 - Brave Shields blocks ads and trackers before they load.
 - the company states that it doesn’t sell user data to advertisers.
 source_type: secondary
+independence: independent
 ---
 The article evaluates Brave's privacy tools such as Brave Shields and Private Windows with Tor. It also discusses past controversies regarding affiliate links and DNS leaks.

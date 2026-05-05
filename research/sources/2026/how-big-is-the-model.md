@@ -7,5 +7,6 @@ accessed_date: '2026-05-01'
 kind: index
 summary: A Reddit discussion thread regarding the size of the model.
 source_type: secondary
+independence: independent
 ---
 The source is a Reddit community discussion thread. Content was inaccessible via direct fetch and archive snapshots due to verification walls.

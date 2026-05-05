@@ -14,5 +14,6 @@ key_quotes:
 - Microsoft stated that it holds an investment in OpenAI valued at around $135 billion.
   It also confirmed that it currently has a 27% stake in OpenAI.
 source_type: secondary
+independence: independent
 ---
 The article details the corporate structure of OpenAI, explaining its transition from a non-profit to a capped for-profit model. It outlines Microsoft's significant investment and equity stake in the company.

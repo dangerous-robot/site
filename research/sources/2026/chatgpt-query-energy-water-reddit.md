@@ -8,5 +8,6 @@ kind: index
 summary: A Reddit discussion thread regarding the official energy and water usage
   of a ChatGPT query, linking to a blog post by Sam Altman.
 source_type: secondary
+independence: independent
 ---
 The page is a Reddit thread in the r/energy community. It references external data from blog.samaltman.com concerning AI resource consumption.

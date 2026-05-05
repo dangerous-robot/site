@@ -12,5 +12,6 @@ key_quotes:
 - Anthropic has raised a total of $72.3B over 18 funding rounds
 - Anthropic's largest funding round so far was a Series G round for $30B in Feb 2026.
 source_type: secondary
+independence: independent
 ---
 This page provides a comprehensive breakdown of Anthropic's capital raises, including early-stage, late-stage, debt, and other funding rounds. It lists 90 total investors, consisting of 81 institutional and 9 angel investors.

@@ -13,5 +13,6 @@ key_quotes:
   less
 - OpenAI's ChatGPT needs about 564 MWh every day just for this.
 source_type: secondary
+independence: independent
 ---
 The page contains a series of user-contributed estimations and debates regarding the electrical cost of LLM inference. Contributors discuss the difficulty of obtaining official data from OpenAI and attempt to derive figures from GPU specifications and academic papers.

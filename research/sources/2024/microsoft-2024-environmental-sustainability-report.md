@@ -9,5 +9,6 @@ kind: report
 summary: Microsoft's 2024 report detailing the company's progress, goals, and challenges
   regarding environmental sustainability, carbon emissions, and resource management.
 source_type: primary
+independence: first-party
 ---
 This document is a comprehensive environmental sustainability report published by Microsoft for the year 2024. It outlines the company's strategic approach to achieving net-zero emissions.

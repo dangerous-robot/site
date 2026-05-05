@@ -15,5 +15,6 @@ key_quotes:
 - This difference comes from more efficient models and hardware compared to early
   2023, and an overly pessimistic estimate of token counts in the original estimate.
 source_type: tertiary
+independence: unknown
 ---
 The article provides a detailed breakdown of the compute and energy costs associated with LLM inference, specifically using GPT-4o and Nvidia H100 GPUs as reference points. It also discusses the impact of input length and the differences in energy consumption between standard and reasoning models.

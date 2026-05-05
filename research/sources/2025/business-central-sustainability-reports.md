@@ -13,5 +13,6 @@ key_quotes:
 - Sustainability reporting gives finance professionals insights and statistics about
   current and past sustainability investments and emissions.
 source_type: primary
+independence: first-party
 ---
 This documentation describes the standard sustainability reports available in Business Central, including Total Emissions, Emission Per Facility, and Emission By Category. It also explains how to track specific items of concern to monitor carbon footprints.

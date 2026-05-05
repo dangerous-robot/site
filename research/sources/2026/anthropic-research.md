@@ -12,5 +12,6 @@ key_quotes:
   of AI models – so that artificial intelligence has a positive impact as it becomes
   increasingly capable.
 source_type: primary
+independence: first-party
 ---
 The page outlines the structure of Anthropic's research organization, including teams dedicated to Alignment, Economic Research, Interpretability, and Societal Impacts. It provides a chronological list of recent publications and experimental projects.

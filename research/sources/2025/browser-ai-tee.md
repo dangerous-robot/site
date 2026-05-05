@@ -14,5 +14,6 @@ key_quotes:
   AI assistants, in effect transitioning from the “trust me bro” process to the privacy-by-design
   approach... “trust but verify”.
 source_type: tertiary
+independence: unknown
 ---
 The post details the integration of Confidential LLM Computing to ensure that user data remains private and that the requested model is the one actually running. Initial implementation focuses on DeepSeek V3.1 within the Brave Nightly channel.

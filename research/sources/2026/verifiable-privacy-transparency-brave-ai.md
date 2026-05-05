@@ -8,5 +8,6 @@ kind: blog
 summary: This source is unavailable. Multiple attempts to fetch the URL and its variations,
   including Wayback Machine checks, resulted in 404 Not Found errors.
 source_type: tertiary
+independence: unknown
 ---
 The provided URL and likely permutations were not accessible. No content could be retrieved from the live site or the Wayback Machine.

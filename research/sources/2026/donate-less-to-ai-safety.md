@@ -16,5 +16,6 @@ key_quotes:
   in all of 2025.'
 - Legislation is what makes technical safety advances mandatory for frontier labs.
 source_type: tertiary
+independence: unknown
 ---
 The author analyzes the funding imbalance between technical AI safety research (c3) and political advocacy (c4). It provides a mathematical formula for calculating equivalent personal costs for c4 donations and recommends specific advocacy organizations.

@@ -15,5 +15,6 @@ key_quotes:
   misuse domains," reflecting concerns about systems capable of taking multi-step
   actions
 source_type: secondary
+independence: independent
 ---
 The program runs from September 2026 to February 2027. It provides external researchers with stipends, model access, and technical support to study alignment and safety.

@@ -15,5 +15,6 @@ key_quotes:
 - ChatGPT’s yearly energy usage to handle prompts could power Brazil, which consumed
   760.83 terra-watt-hours in 2024, for over 10 days.
 source_type: secondary
+independence: independent
 ---
 The article estimates the energy requirements for GPT-5 and subsequent iterations, contrasting the power consumption of AI inference with traditional search engines. It also analyzes OpenAI's potential subscription revenue relative to these energy costs.

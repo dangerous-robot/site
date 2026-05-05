@@ -14,5 +14,6 @@ key_quotes:
   and researchers to investigate some of Anthropic’s highest priority AI safety research
   questions.
 source_type: primary
+independence: first-party
 ---
 The post outlines the goals, research areas, and application requirements for the program's May and July 2026 cohorts. It highlights previous successes in areas such as security, interpretability, and model organisms.

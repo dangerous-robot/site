@@ -17,5 +17,6 @@ key_quotes:
   opening doors for 'impact washing'—where companies might project an image of social
   responsibility without substantial changes in practice.
 source_type: secondary
+independence: independent
 ---
 The article discusses OpenAI's strategic shift to a Public Benefit Corporation (PBC) model. It examines the operational, financial, and ethical implications of this transition, including potential challenges regarding 'impact washing'.

@@ -8,5 +8,6 @@ kind: index
 summary: A landing page for a ChatGPT custom GPT focused on sustainable living and
   practices.
 source_type: primary
+independence: first-party
 ---
 This page serves as the entry point for a specialized AI assistant designed to provide guidance on sustainability.

@@ -16,5 +16,6 @@ key_quotes:
   in support of its mission to educate the public on AI policy and promote safe and
   responsible AI.
 source_type: secondary
+independence: independent
 ---
 The article examines the funding restrictions on Anthropic's contribution to Public First Action and compares the group's financial capacity to its rival, Leading the Future. It highlights the distinction between public policy education and direct electoral political activity.

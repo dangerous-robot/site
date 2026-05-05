@@ -9,5 +9,6 @@ summary: Daniela Amodei, president and co-founder of Anthropic, discusses the us
   of a public benefit corporation structure to support the development of ethical
   AI.
 source_type: secondary
+independence: independent
 ---
 The video features a presentation by Daniela Amodei regarding Anthropic's organizational framework. It focuses on the intersection of corporate governance and AI ethics.

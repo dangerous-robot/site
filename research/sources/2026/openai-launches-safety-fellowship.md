@@ -17,5 +17,6 @@ key_quotes:
   “high-severity misuse domains,” reflecting concerns about systems capable of taking
   multi-step actions with limited human intervention.
 source_type: secondary
+independence: independent
 ---
 The program will run from September 2026 to February 2027, providing stipends and model access to external researchers. It reflects a broader trend of AI labs like Anthropic and Google funding external safety research.

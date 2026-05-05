@@ -9,5 +9,6 @@ summary: Comparison of OpenAI API models, including GPT-5.5, GPT-5.5 pro, and GP
   detailing pricing, context windows, knowledge cutoffs, and rate limits.
 key_quotes: []
 source_type: primary
+independence: first-party
 ---
 The page provides a technical comparison of current OpenAI models. It specifically lists specifications for GPT-5.5, GPT-5.5 pro, and GPT-5.4.

@@ -17,5 +17,6 @@ key_quotes:
 - Anthropic is a Public Benefit Corporation, whose purpose is the responsible development
   and maintenance of advanced AI for the long-term benefit of humanity.
 source_type: primary
+independence: first-party
 ---
 The page details Anthropic's approach to AI safety, its interdisciplinary team structure, and its operational values. It also lists the current Board of Directors and the Long-Term Benefit Trust trustees.

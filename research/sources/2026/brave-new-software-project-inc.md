@@ -11,5 +11,6 @@ key_quotes:
 - Audit identified substantial doubt about this organization’s ability to meet its
   financial obligations and continue operating for the foreseeable future.
 source_type: secondary
+independence: independent
 ---
 This page provides a financial overview of Brave New Software Project Inc based on Form 990 filings from 2014 to 2024. It includes details on revenue, expenses, and executive compensation.

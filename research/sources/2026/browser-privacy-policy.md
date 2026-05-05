@@ -13,5 +13,6 @@ key_quotes:
 - Brave does not have access to your information, your browsing history, or any details
   that can be used to identify or profile you. This is by design.
 source_type: primary
+independence: first-party
 ---
 This document outlines how Brave Software Inc handles user data across various features including Brave Rewards, Brave Leo AI, and Brave Wallet. It specifies the types of personal data processed and the legal basis for such processing.

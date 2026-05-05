@@ -14,5 +14,6 @@ key_quotes:
 - Generative AI systems, on the other hand, are probabilistic. This means that running
   the same input twice may provide different outputs.
 source_type: primary
+independence: first-party
 ---
 The post explains the distinction between traditional and AI red teaming, highlighting the need for defense-in-depth strategies and iterative testing due to the probabilistic nature of generative AI.

@@ -8,5 +8,6 @@ kind: report
 summary: A report by the OpenAI Nonprofit Commission regarding the organization's
   nonprofit structure and governance.
 source_type: primary
+independence: first-party
 ---
 This document is a PDF report published by OpenAI. It outlines the findings and recommendations of the Nonprofit Commission.

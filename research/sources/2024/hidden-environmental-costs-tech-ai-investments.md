@@ -13,5 +13,6 @@ key_quotes:
 - Disclosing the energy consumption of investees’ GHG emissions is a critical step
   toward comprehensive environmental accountability.
 source_type: tertiary
+independence: unknown
 ---
 The author examines how Microsoft, Alphabet, Amazon, and Meta report greenhouse gas emissions related to AI. It specifically discusses the challenge of accounting for Scope 3 emissions from private AI partnerships like OpenAI and Anthropic.

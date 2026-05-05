@@ -14,5 +14,6 @@ key_quotes:
 - The free version of Brave Leo doesn’t even ask you to create an account, which is
   part of Brave's effort to keep your conversations anonymous and your data yours.
 source_type: secondary
+independence: independent
 ---
 The article evaluates Brave Leo's capabilities for individual productivity and contrasts them with the requirements of business support teams. It details the technical privacy measures used by the browser to anonymize requests.

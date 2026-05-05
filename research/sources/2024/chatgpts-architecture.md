@@ -15,5 +15,6 @@ key_quotes:
 - OpenAI employs a technique called Reinforcement Learning from Human Feedback (RLHF)
   to fine-tune ChatGPT.
 source_type: secondary
+independence: independent
 ---
 The article provides a technical breakdown of the Generative Pre-trained Transformer architecture and its application in ChatGPT. It details the progression from GPT-1 through GPT-3.5 and explains the mechanism of self-attention.

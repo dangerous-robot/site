@@ -14,5 +14,6 @@ key_quotes:
   execution, while human operators retain control over objectives, targeting, and
   deployment decisions.
 source_type: primary
+independence: first-party
 ---
 The report details specific AI-enabled tactics used by North Korean threat actors such as Jasper Sleet and Coral Sleet. It provides mitigation guidance and identifies emerging trends in agentic AI.

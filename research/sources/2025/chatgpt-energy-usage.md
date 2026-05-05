@@ -12,5 +12,6 @@ key_quotes:
 - We find that typical ChatGPT queries using GPT-4o likely consume roughly 0.3 watt-hours,
   which is ten times less than the older estimate.
 source_type: secondary
+independence: independent
 ---
 The article details the methodology used to estimate the energy cost of LLM inference, accounting for parameter counts, hardware efficiency (H100 GPUs), and token lengths.

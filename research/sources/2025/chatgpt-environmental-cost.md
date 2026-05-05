@@ -15,5 +15,6 @@ key_quotes:
 - certain types of AI prompts—especially long or complex ones—can use up to 50 times
   more energy than simpler requests
 source_type: secondary
+independence: independent
 ---
 The article discusses the scaling of OpenAI's ChatGPT and the associated resource demands of large language models. It highlights the specific metrics of per-query electricity and water consumption.

@@ -15,5 +15,6 @@ key_quotes:
 - Brave is working to ensure you retain full control of your AI’s activities.
 - AI that adapts to your workflow, not the other way around
 source_type: tertiary
+independence: unknown
 ---
 The post outlines the evolution of the Leo AI assistant from its initial launch to a comprehensive roadmap including agentic AI and on-device capabilities. It emphasizes a privacy-first architecture with zero data retention.

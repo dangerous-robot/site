@@ -16,5 +16,6 @@ key_quotes:
 - The o-series models are engineered specifically for advanced reasoning, featuring
   extra-large context windows and high output limits for extended problem solving.
 source_type: secondary
+independence: independent
 ---
 The article provides a comprehensive breakdown of the ChatGPT model portfolio as of early 2026. It details the specific use cases, context windows, and subscription requirements for various model versions.

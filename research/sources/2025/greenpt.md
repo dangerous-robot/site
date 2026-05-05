@@ -12,5 +12,6 @@ key_quotes:
   a minimal environmental footprint.
 - We host only models locally on our servers – we don’t use any external APIs or services.
 source_type: primary
+independence: first-party
 ---
 The page describes a sustainable AI ecosystem featuring AI Chat, API access, and a privacy-first search engine. It details the use of self-hosted open-source models and infrastructure powered by renewable energy.

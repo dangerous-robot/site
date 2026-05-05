@@ -11,5 +11,6 @@ key_quotes:
 - I understand that using an AI system requires more energy than regular search functions
   and its something always felt guilty about
 source_type: tertiary
+independence: unknown
 ---
 The post is a discussion thread from the r/OpenAI subreddit. It initiates a conversation about the environmental impact of generative AI.

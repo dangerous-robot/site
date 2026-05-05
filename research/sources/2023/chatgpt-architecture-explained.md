@@ -12,5 +12,6 @@ key_quotes:
 - ChatGPT’s neural network takes in a string of text as input and generates a response
   as output.
 source_type: secondary
+independence: independent
 ---
 The article describes the basic functioning of ChatGPT as a neural language model. It explains how text inputs are encoded into numerical data for processing by the network.

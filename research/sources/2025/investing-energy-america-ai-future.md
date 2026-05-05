@@ -14,5 +14,6 @@ key_quotes:
   shape the future of global innovation, economic competitiveness, and democratic
   values.
 source_type: primary
+independence: first-party
 ---
 Anthropic's funding is split between the Scott Institute for Energy Innovation and the picoCTF program. The initiative aims to secure energy infrastructure and optimize grid management using AI.

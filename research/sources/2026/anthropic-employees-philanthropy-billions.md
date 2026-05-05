@@ -15,5 +15,6 @@ key_quotes:
 - EA, and its approach to giving, will inevitably have an outsized influence on where
   the philanthropic capital from Anthropic’s newly wealthy employees flows.
 source_type: secondary
+independence: independent
 ---
 The article examines the financial windfall facing Anthropic employees following a high valuation and potential IPO. It explores the influence of Effective Altruism (EA) on their giving patterns and the risks of groupthink in AI safety funding.

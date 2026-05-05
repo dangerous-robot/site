@@ -12,5 +12,6 @@ key_quotes:
 - Organizations can generate quantitative reports that extract emissions, water, and
   waste data from Microsoft Sustainability Manager.
 source_type: primary
+independence: first-party
 ---
 This documentation provides a step-by-step guide on configuring report types, selecting data categories, and managing report versions for public disclosure.

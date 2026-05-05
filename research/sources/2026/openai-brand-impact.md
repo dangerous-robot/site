@@ -7,5 +7,6 @@ accessed_date: '2026-05-02'
 kind: index
 summary: Sustainability scoring and brand impact analysis for OpenAI.
 source_type: secondary
+independence: independent
 ---
 The page provides sustainability metrics and impact scores for OpenAI. The live version requires JavaScript for content rendering.

@@ -18,5 +18,6 @@ key_quotes:
 - Brave’s transparency mechanism allows users to verify which model is being used,
   helping counter this practice and supporting accountability.
 source_type: secondary
+independence: independent
 ---
 The feature utilizes NEAR AI infrastructure and Nvidia's Hopper GPU architecture to isolate AI inference in secure enclaves. Initial rollout is available for the DeepSeek V3.1 model in Brave Nightly.

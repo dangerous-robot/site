@@ -14,5 +14,6 @@ key_quotes:
 - All requests are proxied through an anonymization server so the request and user
   cannot be linked.
 source_type: tertiary
+independence: unknown
 ---
 The post details the features of Leo on Android, including page summarization, translation, and coding capabilities. It explains the privacy architecture using reverse proxies and the availability of different LLMs.

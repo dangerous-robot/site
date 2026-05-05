@@ -14,5 +14,6 @@ key_quotes:
 - AI features in Brave are designed to minimize data exposure, with requests proxied
   and not tied to user identity.
 source_type: secondary
+independence: independent
 ---
 The source provides financial and operational data for Brave Software, including its $42M total funding. It also discusses the company's shift toward monetizing AI features via a subscription model for its AI assistant, Leo.

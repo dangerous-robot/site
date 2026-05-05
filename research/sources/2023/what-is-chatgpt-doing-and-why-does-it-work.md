@@ -18,5 +18,6 @@ key_quotes:
   irreducibility implies that ultimately there’s a limit to what regularities there
   may be.
 source_type: secondary
+independence: independent
 ---
 This article provides a high-level conceptual overview of how large language models function, moving from simple n-gram statistics to complex neural networks. It emphasizes the empirical nature of current AI training and the theoretical boundaries of learning.

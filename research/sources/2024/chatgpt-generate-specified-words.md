@@ -12,5 +12,6 @@ key_quotes:
 - I’ve since discovered that the way in which ChatGPT tokenizes words and isn’t in
   fact able to “read” them makes this particularly challenging.
 source_type: primary
+independence: first-party
 ---
 The thread focuses on the limitations of Large Language Models in adhering to strict word-list constraints. The user explores various prompting techniques and Python script generation to overcome tokenization issues.

@@ -11,5 +11,6 @@ key_quotes:
 - By 2030, we’ll be carbon negative. By 2050, we’ll remove our historical emissions
   since our founding in 1975.
 source_type: primary
+independence: first-party
 ---
 The page outlines Microsoft's strategic sustainability goals and current progress across carbon, water, waste, and ecosystem preservation. It also highlights the $1 billion Climate Innovation Fund and the use of AI for sustainability.

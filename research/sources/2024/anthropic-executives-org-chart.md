@@ -12,5 +12,6 @@ key_quotes:
 - The leadership team at Anthropic is the driving force behind the company's strategic
   direction and key decision-making.
 source_type: secondary
+independence: independent
 ---
 The page provides a biographical overview of Anthropic's core leadership, including CEO Dario Amodei and other co-founders. It outlines the company's organizational hierarchy and the specific responsibilities of its executive team.
