@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:37:22.036764+00:00'
+  ran_at: '2026-05-05T17:51:15.903718+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,47 +15,55 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - Brave Software environmental donations report
-  - Brave Software sustainability initiatives
-  - Brave Software charitable giving environmental impact
-  planner_rationale: 'These queries aim to find official reports or articles detailing
-    Brave Software''s financial contributions and environmental programs. The variations
-    target different aspects of the claim: a direct report, general sustainability
-    efforts, and the impact of charitable donations.'
-  candidates_seen: 21
-  urls_kept: 12
-  urls_dropped: 8
-  scorer_rationale: The claim is that Brave Software donates to environmental causes.
-    Several candidates mention donations or environmental initiatives, such as Brave's
-    partnership with Ecosia, donations from users of Brave Rewards, and Brave's sustainability
-    reports. Other candidates are related to Brave's funding, technology, or other
-    aspects of the company, making them less relevant. I've included those with clear
-    mentions of donations, sustainability reports, or environmental impact in the
-    'kept' list.
-  urls_after_blocklist: 4
+  - Brave Software environmental donations
+  - Brave Foundation environmental initiatives
+  - Brave Software sustainability commitments
+  - Brave Leo AI environmental impact
+  - Brave Software corporate social responsibility
+  planner_rationale: These queries aim to find information about Brave Software's
+    financial contributions to environmental causes, focusing on the Brave Foundation
+    and specific initiatives like Leo AI. The queries also look into broader CSR efforts
+    and sustainability commitments to corroborate the claim.
+  candidates_seen: 38
+  urls_kept: 16
+  urls_dropped: 13
+  scorer_rationale: The claim is about Brave Software's donations to environmental
+    causes. Candidates are scored based on whether they directly address this or provide
+    relevant information. Candidates with primary or secondary publisher quality are
+    prioritized. Forum candidates are generally lower scoring unless no higher-quality
+    options exist. Several candidates discuss Brave's philanthropic efforts, sustainability
+    initiatives, and AI assistant Leo's potential environmental impacts. Those explicitly
+    mentioning donations or environmental responsibility are highly relevant.  Candidates
+    related to funding rounds or general company profiles are less relevant but still
+    provide some context. The Reddit thread is tangentially related, discussing trust
+    in the company, but does not contain specific evidence of donations. The Wikipedia
+    page provides background information but isn't a primary source of evidence for
+    donations. The Brave website and blog are relevant, as they directly discuss the
+    company's initiatives. The other candidates are either too tangential or unrelated.
+  urls_after_blocklist: 16
 sources_consulted:
-- id: 2026/brave-new-software-project-inc
-  url: https://projects.propublica.org/nonprofits/organizations/273272909
-  title: Brave New Software Project Inc
+- id: 2026/foundation
+  url: https://www.braveblue.world/foundation
+  title: Foundation
   ingested: true
-- id: 2026/transparency-data-feed
-  url: https://brave.com/transparency/
-  title: Transparency Data Feed
+- id: 2026/the-brave-foundation
+  url: https://www.thebravefoundation.net/
+  title: Home
   ingested: true
-- id: 2022/crypto-philanthropy-force-for-good
-  url: https://brave.com/podcast/s4-e5/
-  title: 'Crypto Philanthropy: Using Crypto as a Force for Good'
+- id: 2025/io-cardano
+  url: https://brave.com/blog/io-cardano/
+  title: Input | Output Partners with Brave to Integrate Cardano into Brave Wallet
   ingested: true
 audit:
   analyst_verdict: unverified
   auditor_verdict: 'true'
-  analyst_confidence: medium
-  auditor_confidence: high
+  analyst_confidence: high
+  auditor_confidence: low
   verdict_agrees: false
   confidence_agrees: false
   needs_review: true
 human_review:
-  reviewed_at: '2026-04-30'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

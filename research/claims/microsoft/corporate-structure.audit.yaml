@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-01T05:47:02.322382+00:00'
+  ran_at: '2026-05-05T17:38:48.499932+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,53 +15,45 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"Microsoft" corporate structure legal documents'
-  - '"Microsoft" ownership structure SEC filings'
-  - independent analysis Microsoft corporate governance model
-  - '"Microsoft" employee ownership program details'
+  - Microsoft corporate structure details
+  - Microsoft ownership model information
+  - Microsoft stock ownership structure
+  - Microsoft B-corp status verification
+  - Microsoft steward-ownership model details
   planner_rationale: The claim asks about Microsoft's corporate structure. The queries
-    are designed to find official legal documents (SEC filings) that detail the structure,
-    independent analyses of that structure, and specific details about any employee
-    ownership programs. This targets primary and secondary sources to verify or refute
-    the claim.
-  candidates_seen: 30
-  urls_after_blocklist: 8
+    are designed to directly find information about the company's structure, ownership,
+    and whether it aligns with various corporate models (B-corp, steward-ownership).
+    Some queries focus on general structure, while others target specific models to
+    verify or refute the claim.
+  candidates_seen: 38
+  urls_kept: 24
+  urls_dropped: 0
+  scorer_rationale: The claim asks about Microsoft's corporate structure. The kept
+    candidates provide information on Microsoft's organizational structure, governance,
+    ownership, and B Corp/Steward-ownership status. These sources offer direct or
+    specific details relevant to the claim. The dropped candidates are not directly
+    relevant to the structure, ownership, or governance of Microsoft.
+  urls_after_blocklist: 24
 sources_consulted:
-- id: 2026/legal-resources
-  url: https://www.microsoft.com/en-us/legal
-  title: Legal Resources
+- id: 2026/who-owns-microsoft
+  url: https://www.untaylored.com/post/who-owns-microsoft
+  title: Who Owns Microsoft? The Tech Giant's Major Shareholders and Ownership Structure
   ingested: true
-- id: 2026/microsoft-corporate-governance-framework
-  url: https://www.microsoft.com/en-us/investor/corporate-governance/framework
-  title: Corporate Governance Framework
+- id: 2026/certification
+  url: https://www.bcorporation.net/en-us/certification/
+  title: About B Corp Certification
   ingested: true
-- id: 2026/corporate-governance-policies
-  url: https://www.microsoft.com/en-us/investor/corporate-governance/policies
-  title: Corporate Governance Policies and Guidelines
-  ingested: true
-- id: 2022/legal-matter-management-sharepoint-m365
-  url: https://www.oneplacesolutions.com/how-to-build-a-legal-matter-management-sharepoint-solution-on-microsoft-365.html
-  title: How to build a Legal Matter Management SharePoint solution on Microsoft 365
-  ingested: true
-- id: 2026/microsoft-organizational-structure-overview
-  url: https://www.scribd.com/document/427180648/Structure
-  title: Microsoft Organizational Structure Overview
-  ingested: true
-- id: 2026/microsoft-organization-charts
-  url: https://lexchart.com/microsoft/
-  title: Microsoft Organization Charts - Ownership Structure and Governance
-  ingested: true
-- id: 2026/microsoft-corporation-org-chart
-  url: https://bullfincher.io/companies/microsoft-corporation/org-chart
-  title: Microsoft Corporation Org Chart
+- id: 2026/pending-b-corps
+  url: https://www.bcorporation.net/en-us/programs-and-tools/pending-b-corps/
+  title: Pending B Corp program for start-ups and smaller companies
   ingested: true
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
   analyst_confidence: high
-  auditor_confidence: high
+  auditor_confidence: medium
   verdict_agrees: true
-  confidence_agrees: true
+  confidence_agrees: false
   needs_review: false
 human_review:
   reviewed_at: '2026-05-01'

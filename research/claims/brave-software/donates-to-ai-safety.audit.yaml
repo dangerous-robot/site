@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:36:46.740677+00:00'
+  ran_at: '2026-05-05T17:50:28.302213+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,43 +15,32 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - brave software ai safety donations report
-  - brave software philanthropic activities artificial intelligence
-  - brave software ai safety involvement independent analysis
-  planner_rationale: These queries aim to find verifiable information about Brave
-    Software's financial contributions to AI safety. The first query searches for
-    official reports, the second broadens the search to philanthropic activities including
-    AI, and the third seeks independent analyses of their involvement to avoid biased
-    sources.
-  candidates_seen: 21
-  urls_kept: 9
-  urls_dropped: 12
-  scorer_rationale: The claim is about Brave Software's donations to AI safety causes.
-    Candidates 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are relevant
-    as they discuss Brave's AI initiatives, including the Brave AI Lab and AI browsing
-    features, and some touch upon security aspects. Candidates 16 and 17 are relevant
-    as they discuss AI and philanthropy, which is a potential area for donations.
-    The remaining candidates are less relevant as they focus on browser security,
-    general AI trends, or the company's overall safety practices rather than specific
-    donation activities.
-  urls_after_blocklist: 4
+  - Brave Software AI safety donations
+  - Brave's Leo AI safety commitments
+  - Brave Software philanthropic investments AI
+  - Brave Shields AI safety initiatives
+  - Brave Software AI safety policy
+  planner_rationale: These queries aim to find evidence of Brave Software's financial
+    support for AI safety. They vary by directly asking about donations, referencing
+    their AI initiatives (Leo and Shields), and inquiring about their broader philanthropic
+    policy related to AI. The queries prioritize direct information about Brave's
+    actions and stances.
+  candidates_seen: 31
+  urls_kept: 26
+  urls_dropped: 0
+  scorer_rationale: The prompt asks for relevance scoring of search results to the
+    claim 'Brave Software donates to AI safety causes'.  I'm evaluating each title
+    and snippet individually.  I'm looking for explicit mentions of donations to AI
+    safety. Some sources mention AI-related features or the company's overall commitment
+    to AI, but not specifically donations to AI safety causes. Several sources mention
+    donations to Brave-Origin, which is a different topic.  I'm using publisher quality
+    as a tiebreaker, preferring primary sources.  I'm excluding sources that are tangentially
+    related or irrelevant to the claim. I've included all URLs from the input.
+  urls_after_blocklist: 24
 sources_consulted:
-- id: 2025/ai-safety-scam-tactics-threat-mitigation
-  url: https://brave.com/podcast/e83/
-  title: AI Safety, Scam Tactics and Threat Mitigation
-  ingested: true
-- id: 2024/harmonizing-ai-and-philanthropy
-  url: https://www.geofunders.org/news/harmonizing-ai-and-philanthropy-running-to-or-running-from-a-brave-new-world/
-  title: 'Harmonizing AI and Philanthropy: Running To or Running From a Brave New
-    World'
-  ingested: true
-- id: 2026/brave-ai
-  url: https://brave.com/ai/
-  title: Brave AI
-  ingested: true
-- id: 2026/brave-ai-lab
-  url: https://braveailab.com/
-  title: Brave AI Lab
+- id: 2026/652534
+  url: https://community.brave.app/t/donations-for-brave-origin/652534
+  title: Donations for Brave-Origin
   ingested: true
 audit:
   analyst_verdict: unverified

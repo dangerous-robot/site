@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T02:20:35.039622+00:00'
+  ran_at: '2026-05-05T17:43:55.475604+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -17,69 +17,54 @@ research:
   queries:
   - Anthropic AI safety donations
   - Anthropic funding AI safety research
-  - Anthropic commitments AI safety
-  - Anthropic's AI safety initiatives
-  - Anthropic external funding AI safety
-  planner_rationale: These queries aim to find verifiable information about Anthropic's
-    financial contributions and involvement in AI safety. They vary in phrasing to
-    capture different aspects of the claim, including direct donations, research funding,
-    and overall commitments. The queries prioritize finding information directly related
-    to Anthropic and AI safety, avoiding broad or opinion-based results.
-  candidates_seen: 27
-  urls_kept: 27
-  urls_dropped: 0
-  scorer_rationale: The prompt asks to score candidates for relevance to the claim
-    'Anthropic donates to AI safety causes'. I have scored each candidate based on
-    the title and snippet. Candidates mentioning donations, safety, or fellowships
-    related to Anthropic are considered relevant. The candidates are scored based
-    on how directly and explicitly they address the claim. All URLs are included in
-    either the kept or dropped lists.
-  urls_after_blocklist: 24
+  - Anthropic commitment AI safety
+  - Anthropic philanthropic AI safety
+  - Anthropic AI safety initiatives
+  planner_rationale: These queries aim to find direct evidence of Anthropic's financial
+    support for AI safety causes. They vary by using different keywords – 'donations',
+    'funding', 'commitment', and 'initiatives' – to capture different ways Anthropic
+    might engage with safety efforts. The queries avoid broad terms to focus on specific
+    actions and funding related to AI safety.
+  candidates_seen: 26
+  urls_kept: 11
+  urls_dropped: 12
+  scorer_rationale: The claim is about Anthropic's donations to AI safety causes.
+    I've scored candidates based on whether they directly address this or provide
+    relevant supporting details. I've prioritized primary sources (company statements,
+    official announcements) and then secondary sources (news articles) and forums.
+    Candidates with a publisher quality of 'primary' are considered more relevant.
+    I've included the Anthropic company website and news releases as highly relevant.
+    The Reddit and EA Forum posts are tangentially related but provide context. Wikipedia
+    is useful for background information.
+  urls_after_blocklist: 11
 sources_consulted:
-- id: 2026/anthropic-public-first-donation-restrictions
-  url: https://www.transformernews.ai/p/anthropic-super-pac-donations-public-first-leading-the-future-brad-carson
-  title: Anthropic’s donations can’t be used to influence elections — despite what
-    everyone thought
+- id: 2026/anthropic-safety-policy-change
+  url: https://www.cnn.com/2026/02/25/tech/anthropic-safety-policy-change
+  title: Anthropic ditches its core safety promise in the middle of an AI red line
+    fight with the Pentagon
   ingested: true
-- id: 2026/anthropic-employees-philanthropy-billions
-  url: https://www.transformernews.ai/p/anthropic-employees-philanthropy-billions-donations-effective-altruism-coefficient-giving-ai-safety
-  title: Anthropic employees say they’ll give away billions. Where will it go?
+- id: 2026/donate-public-first-action
+  url: https://www.anthropic.com/news/donate-public-first-action
+  title: Anthropic is donating $20 million to Public First Action
   ingested: true
-- id: 2024/anthropic-fellows-program
-  url: https://alignment.anthropic.com/2024/anthropic-fellows-program/
-  title: Introducing the Anthropic Fellows Program
+- id: 2026/roadmap
+  url: https://www.anthropic.com/responsible-scaling-policy/roadmap
+  title: Frontier Safety Roadmap
   ingested: true
-- id: 2026/anthropic-company
-  url: https://www.anthropic.com/company
-  title: Company
-  ingested: true
-- id: 2025/donate-less-to-ai-safety
-  url: https://forum.effectivealtruism.org/posts/HuyZE6xFfebv7ByXC/donate-less-to-ai-safety
-  title: Stop Donating to AI Safety Research*
-  ingested: true
-- id: 2026/anthropic-fellows-program-2026
-  url: https://alignment.anthropic.com/2025/anthropic-fellows-program-2026/
-  title: 'Anthropic Fellows Program for AI safety research: applications open for
-    May & July 2026'
-  ingested: true
-- id: 2025/anthropic-fellows-program
-  url: https://x.com/AnthropicAI/status/1985505322522296542
-  title: Anthropic Fellows Program Announcement
-  ingested: true
-- id: 2026/anthropic-fellows-program
-  url: https://job-boards.greenhouse.io/anthropic/jobs/5023394008
-  title: Anthropic Fellows Program
+- id: 2026/voluntary-commitments
+  url: https://www.anthropic.com/voluntary-commitments
+  title: Voluntary Commitments
   ingested: true
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
-  analyst_confidence: high
-  auditor_confidence: high
+  analyst_confidence: low
+  auditor_confidence: low
   verdict_agrees: true
   confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

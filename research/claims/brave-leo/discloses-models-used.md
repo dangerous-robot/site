@@ -1,16 +1,27 @@
 ---
 title: Brave Leo discloses which models it uses
 entity: products/brave-leo
-topics:
-- ai-safety
+topics: [ai-safety]
 verdict: 'true'
-confidence: medium
+confidence: high
+verification_level: multiply-verified
+takeaway: Brave Leo’s built‑in transparency lets users see exactly which LLM is powering
+  their chat.
+seo_title: ''
 criteria_slug: discloses-models-used
-status: published
-as_of: '2026-04-30'
+status: draft
+as_of: '2026-05-05'
 sources:
-- 2026/verifiable-privacy-transparency-brave-ai
+- 2025/browser-ai-tee
+- 2026/browser-privacy-policy
+- 2026/brave-leo-ai
 - 2024/leo-android
+- 2024/byom-nightly
+- 2024/rtx-ai-brave-browser
+- 2025/leo-roadmap-2025-update
+- 2025/brave-leo-deep-dive
 - 2025/brave-leo-cryptographic-privacy
+- 2025/brave-leo-trusted-execution-environments
+tags: []
 ---
-Both Brave's own announcement and third‑party reporting indicate that Leo explicitly informs users about the underlying large language models. The Android launch note lists available models such as Mixtral 8x7B, showing that Brave publishes the options it supports ("Leo—Brave’s privacy-preserving AI assistant—now available on Android"). Additionally, CyberInsider reports that Leo's new transparency mechanism lets users verify which model is being used, confirming that model disclosure is a built‑in feature ("Brave’s AI assistant Leo now offers cryptographically proven privacy"). Together these sources substantiate the claim that Brave Leo discloses the models it employs.
+Brave’s Leo assistant explicitly states the LLMs it runs. The Brave blog on verifiable privacy notes that the initial implementation in the Nightly channel runs DeepSeek V3.1【2025/browser-ai-tee】. A separate Brave blog announcing the Android release says the default LLM on mobile is Mixtral【2024/leo-android】. The company’s transparency mechanism, described by independent outlets CyberInsider and The Register, allows users to verify which model is being used in a given session【2025/brave-leo-cryptographic-privacy】【2025/brave-leo-trusted-execution-environments】. Together, these sources show that Brave Leo does disclose the specific models it employs, both for built‑in defaults and when users bring their own models via BYOM.

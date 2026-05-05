@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:43:47.620848+00:00'
+  ran_at: '2026-05-05T17:47:33.534466+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,46 +15,48 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - Brave Leo features limitations image generation
-  - Brave Leo developer documentation image generation capabilities
-  - Independent review Brave Leo image generation functionality
-  planner_rationale: These queries aim to find official documentation from Brave Leo's
-    developers, which would directly state their stance on image generation. The second
-    query seeks independent analysis or reviews that might have tested or commented
-    on this specific feature. The third query targets broader, unbiased reviews to
-    identify any limitations or exclusions regarding image generation.
-  candidates_seen: 12
+  - Brave Leo image generation capabilities
+  - Brave Leo LLM support image generation
+  - Brave Leo privacy image generation policy
+  - Brave Leo local models image generation
+  - Brave Leo limitations image generation
+  planner_rationale: These queries directly address the claim by investigating whether
+    Brave Leo offers image generation features. They explore different aspects, including
+    LLM support, privacy considerations, local model integration, and limitations.
+    The queries are crafted to find information from Brave's official documentation,
+    independent tech reviews, or technical analyses, avoiding potentially biased opinion
+    pieces.
+  candidates_seen: 19
   urls_kept: 12
-  urls_dropped: 0
-  scorer_rationale: The claim is that Brave Leo excludes image generation. Several
-    snippets directly address whether image generation is available in Leo. Some say
-    it is not supported in current models, while others mention future plans for image
-    generation. One snippet indicates that the models don't understand images. Therefore,
-    all listed candidates are relevant.
-  urls_after_blocklist: 4
+  urls_dropped: 9
+  scorer_rationale: The claim is 'Brave Leo excludes image generation'. Several candidates
+    directly address this, stating that image generation is a possible future feature
+    or is not currently available. Other candidates discuss features like text summarization,
+    content generation, and integration with other models, but don't directly confirm
+    the exclusion of image generation. Candidates from Reddit and forums are lower
+    quality and are considered less relevant than official Brave blog posts or help
+    center articles. Github issue is related to a bug. The publisher quality is considered
+    for tie-breaking.
+  urls_after_blocklist: 12
 sources_consulted:
-- id: 2026/brave-leo-ai
-  url: https://brave.com/leo/
-  title: Brave Leo AI
+- id: 2023/leo-roadmap
+  url: https://brave.com/blog/leo-roadmap/
+  title: 'The future of Leo: A roadmap for Brave’s built-in AI browser assistant'
   ingested: true
-- id: 2025/leo-roadmap-2025-update
-  url: https://brave.com/blog/leo-roadmap-2025-update/
-  title: 'Building Browser AI: Leo’s Development Progress and Plans'
-  ingested: true
-- id: 2025/image-generation-in-leo
-  url: https://community.brave.app/t/image-generation-in-leo/606611
-  title: Image generation in Leo
+- id: 2025/automatic-mode-leo
+  url: https://brave.com/blog/automatic-mode-leo/
+  title: 'Leo’s New Automatic Mode: Smarter AI That Adapts to Your Workflow'
   ingested: true
 audit:
-  analyst_verdict: mostly-true
+  analyst_verdict: unverified
   auditor_verdict: 'true'
-  analyst_confidence: medium
-  auditor_confidence: high
+  analyst_confidence: low
+  auditor_confidence: low
   verdict_agrees: false
-  confidence_agrees: false
-  needs_review: false
+  confidence_agrees: true
+  needs_review: true
 human_review:
-  reviewed_at: '2026-04-30'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

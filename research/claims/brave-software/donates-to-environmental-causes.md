@@ -1,16 +1,23 @@
 ---
 title: Brave Software donates to environmental causes
 entity: companies/brave-software
-topics:
-- environmental-impact
+topics: [environmental-impact]
 verdict: unverified
-confidence: medium
+confidence: high
+verification_level: multiply-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: donates-to-environmental-causes
-status: published
-as_of: '2026-04-30'
+status: draft
+as_of: '2026-05-05'
 sources:
-- 2026/brave-new-software-project-inc
-- 2026/transparency-data-feed
 - 2022/crypto-philanthropy-force-for-good
+- 2026/652534
+- 2026/brave-leo-ai
+- 2025/leo-roadmap-2025-update
+- 2026/foundation
+- 2026/the-brave-foundation
+- 2025/io-cardano
+tags: []
 ---
-The available sources describe Brave’s philanthropic activities, but none confirm that these donations are directed toward environmental causes. ProPublica’s filing on the nonprofit *Brave New Software Project Inc* shows the organization focuses on civil‑rights, social‑action, and free‑speech issues, with no mention of environmental work【Brave New Software Project Inc】. The *Transparency Data Feed* from Brave provides usage and token‑distribution metrics, not charitable‑giving details【Transparency Data Feed】. A Brave‑produced podcast on crypto philanthropy discusses the general use of cryptocurrency for charitable purposes, but it does not identify any environmental recipients or describe Brave Software itself making such donations【Crypto Philanthropy: Using Crypto as a Force for Good】. Because the sources discuss Brave’s broader charitable context without addressing environmental donations, the claim remains unverified.
+The available sources discuss several Brave‑affiliated initiatives, such as the Brave Blue World Foundation, which focuses on water‑related challenges, and The BRAVE Foundation, which works on mental‑health programs in Africa. However, none of the sources explicitly state that Brave Software makes donations to environmental causes, nor do they provide evidence of financial contributions to such causes. Consequently, the claim that Brave Software donates to environmental causes is not directly supported by the evidence.

@@ -1,75 +1,50 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T21:03:51.768596+00:00'
+  ran_at: '2026-05-05T17:54:40.519524+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
   - ingestor
-  - analyst
-  - auditor
 models_used:
   researcher: infomaniak:gemma3n
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
   queries:
-  - ChatGPT text-only capabilities
-  - ChatGPT image generation limitations
+  - ChatGPT limitations image generation
+  - ChatGPT text-based capabilities
   - OpenAI ChatGPT features overview
-  - ChatGPT planned image features timeline
-  - ChatGPT API image generation status
-  planner_rationale: These queries aim to verify the claim by exploring ChatGPT's
-    documented capabilities, limitations, and OpenAI's official statements regarding
-    image generation. The queries cover the general functionality, known restrictions,
-    future plans, and technical API aspects to provide a comprehensive understanding.
-  candidates_seen: 37
-  urls_after_blocklist: 24
+  - ChatGPT API image generation availability
+  - ChatGPT intended functionality text
+  planner_rationale: These queries aim to verify the claim by directly asking about
+    ChatGPT's image generation capabilities. They also explore the official documentation
+    and feature lists to confirm the exclusion. The queries also seek to understand
+    the intended purpose of the model.
+  candidates_seen: 36
+  urls_kept: 9
+  urls_dropped: 18
+  scorer_rationale: The claim is about ChatGPT excluding image generation. The relevant
+    candidates discuss ChatGPT's image generation capabilities, limitations, and updates.
+    Candidates 1, 2, 3, 4, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19 and 20 are all
+    directly relevant, discussing limitations, updates, or API access for image generation.
+    Candidates 5, 6, 8 and 21 are less relevant, discussing general information about
+    ChatGPT or its underlying technology, but not specifically addressing the exclusion
+    of image generation. The publisher quality is used as a tiebreaker where candidates
+    are similarly relevant.
+  urls_after_blocklist: 9
 sources_consulted:
-- id: 2024/chatgpt-generate-specified-words
-  url: https://community.openai.com/t/help-getting-chatgpt-to-generate-a-text-using-only-specified-words/584373
-  title: Getting ChatGPT to generate a text using only specified words
+- id: 2025/1321913
+  url: https://community.openai.com/t/image-generation-monthly-limits/1321913
+  title: Image Generation Monthly Limits
   ingested: true
-- id: 2023/why-cant-it-generate-only-text
-  url: https://www.reddit.com/r/ChatGPT/comments/18nmm2v/why_cant_it_generate_only_text/
-  title: Why can't it generate only text
+- id: 2025/openai-says-our-gpus-are-melting-as-it-limits-chatgpt-image-generation-requests
+  url: https://www.theverge.com/news/637542/openai-says-our-gpus-are-melting-as-it-limits-chatgpt-image-generation-requests
+  title: OpenAI says “our GPUs are melting” as it limits ChatGPT image generation
+    requests
   ingested: true
-- id: 2024/chatgpt-understand-text-discussion
-  url: https://philosophy.stackexchange.com/questions/108848/does-or-could-chatgpt-understand-text
-  title: Does or could ChatGPT understand text?
-  ingested: true
-- id: 2023/what-is-chatgpt-doing-and-why-does-it-work
-  url: https://writings.stephenwolfram.com/2023/02/what-is-chatgpt-doing-and-why-does-it-work/
-  title: What Is ChatGPT Doing … and Why Does It Work?
-  ingested: true
-- id: 2026/chatgpt-text-to-speech
-  url: https://murf.ai/blog/chatgpt-text-to-speech
-  title: 'ChatGPT Text to Speech: What It Is & How to Use It'
-  ingested: true
-- id: 2026/chatgpt-images-2-0-text-generation
-  url: https://techcrunch.com/2026/04/21/chatgpts-new-images-2-0-model-is-surprisingly-good-at-generating-text/
-  title: ChatGPT's new Images 2.0 model is surprisingly good at generating text
-  ingested: true
-- id: 2025/chatgpt-image-generation-limits-discussion
-  url: https://community.openai.com/t/why-is-chatgpt-limiting-the-number-of-images-i-try-to-generate-for-something-i-paid-for/1088555
-  title: Why is ChatGPT limiting the number of images I try to generate for something
-    I paid for?
-  ingested: true
-- id: 2025/chatgpt-plus-image-generation-limits-2026
-  url: https://www.glbgpt.com/hub/how-many-images-can-i-generate-with-chatgpt-5-1-5-0-plus-2025-full-guide/
-  title: How Many Images Can I Generate with ChatGPT 5.1 / 5.0 Plus? (2026 Full Guide)
-  ingested: true
-audit:
-  analyst_verdict: 'false'
-  auditor_verdict: mostly-true
-  analyst_confidence: high
-  auditor_confidence: medium
-  verdict_agrees: false
-  confidence_agrees: false
-  needs_review: true
+audit: null
 human_review:
-  reviewed_at: '2026-05-02'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

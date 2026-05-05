@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T20:57:00.934826+00:00'
+  ran_at: '2026-05-05T17:53:14.549254+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -16,67 +16,45 @@ research:
   mode: decomposed
   queries:
   - ChatGPT model disclosure policy
-  - OpenAI ChatGPT model information
-  - ChatGPT model versions available
-  - ChatGPT transparency model details
-  - ChatGPT model architecture specifics
-  planner_rationale: These queries aim to find official documentation from OpenAI
-    (the entity behind ChatGPT) regarding the models used. They also explore independent
-    reporting and analysis focusing on the specific model versions and architectural
-    details of ChatGPT, targeting transparency and technical specifications.
-  candidates_seen: 38
-  urls_kept: 26
+  - OpenAI ChatGPT model versions
+  - ChatGPT model architecture details
+  - ChatGPT transparency model usage
+  - ChatGPT model update history
+  planner_rationale: 'These queries aim to find official documentation or reports
+    from OpenAI regarding ChatGPT''s model usage. They cover different aspects of
+    disclosure: general policy, specific model versions, technical details of the
+    models, transparency efforts, and historical updates. The queries avoid opinion
+    pieces and focus on factual information related to ChatGPT''s model deployment.'
+  candidates_seen: 37
+  urls_kept: 22
   urls_dropped: 0
-  scorer_rationale: The claim asks which models ChatGPT uses. Several articles directly
-    address this, detailing different models like GPT-5.5, GPT-4o, and GPT-3.5, as
-    well as their release notes. Other articles discuss the underlying architecture
-    of ChatGPT. The publisher quality is generally primary or secondary. The forum
-    post is about the architecture and is scored low as it is a discussion rather
-    than a definitive source. The privacy policies detail data handling but don't
-    explicitly list models. The transparency articles discuss limitations and efforts
-    to improve transparency, but don't specify the models used. The rest of the articles
-    are either too general, focus on specific aspects like coding or personal data,
-    or are outdated.
-  urls_after_blocklist: 24
+  scorer_rationale: The claim asks which models ChatGPT uses. The candidates with
+    scores 4 or higher provide information about the models used in ChatGPT, including
+    past and current versions, and the architectures behind them. The publisher quality
+    is considered to be primary or secondary in most cases, which aligns with the
+    scoring guidelines. The timeline links and model release notes are particularly
+    relevant.
+  urls_after_blocklist: 22
 sources_consulted:
-- id: 2026/openai-models-documentation
-  url: https://developers.openai.com/api/docs/models
-  title: Models
+- id: 2023/978-1-4842-9994-44
+  url: https://link.springer.com/chapter/10.1007/978-1-4842-9994-4_4
+  title: 'The ChatGPT Architecture: An In-Depth Exploration of OpenAI’s Conversational
+    Language Model'
   ingested: true
-- id: 2026/all-models
-  url: https://developers.openai.com/api/docs/models/all
-  title: All models
+- id: 2023/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  url: https://datanorth.ai/blog/chatgpt-data-privacy-key-insights-on-security-and-privacy
+  title: 'ChatGPT Data Privacy: Key Insights on Security and Privacy'
   ingested: true
-- id: 2026/audit-chatgpt-data-privacy
-  url: https://www.techbuzz.ai/articles/how-to-audit-what-chatgpt-knows-about-you-and-reclaim-your-data-privacy
-  title: How to audit what ChatGPT knows about you - and reclaim your data privacy
-  ingested: true
-- id: 2026/chatgpt-available-models-comparison
-  url: https://www.datastudios.org/post/chatgpt-available-models-all-supported-models-version-differences-capabilities-comparison-and-ac
-  title: 'ChatGPT Available Models: All Supported Models, Version Differences, Capabilities
-    Comparison, And Access Requirements'
-  ingested: true
-- id: 2024/chatgpts-architecture
-  url: https://www.geeksforgeeks.org/nlp/chatgpts-architecture/
-  title: ChatGPT's Architecture
-  ingested: true
-- id: 2026/exploring-intricate-architecture-chat-gpt
-  url: https://www.gsdcouncil.org/blogs/exploring-the-intricate-architecture-of-chat-gpt
-  title: Exploring the Intricate Architecture of Chat GPT
-  ingested: true
-- id: 2023/chatgpt-architecture-specifics
-  url: https://datascience.stackexchange.com/questions/118273/specifics-about-chatgpts-architecture
-  title: Specifics about ChatGPT's Architecture
-  ingested: true
-- id: 2023/chatgpt-architecture-explained
-  url: https://www.scalablepath.com/machine-learning/chatgpt-architecture-explained
-  title: How Does ChatGPT Actually Work? An ML Engineer Explains
+- id: 2025/250218505
+  url: https://arxiv.org/abs/2502.18505
+  title: Comprehensive Analysis of Transparency and Accessibility of ChatGPT, DeepSeek,
+    And other SoTA Large Language Models
   ingested: true
 audit:
   analyst_verdict: 'true'
   auditor_verdict: mixed
   analyst_confidence: high
-  auditor_confidence: medium
+  auditor_confidence: low
   verdict_agrees: false
   confidence_agrees: false
   needs_review: true

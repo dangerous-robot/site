@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:40:57.753812+00:00'
+  ran_at: '2026-05-05T17:47:58.287530+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,47 +15,48 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"Brave Browser" data training policy'
-  - independent audit Brave Browser data usage
-  - Brave Foundation data privacy report
-  planner_rationale: These queries aim to find official documentation from Brave Browser
-    regarding their data training practices, independent security audits that might
-    have examined this, and reports published by the Brave Foundation, which could
-    offer insights into their data handling policies.
-  candidates_seen: 19
-  urls_kept: 6
-  urls_dropped: 13
-  scorer_rationale: The claim is whether Brave Leo uses user data for training. Several
-    snippets directly state that Brave does not use conversations for model training,
-    or does not log conversations. Some snippets mention Brave's overall privacy policy
-    and data collection practices, which are relevant but less direct. A few snippets
-    discuss potential data breaches or privacy concerns, but do not directly address
-    the training question. The Cambridge Analytica article suggests Brave collects
-    less data than Google but has some concerns. The other URLs are less relevant.
-  urls_after_blocklist: 4
-sources_consulted:
-- id: 2026/browser-privacy-policy
-  url: https://brave.com/privacy/browser/
-  title: Browser Privacy Policy
-  ingested: true
-- id: 2025/is-brave-browser-safe
-  url: https://www.expressvpn.com/blog/is-brave-browser-safe/
-  title: Is Brave browser safe? A practical guide to secure browsing
-  ingested: true
-- id: 2026/see-and-delete-your-data
-  url: https://brave.com/data-access/
-  title: See and delete your data
-  ingested: true
+  - Brave Leo data privacy policy
+  - Brave Leo LLM training data sources
+  - Brave Leo local model training
+  - Brave Labs Brave Leo privacy
+  - Brave Leo user data usage
+  planner_rationale: These queries aim to verify the claim by directly investigating
+    Brave Leo's official data privacy policy and how its underlying LLMs are trained.
+    Queries also look for information on local model training, which could be relevant
+    to the claim about not using user data.  Finally, the queries target Brave Labs,
+    the developer, and specifically address user data usage.
+  candidates_seen: 21
+  urls_kept: 21
+  urls_dropped: 0
+  scorer_rationale: The claim is whether Brave Leo uses user data for training. All
+    provided snippets indicate that Brave Leo does not use user data for training.
+    Several snippets explicitly state that conversations are not stored or logged,
+    and that no personal data is retained. The publisher quality is predominantly
+    secondary, with some forum and tertiary sources. The Wikipedia page is secondary
+    and corroborates the information. The Brave blog posts are secondary and confirm
+    the privacy-preserving nature of Leo. The GitHub links are secondary and relate
+    to the underlying code and data collection processes, but do not suggest user
+    data is used for training. The LinkedIn post is secondary and does not provide
+    specific details about training data. The Brave Search API documentation is secondary
+    and does not state user data is used for training. The Brave's Capture of Usage
+    Data page is secondary and states usage data is used for business decisions, not
+    training. The Bring Your Own Model feature is secondary and allows users to connect
+    their own models, ensuring data privacy. The AI Browsing documentation is secondary
+    and confirms that data is not logged or retained. The scores are generally 4 or
+    5 because the snippets directly address the claim with clear statements about
+    not using user data for training.
+  urls_after_blocklist: 20
+sources_consulted: []
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: medium
-  auditor_confidence: high
-  verdict_agrees: true
+  analyst_verdict: 'true'
+  auditor_verdict: mixed
+  analyst_confidence: high
+  auditor_confidence: low
+  verdict_agrees: false
   confidence_agrees: false
-  needs_review: false
+  needs_review: true
 human_review:
-  reviewed_at: '2026-04-30'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

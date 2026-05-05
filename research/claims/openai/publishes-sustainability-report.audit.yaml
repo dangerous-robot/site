@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T20:46:59.616933+00:00'
+  ran_at: '2026-05-05T17:59:09.550586+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -18,72 +18,33 @@ research:
   - OpenAI sustainability report
   - OpenAI ESG commitments
   - OpenAI environmental impact disclosure
-  - OpenAI corporate social responsibility
-  - OpenAI environmental policy
-  planner_rationale: These queries aim to directly find OpenAI's official sustainability
-    or ESG reports. They also explore related terms like environmental impact and
-    corporate social responsibility to capture information that might not be explicitly
-    labeled as a 'report.' The queries vary by using different keywords to cover a
-    range of possible report titles and focuses.
-  candidates_seen: 27
-  urls_kept: 15
-  urls_dropped: 8
-  scorer_rationale: The candidates are scored based on their relevance to the claim
-    that OpenAI publishes a sustainability or ESG report. Candidates with titles and
-    snippets mentioning sustainability, ESG, emissions, carbon footprint, environmental
-    impact, and reports are given higher scores.  Candidates from primary sources
-    like OpenAI's own sites, news articles, and direct reports receive the highest
-    scores. Candidates mentioning OpenAI's structure changes, particularly the transition
-    to a Public Benefit Corporation, are considered relevant because it ties to their
-    mission and potential for reporting.  Candidates discussing the broader environmental
-    impact of AI are less directly relevant but may provide context.  Candidates with
-    lower scores are either tangentially related, focus on other aspects of OpenAI,
-    or lack specific mentions of sustainability reporting.
-  urls_after_blocklist: 15
-sources_consulted:
-- id: 2025/environmental-impact-of-ai
-  url: https://academy.openai.com/public/clubs/higher-education-05x4z/resources/environmental-impact-of-ai
-  title: Environmental Impact of AI
-  ingested: true
-- id: 2026/openai-brand-impact
-  url: https://brandimpact.org/en/brands/openai
-  title: OpenAI Brand Sustainability Scoring
-  ingested: true
-- id: 2025/irdo-2025-poster-63
-  url: https://www.irdo.si/irdo2025/posters/63.pdf
-  title: Poster 63
-  ingested: true
-- id: 2023/sustainable-development-and-ai
-  url: https://community.openai.com/t/sustainable-development-and-ai/377448
-  title: Sustainable development and AI
-  ingested: true
-- id: 2026/openai-trust-portal
-  url: https://trust.openai.com/
-  title: Trust Portal
-  ingested: true
-- id: 2026/openai-nonprofit-commission-report
-  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
-  title: The OpenAI Nonprofit Commission Report
-  ingested: true
-- id: 2025/openai-public-benefit-corporation-2025
-  url: https://opentools.ai/news/openai-to-transform-into-public-benefit-corporation-by-2025-a-new-era-in-tech
-  title: 'OpenAI to Transform into Public Benefit Corporation by 2025: A New Era in
-    Tech'
-  ingested: true
-- id: 2025/paris-summit-voluntary-commitments-update
-  url: https://cdn.openai.com/global-affairs/paris-summit-update-on-voluntary-commitments-20250207.pdf
-  title: Paris Summit Update on Voluntary Commitments
-  ingested: true
+  - OpenAI corporate responsibility initiatives
+  - OpenAI carbon footprint data
+  planner_rationale: These queries aim to find official reports or disclosures from
+    OpenAI regarding their sustainability efforts. They cover different aspects like
+    general reports, ESG commitments, environmental impact, broader corporate responsibility,
+    and specific data like carbon footprint. This approach seeks primary sources directly
+    from OpenAI or independent analyses of their disclosures.
+  candidates_seen: 32
+  urls_kept: 32
+  urls_dropped: 0
+  scorer_rationale: The claim asks if OpenAI publishes a sustainability or ESG report.
+    All the candidates discuss OpenAI's sustainability efforts, reports, and commitments.
+    Some explicitly mention reports, while others discuss initiatives like carbon
+    emissions, renewable energy targets, and ESG commitments. The candidates are all
+    relevant and provide varying levels of detail.
+  urls_after_blocklist: 24
+sources_consulted: []
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
+  analyst_verdict: 'false'
+  auditor_verdict: 'true'
   analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
 human_review:
-  reviewed_at: '2026-05-02'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

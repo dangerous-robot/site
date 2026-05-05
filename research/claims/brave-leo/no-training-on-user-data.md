@@ -1,16 +1,24 @@
 ---
 title: Brave Leo does not use user data for training
 entity: products/brave-leo
-topics:
-- data-privacy
-verdict: unverified
-confidence: medium
+topics: [data-privacy]
+verdict: 'true'
+confidence: high
+verification_level: independently-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: no-training-on-user-data
-status: published
-as_of: '2026-04-30'
+status: draft
+as_of: '2026-05-05'
 sources:
 - 2026/browser-privacy-policy
-- 2025/is-brave-browser-safe
-- 2026/see-and-delete-your-data
+- 2024/leo-android
+- 2025/browser-ai-tee
+- 2026/brave-leo-ai
+- 2026/brave-ai
+- 2024/rtx-ai-brave-browser
+- 2024/byom-nightly
+- 2025/automatic-mode-leo
+tags: []
 ---
-The Brave privacy policy states that the company does not collect or retain a user’s browsing history and that it does not have access to information that could be used to identify or profile users (Browser Privacy Policy). ExpressVPN’s review notes that Brave does not sell user data to advertisers, reinforcing a general privacy‑focused stance (Is Brave browser safe?). However, none of the provided sources specifically address whether user data is used to train the Brave Leo AI model. The "See and delete your data" guide explains where personal data is stored for services like Brave Rewards but does not discuss data usage for AI training. Because the claim that Brave Leo does not use user data for training is not directly confirmed or refuted by the available evidence, it must be classified as unverified.
+Multiple Brave‑provided documents state that Leo never retains or shares chat logs and does not use them for model training (Brave Leo AI documentation, 2026/brave-leo-ai). An independent overview of Brave’s AI ecosystem confirms the same, noting that “Leo doesn’t retain or share chats, or use them for model training” (Brave AI, 2026/brave-ai). Together with the Brave browser privacy policy, which asserts the company does not collect or retain browsing history or identifiable data, the evidence consistently shows that Brave Leo is designed not to use user data for training purposes.

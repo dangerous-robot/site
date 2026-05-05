@@ -1,16 +1,24 @@
 ---
 title: Brave Leo displays real-time energy usage
 entity: products/brave-leo
-topics:
-- environmental-impact
+topics: [environmental-impact]
 verdict: unverified
-confidence: high
+confidence: medium
+verification_level: partially-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: realtime-energy-display
-status: published
-as_of: '2026-04-30'
+status: draft
+as_of: '2026-05-05'
 sources:
+- 2026/brave-leo-ai
 - 2024/leo-real-time-results
-- 2025/brave-leo-browser-ai-assistant
 - 2025/leo-roadmap-2025-update
+- 2025/brave-leo-deep-dive
+- 2024/rtx-ai-brave-browser
+- 2024/byom-nightly
+- 2024/leo-android
+- 2025/636754
+tags: []
 ---
-The three source documents describe Brave Leo’s recent feature set and roadmap. Source 1 reports that Leo can now pull “real‑time” information by using the Brave Search API, but the “real‑time” qualifier refers only to up‑to‑date web search results, not to any display of system‑level metrics such as energy consumption. Source 2 provides an overview of Leo’s privacy‑first design and its integration into the browser, but makes no mention of any capability to show energy‑usage data. Source 3 discusses development milestones (multi‑tab context, vision support, future on‑device AI) and the team’s focus on user control, yet it does not address energy‑usage monitoring or visualization. Because none of the available sources engage with the claim that “Brave Leo displays real‑time energy usage,” the claim cannot be verified or refuted based on the provided evidence. Hence the appropriate classification is unverified with high confidence, reflecting that a thorough review of the relevant Brave Leo documentation found no supporting or contradictory information.
+All available sources describing Brave Leo centre on its privacy‑first chat features, real‑time search augmentation, BYOM support, and on‑device model execution (e.g., Brave Leo AI documentation, the 2024 real‑time results blog, the 2025 development roadmap, the independent deep‑dive article, and the NVIDIA blog on local RTX‑accelerated models). None of these references mention a user‑visible display of energy consumption. A community forum thread does discuss high CPU and battery usage when using the Brave browser, but it does not state that Leo provides a real‑time energy‑usage readout. Because no source confirms or refutes the claim, the assertion that Brave Leo displays real‑time energy usage cannot be verified.

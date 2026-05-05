@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:42:40.493905+00:00'
+  ran_at: '2026-05-05T17:46:33.171672+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,51 +15,51 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"Brave Leo" energy sourcing transparency report'
-  - Independent analysis of "Brave Leo" energy sources
-  - '"Brave Leo" renewable energy certifications and data'
-  planner_rationale: These queries aim to find direct disclosures from Brave Leo about
-    their energy sources (first query), analyses conducted by external organizations
-    regarding their energy practices (second query), and verifiable data related to
-    their energy usage, specifically focusing on renewable sources and certifications
-    (third query).
-  candidates_seen: 18
-  urls_kept: 18
+  - Brave Leo energy sourcing policy
+  - Brave Leo LLM energy usage
+  - Brave browser AI energy disclosure
+  - Brave Leo local model energy consumption
+  - Brave Leo sustainability practices
+  planner_rationale: These queries target different aspects of the claim. The first
+    two directly ask about the energy sourcing policy and LLM energy usage of Brave
+    Leo. The third focuses on Brave's broader AI energy disclosure practices. The
+    fourth investigates energy consumption when using local models within Brave Leo.
+    The final query explores Brave's overall sustainability efforts, which may include
+    information about AI energy.
+  candidates_seen: 25
+  urls_kept: 20
   urls_dropped: 0
-  scorer_rationale: The task is to score the relevance of each candidate to the claim
-    "Brave Leo discloses its energy sourcing". The claim asks about the energy source
-    used by Brave Leo. Several candidates discuss the technology used, specifically
-    Trusted Execution Environments (TEEs) and the use of Near AI, but none directly
-    state the energy source. Some candidates mention the underlying models (Mixtral
-    8x7B), but not its energy consumption. The best candidates provide the most detail
-    about the underlying technology and the providers involved. Therefore, scores
-    range from 3 to 4 for candidates mentioning TEEs and providers like Near AI.
-  urls_after_blocklist: 4
+  scorer_rationale: The claim is about Brave Leo's energy sourcing. Several candidates
+    discuss Brave Leo, its features, pricing, and development. Some mention privacy
+    and the underlying models. A few candidates focus on the technical aspects of
+    Brave Leo and its integration with other technologies like RTX and local LLMs.  Candidates
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 and 19 are all relevant
+    and contain information about Brave Leo, its functionalities, and related aspects.
+    Candidates 20 and 21 are either off-topic (sustainability) or discussing the browser
+    in general (Wikipedia, Acer blog) without focusing specifically on energy sourcing
+    information related to Brave Leo. Therefore, candidates 20 and 21 are dropped.
+  urls_after_blocklist: 20
 sources_consulted:
-- id: 2025/browser-ai-tee
-  url: https://brave.com/blog/browser-ai-tee/
-  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
+- id: 2024/byom-nightly
+  url: https://brave.com/blog/byom-nightly/
+  title: 'Bring Your Own Model (BYOM): using Brave Leo with your own LLMs'
   ingested: true
-- id: 2025/brave-leo-cryptographic-privacy
-  url: https://cyberinsider.com/braves-ai-assistant-leo-now-offers-cryptographically-proven-privacy/
-  title: Brave’s AI assistant Leo now offers cryptographically proven privacy
+- id: 2024/melting-point
+  url: https://brave.com/blog/melting-point/
+  title: 'MELTing Point: Mobile Evaluation of Language Transformers'
   ingested: true
-- id: 2025/brave-leo-trusted-execution-environments
-  url: https://www.theregister.com/2025/11/22/brave_leo_trusted_execution_environment/
-  title: Brave AI assistant Leo adds Trusted Execution Environments
-  ingested: true
-- id: 2025/brave-leo-deep-dive
-  url: https://www.eesel.ai/blog/brave-leo
-  title: 'Brave Leo: A deep dive into the browser AI assistant'
+- id: 2024/rtx-ai-brave-browser
+  url: https://blogs.nvidia.com/blog/rtx-ai-brave-browser/
+  title: Leo AI and Ollama Bring RTX-Accelerated Local LLMs to Brave Browser Users
   ingested: true
 audit:
   analyst_verdict: unverified
-  auditor_verdict: unverified
+  auditor_verdict: 'true'
   analyst_confidence: high
-  auditor_confidence: medium
-  verdict_agrees: true
-  confidence_agrees: false
-  needs_review: false
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
 human_review:
   reviewed_at: '2026-04-30'
   reviewer: brandon@dangerousrobot.org

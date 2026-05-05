@@ -1,17 +1,24 @@
 ---
 title: Brave Software donates to AI safety causes
 entity: companies/brave-software
-topics:
-- ai-safety
+topics: [ai-safety]
 verdict: unverified
 confidence: high
+verification_level: multiply-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: donates-to-ai-safety
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-05'
 sources:
 - 2025/ai-safety-scam-tactics-threat-mitigation
-- 2024/harmonizing-ai-and-philanthropy
 - 2026/brave-ai
-- 2026/brave-ai-lab
+- 2026/donate-ai-safety
+- 2026/brave-leo-ai
+- 2025/leo-roadmap-2025-update
+- 2025/brave-leo-trusted-execution-environments
+- 2026/browser-privacy-policy
+- 2026/652534
+tags: []
 ---
-The four sources provided discuss Brave's involvement in AI‑related activities, such as hosting an AI safety‑focused podcast episode (Source 1: "AI Safety, Scam Tactics and Threat Mitigation"), outlining its privacy‑first AI products (Source 3: "Brave AI"), and describing its AI development services (Source 4: "Brave AI Lab"). Source 2 ("Harmonizing AI and Philanthropy: Running To or Running From a Brave New World") addresses AI philanthropy generally but does not mention Brave Software as a donor. None of the sources include any statement that Brave Software makes monetary contributions or other donations to AI safety causes. Because the available evidence does not address the claim directly, the claim cannot be confirmed nor disproved, leading to an "unverified" verdict with high confidence due to the thoroughness of the search.
+The available sources describe Brave Software’s AI initiatives (e.g., the Brave Technologist podcast interview on AI safety investigations【2025/ai-safety-scam-tactics-threat-mitigation】, the Brave AI ecosystem overview【2026/brave-ai】, and privacy‑focused features of the Leo assistant【2026/brave-leo-ai】). They also include a donation page for the Center for AI Safety that is unrelated to Brave【2026/donate-ai-safety】 and a community forum request for a generic donation option for Brave‑Origin【2026/652534】. None of the independent or first‑party materials mention that Brave Software makes financial contributions to AI safety causes, nor do they state that it does not. Because the claim is not addressed by any source, it remains unverified.

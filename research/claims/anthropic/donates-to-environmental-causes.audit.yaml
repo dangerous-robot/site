@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T02:21:38.026074+00:00'
+  ran_at: '2026-05-05T17:45:08.798442+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,59 +15,54 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - Anthropic environmental donations reports
-  - Anthropic sustainability initiatives program
-  - Anthropic philanthropic giving environmental
-  - Anthropic climate action investments
-  - Anthropic environmental impact statements
-  planner_rationale: These queries aim to find direct evidence of Anthropic's financial
-    contributions to environmental causes. They vary by searching for reports, specific
-    program details, philanthropic giving, climate investments, and official statements
-    related to their environmental impact. The queries are designed to prioritize
-    official communications and publicly available data.
-  candidates_seen: 31
-  urls_kept: 15
-  urls_dropped: 10
-  scorer_rationale: The candidates were scored based on whether they directly address
-    the claim that Anthropic donates to environmental causes. Candidates with explicit
-    mentions of donations, funding for environmental initiatives, or statements about
-    environmental responsibility received higher scores. Candidates discussing energy
-    efficiency, sustainability, and AI's impact on the environment were also considered
-    relevant. Candidates focusing on other aspects of Anthropic, such as lobbying,
-    settlements, or general company news, received lower scores.
-  urls_after_blocklist: 15
+  - Anthropic environmental donations
+  - Anthropic sustainability initiatives
+  - Anthropic climate action funding
+  - Anthropic philanthropic giving environment
+  - Anthropic environmental impact report
+  planner_rationale: These queries aim to find information about Anthropic's financial
+    contributions and actions related to environmental causes. The queries vary in
+    focus, some targeting general donations, others specific initiatives and reports.
+    They avoid general terms and instead use the entity name with specific keywords
+    related to environmental activities.
+  candidates_seen: 32
+  urls_kept: 10
+  urls_dropped: 12
+  scorer_rationale: The claim is about Anthropic's donations to environmental causes.
+    Candidates with primary or secondary publisher quality are considered. Candidates
+    focusing on Anthropic's energy initiatives, philanthropic activities, and environmental
+    impact are relevant. Candidates discussing funding rounds and valuation are less
+    relevant. Wikipedia and news articles are kept as they provide some context. Candidates
+    with forum quality are generally dropped unless no higher-quality alternatives
+    exist.
+  urls_after_blocklist: 10
 sources_consulted:
-- id: 2025/investing-energy-america-ai-future
-  url: https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
-  title: Investing in energy to secure America's AI future
+- id: 2025/front-load-giving-because-of-anthropic-donors
+  url: https://www.lesswrong.com/posts/oJM6TmFLwsHrBfRpk/front-load-giving-because-of-anthropic-donors
+  title: Front-Load Giving Because of Anthropic Donors?
   ingested: true
-- id: 2026/voluntary-commitments
-  url: https://www.anthropic.com/transparency/voluntary-commitments
-  title: Voluntary Commitments
+- id: 2025/claude-for-nonprofits
+  url: https://www.anthropic.com/news/claude-for-nonprofits
+  title: Introducing Claude for Nonprofits
   ingested: true
-- id: 2026/nonprofits
-  url: https://claude.com/solutions/nonprofits
-  title: Nonprofits
+- id: 2025/ai-fluency-for-nonprofits
+  url: https://anthropic.skilljar.com/ai-fluency-for-nonprofits
+  title: AI Fluency for nonprofits
   ingested: true
-- id: 2025/vera-solutions-anthropic-claude-nonprofits
-  url: https://verasolutions.org/vera-solutions-partners-with-anthropic-as-ai-provider-launches-claude-for-nonprofits/
-  title: Vera Solutions Partners with Anthropic, as AI provider launches Claude for
-    Nonprofits
-  ingested: true
-- id: 2026/anthropic-funding-investors
-  url: https://tracxn.com/d/companies/anthropic/__SzoxXDMin-NK5tKB7ks8yHr6S9Mz68pjVCzFEcGFZ08/funding-and-investors
-  title: Anthropic Funding Rounds & List of Investors
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
   ingested: true
 audit:
   analyst_verdict: unverified
-  auditor_verdict: 'true'
-  analyst_confidence: high
+  auditor_verdict: unverified
+  analyst_confidence: medium
   auditor_confidence: high
-  verdict_agrees: false
-  confidence_agrees: true
-  needs_review: true
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

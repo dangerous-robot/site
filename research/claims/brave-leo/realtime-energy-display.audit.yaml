@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:43:17.946067+00:00'
+  ran_at: '2026-05-05T17:48:46.961894+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,46 +15,45 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - Brave Leo real-time energy usage data
-  - Brave Leo energy monitoring system specifications
-  - Independent review Brave Leo energy consumption accuracy
-  planner_rationale: These queries aim to find direct evidence of Brave Leo's real-time
-    energy usage display (query 1), technical details about its energy monitoring
-    capabilities (query 2), and unbiased assessments of its accuracy from independent
-    sources (query 3). This covers the claim from multiple angles.
-  candidates_seen: 18
-  urls_kept: 10
-  urls_dropped: 4
-  scorer_rationale: The claim asks if Brave Leo displays real-time energy usage.  Candidates
-    1, 3, 5, 7, 9, 10, 11, 13, 14, and 15 all mention real-time information or energy
-    efficiency related to Brave Leo. Candidates 2, 4, 6, 8, and 12 discuss how to
-    use Leo, its features, or reviews but do not directly address real-time energy
-    usage.  Candidates 16 and 17 are less relevant as they focus on general AI model
-    comparisons or are user experiences with accuracy problems.
-  urls_after_blocklist: 4
+  - Brave Leo energy consumption data
+  - Brave Leo real-time resource usage
+  - Brave browser Brave Leo energy monitoring
+  - Brave Leo local model energy impact
+  - Brave Leo privacy energy performance
+  planner_rationale: These queries aim to find information about Brave Leo's energy
+    usage. The queries vary in focus, targeting direct claims of real-time usage,
+    broader resource consumption, the impact of local models, and the connection to
+    privacy. They are phrased to avoid Google-specific operators and prioritize clarity
+    and conciseness, suitable for the Brave search engine. They also consider the
+    integration with local models, a key feature of Brave Leo.
+  candidates_seen: 28
+  urls_kept: 27
+  urls_dropped: 0
+  scorer_rationale: The claim is about Brave Leo displaying real-time energy usage.
+    Several candidates directly address this (brave.com/leo, brave.com/blog/leo-real-time-results,
+    brave.com/blog/leo-roadmap-2025-update, brave.com/blog/byom-nightly, brave.com/blog/leo-android).
+    Others are related but not as direct (Reddit discussions, research papers on energy
+    consumption, general announcements about Leo features).  The publisher quality
+    is mostly secondary.  I've included all candidates as they all touch upon aspects
+    of Brave Leo, even if not directly addressing real-time energy usage in the title/snippet.
+    The forum candidates are kept as they contain user experiences and discussions
+    which are relevant to understanding the claim.
+  urls_after_blocklist: 24
 sources_consulted:
-- id: 2024/leo-real-time-results
-  url: https://brave.com/blog/leo-real-time-results/
-  title: Leo now incorporates real-time Brave Search results for even better answers
-  ingested: true
-- id: 2025/brave-leo-browser-ai-assistant
-  url: https://www.eesel.ai/blog/brave-leo
-  title: 'Brave Leo: A deep dive into the browser AI assistant'
-  ingested: true
-- id: 2025/leo-roadmap-2025-update
-  url: https://brave.com/blog/leo-roadmap-2025-update/
-  title: 'Building Browser AI: Leo’s Development Progress and Plans'
+- id: 2025/636754
+  url: https://community.brave.app/t/insane-memory-and-energy-consumption/636754
+  title: Insane memory and energy consumption
   ingested: true
 audit:
   analyst_verdict: unverified
   auditor_verdict: unverified
-  analyst_confidence: high
-  auditor_confidence: high
+  analyst_confidence: medium
+  auditor_confidence: low
   verdict_agrees: true
-  confidence_agrees: true
+  confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

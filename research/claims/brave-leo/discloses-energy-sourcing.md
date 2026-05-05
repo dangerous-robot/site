@@ -1,24 +1,24 @@
 ---
 title: Brave Leo discloses its energy sourcing
 entity: products/brave-leo
-topics:
-- environmental-impact
+topics: [environmental-impact]
 verdict: unverified
 confidence: high
+verification_level: independently-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: discloses-energy-sourcing
 status: published
-as_of: '2026-04-30'
+as_of: '2026-05-05'
 sources:
-- 2025/browser-ai-tee
-- 2025/brave-leo-cryptographic-privacy
-- 2025/brave-leo-trusted-execution-environments
+- 2025/leo-roadmap-2025-update
+- 2025/brave-leo-pricing
 - 2025/brave-leo-deep-dive
+- 2026/brave-leo-ai
+- 2026/brave-ai
+- 2024/byom-nightly
+- 2024/melting-point
+- 2024/rtx-ai-brave-browser
+tags: []
 ---
-The supplied sources focus on Brave Leo’s privacy and transparency mechanisms—such as Trusted Execution Environments, cryptographic attestation, and confidential LLM computing—but none mention how the service obtains or reports its energy supply. Because there is no information about energy sourcing or any disclosure thereof in any of the cited articles, the claim that "Brave Leo discloses its energy sourcing" cannot be confirmed nor refuted. Consequently, the claim remains unverified.
-
-Sources consulted:
-
-- "Verifiable Privacy and Transparency: A new frontier for Brave AI privacy" (Brave) – discusses privacy architecture, no reference to energy.
-- "Brave’s AI assistant Leo now offers cryptographically proven privacy" (CyberInsider) – describes TEEs and privacy, silent on energy.
-- "Brave AI assistant Leo adds Trusted Execution Environments" (The Register) – covers TEEs and privacy, no energy details.
-- "Brave Leo: A deep dive into the browser AI assistant" (eesel AI) – overview of features and privacy, no mention of energy sourcing.
+None of the eight sources examined mention whether Brave Leo provides any disclosure about the source of the electricity used to run its AI services. The materials focus on privacy features, pricing, on‑device model execution, and performance/energy impact of local inference, but they do not contain any statement that Brave Leo publicly reports its energy sourcing. Because the claim’s central assertion is not addressed by any source, it cannot be confirmed or refuted.

@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T20:58:49.274222+00:00'
+  ran_at: '2026-05-05T17:52:13.331989+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,68 +15,43 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - ChatGPT energy consumption sources
-  - OpenAI ChatGPT energy usage details
-  - ChatGPT carbon footprint disclosure
-  - ChatGPT environmental impact report
-  - OpenAI sustainability energy practices
+  - ChatGPT energy consumption disclosure
+  - OpenAI ChatGPT sustainability report
+  - ChatGPT carbon footprint analysis
+  - ChatGPT energy source transparency
+  - ChatGPT environmental impact statement
   planner_rationale: These queries aim to find information about ChatGPT's energy
-    consumption by directly searching for details on its energy sources, consumption
-    patterns, and environmental impact. They also target OpenAI, the creator of ChatGPT,
-    to find their official sustainability reports and practices.
-  candidates_seen: 32
-  urls_kept: 32
-  urls_dropped: 0
-  scorer_rationale: The prompt asks to score the relevance of search results to the
-    claim that ChatGPT discloses its energy sourcing. I've scored each candidate based
-    on the title and snippet, using the provided scoring scale and rules.  I prioritized
-    candidates that directly discuss ChatGPT's energy consumption and related environmental
-    impacts.  The publisher quality was used as a tiebreaker when relevance was similar.
-    All URLs are included in either the kept or dropped list.
-  urls_after_blocklist: 24
+    usage and sourcing. They cover direct disclosures, sustainability reports from
+    OpenAI, independent analyses of its carbon footprint, transparency initiatives,
+    and formal environmental statements. The queries are varied in their approach,
+    targeting direct disclosures, broader sustainability reports, and specific analytical
+    reports.
+  candidates_seen: 27
+  urls_kept: 17
+  urls_dropped: 8
+  scorer_rationale: The claim asks about ChatGPT's energy sourcing.  I've scored based
+    on whether the snippets directly discuss energy consumption, electricity usage,
+    carbon footprint, or water consumption related to ChatGPT.  I've also considered
+    the publisher quality, prioritizing primary sources and then secondary.
+  urls_after_blocklist: 17
 sources_consulted:
-- id: 2025/how-much-energy-does-chatgpt-use
-  url: https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use
-  title: How much energy does ChatGPT use?
+- id: 2025/explained-generative-ai-environmental-impact-0117
+  url: https://news.mit.edu/2025/explained-generative-ai-environmental-impact-0117
+  title: 'Explained: Generative AI’s environmental impact'
   ingested: true
-- id: 2025/chatgpt-energy-consumption-visualized
-  url: https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/
-  title: ChatGPT Energy Consumption Visualized
-  ingested: true
-- id: 2025/ai-energy-use-queries
-  url: https://spectrum.ieee.org/ai-energy-use
-  title: How Much Energy Does It Take to Power Billions of AI Queries?
-  ingested: true
-- id: 2024/chatgpt-electricity-consumption-analysis
-  url: https://www.bestbrokers.com/forex-brokers/ais-power-demand-calculating-chatgpts-electricity-consumption-for-handling-over-78-billion-user-queries-every-year/
-  title: 'AI’s Power Demand: Calculating ChatGPT’s electricity consumption for handling
-    1.17 trillion user queries every year'
-  ingested: true
-- id: 2024/chatgpt-energy-consumption-electric-cars
-  url: https://balkangreenenergynews.com/chatgpt-consumes-enough-power-in-one-year-to-charge-over-three-million-electric-cars
-  title: ChatGPT consumes enough power in one year to charge over three million electric
-    cars
-  ingested: true
-- id: 2026/chatgpt-energy-ethics-discussion
-  url: https://www.reddit.com/r/OpenAI/comments/1dqm7bu/is_it_ethical_to_use_chatgpt_despite_its_energy/
-  title: Is it Ethical to Use ChatGPT Despite Its Energy Consumption?
-  ingested: true
-- id: 2025/chatgpt-energy-usage-0-34-wh
-  url: https://www.devsustainability.com/p/chatgpt-energy-usage-is-034-wh-per
-  title: ChatGPT energy usage is 0.34 Wh per query
-  ingested: true
-- id: 2025/openai-gpt5-energy-use
-  url: https://www.theguardian.com/technology/2025/aug/09/open-ai-chat-gpt5-energy-use
-  title: OpenAI will not disclose GPT-5’s energy use
+- id: 2024/ai-brings-soaring-emissions-for-google-and-microsoft-a-major-contributor-to-climate-change
+  url: https://www.npr.org/2024/07/12/g-s1-9545/ai-brings-soaring-emissions-for-google-and-microsoft-a-major-contributor-to-climate-change
+  title: AI brings soaring emissions for Google and Microsoft, a major contributor
+    to climate change
   ingested: true
 audit:
   analyst_verdict: unverified
-  auditor_verdict: unverified
+  auditor_verdict: 'true'
   analyst_confidence: high
   auditor_confidence: high
-  verdict_agrees: true
+  verdict_agrees: false
   confidence_agrees: true
-  needs_review: false
+  needs_review: true
 human_review:
   reviewed_at: '2026-05-02'
   reviewer: brandon@dangerousrobot.org

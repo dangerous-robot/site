@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-01T05:50:12.382175+00:00'
+  ran_at: '2026-05-05T17:56:58.321190+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,50 +15,55 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"Microsoft" environmental donations report'
-  - Microsoft sustainability initiatives independent analysis
-  - Microsoft environmental funding data transparency
-  - Microsoft environmental grants recipient list
-  planner_rationale: These queries aim to find verifiable information about Microsoft's
-    environmental donations. The first query seeks official reports, the second aims
-    for independent assessments of their sustainability work, the third focuses on
-    transparency regarding funding, and the fourth specifically targets a list of
-    grant recipients to provide concrete evidence.
-  candidates_seen: 25
-  urls_after_blocklist: 8
+  - Microsoft environmental donations history
+  - Microsoft sustainability initiatives funding
+  - Microsoft carbon offset programs details
+  - Microsoft renewable energy investments impact
+  - Microsoft environmental cause partnerships
+  planner_rationale: These queries aim to verify the claim of Microsoft donating to
+    environmental causes by exploring their donation history, funding for sustainability
+    initiatives, details of their carbon offset programs, the impact of their renewable
+    energy investments, and partnerships with environmental organizations. They are
+    designed to surface information from official Microsoft statements, news reports,
+    and independent analyses rather than opinion pieces.
+  candidates_seen: 34
+  urls_kept: 29
+  urls_dropped: 0
+  scorer_rationale: The claim is 'Microsoft donates to environmental causes'. Candidates
+    are scored based on direct evidence of donations, partnerships with environmental
+    organizations, and initiatives related to environmental sustainability. Candidates
+    with higher scores (4 or 5) provide more direct evidence. Candidates with lower
+    scores (1-3) are either tangentially related or lack sufficient evidence of donations.
+    Publisher quality is used as a tiebreaker, favoring primary sources. The NPS Retirees
+    article mentions partnership with UN AI for Earth program, which supports environmental
+    causes. The other articles provide more direct evidence of financial donations,
+    partnerships, and specific initiatives.
+  urls_after_blocklist: 24
 sources_consulted:
-- id: 2026/reports-hub
-  url: https://www.microsoft.com/en-us/corporate-responsibility/reports-hub
-  title: Reports Hub
+- id: 2026/microsoft
+  url: https://www.influencewatch.org/for-profit/microsoft/
+  title: Microsoft
   ingested: true
-- id: 2026/microsoft-sustainability
-  url: https://www.microsoft.com/en-us/corporate-responsibility/sustainability
+- id: 2020/microsoft-climate-change-goals-negative-emissions-technologies
+  url: https://www.vox.com/energy-and-environment/2020/7/30/21336777/microsoft-climate-change-goals-negative-emissions-technologies
+  title: Microsoft’s astonishing climate change goals, explained
+  ingested: true
+- id: 2026/sustainable-world
+  url: https://www.microsoft.com/en-us/corporate-responsibility/sustainable-world
   title: Sustainability
   ingested: true
-- id: 2026/microsoft-nature-conservancy
-  url: https://www.nature.org/en-us/about-us/who-we-are/how-we-work/working-with-companies/companies-investing-in-nature1/microsoft/
-  title: Microsoft and The Nature Conservancy
-  ingested: true
-- id: 2026/nonprofits-and-giving
-  url: https://www.microsoft.com/en-us/corporate-responsibility/giving-nonprofits
-  title: Nonprofits and Giving
-  ingested: true
-- id: 2026/microsoft-sustainability
-  url: https://www.microsoft.com/en-us/sustainability
-  title: Sustainability - Products for a Sustainable Future
-  ingested: true
-- id: 2026/microsoft-impact-summary
-  url: https://www.microsoft.com/en-us/corporate-responsibility/impact-summary
-  title: The Microsoft Impact Summary
+- id: 2026/approach
+  url: https://www.microsoft.com/en-us/sustainability/approach
+  title: Sustainability Approach
   ingested: true
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: mostly-true
+  auditor_verdict: mixed
   analyst_confidence: high
-  auditor_confidence: medium
+  auditor_confidence: low
   verdict_agrees: false
   confidence_agrees: false
-  needs_review: false
+  needs_review: true
 human_review:
   reviewed_at: '2026-05-01'
   reviewer: brandon@dangerousrobot.org

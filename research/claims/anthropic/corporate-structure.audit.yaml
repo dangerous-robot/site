@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T02:19:17.711989+00:00'
+  ran_at: '2026-05-05T17:41:34.117620+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -16,56 +16,47 @@ research:
   mode: decomposed
   queries:
   - Anthropic corporate structure details
-  - Anthropic ownership model information
-  - Anthropic organizational structure publicly available
-  planner_rationale: These queries aim to directly identify and describe Anthropic's
-    corporate structure using various keywords related to ownership and organization.
-    They prioritize finding official information or analyses about how Anthropic is
-    structured.
-  candidates_seen: 19
-  urls_kept: 18
-  urls_dropped: 0
-  scorer_rationale: The question asks for Anthropic's corporate structure. Several
-    articles discuss this directly, including its Public Benefit Corporation status,
-    the role of the Long-Term Benefit Trust, and ownership details.  The Wikipedia
-    and Clay articles provide summaries of the company.  The YouTube video discusses
-    the structure from a founder's perspective. Other articles discuss ownership details
-    like founders, employees, and investors. The Wikimedia file shows a corporate
-    structure flowchart. All of these sources provide relevant information to the
-    claim.
-  urls_after_blocklist: 17
+  - Anthropic ownership model
+  - Anthropic legal structure
+  - Anthropic company type
+  - Anthropic B-corp status
+  planner_rationale: These queries directly target Anthropic's corporate structure
+    and ownership. They use different phrasing to capture various potential descriptions
+    of the company's structure, aiming to find official statements, legal documents,
+    or reputable news reports detailing its organizational form. The queries are designed
+    to bypass common search engine operators and prioritize direct information.
+  candidates_seen: 30
+  urls_kept: 10
+  urls_dropped: 14
+  scorer_rationale: 'The claim asks about Anthropic''s corporate structure. Candidates
+    are scored based on whether they explicitly state or imply the company''s structure
+    (e.g., Public Benefit Corporation, PBC). Primary sources (company website, official
+    documents) receive the highest score.  The following URLs are kept: Anthropic''s
+    company page, news about the long-term benefit trust, ownership details from revenue
+    memo and rankred, information about legal webinars, the new constitution, legal
+    compliance documentation, the company''s website, Get AI Perks, Britannica, and
+    Anthropic''s official website. The following URLs are dropped because they are
+    either too general (Wikipedia, org chart), discuss related topics (OpenAI''s structure),
+    or are forum posts that don''t provide definitive information. Also, URLs with
+    lower publisher quality (forum) are dropped when higher quality alternatives are
+    available.'
+  urls_after_blocklist: 10
 sources_consulted:
-- id: 2026/anthropic-company
-  url: https://www.anthropic.com/company
-  title: Company
+- id: 2026/claude-for-legal-teams
+  url: https://www.anthropic.com/webinars/claude-for-legal-teams
+  title: Claude for Legal teams
   ingested: true
-- id: 2023/long-term-benefit-trust
-  url: https://www.anthropic.com/news/the-long-term-benefit-trust
-  title: The Long-Term Benefit Trust
+- id: 2026/claude-new-constitution
+  url: https://www.anthropic.com/news/claude-new-constitution
+  title: Claude's new constitution
   ingested: true
-- id: 2024/anthropic-structure-openai-incentives
-  url: https://time.com/6983420/anthropic-structure-openai-incentives/
-  title: How Anthropic Designed Itself to Avoid OpenAI’s Mistakes
+- id: 2026/legal-and-compliance
+  url: https://docs.anthropic.com/en/docs/claude-code/legal-and-compliance
+  title: Legal and compliance
   ingested: true
-- id: 2024/anthropic-executives-org-chart
-  url: https://www.clay.com/dossier/anthropic-executives
-  title: List of Anthropic Executives & Org Chart
-  ingested: true
-- id: 2026/corporate-structure-ethical-ai-daniela-amodei
-  url: https://www.youtube.com/watch?v=UMF1nf3Iy3Q
-  title: Corporate Structure for Ethical AI - Daniela Amodei
-  ingested: true
-- id: 2026/who-owns-anthropic
-  url: https://www.revenuememo.com/p/who-owns-anthropic
-  title: Who owns Anthropic? Ownership structure explained (2026)
-  ingested: true
-- id: 2026/anthropic-ownership
-  url: https://businessmodelcanvastemplate.com/blogs/owners/anthropic-who-owns
-  title: Who Owns Anthropic Company?
-  ingested: true
-- id: 2026/who-owns-anthropic-2026
-  url: https://www.rankred.com/who-owns-anthropic/
-  title: Who Owns Anthropic in 2026? [Shareholders & Ownership Details]
+- id: 2026/anthropic-home
+  url: https://www.anthropic.com/
+  title: Home
   ingested: true
 audit:
   analyst_verdict: 'true'

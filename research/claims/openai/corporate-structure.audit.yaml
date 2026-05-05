@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T20:48:29.547134+00:00'
+  ran_at: '2026-05-05T17:58:42.782346+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -16,67 +16,43 @@ research:
   mode: decomposed
   queries:
   - OpenAI corporate structure details
-  - OpenAI legal structure documents
-  - OpenAI ownership model explained
-  - OpenAI B Corp certification verification
-  - OpenAI corporate governance structure
-  planner_rationale: These queries aim to directly identify and verify OpenAI's corporate
-    structure through official documentation, legal filings, and explanations of their
-    ownership model. The queries vary in their approach, targeting general information,
-    legal specifics, ownership specifics, and certification status, all while maintaining
-    brevity and focusing on primary sources.
+  - OpenAI legal formation documents
+  - OpenAI ownership model analysis
+  - OpenAI governance structure report
+  - OpenAI non-profit status verification
+  planner_rationale: These queries aim to directly uncover information about OpenAI's
+    corporate structure. The queries vary by focusing on different aspects like legal
+    documents, ownership models, governance, and non-profit status, to provide a comprehensive
+    search for verification or refutation of the claim.
   candidates_seen: 34
-  urls_kept: 23
-  urls_dropped: 0
-  scorer_rationale: The claim asks about OpenAI's corporate structure. Several articles
-    directly discuss this, including its evolution, current structure (including PBC),
-    and ownership. The titles and snippets confirm relevance. The publisher quality
-    is a mix of primary and secondary, with primary sources like OpenAI's own pages
-    and articles discussing the restructuring being the most relevant. The scoring
-    takes into account the complexity of the topic, with more detailed explanations
-    receiving higher scores.
-  urls_after_blocklist: 23
+  urls_kept: 14
+  urls_dropped: 14
+  scorer_rationale: The claim asks about OpenAI's corporate structure. Candidates
+    are scored based on how directly they address this, with primary sources getting
+    the highest score. Candidates mentioning 'public benefit corporation (PBC)', 'nonprofit',
+    'for-profit', 'employee ownership', and 'steward-ownership' are highly relevant.
+    Several candidates discuss OpenAI's evolving structure, ownership changes, and
+    governance, which are directly related.  Publisher quality is used to break ties,
+    preferring primary, then secondary, then tertiary.  Candidates with lower scores
+    are tangential or not directly relevant.
+  urls_after_blocklist: 14
 sources_consulted:
-- id: 2025/openai-restructuring-structure
-  url: https://www.nbcnews.com/tech/tech-news/openai-restructuring-company-structure-chatgpt-invest-own-rcna240138
-  title: 'A nonprofit on top, billions below: How OpenAI’s new structure works'
+- id: 2025/openai-nonprofit-altman-restructuring
+  url: https://www.cnn.com/2025/05/05/tech/openai-nonprofit-altman-restructuring
+  title: OpenAI to remain under non-profit control in change of restructuring plans
   ingested: true
-- id: 2025/openai-corporate-structure-legal-future
-  url: https://www.pymnts.com/artificial-intelligence-2/2025/openais-new-corporate-structure-sets-up-a-tangled-legal-future
-  title: OpenAI’s New Corporate Structure Sets Up a Tangled Legal Future
-  ingested: true
-- id: 2026/who-owns-openai-ownership-structure
-  url: https://www.revenuememo.com/p/who-owns-openai
-  title: Who owns OpenAI? Ownership structure explained (2026)
-  ingested: true
-- id: 2026/who-owns-openai
-  url: https://www.untaylored.com/post/who-owns-openai
-  title: Who Owns OpenAI? The AI Company's Ownership Structure Explained
-  ingested: true
-- id: 2026/who-owns-openai-2026
-  url: https://aifundingtracker.com/who-owns-openai/
-  title: Who Owns OpenAI? Complete Ownership Breakdown (2026)
-  ingested: true
-- id: 2025/who-owns-openai-ownership-structure
-  url: https://mbaknol.com/general-business-articles/who-owns-openai-a-simple-guide-to-its-complex-ownership-structure/
-  title: Who Owns OpenAI? A Simple Guide to Its Complex Ownership Structure
-  ingested: true
-- id: 2026/who-owns-openai-2026
-  url: https://www.rankred.com/who-owns-openai/
-  title: Who Owns OpenAI in 2026? [Shareholders & Ownership Explained]
-  ingested: true
-- id: 2023/who-owns-chatgpt-openai
-  url: https://tech.co/news/who-owns-chatgpt-and-openai
-  title: Who Owns ChatGPT and OpenAI? AI Model Ownership Explained
+- id: 2026/810861541
+  url: https://projects.propublica.org/nonprofits/organizations/810861541
+  title: Openai Inc
   ingested: true
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: 'true'
+  auditor_verdict: mixed
   analyst_confidence: high
   auditor_confidence: high
-  verdict_agrees: true
+  verdict_agrees: false
   confidence_agrees: true
-  needs_review: false
+  needs_review: true
 human_review:
   reviewed_at: '2026-05-02'
   reviewer: brandon@dangerousrobot.org

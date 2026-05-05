@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-02T02:18:01.039016+00:00'
+  ran_at: '2026-05-05T17:45:36.383636+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -16,59 +16,38 @@ research:
   mode: decomposed
   queries:
   - Anthropic sustainability report
-  - Anthropic ESG commitments
+  - Anthropic ESG initiatives
   - Anthropic environmental impact disclosure
-  - Anthropic corporate responsibility initiatives
-  - Anthropic AI ethics report
-  planner_rationale: These queries aim to locate Anthropic's official sustainability/ESG
-    reports, look for commitments they've made, explore their environmental impact,
-    identify their corporate responsibility efforts, and find their specific AI ethics
-    reporting – all relevant to the claim that they publish such reports.
-  candidates_seen: 29
+  - Anthropic corporate social responsibility
+  - Claude AI Anthropic sustainability
+  planner_rationale: These queries aim to find Anthropic's official sustainability
+    reports or any publicly available information detailing their ESG (Environmental,
+    Social, and Governance) practices. The queries vary by using terms like 'sustainability
+    report,' 'ESG initiatives,' and 'environmental impact disclosure' to cover different
+    potential naming conventions. One query specifically mentions their product 'Claude'
+    to see if sustainability is tied to the product.
+  candidates_seen: 30
+  urls_kept: 29
+  urls_dropped: 0
+  scorer_rationale: The claim is about Anthropic publishing a sustainability or ESG
+    report. Several candidates directly address this or related topics (sustainability
+    reports, environmental impact, responsible scaling policies).  The other candidates
+    are tangentially related (company overview, news about Anthropic's AI models,
+    discussions about Anthropic).  The publisher quality is used to prioritize primary
+    and secondary sources over tertiary and forum content.  The prompt requests scoring
+    based solely on the title and snippet. All URLs are included.
   urls_after_blocklist: 24
-sources_consulted:
-- id: 2025/build-ai-in-america-energy-report
-  url: https://www.anthropic.com/news/build-ai-in-america
-  title: 'Build AI in America: Anthropic Energy Report'
-  ingested: true
-- id: 2025/investing-energy-america-ai-future
-  url: https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
-  title: Investing in energy to secure America's AI future
-  ingested: true
-- id: 2024/hidden-environmental-costs-tech-ai-investments
-  url: https://blogs.cfainstitute.org/investor/2024/10/31/the-hidden-environmental-costs-of-tech-giants-ai-investments/
-  title: The Hidden Environmental Costs of Tech Giants’ AI Investments
-  ingested: true
-- id: 2026/anthropic-research
-  url: https://www.anthropic.com/research
-  title: Research
-  ingested: true
-- id: 2026/voluntary-commitments
-  url: https://www.anthropic.com/transparency/voluntary-commitments
-  title: Voluntary Commitments
-  ingested: true
-- id: 2024/updated-responsible-scaling-policy
-  url: https://www.anthropic.com/news/announcing-our-updated-responsible-scaling-policy
-  title: Announcing our updated Responsible Scaling Policy
-  ingested: true
-- id: 2023/anthropics-responsible-scaling-policy
-  url: https://www.anthropic.com/news/anthropics-responsible-scaling-policy
-  title: Anthropic's Responsible Scaling Policy
-  ingested: true
-- id: 2026/anthropic-drops-safety-pledge
-  url: https://time.com/7380854/exclusive-anthropic-drops-flagship-safety-pledge/
-  title: Anthropic Drops Flagship Safety Pledge
-  ingested: true
+sources_consulted: []
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
-  analyst_confidence: medium
-  auditor_confidence: high
+  analyst_confidence: low
+  auditor_confidence: low
   verdict_agrees: true
-  confidence_agrees: false
+  confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

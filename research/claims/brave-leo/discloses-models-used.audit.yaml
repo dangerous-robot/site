@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-04-30T07:41:42.383095+00:00'
+  ran_at: '2026-05-05T17:46:56.891875+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,49 +15,39 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - '"Brave Leo" model disclosure policy'
-  - Brave Leo transparency report models
-  - Independent analysis of Brave Leo's model usage
-  planner_rationale: These queries aim to find official disclosures from Brave Leo
-    regarding the models it utilizes. The first query searches for a specific policy
-    document. The second targets a transparency report, which often details technical
-    aspects like model usage. The third seeks independent evaluations or analyses
-    of Brave Leo's model choices, potentially uncovering information not readily available
-    from the company itself.
-  candidates_seen: 17
-  urls_kept: 10
-  urls_dropped: 5
-  scorer_rationale: The claim is 'Brave Leo discloses which models it uses'. Several
-    articles directly address the models used (Mixtral, LLaMA 2, Claude). Articles
-    on privacy and transparency also mention the model selection process. Articles
-    about the roadmap also indicate different models are used. The rest of the articles
-    are either too general (how to use), focus on privacy without mentioning models,
-    or are about related but not directly relevant aspects.
-  urls_after_blocklist: 4
-sources_consulted:
-- id: 2026/verifiable-privacy-transparency-brave-ai
-  url: 'https://brave.com/blog/Verifiable Privacy and Transparency: A new frontier
-    for Brave AI privacy | Brave'
-  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
-  ingested: true
-- id: 2024/leo-android
-  url: https://brave.com/blog/leo-android/
-  title: Leo—Brave’s privacy-preserving AI assistant—now available on Android
-  ingested: true
-- id: 2025/brave-leo-cryptographic-privacy
-  url: https://cyberinsider.com/braves-ai-assistant-leo-now-offers-cryptographically-proven-privacy/
-  title: Brave’s AI assistant Leo now offers cryptographically proven privacy
-  ingested: true
+  - Brave Leo model disclosure policy
+  - Brave Leo integrated LLMs list
+  - Brave Leo local model support details
+  - Brave Leo privacy AI model sources
+  - Brave Leo AI model transparency
+  planner_rationale: These queries aim to verify the claim that Brave Leo discloses
+    its models by directly asking about disclosure policies, listing integrated models,
+    and detailing support for local models. The queries also target privacy and transparency
+    aspects related to the AI models used by Brave Leo.
+  candidates_seen: 19
+  urls_kept: 19
+  urls_dropped: 0
+  scorer_rationale: The claim asks about the models Brave Leo uses. All provided candidates
+    discuss the models used by Brave Leo, including Mixtral, Gemma, Llama 3, Mistral,
+    Phi, and the option to use custom models via BYOM.  The candidates are generally
+    from Brave's official blog, help center, or news sites covering Brave.  I have
+    included the Wikipedia article as it provides a good overview. The forum post
+    is relevant as it discusses the BYOM feature.  The publisher qualities are mostly
+    secondary, with some tertiary sources.  The score is generally 4 or 5 because
+    they directly address the claim. The privacy features discussed in the later candidates
+    are relevant in the broader context of how Brave Leo works.
+  urls_after_blocklist: 19
+sources_consulted: []
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
-  analyst_confidence: medium
-  auditor_confidence: high
+  analyst_confidence: high
+  auditor_confidence: low
   verdict_agrees: true
   confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-04-30'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

@@ -1,15 +1,24 @@
 ---
 title: Brave Leo is hosted on renewable energy
 entity: products/brave-leo
-topics:
-- environmental-impact
+topics: [environmental-impact]
 verdict: unverified
-confidence: medium
+confidence: high
+verification_level: independently-verified
+takeaway: ''
+seo_title: ''
 criteria_slug: renewable-energy-hosting
-status: published
-as_of: '2026-04-30'
+status: draft
+as_of: '2026-05-05'
 sources:
-- 2023/brave-leo-release
-- 2024/leo-android
+- 2026/brave-leo-ai
+- 2025/leo-roadmap-2025-update
+- 2025/brave-leo-deep-dive
+- 2024/byom-nightly
+- 2025/automatic-mode-leo
+- 2022/327190
+- 2026/brave-energy-systems
+- 2023/23ab9c6e8aaf38d96531270128a6e656cd4c7d96
+tags: []
 ---
-The two Brave announcements about Leo describe its privacy architecture, reverse‑proxy routing, and the fact that it runs on models such as Llama 2 and Mixtral, but neither source mentions the energy source powering the service. Because the available material discusses hosting and infrastructure without addressing whether the underlying servers use renewable energy, the claim cannot be confirmed or refuted. Consequently, the claim is classified as **unverified**. The lack of any reference to renewable energy in the sources, despite coverage of Leo’s hosting details, leads to a medium confidence assessment that the claim remains unanswered.
+None of the available sources state that Brave Leo’s inference infrastructure is powered by renewable energy. The Brave Leo documentation (2026/brave-leo-ai; 2023/23ab9c6e8aaf38d96531270128a6e656cd4c7d96) describes privacy‑first architecture, reverse‑proxy routing, and model hosting but does not mention the energy mix of the hosting environment. Independent coverage of Brave Leo (2025/brave-leo-deep-dive) similarly focuses on features and privacy without addressing energy sources. A community forum thread about renewable‑energy requests (2022/327190) concerns Brave Search, not Brave Leo. Because the claim is not engaged by any source, it remains unverified.

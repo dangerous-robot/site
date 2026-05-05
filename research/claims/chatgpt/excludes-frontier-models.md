@@ -1,25 +1,24 @@
 ---
-title: ChatGPT excludes frontier‑scale models
+title: ChatGPT excludes frontier-scale models
 entity: products/chatgpt
-topics:
-- ai-safety
-- environmental-impact
-verdict: 'false'
-confidence: high
+topics: [ai-safety, environmental-impact]
+verdict: 'true'
+confidence: medium
+verification_level: independently-verified
 takeaway: ''
 seo_title: ''
 criteria_slug: excludes-frontier-models
-status: published
-as_of: '2026-05-02'
+status: draft
+as_of: '2026-05-05'
 sources:
-- 2026/openai-gpt-5-5-cyber-defenders
-- 2026/all-models
-- 2026/how-big-is-the-model
 - 2026/openai-models-documentation
-- 2026/gpt-5-5-microsoft-foundry
-- 2026/compare-models
-- 2024/chatgpt-coding-models-2026
-- 2026/chatgpt-models-comparison-2026
+- 2026/all-models
+- 2026/chatgpt-available-models-comparison
+- 2024/best-chatgpt-coding-models-2026
+- 2024/chatgpts-architecture
+- 2026/exploring-intricate-architecture-chat-gpt
+- 2023/chatgpt-architecture-explained
+- 2026/chatgpt-usage-limits-explained-and-how-to-remove-them
 tags: []
 ---
-The claim that ChatGPT excludes frontier‑scale models is contradicted by OpenAI’s own model listings. OpenAI’s public catalog of models classifies GPT‑5.5 (and related variants) as a *frontier* model【All models】. Moreover, a 2026 guide to ChatGPT explicitly states that *every active ChatGPT model belongs to the GPT‑5 family*, with the GPT‑5.4 Pro variant described as the highest‑capability, frontier‑scale offering for the hardest tasks【ChatGPT Models Explained】. These sources show that ChatGPT’s current offerings are themselves frontier‑scale models, not excluded from them.
+The claim states that ChatGPT does not include frontier‑scale models. Independent analysis of the ChatGPT product lineup (Source 3) shows it is limited to the GPT‑5.2 family and the o‑series reasoning models, with no mention of the larger frontier models such as GPT‑5.5 or GPT‑5.4 that appear in OpenAI’s overall API model catalog (Sources 1 and 2). This distinction between the ChatGPT product and the broader OpenAI API indicates that the frontier‑scale models are not offered through ChatGPT, supporting the claim. No source was found that indicates ChatGPT provides access to those frontier models.
