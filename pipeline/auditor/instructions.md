@@ -20,3 +20,15 @@ RULES:
 - Pay attention to whether the narrative accurately represents what the sources say.
 - Note any evidence gaps -- things the narrative claims that no source backs up.
 - Be genuinely critical. Do not default to agreement. Disagreement is valuable.
+
+CONFIDENCE CAP (mirrors the analyst rule; see docs/architecture/source-quality.md):
+The site applies a hard cap of `low` confidence whenever the source pool is
+classified `claimed` or `self-reported` -- i.e., the pool contains no source
+that conducts original analysis independent of the entity's own documents.
+Apply the same cap when forming your independent assessment. If you would
+otherwise pick `medium` or `high` for a claim whose source pool is entirely
+entity documentation (or independent-origin sources that only restate entity
+numbers), select `low` instead. Express the underlying reason in your notes;
+do not raise confidence to signal that the entity's documentation is well-
+written. Strength of self-reporting is communicated through the rationale,
+not the cap level.

@@ -282,7 +282,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     import httpx
     from common.content_loader import resolve_repo_root
     from common.frontmatter import serialize_frontmatter
-    from common.source_classification import classify_source_type
+    from common.source_classification import classify_source_type, independence_for_source_type
     from ingestor.agent import IngestorDeps, ingestor_agent
     from ingestor.validation import validate_source_file
 
@@ -317,7 +317,10 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
 
             fm_dict = sf.frontmatter.model_dump(mode="python")
-            fm_dict["source_type"] = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
+            source_type = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
+            fm_dict["source_type"] = source_type
+            if not fm_dict.get("independence"):
+                fm_dict["independence"] = independence_for_source_type(source_type)
             markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
             if not (do_write or force):
@@ -473,6 +476,15 @@ def step_analyze(
             force=force,
             status=fm.get("status", "draft"),
             criteria_slug=criteria_slug,
+            verification_level=(
+                a.verdict.verification_level.value
+                if a.verdict.verification_level is not None else None
+            ),
+            cap_rationale=a.verdict.cap_rationale,
+            source_overrides=(
+                [o.model_dump(mode="python", exclude_none=True) for o in a.verdict.source_overrides]
+                if a.verdict.source_overrides else None
+            ),
         )
         click.echo(f"Wrote {written_path}")
     except FileExistsError as exc:
@@ -1004,6 +1016,15 @@ def claim_refresh(
         criteria_slug=criteria_slug,
         seo_title=ao.verdict.seo_title,
         takeaway=ao.verdict.takeaway,
+        verification_level=(
+            ao.verdict.verification_level.value
+            if ao.verdict.verification_level is not None else None
+        ),
+        cap_rationale=ao.verdict.cap_rationale,
+        source_overrides=(
+            [o.model_dump(mode="python", exclude_none=True) for o in ao.verdict.source_overrides]
+            if ao.verdict.source_overrides else None
+        ),
     )
 
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]

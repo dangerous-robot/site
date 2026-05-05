@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from common.instructions import common, load_instructions
-from common.models import Category, Confidence, EntityType, Verdict
+from common.models import Category, Confidence, EntityType, Independence, Verdict, VerificationLevel
 from common.utils import slugify
 
 if TYPE_CHECKING:
@@ -28,6 +28,27 @@ class EntityResolution(BaseModel):
     )
 
 
+class SourceOverride(BaseModel):
+    """Per-claim override of a source-level field, recorded on the claim.
+
+    See docs/architecture/source-quality.md § Source overrides on claims.
+    """
+
+    source: str = Field(description='Source id like "2025/some-slug" — must reference one of the claim\'s sources.')
+    independence: Independence | None = Field(
+        default=None,
+        description=(
+            "Override value for `independence` on this source for this claim only. "
+            "Set to `first-party` when a source classified `independent` is actually "
+            "restating a primary disclosure without conducting original analysis."
+        ),
+    )
+    reason: str = Field(
+        description="One short sentence explaining why the override was applied (cited in the architecture doc).",
+        max_length=300,
+    )
+
+
 class VerdictAssessment(BaseModel):
     """Verdict and narrative produced from source analysis."""
 
@@ -39,6 +60,31 @@ class VerdictAssessment(BaseModel):
         min_length=1,
         max_length=3,
         description="One to three topic slugs that classify the claim. Mirror the source criterion's topics by default.",
+    )
+    verification_level: VerificationLevel = Field(
+        description=(
+            "Source-pool diversity signal, derived from the effective `independence` "
+            "and `kind` of sources on this claim (after `source_overrides` are "
+            "applied). See docs/architecture/source-quality.md § Verification scale."
+        ),
+    )
+    cap_rationale: str | None = Field(
+        default=None,
+        description=(
+            "Required when `verification_level` is `claimed` or `self-reported`. "
+            "One sentence matching one of the templates in "
+            "docs/architecture/source-quality.md § Rationale templates. "
+            "Surfaced verbatim under the verdict on the claim page."
+        ),
+        max_length=400,
+    )
+    source_overrides: list[SourceOverride] | None = Field(
+        default=None,
+        description=(
+            "Optional per-claim overrides of source-level fields. Use when a "
+            "source classified `independent` is actually restating a primary "
+            "disclosure for this claim. Omit when no overrides apply."
+        ),
     )
     seo_title: str | None = Field(
         default=None,
@@ -118,7 +164,15 @@ def build_analyst_prompt(
         parts.append("## Source materials")
         for i, src in enumerate(sources, 1):
             parts.append(f"### Source {i}: {src['title']}")
+            if src.get("source_id"):
+                parts.append(f"Source id: {src['source_id']}")
             parts.append(f"Publisher: {src['publisher']}")
+            if src.get("kind"):
+                parts.append(f"Kind: {src['kind']}")
+            if src.get("source_type"):
+                parts.append(f"Source type: {src['source_type']}")
+            if src.get("independence"):
+                parts.append(f"Independence: {src['independence']}")
             parts.append(f"Summary: {src['summary']}")
             if src.get("key_quotes"):
                 parts.append("Key quotes:")

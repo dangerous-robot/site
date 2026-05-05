@@ -17,7 +17,7 @@ from common.models import (
     EntityType,
     Verdict,
 )
-from common.source_classification import classify_source_type
+from common.source_classification import classify_source_type, independence_for_source_type
 from common.utils import slugify
 from ingestor.models import SourceFile
 
@@ -89,14 +89,22 @@ def load_source_dict(source_id: str, repo_root: Path) -> dict | None:
     except (ValueError, yaml.YAMLError, OSError):
         return None
     slug = path.stem
+    publisher = fm.get("publisher", "") or ""
+    kind = fm.get("kind", "") or ""
+    source_type = fm.get("source_type") or classify_source_type(publisher, kind)
+    independence = fm.get("independence") or independence_for_source_type(source_type)
     return {
         "title": fm.get("title", ""),
-        "publisher": fm.get("publisher", ""),
+        "publisher": publisher,
         "summary": fm.get("summary", ""),
         "key_quotes": fm.get("key_quotes") or [],
         "body": body,
         "slug": slug,
         "url": fm.get("url", ""),
+        "source_id": source_id,
+        "kind": kind,
+        "source_type": source_type,
+        "independence": independence,
     }
 
 
@@ -113,9 +121,12 @@ def _write_source_files(
         target_path = target_dir / f"{sf.slug}.md"
 
         fm_dict = sf.frontmatter.model_dump(mode="python")
-        fm_dict["source_type"] = classify_source_type(
+        source_type = classify_source_type(
             sf.frontmatter.publisher, sf.frontmatter.kind.value
         )
+        fm_dict["source_type"] = source_type
+        if not fm_dict.get("independence"):
+            fm_dict["independence"] = independence_for_source_type(source_type)
         markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
         try:
@@ -189,6 +200,9 @@ def _write_claim_file(
     criteria_slug: str | None = None,
     seo_title: str | None = None,
     takeaway: str | None = None,
+    verification_level: str | None = None,
+    cap_rationale: str | None = None,
+    source_overrides: list[dict] | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -236,6 +250,8 @@ def _write_claim_file(
         "topics": FlowList(topics),
         "verdict": verdict,
         "confidence": confidence,
+        "verification_level": verification_level,
+        "cap_rationale": cap_rationale,
         "takeaway": takeaway if takeaway is not None else existing_takeaway,
         "seo_title": seo_title if seo_title is not None else existing_seo_title,
         "criteria_slug": criteria_slug,
@@ -243,6 +259,7 @@ def _write_claim_file(
         "blocked_reason": blocked_reason,
         "as_of": datetime.date.today(),
         "sources": source_ids,
+        "source_overrides": source_overrides,
         "tags": [],
     }
     claim_path.write_text(

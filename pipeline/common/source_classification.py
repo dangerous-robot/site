@@ -91,3 +91,18 @@ def classify_source_type(publisher: str, kind: str) -> str:
         return "tertiary"
 
     return "secondary"
+
+
+_INDEPENDENCE_BY_SOURCE_TYPE: dict[str, str] = {
+    "primary": "first-party",
+    "secondary": "independent",
+    "tertiary": "unknown",
+}
+
+
+def independence_for_source_type(source_type: str) -> str:
+    """Map `source_type` to `independence` per the v1 proxy.
+
+    See docs/architecture/source-quality.md § The `independence` field.
+    """
+    return _INDEPENDENCE_BY_SOURCE_TYPE.get(source_type, "unknown")

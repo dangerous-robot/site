@@ -73,6 +73,7 @@ def _analyst_model() -> TestModel:
                 "verdict": "mixed",
                 "confidence": "medium",
                 "narrative": "The evidence is mixed.",
+                "verification_level": "partially-verified",
             },
         },
     )

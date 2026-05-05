@@ -583,7 +583,7 @@ class TestResearchClaimWithResolvedEntity:
             return [("https://example.com/a", sf)] * 4, []
 
         from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
-        from common.models import Confidence, EntityType, Verdict, Category
+        from common.models import Confidence, EntityType, Verdict, Category, VerificationLevel
 
         async def _fake_analyse(*args, **kwargs):
             return AnalystOutput(
@@ -598,6 +598,7 @@ class TestResearchClaimWithResolvedEntity:
                     confidence=Confidence.HIGH,
                     narrative="narrative",
                     topics=[Category("data-privacy")],
+                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
                 ),
             )
 
@@ -657,7 +658,7 @@ class TestResearchClaimWithResolvedEntity:
             return [("https://example.com/a", sf)] * 4, []
 
         from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
-        from common.models import Confidence, EntityType, Verdict, Category
+        from common.models import Confidence, EntityType, Verdict, Category, VerificationLevel
 
         async def _fake_analyse(*args, **kwargs):
             return AnalystOutput(
@@ -672,6 +673,7 @@ class TestResearchClaimWithResolvedEntity:
                     confidence=Confidence.HIGH,
                     narrative="narrative",
                     topics=[Category("data-privacy")],
+                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
                 ),
             )
 

@@ -12,12 +12,15 @@ from common.sidecar import read_sidecar
 from .checks import (
     check_broken_criteria_slug,
     check_broken_source_refs,
+    check_confidence_cap_violation,
     check_duplicate_entity_slugs,
     check_empty_required_strings,
     check_entity_type_dir_mismatch,
     check_future_as_of,
     check_legacy_field_name,
+    check_missing_cap_rationale,
     check_missing_criteria_slug,
+    check_missing_independence,
     check_missing_required_fields,
     check_missing_seo_title,
     check_orphaned_claims,
@@ -83,6 +86,7 @@ def run_all_checks(
 
     claim_fms = {str(p): _read_frontmatter(p) for p in claim_files}
     entity_fms = {str(p): _read_frontmatter(p) for p in entity_files}
+    source_fms = {str(p): _read_frontmatter(p) for p in source_files}
     # Sidecars are only consulted for published claims; skip the stat+parse for drafts.
     claim_sidecars = {
         str(p): read_sidecar(p)
@@ -120,5 +124,8 @@ def run_all_checks(
     issues += check_entity_type_dir_mismatch(entity_files, entity_fms)
     issues += check_published_criterion(claim_files, claim_fms)
     issues += check_published_review_signoff(claim_files, claim_fms, claim_sidecars)
+    issues += check_missing_independence(source_files, source_fms)
+    issues += check_confidence_cap_violation(claim_files, claim_fms)
+    issues += check_missing_cap_rationale(claim_files, claim_fms)
 
     return issues, files_checked

@@ -30,6 +30,7 @@ class TestAnalystAgent:
                         "verdict": "mixed",
                         "confidence": "medium",
                         "narrative": "The evidence is mixed on this claim.",
+                        "verification_level": "partially-verified",
                     },
                 },
             )

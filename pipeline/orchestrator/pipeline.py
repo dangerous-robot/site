@@ -538,6 +538,14 @@ async def _ingest_urls(
 
 
 def _build_source_dict(sf: SourceFile) -> dict:
+    from common.source_classification import classify_source_type, independence_for_source_type
+
+    source_type = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
+    independence = (
+        sf.frontmatter.independence.value
+        if sf.frontmatter.independence is not None
+        else independence_for_source_type(source_type)
+    )
     return {
         "title": sf.frontmatter.title,
         "publisher": sf.frontmatter.publisher,
@@ -546,6 +554,10 @@ def _build_source_dict(sf: SourceFile) -> dict:
         "body": sf.body,
         "slug": sf.slug,
         "url": sf.frontmatter.url,
+        "source_id": f"{sf.year}/{sf.slug}",
+        "kind": sf.frontmatter.kind.value,
+        "source_type": source_type,
+        "independence": independence,
     }
 
 
@@ -812,6 +824,15 @@ async def research_claim(
                 force=cfg.force_overwrite,
                 seo_title=analyst_out.verdict.seo_title,
                 takeaway=analyst_out.verdict.takeaway,
+                verification_level=(
+                    analyst_out.verdict.verification_level.value
+                    if analyst_out.verdict.verification_level is not None else None
+                ),
+                cap_rationale=analyst_out.verdict.cap_rationale,
+                source_overrides=(
+                    [o.model_dump(mode="python", exclude_none=True) for o in analyst_out.verdict.source_overrides]
+                    if analyst_out.verdict.source_overrides else None
+                ),
             )
             try:
                 result.claim_path = str(claim_path.relative_to(Path(repo_root)))
@@ -1251,6 +1272,15 @@ async def onboard_entity(
                         criteria_slug=slug,
                         seo_title=ao.verdict.seo_title,
                         takeaway=ao.verdict.takeaway,
+                        verification_level=(
+                            ao.verdict.verification_level.value
+                            if ao.verdict.verification_level is not None else None
+                        ),
+                        cap_rationale=ao.verdict.cap_rationale,
+                        source_overrides=(
+                            [o.model_dump(mode="python", exclude_none=True) for o in ao.verdict.source_overrides]
+                            if ao.verdict.source_overrides else None
+                        ),
                     )
                     result.claims_created.append(str(claim_path.relative_to(repo_root)))
 

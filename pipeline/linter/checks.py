@@ -12,10 +12,14 @@ REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "
 CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description", "parent_company", "search_hints"}
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
+    "verification_level", "cap_rationale", "source_overrides",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
     "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
     "audit", "seo_title", "tags",
 }
+INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
+CAPPED_VERIFICATION_LEVELS = {"claimed", "self-reported"}
+CAPPED_CONFIDENCE_VALUES = {"medium", "high"}
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 ENTITY_DIR_TO_TYPE = {
@@ -386,6 +390,105 @@ def check_future_as_of(
                 severity="info",
                 message=f'as_of date {as_of} is in the future — likely a paste error',
             ))
+    return issues
+
+
+def check_missing_independence(
+    source_files: list[Path],
+    source_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Warn when a recent source omits `independence`.
+
+    Sources accessed before INDEPENDENCE_GRACE_DATE are exempt — see the v1
+    backfill scope in docs/architecture/source-quality.md. New sources must
+    carry the field so the verification scale doesn't silently degrade.
+    """
+    issues = []
+    for path in source_files:
+        fm = source_frontmatters.get(str(path), {})
+        if fm.get("independence"):
+            continue
+        accessed = fm.get("accessed_date")
+        if isinstance(accessed, datetime.datetime):
+            accessed = accessed.date()
+        if not isinstance(accessed, datetime.date) or accessed < INDEPENDENCE_GRACE_DATE:
+            continue
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="missing-independence",
+            severity="warning",
+            message="source has no `independence` field",
+            hint=(
+                "add `independence: first-party | independent | unknown` to the "
+                "source frontmatter (see docs/architecture/source-quality.md)"
+            ),
+        ))
+    return issues
+
+
+def check_confidence_cap_violation(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Warn when a claim violates the confidence cap.
+
+    Claims with `verification_level` of `claimed` or `self-reported` must have
+    `confidence: low`. The analyst applies the cap at write time; this check
+    catches drift after the fact. See docs/architecture/source-quality.md.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        level = fm.get("verification_level")
+        confidence = fm.get("confidence")
+        if level in CAPPED_VERIFICATION_LEVELS and confidence in CAPPED_CONFIDENCE_VALUES:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="confidence-cap-violation",
+                severity="warning",
+                message=(
+                    f"confidence `{confidence}` is above the cap for "
+                    f"verification_level `{level}` (must be `low`)"
+                ),
+                hint=(
+                    "lower `confidence:` to `low` and add a `cap_rationale:` field, "
+                    "or revise `verification_level` if the source pool changed"
+                ),
+            ))
+    return issues
+
+
+def check_missing_cap_rationale(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Warn when a capped claim has no `cap_rationale`.
+
+    The display layer surfaces `cap_rationale` to readers; without it, the
+    confidence cap is uninterpretable.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        level = fm.get("verification_level")
+        if level not in CAPPED_VERIFICATION_LEVELS:
+            continue
+        rationale = fm.get("cap_rationale")
+        if isinstance(rationale, str) and rationale.strip():
+            continue
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="missing-cap-rationale",
+            severity="warning",
+            message=(
+                f"verification_level `{level}` requires a `cap_rationale` "
+                f"explaining why confidence is capped at low"
+            ),
+            hint=(
+                "add a one-sentence `cap_rationale:` field per the templates in "
+                "docs/architecture/source-quality.md"
+            ),
+        ))
     return issues
 
 

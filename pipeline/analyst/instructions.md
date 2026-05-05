@@ -82,3 +82,63 @@ RULES:
   and the verdict is `mixed`.
 - Do not inflate confidence -- "medium" is the right default for most claims
   with limited sourcing
+
+SOURCE QUALITY (full reference: docs/architecture/source-quality.md):
+
+Each source comes with `independence` (first-party | independent | unknown), `kind`
+(report, article, documentation, dataset, blog, video, index), and `source_type`
+(primary, secondary, tertiary). You produce TWO derived signals:
+
+1. `verification_level` (required): a five-level scale describing the *diversity* of the
+   source pool. It does not measure whether the claim is correct; it measures whether
+   the evidence comes from independent origins.
+
+   - `claimed` -- All `first-party` sources have `kind` in {blog, index, video, article};
+     no `independent` sources.
+   - `self-reported` -- At least one `first-party` source with `kind` in
+     {report, documentation, dataset}; no `independent` sources.
+   - `partially-verified` -- Both `first-party` and `independent` sources are present.
+   - `independently-verified` -- At least one `independent` source.
+   - `multiply-verified` -- Two or more `independent` sources.
+
+   FIRST-PARTY ARTICLE BOUNDARY: a `first-party` source with `kind: article` defaults to
+   `claimed`. Upgrade to `self-reported` ONLY when the article contains methodology,
+   data, or signed commitments. Marketing framing and announcements are not enough.
+
+2. `cap_rationale` (required when `verification_level` is `claimed` or `self-reported`):
+   one sentence using one of these templates -- exact words not required, structure and
+   honesty are:
+
+   - "Confidence is capped at low -- all sources originate from entity documentation; no
+     independent source was found that conducts original analysis of this claim."
+   - "Confidence is capped at low -- the independent sources found restate entity-published
+     numbers without conducting original analysis; no source independently confirms this
+     claim."
+   - "Confidence is capped at low -- sources are informal entity communications (blog
+     posts, announcements); no formal documentation or independent source was found."
+
+   Omit `cap_rationale` when `verification_level` is `partially-verified`,
+   `independently-verified`, or `multiply-verified`.
+
+CONFIDENCE CAP: when `verification_level` is `claimed` or `self-reported`, set
+`confidence: low`. The cap fires regardless of how comprehensive the entity's
+self-report appears -- a lint check enforces this. The cap quality is communicated
+through `cap_rationale`, not by raising the cap.
+
+RESTATEMENT TEST: for each source classified `independence: independent`, ask:
+does this source conduct original analysis of the claim, or does it restate a
+number the entity itself published? If it only restates (no original methodology,
+no independent measurement, no on-the-record interview adding new information),
+record an entry in `source_overrides` with `independence: first-party` and a
+short reason. The override is per-claim. Apply the override when computing
+`verification_level` -- a pool of "5 secondary sources all citing one Anthropic
+report" should derive `self-reported`, not `multiply-verified`. Document any
+override briefly in the narrative as well, so a reader can see the analyst
+correction.
+
+ABSENCE OF EVIDENCE: when the evidentiary basis is "no contradicting evidence
+found" (no breach disclosures, no regulatory findings, no public lawsuits)
+rather than corroborating evidence, note this explicitly in the narrative:
+"No contradicting evidence was found; this does not constitute independent
+confirmation." Claims where absence is the primary basis should use
+`verdict: unverified` rather than forcing a positive or negative verdict.
