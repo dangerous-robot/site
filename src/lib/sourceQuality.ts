@@ -16,7 +16,7 @@ export const VERIFICATION_LEVEL_LABELS: Record<VerificationLevel, string> = {
   'self-reported': 'Self-reported',
   'partially-verified': 'Partially verified',
   'independently-verified': 'Independently verified',
-  'multiply-verified': 'Multiply verified',
+  'multiply-verified': 'Cross-verified',
 };
 
 export const VERIFICATION_LEVEL_GLOSS: Record<VerificationLevel, string> = {

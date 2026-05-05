@@ -151,23 +151,6 @@ const claimReview = {
       </section>
     )}
 
-    <section class="rationale">
-      <Content />
-    </section>
-
-    {claim.data.sources && claim.data.sources.length > 0 && (
-      <section class="sources-section">
-        <h2>Sources</h2>
-        <ul class="source-list">
-          {claim.data.sources.map((sourceRef: string) => (
-            <li>
-              <a href={`/sources/${sourceRef}`}>{sourceRef}</a>
-            </li>
-          ))}
-        </ul>
-      </section>
-    )}
-
     {audit && (
       <details class="audit-trail">
         <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
@@ -233,6 +216,23 @@ const claimReview = {
           </section>
         </div>
       </details>
+    )}
+
+    <section class="rationale">
+      <Content />
+    </section>
+
+    {claim.data.sources && claim.data.sources.length > 0 && (
+      <section class="sources-section">
+        <h2>Sources</h2>
+        <ul class="source-list">
+          {claim.data.sources.map((sourceRef: string) => (
+            <li>
+              <a href={`/sources/${sourceRef}`}>{sourceRef}</a>
+            </li>
+          ))}
+        </ul>
+      </section>
     )}
 
     {matchedCriteria && (

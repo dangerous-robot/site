@@ -18,7 +18,7 @@ Single claim-level field, set by the analyst. Each row's "Derivation" describes 
 
 | Level (strongest first) | Plain-language meaning (display copy) | Derivation |
 |-------|----------------------------------------|------------|
-| `multiply-verified` | Multiple independent sources corroborate this claim. | The pool contains two or more `independent` sources. |
+| `multiply-verified` (display: **Cross-verified**) | Multiple independent sources corroborate this claim. | The pool contains two or more `independent` sources. |
 | `independently-verified` | At least one independent source corroborates this claim. | The pool contains at least one `independent` source. The pool may also contain `first-party` sources. |
 | `partially-verified` | A mix of entity documentation and independent sources. | The pool contains at least one `first-party` source and at least one `independent` source. (Mechanically a subset of `independently-verified`; the cascade routes mixed pools to the stronger label, so this row is selected only when the analyst judges the independent source provides supplementary context rather than corroboration.) |
 | `self-reported` | The entity has published formal documentation; no independent source was found to corroborate. | The pool has zero `independent` sources and at least one `first-party` source whose `kind` is in {report, documentation, dataset}. |
