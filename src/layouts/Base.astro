@@ -287,6 +287,15 @@ const orgSchema = {
         text-decoration: none;
       }
 
+      /* Container query host for components that want to adapt to layout width
+         (e.g., PageHeader's outdent fallback). Lives on <body> rather than
+         <main> because <main>'s width is capped by --content-max-width, which
+         would prevent min-width queries above the cap from ever matching. */
+      :global(body) {
+        container-type: inline-size;
+        container-name: page;
+      }
+
       .content {
         max-width: var(--content-max-width);
         margin: 0 auto;

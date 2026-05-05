@@ -34,6 +34,10 @@
   --radius-md: 6px;
   --radius-full: 9999px;
 
+  /* Page-identity icon box dimensions */
+  --icon-box-size: 64px;
+  --icon-box-size-row: 32px;
+
   /* Badge text color (always white — overridden in high-contrast) */
   --color-on-badge: #fff;
 }

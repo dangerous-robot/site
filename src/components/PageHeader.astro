@@ -4,30 +4,62 @@ import ObjectTypeIcon from './ObjectTypeIcon.astro';
 import { ENTITY_TYPE_LABELS } from '../lib/entityTypes';
 
 interface Props {
-  crumbs: { label: string; href?: string }[];
+  crumbs?: { label: string; href?: string }[];
   type: string;
   title: string;
+  /** 'detail' (default): outdented icon + rail anchored to title block.
+   *  'index': inline-stacked icon above title, no rail. */
+  variant?: 'detail' | 'index';
 }
 
-const { crumbs, type, title } = Astro.props;
+const { crumbs, type, title, variant = 'detail' } = Astro.props;
+const hasMeta = Astro.slots.has('default');
+const hasCrumbs = Array.isArray(crumbs) && crumbs.length > 0;
+const typeLabel = ENTITY_TYPE_LABELS[type] ?? type;
+const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
 ---
 
-<header class="page-header">
-  <div class="breadcrumb-row">
-    <Breadcrumb crumbs={crumbs} />
-  </div>
-  <h1 class="page-title">{title}</h1>
-  <div class="item-meta">
-    <div class="icon-col">
-      <div class="icon-box">
-        <ObjectTypeIcon type={type} size={28} />
+<header class:list={['page-header', variantClass]}>
+  {hasCrumbs && (
+    <div class="breadcrumb-row">
+      <Breadcrumb crumbs={crumbs!} />
+    </div>
+  )}
+
+  {variant === 'detail' ? (
+    <div class="detail-body">
+      <div class="icon-outdent" aria-hidden="true">
+        <div class="icon-box">
+          <ObjectTypeIcon type={type} size={44} />
+        </div>
+        <span class="type-label">{typeLabel}</span>
+        {hasMeta && <div class="rail"></div>}
       </div>
-      <span class="type-label">{ENTITY_TYPE_LABELS[type] ?? type}</span>
+      <div class="content-col">
+        <h1 class="page-title">{title}</h1>
+        {hasMeta && (
+          <div class="meta-col">
+            <slot />
+          </div>
+        )}
+      </div>
     </div>
-    <div class="meta-col">
-      <slot />
+  ) : (
+    <div class="index-body">
+      <div class="index-icon-row">
+        <div class="icon-box">
+          <ObjectTypeIcon type={type} size={28} />
+        </div>
+        <span class="type-label">{typeLabel}</span>
+      </div>
+      <h1 class="page-title">{title}</h1>
+      {hasMeta && (
+        <div class="meta-col">
+          <slot />
+        </div>
+      )}
     </div>
-  </div>
+  )}
 </header>
 
 <style>
@@ -44,30 +76,20 @@ const { crumbs, type, title } = Astro.props;
     margin-bottom: 0.75rem;
   }
 
-  .item-meta {
-    display: grid;
-    grid-template-columns: 60px 1fr;
-    column-gap: var(--space-md);
-  }
-
-  .icon-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-xs);
-    padding-top: 3px;
-  }
-
+  /* Icon box — uses --color-bg (rather than --color-surface) so the box has
+     a visible inner-vs-outer contrast in both light (cream-on-white) and
+     dark (near-black-on-charcoal) themes. */
   .icon-box {
-    background: var(--color-surface);
+    width: var(--icon-box-size, 64px);
+    height: var(--icon-box-size, 64px);
+    background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
-    padding: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     color: var(--color-text-muted);
+    flex-shrink: 0;
   }
 
   .type-label {
@@ -79,7 +101,129 @@ const { crumbs, type, title } = Astro.props;
     line-height: 1.3;
   }
 
+  /* ============================================================
+     Detail variant — outdented icon + rail (Design 4).
+     Default state is the inline-stack fallback; the @container
+     query promotes to outdent when the page container has the
+     gutter to spare.
+     ============================================================ */
+  .detail-body {
+    position: relative;
+  }
+
+  /* Inline-stack fallback (default — applies on narrow containers,
+     wide-layout pages, and bare-layout pages). */
+  .icon-outdent {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .icon-outdent .icon-box {
+    width: 48px;
+    height: 48px;
+  }
+  .icon-outdent .icon-box :global(svg) {
+    width: 32px;
+    height: 32px;
+  }
+  .icon-outdent .rail {
+    display: none;
+  }
+  .icon-outdent .type-label {
+    text-align: left;
+  }
+
+  .content-col {
+    min-width: 0;
+  }
+
   .meta-col {
     margin-bottom: var(--space-md);
+  }
+
+  /* Outdent promotion. The reading-layout content column maxes out at
+     48rem (768px); the outdent needs ~88px of gutter to clear. A page
+     container of ~1000px gives roughly that on each side. Wide layout
+     (72rem / 1152px) would need ~1328px viewport — uncommon — so wide
+     pages stay inline-stacked. We scope the promotion to descendants
+     of .content--reading so wide layouts never trigger it. */
+  @container page (min-width: 1000px) {
+    :global(.content--reading) .page-header.is-detail .icon-outdent {
+      position: absolute;
+      right: calc(100% + var(--space-md));
+      top: 0;
+      bottom: 0;
+      flex-direction: column;
+      align-items: center;
+      width: max-content;
+      min-width: 64px;
+      gap: var(--space-xs);
+      margin-bottom: 0;
+    }
+    :global(.content--reading) .page-header.is-detail .icon-outdent .icon-box {
+      width: var(--icon-box-size, 64px);
+      height: var(--icon-box-size, 64px);
+    }
+    :global(.content--reading) .page-header.is-detail .icon-outdent .icon-box :global(svg) {
+      width: 44px;
+      height: 44px;
+    }
+    :global(.content--reading) .page-header.is-detail .icon-outdent .type-label {
+      text-align: center;
+    }
+    :global(.content--reading) .page-header.is-detail .icon-outdent .rail {
+      display: block;
+      flex: 1 1 auto;
+      width: 1px;
+      background: var(--color-border);
+      margin-top: var(--space-xs);
+    }
+  }
+
+  /* Print: always use inline-stack; absolute-positioned outdent often
+     drops out in print. */
+  @media print {
+    .page-header.is-detail .icon-outdent {
+      position: static !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      width: auto !important;
+      gap: var(--space-sm) !important;
+      margin-bottom: var(--space-sm) !important;
+    }
+    .page-header.is-detail .icon-outdent .icon-box {
+      width: 48px !important;
+      height: 48px !important;
+    }
+    .page-header.is-detail .icon-outdent .rail {
+      display: none !important;
+    }
+  }
+
+  /* ============================================================
+     Index variant — inline-stacked, smaller icon, no rail.
+     ============================================================ */
+  .index-body {
+    /* nothing special — block flow */
+  }
+
+  .index-icon-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+  .index-icon-row .icon-box {
+    width: 40px;
+    height: 40px;
+  }
+  .index-icon-row .icon-box :global(svg) {
+    width: 24px;
+    height: 24px;
+  }
+  .index-icon-row .type-label {
+    text-align: left;
   }
 </style>
