@@ -42,6 +42,31 @@ Each source carries `independence: first-party | independent | unknown`. The ing
 
 The proxy is a starting classification. It has a known failure mode (next section).
 
+### `source_type` and `independence`: why both?
+
+Two fields, two different questions:
+
+- **`source_type`** (`primary | secondary | tertiary`, set by `pipeline/common/source_classification.py`): how close is this source to the originating authority? Older field; used by the scorer and surfaced in the audit trail.
+- **`independence`** (`first-party | independent | unknown`): is this source authored by the entity (or by someone with structural COI to the entity) or not? v1 field; feeds the verification scale and confidence cap.
+
+For most of the corpus the two coincide:
+
+| `source_type` | `independence` | Typical case |
+|---|---|---|
+| `primary` | `first-party` | Company press release, the entity's own SEC 10-K |
+| `secondary` | `independent` | Newspaper article, peer-reviewed journal |
+| `tertiary` | `unknown` | Personal blog, foundation site, content aggregator |
+
+That coincidence is why the ingestor mechanically derives `independence` from `source_type`. The mapping is a v1 proxy, not a definition — the two fields answer related but distinct questions and could disagree.
+
+Edges where the proxy is imprecise:
+
+- **Regulator filings about (not by) the entity** are `primary` by publisher rule (sec.gov, ftc.gov) and proxied to `first-party`. The document originates outside the entity but speaks with regulator authority — neither label fits cleanly. Today the proxy treats them as first-party; the analyst can correct per-claim if it matters.
+- **Academic articles authored by entity employees** are `secondary` by publisher (arxiv, IEEE) and proxied to `independent`. They may functionally be entity-authored content disclosed through a third-party venue. Independent venue, not independent author.
+- **Secondary sources that restate primary numbers without original analysis** — by far the most common edge — are addressed per-claim via `source_overrides` (see § Source overrides on claims). Other edges currently rely on the analyst flagging them in the narrative.
+
+When the v1.x publisher-groups registry lands and the deferred `coi_with_subject` field is added, the proxy can be tightened. For v1, the analyst's restatement test is the only persistent correction mechanism.
+
 ### Known failure mode: independent restatement of primary disclosures
 
 The proxy's biggest gap is on the most common real case: a secondary source (a journalist, an analyst) restating a number from a company's own press release or report. The source originates outside the entity, so the proxy classifies it `independent`, but it adds no independent corroboration: the only place the number actually exists is the entity's own document.
