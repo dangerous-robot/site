@@ -6,7 +6,7 @@ import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
-from common.models import SourceKind
+from common.models import Independence, SourceKind
 
 
 class SourceFrontmatter(BaseModel):
@@ -19,6 +19,7 @@ class SourceFrontmatter(BaseModel):
     published_date: datetime.date | None = None
     accessed_date: datetime.date
     kind: SourceKind
+    independence: Independence | None = None
     summary: str = Field(max_length=200)
     key_quotes: list[str] | None = None
 

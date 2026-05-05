@@ -23,6 +23,7 @@ const sources = defineCollection({
       'index',
     ]),
     source_type: z.enum(['primary', 'secondary', 'tertiary']).optional(),
+    independence: z.enum(['first-party', 'independent', 'unknown']).optional(),
     summary: z.string().max(200),
     key_quotes: z.array(z.string()).optional(),
   }),
@@ -161,6 +162,26 @@ const claims = defineCollection({
       'not-applicable',
     ]),
     confidence: z.enum(['high', 'medium', 'low']),
+    // Source-pool diversity signal. Set by the analyst from `independence` + `kind`
+    // on the claim's sources. See docs/architecture/source-quality.md.
+    verification_level: z.enum([
+      'claimed',
+      'self-reported',
+      'partially-verified',
+      'independently-verified',
+      'multiply-verified',
+    ]).optional(),
+    // One-sentence explanation when the confidence cap fires. Required reading
+    // when `verification_level` is `claimed` or `self-reported`. See architecture doc.
+    cap_rationale: z.string().max(400).optional(),
+    // Per-claim overrides of source-level fields, used when a source classified
+    // `independent` is actually restating a primary disclosure for this claim.
+    // See docs/architecture/source-quality.md § Source overrides on claims.
+    source_overrides: z.array(z.object({
+      source: z.string(),
+      independence: z.enum(['first-party', 'independent', 'unknown']).optional(),
+      reason: z.string(),
+    })).optional(),
     // One-sentence reader-facing takeaway rendered under the verdict badge on the
     // claim page. Optional during v1; the analyst pipeline doesn't yet generate it,
     // so operators add it by hand during review. Capped to keep it scannable.

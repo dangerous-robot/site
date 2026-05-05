@@ -19,4 +19,19 @@ hosts:
     reason: "paywall"
   - host: hbr.org
     reason: "Harvard Business Review paywall"
+  # PR wire services: republish entity press releases verbatim. Treating these
+  # as independent sources is the proxy's main failure mode (see
+  # docs/architecture/source-quality.md § Known failure mode). Hard-drop here.
+  - host: prnewswire.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
+  - host: businesswire.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
+  - host: globenewswire.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
+  - host: accesswire.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
+  - host: prweb.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
+  - host: einpresswire.com
+    reason: "PR wire: republishes entity press releases without independent analysis"
   # Candidates to review later: medium.com (intermittent), reuters.com (geo-gated)

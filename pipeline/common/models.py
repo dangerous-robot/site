@@ -117,6 +117,32 @@ class SourceKind(str, Enum):
     INDEX = "index"
 
 
+class Independence(str, Enum):
+    """Source-pool independence signal; mirrors the Zod enum in content.config.ts.
+
+    See docs/architecture/source-quality.md for derivation rules and the
+    restatement failure mode.
+    """
+
+    FIRST_PARTY = "first-party"
+    INDEPENDENT = "independent"
+    UNKNOWN = "unknown"
+
+
+class VerificationLevel(str, Enum):
+    """Per-claim source-pool diversity signal.
+
+    Derived from the `independence` + `kind` of sources on a claim.
+    See docs/architecture/source-quality.md.
+    """
+
+    CLAIMED = "claimed"
+    SELF_REPORTED = "self-reported"
+    PARTIALLY_VERIFIED = "partially-verified"
+    INDEPENDENTLY_VERIFIED = "independently-verified"
+    MULTIPLY_VERIFIED = "multiply-verified"
+
+
 class EntityType(str, Enum):
     COMPANY = "company"
     PRODUCT = "product"
