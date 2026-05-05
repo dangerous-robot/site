@@ -11,4 +11,5 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 | [onboarding.md](onboarding.md) | `dr onboard` flow, template screening, checkpoint protocol, company/product relationships |
 | [glossary.md](glossary.md) | Canonical vocabulary: research objects, roles, pipeline terms, governance rules |
 | [research-flow.md](research-flow.md) | Mermaid flow diagrams: initiation paths, pipeline, sign-off, rejection, publish, recheck |
+| [source-quality.md](source-quality.md) | Verification scale, independence proxy + restatement failure mode, confidence cap, source overrides |
 | [open-issues.md](open-issues.md) | Design questions from architecture review that require decisions before implementation |
