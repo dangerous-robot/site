@@ -12,6 +12,7 @@ interface Props {
 }
 const { total, searchPlaceholder, facets = [], searchDataAttr = 'data-title' } = Astro.props;
 const hasFacets = facets.length > 0;
+const initiallyCollapsed = true;
 ---
 <div class="filter-bar">
   <div class="filter-top">
@@ -23,7 +24,7 @@ const hasFacets = facets.length > 0;
       type="button"
       class="facet-toggle-btn"
       id="facet-toggle"
-      aria-expanded="false"
+      aria-expanded={String(!initiallyCollapsed)}
       aria-controls="facet-bar"
     >
       <DisclosureIndicator />
@@ -31,16 +32,13 @@ const hasFacets = facets.length > 0;
       <span class="active-count" id="active-count" hidden>(0)</span>
     </button>
   )}
-  {hasFacets && <FacetBar facets={facets} defaultCollapsed={true} />}
+  {hasFacets && <FacetBar facets={facets} defaultCollapsed={initiallyCollapsed} />}
 </div>
 <style>
 .filter-bar { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-lg); }
 .filter-top { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 .showing-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
 
-/* Disclosure-style toggle. No background, no full border — the small
-   circular indicator carries the affordance. Matches the audit-trail
-   "+ Research process" pattern on claim detail. */
 .facet-toggle-btn {
   align-self: flex-start;
   cursor: pointer;
@@ -71,54 +69,48 @@ const hasFacets = facets.length > 0;
   let textQuery = '';
   let facetFilters = {};
 
+  // Static across the page lifetime; cache once.
+  const rows = document.querySelectorAll('[data-filterable]');
+  const countEl = document.getElementById('showing-count');
+  const emptyEl = document.getElementById('filter-empty');
+
   function applyFilters() {
-    const rows = document.querySelectorAll('[data-filterable]');
+    const filterEntries = Object.entries(facetFilters);
     let shown = 0;
     rows.forEach(row => {
-      const el = row;
-      const searchTarget = (el.getAttribute(searchDataAttr) || el.textContent || '').toLowerCase();
+      const searchTarget = (row.getAttribute(searchDataAttr) || row.textContent || '').toLowerCase();
       const textMatch = !textQuery || searchTarget.includes(textQuery);
 
-      const facetMatch = Object.entries(facetFilters).every(([facetId, values]) => {
-        const set = values;
-        if (set.size === 0) return true;
-        const attrVal = el.getAttribute(`data-${facetId}`);
-        return set.has(attrVal);
+      const facetMatch = filterEntries.every(([facetId, values]) => {
+        if (values.size === 0) return true;
+        return values.has(row.getAttribute(`data-${facetId}`));
       });
 
       const visible = textMatch && facetMatch;
-      el.hidden = !visible;
+      row.hidden = !visible;
       if (visible) shown++;
     });
 
-    const countEl = document.getElementById('showing-count');
     if (countEl) countEl.textContent = `Showing ${shown} of ${total}`;
-
-    const emptyEl = document.getElementById('filter-empty');
     if (emptyEl) emptyEl.hidden = shown > 0;
   }
 
   const searchInput = document.querySelector('.search-input');
-  if (searchInput) {
-    searchInput.addEventListener('input', e => {
-      textQuery = e.target.value.toLowerCase().trim();
-      applyFilters();
-    });
-  }
+  searchInput?.addEventListener('input', e => {
+    textQuery = e.target.value.toLowerCase().trim();
+    applyFilters();
+  });
 
   document.addEventListener('facet-change', e => {
     facetFilters = e.detail;
     applyFilters();
   });
 
-  // Toggle facet visibility. Default state is collapsed.
   const facetToggle = document.getElementById('facet-toggle');
   const facetBar = document.getElementById('facet-bar');
-  if (facetToggle && facetBar) {
-    facetToggle.addEventListener('click', () => {
-      const isExpanded = facetToggle.getAttribute('aria-expanded') === 'true';
-      facetToggle.setAttribute('aria-expanded', String(!isExpanded));
-      facetBar.classList.toggle('is-collapsed');
-    });
-  }
+  facetToggle?.addEventListener('click', () => {
+    const isExpanded = facetToggle.getAttribute('aria-expanded') === 'true';
+    facetToggle.setAttribute('aria-expanded', String(!isExpanded));
+    facetBar?.classList.toggle('is-collapsed');
+  });
 </script>
