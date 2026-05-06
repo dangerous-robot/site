@@ -10,7 +10,7 @@ interface Props {
 const { id, title, publisher, kind, year, citationCount } = Astro.props;
 ---
 <a href={`/sources/${id}`} class="source-row" data-kind={kind}>
-  <span class:list={['kind-badge', `kind-${kind}`]}>{kind}</span>
+  <span class:list={['chip', 'kind-badge', `kind-${kind}`]}>{kind}</span>
   <span class="source-info">
     <span class="publisher">{publisher}</span>
     <span class="source-title">{title}</span>
@@ -33,23 +33,16 @@ const { id, title, publisher, kind, year, citationCount } = Astro.props;
 }
 .source-row:hover { background: var(--color-surface); }
 .kind-badge {
-  display: inline-block;
   padding: 2px var(--space-xs);
-  border-radius: var(--radius-sm);
   font-size: var(--font-size-2xs);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
-  border: 1px solid var(--kind-color, var(--color-text-faint));
-  color: var(--kind-color, var(--color-text-faint));
 }
-.kind-report      { --kind-color: var(--color-kind-report); }
-.kind-article     { --kind-color: var(--color-kind-article); }
-.kind-documentation { --kind-color: var(--color-kind-documentation); }
-.kind-dataset     { --kind-color: var(--color-kind-dataset); }
-.kind-blog        { --kind-color: var(--color-kind-blog); }
-.kind-video       { --kind-color: var(--color-kind-video); }
-.kind-index       { --kind-color: var(--color-kind-index); }
+.kind-report      { --chip-color: var(--color-kind-report); }
+.kind-article     { --chip-color: var(--color-kind-article); }
+.kind-documentation { --chip-color: var(--color-kind-documentation); }
+.kind-dataset     { --chip-color: var(--color-kind-dataset); }
+.kind-blog        { --chip-color: var(--color-kind-blog); }
+.kind-video       { --chip-color: var(--color-kind-video); }
+.kind-index       { --chip-color: var(--color-kind-index); }
 .source-info { display: flex; flex-direction: column; gap: 2px; }
 .publisher { font-size: var(--font-size-xs); color: var(--color-text-muted); }
 .source-title { font-weight: 500; color: var(--color-text); }

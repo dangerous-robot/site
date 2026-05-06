@@ -22,16 +22,6 @@ const allClaims = await getCollection("claims", ({ data }) => data.status === "p
 const citationIndex = buildCitationIndex(allClaims);
 const citingClaims = citationIndex.get(source.id) ?? [];
 
-const kindCssVar: Record<string, string> = {
-  report: "var(--color-kind-report)",
-  article: "var(--color-kind-article)",
-  documentation: "var(--color-kind-documentation)",
-  dataset: "var(--color-kind-dataset)",
-  blog: "var(--color-kind-blog)",
-  video: "var(--color-kind-video)",
-  index: "var(--color-kind-index)",
-};
-
 const sourceTypeLabel: Record<string, string> = {
   primary: "Primary",
   secondary: "Secondary",
@@ -72,17 +62,14 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
       <div class="meta">
         {source.data.source_type && (
           <span
-            class={`source-type-badge source-type-${source.data.source_type}`}
+            class:list={['chip', 'source-type-badge', `source-type-${source.data.source_type}`]}
             title={sourceTypeTooltip[source.data.source_type]}
           >
             {sourceTypeLabel[source.data.source_type]}
           </span>
         )}
 
-        <span
-          class="kind-badge"
-          style={`--kind-color: ${kindCssVar[source.data.kind] || "var(--color-text-faint)"}`}
-        >
+        <span class:list={['chip', 'kind-badge', `kind-${source.data.kind}`]}>
           {source.data.kind}
         </span>
 
@@ -153,39 +140,25 @@ const sourcePageTitle = combinedTitle.length <= 50 ? combinedTitle : source.data
   }
 
   .source-type-badge {
-    display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    text-transform: uppercase;
     cursor: default;
-    background: color-mix(in srgb, var(--source-type-color, var(--color-text-faint)) 15%, transparent);
-    border: 1px solid var(--source-type-color, var(--color-text-faint));
-    color: var(--source-type-color, var(--color-text-faint));
   }
-
-  .source-type-primary {
-    --source-type-color: hsl(210 55% 50%);
-  }
-
-  .source-type-secondary {
-    --source-type-color: hsl(220 18% 55%);
-  }
-
-  .source-type-tertiary {
-    --source-type-color: hsl(220 10% 50%);
-  }
+  .source-type-primary   { --chip-color: hsl(210 55% 50%); }
+  .source-type-secondary { --chip-color: hsl(220 18% 55%); }
+  .source-type-tertiary  { --chip-color: hsl(220 10% 50%); }
 
   .kind-badge {
-    display: inline-block;
     padding: 0.15rem 0.5rem;
-    border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    text-transform: uppercase;
-    background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
-    border: 1px solid var(--kind-color, var(--color-text-faint));
-    color: var(--kind-color, var(--color-text-faint));
   }
+  .kind-report      { --chip-color: var(--color-kind-report); }
+  .kind-article     { --chip-color: var(--color-kind-article); }
+  .kind-documentation { --chip-color: var(--color-kind-documentation); }
+  .kind-dataset     { --chip-color: var(--color-kind-dataset); }
+  .kind-blog        { --chip-color: var(--color-kind-blog); }
+  .kind-video       { --chip-color: var(--color-kind-video); }
+  .kind-index       { --chip-color: var(--color-kind-index); }
 
   .publisher {
     color: var(--color-text-muted);

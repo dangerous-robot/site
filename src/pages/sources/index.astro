@@ -59,15 +59,6 @@ const sourceTypeFacet = {
   ],
 };
 
-const kindCssVar: Record<string, string> = {
-  report: 'var(--color-kind-report)',
-  article: 'var(--color-kind-article)',
-  documentation: 'var(--color-kind-documentation)',
-  dataset: 'var(--color-kind-dataset)',
-  blog: 'var(--color-kind-blog)',
-  video: 'var(--color-kind-video)',
-  index: 'var(--color-kind-index)',
-};
 ---
 <Base title="Sources" layout="wide">
   <PageHeader variant="index" type="source" title="Sources" />
@@ -90,7 +81,7 @@ const kindCssVar: Record<string, string> = {
       >
         <span class="source-title">{row.title}</span>
         <span class="source-meta">
-          <span class="kind-badge" style={`--kind-color: ${kindCssVar[row.kind] ?? 'var(--color-text-faint)'}`}>
+          <span class:list={['chip', 'kind-badge', `kind-${row.kind}`]}>
             {KIND_LABELS[row.kind] ?? row.kind}
           </span>
           <span class="publisher">{row.publisher}</span>
@@ -130,15 +121,16 @@ const kindCssVar: Record<string, string> = {
     color: var(--color-text-muted);
   }
   .kind-badge {
-    display: inline-block;
     padding: 0.1rem 0.4rem;
-    border-radius: var(--radius-sm);
     font-size: var(--font-size-2xs);
-    text-transform: uppercase;
-    background: color-mix(in srgb, var(--kind-color, var(--color-text-faint)) 15%, transparent);
-    border: 1px solid var(--kind-color, var(--color-text-faint));
-    color: var(--kind-color, var(--color-text-faint));
   }
+  .kind-report      { --chip-color: var(--color-kind-report); }
+  .kind-article     { --chip-color: var(--color-kind-article); }
+  .kind-documentation { --chip-color: var(--color-kind-documentation); }
+  .kind-dataset     { --chip-color: var(--color-kind-dataset); }
+  .kind-blog        { --chip-color: var(--color-kind-blog); }
+  .kind-video       { --chip-color: var(--color-kind-video); }
+  .kind-index       { --chip-color: var(--color-kind-index); }
   .publisher { color: var(--color-text-muted); }
   .date { color: var(--color-text-faint); }
 </style>

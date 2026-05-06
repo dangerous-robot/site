@@ -8,32 +8,23 @@ const { verdict, size = 'md' } = Astro.props;
 const label = VERDICT_LABELS[verdict as keyof typeof VERDICT_LABELS] ?? verdict;
 const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
 ---
-<span class:list={['verdict-badge', `verdict-${verdict}`, size]} title={tooltip}>
+<span class:list={['chip', 'verdict-badge', `verdict-${verdict}`, size]} title={tooltip}>
   {label}
 </span>
 <style>
-/* Tinted chip family — same pattern as kind / source-type badges, but
-   with a deeper background tint (25% vs 15%) and bold weight so the
-   verdict reads as the strongest chip on the page. */
+/* Verdict ranks strongest in the chip family via deeper tint + bold. */
 .verdict-badge {
-  display: inline-block;
+  --chip-tint: 25%;
   padding: var(--space-xs) var(--space-sm);
-  border-radius: var(--radius-sm);
   font-size: var(--font-size-xs);
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  background: color-mix(in srgb, var(--verdict-color, var(--color-text-faint)) 25%, transparent);
-  border: 1px solid var(--verdict-color, var(--color-text-faint));
-  color: var(--verdict-color, var(--color-text-faint));
 }
 .verdict-badge.sm { font-size: var(--font-size-2xs); padding: 2px var(--space-xs); }
-.verdict-true       { --verdict-color: var(--color-verdict-true); }
-.verdict-mostly-true { --verdict-color: var(--color-verdict-mostly-true); }
-.verdict-mixed      { --verdict-color: var(--color-verdict-mixed); }
-.verdict-mostly-false { --verdict-color: var(--color-verdict-mostly-false); }
-.verdict-false      { --verdict-color: var(--color-verdict-false); }
-.verdict-unverified { --verdict-color: var(--color-verdict-unverified); }
-.verdict-not-applicable { --verdict-color: var(--color-verdict-not-applicable); font-style: italic; }
+.verdict-true       { --chip-color: var(--color-verdict-true); }
+.verdict-mostly-true { --chip-color: var(--color-verdict-mostly-true); }
+.verdict-mixed      { --chip-color: var(--color-verdict-mixed); }
+.verdict-mostly-false { --chip-color: var(--color-verdict-mostly-false); }
+.verdict-false      { --chip-color: var(--color-verdict-false); }
+.verdict-unverified { --chip-color: var(--color-verdict-unverified); }
+.verdict-not-applicable { --chip-color: var(--color-verdict-not-applicable); font-style: italic; }
 </style>

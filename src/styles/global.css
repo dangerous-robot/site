@@ -192,6 +192,29 @@ th {
 }
 
 /* ---------------------------------------------------------
+   Tinted chip family — used by VerdictBadge, kind / source-type
+   badges, and any future small-pill metadata.
+
+   Consumer pattern:
+     <span class="chip"
+           style="--chip-color: var(--color-kind-article)">…</span>
+
+   Override `--chip-tint` (default 15%) to make a chip louder.
+   Size, padding, font-size, and font-weight stay with the
+   per-chip skin classes that compose on top of `.chip`.
+   --------------------------------------------------------- */
+.chip {
+  display: inline-block;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: color-mix(in srgb, var(--chip-color, var(--color-text-faint)) var(--chip-tint, 15%), transparent);
+  border: 1px solid var(--chip-color, var(--color-text-faint));
+  color: var(--chip-color, var(--color-text-faint));
+}
+
+/* ---------------------------------------------------------
    Selection
    --------------------------------------------------------- */
 ::selection {
