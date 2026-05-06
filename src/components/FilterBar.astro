@@ -10,18 +10,60 @@ interface Props {
   searchDataAttr?: string;
 }
 const { total, searchPlaceholder, facets = [], searchDataAttr = 'data-title' } = Astro.props;
+const hasFacets = facets.length > 0;
 ---
 <div class="filter-bar">
   <div class="filter-top">
     <SearchInput placeholder={searchPlaceholder} />
     <span class="showing-count" id="showing-count">Showing {total} of {total}</span>
+    {hasFacets && (
+      <button
+        type="button"
+        class="facet-toggle-btn"
+        id="facet-toggle"
+        aria-expanded="true"
+        aria-controls="facet-bar"
+      >
+        Filter
+        <span class="active-count" id="active-count" hidden>(0)</span>
+        <span class="caret" aria-hidden="true">▴</span>
+      </button>
+    )}
   </div>
-  {facets.length > 0 && <FacetBar facets={facets} />}
+  {hasFacets && <FacetBar facets={facets} />}
 </div>
 <style>
 .filter-bar { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-lg); }
-.filter-top { display: flex; align-items: center; gap: var(--space-md); }
+.filter-top { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 .showing-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
+
+.facet-toggle-btn {
+  margin-left: auto;
+  cursor: pointer;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  white-space: nowrap;
+}
+.facet-toggle-btn:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-faint);
+}
+.facet-toggle-btn .caret {
+  font-size: 0.7em;
+  line-height: 1;
+  transition: transform 0.15s;
+}
+.facet-toggle-btn[aria-expanded="false"] .caret {
+  transform: rotate(180deg);
+}
+.active-count { font-variant-numeric: tabular-nums; }
 </style>
 <script define:vars={{ total, searchDataAttr }}>
   let textQuery = '';
@@ -66,4 +108,15 @@ const { total, searchPlaceholder, facets = [], searchDataAttr = 'data-title' } =
     facetFilters = e.detail;
     applyFilters();
   });
+
+  // Toggle facet visibility. Default state is expanded.
+  const facetToggle = document.getElementById('facet-toggle');
+  const facetBar = document.getElementById('facet-bar');
+  if (facetToggle && facetBar) {
+    facetToggle.addEventListener('click', () => {
+      const isExpanded = facetToggle.getAttribute('aria-expanded') === 'true';
+      facetToggle.setAttribute('aria-expanded', String(!isExpanded));
+      facetBar.classList.toggle('is-collapsed');
+    });
+  }
 </script>
