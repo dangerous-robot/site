@@ -152,7 +152,26 @@ const claimReview = {
 
       {audit && (
         <details class="audit-trail">
-          <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
+          <summary>
+            <svg
+              class="disclosure-svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 12h8" />
+              <path class="v-stroke" d="M12 8v8" />
+            </svg>
+            <span>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</span>
+          </summary>
 
           <div class="audit-content">
             <section class="audit-section">
@@ -425,29 +444,18 @@ const claimReview = {
     display: none;
   }
 
-  /* Circular +/− indicator, matching the FilterBar facet toggle. */
-  .audit-trail summary::before {
-    content: '+';
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 18px;
-    height: 18px;
-    border: 1px solid var(--color-text-faint);
-    border-radius: 50%;
-    font-size: 0.85em;
-    line-height: 1;
-    color: var(--color-text-muted);
+  /* Lucide circle-plus / circle-minus, matching FilterBar's toggle. */
+  .audit-trail .disclosure-svg {
     flex-shrink: 0;
+    color: var(--color-text-faint);
   }
 
-  .audit-trail summary:hover::before {
-    border-color: var(--color-text);
+  .audit-trail summary:hover .disclosure-svg {
     color: var(--color-text);
   }
 
-  .audit-trail[open] summary::before {
-    content: '−';
+  .audit-trail[open] .disclosure-svg .v-stroke {
+    display: none;
   }
 
   .audit-content {
