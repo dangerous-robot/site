@@ -66,8 +66,18 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
     margin-bottom: var(--space-xl);
   }
 
+  /* Index pages sit directly above a list/grid; trim the gap so the
+     header doesn't dwarf the list below. */
+  header.page-header.is-index {
+    margin-bottom: var(--space-md);
+  }
+
   .breadcrumb-row {
     margin-bottom: var(--space-sm);
+  }
+
+  header.page-header.is-index .breadcrumb-row {
+    margin-bottom: var(--space-xs);
   }
 
   h1.page-title {
@@ -142,20 +152,15 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
     margin-bottom: var(--space-md);
   }
 
-  /* Outdent promotion. The icon needs ~80px of gutter on the page-edge
-     side (16px gap from body's outer edge + 64px icon-box). Reading
-     layout (48rem) needs viewport >= ~928px; wide layout (60rem) needs
-     viewport >= ~1120px. Single breakpoint of 1120px covers both
-     comfortably and keeps the layout consistent across detail pages.
-
-     The `right` calc clears both the body's padding-left
-     (`--space-lg`) and a `--space-md` gap, so the icon's right edge
-     sits one space-md to the LEFT of the body's outer max-width edge —
-     fully outside the body box. */
+  /* Outdent promotion. The icon's right edge sits one --space-md to the
+     LEFT of the title block's content area, so the bulk of the 64px box
+     lives in the page gutter with a small overlap into the body's
+     padding zone. Single 1120px breakpoint covers reading (48rem) and
+     wide (60rem) layouts comfortably. */
   @container page (min-width: 1120px) {
     .page-header.is-detail .icon-outdent {
       position: absolute;
-      right: calc(100% + var(--space-lg) + var(--space-md));
+      right: calc(100% + var(--space-md));
       top: 0;
       bottom: 0;
       flex-direction: column;
@@ -180,7 +185,7 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
       display: block;
       flex: 1 1 auto;
       width: 1px;
-      background: var(--color-border);
+      background: var(--color-text-faint);
       margin-top: var(--space-xs);
     }
   }
@@ -218,7 +223,7 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
     display: flex;
     align-items: center;
     gap: var(--space-md);
-    margin-bottom: var(--space-sm);
+    margin-bottom: 0;
   }
   .index-title-row .icon-box {
     width: 48px;
