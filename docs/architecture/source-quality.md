@@ -138,7 +138,7 @@ When the analyst recognizes that the entire pool is restatement, the right move 
 
 ## Cross-references
 
-- Plan that introduced this v1 scope: [`docs/plans/source-quality-robust-roadmap.md`](../plans/source-quality-robust-roadmap.md).
+- Plan that introduced this v1 scope: [`docs/plans/completed/source-quality-robust-roadmap_completed.md`](../plans/completed/source-quality-robust-roadmap_completed.md).
 - Strategic critique that drove the rewrite: [`docs/plans/source-quality-agent-review.md`](../plans/source-quality-agent-review.md).
 - Survey of all source-quality signals considered: [`docs/plans/source-quality_survey.md`](../plans/source-quality_survey.md).
 - Canonical schema: `src/content.config.ts` (sources, claims).

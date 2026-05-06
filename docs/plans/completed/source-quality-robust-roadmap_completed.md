@@ -1,10 +1,13 @@
 # Source quality robust roadmap
 
-**Status**: Active  
-**Created**: 2026-05-05  
-**Supersedes**: [`source-quality-roadmap.md`](source-quality-roadmap.md)  
-**Driven by**: [`source-quality-agent-review.md`](source-quality-agent-review.md) — strategic critique from three specialized agents  
-**Survey**: [`source-quality_survey.md`](source-quality_survey.md) — full signal inventory
+**Status**: Completed (2026-05-05)
+**Created**: 2026-05-05
+**Supersedes**: [`../source-quality-roadmap.md`](../source-quality-roadmap.md)
+**Driven by**: [`../source-quality-agent-review.md`](../source-quality-agent-review.md) — strategic critique from three specialized agents
+**Survey**: [`../source-quality_survey.md`](../source-quality_survey.md) — full signal inventory
+**Architecture doc**: [`../../architecture/source-quality.md`](../../architecture/source-quality.md) — single reference for the v1 design
+
+All 8 v1 implementation items shipped. The 23 v1 launch claims that were eligible for re-run (status `published` with `criteria_slug`) were processed; smaller-surface re-review preserved sign-off on the 6 claims whose verdict + confidence were unchanged. 15 claims changed verdict and/or confidence and reverted to `status: draft` for operator triage; 1 claim (`chatgpt/excludes-image-generation`) regressed to `blocked` (`terminal_fetch_error`). Per-claim deltas captured in [`source-quality-rerun-log.jsonl`](../source-quality-rerun-log.jsonl).
 
 This plan defines the minimum, highest-leverage v1 changes that produce verdicts users can trust and understand. The central goal is not metadata coverage — it is verdict quality, reader trust, and honest communication of what the evidence shows. Every item that does not directly serve a reader's ability to evaluate a verdict is a candidate for demotion.
 
@@ -28,7 +31,7 @@ This plan defines the minimum, highest-leverage v1 changes that produce verdicts
 
 ## v1 implementation
 
-### 1. Architecture doc
+### 1. Architecture doc — DONE (commits `0caf560`, `73fbbb4`, `d3c709c`, `afc86e2`, `46440c4`)
 
 Create `docs/architecture/source-quality.md`. This is the reference that every other v1 item depends on for consistent behavior.
 
@@ -46,7 +49,7 @@ Required content:
 
 ---
 
-### 2. Source schema — `independence` field only
+### 2. Source schema — `independence` field only — DONE (commits `0caf560` Zod + Pydantic, `54c09e6` analyst output type)
 
 Add `independence` to source frontmatter.
 
@@ -77,7 +80,7 @@ Set by the analyst at verdict time. Added to the Zod schema in `src/content.conf
 
 ---
 
-### 3. Partial backfill — `independence` on v1 launch sources
+### 3. Partial backfill — `independence` on v1 launch sources — DONE (commit `687ab54`; 47 first-party + 71 independent + 18 unknown across 136 sources)
 
 Add `independence` to all v1 launch sources. Use `source_type` as the starting point — mostly mechanical. Spot-check secondary sources for the restatement failure mode (decision 3) and correct misclassifications.
 
@@ -89,7 +92,7 @@ Add `independence` to all v1 launch sources. Use `source_type` as the starting p
 
 ---
 
-### 4. Blocklist extension
+### 4. Blocklist extension — DONE (commit `0caf560`; 6 PR-wire hosts added)
 
 Extend `research/blocklist.yaml` with:
 - PR wire services: prnewswire.com, businesswire.com, globenewswire.com, accesswire.com
@@ -103,7 +106,7 @@ The blocklist handles hard drops. Low-trust domains that should score down but n
 
 ---
 
-### 5. Analyst instructions and confidence cap
+### 5. Analyst instructions and confidence cap — DONE (commits `54c09e6` analyst + auditor + lint, `89b6bfc` drop source_type from prompt, `d3c709c` tighten partially-verified)
 
 This is the highest-weight v1 item. It is where the constraints from the agent review become executable.
 
@@ -136,7 +139,7 @@ The rationale appears in the claim narrative and is surfaced by the display laye
 
 ---
 
-### 6. Backfill `verification_level` on v1 launch claims
+### 6. Backfill `verification_level` on v1 launch claims — DONE (commit `79d69ca`; 23 claims processed, 6 unchanged_preserved, 15 changed_cleared, 1 regression to blocked)
 
 After item 5, re-run all v1 launch claims to populate `verification_level` and produce cap rationale where needed. Set manually on any that cannot be re-run.
 
@@ -148,7 +151,7 @@ Review verdict deltas against prior state before proceeding.
 
 ---
 
-### 7. Display — claim page, expanded
+### 7. Display — claim page, expanded — DONE (commits `4c15e72` initial, `61470fd` Cross-verified label + audit-trail lift)
 
 No panels, no expand/collapse. The display must answer three questions: what is the verdict, what evidence underlies it, and why is confidence what it is.
 
@@ -167,7 +170,7 @@ Source detail pages unchanged in v1.
 
 ---
 
-### 8. Lint for new sources
+### 8. Lint for new sources — DONE (commit `54c09e6`; three checks: missing-independence, confidence-cap-violation, missing-cap-rationale)
 
 `dr lint` warns on missing `independence` for sources with `accessed_date` >= 2026-05-01. Grace period exempts older sources.
 

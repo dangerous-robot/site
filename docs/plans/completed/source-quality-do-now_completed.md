@@ -1,6 +1,6 @@
 # Source quality: do-now implementation plan
 
-> **Completed (2026-05-05)**: items folded into other plans. Groups 1+3a shipped in [`scorer-quality-signals.md`](../completed/scorer-quality-signals.md); Groups 2a, 2b, 3b, 4a, 4b, 6a, 6b, 7a, 8 incorporated into [`source-quality-robust-roadmap.md`](../source-quality-robust-roadmap.md); Groups 5a, 5b deferred to v1.x. Tracking lives in those plans; this file is retained as historical context.
+> **Completed (2026-05-05)**: items folded into other plans. Groups 1+3a shipped in [`scorer-quality-signals.md`](scorer-quality-signals.md); Groups 2a, 2b, 3b, 4a, 4b, 6a, 6b, 7a, 8 incorporated into [`source-quality-robust-roadmap_completed.md`](source-quality-robust-roadmap_completed.md); Groups 5a, 5b deferred to v1.x. Tracking lives in those plans; this file is retained as historical context.
 
 **Type**: Draft implementation plan (retired into other plans)
 **Created**: 2026-05-02

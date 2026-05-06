@@ -1,6 +1,6 @@
 # Source quality roadmap
 
-> **Superseded**: This plan has been superseded by [`source-quality-robust-roadmap.md`](source-quality-robust-roadmap.md) (2026-05-05). The original is retained for reference. See [`source-quality-agent-review.md`](source-quality-agent-review.md) for the strategic critique that drove the rewrite.
+> **Superseded**: This plan has been superseded by [`completed/source-quality-robust-roadmap_completed.md`](completed/source-quality-robust-roadmap_completed.md) (2026-05-05). The original is retained for reference. See [`source-quality-agent-review.md`](source-quality-agent-review.md) for the strategic critique that drove the rewrite.
 
 **Status**: Superseded  
 **Created**: 2026-05-05  
