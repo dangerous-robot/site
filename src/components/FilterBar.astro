@@ -20,27 +20,37 @@ const initiallyCollapsed = true;
     <span class="showing-count" id="showing-count">Showing {total} of {total}</span>
   </div>
   {hasFacets && (
-    <button
-      type="button"
-      class="facet-toggle-btn"
-      id="facet-toggle"
-      aria-expanded={String(!initiallyCollapsed)}
-      aria-controls="facet-bar"
-    >
-      <DisclosureIndicator />
-      <span class="toggle-text">Filter</span>
-      <span class="active-count" id="active-count" hidden>(0)</span>
-    </button>
+    <div class="filter-disclosure">
+      <button
+        type="button"
+        class="facet-toggle-btn"
+        id="facet-toggle"
+        aria-expanded={String(!initiallyCollapsed)}
+        aria-controls="facet-bar"
+      >
+        <DisclosureIndicator />
+        <span class="toggle-text">Filter</span>
+        <span class="active-count" id="active-count" hidden>(0)</span>
+      </button>
+      <FacetBar facets={facets} defaultCollapsed={initiallyCollapsed} />
+    </div>
   )}
-  {hasFacets && <FacetBar facets={facets} defaultCollapsed={initiallyCollapsed} />}
 </div>
 <style>
-.filter-bar { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-lg); }
+.filter-bar { display: flex; flex-direction: column; margin-bottom: var(--space-lg); }
 .filter-top { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 .showing-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
 
+/* Disclosure container — same border-left treatment as the audit-trail
+   on claim detail pages. The border grows vertically when expanded,
+   visually tying the toggle and the chips into one disclosure. */
+.filter-disclosure {
+  margin-top: var(--space-md);
+  border-left: 2px solid var(--color-border);
+  padding-left: var(--space-sm);
+}
+
 .facet-toggle-btn {
-  align-self: flex-start;
   cursor: pointer;
   padding: 0;
   border: 0;
@@ -61,7 +71,6 @@ const initiallyCollapsed = true;
 
 .facet-toggle-btn .disclosure-indicator { color: var(--color-text-faint); }
 .facet-toggle-btn:hover .disclosure-indicator { color: var(--color-text); }
-.facet-toggle-btn[aria-expanded="true"] .v-stroke { display: none; }
 
 .active-count { font-variant-numeric: tabular-nums; }
 </style>

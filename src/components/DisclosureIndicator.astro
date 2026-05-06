@@ -20,7 +20,11 @@ const { size = 18 } = Astro.props;
   <path class="v-stroke" d="M12 8v8" />
 </svg>
 <style is:global>
-  /* Class is global so host-component CSS can target [aria-expanded="true"] /
-     [open] ancestors without needing :global() wrappers. */
+  /* Global so host components can target [aria-expanded="true"] / [open]
+     ancestors without :global() wrappers. The v-stroke hide rule also
+     needs to be global: the .v-stroke element is rendered by this
+     component, so a scoped rule in the host wouldn't match it. */
   .disclosure-indicator { flex-shrink: 0; }
+  [aria-expanded="true"] .v-stroke,
+  [open] .v-stroke { display: none; }
 </style>
