@@ -12,6 +12,9 @@ const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
   {label}
 </span>
 <style>
+/* Tinted chip family — same pattern as kind / source-type badges, but
+   with a deeper background tint (25% vs 15%) and bold weight so the
+   verdict reads as the strongest chip on the page. */
 .verdict-badge {
   display: inline-block;
   padding: var(--space-xs) var(--space-sm);
@@ -20,15 +23,17 @@ const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--color-on-badge);
   white-space: nowrap;
+  background: color-mix(in srgb, var(--verdict-color, var(--color-text-faint)) 25%, transparent);
+  border: 1px solid var(--verdict-color, var(--color-text-faint));
+  color: var(--verdict-color, var(--color-text-faint));
 }
 .verdict-badge.sm { font-size: var(--font-size-2xs); padding: 2px var(--space-xs); }
-.verdict-true       { background: var(--color-verdict-true); }
-.verdict-mostly-true { background: var(--color-verdict-mostly-true); }
-.verdict-mixed      { background: var(--color-verdict-mixed); }
-.verdict-mostly-false { background: var(--color-verdict-mostly-false); }
-.verdict-false      { background: var(--color-verdict-false); }
-.verdict-unverified { background: var(--color-verdict-unverified); }
-.verdict-not-applicable { background: var(--color-verdict-not-applicable); font-style: italic; }
+.verdict-true       { --verdict-color: var(--color-verdict-true); }
+.verdict-mostly-true { --verdict-color: var(--color-verdict-mostly-true); }
+.verdict-mixed      { --verdict-color: var(--color-verdict-mixed); }
+.verdict-mostly-false { --verdict-color: var(--color-verdict-mostly-false); }
+.verdict-false      { --verdict-color: var(--color-verdict-false); }
+.verdict-unverified { --verdict-color: var(--color-verdict-unverified); }
+.verdict-not-applicable { --verdict-color: var(--color-verdict-not-applicable); font-style: italic; }
 </style>
