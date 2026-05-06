@@ -46,13 +46,12 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
     </div>
   ) : (
     <div class="index-body">
-      <div class="index-icon-row">
-        <div class="icon-box">
+      <div class="index-title-row">
+        <div class="icon-box" aria-hidden="true">
           <ObjectTypeIcon type={type} size={28} />
         </div>
-        <span class="type-label">{typeLabel}</span>
+        <h1 class="page-title">{title}</h1>
       </div>
-      <h1 class="page-title">{title}</h1>
       {hasMeta && (
         <div class="meta-col">
           <slot />
@@ -203,27 +202,38 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
   }
 
   /* ============================================================
-     Index variant — inline-stacked, smaller icon, no rail.
+     Index variant — icon left of H1 in a single row. Stacks above
+     the H1 only at near-mobile widths. The H1 already names the
+     entity type ("Sources", "Claims"), so no separate label.
      ============================================================ */
   .index-body {
     /* nothing special — block flow */
   }
 
-  .index-icon-row {
+  .index-title-row {
     display: flex;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-md);
     margin-bottom: var(--space-sm);
   }
-  .index-icon-row .icon-box {
-    width: 40px;
-    height: 40px;
+  .index-title-row .icon-box {
+    width: 48px;
+    height: 48px;
   }
-  .index-icon-row .icon-box :global(svg) {
-    width: 24px;
-    height: 24px;
+  .index-title-row .icon-box :global(svg) {
+    width: 28px;
+    height: 28px;
   }
-  .index-icon-row .type-label {
-    text-align: left;
+  .index-title-row .page-title {
+    margin-bottom: 0;
+  }
+
+  /* Stack only at near-mobile widths. */
+  @media (max-width: 600px) {
+    .index-title-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--space-sm);
+    }
   }
 </style>
