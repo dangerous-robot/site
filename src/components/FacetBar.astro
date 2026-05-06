@@ -7,7 +7,10 @@ const { facets, defaultCollapsed = false } = Astro.props;
 <div class:list={['facet-bar', { 'is-collapsed': defaultCollapsed }]} id="facet-bar">
   {facets.map(facet => (
     <div class="facet-group">
-      <span class="facet-label">{facet.label}</span>
+      <div class="facet-header">
+        <span class="facet-label">{facet.label}</span>
+        <span class="facet-line" aria-hidden="true"></span>
+      </div>
       <div class="facet-chips">
         {facet.values.map(v => (
           <button
@@ -43,7 +46,30 @@ const { facets, defaultCollapsed = false } = Astro.props;
 }
 
 .facet-group { display: flex; flex-direction: column; gap: var(--space-xs); }
-.facet-label { font-size: var(--font-size-xs); color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Header row: label, then a horizontal line that visually attaches the
+   label to the chip group below. The line fills the rest of the
+   group's width so each facet group reads as a self-contained unit. */
+.facet-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.facet-label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.facet-line {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--color-text-faint);
+  opacity: 0.5;
+}
+
 .facet-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
 .facet-chip {
   padding: 3px var(--space-sm);

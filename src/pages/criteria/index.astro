@@ -21,7 +21,6 @@ const rows = criteria.map(std => {
     text: std.data.text,
     topics: std.data.topics,
     entityType: std.data.entity_type,
-    core: std.data.core,
     coverageCount,
     totalClaims,
   };
@@ -32,11 +31,6 @@ const topicFacet = {
   label: 'Topic',
   values: Object.entries(CATEGORY_LABELS).map(([v, label]) => ({ value: v, label })),
 };
-const coreFacet = {
-  id: 'core',
-  label: 'Core',
-  values: [{ value: 'true', label: 'Core only' }],
-};
 ---
 <Base title="Criteria" layout="wide">
   <PageHeader variant="index" type="criterion" title="Criteria" />
@@ -45,7 +39,7 @@ const coreFacet = {
     total={rows.length}
     searchPlaceholder="Search criteria…"
     searchDataAttr="data-text"
-    facets={[topicFacet, coreFacet]}
+    facets={[topicFacet]}
   />
   <div class="criteria-list">
     {/* `data-topic` exposes the first topic only: FilterBar matches one
@@ -58,7 +52,6 @@ const coreFacet = {
         data-filterable
         data-text={row.text.toLowerCase()}
         data-topic={row.topics[0]}
-        data-core={row.core ? 'true' : 'false'}
       >
         <span class="std-text">{row.text}</span>
         <span class="std-meta">
