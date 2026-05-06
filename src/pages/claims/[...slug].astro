@@ -416,19 +416,38 @@ const claimReview = {
     cursor: pointer;
     color: var(--color-text-muted);
     padding: var(--space-xs) 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
   }
 
   .audit-trail summary::-webkit-details-marker {
     display: none;
   }
 
+  /* Circular +/− indicator, matching the FilterBar facet toggle. */
   .audit-trail summary::before {
-    content: '+ ';
-    color: var(--color-text-faint);
+    content: '+';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--color-text-faint);
+    border-radius: 50%;
+    font-size: 0.85em;
+    line-height: 1;
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .audit-trail summary:hover::before {
+    border-color: var(--color-text);
+    color: var(--color-text);
   }
 
   .audit-trail[open] summary::before {
-    content: '- ';
+    content: '−';
   }
 
   .audit-content {

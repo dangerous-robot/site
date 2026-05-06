@@ -1,10 +1,10 @@
 ---
 interface FacetValue { value: string; label: string; }
 interface Facet { id: string; label: string; values: FacetValue[]; }
-interface Props { facets: Facet[]; }
-const { facets } = Astro.props;
+interface Props { facets: Facet[]; defaultCollapsed?: boolean; }
+const { facets, defaultCollapsed = false } = Astro.props;
 ---
-<div class="facet-bar" id="facet-bar">
+<div class:list={['facet-bar', { 'is-collapsed': defaultCollapsed }]} id="facet-bar">
   {facets.map(facet => (
     <div class="facet-group">
       <span class="facet-label">{facet.label}</span>

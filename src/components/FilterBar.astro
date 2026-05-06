@@ -16,53 +16,70 @@ const hasFacets = facets.length > 0;
   <div class="filter-top">
     <SearchInput placeholder={searchPlaceholder} />
     <span class="showing-count" id="showing-count">Showing {total} of {total}</span>
-    {hasFacets && (
-      <button
-        type="button"
-        class="facet-toggle-btn"
-        id="facet-toggle"
-        aria-expanded="true"
-        aria-controls="facet-bar"
-      >
-        Filter
-        <span class="active-count" id="active-count" hidden>(0)</span>
-        <span class="caret" aria-hidden="true">▴</span>
-      </button>
-    )}
   </div>
-  {hasFacets && <FacetBar facets={facets} />}
+  {hasFacets && (
+    <button
+      type="button"
+      class="facet-toggle-btn"
+      id="facet-toggle"
+      aria-expanded="false"
+      aria-controls="facet-bar"
+    >
+      <span class="toggle-indicator" aria-hidden="true"></span>
+      <span class="toggle-text">Filter</span>
+      <span class="active-count" id="active-count" hidden>(0)</span>
+    </button>
+  )}
+  {hasFacets && <FacetBar facets={facets} defaultCollapsed={true} />}
 </div>
 <style>
 .filter-bar { display: flex; flex-direction: column; gap: var(--space-sm); margin-bottom: var(--space-lg); }
 .filter-top { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; }
 .showing-count { font-size: var(--font-size-xs); color: var(--color-text-faint); white-space: nowrap; }
 
+/* Disclosure-style toggle. No background, no full border — the small
+   circular indicator carries the affordance. Matches the audit-trail
+   "+ Research process" pattern on claim detail. */
 .facet-toggle-btn {
-  margin-left: auto;
+  align-self: flex-start;
   cursor: pointer;
-  padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  padding: 0;
+  border: 0;
   background: transparent;
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  color: var(--color-text-muted);
   display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
-  white-space: nowrap;
 }
-.facet-toggle-btn:hover {
-  color: var(--color-text);
-  border-color: var(--color-text-faint);
+.facet-toggle-btn:hover { color: var(--color-text); }
+.facet-toggle-btn:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
-.facet-toggle-btn .caret {
-  font-size: 0.7em;
+
+.toggle-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-text-faint);
+  border-radius: 50%;
+  font-size: 0.85em;
   line-height: 1;
-  transition: transform 0.15s;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
-.facet-toggle-btn[aria-expanded="false"] .caret {
-  transform: rotate(180deg);
+.facet-toggle-btn:hover .toggle-indicator {
+  border-color: var(--color-text);
+  color: var(--color-text);
 }
+.facet-toggle-btn .toggle-indicator::before { content: "+"; }
+.facet-toggle-btn[aria-expanded="true"] .toggle-indicator::before { content: "−"; }
+
 .active-count { font-variant-numeric: tabular-nums; }
 </style>
 <script define:vars={{ total, searchDataAttr }}>
@@ -109,7 +126,7 @@ const hasFacets = facets.length > 0;
     applyFilters();
   });
 
-  // Toggle facet visibility. Default state is expanded.
+  // Toggle facet visibility. Default state is collapsed.
   const facetToggle = document.getElementById('facet-toggle');
   const facetBar = document.getElementById('facet-bar');
   if (facetToggle && facetBar) {
