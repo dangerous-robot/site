@@ -5,47 +5,79 @@ interface Props { facets: Facet[]; }
 const { facets } = Astro.props;
 ---
 <div class="facet-bar" id="facet-bar">
-  <details class="facet-mobile-toggle" id="facet-details">
-    <summary class="facet-toggle-btn">
-      Filter <span class="active-count" id="active-count" hidden>(0)</span>
-    </summary>
-    <div class="facet-inner" id="facet-inner">
-      {facets.map(facet => (
-        <div class="facet-group">
-          <span class="facet-label">{facet.label}</span>
-          <div class="facet-chips">
-            {facet.values.map(v => (
-              <button
-                type="button"
-                class="facet-chip"
-                data-facet={facet.id}
-                data-value={v.value}
-                aria-pressed="false"
-              >
-                {v.label}
-              </button>
-            ))}
-          </div>
+  <button
+    type="button"
+    class="facet-toggle-btn"
+    id="facet-toggle"
+    aria-expanded="false"
+    aria-controls="facet-inner"
+  >
+    Filter <span class="active-count" id="active-count" hidden>(0)</span>
+  </button>
+  <div class="facet-inner" id="facet-inner">
+    {facets.map(facet => (
+      <div class="facet-group">
+        <span class="facet-label">{facet.label}</span>
+        <div class="facet-chips">
+          {facet.values.map(v => (
+            <button
+              type="button"
+              class="facet-chip"
+              data-facet={facet.id}
+              data-value={v.value}
+              aria-pressed="false"
+            >
+              {v.label}
+            </button>
+          ))}
         </div>
-      ))}
-    </div>
-  </details>
+      </div>
+    ))}
+  </div>
 </div>
 <style>
 .facet-bar { width: 100%; }
-.facet-mobile-toggle > summary {
-  list-style: none; cursor: pointer;
+
+/* Toggle button is mobile-only. */
+.facet-toggle-btn {
+  cursor: pointer;
   padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--color-border); border-radius: var(--radius-md);
-  font-size: var(--font-size-sm); color: var(--color-text-muted);
-  display: inline-flex; align-items: center; gap: var(--space-xs);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
-.facet-mobile-toggle > summary::-webkit-details-marker { display: none; }
+
+/* Default: chips visible inline (desktop / tablet). */
+.facet-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  padding: 0;
+}
+
+/* Mobile: chips hidden until the toggle is clicked. */
+@media (max-width: 639px) {
+  .facet-inner {
+    display: none;
+    padding-top: var(--space-sm);
+  }
+  .facet-bar.is-open .facet-inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+}
+
+/* Desktop: hide the toggle, chips are always inline. */
 @media (min-width: 640px) {
-  .facet-mobile-toggle > summary { display: none; }
-  .facet-inner { display: flex !important; flex-wrap: wrap; gap: var(--space-md); padding: 0; }
+  .facet-toggle-btn { display: none; }
 }
-.facet-inner { padding-top: var(--space-sm); }
+
 .facet-group { display: flex; flex-direction: column; gap: var(--space-xs); }
 .facet-label { font-size: var(--font-size-xs); color: var(--color-text-faint); text-transform: uppercase; letter-spacing: 0.04em; }
 .facet-chips { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
@@ -63,6 +95,14 @@ const { facets } = Astro.props;
 .active-count { font-variant-numeric: tabular-nums; }
 </style>
 <script>
+  const bar = document.getElementById('facet-bar');
+  const toggle = document.getElementById('facet-toggle');
+  toggle?.addEventListener('click', () => {
+    if (!bar) return;
+    const isOpen = bar.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
   const chips = document.querySelectorAll<HTMLButtonElement>('.facet-chip');
   const activeCountEl = document.getElementById('active-count');
   const activeFilters: Record<string, Set<string>> = {};
