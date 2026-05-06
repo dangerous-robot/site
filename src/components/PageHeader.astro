@@ -89,8 +89,8 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
      a visible inner-vs-outer contrast in both light (cream-on-white) and
      dark (near-black-on-charcoal) themes. */
   .icon-box {
-    width: var(--icon-box-size, 64px);
-    height: var(--icon-box-size, 64px);
+    width: var(--icon-box-size);
+    height: var(--icon-box-size);
     background: var(--color-bg);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-md);
@@ -157,7 +157,7 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
      lives in the page gutter with a small overlap into the body's
      padding zone. Single 1120px breakpoint covers reading (48rem) and
      wide (60rem) layouts comfortably. */
-  @container page (min-width: 1120px) {
+  @media (min-width: 1120px) {
     .page-header.is-detail .icon-outdent {
       position: absolute;
       right: calc(100% + var(--space-md));
@@ -171,8 +171,8 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
       margin-bottom: 0;
     }
     .page-header.is-detail .icon-outdent .icon-box {
-      width: var(--icon-box-size, 64px);
-      height: var(--icon-box-size, 64px);
+      width: var(--icon-box-size);
+      height: var(--icon-box-size);
     }
     .page-header.is-detail .icon-outdent .icon-box :global(svg) {
       width: 44px;
@@ -215,10 +215,6 @@ const variantClass = variant === 'index' ? 'is-index' : 'is-detail';
      the H1 only at near-mobile widths. The H1 already names the
      entity type ("Sources", "Claims"), so no separate label.
      ============================================================ */
-  .index-body {
-    /* nothing special — block flow */
-  }
-
   .index-title-row {
     display: flex;
     align-items: center;
