@@ -130,93 +130,93 @@ const claimReview = {
       {claim.data.takeaway && (
         <p class="takeaway">{claim.data.takeaway}</p>
       )}
-    </PageHeader>
 
-    {(verificationLabel || sourceCounts.total > 0) && (
-      <section class="source-quality" aria-label="Source quality">
-        {verificationLabel && (
-          <div class="verification">
-            <span class={`verification-label level-${verificationLevel}`}>{verificationLabel}</span>
-            {verificationGloss && (
-              <span class="verification-gloss">{verificationGloss}</span>
-            )}
-          </div>
-        )}
-        {sourceCounts.total > 0 && (
-          <p class="source-count">{sourceCountText}</p>
-        )}
-        {capRationale && (
-          <p class="cap-rationale">{capRationale}</p>
-        )}
-      </section>
-    )}
+      {(verificationLabel || sourceCounts.total > 0) && (
+        <section class="source-quality" aria-label="Source quality">
+          {verificationLabel && (
+            <div class="verification">
+              <span class={`verification-label level-${verificationLevel}`}>{verificationLabel}</span>
+              {verificationGloss && (
+                <span class="verification-gloss">{verificationGloss}</span>
+              )}
+            </div>
+          )}
+          {sourceCounts.total > 0 && (
+            <p class="source-count">{sourceCountText}</p>
+          )}
+          {capRationale && (
+            <p class="cap-rationale">{capRationale}</p>
+          )}
+        </section>
+      )}
 
-    {audit && (
-      <details class="audit-trail">
-        <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
+      {audit && (
+        <details class="audit-trail">
+          <summary>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</summary>
 
-        <div class="audit-content">
-          <section class="audit-section">
-            <h3>Sources consulted</h3>
-            <ul class="audit-source-list">
-              {audit.sources_consulted.map((src) => {
-                const meta = sourceMap.get(src.id);
-                return (
-                  <li>
-                    {meta
-                      ? <a href={`/sources/${src.id}`}>{src.title}</a>
-                      : <a href={src.url} target="_blank" rel="noopener noreferrer">{src.title} ↗</a>}
-                    {meta && (
-                      <span class="source-meta">
-                        {meta.data.kind}{meta.data.source_type ? ` · ${meta.data.source_type}` : ''} · {meta.data.publisher}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </section>
-
-          {audit.models_used && Object.keys(audit.models_used).length > 0 && (
+          <div class="audit-content">
             <section class="audit-section">
-              <h3>Models used</h3>
-              <ul class="audit-models-list">
-                {Object.entries(audit.models_used).map(([agent, m]) => (
-                  <li><code>{agent}</code>: <code>{m}</code></li>
-                ))}
+              <h3>Sources consulted</h3>
+              <ul class="audit-source-list">
+                {audit.sources_consulted.map((src) => {
+                  const meta = sourceMap.get(src.id);
+                  return (
+                    <li>
+                      {meta
+                        ? <a href={`/sources/${src.id}`}>{src.title}</a>
+                        : <a href={src.url} target="_blank" rel="noopener noreferrer">{src.title} ↗</a>}
+                      {meta && (
+                        <span class="source-meta">
+                          {meta.data.kind}{meta.data.source_type ? ` · ${meta.data.source_type}` : ''} · {meta.data.publisher}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
-          )}
 
-          <section class="audit-section">
-            <h3>Verdict check</h3>
-            {audit.audit === null ? (
-              <p class="audit-muted">Auditor check unavailable.</p>
-            ) : (
-              <div>
-                <p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>
-                <p>Auditor: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
-                <p class={audit.audit.verdict_agrees ? 'audit-agrees' : 'audit-disagrees'}>
-                  {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
-                </p>
-                {audit.audit.needs_review && (
-                  <p class="audit-muted">Flagged for human review</p>
-                )}
-              </div>
+            {audit.models_used && Object.keys(audit.models_used).length > 0 && (
+              <section class="audit-section">
+                <h3>Models used</h3>
+                <ul class="audit-models-list">
+                  {Object.entries(audit.models_used).map(([agent, m]) => (
+                    <li><code>{agent}</code>: <code>{m}</code></li>
+                  ))}
+                </ul>
+              </section>
             )}
-          </section>
 
-          <section class="audit-section">
-            <h3>Human review</h3>
-            {reviewedAt ? (
-              <p>Reviewed {reviewedAt}{audit.human_review.reviewer ? ` by ${audit.human_review.reviewer}` : ''}</p>
-            ) : (
-              <p class="audit-muted">Pending human review</p>
-            )}
-          </section>
-        </div>
-      </details>
-    )}
+            <section class="audit-section">
+              <h3>Verdict check</h3>
+              {audit.audit === null ? (
+                <p class="audit-muted">Auditor check unavailable.</p>
+              ) : (
+                <div>
+                  <p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>
+                  <p>Auditor: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
+                  <p class={audit.audit.verdict_agrees ? 'audit-agrees' : 'audit-disagrees'}>
+                    {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
+                  </p>
+                  {audit.audit.needs_review && (
+                    <p class="audit-muted">Flagged for human review</p>
+                  )}
+                </div>
+              )}
+            </section>
+
+            <section class="audit-section">
+              <h3>Human review</h3>
+              {reviewedAt ? (
+                <p>Reviewed {reviewedAt}{audit.human_review.reviewer ? ` by ${audit.human_review.reviewer}` : ''}</p>
+              ) : (
+                <p class="audit-muted">Pending human review</p>
+              )}
+            </section>
+          </div>
+        </details>
+      )}
+    </PageHeader>
 
     <section class="rationale">
       <Content />
