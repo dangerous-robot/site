@@ -69,15 +69,14 @@ const initiallyCollapsed = true;
   let textQuery = '';
   let facetFilters = {};
 
-  // Static across the page lifetime; cache once.
-  const rows = document.querySelectorAll('[data-filterable]');
-  const countEl = document.getElementById('showing-count');
-  const emptyEl = document.getElementById('filter-empty');
-
   function applyFilters() {
+    // Queries run on every call: this inline script executes during HTML
+    // parsing, before [data-filterable] rows and #filter-empty (which live
+    // in the page template, after FilterBar) are in the DOM. Caching at
+    // module init returns empty results.
     const filterEntries = Object.entries(facetFilters);
     let shown = 0;
-    rows.forEach(row => {
+    document.querySelectorAll('[data-filterable]').forEach(row => {
       const searchTarget = (row.getAttribute(searchDataAttr) || row.textContent || '').toLowerCase();
       const textMatch = !textQuery || searchTarget.includes(textQuery);
 
@@ -91,7 +90,9 @@ const initiallyCollapsed = true;
       if (visible) shown++;
     });
 
+    const countEl = document.getElementById('showing-count');
     if (countEl) countEl.textContent = `Showing ${shown} of ${total}`;
+    const emptyEl = document.getElementById('filter-empty');
     if (emptyEl) emptyEl.hidden = shown > 0;
   }
 
