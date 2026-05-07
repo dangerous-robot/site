@@ -6,12 +6,14 @@ from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
+import yaml
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
 from analyst.agent import analyst_agent
 from auditor.agent import auditor_agent
 from common.frontmatter import parse_frontmatter
+from common.models import SubQuestion
 from ingestor.agent import ingestor_agent
 from orchestrator.pipeline import VerifyConfig, research_claim
 
@@ -78,14 +80,31 @@ async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
 
     from researcher.decomposed import ResearchOutput
 
+    sub_questions = [
+        SubQuestion(id="sq1", question="Does TestCorp publish energy data?", rationale="first-party axis"),
+        SubQuestion(id="sq2", question="Do third-party sources confirm it?", rationale="independent axis"),
+    ]
+    urls = [
+        "https://example.com/report",
+        "https://example.com/second-report",
+        "https://example.com/third-report",
+        "https://example.com/fourth-report",
+    ]
+
     async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
         return ResearchOutput(
-            urls=[
-                "https://example.com/report",
-                "https://example.com/second-report",
-                "https://example.com/third-report",
-                "https://example.com/fourth-report",
-            ],
+            urls=list(urls),
+            url_addresses={
+                urls[0]: ["sq1"],
+                urls[1]: ["sq1", "sq2"],
+                urls[2]: ["sq2"],
+                urls[3]: ["sq1"],
+            },
+            sub_questions=list(sub_questions),
+            queries_by_sub_question={
+                "sq1": ["TestCorp energy report"],
+                "sq2": ["TestCorp energy independent"],
+            },
             trace={"mode": "decomposed"},
         )
 
@@ -140,3 +159,20 @@ async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
     assert result.entity == "TestCorp"
     assert result.analyst_output is not None
     assert result.consistency is not None
+
+    # -- Audit sidecar carries the sub_questions block in the right slot --
+    audit_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+    assert audit_path.exists(), f"Audit sidecar not found at {audit_path}"
+    sidecar = yaml.safe_load(audit_path.read_text())
+    keys = list(sidecar.keys())
+    assert "sub_questions" in sidecar
+    # sub_questions must sit between research and sources_consulted
+    assert keys.index("sub_questions") == keys.index("research") + 1
+    assert keys.index("sub_questions") == keys.index("sources_consulted") - 1
+    block = sidecar["sub_questions"]
+    assert len(block) == 2
+    for entry in block:
+        assert {"id", "question", "rationale", "queries", "citations"} <= set(entry)
+    sq1_entry = next(e for e in block if e["id"] == "sq1")
+    # sq1 should have citations from the three urls that addressed it
+    assert len(sq1_entry["citations"]) >= 1
