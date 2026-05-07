@@ -169,8 +169,7 @@ def _record_threshold_block(
 class VerifyConfig:
     model: str = DEFAULT_MODEL
     # Per-agent overrides; each falls back to ``model`` when None. Keeps the
-    # single-model path unchanged while letting `dr` mix providers per agent
-    # (e.g. analyst on Infomaniak gpt-oss, auditor on Mistral-Small).
+    # single-model path unchanged while letting `dr` mix providers per agent.
     researcher_model: str | None = None
     analyst_model: str | None = None
     auditor_model: str | None = None

@@ -24,7 +24,9 @@ python tester.py probe greenpt mistral-small-3.2-24b-instruct-2506
 |---|---|---|---|---|---|---|---|---|
 | Infomaniak | gemma3n | ✅ | ✅ | ❌ | ❌ | BLK | 2026-04-28 | alias → google/gemma-3n-E4B-it; tool use not enabled at gateway |
 | Infomaniak | mistral24b | ✅ | ✅ | ✅ | ✅ | ❌ | 2026-04-28 | T5 now hard 500 (was fixable ⚠ with reasoning_content strip) |
-| Infomaniak | swiss-ai/Apertus-70B-Instruct-2509 | ✅ | ✅ | ✅ | ✅ | ❌ | 2026-04-25 | server-side template crash on T5 |
+| Infomaniak | swiss-ai/Apertus-70B-Instruct-2509 | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-05-07 | T5 now clean — earlier server-side template crash resolved |
+| Infomaniak | mistralai/Ministral-3-14B-Instruct-2512 | ✅ | ✅ | ✅ | ✅ | ❌ | 2026-05-07 | T5 fails: emits another tool_call instead of a final answer (loops on web_search) |
+| Infomaniak | mistralai/Mistral-Small-4-119B-2603 | ❌ | — | — | — | — | 2026-05-07 | not yet served — HTTP 400 `validation_rule_in` |
 | Infomaniak | openai/gpt-oss-120b | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-28 | chain-of-thought model; requires max_tokens≥200 or T1 burns budget before output |
 | Infomaniak | google/gemma-4-31B-it | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-27 | clean across all five |
 | GreenPT (router) | mistral-small-3.2-24b-instruct-2506 | ✅ | ✅ | ✅ | ✅ | ✅ | 2026-04-25 | |

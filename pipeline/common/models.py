@@ -189,22 +189,6 @@ def _model_needs_reasoning_strip(model_id: str) -> bool:
     return "mistral" in model_id.lower()
 
 
-def _model_needs_native_output(model_id: str) -> bool:
-    """True for Infomaniak-hosted models that don't support tool calling at the gateway.
-
-    These models fail T3/T4 (tool definition / tool call) but pass T2b
-    (response_format: json_schema). PydanticAI's default structured-output
-    mode uses tool calling; switching to 'native' tells it to use
-    response_format: json_schema instead.
-
-    gemma3n (google/gemma-3n-E4B-it): tool use not enabled at Infomaniak gateway.
-    gpt-oss-120b (openai/gpt-oss-120b): returns markdown prose instead of JSON
-      when using tool-calling mode; native json_schema mode resolves this.
-    """
-    lower = model_id.lower()
-    return "gemma3n" in lower or "gpt-oss-120b" in lower
-
-
 @lru_cache(maxsize=None)
 def resolve_model(spec: str) -> "Model | str":
     """Map a model spec string to a PydanticAI Model or pass it through.
@@ -247,9 +231,6 @@ def resolve_model(spec: str) -> "Model | str":
         profile_kwargs: dict = {}
         if _model_needs_reasoning_strip(model_id):
             profile_kwargs["openai_chat_send_back_thinking_parts"] = False
-        if _model_needs_native_output(model_id):
-            profile_kwargs["default_structured_output_mode"] = "native"
-            profile_kwargs["supports_json_schema_output"] = True
         profile: "OpenAIModelProfile | None" = OpenAIModelProfile(**profile_kwargs) if profile_kwargs else None
         return OpenAIChatModel(model_id, provider=provider, profile=profile)
     return spec

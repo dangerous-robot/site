@@ -21,7 +21,9 @@ from harness._fmt import TABLE_HEADER, TABLE_SEP, TESTS, format_row, score_resul
 KNOWN_MODELS = [
     ("infomaniak", "gemma3n",                             "T1✅ T2✅ T2b✅ T3❌ T4❌ T5BLK", "2026-04-28"),
     ("infomaniak", "mistral24b",                          "T1✅ T2✅ T2b— T3✅ T4✅ T5❌",  "2026-04-28"),
-    ("infomaniak", "swiss-ai/Apertus-70B-Instruct-2509",  "T1✅ T2✅ T2b— T3✅ T4✅ T5❌",  "2026-04-25"),
+    ("infomaniak", "swiss-ai/Apertus-70B-Instruct-2509",  "T1✅ T2✅ T2b✅ T3✅ T4✅ T5✅",  "2026-05-07"),
+    ("infomaniak", "mistralai/Ministral-3-14B-Instruct-2512", "T1✅ T2✅ T2b✅ T3✅ T4✅ T5❌",  "2026-05-07"),
+    ("infomaniak", "mistralai/Mistral-Small-4-119B-2603", "T1❌ — — — — —",                "2026-05-07"),
     ("infomaniak", "openai/gpt-oss-120b",                 "T1✅ T2✅ T2b— T3✅ T4✅ T5✅",  "2026-04-28"),
     ("infomaniak", "google/gemma-4-31B-it",               "T1✅ T2✅ T2b— T3✅ T4✅ T5✅",  "2026-04-27"),
     ("greenpt",    "mistral-small-3.2-24b-instruct-2506", "T1✅ T2✅ T2b— T3✅ T4✅ T5✅",  "2026-04-25"),

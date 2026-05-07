@@ -124,16 +124,16 @@ class TestResolveModel:
         resolve_model.cache_clear()
         from pydantic_ai.models.openai import OpenAIChatModel
 
-        model = resolve_model("infomaniak:openai/gpt-oss-120b")
+        model = resolve_model("infomaniak:swiss-ai/Apertus-70B-Instruct-2509")
         assert isinstance(model, OpenAIChatModel)
-        assert model.model_name == "openai/gpt-oss-120b"
+        assert model.model_name == "swiss-ai/Apertus-70B-Instruct-2509"
 
     def test_infomaniak_missing_keys_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("INFOMANIAK_API_KEY", raising=False)
         monkeypatch.delenv("INFOMANIAK_PRODUCT_ID", raising=False)
         resolve_model.cache_clear()
         with pytest.raises(RuntimeError, match="INFOMANIAK"):
-            resolve_model("infomaniak:openai/gpt-oss-120b")
+            resolve_model("infomaniak:swiss-ai/Apertus-70B-Instruct-2509")
 
     def test_mistral_gets_thinking_strip_profile(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Mistral specs must have ``openai_chat_send_back_thinking_parts=False``
@@ -155,7 +155,7 @@ class TestResolveModel:
         resolve_model.cache_clear()
         from pydantic_ai.profiles.openai import OpenAIModelProfile
 
-        model = resolve_model("infomaniak:openai/gpt-oss-120b")
+        model = resolve_model("infomaniak:swiss-ai/Apertus-70B-Instruct-2509")
         profile = OpenAIModelProfile.from_profile(model.profile)
         # Default is "auto"; the scrubber only fires for Mistral.
         assert profile.openai_chat_send_back_thinking_parts != False  # noqa: E712
@@ -166,6 +166,7 @@ class TestModelNeedsReasoningStrip:
         "model_id",
         [
             "mistralai/Mistral-Small-3.2-24B-Instruct-2506",
+            "mistralai/Ministral-3-14B-Instruct-2512",
             "mistral24b",
             "MISTRAL-large",
         ],
@@ -176,9 +177,7 @@ class TestModelNeedsReasoningStrip:
     @pytest.mark.parametrize(
         "model_id",
         [
-            "openai/gpt-oss-120b",
-            "gemma3n",
-            "google/gemma-3n-E4B-it",
+            "swiss-ai/Apertus-70B-Instruct-2509",
             "claude-haiku-4-5-20251001",
         ],
     )

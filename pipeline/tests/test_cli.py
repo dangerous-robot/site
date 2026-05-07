@@ -46,7 +46,7 @@ class TestRequiredEnvForModel:
         assert _required_env_for_model("gpt-4o-mini") == ("ANTHROPIC_API_KEY",)
 
     def test_infomaniak_requires_both_keys(self) -> None:
-        assert _required_env_for_model("infomaniak:openai/gpt-oss-120b") == (
+        assert _required_env_for_model("infomaniak:swiss-ai/Apertus-70B-Instruct-2509") == (
             "INFOMANIAK_API_KEY",
             "INFOMANIAK_PRODUCT_ID",
         )
@@ -63,14 +63,14 @@ class TestCheckProviderApiKeys:
         monkeypatch.delenv("INFOMANIAK_API_KEY", raising=False)
         monkeypatch.delenv("INFOMANIAK_PRODUCT_ID", raising=False)
         with pytest.raises(SystemExit) as exc:
-            _check_provider_api_keys(["anthropic:claude", "infomaniak:openai/gpt-oss-120b"])
+            _check_provider_api_keys(["anthropic:claude", "infomaniak:swiss-ai/Apertus-70B-Instruct-2509"])
         assert exc.value.code == 2
 
     def test_mixed_providers_pass_when_all_keys_set(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
         monkeypatch.setenv("INFOMANIAK_API_KEY", "y")
         monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "z")
-        _check_provider_api_keys(["anthropic:claude", "infomaniak:openai/gpt-oss-120b"])
+        _check_provider_api_keys(["anthropic:claude", "infomaniak:swiss-ai/Apertus-70B-Instruct-2509"])
 
     def test_test_model_skips_check(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)

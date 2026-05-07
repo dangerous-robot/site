@@ -273,16 +273,16 @@ class TestWriteAuditSidecar:
         claim_path.touch()
 
         per_agent = {
-            "researcher": "infomaniak:openai/gpt-oss-120b",
+            "researcher": "infomaniak:swiss-ai/Apertus-70B-Instruct-2509",
             "ingestor": "infomaniak:mistral3",
-            "analyst": "infomaniak:openai/gpt-oss-120b",
+            "analyst": "infomaniak:swiss-ai/Apertus-70B-Instruct-2509",
             "auditor": "anthropic:claude-sonnet-4-6",
         }
 
         sidecar_path = _write_audit_sidecar(
             claim_path=claim_path,
             comparison=None,
-            model="infomaniak:openai/gpt-oss-120b",
+            model="infomaniak:swiss-ai/Apertus-70B-Instruct-2509",
             ran_at=FIXED_TS,
             sources_consulted=[],
             agents_run=["researcher", "ingestor", "analyst", "auditor"],
@@ -292,7 +292,7 @@ class TestWriteAuditSidecar:
         data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
         assert data["models_used"] == per_agent
         # pipeline_run.model still records the run's default model
-        assert data["pipeline_run"]["model"] == "infomaniak:openai/gpt-oss-120b"
+        assert data["pipeline_run"]["model"] == "infomaniak:swiss-ai/Apertus-70B-Instruct-2509"
 
     def test_research_block_persists_planner_and_scorer_trace(self, tmp_path):
         claim_path = tmp_path / "test-claim.md"

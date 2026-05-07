@@ -178,11 +178,11 @@ class TestVerifyConfigPerAgentModels:
     def test_model_for_per_agent_override_wins(self) -> None:
         cfg = VerifyConfig(
             model="anthropic:claude",
-            analyst_model="infomaniak:openai/gpt-oss-120b",
+            analyst_model="infomaniak:swiss-ai/Apertus-70B-Instruct-2509",
             auditor_model="infomaniak:mistral24b",
         )
         assert cfg.model_for("researcher") == "anthropic:claude"
-        assert cfg.model_for("analyst") == "infomaniak:openai/gpt-oss-120b"
+        assert cfg.model_for("analyst") == "infomaniak:swiss-ai/Apertus-70B-Instruct-2509"
         assert cfg.model_for("auditor") == "infomaniak:mistral24b"
         assert cfg.model_for("ingestor") == "anthropic:claude"
 
