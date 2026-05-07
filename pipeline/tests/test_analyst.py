@@ -6,7 +6,7 @@ import pytest
 from pydantic_ai.models.test import TestModel
 
 from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
-from common.models import Category, Confidence, Verdict
+from common.models import Category, Confidence, SubQuestion, Verdict
 
 
 class TestAnalystAgent:
@@ -61,3 +61,49 @@ class TestAnalystPrompt:
     def test_handles_no_sources(self) -> None:
         prompt = build_analyst_prompt("X", "Claim", [])
         assert "No sources were found" in prompt
+
+    def test_renders_sub_questions_block(self) -> None:
+        sub_questions = [
+            SubQuestion(id="sq1", question="Does Ecosia publish energy data?", rationale="direct"),
+            SubQuestion(id="sq2", question="Do third parties confirm it?", rationale="independent"),
+        ]
+        prompt = build_analyst_prompt(
+            "Ecosia",
+            "Ecosia runs on renewable energy",
+            [],
+            sub_questions=sub_questions,
+        )
+        assert "## Sub-questions" in prompt
+        assert "sq1: Does Ecosia publish energy data?" in prompt
+        assert "sq2: Do third parties confirm it?" in prompt
+        assert "Rationale: direct" in prompt
+
+    def test_renders_addresses_per_source(self) -> None:
+        sub_questions = [
+            SubQuestion(id="sq1", question="A?", rationale="r1"),
+            SubQuestion(id="sq2", question="B?", rationale="r2"),
+        ]
+        sources = [
+            {
+                "title": "First",
+                "publisher": "Pub",
+                "summary": "Summary",
+                "body": "Body",
+                "addresses": ["sq1", "sq2"],
+            },
+            {
+                "title": "Second",
+                "publisher": "Pub",
+                "summary": "Summary",
+                "body": "Body",
+                "addresses": [],
+            },
+        ]
+        prompt = build_analyst_prompt(
+            "Ecosia",
+            "Some claim",
+            sources,
+            sub_questions=sub_questions,
+        )
+        assert "Addresses: sq1, sq2" in prompt
+        assert "Addresses: (none)" in prompt
