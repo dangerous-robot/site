@@ -1,16 +1,18 @@
 ---
 title: Microsoft publishes a sustainability or ESG report
 entity: companies/microsoft
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'true'
 confidence: low
 verification_level: claimed
 cap_rationale: Confidence is capped at low -- all sources originate from entity documentation;
   no independent source was found that conducts original analysis of this claim.
-takeaway: ''
-seo_title: ''
+takeaway: Microsoft regularly publishes environmental impact information, as well
+  as ESG reporting to shareholders.
+seo_title: Microsoft publishes ESG reports
 criteria_slug: publishes-sustainability-report
-status: draft
+status: published
 as_of: '2026-05-05'
 sources:
 - 2026/microsoft-reports-hub

@@ -1,14 +1,15 @@
 ---
 title: Anthropic donates to environmental causes
 entity: companies/anthropic
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: unverified
 confidence: medium
 verification_level: partially-verified
 takeaway: ''
 seo_title: ''
 criteria_slug: donates-to-environmental-causes
-status: draft
+status: published
 as_of: '2026-05-05'
 sources:
 - 2026/voluntary-commitments

@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:47:58.287530+00:00'
+  ran_at: '2026-05-07T01:45:37.109783+00:00'
   model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
@@ -15,48 +15,75 @@ models_used:
 research:
   mode: decomposed
   queries:
-  - Brave Leo data privacy policy
+  - Brave Leo data usage privacy policy
   - Brave Leo LLM training data sources
   - Brave Leo local model training
-  - Brave Labs Brave Leo privacy
-  - Brave Leo user data usage
-  planner_rationale: These queries aim to verify the claim by directly investigating
-    Brave Leo's official data privacy policy and how its underlying LLMs are trained.
-    Queries also look for information on local model training, which could be relevant
-    to the claim about not using user data.  Finally, the queries target Brave Labs,
-    the developer, and specifically address user data usage.
+  - Brave Leo user data privacy
+  - Brave Leo privacy commitments LLMs
+  planner_rationale: These queries aim to verify the claim by directly searching for
+    Brave's official privacy policy and information about their LLM training process.
+    They also explore whether Brave Leo utilizes local models, which would mitigate
+    the need for user data in training. The queries cover both explicit statements
+    and potential data handling practices.
   candidates_seen: 21
-  urls_kept: 21
+  urls_kept: 19
   urls_dropped: 0
-  scorer_rationale: The claim is whether Brave Leo uses user data for training. All
-    provided snippets indicate that Brave Leo does not use user data for training.
-    Several snippets explicitly state that conversations are not stored or logged,
-    and that no personal data is retained. The publisher quality is predominantly
-    secondary, with some forum and tertiary sources. The Wikipedia page is secondary
-    and corroborates the information. The Brave blog posts are secondary and confirm
-    the privacy-preserving nature of Leo. The GitHub links are secondary and relate
-    to the underlying code and data collection processes, but do not suggest user
-    data is used for training. The LinkedIn post is secondary and does not provide
-    specific details about training data. The Brave Search API documentation is secondary
-    and does not state user data is used for training. The Brave's Capture of Usage
-    Data page is secondary and states usage data is used for business decisions, not
-    training. The Bring Your Own Model feature is secondary and allows users to connect
-    their own models, ensuring data privacy. The AI Browsing documentation is secondary
-    and confirms that data is not logged or retained. The scores are generally 4 or
-    5 because the snippets directly address the claim with clear statements about
-    not using user data for training.
-  urls_after_blocklist: 20
-sources_consulted: []
+  scorer_rationale: The claim is that Brave Leo does not use user data for training.
+    All provided candidates discuss Brave Leo's privacy practices, specifically focusing
+    on whether user data is stored, retained, or used for model training. Several
+    candidates directly state that user data is not used for training or is not stored.
+    Others mention local storage or the ability to use custom models. The candidates
+    with a score of 4 or higher directly address the claim and provide evidence supporting
+    it. The publisher quality is primarily secondary, which is acceptable given the
+    nature of the claim and the available sources.
+  urls_after_blocklist: 19
+sources_consulted:
+- id: 2026/browser-privacy-policy
+  url: https://brave.com/privacy/browser/
+  title: Browser Privacy Policy
+  ingested: true
+- id: 2024/leo-android
+  url: https://brave.com/blog/leo-android/
+  title: Leo—Brave’s privacy-preserving AI assistant—now available on Android
+  ingested: true
+- id: 2025/automatic-mode-leo
+  url: https://brave.com/blog/automatic-mode-leo/
+  title: 'Leo’s New Automatic Mode: Smarter AI That Adapts to Your Workflow'
+  ingested: true
+- id: 2026/brave-leo-ai
+  url: https://brave.com/leo/
+  title: Brave Leo AI
+  ingested: true
+- id: 2026/brave-ai
+  url: https://brave.com/ai/
+  title: Brave AI
+  ingested: true
+- id: 2024/rtx-ai-brave-browser
+  url: https://blogs.nvidia.com/blog/rtx-ai-brave-browser/
+  title: Leo AI and Ollama Bring RTX-Accelerated Local LLMs to Brave Browser Users
+  ingested: true
+- id: 2024/byom-nightly
+  url: https://brave.com/blog/byom-nightly/
+  title: 'Bring Your Own Model (BYOM): using Brave Leo with your own LLMs'
+  ingested: true
+- id: 2025/leo-roadmap-2025-update
+  url: https://brave.com/blog/leo-roadmap-2025-update/
+  title: 'Building Browser AI: Leo’s Development Progress and Plans'
+  ingested: true
+- id: 2025/browser-ai-tee
+  url: https://brave.com/blog/browser-ai-tee/
+  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
+  ingested: true
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: mixed
-  analyst_confidence: high
+  auditor_verdict: 'true'
+  analyst_confidence: medium
   auditor_confidence: low
-  verdict_agrees: false
+  verdict_agrees: true
   confidence_agrees: false
-  needs_review: true
+  needs_review: false
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-05-06'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

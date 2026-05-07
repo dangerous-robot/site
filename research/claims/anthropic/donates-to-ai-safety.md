@@ -1,7 +1,8 @@
 ---
 title: Anthropic donates to AI safety causes
 entity: companies/anthropic
-topics: [ai-safety]
+topics:
+- ai-safety
 verdict: 'true'
 confidence: low
 verification_level: claimed
@@ -10,7 +11,7 @@ cap_rationale: Confidence is capped at low -- all sources originate from entity 
 takeaway: ''
 seo_title: ''
 criteria_slug: donates-to-ai-safety
-status: draft
+status: published
 as_of: '2026-05-05'
 sources:
 - 2024/anthropic-fellows-program

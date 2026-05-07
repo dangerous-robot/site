@@ -6,7 +6,7 @@ verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
-seo_title: ''
+seo_title: Anthropic is privately held
 criteria_slug: corporate-structure
 status: published
 as_of: '2026-05-05'

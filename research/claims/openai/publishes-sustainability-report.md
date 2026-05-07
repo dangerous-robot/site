@@ -1,14 +1,16 @@
 ---
 title: OpenAI publishes a sustainability or ESG report
 entity: companies/openai
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'false'
 confidence: high
 verification_level: partially-verified
-takeaway: ''
+takeaway: OpenAI does not publish a sustainability or ESG report, which limits transparency
+  about its environmental and social impact.
 seo_title: ''
 criteria_slug: publishes-sustainability-report
-status: draft
+status: published
 as_of: '2026-05-05'
 sources:
 - 2025/environmental-impact-of-ai
@@ -20,6 +22,7 @@ sources:
 - 2026/openai-trust-portal
 - 2024/hidden-environmental-costs-tech-ai-investments
 - 2025/explained-generative-ai-environmental-impact-0117
-tags: []
+tags:
+- highlight
 ---
 Available evidence shows that OpenAI has not released a formal sustainability or ESG report. An independent analysis by The Sustainable Innovation notes that OpenAI has published zero verified Scope 1, 2, or 3 emissions figures as of March 2026, indicating the absence of a disclosed sustainability report. No other source provides a public ESG or sustainability report from OpenAI, and the company’s own documentation (e.g., the OpenAI Nonprofit Commission Report) does not address ESG disclosures.

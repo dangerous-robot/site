@@ -1,15 +1,16 @@
 ---
 title: Brave Leo discloses which models it uses
 entity: products/brave-leo
-topics: [ai-safety]
+topics:
+- ai-safety
 verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: Brave Leo’s built‑in transparency lets users see exactly which LLM is powering
   their chat.
-seo_title: ''
+seo_title: Brave Leo discloses which models it uses
 criteria_slug: discloses-models-used
-status: draft
+status: published
 as_of: '2026-05-05'
 sources:
 - 2025/browser-ai-tee
