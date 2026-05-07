@@ -388,6 +388,103 @@ def test_forum_domain_scores_low() -> None:
     assert result == "forum", f"Expected 'forum', got {result!r}"
 
 
+# --------------------------------------------------------------------------- #
+# Entity-exclude post-scorer filter (search_hints.exclude domain entries)      #
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.asyncio
+async def test_entity_exclude_drops_matching_domain_post_scorer() -> None:
+    """A URL kept by the LLM scorer is still dropped when its host matches
+    a domain-shaped entry in resolved_entity.search_hints.exclude."""
+    from orchestrator.entity_resolution import SearchHints
+
+    cfg = _make_cfg(max_initial_queries=2)
+    resolved = ResolvedEntity(
+        entity_ref="companies/treadlightlyai",
+        entity_name="TreadLightly AI",
+        entity_type=EntityType.COMPANY,
+        entity_description="AI thinking tool.",
+        website="https://treadlightly.ai",
+        search_hints=SearchHints(include=[], exclude=["treadlightly.org", "off-roading"]),
+    )
+
+    fake_candidates = [
+        SearchCandidate(url="https://treadlightly.ai/about", title="Canonical", snippet="", from_query="q1"),
+        SearchCandidate(url="https://treadlightly.org/team", title="Wrong entity", snippet="", from_query="q1"),
+    ]
+    fake_plan = _plan(["q1"], "ok")
+    fake_scored = ScoredURLs(
+        kept=[
+            ScoredCandidate(url="https://treadlightly.ai/about", addresses=["sq1"]),
+            ScoredCandidate(url="https://treadlightly.org/team", addresses=["sq1"]),
+        ],
+        dropped=[],
+        rationale="LLM didn't catch the collision",
+    )
+
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            ro = await decomposed_research(
+                "test claim", "TreadLightly AI", cfg, sem, client, resolved_entity=resolved,
+            )
+
+    assert ro.urls == ["https://treadlightly.ai/about"]
+    assert "https://treadlightly.org/team" not in ro.url_addresses
+    assert ro.trace.get("entity_exclude_dropped") == ["https://treadlightly.org/team"]
+
+
+@pytest.mark.asyncio
+async def test_website_and_avoid_render_in_scorer_prompt() -> None:
+    """When resolved_entity has website + search_hints.exclude, both surface in the
+    scorer prompt as disambiguation anchors."""
+    from orchestrator.entity_resolution import SearchHints
+
+    cfg = _make_cfg(max_initial_queries=2)
+    resolved = ResolvedEntity(
+        entity_ref="companies/treadlightlyai",
+        entity_name="TreadLightly AI",
+        entity_type=EntityType.COMPANY,
+        entity_description="AI thinking tool.",
+        website="https://treadlightly.ai",
+        search_hints=SearchHints(include=[], exclude=["treadlightly.org"]),
+    )
+    fake_candidates = [
+        SearchCandidate(url="https://x.example", title="x", snippet="x", from_query="q1"),
+    ]
+    fake_plan = _plan(["q1"], "ok")
+    fake_scored = ScoredURLs(
+        kept=[ScoredCandidate(url="https://x.example", addresses=["sq1"])],
+        dropped=[],
+        rationale="ok",
+    )
+
+    captured: dict = {}
+
+    async def capture_scorer(prompt, *args, **kwargs):
+        captured["scorer"] = prompt
+        return _AgentResult(fake_scored)
+
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(url_scorer_agent, "run", side_effect=capture_scorer),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            await decomposed_research(
+                "test claim", "TreadLightly AI", cfg, sem, client, resolved_entity=resolved,
+            )
+
+    prompt = captured.get("scorer", "")
+    assert "Official website: https://treadlightly.ai" in prompt
+    assert "treadlightly.org" in prompt
+
+
 def test_primary_domain_classification() -> None:
     """classify_url_publisher_quality returns 'primary' for anthropic.com."""
     from common.publisher_quality import classify_url_publisher_quality

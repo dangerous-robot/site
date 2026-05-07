@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
+from common.blocklist import BlocklistEntry, filter_urls
 from common.models import SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
@@ -142,13 +143,35 @@ async def decomposed_research(
         return out
 
     parent_name = resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
+    entity_website = resolved_entity.website if resolved_entity else None
+    avoid_topics = (
+        list(resolved_entity.search_hints.exclude)
+        if resolved_entity and resolved_entity.search_hints
+        else []
+    )
     scorer_prompt = build_scorer_prompt(
         entity_name,
         claim_text,
         candidates,
         out.sub_questions,
         parent_company=parent_name,
+        website=entity_website,
+        avoid=avoid_topics or None,
     )
+    def _fallback_to_candidates() -> tuple[list[str], dict[str, list[str]]]:
+        # Without scorer output we have no per-URL addresses; tag every
+        # candidate as addressing every sub-question so downstream
+        # invariants (non-empty addresses) still hold.
+        fallback_addrs = [sq.id for sq in out.sub_questions] or ["sq1"]
+        urls = [c.url for c in candidates]
+        return urls, {url: list(fallback_addrs) for url in urls}
+
+    def _commit(urls: list[str], addresses: dict[str, list[str]]) -> ResearchOutput:
+        urls, addresses = _apply_entity_exclude(urls, addresses, avoid_topics, out.trace)
+        out.urls = urls
+        out.url_addresses = addresses
+        return out
+
     try:
         async with sem:
             with url_scorer_agent.override(model=resolve_model(cfg.model_for("researcher"))):
@@ -169,26 +192,17 @@ async def decomposed_research(
             out.trace["scorer_dropped_all"] = True
             out.errors.append(_research_err("scorer_dropped_all", f"URL scorer dropped all {len(candidates)} candidates"))
             return out
-        out.urls = [c.url for c in scored.kept]
-        out.url_addresses = {c.url: list(c.addresses) for c in scored.kept}
-        return out
+        return _commit(
+            [c.url for c in scored.kept],
+            {c.url: list(c.addresses) for c in scored.kept},
+        )
     except asyncio.TimeoutError:
         out.errors.append(_research_err("timeout", "URL scorer timed out"))
-        # Fall back to all candidates rather than returning nothing.
-        # Without scorer output we have no per-URL addresses; tag every
-        # candidate as addressing every sub-question so downstream
-        # invariants (non-empty addresses) still hold.
-        fallback_addrs = [sq.id for sq in out.sub_questions] or ["sq1"]
-        out.urls = [c.url for c in candidates]
-        out.url_addresses = {c.url: list(fallback_addrs) for c in candidates}
-        return out
+        return _commit(*_fallback_to_candidates())
     except Exception as exc:
         out.errors.append(_research_err("model_error", str(exc)))
         logger.error("URL scorer failed: %s", exc)
-        fallback_addrs = [sq.id for sq in out.sub_questions] or ["sq1"]
-        out.urls = [c.url for c in candidates]
-        out.url_addresses = {c.url: list(fallback_addrs) for c in candidates}
-        return out
+        return _commit(*_fallback_to_candidates())
 
 
 def _group_queries_by_sq(planned) -> dict[str, list[str]]:
@@ -196,3 +210,27 @@ def _group_queries_by_sq(planned) -> dict[str, list[str]]:
     for pq in planned:
         out.setdefault(pq.sub_question_id, []).append(pq.text)
     return out
+
+
+def _apply_entity_exclude(
+    urls: list[str],
+    addresses: dict[str, list[str]],
+    avoid: list[str],
+    trace: dict,
+) -> tuple[list[str], dict[str, list[str]]]:
+    """Drop URLs whose host matches a domain-shaped entry in `avoid`.
+
+    Topical avoid entries (free text without a `.`) are left to the LLM scorer.
+    """
+    domain_excludes = [a.strip().lower() for a in avoid if "." in a and " " not in a]
+    if not domain_excludes:
+        return urls, addresses
+    entries = [BlocklistEntry(host=d, reason="entity_exclude") for d in domain_excludes]
+    kept, dropped = filter_urls(urls, entries)
+    if dropped:
+        trace["entity_exclude_dropped"] = [d.url for d in dropped]
+        logger.info(
+            "Entity-exclude filter dropped %d URL(s): %s",
+            len(dropped), [d.url for d in dropped],
+        )
+    return kept, {u: addresses[u] for u in kept if u in addresses}

@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -34,14 +35,14 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 import dataclasses
 
-from pydantic_ai import capture_run_messages
+from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution
-from orchestrator.entity_resolution import ResolvedEntity
+from orchestrator.entity_resolution import ResolvedEntity, SearchHints
 from auditor.agent import auditor_agent, build_auditor_prompt
-from common.blocklist import filter_urls, load_blocklist
+from common.blocklist import normalised_host, filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
@@ -278,7 +279,7 @@ async def verify_claim(
                 for e in research_errors:
                     progress("  ! research: %s", e.message)
             if not urls:
-                result.errors.append("Researcher agent found no relevant URLs")
+                result.errors.append(_NO_URLS_ERR)
                 if any(e.error_type == "scorer_dropped_all" for e in research_errors):
                     result.blocked_reason = BlockedReason.INSUFFICIENT_SOURCES
                 return result
@@ -820,7 +821,7 @@ async def research_claim(
 
             result.errors.extend(e.message for e in research_errors)
             if not urls:
-                result.errors.append("Researcher agent found no relevant URLs")
+                result.errors.append(_NO_URLS_ERR)
                 if any(e.error_type == "scorer_dropped_all" for e in research_errors):
                     result.blocked_reason = BlockedReason.INSUFFICIENT_SOURCES
                 return result
@@ -978,6 +979,29 @@ async def research_claim(
     return result
 
 
+_NO_URLS_ERR = "Researcher agent found no relevant URLs"
+
+
+def _blocked_reason_label(
+    reason_value: str,
+    vr_errors: list[str],
+    extra: str | None = None,
+) -> str:
+    """Format a BlockedReason value with the most informative upstream cause.
+
+    Prefers ``extra`` if provided, otherwise the first non-noise message
+    from ``vr_errors``, otherwise the first error, otherwise the bare
+    reason. The "no relevant URLs" string is treated as noise because it
+    is downstream of the real cause (planner timeout, search failure,
+    etc.) and obscures it.
+    """
+    cause = extra
+    if cause is None:
+        non_noise = [e for e in vr_errors if not e.startswith(_NO_URLS_ERR)]
+        cause = non_noise[0] if non_noise else (vr_errors[0] if vr_errors else None)
+    return f"{reason_value}: {cause}" if cause else reason_value
+
+
 @dataclass
 class OnboardResult:
     """Summary of an entity onboarding run."""
@@ -989,6 +1013,10 @@ class OnboardResult:
     claims_created: list[str] = field(default_factory=list)
     claims_skipped: list[str] = field(default_factory=list)
     claims_failed: list[str] = field(default_factory=list)
+    # Each entry is (relative_claim_path, reason_label). reason_label is the
+    # BlockedReason value plus the upstream cause when available, e.g.
+    # "analyst_error: research planner timed out".
+    claims_blocked: list[tuple[str, str]] = field(default_factory=list)
     templates_applied: list[str] = field(default_factory=list)
     templates_excluded: list[tuple[str, str]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
@@ -1004,6 +1032,149 @@ def _screen_templates(
     return applicable, excluded
 
 
+def _wrong_entity_source(
+    source_url: str | None, entity_website: str | None
+) -> bool:
+    """True when the source URL's registered domain differs from the canonical."""
+    if not (entity_website and source_url):
+        return False
+    canon = normalised_host(entity_website)
+    src = normalised_host(source_url)
+    if not (canon and src):
+        return False
+    return canon != src and not src.endswith("." + canon)
+
+
+class _EntityDescription(BaseModel):
+    description: str = Field(
+        description="One sentence describing the organization (not the webpage)."
+    )
+
+
+_ENTITY_DESCRIPTION_INSTRUCTIONS = """\
+You rewrite a webpage summary into a one-sentence description of the organization the page is about.
+
+Rules:
+- Output a single sentence.
+- The subject is the organization, not the webpage. Do not start with "Landing page", "Homepage", "Website", etc.
+- Preserve concrete facts from the source (what the organization does, key products or focus). Do not invent new facts.
+- If the source summary does not actually describe an organization, return an empty string.
+"""
+
+
+_entity_description_agent = Agent(
+    "test",
+    output_type=_EntityDescription,
+    system_prompt=_ENTITY_DESCRIPTION_INSTRUCTIONS,
+    retries=1,
+)
+
+
+async def _tighten_entity_description(
+    description: str,
+    entity_name: str,
+    source_url: str | None,
+    entity_website: str | None,
+    cfg: VerifyConfig,
+) -> str:
+    """Rewrite the source-derived summary into a one-sentence org description.
+
+    Blanks the description when the source URL belongs to a different registered
+    domain than the canonical website (a wrong-entity blurb is worse than none).
+    Otherwise calls a small LLM to recast the page summary as an organization
+    description; falls back to the raw summary if the call fails.
+    """
+    description = (description or "").strip()
+    if not description:
+        return ""
+    if _wrong_entity_source(source_url, entity_website):
+        logger.info(
+            "Onboard: source domain mismatches canonical website; blanking description"
+        )
+        return ""
+    prompt = f"Entity name: {entity_name}\nWebpage summary: {description}"
+    try:
+        with _entity_description_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
+            res = await asyncio.wait_for(
+                _entity_description_agent.run(prompt),
+                timeout=cfg.research_timeout_s,
+            )
+        rewritten = (res.output.description or "").strip()
+        return rewritten or description
+    except Exception as exc:
+        logger.warning("Entity description rewrite failed (%s); using raw summary", exc)
+        return description
+
+
+async def _probe_collision_suggestions(
+    client: httpx.AsyncClient,
+    entity_name: str,
+    entity_website: str | None,
+) -> list[str]:
+    """Probe Brave for the bare entity name; suggest exclude domains on collision.
+
+    Skipped (returns []) when there is no canonical website to compare against.
+    Returns up to 3 distinct registered domains that appear in the top results
+    and don't match the canonical. Failures are non-fatal: the probe is best-
+    effort disambiguation, not a gate.
+    """
+    if not entity_website:
+        return []
+    canon = normalised_host(entity_website)
+    if not canon:
+        return []
+    try:
+        from researcher.agent import search_brave
+        results = await search_brave(client, entity_name, max_results=8)
+    except Exception as exc:
+        logger.warning("Collision probe failed: %s", exc)
+        return []
+    counts: Counter[str] = Counter()
+    for r in results[:5]:
+        host = normalised_host(r.get("url", "") or "")
+        if not host:
+            continue
+        if host == canon or host.endswith("." + canon):
+            continue
+        counts[host] += 1
+    suggestions = [host for host, _ in counts.most_common(3)]
+    if suggestions:
+        logger.info(
+            "Collision probe for %r: canonical=%s, suggesting excludes=%s",
+            entity_name, canon, suggestions,
+        )
+    return suggestions
+
+
+def _merge_search_hints(
+    cli_include: list[str] | None,
+    cli_exclude: list[str] | None,
+    probe_excludes: list[str],
+) -> SearchHints | None:
+    """Combine operator-supplied + probe-suggested hints.
+
+    Returns None when nothing is set so the entity frontmatter can omit the key.
+    Order is preserved per source; duplicates dropped.
+    """
+    include = _dedup(cli_include or [])
+    exclude = _dedup((cli_exclude or []) + list(probe_excludes))
+    if not include and not exclude:
+        return None
+    return SearchHints(include=include, exclude=exclude)
+
+
+def _dedup(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in items:
+        s = item.strip()
+        if not s or s in seen:
+            continue
+        seen.add(s)
+        out.append(s)
+    return out
+
+
 async def onboard_entity(
     entity_name: str,
     entity_type: str,
@@ -1012,6 +1183,8 @@ async def onboard_entity(
     seed_url: str | None = None,
     only: list[str] | None = None,
     entity_ref: str | None = None,
+    search_hints_include: list[str] | None = None,
+    search_hints_exclude: list[str] | None = None,
 ) -> OnboardResult:
     """Onboard an entity by running claim templates through the research pipeline.
 
@@ -1062,6 +1235,8 @@ async def onboard_entity(
         logger.info("Onboard step 1: light research for %s", entity_name)
         entity_description = ""
         entity_website: str | None = None
+        description_source_url: str | None = None
+        probe_excludes: list[str] = []
         try:
             async with httpx.AsyncClient() as client:
                 if seed_url:
@@ -1077,10 +1252,29 @@ async def onboard_entity(
                         entity_website = urls[0]
                     source_files, _ = await _ingest_urls(client, urls[:1], cfg, sem) if urls else ([], [])
                 if source_files:
-                    _u, sf = source_files[0]
+                    src_url, sf = source_files[0]
                     entity_description = sf.frontmatter.summary or ""
+                    description_source_url = src_url
+                # Probe (Brave) and description rewrite (LLM) have no mutual
+                # data dependency; run them concurrently.
+                probe_excludes, entity_description = await asyncio.gather(
+                    _probe_collision_suggestions(client, entity_name, entity_website),
+                    _tighten_entity_description(
+                        entity_description, entity_name,
+                        description_source_url, entity_website, cfg,
+                    ),
+                )
         except Exception as exc:
             logger.warning("Light research failed: %s", exc)
+
+        merged_search_hints = _merge_search_hints(
+            search_hints_include, search_hints_exclude, probe_excludes,
+        )
+        if probe_excludes:
+            progress(
+                "Name-collision probe suggested excludes: %s",
+                ", ".join(probe_excludes),
+            )
 
         # Step 2: Template screening
         logger.info("Onboard step 2: screening templates")
@@ -1121,6 +1315,7 @@ async def onboard_entity(
                 entity_description=entity_description,
                 repo_root=repo_root,
                 website=entity_website,
+                search_hints=merged_search_hints,
             )
             result.entity_ref = draft_ref
             return result
@@ -1137,8 +1332,20 @@ async def onboard_entity(
                 entity_description=entity_description,
                 repo_root=repo_root,
                 website=entity_website,
+                search_hints=merged_search_hints,
             )
         result.entity_ref = entity_ref
+
+        # Without this resolved entity, the just-persisted search_hints would
+        # not reach the per-template researcher on the run that wrote them.
+        onboard_resolved_entity = ResolvedEntity(
+            entity_ref=entity_ref,
+            entity_name=entity_name,
+            entity_type=et,
+            entity_description=entity_description,
+            website=entity_website,
+            search_hints=merged_search_hints,
+        )
 
         # Step 5: Per-template research pipeline. Each template gets its own
         # run_id so the per-claim agent runs (researcher/ingestor/analyst/
@@ -1177,7 +1384,11 @@ async def onboard_entity(
                     continue
 
                 try:
-                    vr = await verify_claim(entity_name, claim_text, iter_cfg, gate, sem=sem, url_index=onboard_url_index)
+                    vr = await verify_claim(
+                        entity_name, claim_text, iter_cfg, gate,
+                        sem=sem, url_index=onboard_url_index,
+                        resolved_entity=onboard_resolved_entity,
+                    )
 
                     if vr.errors:
                         result.errors.extend(f"{slug}: {e}" for e in vr.errors)
@@ -1219,7 +1430,8 @@ async def onboard_entity(
                             blocked_reason=vr.blocked_reason,
                             criteria_slug=slug,
                         )
-                        result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        reason_label = _blocked_reason_label(vr.blocked_reason.value, vr.errors)
+                        result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,
                             comparison=None,
@@ -1242,7 +1454,7 @@ async def onboard_entity(
                             idx,
                             total,
                             slug,
-                            vr.blocked_reason.value,
+                            reason_label,
                         )
                         continue
 
@@ -1280,9 +1492,8 @@ async def onboard_entity(
                             blocked_reason=BlockedReason.ANALYST_ERROR,
                             criteria_slug=slug,
                         )
-                        result.claims_created.append(
-                            str(blocked_path.relative_to(repo_root))
-                        )
+                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors)
+                        result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,
                             comparison=None,
@@ -1303,7 +1514,7 @@ async def onboard_entity(
                             idx,
                             total,
                             slug,
-                            BlockedReason.ANALYST_ERROR.value,
+                            reason_label,
                         )
                         continue
 
@@ -1340,7 +1551,8 @@ async def onboard_entity(
                             blocked_reason=BlockedReason.ANALYST_ERROR,
                             criteria_slug=slug,
                         )
-                        result.claims_created.append(str(blocked_path.relative_to(repo_root)))
+                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, extra="unresolved vocabulary")
+                        result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,
                             comparison=None,
@@ -1357,11 +1569,11 @@ async def onboard_entity(
                             ),
                         )
                         progress(
-                            "[%d/%d] Blocked: %s (%s, unresolved vocabulary)",
+                            "[%d/%d] Blocked: %s (%s)",
                             idx,
                             total,
                             slug,
-                            BlockedReason.ANALYST_ERROR.value,
+                            reason_label,
                         )
                         continue
 

@@ -53,6 +53,8 @@ Rules:
 - When parent company is provided, sources about the parent company are relevant to claims about the subsidiary.
 - Each candidate has a `publisher_quality` label: `primary` (company or regulatory), `secondary` (academic, research, news), `tertiary` (advocacy, community), or `forum` (Reddit, Quora, HN, etc.).
 - Use publisher quality as a per-sub-question tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 3 unless no higher-quality alternatives exist in this candidate set.
+- ENTITY DISAMBIGUATION: when an `Official website` is provided, the entity is the organization at that domain. Score candidates whose URL belongs to a *different* organization that merely shares a similar name as 1 (level: "different entity"), even if their snippet superficially matches a sub-question. The canonical website's own pages and well-known third-party coverage of the *same* organization (its press, regulator filings, profile databases) remain in scope.
+- When `Avoid results about` is provided, candidates clearly about those topics or organizations score 1.
 """
 
 url_scorer_agent = Agent(
@@ -69,10 +71,16 @@ def build_scorer_prompt(
     candidates: list[SearchCandidate],
     sub_questions: list[SubQuestion],
     parent_company: str | None = None,
+    website: str | None = None,
+    avoid: list[str] | None = None,
 ) -> str:
     entity_block = f"Entity: {entity or '(unknown)'}\n"
     if parent_company:
         entity_block += f"Parent company: {parent_company}\n"
+    if website:
+        entity_block += f"Official website: {website}\n"
+    if avoid:
+        entity_block += f"Avoid results about: {', '.join(avoid)}\n"
     sub_question_block = "Sub-questions:\n" + "\n".join(
         f"- {sq.id}: {sq.question} (rationale: {sq.rationale})"
         for sq in sub_questions

@@ -92,6 +92,38 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
 ]
 
 
+_TIMEOUT_SOURCES: tuple[tuple[str, str], ...] = (
+    ("research planner timed out", "research planner"),
+    ("url scorer timed out", "url scorer"),
+    ("ingest timed out", "ingest"),
+)
+
+
+def _summarize_timeouts(errors: list[str]) -> str:
+    """Return a one-line summary of timeout errors, or "" if none.
+
+    Scans onboard ``result.errors`` for known timeout phrases and groups
+    by source. Output forms:
+      - single source: ``"3 (research planner)"``
+      - multiple:      ``"5 (research planner: 3, ingest: 2)"``
+    """
+    counts: dict[str, int] = {}
+    for err in errors:
+        lowered = err.lower()
+        for needle, label in _TIMEOUT_SOURCES:
+            if needle in lowered:
+                counts[label] = counts.get(label, 0) + 1
+                break
+    if not counts:
+        return ""
+    total = sum(counts.values())
+    if len(counts) == 1:
+        (label,) = counts
+        return f"{total} ({label})"
+    parts = ", ".join(f"{label}: {n}" for label, n in counts.items())
+    return f"{total} ({parts})"
+
+
 class _CategorizedGroup(click.Group):
     """`click.Group` that organizes `dr --help` by write semantics."""
 
@@ -124,7 +156,7 @@ class _CategorizedGroup(click.Group):
 
 
 @click.group(cls=_CategorizedGroup)
-@click.option("--verbose", is_flag=True, help="Enable verbose logging (INFO on console; DEBUG always written to logs/debug.log)")
+@click.option("--verbose", is_flag=True, help="Surface INFO-level events on stderr in addition to progress lines. File logs (logs/info.log, logs/debug.log) are written at full detail regardless of this flag.")
 @click.option("--model", default=DEFAULT_MODEL, help="Default LLM model for all agents", envvar="DR_MODEL")
 @click.option("--researcher-model", default=None, help="Override model for the researcher agent (falls back to --model)", envvar="DR_RESEARCHER_MODEL")
 @click.option("--analyst-model", default=None, help="Override model for the analyst agent (falls back to --model)", envvar="DR_ANALYST_MODEL")
@@ -1416,6 +1448,18 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--force", is_flag=True, help="Overwrite existing claim files if present")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
+@click.option(
+    "--search-hint-include",
+    multiple=True,
+    metavar="TERM",
+    help="Term to prefer in researcher queries; persisted to entity frontmatter (repeatable)",
+)
+@click.option(
+    "--search-hint-exclude",
+    multiple=True,
+    metavar="TERM_OR_DOMAIN",
+    help="Term or domain to avoid in research; persisted to entity frontmatter. Domains (e.g. 'treadlightly.org') also drive a deterministic post-scorer filter (repeatable)",
+)
 @click.pass_context
 def onboard(
     ctx: click.Context,
@@ -1431,6 +1475,8 @@ def onboard(
     force: bool,
     max_initial_queries: int | None,
     llm_concurrency: int | None,
+    search_hint_include: tuple[str, ...],
+    search_hint_exclude: tuple[str, ...],
 ) -> None:
     """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
 
@@ -1486,7 +1532,12 @@ def onboard(
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     only_slugs = [s.strip() for s in only.split(",") if s.strip()] if only else None
-    result = asyncio.run(onboard_entity(entity_name, entity_type, config, checkpoint, seed_url=homepage_url, only=only_slugs, entity_ref=resolved_entity_ref))
+    result = asyncio.run(onboard_entity(
+        entity_name, entity_type, config, checkpoint,
+        seed_url=homepage_url, only=only_slugs, entity_ref=resolved_entity_ref,
+        search_hints_include=list(search_hint_include) or None,
+        search_hints_exclude=list(search_hint_exclude) or None,
+    ))
 
     click.echo("=" * 60)
     click.echo("Onboard Report")
@@ -1506,14 +1557,25 @@ def onboard(
         click.echo("")
         click.echo(f"Templates applied: {len(result.templates_applied)}")
         click.echo(f"Claims created:    {len(result.claims_created)}")
+        click.echo(f"Claims blocked:    {len(result.claims_blocked)}")
         click.echo(f"Claims skipped:    {len(result.claims_skipped)}")
         click.echo(f"Claims failed:     {len(result.claims_failed)}")
+
+        timeout_summary = _summarize_timeouts(result.errors)
+        if timeout_summary:
+            click.echo(f"Timeouts:          {timeout_summary}")
 
         if result.claims_created:
             click.echo("")
             click.echo("Created:")
             for path in result.claims_created:
                 click.echo(f"  + {path}")
+
+        if result.claims_blocked:
+            click.echo("")
+            click.echo("Blocked:")
+            for path, reason in result.claims_blocked:
+                click.echo(f"  ! {path} ({reason})")
 
         if result.claims_skipped:
             click.echo("")
@@ -1527,13 +1589,10 @@ def onboard(
         for slug, reason in result.templates_excluded:
             click.echo(f"  - {slug}: {reason}")
 
-    # Render failures and errors as a single "Failed:" block. Every entry in
-    # result.errors is slug-prefixed (invariant enforced in pipeline.py); the
-    # bare result.claims_failed list is redundant for rendering and only used
-    # for the "Claims failed: N" count line above.
+    # Full error stream; "Blocked:" above already shows the top-line cause per claim.
     if result.errors:
         click.echo("")
-        click.echo("Failed:")
+        click.echo("Errors:")
         for err in result.errors:
             click.echo(f"  ! {err}")
 

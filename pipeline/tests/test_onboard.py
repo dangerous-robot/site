@@ -11,13 +11,20 @@ import pytest
 from pydantic_ai import Agent
 from pydantic_ai.models.test import TestModel
 
-from analyst.agent import analyst_agent
+from analyst.agent import analyst_agent, verdict_only_agent
 from auditor.agent import auditor_agent
 from common.content_loader import resolve_repo_root
 from common.frontmatter import parse_frontmatter
 from ingestor.agent import ingestor_agent
 from orchestrator.checkpoints import AutoApproveCheckpointHandler
-from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
+from orchestrator.pipeline import (
+    OnboardResult,
+    VerifyConfig,
+    _merge_search_hints,
+    _probe_collision_suggestions,
+    _tighten_entity_description,
+    onboard_entity,
+)
 
 
 @contextmanager
@@ -43,6 +50,10 @@ async def _fake_research_with_url(*args, **kwargs):
 
 async def _fake_research_empty(*args, **kwargs):
     return _ro()
+
+
+async def _no_probe(*args, **kwargs):
+    return []
 
 
 def _ingestor_model() -> TestModel:
@@ -163,9 +174,12 @@ class TestOnboardEntityHappyPath:
         entity_path = tmp_path / "research" / "entities" / "companies" / "testcorp.md"
         assert entity_path.exists()
 
-        # At least some claims created (4 company templates active in v0.1.0)
+        # At least some claim files written (4 company templates active in v0.1.0).
+        # Under TestModel + 1-URL fake researcher, claims land in claims_blocked
+        # (insufficient_sources) rather than claims_created; both are valid
+        # written-artifact outcomes for this test.
         assert len(result.templates_applied) == 4
-        assert len(result.claims_created) > 0
+        assert len(result.claims_created) + len(result.claims_blocked) > 0
 
 
 class TestOnboardEntityNoDoubleIngest:
@@ -289,12 +303,16 @@ class TestOnboardErrorAttribution:
             )
 
         assert result.status == "accepted"
-        # Empty researcher causes claims to land as blocked (claims_created),
-        # not claims_failed -- but errors must still be slug-attributed.
+        # Empty researcher causes claims to land in claims_blocked (with
+        # placeholder files written), not claims_failed -- but errors must
+        # still be slug-attributed.
         assert len(result.errors) > 0, "expected per-template errors"
         known_slugs = {
             t.split("/")[-1].replace(".md", "")
             for t in result.claims_created
+        } | {
+            path.split("/")[-1].replace(".md", "")
+            for path, _ in result.claims_blocked
         }
         for err in result.errors:
             slug, sep, _reason = err.partition(": ")
@@ -365,21 +383,17 @@ class TestOnboardVocabularyResolution:
         the claim is blocked with analyst_error and written with a clean title."""
         _setup_tmp_repo(tmp_path)
 
-        # Analyst returns the raw vocabulary placeholder as the title
-        unresolved_analyst = TestModel(
+        # Analyst returns the raw vocabulary placeholder as the title.
+        # Onboard now passes a resolved_entity into verify_claim, which routes
+        # the analyst through verdict_only_agent (entity is taken from the
+        # resolved entity, the agent only emits a VerdictAssessment).
+        unresolved_verdict = TestModel(
             custom_output_args={
-                "entity": {
-                    "entity_name": "TestCorp",
-                    "entity_type": "company",
-                    "entity_description": "A test company",
-                },
-                "verdict": {
-                    "title": "TestCorp has one of (publicly-traded, privately-held, non-profit, B-corp) corporate structure",
-                    "topics": ["industry-analysis"],
-                    "verdict": "unverified",
-                    "confidence": "low",
-                    "narrative": "No sources address ownership structure.",
-                },
+                "title": "TestCorp has one of (publicly-traded, privately-held, non-profit, B-corp) corporate structure",
+                "topics": ["industry-analysis"],
+                "verdict": "unverified",
+                "confidence": "low",
+                "narrative": "No sources address ownership structure.",
             },
         )
 
@@ -416,11 +430,12 @@ class TestOnboardVocabularyResolution:
             ], trace={"mode": "test"})
 
         with (
-            analyst_agent.override(model=unresolved_analyst),
+            verdict_only_agent.override(model=unresolved_verdict),
             auditor_agent.override(model=_auditor_model()),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
             patch.object(pipeline_mod, "_research", side_effect=fake_research),
             patch.object(pipeline_mod, "_ingest_urls", side_effect=fake_ingest),
+            patch.object(pipeline_mod, "_probe_collision_suggestions", side_effect=_no_probe),
         ):
             config = VerifyConfig(
                 model="test",
@@ -433,15 +448,268 @@ class TestOnboardVocabularyResolution:
             )
 
         assert result.status == "accepted"
-        assert len(result.claims_created) == 1
+        assert len(result.claims_created) == 0
+        assert len(result.claims_blocked) == 1
         assert len(result.claims_failed) == 0
 
         # The blocked claim file must have a clean title (no "one of (")
-        claim_path = tmp_path / result.claims_created[0]
+        blocked_rel, blocked_reason = result.claims_blocked[0]
+        claim_path = tmp_path / blocked_rel
         assert claim_path.exists()
+        assert blocked_reason.startswith("analyst_error")
         fm, _ = parse_frontmatter(claim_path.read_text())
         assert "one of (" not in fm["title"], (
             f"blocked claim title must not contain raw vocabulary hint: {fm['title']!r}"
         )
         assert fm["status"] == "blocked"
         assert fm["blocked_reason"] == "analyst_error"
+
+
+class _AgentResult:
+    def __init__(self, output) -> None:
+        self.output = output
+
+
+class TestTightenEntityDescription:
+    @pytest.mark.asyncio
+    async def test_calls_llm_to_rewrite(self) -> None:
+        """Description rewrite is delegated to the LLM agent; on success its
+        output replaces the raw page summary."""
+        from orchestrator import pipeline as pipeline_mod
+        cfg = VerifyConfig(model="test")
+
+        async def fake_run(prompt, *args, **kwargs):
+            assert "TreadLightly AI" in prompt
+            return _AgentResult(pipeline_mod._EntityDescription(
+                description="TreadLightly AI is an AI thinking tool with seven modes.",
+            ))
+
+        with (
+            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=fake_run),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            out = await _tighten_entity_description(
+                "Landing page for TreadLightly AI, an AI thinking tool with seven modes.",
+                "TreadLightly AI",
+                "https://treadlightly.ai/",
+                "https://treadlightly.ai",
+                cfg,
+            )
+        assert out == "TreadLightly AI is an AI thinking tool with seven modes."
+
+    @pytest.mark.asyncio
+    async def test_blanks_when_source_domain_mismatches_canonical(self) -> None:
+        """Domain-mismatch guard runs BEFORE the LLM and short-circuits to empty."""
+        cfg = VerifyConfig(model="test")
+        out = await _tighten_entity_description(
+            "Tread Lightly! is a non-profit organization promoting responsible recreation.",
+            "TreadLightly AI",
+            "https://treadlightly.org/about-us/",
+            "https://treadlightly.ai",
+            cfg,
+        )
+        assert out == ""
+
+    @pytest.mark.asyncio
+    async def test_subdomain_of_canonical_is_kept(self) -> None:
+        """www.acme.example matches acme.example; the rewrite proceeds."""
+        from orchestrator import pipeline as pipeline_mod
+        cfg = VerifyConfig(model="test")
+
+        async def fake_run(prompt, *args, **kwargs):
+            return _AgentResult(pipeline_mod._EntityDescription(
+                description="Acme makes things.",
+            ))
+
+        with (
+            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=fake_run),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            out = await _tighten_entity_description(
+                "Acme makes things.",
+                "Acme",
+                "https://www.acme.example/about",
+                "https://acme.example",
+                cfg,
+            )
+        assert out == "Acme makes things."
+
+    @pytest.mark.asyncio
+    async def test_falls_back_to_raw_on_llm_failure(self) -> None:
+        """If the rewrite call raises, return the raw summary unchanged."""
+        from orchestrator import pipeline as pipeline_mod
+        cfg = VerifyConfig(model="test")
+
+        async def boom(*a, **kw):
+            raise RuntimeError("model exploded")
+
+        with (
+            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=boom),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            out = await _tighten_entity_description(
+                "Acme is a thing.", "Acme", "https://acme.example", "https://acme.example", cfg,
+            )
+        assert out == "Acme is a thing."
+
+
+class TestProbeCollisionSuggestions:
+    @pytest.mark.asyncio
+    async def test_suggests_offending_domain(self, monkeypatch) -> None:
+        async def fake_search(client, query, max_results=8):
+            return [
+                {"url": "https://treadlightly.org/about-us/", "title": "About Us", "snippet": ""},
+                {"url": "https://treadlightly.org/team-bod/", "title": "Team", "snippet": ""},
+                {"url": "https://en.wikipedia.org/wiki/Tread_Lightly!", "title": "Wikipedia", "snippet": ""},
+                {"url": "https://treadlightly.ai/", "title": "TreadLightly AI", "snippet": ""},
+            ]
+        from researcher import agent as researcher_agent_mod
+        monkeypatch.setattr(researcher_agent_mod, "search_brave", fake_search)
+
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="TreadLightly AI",
+            entity_website="https://treadlightly.ai",
+        )
+        assert "treadlightly.org" in suggestions
+        assert "treadlightly.ai" not in suggestions
+        assert len(suggestions) <= 3
+
+    @pytest.mark.asyncio
+    async def test_skipped_when_no_canonical(self) -> None:
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="Anything", entity_website=None,
+        )
+        assert suggestions == []
+
+    @pytest.mark.asyncio
+    async def test_swallows_search_failures(self, monkeypatch) -> None:
+        async def boom(client, query, max_results=8):
+            raise RuntimeError("Brave 500")
+        from researcher import agent as researcher_agent_mod
+        monkeypatch.setattr(researcher_agent_mod, "search_brave", boom)
+
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="X", entity_website="https://x.example",
+        )
+        assert suggestions == []
+
+
+class TestMergeSearchHints:
+    def test_returns_none_when_empty(self) -> None:
+        assert _merge_search_hints(None, None, []) is None
+        assert _merge_search_hints([], [], []) is None
+
+    def test_merges_and_dedups(self) -> None:
+        hints = _merge_search_hints(
+            ["alpha", "beta"], ["bad.example"], ["bad.example", "worse.example"],
+        )
+        assert hints is not None
+        assert hints.include == ["alpha", "beta"]
+        assert hints.exclude == ["bad.example", "worse.example"]
+
+    def test_cli_excludes_take_priority_in_order(self) -> None:
+        hints = _merge_search_hints(None, ["operator-pick.com"], ["probe.com"])
+        assert hints is not None
+        assert hints.include == []
+        assert hints.exclude == ["operator-pick.com", "probe.com"]
+
+
+class TestOnboardSearchHintsWiredIntoResearch:
+    @pytest.mark.asyncio
+    async def test_per_template_research_receives_search_hints(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Per-template verify_claim runs must call _research with a resolved_entity
+        that carries the merged search_hints. Without this wiring, the post-scorer
+        filter and scorer disambiguation never fire on the onboard run that wrote
+        them — they would only kick in on a re-run from disk."""
+        _setup_tmp_repo(tmp_path)
+
+        async def fake_probe(client, entity_name, entity_website):
+            return ["evil.example"]
+        monkeypatch.setattr(
+            "orchestrator.pipeline._probe_collision_suggestions", fake_probe
+        )
+
+        seen_resolved_entities: list = []
+
+        async def spy_research(client, entity, claim, cfg, sem, **kwargs):
+            seen_resolved_entities.append(kwargs.get("resolved_entity"))
+            return _ro(urls=["https://example.com/report"])
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+            patch("orchestrator.pipeline._research", side_effect=spy_research),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config,
+                search_hints_exclude=["operator-bad.example"],
+                only=["publishes-sustainability-report"],
+            )
+
+        assert result.status == "accepted"
+        # First call is light research (no resolved_entity); subsequent calls are
+        # per-template and MUST carry the resolved entity with search_hints.
+        per_template_calls = [r for r in seen_resolved_entities if r is not None]
+        assert per_template_calls, (
+            "verify_claim was invoked without a resolved_entity; search_hints "
+            "won't reach decomposed_research"
+        )
+        for resolved in per_template_calls:
+            assert resolved.search_hints is not None
+            assert "operator-bad.example" in resolved.search_hints.exclude
+            assert "evil.example" in resolved.search_hints.exclude
+            assert resolved.entity_name == "TestCorp"
+
+
+class TestOnboardSearchHintsPersisted:
+    @pytest.mark.asyncio
+    async def test_search_hints_land_in_entity_frontmatter(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """CLI-provided hints + probe suggestions persist to entity YAML frontmatter
+        and round-trip through parse_entity_ref."""
+        _setup_tmp_repo(tmp_path)
+
+        async def fake_research(*args, **kwargs):
+            return _ro(urls=["https://example.com/report"])
+        monkeypatch.setattr("orchestrator.pipeline._research", fake_research)
+
+        async def fake_probe(client, entity_name, entity_website):
+            return ["evil.example"]
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", fake_probe)
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "TestCorp", "company", config=config,
+                search_hints_include=["prefer-this"],
+                search_hints_exclude=["operator-bad.example"],
+            )
+
+        assert result.status == "accepted"
+        entity_path = tmp_path / "research" / "entities" / "companies" / "testcorp.md"
+        fm, _ = parse_frontmatter(entity_path.read_text())
+
+        hints = fm["search_hints"]
+        assert hints["include"] == ["prefer-this"]
+        assert hints["exclude"] == ["operator-bad.example", "evil.example"]
+
+        from orchestrator.entity_resolution import parse_entity_ref
+        resolved = parse_entity_ref("companies/testcorp", tmp_path)
+        assert resolved.search_hints is not None
+        assert resolved.search_hints.include == ["prefer-this"]
+        assert resolved.search_hints.exclude == ["operator-bad.example", "evil.example"]

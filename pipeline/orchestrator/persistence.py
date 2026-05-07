@@ -14,6 +14,7 @@ from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatte
 
 if TYPE_CHECKING:
     from analyst.agent import VerdictAssessment
+    from orchestrator.entity_resolution import SearchHints
 from common.models import (
     BlockedReason,
     Category,
@@ -43,6 +44,7 @@ def _entity_frontmatter(
     website: str | None = None,
     aliases: list[str] | None = None,
     status: str | None = None,
+    search_hints: "SearchHints | None" = None,
 ) -> dict:
     # Ensure description is never empty -- the linter rejects blank required strings.
     description = entity_description.strip() or f"{entity_name} ({entity_type.value})."
@@ -53,7 +55,19 @@ def _entity_frontmatter(
         "aliases": aliases or None,
         "description": description,
         "status": status,
+        "search_hints": _search_hints_dict(search_hints),
     }
+
+
+def _search_hints_dict(search_hints: "SearchHints | None") -> dict[str, list[str]] | None:
+    if search_hints is None:
+        return None
+    out: dict[str, list[str]] = {}
+    if search_hints.include:
+        out["include"] = list(search_hints.include)
+    if search_hints.exclude:
+        out["exclude"] = list(search_hints.exclude)
+    return out or None
 
 
 def build_source_url_index(repo_root: Path) -> dict[str, str]:
@@ -151,6 +165,7 @@ def _write_entity_file(
     repo_root: Path,
     website: str | None = None,
     aliases: list[str] | None = None,
+    search_hints: "SearchHints | None" = None,
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
     entity_slug = slugify(entity_name)
@@ -165,7 +180,10 @@ def _write_entity_file(
         logger.info("Entity already exists: %s", entity_path)
         return entity_ref
 
-    fm = _entity_frontmatter(entity_name, entity_type, entity_description, website, aliases)
+    fm = _entity_frontmatter(
+        entity_name, entity_type, entity_description, website, aliases,
+        search_hints=search_hints,
+    )
     entity_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote entity: %s", entity_path)
     return entity_ref
@@ -483,6 +501,7 @@ def _write_draft_entity_file(
     repo_root: Path,
     website: str | None = None,
     aliases: list[str] | None = None,
+    search_hints: "SearchHints | None" = None,
 ) -> str:
     """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
     entity_slug = slugify(entity_name)
@@ -494,7 +513,8 @@ def _write_draft_entity_file(
     entity_ref = f"drafts/{type_dir}/{entity_slug}"
 
     fm = _entity_frontmatter(
-        entity_name, entity_type, entity_description, website, aliases, status="draft"
+        entity_name, entity_type, entity_description, website, aliases,
+        status="draft", search_hints=search_hints,
     )
     draft_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote draft entity: %s", draft_path)

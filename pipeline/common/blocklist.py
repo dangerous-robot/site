@@ -64,7 +64,7 @@ def load_blocklist(repo_root: Path) -> list[BlocklistEntry]:
     return list(_load_blocklist_cached(str(repo_root)))
 
 
-def _normalised_host(url: str) -> str | None:
+def normalised_host(url: str) -> str | None:
     host = (urlparse(url).hostname or "").lower()
     if not host:
         return None
@@ -85,7 +85,7 @@ def filter_urls(
     kept: list[str] = []
     dropped: list[FilterDecision] = []
     for url in urls:
-        host = _normalised_host(url)
+        host = normalised_host(url)
         if not host:
             kept.append(url)
             continue

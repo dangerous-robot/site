@@ -62,6 +62,12 @@ def build_entity_context(resolved_entity: ResolvedEntity | None, fallback_name: 
         parent_name = resolve_parent_name(resolved_entity.parent_company)
         if parent_name:
             lines.append(f"Parent company: {parent_name}")
+    if resolved_entity.website:
+        lines.append(f"Official website: {resolved_entity.website}")
+        lines.append(
+            "The entity is the organization at that website. "
+            "Other organizations sharing the same name are not this entity."
+        )
     if resolved_entity.search_hints:
         if resolved_entity.search_hints.include:
             lines.append(f"Prefer queries including: {', '.join(resolved_entity.search_hints.include)}")

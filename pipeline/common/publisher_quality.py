@@ -1,7 +1,7 @@
 """Pre-ingest publisher quality classification based on URL hostname."""
 from __future__ import annotations
 
-from common.blocklist import _host_matches, _normalised_host
+from common.blocklist import _host_matches, normalised_host
 from common.source_classification import (
     _PRIMARY_PUBLISHERS,
     _SECONDARY_PUBLISHERS,
@@ -23,7 +23,7 @@ def classify_url_publisher_quality(url: str) -> str:
     Less accurate than post-ingest classify_source_type (no kind signal),
     but sufficient as a scoring hint.
     """
-    hostname = _normalised_host(url)
+    hostname = normalised_host(url)
     if not hostname:
         return "secondary"
 

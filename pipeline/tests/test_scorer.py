@@ -84,3 +84,26 @@ def test_build_scorer_prompt_renders_sub_question_block() -> None:
         assert sq.question in prompt
     # Candidate listing still renders
     assert candidates[0].url in prompt
+
+
+def test_build_scorer_prompt_renders_website_when_provided() -> None:
+    """Website + avoid kwargs surface in the entity block as disambiguation anchors."""
+    sub_questions = _sub_questions()
+    candidates = _candidates()[:1]
+    prompt = build_scorer_prompt(
+        "Entity", "test claim", candidates, sub_questions,
+        website="https://entity.example.com",
+        avoid=["other.example.org", "off-topic-thing"],
+    )
+
+    assert "Official website: https://entity.example.com" in prompt
+    assert "Avoid results about: other.example.org, off-topic-thing" in prompt
+
+
+def test_build_scorer_prompt_omits_website_when_absent() -> None:
+    """Back-compat: callers that don't pass website still get a clean prompt."""
+    prompt = build_scorer_prompt(
+        "Entity", "test claim", _candidates()[:1], _sub_questions()
+    )
+    assert "Official website" not in prompt
+    assert "Avoid results about" not in prompt
