@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from common.instructions import common, load_instructions
-from common.models import Category, Confidence, EntityType, Independence, Verdict, VerificationLevel
+from common.models import Category, Confidence, EntityType, Independence, SubQuestion, Verdict, VerificationLevel
 from common.utils import slugify
 
 if TYPE_CHECKING:
@@ -137,6 +137,7 @@ def build_analyst_prompt(
     claim_text: str,
     sources: list[dict],
     resolved_entity: "ResolvedEntity | None" = None,
+    sub_questions: list[SubQuestion] | None = None,
 ) -> str:
     """Build the user prompt for the analyst agent."""
     parts: list[str] = []
@@ -160,6 +161,13 @@ def build_analyst_prompt(
     parts.append(f"## Claim to evaluate: {claim_text}")
     parts.append("")
 
+    if sub_questions:
+        parts.append("## Sub-questions")
+        for sq in sub_questions:
+            parts.append(f"- {sq.id}: {sq.question}")
+            parts.append(f"  Rationale: {sq.rationale}")
+        parts.append("")
+
     if sources:
         parts.append("## Source materials")
         for i, src in enumerate(sources, 1):
@@ -171,6 +179,9 @@ def build_analyst_prompt(
                 parts.append(f"Kind: {src['kind']}")
             if src.get("independence"):
                 parts.append(f"Independence: {src['independence']}")
+            if src.get("addresses") is not None:
+                addresses = ", ".join(src["addresses"]) if src["addresses"] else "(none)"
+                parts.append(f"Addresses: {addresses}")
             parts.append(f"Summary: {src['summary']}")
             if src.get("key_quotes"):
                 parts.append("Key quotes:")

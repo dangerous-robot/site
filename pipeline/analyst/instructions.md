@@ -83,6 +83,25 @@ RULES:
 - Do not inflate confidence -- "medium" is the right default for most claims
   with limited sourcing
 
+SUB-QUESTION COVERAGE:
+
+The user prompt lists 2-5 sub-questions that decompose the claim, and each source
+carries an `addresses` field listing which sub-questions it serves. Before deciding
+the verdict:
+
+1. For each sub-question, count how many sources address it.
+2. If every sub-question has >=1 addressing source, treat the pool as fully covered.
+   Verdict and confidence follow the normal rules.
+3. If any sub-question has zero addressing sources, the pool has a coverage gap.
+   The narrative MUST name the uncovered sub-question(s). The verdict cannot be
+   `true` or `false` with `high` confidence; choose `unverified` (when the gap
+   dominates) or render the available verdict at `medium` confidence with the gap
+   explicit. The confidence cap is editorial, not mechanical: a single uncovered
+   supporting axis on an otherwise multi-source claim does not force `unverified`.
+4. The `verification_level` derivation is unchanged - it is computed on the union
+   pool's `independence` distribution as before. Coverage gaps are reflected in
+   `confidence` and narrative, not in `verification_level`.
+
 SOURCE QUALITY (full reference: docs/architecture/source-quality.md):
 
 Each source comes with `independence` (first-party | independent | unknown) and

@@ -360,7 +360,11 @@ async def verify_claim(
 
             # Step 3: Analyst
             say("Step 3/4: Analysing claim from %d sources...", len(result.sources))
-            analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg, resolved_entity=resolved_entity)
+            analyst_out = await _analyse_claim(
+                entity_name, claim_text, result.sources, cfg,
+                resolved_entity=resolved_entity,
+                sub_questions=result.sub_questions,
+            )
             result.analyst_output = analyst_out
 
             if not analyst_out:
@@ -695,8 +699,15 @@ async def _analyse_claim(
     sources: list[dict],
     cfg: VerifyConfig,
     resolved_entity: ResolvedEntity | None = None,
+    sub_questions: list[SubQuestion] | None = None,
 ) -> AnalystOutput | None:
-    prompt = build_analyst_prompt(entity_name, claim_text, sources, resolved_entity=resolved_entity)
+    prompt = build_analyst_prompt(
+        entity_name,
+        claim_text,
+        sources,
+        resolved_entity=resolved_entity,
+        sub_questions=sub_questions,
+    )
     if resolved_entity is not None:
         with verdict_only_agent.override(model=resolve_model(cfg.model_for("analyst"))):
             verdict_assessment, _ = await _run_with_null_retry(
@@ -881,7 +892,11 @@ async def research_claim(
 
             # Step 4: Analyse claim (analyst identifies entity)
             logger.info("Step 4/5: Analysing claim...")
-            analyst_out = await _analyse_claim(None, claim_text, result.sources, cfg, resolved_entity=resolved_entity)
+            analyst_out = await _analyse_claim(
+                None, claim_text, result.sources, cfg,
+                resolved_entity=resolved_entity,
+                sub_questions=result.sub_questions,
+            )
             result.analyst_output = analyst_out
 
             if not analyst_out:
