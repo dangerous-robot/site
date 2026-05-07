@@ -128,6 +128,61 @@ class TestBuildSourcesConsulted:
         assert len(result) == 2
         assert result[1]["id"] == "2025/source-two"
 
+    def test_cached_sources_only(self):
+        """All-cached run still reports cached entries in sources_consulted."""
+        cached = [
+            (
+                "https://anthropic.com/voluntary-commitments",
+                "2026/voluntary-commitments",
+                {"title": "Voluntary Commitments", "url": "https://anthropic.com/voluntary-commitments"},
+            ),
+        ]
+        result = _build_sources_consulted(None, cached_sources=cached)
+        assert len(result) == 1
+        assert result[0] == {
+            "id": "2026/voluntary-commitments",
+            "url": "https://anthropic.com/voluntary-commitments",
+            "title": "Voluntary Commitments",
+            "ingested": True,
+        }
+
+    def test_combined_fresh_and_cached(self):
+        """Cached entries appear before fresh entries (matches result.sources order)."""
+        sf = _make_source_file("freshly-ingested", 2026, "Fresh One")
+        cached = [
+            (
+                "https://example.com/cached",
+                "2026/cached-source",
+                {"title": "Cached Source"},
+            ),
+        ]
+        result = _build_sources_consulted(
+            [("https://example.com/fresh", sf)],
+            cached_sources=cached,
+        )
+        assert [entry["id"] for entry in result] == [
+            "2026/cached-source",
+            "2026/freshly-ingested",
+        ]
+        assert all(entry["ingested"] is True for entry in result)
+
+    def test_cached_dedup_against_fresh(self):
+        """Same source_id in both lists: cached wins (it's appended first)."""
+        sf = _make_source_file("dup-id", 2026, "Fresh Title")
+        cached = [
+            (
+                "https://example.com/dup",
+                "2026/dup-id",
+                {"title": "Cached Title"},
+            ),
+        ]
+        result = _build_sources_consulted(
+            [("https://example.com/dup", sf)],
+            cached_sources=cached,
+        )
+        assert len(result) == 1
+        assert result[0]["title"] == "Cached Title"
+
 
 # ---------------------------------------------------------------------------
 # _write_audit_sidecar — valid ComparisonResult

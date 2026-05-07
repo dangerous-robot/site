@@ -292,20 +292,41 @@ def _write_claim_file(
 
 def _build_sources_consulted(
     source_files: list[tuple[str, SourceFile]] | None,
+    cached_sources: list[tuple[str, str, dict]] | None = None,
 ) -> list[dict]:
     """Build the sources_consulted list for an audit sidecar.
 
-    Takes the raw (url, SourceFile) pairs from a verification run and returns
-    a flat list of dicts suitable for YAML serialisation.  Returns an empty
-    list if the input is None or empty.
+    Combines freshly-ingested ``source_files`` (``(url, SourceFile)`` tuples)
+    with ``cached_sources`` reused via URL dedup
+    (``(url, source_id, source_dict)`` tuples). Cached entries are listed
+    first to mirror the order in which the pipeline appends them to
+    ``VerificationResult.sources``. If a source_id appears in both lists
+    the cached entry wins. Returns ``[]`` when both inputs are empty.
     """
-    if not source_files:
-        return []
-    result = []
-    for url, sf in source_files:
+    result: list[dict] = []
+    seen_ids: set[str] = set()
+
+    for url, source_id, sd in cached_sources or []:
+        if source_id in seen_ids:
+            continue
+        seen_ids.add(source_id)
         result.append(
             {
-                "id": f"{sf.year}/{sf.slug}",
+                "id": source_id,
+                "url": url,
+                "title": sd.get("title", ""),
+                "ingested": True,
+            }
+        )
+
+    for url, sf in source_files or []:
+        source_id = f"{sf.year}/{sf.slug}"
+        if source_id in seen_ids:
+            continue
+        seen_ids.add(source_id)
+        result.append(
+            {
+                "id": source_id,
                 "url": url,
                 "title": sf.frontmatter.title,
                 "ingested": True,

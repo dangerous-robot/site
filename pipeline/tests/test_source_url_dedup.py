@@ -289,6 +289,69 @@ class TestTargetCap:
         assert len(results) == 2
 
 
+# --- VerificationResult.cached_sources end-to-end tests ---
+
+class TestVerifyClaimSurfacesCachedSources:
+    """verify_claim records cache-hit sources on cached_sources so the audit
+    sidecar's sources_consulted block lists them."""
+
+    @pytest.mark.asyncio
+    async def test_all_cached_urls_populate_cached_sources(self, tmp_path: Path) -> None:
+        from orchestrator.persistence import _build_sources_consulted
+        from orchestrator.pipeline import verify_claim
+
+        for i in range(4):
+            _write_source_md(
+                tmp_path / "research" / "sources" / "2026" / f"cached-{i}.md",
+                url=f"https://example.com/cached-{i}",
+                title=f"Cached Source {i}",
+            )
+
+        urls = [f"https://example.com/cached-{i}" for i in range(4)]
+
+        async def _fake_research(*args, **kwargs):
+            return urls, [], {"mode": "decomposed", "urls_kept": len(urls)}
+
+        async def _fail_ingest(*args, **kwargs):
+            raise AssertionError("_ingest_urls must not run when every URL is cached")
+
+        async def _fake_analyse(*args, **kwargs):
+            return None  # short-circuits before auditor; we only care about cached_sources
+
+        async def _fake_audit(*args, **kwargs):
+            return None
+
+        cfg = VerifyConfig(
+            model="test",
+            max_sources=4,
+            skip_wayback=True,
+            repo_root=str(tmp_path),
+            researcher_mode="decomposed",
+        )
+
+        with (
+            patch("orchestrator.pipeline._research", side_effect=_fake_research),
+            patch("orchestrator.pipeline._ingest_urls", side_effect=_fail_ingest),
+            patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse),
+            patch("orchestrator.pipeline._audit_claim", side_effect=_fake_audit),
+        ):
+            result = await verify_claim("Example", "claim text", config=cfg)
+
+        assert len(result.cached_sources) == 4
+        assert result.source_files == []
+        ids = [sid for _u, sid, _sd in result.cached_sources]
+        assert ids == [f"2026/cached-{i}" for i in range(4)]
+
+        consulted = _build_sources_consulted(
+            result.source_files, cached_sources=result.cached_sources
+        )
+        assert len(consulted) == 4
+        assert consulted[0]["id"] == "2026/cached-0"
+        assert consulted[0]["title"] == "Cached Source 0"
+        assert consulted[0]["url"] == "https://example.com/cached-0"
+        assert all(entry["ingested"] is True for entry in consulted)
+
+
 # --- slug_from_url tests ---
 
 class TestSlugFromUrl:

@@ -30,7 +30,7 @@ from typing import Literal
 import click
 import httpx
 import openai
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, computed_field
 
 import dataclasses
 
@@ -91,8 +91,9 @@ class VerificationResult(BaseModel):
     # verify_claim runs that don't persist.
     claim_path: str | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
-    # IDs of sources already on disk and reused via URL dedup (not re-ingested).
-    cached_source_ids: list[str] = Field(default_factory=list)
+    # Cache-hit sources reused via URL dedup; without these the audit sidecar's
+    # sources_consulted is empty when every URL was already on disk.
+    cached_sources: list[tuple[str, str, dict]] = Field(default_factory=list, exclude=True)
     # Researcher-step trace: planner queries+rationale and scorer rationale
     # for the decomposed mode; just the classic researcher's reasoning string
     # for classic mode. Persisted to the audit sidecar so reviewers can see
@@ -100,6 +101,11 @@ class VerificationResult(BaseModel):
     research_trace: dict | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @computed_field
+    @property
+    def cached_source_ids(self) -> list[str]:
+        return [sid for _url, sid, _sd in self.cached_sources]
 
 
 def below_threshold(usable_sources: list) -> bool:
@@ -273,7 +279,7 @@ async def verify_claim(
             for url, sid, sd in cached_sources:
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
-                result.cached_source_ids.append(sid)
+                result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -742,9 +748,10 @@ async def research_claim(
 
             cached_map = {url: sid for url, sid, _ in cached_sources}
 
-            for url, _sid, sd in cached_sources:
+            for url, sid, sd in cached_sources:
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
+                result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
                 result.urls_ingested.append(url)
@@ -840,7 +847,9 @@ async def research_claim(
             result.consistency = comparison
 
             # Write audit sidecar after auditor step
-            sidecar_sources = _build_sources_consulted(result.source_files)
+            sidecar_sources = _build_sources_consulted(
+                result.source_files, cached_sources=result.cached_sources
+            )
             agents_run = ["researcher", "ingestor", "analyst", "auditor"]
             _write_audit_sidecar(
                 claim_path=claim_path,
@@ -1108,7 +1117,9 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            sources_consulted=_build_sources_consulted(
+                                vr.source_files, cached_sources=vr.cached_sources
+                            ),
                             agents_run=["researcher", "ingestor"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor"]},
                             research_trace=vr.research_trace,
@@ -1164,7 +1175,7 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
@@ -1217,7 +1228,7 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(vr.source_files),
+                            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
@@ -1269,7 +1280,7 @@ async def onboard_entity(
                     result.claims_created.append(str(claim_path.relative_to(repo_root)))
 
                     # Write audit sidecar after auditor step
-                    sidecar_sources = _build_sources_consulted(vr.source_files)
+                    sidecar_sources = _build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources)
                     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
                     _write_audit_sidecar(
                         claim_path=claim_path,
