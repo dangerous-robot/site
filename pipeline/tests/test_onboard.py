@@ -26,12 +26,23 @@ def _noop(**kwargs):
     yield
 
 
+def _ro(urls=None, errors=None, trace=None, sub_questions=None, url_addresses=None):
+    from researcher.decomposed import ResearchOutput
+    return ResearchOutput(
+        urls=list(urls or []),
+        errors=list(errors or []),
+        trace=dict(trace or {"mode": "decomposed"}),
+        sub_questions=list(sub_questions or []),
+        url_addresses=dict(url_addresses or {}),
+    )
+
+
 async def _fake_research_with_url(*args, **kwargs):
-    return ["https://example.com/report"], [], {"mode": "decomposed"}
+    return _ro(urls=["https://example.com/report"])
 
 
 async def _fake_research_empty(*args, **kwargs):
-    return [], [], {"mode": "decomposed"}
+    return _ro()
 
 
 def _ingestor_model() -> TestModel:
@@ -397,12 +408,12 @@ class TestOnboardVocabularyResolution:
             return sources, []
 
         async def fake_research(client, entity, claim, cfg, sem, **kwargs):
-            return [
+            return _ro(urls=[
                 "https://example.com/a",
                 "https://example.com/b",
                 "https://example.com/c",
                 "https://example.com/d",
-            ], [], {"mode": "test"}
+            ], trace={"mode": "test"})
 
         with (
             analyst_agent.override(model=unresolved_analyst),

@@ -309,8 +309,13 @@ class TestVerifyClaimSurfacesCachedSources:
 
         urls = [f"https://example.com/cached-{i}" for i in range(4)]
 
+        from researcher.decomposed import ResearchOutput
+
         async def _fake_research(*args, **kwargs):
-            return urls, [], {"mode": "decomposed", "urls_kept": len(urls)}
+            return ResearchOutput(
+                urls=list(urls),
+                trace={"mode": "decomposed", "urls_kept": len(urls)},
+            )
 
         async def _fail_ingest(*args, **kwargs):
             raise AssertionError("_ingest_urls must not run when every URL is cached")

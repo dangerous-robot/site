@@ -110,7 +110,9 @@ async def test_research_planner_cap_enforcement() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            kept, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            ro = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+        kept = ro.urls
+        errors = ro.errors
 
     # The planner returned 6 queries; hard-truncation must cap them at 3.
     assert len(captured_queries) == 1
@@ -193,12 +195,12 @@ async def test_decomposed_research_step_sequencing() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            scored_candidates, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            ro = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
-    assert isinstance(scored_candidates, list)
-    assert all(isinstance(c, ScoredCandidate) for c in scored_candidates)
-    assert {c.url for c in scored_candidates} == {"https://a.com", "https://b.com"}
-    assert errors == []
+    assert isinstance(ro.urls, list)
+    assert set(ro.urls) == {"https://a.com", "https://b.com"}
+    assert ro.url_addresses["https://b.com"] == ["sq1", "sq2"]
+    assert ro.errors == []
 
 
 # --------------------------------------------------------------------------- #
@@ -288,24 +290,29 @@ async def test_scorer_drops_all_returns_empty() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            kept, errors, trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            ro = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
-    assert kept == [], f"Expected empty kept list, got {kept}"
-    assert trace.get("scorer_dropped_all") is True, "trace['scorer_dropped_all'] should be True"
-    scorer_drop_errors = [e for e in errors if e.error_type == "scorer_dropped_all"]
+    assert ro.urls == [], f"Expected empty urls list, got {ro.urls}"
+    assert ro.trace.get("scorer_dropped_all") is True, "trace['scorer_dropped_all'] should be True"
+    scorer_drop_errors = [e for e in ro.errors if e.error_type == "scorer_dropped_all"]
     assert len(scorer_drop_errors) == 1, f"Expected one scorer_dropped_all error, got {scorer_drop_errors}"
     assert "2" in scorer_drop_errors[0].message, "Error message should reference candidate count"
 
 
 @pytest.mark.asyncio
 async def test_scorer_drops_all_sets_blocked_reason() -> None:
-    """When _research returns ([], [scorer_dropped_all error], {}), verify_claim
-    sets blocked_reason=INSUFFICIENT_SOURCES (not None, not ANALYST_ERROR)."""
+    """When _research returns an empty ResearchOutput with scorer_dropped_all,
+    verify_claim sets blocked_reason=INSUFFICIENT_SOURCES."""
     from orchestrator.pipeline import verify_claim, VerifyConfig
+    from researcher.decomposed import ResearchOutput
 
     scorer_error = StepError(step="research", error_type="scorer_dropped_all", message="URL scorer dropped all 5 candidates")
+    empty = ResearchOutput(urls=[], errors=[scorer_error], trace={})
 
-    with patch("orchestrator.pipeline._research", return_value=([], [scorer_error], {})):
+    async def _fake_research(*args, **kwargs):
+        return empty
+
+    with patch("orchestrator.pipeline._research", side_effect=_fake_research):
         result = await verify_claim("TestEntity", "test claim", VerifyConfig())
 
     assert result.blocked_reason == BlockedReason.INSUFFICIENT_SOURCES, (
@@ -358,7 +365,7 @@ async def test_parent_company_injected_into_prompts() -> None:
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            kept, errors, _trace = await decomposed_research("test claim", "Claude", cfg, sem, client, resolved_entity=resolved)
+            await decomposed_research("test claim", "Claude", cfg, sem, client, resolved_entity=resolved)
 
     assert "Anthropic" in captured.get("planner", ""), (
         f"'Anthropic' not found in planner prompt: {captured.get('planner', '')!r}"

@@ -93,6 +93,15 @@ def _noop(**kwargs):
     yield
 
 
+def _ro(urls=None, errors=None, trace=None):
+    from researcher.decomposed import ResearchOutput
+    return ResearchOutput(
+        urls=list(urls or []),
+        errors=list(errors or []),
+        trace=dict(trace or {"mode": "decomposed"}),
+    )
+
+
 def _write_blocklist(tmp_path) -> None:
     research = tmp_path / "research"
     research.mkdir(parents=True, exist_ok=True)
@@ -305,7 +314,7 @@ class TestThresholdEnforcement:
         )
 
         async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
-            return ["https://example.com/one"], [], {"mode": "test"}
+            return _ro(urls=["https://example.com/one"], trace={"mode": "test"})
 
         async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             return [("https://example.com/one", sf)], []
@@ -340,7 +349,7 @@ class TestThresholdEnforcement:
     ) -> None:
         """When zero sources ingest and all errors are terminal HTTP, mark it so."""
         async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
-            return ["https://a", "https://b"], [], {"mode": "test"}
+            return _ro(urls=["https://a", "https://b"], trace={"mode": "test"})
 
         async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             errors = [
@@ -384,10 +393,10 @@ class TestThresholdEnforcement:
         sf4 = _make_sf("d", "https://example.com/d")
 
         async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
-            return [
+            return _ro(urls=[
                 "https://example.com/a", "https://example.com/b",
                 "https://example.com/c", "https://example.com/d",
-            ], [], {"mode": "test"}
+            ], trace={"mode": "test"})
 
         async def _fake_ingest(client, urls, cfg, sem, **kwargs):
             return [
@@ -441,7 +450,7 @@ class TestVerifyClaimWithResolvedEntity:
         received_kwargs: dict = {}
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
+            return _ro(urls=["https://example.com/a"] * 4)
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(
@@ -490,7 +499,7 @@ class TestVerifyClaimWithResolvedEntity:
                 return original(*args, **kwargs)
 
         async def _fake_research(*args, **kwargs):
-            return [], [], {"mode": "decomposed"}
+            return _ro()
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
 
@@ -522,7 +531,7 @@ class TestResearchClaimWithResolvedEntity:
         write_claim_kwargs: dict = {}
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
+            return _ro(urls=["https://example.com/a"] * 4)
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(
@@ -597,7 +606,7 @@ class TestResearchClaimWithResolvedEntity:
         write_entity_called = []
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
+            return _ro(urls=["https://example.com/a"] * 4)
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(

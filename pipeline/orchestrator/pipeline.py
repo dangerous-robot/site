@@ -56,8 +56,10 @@ from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
+from common.models import SubQuestion
 from common.source_classification import classify_source_type, independence_for_source_type
 from orchestrator.persistence import build_source_url_index, load_source_dict
+from researcher.decomposed import ResearchOutput
 
 logger = logging.getLogger(__name__)
 
@@ -97,6 +99,15 @@ class VerificationResult(BaseModel):
     # Persisted to the audit sidecar so reviewers can see how the source set
     # was assembled.
     research_trace: dict | None = None
+    # Sub-question decomposition the planner emitted for this claim.
+    sub_questions: list[SubQuestion] = Field(default_factory=list)
+    # Map SubQuestion.id -> list of source_ids that addressed it after ingest
+    # (sources whose ScoredCandidate.addresses included this id AND that
+    # ingested successfully). An empty list signals an uncovered axis.
+    sub_question_coverage: dict[str, list[str]] = Field(default_factory=dict)
+    # Per-sub-question queries from the planner. Used to render the audit
+    # sidecar's `sub_questions:` block; not part of the on-disk claim file.
+    queries_by_sub_question: dict[str, list[str]] = Field(default_factory=dict, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -254,9 +265,13 @@ async def verify_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             say("Step 1/4: Searching for sources...")
-            urls, research_errors, trace = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
+            ro = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
+            urls = ro.urls
+            research_errors = ro.errors
             result.urls_found = urls
-            result.research_trace = trace
+            result.research_trace = ro.trace
+            result.sub_questions = ro.sub_questions
+            result.queries_by_sub_question = ro.queries_by_sub_question
 
             result.errors.extend(e.message for e in research_errors)
             if cfg.show_progress:
@@ -282,18 +297,29 @@ async def verify_claim(
                 source_files, ingest_errors = [], []
 
             for url, sid, sd in cached_sources:
+                sd["addresses"] = list(ro.url_addresses.get(url, []))
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
+                sd = _build_source_dict(sf)
+                sd["addresses"] = list(ro.url_addresses.get(url, []))
                 result.urls_ingested.append(url)
-                result.sources.append(_build_source_dict(sf))
+                result.sources.append(sd)
                 result.source_files.append((url, sf))
 
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
+
+            # Build per-sub-question coverage from the post-ingest source set.
+            # Inverts url -> [sq_id] into sq_id -> [source_id]; sub-questions
+            # with zero addressing sources keep an empty list to surface the
+            # gap to the analyst and the audit sidecar.
+            result.sub_question_coverage = _invert_addresses(
+                ro.sub_questions, ro.url_addresses, result.sources
+            )
 
             if cfg.show_progress:
                 progress(
@@ -306,12 +332,15 @@ async def verify_claim(
                 )
                 for e in ingest_errors:
                     progress("  ! ingest: %s", e.message)
+                for sq in ro.sub_questions:
+                    progress("  %s: %d sources", sq.id, len(result.sub_question_coverage.get(sq.id, [])))
 
             # Checkpoint: review sources
             proceed = await gate.review_sources(
                 urls_found=len(result.urls_found),
                 urls_ingested=len(result.urls_ingested),
                 errors=all_errors,
+                sub_question_coverage=result.sub_question_coverage,
             )
             if not proceed:
                 result.errors.append("Halted at source review checkpoint")
@@ -359,6 +388,56 @@ async def verify_claim(
                 progress("Pipeline complete.")
 
     return result
+
+
+def _build_sub_questions_block(
+    sub_questions: list[SubQuestion],
+    coverage: dict[str, list[str]],
+    queries_by_sub_question: dict[str, list[str]],
+) -> list[dict] | None:
+    """Render the sidecar's ``sub_questions:`` block, or None if empty.
+
+    Each entry has ``id``, ``question``, ``rationale``, ``queries``, and
+    ``citations`` (list of source-ids that addressed it post-ingest).
+    Returns None when the planner emitted no sub-questions, so the
+    sidecar writer can omit the key.
+    """
+    if not sub_questions:
+        return None
+    block: list[dict] = []
+    for sq in sub_questions:
+        block.append({
+            "id": sq.id,
+            "question": sq.question,
+            "rationale": sq.rationale,
+            "queries": list(queries_by_sub_question.get(sq.id, [])),
+            "citations": list(coverage.get(sq.id, [])),
+        })
+    return block
+
+
+def _invert_addresses(
+    sub_questions: list[SubQuestion],
+    url_addresses: dict[str, list[str]],
+    sources: list[dict],
+) -> dict[str, list[str]]:
+    """Build a sq_id -> [source_id] map from per-URL addresses + ingested sources.
+
+    Sub-questions with no addressing source keep an empty list so the
+    coverage gap is observable. ``sources`` is the post-ingest list of
+    source dicts (cached + fresh combined); each must carry ``url`` and
+    ``source_id``.
+    """
+    coverage: dict[str, list[str]] = {sq.id: [] for sq in sub_questions}
+    for sd in sources:
+        url = sd.get("url")
+        sid = sd.get("source_id")
+        if not url or not sid:
+            continue
+        for sq_id in url_addresses.get(url, []):
+            if sq_id in coverage and sid not in coverage[sq_id]:
+                coverage[sq_id].append(sid)
+    return coverage
 
 
 def _apply_blocklist_cap(
@@ -430,22 +509,24 @@ async def _research(
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
     resolved_entity: "ResolvedEntity | None" = None,
-) -> tuple[list[str], list[StepError], dict]:
-    """Run the decomposed researcher and return ``(urls, errors, trace)``.
+) -> "ResearchOutput":
+    """Run the decomposed researcher and return a ``ResearchOutput``.
 
-    ``trace`` is a dict suitable for the audit sidecar's ``research:`` block.
-    Always populated with at least ``mode``; further fields depend on how
-    far the researcher got before any error.
+    The returned ``trace`` dict is suitable for the audit sidecar's
+    ``research:`` block. Always populated with at least ``mode``; further
+    fields depend on how far the researcher got before any error.
     """
     from researcher.decomposed import decomposed_research
-    kept, errors, trace = await decomposed_research(
+    out = await decomposed_research(
         claim_text, entity_name, cfg, sem, client, resolved_entity=resolved_entity
     )
-    raw_urls = [c.url for c in kept]
-    urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
+    urls, errors = _apply_blocklist_cap(out.urls, cfg, out.errors)
     logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
-    trace["urls_after_blocklist"] = len(urls)
-    return urls, errors, trace
+    out.urls = urls
+    out.errors = errors
+    out.url_addresses = {u: out.url_addresses.get(u, []) for u in urls}
+    out.trace["urls_after_blocklist"] = len(urls)
+    return out
 
 
 async def _ingest_one(
@@ -718,9 +799,13 @@ async def research_claim(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             logger.info("Step 1/5: Searching for sources...")
-            urls, research_errors, trace = await _research(client, research_entity_hint, claim_text, cfg, _sem, resolved_entity=resolved_entity)
+            ro = await _research(client, research_entity_hint, claim_text, cfg, _sem, resolved_entity=resolved_entity)
+            urls = ro.urls
+            research_errors = ro.errors
             result.urls_found = urls
-            result.research_trace = trace
+            result.research_trace = ro.trace
+            result.sub_questions = ro.sub_questions
+            result.queries_by_sub_question = ro.queries_by_sub_question
 
             result.errors.extend(e.message for e in research_errors)
             if not urls:
@@ -743,24 +828,32 @@ async def research_claim(
             cached_map = {url: sid for url, sid, _ in cached_sources}
 
             for url, sid, sd in cached_sources:
+                sd["addresses"] = list(ro.url_addresses.get(url, []))
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
+                sd = _build_source_dict(sf)
+                sd["addresses"] = list(ro.url_addresses.get(url, []))
                 result.urls_ingested.append(url)
-                result.sources.append(_build_source_dict(sf))
+                result.sources.append(sd)
                 result.source_files.append((url, sf))
 
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
 
+            result.sub_question_coverage = _invert_addresses(
+                ro.sub_questions, ro.url_addresses, result.sources
+            )
+
             # Checkpoint: review sources
             proceed = await gate.review_sources(
                 urls_found=len(result.urls_found),
                 urls_ingested=len(result.urls_ingested),
                 errors=all_errors,
+                sub_question_coverage=result.sub_question_coverage,
             )
             if not proceed:
                 result.errors.append("Halted at source review checkpoint")
@@ -854,6 +947,11 @@ async def research_claim(
                 agents_run=agents_run,
                 models_used={a: cfg.model_for(a) for a in agents_run},
                 research_trace=result.research_trace,
+                sub_questions_block=_build_sub_questions_block(
+                    result.sub_questions,
+                    result.sub_question_coverage,
+                    result.queries_by_sub_question,
+                ),
             )
 
             # Checkpoint: review disagreement
@@ -958,7 +1056,8 @@ async def onboard_entity(
                     source_files, _ = await _ingest_urls(client, [_url], cfg, sem)
                 else:
                     query = f"{entity_name} official website"
-                    urls, _, _ = await _research(client, entity_name, query, cfg, sem)
+                    light_ro = await _research(client, entity_name, query, cfg, sem)
+                    urls = light_ro.urls
                     if urls:
                         entity_website = urls[0]
                     source_files, _ = await _ingest_urls(client, urls[:1], cfg, sem) if urls else ([], [])
@@ -1117,6 +1216,11 @@ async def onboard_entity(
                             agents_run=["researcher", "ingestor"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor"]},
                             research_trace=vr.research_trace,
+                            sub_questions_block=_build_sub_questions_block(
+                                vr.sub_questions,
+                                vr.sub_question_coverage,
+                                vr.queries_by_sub_question,
+                            ),
                         )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",
@@ -1173,6 +1277,11 @@ async def onboard_entity(
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
+                            sub_questions_block=_build_sub_questions_block(
+                                vr.sub_questions,
+                                vr.sub_question_coverage,
+                                vr.queries_by_sub_question,
+                            ),
                         )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",
@@ -1226,6 +1335,11 @@ async def onboard_entity(
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
+                            sub_questions_block=_build_sub_questions_block(
+                                vr.sub_questions,
+                                vr.sub_question_coverage,
+                                vr.queries_by_sub_question,
+                            ),
                         )
                         progress(
                             "[%d/%d] Blocked: %s (%s, unresolved vocabulary)",
@@ -1285,6 +1399,11 @@ async def onboard_entity(
                         agents_run=agents_run,
                         models_used={a: iter_cfg.model_for(a) for a in agents_run},
                         research_trace=vr.research_trace,
+                        sub_questions_block=_build_sub_questions_block(
+                            vr.sub_questions,
+                            vr.sub_question_coverage,
+                            vr.queries_by_sub_question,
+                        ),
                     )
 
                     progress("[%d/%d] Done: %s", idx, total, slug)

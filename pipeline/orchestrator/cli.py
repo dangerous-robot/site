@@ -766,7 +766,7 @@ def claim_refresh(
         _write_source_files,
         verdict_write_kwargs,
     )
-    from orchestrator.pipeline import VerifyConfig, verify_claim
+    from orchestrator.pipeline import VerifyConfig, _build_sub_questions_block, verify_claim
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -889,6 +889,11 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            sub_questions_block=_build_sub_questions_block(
+                vr.sub_questions,
+                vr.sub_question_coverage,
+                vr.queries_by_sub_question,
+            ),
             reset_review=True,
         )
         click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
@@ -933,6 +938,11 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            sub_questions_block=_build_sub_questions_block(
+                vr.sub_questions,
+                vr.sub_question_coverage,
+                vr.queries_by_sub_question,
+            ),
             reset_review=True,
         )
         click.echo(f"Blocked (analyst_error): {blocked_path}")
@@ -978,6 +988,11 @@ def claim_refresh(
             agents_run=agents_run,
             models_used={a: cfg.model_for(a) for a in agents_run},
             research_trace=vr.research_trace,
+            sub_questions_block=_build_sub_questions_block(
+                vr.sub_questions,
+                vr.sub_question_coverage,
+                vr.queries_by_sub_question,
+            ),
             reset_review=True,
         )
         click.echo(f"Blocked (unresolved vocabulary): {blocked_path}")
@@ -1021,6 +1036,11 @@ def claim_refresh(
         agents_run=agents_run,
         models_used={a: cfg.model_for(a) for a in agents_run},
         research_trace=vr.research_trace,
+        sub_questions_block=_build_sub_questions_block(
+            vr.sub_questions,
+            vr.sub_question_coverage,
+            vr.queries_by_sub_question,
+        ),
         reset_review=True,
     )
 
@@ -1315,10 +1335,12 @@ def step_audit(
                 from common.sidecar import sidecar_path_for
                 sidecar_path = sidecar_path_for(path)
                 research_trace = None
+                sub_questions_block = None
                 if sidecar_path.exists():
                     try:
                         existing = _yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
                         research_trace = existing.get("research")
+                        sub_questions_block = existing.get("sub_questions")
                     except _yaml.YAMLError:
                         pass
                 _write_audit_sidecar(
@@ -1330,6 +1352,7 @@ def step_audit(
                     agents_run=["auditor"],
                     models_used={"auditor": auditor_model},
                     research_trace=research_trace,
+                    sub_questions_block=sub_questions_block,
                 )
                 click.echo(f"Wrote {sidecar_path}")
 

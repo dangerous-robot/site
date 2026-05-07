@@ -76,13 +76,18 @@ def _auditor_model() -> TestModel:
 async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
     """research_claim with TestModel writes source, entity, and claim files."""
 
+    from researcher.decomposed import ResearchOutput
+
     async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
-        return [
-            "https://example.com/report",
-            "https://example.com/second-report",
-            "https://example.com/third-report",
-            "https://example.com/fourth-report",
-        ], [], {"mode": "decomposed"}
+        return ResearchOutput(
+            urls=[
+                "https://example.com/report",
+                "https://example.com/second-report",
+                "https://example.com/third-report",
+                "https://example.com/fourth-report",
+            ],
+            trace={"mode": "decomposed"},
+        )
 
     monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
 

@@ -38,8 +38,15 @@ class CheckpointHandler(Protocol):
         urls_found: int,
         urls_ingested: int,
         errors: list[StepError],
+        sub_question_coverage: dict[str, list[str]] | None = None,
     ) -> bool:
-        """Return True to proceed to analysis, False to halt."""
+        """Return True to proceed to analysis, False to halt.
+
+        ``sub_question_coverage`` is a map of SubQuestion.id -> list of
+        source_ids that addressed it; an empty list signals an uncovered
+        axis. May be omitted (or empty) when the planner emitted no
+        sub-questions.
+        """
         ...
 
     async def review_disagreement(
@@ -69,8 +76,13 @@ class CLICheckpointHandler:
         urls_found: int,
         urls_ingested: int,
         errors: list[StepError],
+        sub_question_coverage: dict[str, list[str]] | None = None,
     ) -> bool:
         click.echo(f"\nFound {urls_found} URLs, ingested {urls_ingested}.")
+        if sub_question_coverage:
+            click.echo("Sub-question coverage:")
+            for sq_id, source_ids in sub_question_coverage.items():
+                click.echo(f"  {sq_id}: {len(source_ids)} sources")
         if errors:
             click.echo("Ingestion errors:")
             for e in errors:
@@ -132,6 +144,7 @@ class AutoApproveCheckpointHandler:
         urls_found: int,
         urls_ingested: int,
         errors: list[StepError],
+        sub_question_coverage: dict[str, list[str]] | None = None,
     ) -> bool:
         self.calls.append("review_sources")
         return True

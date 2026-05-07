@@ -344,6 +344,7 @@ def _write_audit_sidecar(
     agents_run: list[str],
     models_used: dict[str, str] | None = None,
     research_trace: dict | None = None,
+    sub_questions_block: list[dict] | None = None,
     reset_review: bool = False,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
@@ -396,7 +397,7 @@ def _write_audit_sidecar(
         # agents this run actually invoked.
         models_used = {agent: models_used.get(agent, model) for agent in agents_run}
 
-    sidecar_data = {
+    sidecar_data: dict = {
         "schema_version": 1,
         "pipeline_run": {
             "ran_at": ran_at.isoformat(),
@@ -405,10 +406,14 @@ def _write_audit_sidecar(
         },
         "models_used": models_used,
         "research": research_trace,
+    }
+    if sub_questions_block is not None:
+        sidecar_data["sub_questions"] = sub_questions_block
+    sidecar_data.update({
         "sources_consulted": sources_consulted,
         "audit": audit_block,
         "human_review": human_review,
-    }
+    })
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
