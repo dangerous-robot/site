@@ -8,6 +8,7 @@ Two layers:
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -36,10 +37,15 @@ def _write_claim(
     verdict: str = "true",
     blocked_reason: str | None = None,
     criteria_slug: str | None = "test-criterion",
+    fm_sources: list[str] | None = None,
 ) -> Path:
     """Write a claim .md with the specified frontmatter. Returns its Path."""
     entity_dir = repo_root / "research" / "claims" / entity
     entity_dir.mkdir(parents=True, exist_ok=True)
+    if fm_sources:
+        sources_block = "sources:\n" + "\n".join(f"- {s}" for s in fm_sources)
+    else:
+        sources_block = "sources: []"
     fm_lines = [
         "---",
         f"title: {title}",
@@ -48,7 +54,7 @@ def _write_claim(
         f"verdict: '{verdict}'",
         "confidence: high",
         "as_of: 2026-04-01",
-        "sources: []",
+        sources_block,
     ]
     if status is not None:
         fm_lines.append(f"status: {status}")
@@ -183,7 +189,13 @@ class TestFindPublicationQueue:
         assert [i.claim_slug for i in only_a] == ["ent-a/hotel"]
 
     def test_item_carries_audit_and_source_counts(self, tmp_path):
-        c = _write_claim(tmp_path, entity="ent-a", slug="juliet", verdict="mixed")
+        c = _write_claim(
+            tmp_path,
+            entity="ent-a",
+            slug="juliet",
+            verdict="mixed",
+            fm_sources=["s1", "s2", "s3"],
+        )
         _write_sidecar(
             c,
             analyst_verdict="mixed",
@@ -204,6 +216,31 @@ class TestFindPublicationQueue:
         assert item.needs_review is True
         assert item.sources_count == 3
         assert item.sources_ingested == 2
+
+    def test_sources_count_falls_back_to_fm_when_sidecar_empty(self, tmp_path):
+        """Pipeline paths that leave sources_consulted empty should still
+        report the claim's cited sources, since they are what the site renders."""
+        c = _write_claim(
+            tmp_path,
+            entity="ent-a",
+            slug="kilo-empty-sidecar",
+            fm_sources=["a", "b", "c"],
+        )
+        _write_sidecar(c, sources=[])
+
+        item = find_publication_queue(tmp_path)[0]
+
+        assert item.sources_count == 3
+        assert item.sources_ingested == 3
+
+    def test_sources_zero_when_both_empty(self, tmp_path):
+        c = _write_claim(tmp_path, entity="ent-a", slug="lima-no-sources")
+        _write_sidecar(c, sources=[])
+
+        item = find_publication_queue(tmp_path)[0]
+
+        assert item.sources_count == 0
+        assert item.sources_ingested == 0
 
 
 # --------------------------------------------------------------------------- #
@@ -407,6 +444,239 @@ class TestReviewQueueInteractive:
         assert result.exit_code == 0, result.output
         assert c.exists()
         assert not deleted
+
+
+# --------------------------------------------------------------------------- #
+# CLI: `e` (edit fields) action                                                #
+# --------------------------------------------------------------------------- #
+
+def _stub_editor(monkeypatch, fn):
+    """Replace `_run_editor_blocking` with `fn(path) -> int`."""
+    monkeypatch.setattr(review_queue_mod, "_run_editor_blocking", fn)
+
+
+class TestReviewQueueEditFields:
+    def test_save_round_trip_updates_only_edited_fields(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="alpha", title="Original title")
+        _write_sidecar(c)
+        original_text = c.read_text(encoding="utf-8")
+
+        def fake_edit(path):
+            path.write_text(
+                "title: New title\n"
+                "takeaway: New takeaway\n"
+                "seo_title: ''\n"
+                "tags: []\n"
+                "verdict: 'true'\n",
+                encoding="utf-8",
+            )
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\ns\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        new_text = c.read_text(encoding="utf-8")
+        assert "title: New title" in new_text
+        assert "takeaway: New takeaway" in new_text
+        # Body untouched
+        assert CLAIM_BODY.strip() in new_text
+        # Unrelated fm keys untouched
+        assert "criteria_slug: test-criterion" in new_text
+        assert "entity: companies/ent-a" in new_text
+        # Status not flipped (only an edit, not approve)
+        assert "status: draft" in new_text
+        # Original differed from new
+        assert new_text != original_text
+
+    def test_tags_preserve_flow_style(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="bravo")
+        _write_sidecar(c)
+
+        def fake_edit(path):
+            path.write_text(
+                "title: T\n"
+                "takeaway: ''\n"
+                "seo_title: ''\n"
+                "tags:\n  - highlight\n  - featured\n"
+                "verdict: 'true'\n",
+                encoding="utf-8",
+            )
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\ns\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        new_text = c.read_text(encoding="utf-8")
+        assert "tags: [highlight, featured]" in new_text
+
+    def test_invalid_verdict_reedits_with_broken_text(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="charlie")
+        _write_sidecar(c)
+        before = c.read_bytes()
+
+        seen_buffers: list[str] = []
+        attempt = {"n": 0}
+
+        def fake_edit(path):
+            seen_buffers.append(path.read_text(encoding="utf-8"))
+            attempt["n"] += 1
+            if attempt["n"] == 1:
+                path.write_text(
+                    "title: T\ntakeaway: ''\nseo_title: ''\n"
+                    "tags: []\nverdict: 'yes'\n",
+                    encoding="utf-8",
+                )
+            else:
+                path.write_text(
+                    "title: T\ntakeaway: ''\nseo_title: ''\n"
+                    "tags: []\nverdict: 'yes'\n",
+                    encoding="utf-8",
+                )
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\nr\nd\nq\n",  # edit, re-edit on validation fail, then discard, then quit
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "verdict must be one of" in result.output
+        # On the second open, the buffer should contain the operator's broken text,
+        # not the original (no comment header).
+        assert len(seen_buffers) >= 2
+        assert "verdict: 'yes'" in seen_buffers[1]
+        # File on disk unchanged
+        assert c.read_bytes() == before
+
+    def test_yaml_parse_error_offers_reedit(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="delta")
+        _write_sidecar(c)
+        before = c.read_bytes()
+
+        def fake_edit(path):
+            path.write_text("title: : :\n  bad yaml\n", encoding="utf-8")
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\nd\nq\n",  # edit, then discard at error prompt, then quit
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Edit rejected" in result.output
+        assert c.read_bytes() == before
+
+    def test_discard_at_preview_leaves_file_unchanged(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="echo")
+        _write_sidecar(c)
+        before = c.read_bytes()
+
+        def fake_edit(path):
+            path.write_text(
+                "title: Should not save\ntakeaway: ''\nseo_title: ''\n"
+                "tags: []\nverdict: 'true'\n",
+                encoding="utf-8",
+            )
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\nd\nq\n",  # edit, discard at preview, quit
+        )
+
+        assert result.exit_code == 0, result.output
+        assert c.read_bytes() == before
+
+    def test_no_editor_available_surfaces_error(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="foxtrot")
+        _write_sidecar(c)
+        before = c.read_bytes()
+
+        _stub_editor(monkeypatch, lambda path: -1)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "No editor found" in result.output
+        assert c.read_bytes() == before
+
+    def test_unmodified_buffer_is_treated_as_discard(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="golf")
+        _write_sidecar(c)
+        before = c.read_bytes()
+
+        def fake_edit(path):
+            # Don't write; simulate `:q` without changes
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert c.read_bytes() == before
+
+    def test_mtime_conflict_aborts_save(self, tmp_path, monkeypatch):
+        c = _write_claim(tmp_path, entity="ent-a", slug="hotel")
+        _write_sidecar(c)
+
+        def fake_edit(path):
+            path.write_text(
+                "title: New\ntakeaway: ''\nseo_title: ''\n"
+                "tags: []\nverdict: 'true'\n",
+                encoding="utf-8",
+            )
+            # Simulate external write to the claim while the buffer was open.
+            external = c.read_text(encoding="utf-8") + "\nexternal append\n"
+            c.write_text(external, encoding="utf-8")
+            # Force an mtime bump even if writes coalesce in the same nanosecond.
+            future = c.stat().st_mtime_ns + 1_000_000
+            os.utime(c, ns=(future, future))
+            return 0
+
+        _stub_editor(monkeypatch, fake_edit)
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="e\ns\nd\nq\n",  # edit, save (aborted), discard at retry, quit
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "changed externally" in result.output
+        # External append survived; our edits did NOT write over it
+        text = c.read_text(encoding="utf-8")
+        assert "external append" in text
+        assert "title: New" not in text
 
 
 class TestDeleteFiles:

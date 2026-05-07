@@ -1651,12 +1651,14 @@ def review_queue(
     filter_entity: str | None,
     repo_root: str | None,
 ) -> None:
-    """Walk through draft claims awaiting human review (a/s/p/o/q keys); --format text|json prints the queue for CI/scripting.
+    """Walk through draft claims awaiting human review (a/d/e/s/p/o/q keys); --format text|json prints the queue for CI/scripting.
 
     Default (no --format): interactive loop over draft claims with completed
-    research. Single-key actions: [a]pprove, [s]kip, [p]review, [o]pen in
-    editor, [q]uit. Approve delegates to the same `approve_claim` callable as
-    `dr review --approve`.
+    research. Single-key actions: [a]pprove, [d]elete, [e]dit fields,
+    [s]kip, [p]review, [o]pen in editor, [q]uit. Approve delegates to the
+    same `approve_claim` callable as `dr review --approve`. Edit opens the
+    five header fields (title, takeaway, seo_title, tags, verdict) in
+    `$EDITOR` for an inline change with a save/re-edit/discard preview.
 
     With --format: prints the queue and exits. Always exits 0 regardless of
     queue size; this is informational.
