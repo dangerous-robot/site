@@ -1,16 +1,30 @@
-"""Query Planner: generates search queries for a claim (tool-free, Haiku)."""
+"""Research Planner: decomposes a claim into sub-questions and tagged queries (tool-free, Haiku)."""
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
-
-class QueryPlan(BaseModel):
-    queries: list[str] = Field(description="Search queries to execute, ordered by expected relevance")
-    rationale: str = Field(description="Why these queries cover the claim")
+from common.models import SubQuestion
 
 
-_PLANNER_INSTRUCTIONS = """\
+class PlannedQuery(BaseModel):
+    text: str
+    sub_question_id: str = Field(
+        description="Matches a SubQuestion.id within the same ResearchPlan."
+    )
+
+
+class ResearchPlan(BaseModel):
+    sub_questions: list[SubQuestion] = Field(min_length=2, max_length=5)
+    queries: list[PlannedQuery] = Field(
+        description="Search queries, each tagged with the sub-question it serves.",
+    )
+    rationale: str = Field(
+        description="One-line justification for why these sub-questions cover the claim.",
+    )
+
+
+_RESEARCH_PLANNER_INSTRUCTIONS = """\
 You are a search query planner. Given a claim and entity name, generate targeted web search queries to find credible sources that could verify or refute the claim.
 
 Rules:
@@ -28,9 +42,9 @@ Brave Search query format (important — these run on Brave, not Google):
 - For sector-level or abstract entities (e.g. "AI/LLM producers", "cloud providers"), skip the entity name and query by the concrete subject matter directly (e.g. "Bletchley Park AI safety commitments" rather than "AI/LLM producers safety pledges").
 """
 
-query_planner_agent = Agent(
+research_planner_agent = Agent(
     "test",
-    output_type=QueryPlan,
-    system_prompt=_PLANNER_INSTRUCTIONS,
+    output_type=ResearchPlan,
+    system_prompt=_RESEARCH_PLANNER_INSTRUCTIONS,
     retries=2,
 )

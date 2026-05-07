@@ -11,11 +11,23 @@ from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
 
 import httpx
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from pydantic_ai.models import Model
 
 logger = logging.getLogger(__name__)
+
+
+class SubQuestion(BaseModel):
+    id: str = Field(
+        pattern=r"^sq\d+$",
+        description="Stable id within a claim. Format: 'sq1', 'sq2', ... (sequential within a ResearchPlan).",
+    )
+    question: str = Field(description="An independently answerable factual question.")
+    rationale: str = Field(
+        description="One-sentence justification for why this sub-question belongs in the decomposition; surfaced in the audit sidecar.",
+    )
 
 
 async def _log_infomaniak_response(response: httpx.Response) -> None:

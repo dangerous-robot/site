@@ -38,12 +38,6 @@ class TestLoadInstructions:
 class TestAgentInstructionsWiring:
     """Each agent's system prompt should match its instructions.md content."""
 
-    def test_researcher_loads_instructions(self):
-        from researcher.agent import research_agent
-        agent_dir = Path(__file__).resolve().parent.parent / "researcher"
-        expected = load_instructions(agent_dir)
-        assert research_agent._system_prompts[0] == expected
-
     def test_analyst_loads_instructions(self):
         from analyst.agent import analyst_agent
         from common.instructions import common

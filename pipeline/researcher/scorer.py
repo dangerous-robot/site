@@ -4,6 +4,8 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from common.models import SubQuestion
+
 
 class SearchCandidate(BaseModel):
     url: str
@@ -13,10 +15,21 @@ class SearchCandidate(BaseModel):
     publisher_quality: str = "secondary"
 
 
+class ScoredCandidate(BaseModel):
+    url: str
+    addresses: list[str] = Field(
+        description=(
+            "Sub-question ids (each matches a SubQuestion.id within the same "
+            "ResearchPlan) this candidate is judged to address. Non-empty by "
+            "construction; only kept candidates carry `addresses`."
+        ),
+    )
+
+
 class ScoredURLs(BaseModel):
-    kept: list[str] = Field(description="URLs with relevance score >= 4, ordered best-first")
-    dropped: list[str] = Field(description="URLs with relevance score < 4")
-    rationale: str = Field(description="Brief explanation of scoring decisions")
+    kept: list[ScoredCandidate]
+    dropped: list[str]
+    rationale: str
 
 
 _SCORER_INSTRUCTIONS = """\

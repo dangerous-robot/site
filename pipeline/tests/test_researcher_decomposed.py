@@ -9,13 +9,12 @@ import httpx
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from researcher.agent import ResearchResult, research_agent
-from researcher.planner import QueryPlan, query_planner_agent
-from researcher.scorer import SearchCandidate, ScoredURLs, url_scorer_agent
+from researcher.planner import PlannedQuery, ResearchPlan, research_planner_agent
+from researcher.scorer import ScoredCandidate, ScoredURLs, SearchCandidate, url_scorer_agent
 from researcher.decomposed import execute_searches, decomposed_research
 from orchestrator.checkpoints import StepError
-from orchestrator.entity_resolution import ResolvedEntity, SearchHints
-from common.models import BlockedReason, EntityType
+from orchestrator.entity_resolution import ResolvedEntity
+from common.models import BlockedReason, EntityType, SubQuestion
 
 
 class _AgentResult:
@@ -24,12 +23,22 @@ class _AgentResult:
         self.output = output
 
 
-# --------------------------------------------------------------------------- #
-# Helpers                                                                       #
-# --------------------------------------------------------------------------- #
+def _stub_sub_questions() -> list[SubQuestion]:
+    return [
+        SubQuestion(id="sq1", question="First sub-question?", rationale="covers axis 1"),
+        SubQuestion(id="sq2", question="Second sub-question?", rationale="covers axis 2"),
+    ]
+
+
+def _plan(queries: list[str], rationale: str = "ok") -> ResearchPlan:
+    return ResearchPlan(
+        sub_questions=_stub_sub_questions(),
+        queries=[PlannedQuery(text=q, sub_question_id="sq1") for q in queries],
+        rationale=rationale,
+    )
+
 
 def _make_cfg(
-    researcher_mode: str = "decomposed",
     max_initial_queries: int = 3,
     llm_concurrency: int = 8,
     max_sources: int = 12,
@@ -38,7 +47,6 @@ def _make_cfg(
     """Build a minimal VerifyConfig-like object for unit tests."""
     from orchestrator.pipeline import VerifyConfig
     return VerifyConfig(
-        researcher_mode=researcher_mode,
         max_initial_queries=max_initial_queries,
         llm_concurrency=llm_concurrency,
         max_sources=max_sources,
@@ -47,60 +55,69 @@ def _make_cfg(
 
 
 # --------------------------------------------------------------------------- #
-# Test 1: Query planner output shape                                            #
+# Test 1: Research planner output shape                                         #
 # --------------------------------------------------------------------------- #
 
 @pytest.mark.asyncio
-async def test_query_planner_output_shape() -> None:
-    with query_planner_agent.override(
+async def test_research_planner_output_shape() -> None:
+    with research_planner_agent.override(
         model=TestModel(
-            custom_output_args={"queries": ["q1", "q2"], "rationale": "test rationale"},
+            custom_output_args={
+                "sub_questions": [
+                    {"id": "sq1", "question": "Q1?", "rationale": "axis 1"},
+                    {"id": "sq2", "question": "Q2?", "rationale": "axis 2"},
+                ],
+                "queries": [
+                    {"text": "q1", "sub_question_id": "sq1"},
+                    {"text": "q2", "sub_question_id": "sq2"},
+                ],
+                "rationale": "test rationale",
+            },
         )
     ):
-        result = await query_planner_agent.run("test prompt")
+        result = await research_planner_agent.run("test prompt")
 
     plan = result.output
-    assert isinstance(plan, QueryPlan)
-    assert isinstance(plan.queries, list)
+    assert isinstance(plan, ResearchPlan)
     assert len(plan.queries) > 0
+    assert len(plan.sub_questions) >= 2
     assert isinstance(plan.rationale, str)
     assert len(plan.rationale) > 0
 
 
 # --------------------------------------------------------------------------- #
-# Test 2: Query planner cap enforcement (hard-truncation in decomposed_research)#
+# Test 2: Research planner cap enforcement                                       #
 # --------------------------------------------------------------------------- #
 
 @pytest.mark.asyncio
-async def test_query_planner_cap_enforcement() -> None:
+async def test_research_planner_cap_enforcement() -> None:
     """decomposed_research must truncate to max_initial_queries even if the model
     returns more queries."""
     six_queries = [f"query_{i}" for i in range(6)]
     cfg = _make_cfg(max_initial_queries=3)
 
-    six_plan = QueryPlan(queries=six_queries, rationale="many queries")
+    six_plan = _plan(six_queries, "many queries")
 
-    # Track how many queries were passed to execute_searches.
     captured_queries: list[list[str]] = []
 
     async def fake_execute_searches(queries, client):
         captured_queries.append(list(queries))
-        return []  # no candidates; keeps the test focused on truncation
+        return []
 
     with (
-        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(six_plan))),
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(six_plan))),
         patch("researcher.decomposed.execute_searches", side_effect=fake_execute_searches),
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            kept, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
     # The planner returned 6 queries; hard-truncation must cap them at 3.
     assert len(captured_queries) == 1
     assert len(captured_queries[0]) == 3, (
         f"Expected 3 queries after truncation, got {len(captured_queries[0])}"
     )
-    assert isinstance(urls, list)
+    assert isinstance(kept, list)
     assert isinstance(errors, list)
 
 
@@ -113,7 +130,7 @@ async def test_url_scorer_output_shape() -> None:
     with url_scorer_agent.override(
         model=TestModel(
             custom_output_args={
-                "kept": ["https://a.com"],
+                "kept": [{"url": "https://a.com", "addresses": ["sq1"]}],
                 "dropped": ["https://b.com"],
                 "rationale": "test scoring",
             },
@@ -123,7 +140,7 @@ async def test_url_scorer_output_shape() -> None:
 
     scored = result.output
     assert isinstance(scored, ScoredURLs)
-    assert isinstance(scored.kept, list)
+    assert all(isinstance(c, ScoredCandidate) for c in scored.kept)
     assert isinstance(scored.dropped, list)
     assert isinstance(scored.rationale, str)
     assert len(scored.rationale) > 0
@@ -153,7 +170,7 @@ async def test_execute_searches_deduplication() -> None:
 
 @pytest.mark.asyncio
 async def test_decomposed_research_step_sequencing() -> None:
-    """decomposed_research returns a list[str] of kept URLs from the scorer."""
+    """decomposed_research returns the scorer's kept ScoredCandidate list."""
     cfg = _make_cfg(max_initial_queries=3)
 
     fake_candidates = [
@@ -161,24 +178,26 @@ async def test_decomposed_research_step_sequencing() -> None:
         SearchCandidate(url="https://b.com", title="B", snippet="b", from_query="q1"),
         SearchCandidate(url="https://c.com", title="C", snippet="c", from_query="q2"),
     ]
-    kept_urls = ["https://a.com", "https://b.com"]
+    kept = [
+        ScoredCandidate(url="https://a.com", addresses=["sq1"]),
+        ScoredCandidate(url="https://b.com", addresses=["sq1", "sq2"]),
+    ]
 
-    # decomposed_research applies its own agent.override internally, so patch .run directly.
-    fake_plan = QueryPlan(queries=["q1", "q2"], rationale="good queries")
-    fake_scored = ScoredURLs(kept=kept_urls, dropped=["https://c.com"], rationale="a and b are better")
+    fake_plan = _plan(["q1", "q2"], "good queries")
+    fake_scored = ScoredURLs(kept=kept, dropped=["https://c.com"], rationale="a and b are better")
 
     with (
-        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
         patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
         patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            scored_candidates, errors, _trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
-    assert isinstance(urls, list)
-    assert all(isinstance(u, str) for u in urls)
-    assert set(urls) == set(kept_urls)
+    assert isinstance(scored_candidates, list)
+    assert all(isinstance(c, ScoredCandidate) for c in scored_candidates)
+    assert {c.url for c in scored_candidates} == {"https://a.com", "https://b.com"}
     assert errors == []
 
 
@@ -194,8 +213,12 @@ async def test_semaphore_bounds_concurrency() -> None:
     current_concurrent = 0
     lock = asyncio.Lock()
 
-    fake_plan = QueryPlan(queries=["q1", "q2"], rationale="ok")
-    fake_scored = ScoredURLs(kept=["https://x.com"], dropped=[], rationale="good")
+    fake_plan = _plan(["q1", "q2"], "ok")
+    fake_scored = ScoredURLs(
+        kept=[ScoredCandidate(url="https://x.com", addresses=["sq1"])],
+        dropped=[],
+        rationale="good",
+    )
     fake_candidates = [
         SearchCandidate(url="https://x.com", title="X", snippet="x", from_query="q1"),
     ]
@@ -230,7 +253,7 @@ async def test_semaphore_bounds_concurrency() -> None:
             return await decomposed_research("claim", "Entity", cfg, sem, client)
 
     with (
-        patch.object(query_planner_agent, "run", side_effect=counting_planner_run),
+        patch.object(research_planner_agent, "run", side_effect=counting_planner_run),
         patch.object(url_scorer_agent, "run", side_effect=counting_scorer_run),
         patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
     ):
@@ -239,16 +262,6 @@ async def test_semaphore_bounds_concurrency() -> None:
     assert max_concurrent <= 3, (
         f"Expected at most 3 concurrent LLM calls, observed {max_concurrent}"
     )
-
-
-# --------------------------------------------------------------------------- #
-# Test 7: Classic researcher still importable and intact                        #
-# --------------------------------------------------------------------------- #
-
-@pytest.mark.asyncio
-async def test_existing_researcher_tests_still_pass() -> None:
-    """research_agent and ResearchResult remain importable; output_type is correct."""
-    assert research_agent.output_type is ResearchResult
 
 
 # --------------------------------------------------------------------------- #
@@ -265,20 +278,19 @@ async def test_scorer_drops_all_returns_empty() -> None:
         SearchCandidate(url="https://a.com", title="A", snippet="a", from_query="q1"),
         SearchCandidate(url="https://b.com", title="B", snippet="b", from_query="q1"),
     ]
-    fake_plan = QueryPlan(queries=["q1"], rationale="ok")
-    # Scorer drops everything
+    fake_plan = _plan(["q1"], "ok")
     fake_scored = ScoredURLs(kept=[], dropped=["https://a.com", "https://b.com"], rationale="all irrelevant")
 
     with (
-        patch.object(query_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
         patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
         patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors, trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+            kept, errors, trace = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
-    assert urls == [], f"Expected empty URL list, got {urls}"
+    assert kept == [], f"Expected empty kept list, got {kept}"
     assert trace.get("scorer_dropped_all") is True, "trace['scorer_dropped_all'] should be True"
     scorer_drop_errors = [e for e in errors if e.error_type == "scorer_dropped_all"]
     assert len(scorer_drop_errors) == 1, f"Expected one scorer_dropped_all error, got {scorer_drop_errors}"
@@ -322,8 +334,12 @@ async def test_parent_company_injected_into_prompts() -> None:
     fake_candidates = [
         SearchCandidate(url="https://anthropic.com/claude", title="Claude", snippet="info", from_query="q1"),
     ]
-    fake_plan = QueryPlan(queries=["q1", "q2"], rationale="ok")
-    fake_scored = ScoredURLs(kept=["https://anthropic.com/claude"], dropped=[], rationale="relevant")
+    fake_plan = _plan(["q1", "q2"], "ok")
+    fake_scored = ScoredURLs(
+        kept=[ScoredCandidate(url="https://anthropic.com/claude", addresses=["sq1"])],
+        dropped=[],
+        rationale="relevant",
+    )
 
     captured: dict = {}
 
@@ -336,13 +352,13 @@ async def test_parent_company_injected_into_prompts() -> None:
         return _AgentResult(fake_scored)
 
     with (
-        patch.object(query_planner_agent, "run", side_effect=capture_planner),
+        patch.object(research_planner_agent, "run", side_effect=capture_planner),
         patch.object(url_scorer_agent, "run", side_effect=capture_scorer),
         patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
     ):
         sem = asyncio.Semaphore(8)
         async with httpx.AsyncClient() as client:
-            urls, errors, _trace = await decomposed_research("test claim", "Claude", cfg, sem, client, resolved_entity=resolved)
+            kept, errors, _trace = await decomposed_research("test claim", "Claude", cfg, sem, client, resolved_entity=resolved)
 
     assert "Anthropic" in captured.get("planner", ""), (
         f"'Anthropic' not found in planner prompt: {captured.get('planner', '')!r}"

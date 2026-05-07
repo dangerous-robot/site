@@ -563,11 +563,10 @@ def _print_verify_result(result) -> None:
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
-def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, interactive: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
+def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, interactive: bool, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
     """Run the full pipeline in memory and print the verdict; nothing is written to disk.
 
     Example:
@@ -584,7 +583,6 @@ def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | 
     config = VerifyConfig(
         model=model,
         skip_wayback=skip_wayback,
-        researcher_mode=researcher_mode,
         show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
@@ -619,11 +617,10 @@ def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | 
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--force", is_flag=True, help="Overwrite existing claim file if present")
-@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
-def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, researcher_mode: str, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
+def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
     """Run the full pipeline for a claim and write it to disk with status=draft and no criteria_slug.
 
     ENTITY_REF is required. Use 'products/chatgpt' to pre-resolve entity from disk
@@ -675,7 +672,6 @@ def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_source
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
-        researcher_mode=researcher_mode,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
@@ -720,7 +716,6 @@ def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_source
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
@@ -732,7 +727,6 @@ def claim_refresh(
     skip_wayback: bool,
     repo_root: str | None,
     interactive: bool,
-    researcher_mode: str,
     max_initial_queries: int | None,
     llm_concurrency: int | None,
 ) -> None:
@@ -833,7 +827,6 @@ def claim_refresh(
         skip_wayback=skip_wayback,
         repo_root=str(root),
         force_overwrite=True,
-        researcher_mode=researcher_mode,
         show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
@@ -1398,7 +1391,6 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
 @click.option("--force", is_flag=True, help="Overwrite existing claim files if present")
-@click.option("--researcher-mode", default="decomposed", type=click.Choice(["classic", "decomposed"]), help="Researcher implementation (classic=tool-using agent, decomposed=3-step pipeline)")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.pass_context
@@ -1414,7 +1406,6 @@ def onboard(
     interactive: bool,
     only: str | None,
     force: bool,
-    researcher_mode: str,
     max_initial_queries: int | None,
     llm_concurrency: int | None,
 ) -> None:
@@ -1466,7 +1457,6 @@ def onboard(
         skip_wayback=skip_wayback,
         repo_root=repo_root or "",
         force_overwrite=force,
-        researcher_mode=researcher_mode,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )

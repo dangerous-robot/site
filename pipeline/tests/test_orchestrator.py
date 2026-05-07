@@ -10,7 +10,6 @@ from unittest.mock import patch
 import httpx
 import pytest
 from pydantic_ai import Agent
-from pydantic_ai.models.test import TestModel
 
 from common.models import BlockedReason
 from ingestor.models import SourceFile, SourceFrontmatter
@@ -18,13 +17,12 @@ from orchestrator.checkpoints import StepError
 from orchestrator.pipeline import (
     VerificationResult,
     VerifyConfig,
+    _apply_blocklist_cap,
     _classify_blocked_reason,
     _ingest_one,
-    _research,
     below_threshold,
     verify_claim,
 )
-from researcher.agent import research_agent
 
 
 class TestVerificationResult:
@@ -95,16 +93,6 @@ def _noop(**kwargs):
     yield
 
 
-def _researcher_returning(urls: list[str]) -> TestModel:
-    return TestModel(
-        custom_output_args={
-            "urls": urls,
-            "reasoning": "fake",
-        },
-        call_tools=[],
-    )
-
-
 def _write_blocklist(tmp_path) -> None:
     research = tmp_path / "research"
     research.mkdir(parents=True, exist_ok=True)
@@ -119,28 +107,20 @@ hosts:
 
 
 class TestResearchBlocklist:
-    @pytest.mark.asyncio
-    async def test_blocklist_drops_linkedin_url(self, tmp_path) -> None:
+    """`_apply_blocklist_cap` is the join point between researcher output and
+    the orchestrator. These tests exercise it directly with raw URL lists."""
+
+    def test_blocklist_drops_linkedin_url(self, tmp_path) -> None:
         _write_blocklist(tmp_path)
         cfg = VerifyConfig(
             model="test",
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
-            researcher_mode="classic",
         )
-        async with httpx.AsyncClient() as client:
-            with (
-                research_agent.override(
-                    model=_researcher_returning(
-                        ["https://linkedin.com/a", "https://example.com/b"]
-                    )
-                ),
-                patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            ):
-                sem = asyncio.Semaphore(8)
-                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
-
+        urls, errors = _apply_blocklist_cap(
+            ["https://linkedin.com/a", "https://example.com/b"], cfg
+        )
         assert urls == ["https://example.com/b"]
         blocked = [e for e in errors if e.error_type == "blocked_host"]
         assert len(blocked) == 1
@@ -149,55 +129,33 @@ class TestResearchBlocklist:
         # No all_blocked when at least one URL was kept
         assert not any(e.error_type == "all_blocked" for e in errors)
 
-    @pytest.mark.asyncio
-    async def test_all_blocked_adds_summary_error(self, tmp_path) -> None:
+    def test_all_blocked_adds_summary_error(self, tmp_path) -> None:
         _write_blocklist(tmp_path)
         cfg = VerifyConfig(
             model="test",
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
-            researcher_mode="classic",
         )
-        async with httpx.AsyncClient() as client:
-            with (
-                research_agent.override(
-                    model=_researcher_returning(
-                        ["https://linkedin.com/a", "https://uk.linkedin.com/b"]
-                    )
-                ),
-                patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            ):
-                sem = asyncio.Semaphore(8)
-                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
-
+        urls, errors = _apply_blocklist_cap(
+            ["https://linkedin.com/a", "https://uk.linkedin.com/b"], cfg
+        )
         assert urls == []
         assert errors[0].error_type == "all_blocked"
         blocked = [e for e in errors if e.error_type == "blocked_host"]
         assert len(blocked) == 2
 
-    @pytest.mark.asyncio
-    async def test_no_blocklist_file_passes_through(self, tmp_path) -> None:
+    def test_no_blocklist_file_passes_through(self, tmp_path) -> None:
         # No research/blocklist.yaml written
         cfg = VerifyConfig(
             model="test",
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
-            researcher_mode="classic",
         )
-        async with httpx.AsyncClient() as client:
-            with (
-                research_agent.override(
-                    model=_researcher_returning(
-                        ["https://linkedin.com/a", "https://example.com/b"]
-                    )
-                ),
-                patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            ):
-                sem = asyncio.Semaphore(8)
-                urls, errors, _trace = await _research(client, "Ent", "claim", cfg, sem)
-
+        urls, errors = _apply_blocklist_cap(
+            ["https://linkedin.com/a", "https://example.com/b"], cfg
+        )
         assert urls == ["https://linkedin.com/a", "https://example.com/b"]
         assert errors == []
 
@@ -483,7 +441,7 @@ class TestVerifyClaimWithResolvedEntity:
         received_kwargs: dict = {}
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(
@@ -532,7 +490,7 @@ class TestVerifyClaimWithResolvedEntity:
                 return original(*args, **kwargs)
 
         async def _fake_research(*args, **kwargs):
-            return [], [], {"mode": "classic"}
+            return [], [], {"mode": "decomposed"}
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
 
@@ -564,7 +522,7 @@ class TestResearchClaimWithResolvedEntity:
         write_claim_kwargs: dict = {}
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(
@@ -639,7 +597,7 @@ class TestResearchClaimWithResolvedEntity:
         write_entity_called = []
 
         async def _fake_research(*args, **kwargs):
-            return ["https://example.com/a"] * 4, [], {"mode": "classic"}
+            return ["https://example.com/a"] * 4, [], {"mode": "decomposed"}
 
         async def _fake_ingest(*args, **kwargs):
             sf = SourceFile(

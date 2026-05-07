@@ -12,8 +12,14 @@ from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
 from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
 from researcher.agent import search_brave
-from researcher.planner import QueryPlan, query_planner_agent
-from researcher.scorer import SearchCandidate, ScoredURLs, build_scorer_prompt, url_scorer_agent
+from researcher.planner import ResearchPlan, research_planner_agent
+from researcher.scorer import (
+    ScoredCandidate,
+    ScoredURLs,
+    SearchCandidate,
+    build_scorer_prompt,
+    url_scorer_agent,
+)
 
 if TYPE_CHECKING:
     from orchestrator.pipeline import VerifyConfig
@@ -61,13 +67,15 @@ async def decomposed_research(
     sem: asyncio.Semaphore,
     client: httpx.AsyncClient,
     resolved_entity: ResolvedEntity | None = None,
-) -> tuple[list[str], list[StepError], dict]:
+) -> tuple[list[ScoredCandidate], list[StepError], dict]:
     """Run the 3-step decomposed researcher.
 
-    Returns ``(urls, errors, trace)`` where ``trace`` is a dict suitable
-    for direct YAML serialisation into the audit sidecar's ``research:``
-    block. Trace fields are populated as each step succeeds; partial
-    traces are returned on early-exit error paths.
+    Returns ``(kept, errors, trace)`` where ``kept`` is the list of
+    ``ScoredCandidate`` the scorer kept (each carrying its ``addresses``
+    tag) and ``trace`` is a dict suitable for direct YAML serialisation
+    into the audit sidecar's ``research:`` block. Trace fields are
+    populated as each step succeeds; partial traces are returned on
+    early-exit error paths.
     """
     errors: list[StepError] = []
     trace: dict = {"mode": "decomposed"}
@@ -80,27 +88,28 @@ async def decomposed_research(
     )
     try:
         async with sem:
-            with query_planner_agent.override(model=resolve_model(cfg.model_for("researcher"))):
+            with research_planner_agent.override(model=resolve_model(cfg.model_for("researcher"))):
                 planner_res = await asyncio.wait_for(
-                    query_planner_agent.run(planner_prompt),
+                    research_planner_agent.run(planner_prompt),
                     timeout=cfg.research_timeout_s,
                 )
-        plan: QueryPlan = planner_res.output
+        plan: ResearchPlan = planner_res.output
         # Belt-and-suspenders: hard-truncate even if the model ignores the prompt cap
-        queries = plan.queries[: cfg.max_initial_queries]
+        planned = plan.queries[: cfg.max_initial_queries]
+        queries = [pq.text for pq in planned]
         trace["queries"] = list(queries)
         trace["planner_rationale"] = plan.rationale
-        logger.info("Query planner: %d queries (rationale: %s)", len(queries), plan.rationale)
+        logger.info("Research planner: %d queries (rationale: %s)", len(queries), plan.rationale)
     except asyncio.TimeoutError:
-        errors.append(_research_err("timeout", "Query planner timed out"))
+        errors.append(_research_err("timeout", "Research planner timed out"))
         return [], errors, trace
     except Exception as exc:
         errors.append(_research_err("model_error", str(exc)))
-        logger.error("Query planner failed: %s", exc)
+        logger.error("Research planner failed: %s", exc)
         return [], errors, trace
 
     if not queries:
-        errors.append(_research_err("no_queries", "Query planner returned no queries"))
+        errors.append(_research_err("no_queries", "Research planner returned no queries"))
         return [], errors, trace
 
     candidates = await execute_searches(queries, client)
@@ -133,12 +142,16 @@ async def decomposed_research(
             trace["scorer_dropped_all"] = True
             errors.append(_research_err("scorer_dropped_all", f"URL scorer dropped all {len(candidates)} candidates"))
             return [], errors, trace
-        return scored.kept, errors, trace
+        return list(scored.kept), errors, trace
     except asyncio.TimeoutError:
         errors.append(_research_err("timeout", "URL scorer timed out"))
-        # Fall back to all candidates rather than returning nothing
-        return [c.url for c in candidates], errors, trace
+        # Fall back to all candidates rather than returning nothing.
+        # No sub-question context is available here in stage 1; use a placeholder
+        # address so the ScoredCandidate invariant (non-empty addresses) holds.
+        fallback = [ScoredCandidate(url=c.url, addresses=["sq1"]) for c in candidates]
+        return fallback, errors, trace
     except Exception as exc:
         errors.append(_research_err("model_error", str(exc)))
         logger.error("URL scorer failed: %s", exc)
-        return [c.url for c in candidates], errors, trace
+        fallback = [ScoredCandidate(url=c.url, addresses=["sq1"]) for c in candidates]
+        return fallback, errors, trace

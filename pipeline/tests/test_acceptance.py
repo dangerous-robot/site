@@ -21,10 +21,10 @@ import pytest
 from dotenv import load_dotenv
 
 from analyst.agent import analyst_agent, build_analyst_prompt
-from common.models import DEFAULT_MODEL, Confidence, Verdict, resolve_model
+from common.models import DEFAULT_MODEL, Confidence, SubQuestion, Verdict, resolve_model
 from orchestrator.checkpoints import AutoApproveCheckpointHandler
 from orchestrator.pipeline import VerifyConfig, verify_claim
-from researcher.planner import query_planner_agent
+from researcher.planner import research_planner_agent
 from researcher.scorer import SearchCandidate, build_scorer_prompt, url_scorer_agent
 
 load_dotenv()
@@ -113,25 +113,26 @@ async def test_scorer_obvious_split() -> None:
         result = await url_scorer_agent.run(prompt)
 
     scored = result.output
-    all_returned = set(scored.kept) | set(scored.dropped)
+    kept_urls = {c.url for c in scored.kept}
+    all_returned = kept_urls | set(scored.dropped)
     all_input = {c.url for c in all_candidates}
     assert all_input == all_returned, f"URLs missing from output: {all_input - all_returned}"
 
     for c in relevant:
-        assert c.url in scored.kept, f"Expected {c.url!r} in kept, got kept={scored.kept}"
+        assert c.url in kept_urls, f"Expected {c.url!r} in kept, got kept={kept_urls}"
     for c in irrelevant:
         assert c.url in scored.dropped, f"Expected {c.url!r} in dropped, got dropped={scored.dropped}"
 
 
 # ---------------------------------------------------------------------------
-# Stage: query_planner_agent
+# Stage: research_planner_agent
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.acceptance
 @_skip_stage
-async def test_query_planner_structure() -> None:
-    """Query planner returns entity-grounded, non-duplicate queries with a rationale."""
+async def test_research_planner_structure() -> None:
+    """Research planner returns entity-grounded, non-duplicate queries with a rationale."""
     entity = "Google"
     claim = "Google publicly reports annual greenhouse gas emissions in a sustainability report"
     prompt = (
@@ -140,16 +141,18 @@ async def test_query_planner_structure() -> None:
         "Generate up to 4 search queries."
     )
 
-    with query_planner_agent.override(model=_stage_model()):
-        result = await query_planner_agent.run(prompt)
+    with research_planner_agent.override(model=_stage_model()):
+        result = await research_planner_agent.run(prompt)
 
     plan = result.output
     assert len(plan.queries) >= 2, f"Expected >= 2 queries, got {len(plan.queries)}"
-    assert len(plan.queries) == len(set(plan.queries)), "Duplicate queries returned"
+    query_texts = [pq.text for pq in plan.queries]
+    assert len(query_texts) == len(set(query_texts)), "Duplicate queries returned"
     assert plan.rationale.strip(), "Rationale is empty"
+    assert 2 <= len(plan.sub_questions) <= 5
 
     entity_terms = {"google", "alphabet"}
-    for q in plan.queries:
+    for q in query_texts:
         assert any(t in q.lower() for t in entity_terms), (
             f"Query not entity-grounded: {q!r}"
         )

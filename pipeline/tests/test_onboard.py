@@ -18,7 +18,6 @@ from common.frontmatter import parse_frontmatter
 from ingestor.agent import ingestor_agent
 from orchestrator.checkpoints import AutoApproveCheckpointHandler
 from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
-from researcher.agent import research_agent
 
 
 @contextmanager
@@ -27,14 +26,12 @@ def _noop(**kwargs):
     yield
 
 
-def _research_model() -> TestModel:
-    return TestModel(
-        custom_output_args={
-            "urls": ["https://example.com/report"],
-            "reasoning": "Found a relevant report.",
-        },
-        call_tools=[],
-    )
+async def _fake_research_with_url(*args, **kwargs):
+    return ["https://example.com/report"], [], {"mode": "decomposed"}
+
+
+async def _fake_research_empty(*args, **kwargs):
+    return [], [], {"mode": "decomposed"}
 
 
 def _ingestor_model() -> TestModel:
@@ -121,12 +118,13 @@ class TestAutoApproveReviewOnboard:
 
 class TestOnboardEntityHappyPath:
     @pytest.mark.asyncio
-    async def test_onboard_creates_entity_and_claims(self, tmp_path: Path) -> None:
+    async def test_onboard_creates_entity_and_claims(self, tmp_path: Path, monkeypatch) -> None:
         """Onboard with TestModel writes entity and claim files."""
         _setup_tmp_repo(tmp_path)
 
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+
         with (
-            research_agent.override(model=_research_model()),
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),
@@ -161,7 +159,7 @@ class TestOnboardEntityHappyPath:
 
 class TestOnboardEntityNoDoubleIngest:
     @pytest.mark.asyncio
-    async def test_single_research_and_ingest_per_template(self, tmp_path: Path) -> None:
+    async def test_single_research_and_ingest_per_template(self, tmp_path: Path, monkeypatch) -> None:
         """Onboard should run one _research + _ingest_urls pair per template plus one for light research.
 
         Regression canary: pre-refactor onboard called verify_claim (which runs research+ingest)
@@ -173,7 +171,6 @@ class TestOnboardEntityNoDoubleIngest:
 
         from orchestrator import pipeline as pipeline_mod
 
-        real_research = pipeline_mod._research
         real_ingest = pipeline_mod._ingest_urls
 
         research_calls = 0
@@ -182,7 +179,7 @@ class TestOnboardEntityNoDoubleIngest:
         async def spy_research(*args, **kwargs):
             nonlocal research_calls
             research_calls += 1
-            return await real_research(*args, **kwargs)
+            return await _fake_research_with_url(*args, **kwargs)
 
         async def spy_ingest(*args, **kwargs):
             nonlocal ingest_calls
@@ -190,7 +187,6 @@ class TestOnboardEntityNoDoubleIngest:
             return await real_ingest(*args, **kwargs)
 
         with (
-            research_agent.override(model=_research_model()),
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),
@@ -219,18 +215,13 @@ class TestOnboardEntityNoDoubleIngest:
 
 class TestOnboardEntitySeedUrl:
     @pytest.mark.asyncio
-    async def test_seed_url_skips_researcher(self, tmp_path: Path) -> None:
+    async def test_seed_url_skips_researcher(self, tmp_path: Path, monkeypatch) -> None:
         """When seed_url is provided, the researcher step is not called for light research."""
         _setup_tmp_repo(tmp_path)
 
-        researcher_calls: list[str] = []
-
-        def _tracking_research_model() -> TestModel:
-            researcher_calls.append("called")
-            return _research_model()
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
 
         with (
-            research_agent.override(model=_research_model()),
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),
@@ -257,7 +248,7 @@ class TestOnboardEntitySeedUrl:
 
 class TestOnboardErrorAttribution:
     @pytest.mark.asyncio
-    async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path) -> None:
+    async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path, monkeypatch) -> None:
         """Every result.errors entry must start with `<slug>: `.
 
         When the researcher finds no URLs, claims land in claims_created as
@@ -266,13 +257,9 @@ class TestOnboardErrorAttribution:
         """
         _setup_tmp_repo(tmp_path)
 
-        empty_research = TestModel(
-            custom_output_args={"urls": [], "reasoning": "No sources found."},
-            call_tools=[],
-        )
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
 
         with (
-            research_agent.override(model=empty_research),
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),
@@ -285,7 +272,6 @@ class TestOnboardErrorAttribution:
                 max_sources=2,
                 skip_wayback=True,
                 repo_root=str(tmp_path),
-                researcher_mode="classic",
             )
             result = await onboard_entity(
                 "TestCorp", "company", config=config
@@ -311,9 +297,11 @@ class TestOnboardErrorAttribution:
 
 class TestOnboardEntityRejection:
     @pytest.mark.asyncio
-    async def test_rejected_writes_draft(self, tmp_path: Path) -> None:
+    async def test_rejected_writes_draft(self, tmp_path: Path, monkeypatch) -> None:
         """Rejected onboard writes draft entity file."""
         _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
 
         class RejectHandler(AutoApproveCheckpointHandler):
             async def review_onboard(self, entity_name, entity_type,
@@ -323,7 +311,6 @@ class TestOnboardEntityRejection:
                 return "reject"
 
         with (
-            research_agent.override(model=_research_model()),
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),

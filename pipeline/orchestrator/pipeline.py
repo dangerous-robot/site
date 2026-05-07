@@ -39,7 +39,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution
-from orchestrator.entity_resolution import ResolvedEntity, build_entity_context
+from orchestrator.entity_resolution import ResolvedEntity
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
@@ -51,14 +51,13 @@ from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
-from common.models import AGENT_NAMES, DEFAULT_MODEL, AgentName, resolve_model
+from common.models import DEFAULT_MODEL, AgentName, resolve_model
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from common.source_classification import classify_source_type, independence_for_source_type
 from orchestrator.persistence import build_source_url_index, load_source_dict
-from researcher.agent import ResearchDeps, research_agent
 
 logger = logging.getLogger(__name__)
 
@@ -94,10 +93,9 @@ class VerificationResult(BaseModel):
     # Cache-hit sources reused via URL dedup; without these the audit sidecar's
     # sources_consulted is empty when every URL was already on disk.
     cached_sources: list[tuple[str, str, dict]] = Field(default_factory=list, exclude=True)
-    # Researcher-step trace: planner queries+rationale and scorer rationale
-    # for the decomposed mode; just the classic researcher's reasoning string
-    # for classic mode. Persisted to the audit sidecar so reviewers can see
-    # how the source set was assembled.
+    # Researcher-step trace: planner queries+rationale and scorer rationale.
+    # Persisted to the audit sidecar so reviewers can see how the source set
+    # was assembled.
     research_trace: dict | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -182,9 +180,6 @@ class VerifyConfig:
     analyst_timeout_s: float = 120.0
     auditor_timeout_s: float = 120.0
     force_overwrite: bool = False
-    # Temporary validation scaffold: switches between "classic" tool-using agent
-    # and the new 3-step decomposed pipeline. Removed post-validation.
-    researcher_mode: Literal["classic", "decomposed"] = "decomposed"
     # Effort lever for decomposed researcher: more queries = wider net.
     max_initial_queries: int = 5
     # Integer cap for the shared asyncio.Semaphore created at each call site.
@@ -436,56 +431,21 @@ async def _research(
     sem: asyncio.Semaphore,
     resolved_entity: "ResolvedEntity | None" = None,
 ) -> tuple[list[str], list[StepError], dict]:
-    """Run the configured researcher and return ``(urls, errors, trace)``.
+    """Run the decomposed researcher and return ``(urls, errors, trace)``.
 
     ``trace`` is a dict suitable for the audit sidecar's ``research:`` block.
-    Always populated with at least ``mode``; further fields depend on the
-    researcher path and how far it got before any error.
+    Always populated with at least ``mode``; further fields depend on how
+    far the researcher got before any error.
     """
-    if cfg.researcher_mode == "decomposed":
-        from researcher.decomposed import decomposed_research
-        raw_urls, errors, trace = await decomposed_research(claim_text, entity_name, cfg, sem, client, resolved_entity=resolved_entity)
-        urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
-        logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
-        trace["urls_after_blocklist"] = len(urls)
-        return urls, errors, trace
-
-    # Classic path
-    deps = ResearchDeps(http_client=client)
-    entity_ctx = build_entity_context(resolved_entity, entity_name)
-    prompt = f"{entity_ctx}Claim to verify: {claim_text}"
-    trace: dict = {"mode": "classic"}
-
-    try:
-        async with sem:
-            with research_agent.override(model=resolve_model(cfg.model_for("researcher"))):
-                res = await asyncio.wait_for(
-                    research_agent.run(prompt, deps=deps), timeout=cfg.research_timeout_s
-                )
-        raw_urls = res.output.urls
-        urls, errors = _apply_blocklist_cap(raw_urls, cfg)
-        trace["urls_raw"] = len(raw_urls)
-        trace["urls_after_blocklist"] = len(urls)
-        trace["reasoning"] = res.output.reasoning
-        logger.info(
-            "Research: %d raw, %d blocked, %d kept (cap=%d). Reasoning: %s",
-            len(raw_urls),
-            len(raw_urls) - len(urls),
-            len(urls),
-            cfg.candidate_pool_size,
-            res.output.reasoning,
-        )
-        return urls, errors, trace
-    except asyncio.TimeoutError:
-        err = StepError(step="research", error_type="timeout", message="Research timed out")
-        logger.error("Researcher timed out")
-        trace["timed_out"] = True
-        return [], [err], trace
-    except Exception as exc:
-        error_type = "api_key_missing" if "API key" in str(exc) else "model_error"
-        err = StepError(step="research", error_type=error_type, message=str(exc))
-        logger.error("Researcher agent failed: %s", exc)
-        return [], [err], trace
+    from researcher.decomposed import decomposed_research
+    kept, errors, trace = await decomposed_research(
+        claim_text, entity_name, cfg, sem, client, resolved_entity=resolved_entity
+    )
+    raw_urls = [c.url for c in kept]
+    urls, errors = _apply_blocklist_cap(raw_urls, cfg, errors)
+    logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
+    trace["urls_after_blocklist"] = len(urls)
+    return urls, errors, trace
 
 
 async def _ingest_one(

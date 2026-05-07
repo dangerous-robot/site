@@ -14,30 +14,12 @@ from auditor.agent import auditor_agent
 from common.frontmatter import parse_frontmatter
 from ingestor.agent import ingestor_agent
 from orchestrator.pipeline import VerifyConfig, research_claim
-from researcher.agent import research_agent
 
 
 @contextmanager
 def _noop(**kwargs):
     """No-op context manager used to neutralize inner agent overrides."""
     yield
-
-
-def _research_model() -> TestModel:
-    # Four URLs so research_claim clears the >=4 usable-source threshold the
-    # Orchestrator enforces post-ingest (docs/plans/claim-lifecycle-states.md).
-    return TestModel(
-        custom_output_args={
-            "urls": [
-                "https://example.com/report",
-                "https://example.com/second-report",
-                "https://example.com/third-report",
-                "https://example.com/fourth-report",
-            ],
-            "reasoning": "Found several relevant reports.",
-        },
-        call_tools=[],
-    )
 
 
 def _ingestor_model() -> TestModel:
@@ -91,13 +73,20 @@ def _auditor_model() -> TestModel:
 
 
 @pytest.mark.asyncio
-async def test_research_claim_writes_artifacts(tmp_path):
+async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
     """research_claim with TestModel writes source, entity, and claim files."""
-    # Set up outer overrides with TestModel instances per agent, then
-    # neutralize the orchestrator's inner override calls so they don't
-    # replace our custom TestModel instances with a default TestModel.
+
+    async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
+        return [
+            "https://example.com/report",
+            "https://example.com/second-report",
+            "https://example.com/third-report",
+            "https://example.com/fourth-report",
+        ], [], {"mode": "decomposed"}
+
+    monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+
     with (
-        research_agent.override(model=_research_model()),
         ingestor_agent.override(model=_ingestor_model()),
         analyst_agent.override(model=_analyst_model()),
         auditor_agent.override(model=_auditor_model()),
@@ -110,7 +99,6 @@ async def test_research_claim_writes_artifacts(tmp_path):
             max_sources=4,
             skip_wayback=True,
             repo_root=str(tmp_path),
-            researcher_mode="classic",
         )
         result = await research_claim("TestCorp uses renewable energy", config)
 
