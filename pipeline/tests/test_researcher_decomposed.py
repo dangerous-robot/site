@@ -396,7 +396,7 @@ def test_publisher_quality_in_scorer_prompt() -> None:
         SearchCandidate(url="https://reddit.com/r/ml/abc", title="Reddit post", snippet="discussion", from_query="q1", publisher_quality="forum"),
         SearchCandidate(url="https://anthropic.com/paper", title="Anthropic paper", snippet="research", from_query="q1", publisher_quality="primary"),
     ]
-    prompt = build_scorer_prompt("TestEntity", "test claim", candidates)
+    prompt = build_scorer_prompt("TestEntity", "test claim", candidates, _stub_sub_questions())
     assert "publisher_quality" not in prompt.lower() or "Publisher quality:" in prompt, \
         "Expected the literal 'Publisher quality:' label in prompt"
     assert "Publisher quality: forum" in prompt, f"Expected 'Publisher quality: forum' in prompt:\n{prompt}"

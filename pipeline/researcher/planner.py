@@ -25,15 +25,13 @@ class ResearchPlan(BaseModel):
 
 
 _RESEARCH_PLANNER_INSTRUCTIONS = """\
-You are a search query planner. Given a claim and entity name, generate targeted web search queries to find credible sources that could verify or refute the claim.
+You are a research planner. Given a claim and entity, decompose the claim into 2-5 sub-questions, then generate search queries per sub-question.
 
-Rules:
-- Generate between 2 and the cap given in the user prompt.
-- Each query should be specific: include the entity name and key terms from the claim.
-- Vary the angle: one query may target the entity directly, another may target an independent analysis, another a specific data point.
-- Prefer queries that would surface primary sources or independent journalism over opinion pieces.
-- Do not repeat the same query with minor word changes.
-- Return queries in the `queries` field. Include a brief `rationale` explaining why these queries cover the claim.
+A good sub-question is independently answerable, factually framed, and covers one axis of the claim. The union of sub-questions should cover the whole claim. Sub-question ids are sequential (sq1, sq2, ...).
+
+For environmental, privacy, and disclosure claims, sub-questions typically include: (1) the entity's own first-party publication channels (transparency reports, sustainability pages), (2) third-party databases (ESG aggregators, regulator filings, model cards), (3) the underlying technical or factual mechanism (e.g. hosting provider, training pipeline). Cover all three when applicable.
+
+Then generate 2 to `max_initial_queries` total search queries, distributed across sub-questions. Each query is tagged with `sub_question_id`. Queries must follow Brave query format (no `site:`, no `intitle:`, no chained quoted phrases - see below).
 
 Brave Search query format (important — these run on Brave, not Google):
 - Do NOT use Google-specific operators: no `site:`, `source:`, `date:`, `filetype:`, `intitle:`, `inurl:`.

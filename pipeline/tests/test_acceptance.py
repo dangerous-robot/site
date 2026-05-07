@@ -107,7 +107,10 @@ async def test_scorer_obvious_split() -> None:
     ]
     all_candidates = relevant + irrelevant
 
-    prompt = build_scorer_prompt(entity, claim, all_candidates)
+    sub_questions = [
+        SubQuestion(id="sq1", question="Does Google publish annual GHG emissions?", rationale="Direct restatement"),
+    ]
+    prompt = build_scorer_prompt(entity, claim, all_candidates, sub_questions)
 
     with url_scorer_agent.override(model=_stage_model()):
         result = await url_scorer_agent.run(prompt)

@@ -121,7 +121,13 @@ async def decomposed_research(
         return [], errors, trace
 
     parent_name = resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
-    scorer_prompt = build_scorer_prompt(entity_name, claim_text, candidates, parent_company=parent_name)
+    scorer_prompt = build_scorer_prompt(
+        entity_name,
+        claim_text,
+        candidates,
+        list(plan.sub_questions),
+        parent_company=parent_name,
+    )
     try:
         async with sem:
             with url_scorer_agent.override(model=resolve_model(cfg.model_for("researcher"))):

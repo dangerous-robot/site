@@ -33,25 +33,26 @@ class ScoredURLs(BaseModel):
 
 
 _SCORER_INSTRUCTIONS = """\
-You are a source relevance scorer. Given a claim, entity name, and a list of search result candidates (title + snippet only), score each candidate for relevance to the claim.
+You are a source relevance scorer. Given a claim, entity name, a list of sub-questions decomposing the claim, and a list of search result candidates (title + snippet only), score each candidate per sub-question for relevance.
 
-Scoring scale:
-- 5: Directly addresses the claim with likely primary-source or independent evidence
-- 4: Clearly relevant, likely to contain useful facts or data
+Scoring scale (applied per sub-question):
+- 5: Directly addresses this sub-question with likely primary-source or independent evidence
+- 4: Clearly relevant to this sub-question, likely to contain useful facts or data
 - 3: Possibly relevant; worth fetching to check
-- 2: Tangentially related; unlikely to contain claim-specific evidence
+- 2: Tangentially related; unlikely to contain sub-question-specific evidence
 - 1: Not relevant; about a different topic, entity, or time period
 
 Rules:
-- Score only on the title and snippet — do not assume body content.
-- Keep all candidates with score >= 4 in the `kept` list.
-- Put candidates with score < 4 in the `dropped` list.
-- Every input URL must appear in either `kept` or `dropped` (no omissions).
+- Score each candidate against EACH sub-question separately on the title and snippet only — do not assume body content.
+- Keep a candidate (in the `kept` list) when it scores >= 4 on AT LEAST ONE sub-question.
+- For each kept candidate, set `addresses` to the list of sub-question ids on which it scored >= 4. `addresses` must be non-empty.
+- Drop a candidate (in the `dropped` list) only when it scores < 4 on EVERY sub-question.
+- Every input URL must appear in either `kept` (as a ScoredCandidate) or `dropped` (as a URL string). No omissions.
 - Return URLs as-is (exact strings from input).
-- Include a brief `rationale` summarizing the scoring decisions.
+- Include a brief `rationale` summarizing the scoring decisions across sub-questions.
 - When parent company is provided, sources about the parent company are relevant to claims about the subsidiary.
 - Each candidate has a `publisher_quality` label: `primary` (company or regulatory), `secondary` (academic, research, news), `tertiary` (advocacy, community), or `forum` (Reddit, Quora, HN, etc.).
-- Use publisher quality as a tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 3 unless no higher-quality alternatives exist in this candidate set.
+- Use publisher quality as a per-sub-question tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 3 unless no higher-quality alternatives exist in this candidate set.
 """
 
 url_scorer_agent = Agent(
@@ -66,11 +67,16 @@ def build_scorer_prompt(
     entity: str | None,
     claim: str,
     candidates: list[SearchCandidate],
+    sub_questions: list[SubQuestion],
     parent_company: str | None = None,
 ) -> str:
     entity_block = f"Entity: {entity or '(unknown)'}\n"
     if parent_company:
         entity_block += f"Parent company: {parent_company}\n"
+    sub_question_block = "Sub-questions:\n" + "\n".join(
+        f"- {sq.id}: {sq.question} (rationale: {sq.rationale})"
+        for sq in sub_questions
+    )
     candidate_text = "\n".join(
         f"URL: {c.url}\nTitle: {c.title}\nSnippet: {c.snippet}\nPublisher quality: {c.publisher_quality}\n"
         for c in candidates
@@ -78,5 +84,6 @@ def build_scorer_prompt(
     return (
         entity_block
         + f"Claim: {claim}\n\n"
-        f"Candidates:\n{candidate_text}"
+        + sub_question_block
+        + f"\n\nCandidates:\n{candidate_text}"
     )
