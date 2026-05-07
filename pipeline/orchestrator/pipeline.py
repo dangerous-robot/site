@@ -190,6 +190,11 @@ class VerifyConfig:
     # Integer cap for the shared asyncio.Semaphore created at each call site.
     # Never store the Semaphore itself here — it is loop-bound.
     llm_concurrency: int = 8
+    # When True, verify_claim emits stderr progress lines at step boundaries
+    # via progress(). Off for onboard (which has its own per-claim progress);
+    # on for single-claim CLI paths (claim-refresh, claim-probe) where the
+    # run otherwise looks hung.
+    show_progress: bool = False
     # Correlates every log record (and future token-usage record) emitted
     # during one top-level pipeline invocation. Inherits a CLI-bound id if
     # set; onboard's per-template loop overrides via dataclasses.replace.
@@ -247,16 +252,21 @@ async def verify_claim(
 
     research_entity = resolved_entity.entity_name if resolved_entity is not None else entity_name
 
+    say = progress if cfg.show_progress else logger.info
+
     with bind_run_id(cfg.run_id):
         logger.info("verify_claim entry: entity=%s claim=%s", entity_name, claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
-            logger.info("Step 1/4: Searching for sources...")
+            say("Step 1/4: Searching for sources...")
             urls, research_errors, trace = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             result.urls_found = urls
             result.research_trace = trace
 
             result.errors.extend(e.message for e in research_errors)
+            if cfg.show_progress:
+                for e in research_errors:
+                    progress("  ! research: %s", e.message)
             if not urls:
                 result.errors.append("Researcher agent found no relevant URLs")
                 if any(e.error_type == "scorer_dropped_all" for e in research_errors):
@@ -264,7 +274,7 @@ async def verify_claim(
                 return result
 
             # Step 2: Ingest
-            logger.info("Step 2/4: Ingesting %d sources...", len(urls))
+            say("Step 2/4: Ingesting %d candidate URLs...", len(urls))
             repo_root = Path(cfg.repo_root or str(resolve_repo_root()))
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
@@ -290,6 +300,18 @@ async def verify_claim(
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
 
+            if cfg.show_progress:
+                progress(
+                    "  ingested %d/%d (cached=%d, fetched=%d, failed=%d)",
+                    len(result.urls_ingested),
+                    len(urls),
+                    len(cached_sources),
+                    len(source_files),
+                    len(result.urls_failed),
+                )
+                for e in ingest_errors:
+                    progress("  ! ingest: %s", e.message)
+
             # Checkpoint: review sources
             proceed = await gate.review_sources(
                 urls_found=len(result.urls_found),
@@ -305,19 +327,26 @@ async def verify_claim(
             # docs/plans/claim-lifecycle-states.md § Behavior change.
             if below_threshold(result.sources):
                 _record_threshold_block(result, ingest_errors)
+                if cfg.show_progress:
+                    progress(
+                        "  ! blocked before analyst: %s",
+                        result.blocked_reason.value if result.blocked_reason else "below_threshold",
+                    )
                 return result
 
             # Step 3: Analyst
-            logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+            say("Step 3/4: Analysing claim from %d sources...", len(result.sources))
             analyst_out = await _analyse_claim(entity_name, claim_text, result.sources, cfg, resolved_entity=resolved_entity)
             result.analyst_output = analyst_out
 
             if not analyst_out:
                 result.errors.append("Analyst failed to produce an assessment")
+                if cfg.show_progress:
+                    progress("  ! analyst failed to produce an assessment")
                 return result
 
             # Step 4: Auditor
-            logger.info("Step 4/4: Running auditor check...")
+            say("Step 4/4: Running auditor check...")
             comparison = await _audit_claim(
                 entity_name, claim_text, analyst_out, result.sources, cfg
             )
@@ -328,6 +357,11 @@ async def verify_claim(
                 accept = await gate.review_disagreement(comparison)
                 if not accept:
                     result.errors.append("Flagged for human review: analyst/auditor disagree")
+                    if cfg.show_progress:
+                        progress("  ! analyst/auditor disagree: flagged for review")
+
+            if cfg.show_progress:
+                progress("Pipeline complete.")
 
     return result
 

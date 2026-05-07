@@ -585,6 +585,7 @@ def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | 
         model=model,
         skip_wayback=skip_wayback,
         researcher_mode=researcher_mode,
+        show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
@@ -598,6 +599,8 @@ def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | 
             resolved_entity = parse_entity_ref(entity, resolve_repo_root())
         except ValueError:
             pass  # fall back to bare name hint; not an error for claim-probe
+
+    progress("Probing claim: %s (%s)", claim, entity)
 
     result = asyncio.run(verify_claim(entity, claim, config, checkpoint, resolved_entity=resolved_entity))
     _print_verify_result(result)
@@ -831,10 +834,13 @@ def claim_refresh(
         repo_root=str(root),
         force_overwrite=True,
         researcher_mode=researcher_mode,
+        show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
     gate = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
+
+    progress("Refreshing %s (model=%s)...", claim_ref, model)
 
     # Run full pipeline; writes are handled below per branch.
     vr = asyncio.run(verify_claim(entity_name, claim_text, cfg, gate, resolved_entity=resolved_entity))
