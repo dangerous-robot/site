@@ -654,21 +654,21 @@ class TestSearchBackendDispatch:
 class TestVerifyConfigSearchBackend:
     """`VerifyConfig.search_backend` reads RESEARCH_SEARCH_BACKEND at construction."""
 
-    def test_default_is_brave(self, monkeypatch) -> None:
+    def test_default_is_tavily(self, monkeypatch) -> None:
         monkeypatch.delenv("RESEARCH_SEARCH_BACKEND", raising=False)
-        from orchestrator.pipeline import VerifyConfig
-        assert VerifyConfig().search_backend == "brave"
-
-    def test_env_var_overrides_default(self, monkeypatch) -> None:
-        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")
         from orchestrator.pipeline import VerifyConfig
         assert VerifyConfig().search_backend == "tavily"
 
+    def test_env_var_overrides_default(self, monkeypatch) -> None:
+        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "brave")
+        from orchestrator.pipeline import VerifyConfig
+        assert VerifyConfig().search_backend == "brave"
+
     def test_explicit_kwarg_wins(self, monkeypatch) -> None:
         """Explicit kwarg should beat the env var (tests can pin behavior)."""
-        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")
+        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "brave")
         from orchestrator.pipeline import VerifyConfig
-        assert VerifyConfig(search_backend="brave").search_backend == "brave"
+        assert VerifyConfig(search_backend="tavily").search_backend == "tavily"
 
 
 @pytest.mark.asyncio
@@ -707,5 +707,5 @@ async def test_decomposed_research_writes_acquisition_trace() -> None:
 
     acquisition = ro.trace.get("acquisition")
     assert isinstance(acquisition, dict)
-    assert acquisition["https://a.com"] == {"stage": "research", "origin": "brave", "query": "q1"}
-    assert acquisition["https://b.com"] == {"stage": "research", "origin": "brave", "query": "q1"}
+    assert acquisition["https://a.com"] == {"stage": "research", "origin": "tavily", "query": "q1"}
+    assert acquisition["https://b.com"] == {"stage": "research", "origin": "tavily", "query": "q1"}

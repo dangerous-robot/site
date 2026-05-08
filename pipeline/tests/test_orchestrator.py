@@ -192,16 +192,16 @@ class TestVerifyConfigPerAgentModels:
 class TestVerifyConfigResearchOrigins:
     """Cover the activation list added for source-pool-expansion-tier1.md."""
 
-    def test_default_is_brave_only(self) -> None:
+    def test_default_is_tavily_only(self) -> None:
         cfg = VerifyConfig()
-        assert cfg.research_origins == ["brave"]
+        assert cfg.research_origins == ["tavily"]
 
     def test_explicit_list_round_trips(self) -> None:
         cfg = VerifyConfig(research_origins=["brave", "arxiv"])
         assert cfg.research_origins == ["brave", "arxiv"]
 
     def test_empty_list_is_valid(self) -> None:
-        """No 'must include brave' guard - empty list permitted for testing."""
+        """No 'must include a backend' guard - empty list permitted for testing."""
         cfg = VerifyConfig(research_origins=[])
         assert cfg.research_origins == []
 
@@ -211,7 +211,7 @@ class TestVerifyConfigResearchOrigins:
         cfg_b = VerifyConfig()
         assert cfg_a.research_origins is not cfg_b.research_origins
         cfg_a.research_origins.append("arxiv")
-        assert cfg_b.research_origins == ["brave"]
+        assert cfg_b.research_origins == ["tavily"]
 
 
 class TestVerifyConfigTimeouts:

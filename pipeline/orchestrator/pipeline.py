@@ -195,19 +195,20 @@ class VerifyConfig:
     # rescued via web.archive.org during the synchronous run.
     skip_wayback: bool = False
     # Per-claim list of acquisition origins to attempt during research.
-    # Default ['brave']; tier1 paths add 'arxiv', 's2', 'openalex', 'edgar',
-    # and the companion plan adds 'tavily'. Values mirror the schema enum on
+    # Default ['tavily']; Brave remains available via search_backend for
+    # per-query fallback. Tier1 paths add 'arxiv', 's2', 'openalex', 'edgar'.
+    # Values mirror the schema enum on
     # audit.sources_consulted[].acquisition.origin. See
     # docs/plans/source-pool-expansion-tier1.md § Rollout order.
-    research_origins: list[str] = field(default_factory=lambda: ["brave"])
+    research_origins: list[str] = field(default_factory=lambda: ["tavily"])
     # Search backend used by the decomposed researcher's `execute_searches`
-    # step. Today: 'brave' (default) or 'tavily'. Read once from
+    # step. Today: 'tavily' (default) or 'brave'. Read once from
     # RESEARCH_SEARCH_BACKEND at construction time; tests can override by
     # passing `search_backend=...` directly. Unknown values fall back to
     # 'brave' with a warning logged in `execute_searches`. See
     # docs/plans/source-pool-expansion-tier1-search-backend.md.
     search_backend: str = field(
-        default_factory=lambda: os.environ.get("RESEARCH_SEARCH_BACKEND", "brave")
+        default_factory=lambda: os.environ.get("RESEARCH_SEARCH_BACKEND", "tavily")
     )
     repo_root: str = ""
     # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
