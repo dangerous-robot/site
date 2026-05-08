@@ -20,6 +20,8 @@ from orchestrator.pipeline import (
     _apply_blocklist_cap,
     _classify_blocked_reason,
     _ingest_one,
+    _record_threshold_block,
+    _summarize_terminal_fetch,
     below_threshold,
     verify_claim,
 )
@@ -289,6 +291,68 @@ class TestThresholdEnforcement:
     def test_classify_blocked_reason_insufficient_when_no_ingest_errors(self) -> None:
         # Researcher returned nothing usable, no ingest attempts made.
         assert _classify_blocked_reason([]) is BlockedReason.INSUFFICIENT_SOURCES
+
+    def test_summarize_terminal_fetch_single_status(self) -> None:
+        errors = [
+            StepError(step="ingest", url=f"https://h{i}", error_type="http_403",
+                      message="forbidden", retryable=False)
+            for i in range(4)
+        ]
+        assert _summarize_terminal_fetch(errors) == "4 URLs (4× http_403)"
+
+    def test_summarize_terminal_fetch_multiple_statuses_sorted_desc(self) -> None:
+        errors = [
+            StepError(step="ingest", url="https://a", error_type="http_403",
+                      message="forbidden", retryable=False),
+            StepError(step="ingest", url="https://b", error_type="http_404",
+                      message="not found", retryable=False),
+            StepError(step="ingest", url="https://c", error_type="http_403",
+                      message="forbidden", retryable=False),
+            StepError(step="ingest", url="https://d", error_type="http_403",
+                      message="forbidden", retryable=False),
+        ]
+        # 3× http_403 dominates; comes first.
+        assert _summarize_terminal_fetch(errors) == "4 URLs (3× http_403, 1× http_404)"
+
+    def test_summarize_terminal_fetch_ignores_non_ingest(self) -> None:
+        errors = [
+            StepError(step="ingest", url="https://a", error_type="http_403",
+                      message="forbidden", retryable=False),
+            StepError(step="research", url=None, error_type="planner_failed",
+                      message="oops"),
+        ]
+        assert _summarize_terminal_fetch(errors) == "1 URLs (1× http_403)"
+
+    def test_record_threshold_block_inserts_histogram_for_terminal(self) -> None:
+        result = VerificationResult(
+            entity="T", claim_text="c", urls_found=[], urls_ingested=[],
+            urls_failed=[], sources=[],
+        )
+        result.errors.append("research planner timed out")
+        ingest_errors = [
+            StepError(step="ingest", url=f"https://h{i}", error_type="http_403",
+                      message="forbidden", retryable=False)
+            for i in range(3)
+        ]
+        _record_threshold_block(result, ingest_errors)
+        assert result.blocked_reason is BlockedReason.TERMINAL_FETCH_ERROR
+        # Histogram is inserted at index 0 so the label builder picks it up.
+        assert result.errors[0] == "3 URLs (3× http_403)"
+        assert "research planner timed out" in result.errors
+
+    def test_record_threshold_block_no_histogram_for_insufficient(self) -> None:
+        result = VerificationResult(
+            entity="T", claim_text="c", urls_found=[], urls_ingested=[],
+            urls_failed=[], sources=[],
+        )
+        ingest_errors = [
+            StepError(step="ingest", url="https://a", error_type="timeout",
+                      message="timed out"),
+        ]
+        _record_threshold_block(result, ingest_errors)
+        assert result.blocked_reason is BlockedReason.INSUFFICIENT_SOURCES
+        # Insufficient_sources path leaves errors untouched.
+        assert result.errors == []
 
     @pytest.mark.asyncio
     async def test_verify_claim_halts_when_one_source_ingested(

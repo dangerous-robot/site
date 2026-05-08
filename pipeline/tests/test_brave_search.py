@@ -69,3 +69,63 @@ class TestBrave429Handling:
                     sleep_mock.return_value = None
                     await search_brave(client, "test query")
         assert sleep_mock.await_args.args[0] == 45.0
+
+
+_EMPTY_RESULT = {"web": {"results": []}}
+
+
+class TestBraveQuotedFallback:
+    @pytest.mark.asyncio
+    async def test_empty_quoted_query_retries_unquoted(self) -> None:
+        """Quoted query with 0 results triggers an unquoted retry."""
+        with respx.mock:
+            route = respx.get(_BRAVE_URL).mock(
+                side_effect=[
+                    httpx.Response(200, json=_EMPTY_RESULT),
+                    httpx.Response(200, json=_RESULT),
+                ]
+            )
+            async with httpx.AsyncClient() as client:
+                results = await search_brave(client, '"Anthropic sustainability report"')
+        assert route.call_count == 2
+        assert route.calls[0].request.url.params["q"] == '"Anthropic sustainability report"'
+        assert route.calls[1].request.url.params["q"] == "Anthropic sustainability report"
+        assert results == [{"url": "https://example.com", "title": "Ex", "snippet": "d"}]
+
+    @pytest.mark.asyncio
+    async def test_empty_unquoted_query_does_not_retry(self) -> None:
+        """No retry when there are no quotes to strip."""
+        with respx.mock:
+            route = respx.get(_BRAVE_URL).mock(
+                return_value=httpx.Response(200, json=_EMPTY_RESULT),
+            )
+            async with httpx.AsyncClient() as client:
+                results = await search_brave(client, "plain query")
+        assert route.call_count == 1
+        assert results == []
+
+    @pytest.mark.asyncio
+    async def test_nonempty_quoted_query_does_not_retry(self) -> None:
+        """A quoted query that already has results is not retried."""
+        with respx.mock:
+            route = respx.get(_BRAVE_URL).mock(
+                return_value=httpx.Response(200, json=_RESULT),
+            )
+            async with httpx.AsyncClient() as client:
+                results = await search_brave(client, '"some title"')
+        assert route.call_count == 1
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_retry_strips_all_quotes(self) -> None:
+        """Mixed/multiple quote characters are all stripped on retry."""
+        with respx.mock:
+            route = respx.get(_BRAVE_URL).mock(
+                side_effect=[
+                    httpx.Response(200, json=_EMPTY_RESULT),
+                    httpx.Response(200, json=_RESULT),
+                ]
+            )
+            async with httpx.AsyncClient() as client:
+                await search_brave(client, '"Anthropic carbon offset" news')
+        assert route.calls[1].request.url.params["q"] == "Anthropic carbon offset news"

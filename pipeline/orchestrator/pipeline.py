@@ -147,11 +147,22 @@ def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
     return BlockedReason.INSUFFICIENT_SOURCES
 
 
+def _summarize_terminal_fetch(ingest_errors: list[StepError]) -> str:
+    """Format terminal fetch failures as ``"4 URLs (3× http_403, 1× http_404)"``."""
+    counts = Counter(e.error_type for e in ingest_errors if e.step == "ingest")
+    parts = ", ".join(
+        f"{n}× {code}" for code, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
+    )
+    return f"{counts.total()} URLs ({parts})"
+
+
 def _record_threshold_block(
     result: VerificationResult, ingest_errors: list[StepError]
 ) -> None:
     """Mark `result` as blocked by the < 4 source threshold and emit logs."""
     result.blocked_reason = _classify_blocked_reason(ingest_errors)
+    if result.blocked_reason == BlockedReason.TERMINAL_FETCH_ERROR:
+        result.errors.insert(0, _summarize_terminal_fetch(ingest_errors))
     msg = (
         f"Claim halted: < 4 usable sources "
         f"(blocked_reason={result.blocked_reason.value})"
@@ -176,7 +187,7 @@ class VerifyConfig:
     ingestor_model: str | None = None
     # target successes to pass to the analyst
     max_sources: int = 8
-    candidate_pool_size: int = 24
+    candidate_pool_size: int = 32
     # Interim default: wayback ON. The wayback-archive-job plan envisions
     # archival as a background job with skip_wayback=True in-pipeline, but
     # until that job lands we want primary sources behind paywalls/blocks
@@ -192,7 +203,7 @@ class VerifyConfig:
     auditor_timeout_s: float = 120.0
     force_overwrite: bool = False
     # Effort lever for decomposed researcher: more queries = wider net.
-    max_initial_queries: int = 5
+    max_initial_queries: int = 7
     # Integer cap for the shared asyncio.Semaphore created at each call site.
     # Never store the Semaphore itself here — it is loop-bound.
     llm_concurrency: int = 8
