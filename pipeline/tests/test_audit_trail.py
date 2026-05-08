@@ -633,6 +633,86 @@ class TestAcquisitionAndToolOutcomes:
         # No research block / no tool_outcomes — both should be tolerated.
         assert "research" not in data or data.get("research") is None
 
+    def test_re_audit_preserves_prior_acquisition(self, tmp_path):
+        """`dr step-audit --write` must not silently drop acquisition data.
+
+        On re-audit the auditor doesn't re-run research, so the rebuilt
+        ``sources_consulted`` list has no ``acquisition`` key. The cli
+        path at ``orchestrator/cli.py`` step_audit reads acquisition off
+        the existing sidecar's ``sources_consulted[]`` and merges it
+        back into ``research_trace["acquisition"]`` so
+        ``_write_audit_sidecar`` can graft per-URL on rewrite. This
+        test exercises that round-trip end-to-end via the writer.
+        """
+        # Step 1: write an initial sidecar with per-URL acquisition.
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        initial_sources = [
+            self._entry("2026/a", "https://a.example", "A"),
+            self._entry("2026/b", "https://b.example", "B"),
+        ]
+        initial_trace = {
+            "mode": "decomposed",
+            "acquisition": {
+                "https://a.example": {"stage": "research", "origin": "tavily", "query": "q1"},
+                "https://b.example": {"stage": "research", "origin": "brave", "query": "q1"},
+            },
+        }
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=initial_sources,
+            agents_run=["researcher"],
+            research_trace=initial_trace,
+        )
+
+        # Sanity: per-URL acquisition is on the sources_consulted entries.
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["sources_consulted"][0]["acquisition"]["origin"] == "tavily"
+        assert data["sources_consulted"][1]["acquisition"]["origin"] == "brave"
+
+        # Step 2: simulate the re-audit read path (mirrors step_audit in cli.py).
+        existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        research_trace = existing.get("research")
+        existing_sources = existing.get("sources_consulted") or []
+        prior_acquisition = {
+            s["url"]: s["acquisition"]
+            for s in existing_sources
+            if isinstance(s, dict) and s.get("url") and isinstance(s.get("acquisition"), dict)
+        }
+        if prior_acquisition and isinstance(research_trace, dict):
+            research_trace = {**research_trace, "acquisition": prior_acquisition}
+
+        # Step 3: rebuild sources_consulted as the auditor would (no
+        # acquisition keys), then rewrite the sidecar.
+        rebuilt_sources = [
+            self._entry("2026/a", "https://a.example", "A"),
+            self._entry("2026/b", "https://b.example", "B"),
+        ]
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=rebuilt_sources,
+            agents_run=["auditor"],
+            research_trace=research_trace,
+        )
+
+        # Step 4: acquisition must survive the re-audit rewrite.
+        rewritten = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        first, second = rewritten["sources_consulted"]
+        assert first["acquisition"] == {
+            "stage": "research", "origin": "tavily", "query": "q1",
+        }
+        assert second["acquisition"] == {
+            "stage": "research", "origin": "brave", "query": "q1",
+        }
+        # And acquisition stayed off the research block (popped + grafted).
+        assert "acquisition" not in (rewritten.get("research") or {})
+
     def test_decomposed_researcher_initialises_trace_keys(self):
         """``decomposed.py`` seeds ``acquisition`` (dict) and
         ``tool_outcomes`` (list) on ``out.trace`` so producer code in

@@ -157,6 +157,18 @@ inv clean      # remove build artifacts
 
 `inv` requires a one-time global install: `uv tool install invoke`. For pipeline operations, use `dr` directly.
 
+### Environment variables
+
+Pipeline behavior is gated by these environment variables. Required vars must be set before running `dr`; optional vars unlock additional behavior.
+
+| Variable | Required | Used by | Notes |
+|----------|----------|---------|-------|
+| `BRAVE_WEB_SEARCH_API_KEY` | Yes (today) | Researcher (`search_brave`) | The default search backend. Mandatory for `dr claim-probe`, `dr claim-draft`, `dr onboard`, etc. |
+| `RESEARCH_SEARCH_BACKEND` | No (default `brave`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
+| `TAVILY_API_KEY` | No | Researcher (`search_tavily`) | Required only when `RESEARCH_SEARCH_BACKEND=tavily`. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
+
+**Tavily data-handling note.** When `RESEARCH_SEARCH_BACKEND=tavily` is set, claim text and entity names are sent to Tavily on each query. The published research is already public, but verify Tavily's retention/reuse posture before flipping the default. The plan at `docs/plans/source-pool-expansion-tier1-search-backend.md` tracks the evaluation that gates a default flip.
+
 ## File Naming
 
 - Use lowercase kebab-case slugs: `openai.md`, `training-data-consent.md`

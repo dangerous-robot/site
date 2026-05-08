@@ -1394,6 +1394,28 @@ def step_audit(
                         existing = _yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
                         research_trace = existing.get("research")
                         sub_questions_block = existing.get("sub_questions")
+                        # Re-graft per-URL `acquisition` from the existing
+                        # sidecar's `sources_consulted[]` back into the
+                        # research_trace so _write_audit_sidecar can graft
+                        # it again on this rewrite. Without this, a re-audit
+                        # silently drops the acquisition data the original
+                        # research run produced (the auditor doesn't re-run
+                        # research). See
+                        # docs/plans/source-pool-expansion-tier1.md
+                        # § Audit-trail acquisition plumbing — known limitation.
+                        existing_sources = existing.get("sources_consulted") or []
+                        prior_acquisition = {
+                            s["url"]: s["acquisition"]
+                            for s in existing_sources
+                            if isinstance(s, dict)
+                            and s.get("url")
+                            and isinstance(s.get("acquisition"), dict)
+                        }
+                        if prior_acquisition and isinstance(research_trace, dict):
+                            research_trace = {
+                                **research_trace,
+                                "acquisition": prior_acquisition,
+                            }
                     except _yaml.YAMLError:
                         pass
                 _write_audit_sidecar(

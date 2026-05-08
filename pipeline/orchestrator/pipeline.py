@@ -23,6 +23,7 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import os
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -199,6 +200,15 @@ class VerifyConfig:
     # audit.sources_consulted[].acquisition.origin. See
     # docs/plans/source-pool-expansion-tier1.md § Rollout order.
     research_origins: list[str] = field(default_factory=lambda: ["brave"])
+    # Search backend used by the decomposed researcher's `execute_searches`
+    # step. Today: 'brave' (default) or 'tavily'. Read once from
+    # RESEARCH_SEARCH_BACKEND at construction time; tests can override by
+    # passing `search_backend=...` directly. Unknown values fall back to
+    # 'brave' with a warning logged in `execute_searches`. See
+    # docs/plans/source-pool-expansion-tier1-search-backend.md.
+    search_backend: str = field(
+        default_factory=lambda: os.environ.get("RESEARCH_SEARCH_BACKEND", "brave")
+    )
     repo_root: str = ""
     # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
     # ``__post_init__`` can pick a default based on ``skip_wayback``. Callers

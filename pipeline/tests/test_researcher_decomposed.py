@@ -100,7 +100,7 @@ async def test_research_planner_cap_enforcement() -> None:
 
     captured_queries: list[list[str]] = []
 
-    async def fake_execute_searches(queries, client):
+    async def fake_execute_searches(queries, client, **_kwargs):
         captured_queries.append(list(queries))
         return []
 
@@ -505,3 +505,207 @@ def test_publisher_quality_in_scorer_prompt() -> None:
         "Expected the literal 'Publisher quality:' label in prompt"
     assert "Publisher quality: forum" in prompt, f"Expected 'Publisher quality: forum' in prompt:\n{prompt}"
     assert "Publisher quality: primary" in prompt, f"Expected 'Publisher quality: primary' in prompt:\n{prompt}"
+
+
+# --------------------------------------------------------------------------- #
+# Search-backend dispatch (RESEARCH_SEARCH_BACKEND)                             #
+# --------------------------------------------------------------------------- #
+
+
+class TestSearchBackendDispatch:
+    """`execute_searches(..., backend=...)` routes to Brave or Tavily.
+
+    Mirrors the contract laid out in
+    ``docs/plans/source-pool-expansion-tier1-search-backend.md``.
+    """
+
+    @pytest.mark.asyncio
+    async def test_default_backend_calls_brave(self) -> None:
+        """No env var, no kw-arg: Brave is called; Tavily is not."""
+        brave_results = [{"url": "https://b.example", "title": "B", "snippet": "from-brave"}]
+        with (
+            patch("researcher.decomposed.search_brave", new=AsyncMock(return_value=brave_results)) as brave_mock,
+            patch("researcher.decomposed.search_tavily", new=AsyncMock(return_value=[])) as tavily_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(["q1"], client)
+        assert brave_mock.await_count == 1
+        assert tavily_mock.await_count == 0
+        assert [c.url for c in candidates] == ["https://b.example"]
+
+    @pytest.mark.asyncio
+    async def test_tavily_backend_calls_tavily(self, monkeypatch) -> None:
+        """`backend='tavily'` routes through search_tavily and stamps origin."""
+        monkeypatch.setenv("TAVILY_API_KEY", "k")
+        tavily_results = [{"url": "https://t.example", "title": "T", "snippet": "from-tavily"}]
+        acquisition: dict[str, dict] = {}
+        with (
+            patch("researcher.decomposed.search_brave", new=AsyncMock(return_value=[])) as brave_mock,
+            patch("researcher.decomposed.search_tavily", new=AsyncMock(return_value=tavily_results)) as tavily_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1"], client, backend="tavily", acquisition_out=acquisition,
+                )
+        assert tavily_mock.await_count == 1
+        assert brave_mock.await_count == 0
+        assert [c.url for c in candidates] == ["https://t.example"]
+        assert acquisition == {
+            "https://t.example": {"stage": "research", "origin": "tavily", "query": "q1"},
+        }
+
+    @pytest.mark.asyncio
+    async def test_unknown_backend_falls_back_to_brave(self) -> None:
+        """An unrecognized value logs and uses Brave; doesn't crash the pipeline."""
+        brave_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+        with (
+            patch("researcher.decomposed.search_brave", new=AsyncMock(return_value=brave_results)) as brave_mock,
+            patch("researcher.decomposed.search_tavily", new=AsyncMock(return_value=[])) as tavily_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(["q1"], client, backend="duckduckgo")
+        assert brave_mock.await_count == 1
+        assert tavily_mock.await_count == 0
+        assert candidates and candidates[0].url == "https://b.example"
+
+    @pytest.mark.asyncio
+    async def test_tavily_failure_falls_back_to_brave_per_query(self, monkeypatch) -> None:
+        """Tavily raising for one query: Brave is called for that query.
+        The acquisition entry records the actual origin (`brave`)."""
+        monkeypatch.setenv("TAVILY_API_KEY", "k")
+        brave_results = [{"url": "https://b.example", "title": "B", "snippet": "fallback"}]
+        acquisition: dict[str, dict] = {}
+        with (
+            patch(
+                "researcher.decomposed.search_tavily",
+                new=AsyncMock(side_effect=RuntimeError("simulated outage")),
+            ),
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=brave_results),
+            ) as brave_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1"], client, backend="tavily", acquisition_out=acquisition,
+                )
+        # Brave handled the fallback; acquisition reflects that.
+        assert brave_mock.await_count == 1
+        assert [c.url for c in candidates] == ["https://b.example"]
+        assert acquisition == {
+            "https://b.example": {"stage": "research", "origin": "brave", "query": "q1"},
+        }
+
+    @pytest.mark.asyncio
+    async def test_tavily_rate_limit_emits_step_error_and_falls_back(self, monkeypatch) -> None:
+        """A TavilyRateLimitError appends a `tavily_rate_limited` StepError
+        and falls back to Brave for that query."""
+        from researcher.tools.tavily import TavilyRateLimitError
+
+        monkeypatch.setenv("TAVILY_API_KEY", "k")
+        brave_results = [{"url": "https://b.example", "title": "B", "snippet": "fallback"}]
+        errors: list[StepError] = []
+        with (
+            patch(
+                "researcher.decomposed.search_tavily",
+                new=AsyncMock(side_effect=TavilyRateLimitError("limit hit")),
+            ),
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=brave_results),
+            ),
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1"], client, backend="tavily", errors_out=errors,
+                )
+        assert [c.url for c in candidates] == ["https://b.example"]
+        rate_errs = [e for e in errors if e.error_type == "tavily_rate_limited"]
+        assert len(rate_errs) == 1
+        assert rate_errs[0].step == "research"
+
+    @pytest.mark.asyncio
+    async def test_tavily_with_no_api_key_falls_back(self, monkeypatch) -> None:
+        """`backend='tavily'` with no key: every query falls back to Brave."""
+        monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+        brave_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+
+        # search_tavily raises RuntimeError("TAVILY_API_KEY is not set")
+        async def _real_tavily(*args, **kwargs):
+            raise RuntimeError("TAVILY_API_KEY is not set")
+
+        acquisition: dict[str, dict] = {}
+        with (
+            patch("researcher.decomposed.search_tavily", new=AsyncMock(side_effect=_real_tavily)),
+            patch("researcher.decomposed.search_brave", new=AsyncMock(return_value=brave_results)) as brave_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1", "q2"], client, backend="tavily", acquisition_out=acquisition,
+                )
+        # Both queries fell back to Brave.
+        assert brave_mock.await_count == 2
+        # All acquisition entries must reflect Brave as origin.
+        assert candidates  # non-empty
+        for entry in acquisition.values():
+            assert entry["origin"] == "brave"
+
+
+class TestVerifyConfigSearchBackend:
+    """`VerifyConfig.search_backend` reads RESEARCH_SEARCH_BACKEND at construction."""
+
+    def test_default_is_brave(self, monkeypatch) -> None:
+        monkeypatch.delenv("RESEARCH_SEARCH_BACKEND", raising=False)
+        from orchestrator.pipeline import VerifyConfig
+        assert VerifyConfig().search_backend == "brave"
+
+    def test_env_var_overrides_default(self, monkeypatch) -> None:
+        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")
+        from orchestrator.pipeline import VerifyConfig
+        assert VerifyConfig().search_backend == "tavily"
+
+    def test_explicit_kwarg_wins(self, monkeypatch) -> None:
+        """Explicit kwarg should beat the env var (tests can pin behavior)."""
+        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")
+        from orchestrator.pipeline import VerifyConfig
+        assert VerifyConfig(search_backend="brave").search_backend == "brave"
+
+
+@pytest.mark.asyncio
+async def test_decomposed_research_writes_acquisition_trace() -> None:
+    """`decomposed_research` populates `out.trace["acquisition"]` with one
+    `{stage, origin, query}` entry per kept URL. Load-bearing for the
+    audit-sidecar graft in `_write_audit_sidecar`."""
+    cfg = _make_cfg(max_initial_queries=2)
+
+    async def fake_execute(queries, client, *, backend, acquisition_out, errors_out):
+        # Simulate the dispatcher writing into acquisition_out.
+        acquisition_out["https://a.com"] = {"stage": "research", "origin": backend, "query": queries[0]}
+        acquisition_out["https://b.com"] = {"stage": "research", "origin": backend, "query": queries[0]}
+        return [
+            SearchCandidate(url="https://a.com", title="A", snippet="a", from_query=queries[0]),
+            SearchCandidate(url="https://b.com", title="B", snippet="b", from_query=queries[0]),
+        ]
+
+    fake_plan = _plan(["q1"], "ok")
+    fake_scored = ScoredURLs(
+        kept=[
+            ScoredCandidate(url="https://a.com", addresses=["sq1"]),
+            ScoredCandidate(url="https://b.com", addresses=["sq1"]),
+        ],
+        dropped=[],
+        rationale="all good",
+    )
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
+        patch("researcher.decomposed.execute_searches", side_effect=fake_execute),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            ro = await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+
+    acquisition = ro.trace.get("acquisition")
+    assert isinstance(acquisition, dict)
+    assert acquisition["https://a.com"] == {"stage": "research", "origin": "brave", "query": "q1"}
+    assert acquisition["https://b.com"] == {"stage": "research", "origin": "brave", "query": "q1"}

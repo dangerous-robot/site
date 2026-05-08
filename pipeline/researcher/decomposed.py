@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from typing import TYPE_CHECKING
 
 import httpx
@@ -23,6 +24,12 @@ from researcher.scorer import (
     build_scorer_prompt,
     url_scorer_agent,
 )
+from researcher.tools.tavily import TavilyRateLimitError, search_tavily
+
+# Backends that ``execute_searches`` knows how to dispatch to. Unknown
+# values fall back to Brave with a logged warning so a typo can't silently
+# stop the pipeline. Keep in sync with VerifyConfig.search_backend.
+_KNOWN_BACKENDS: frozenset[str] = frozenset({"brave", "tavily"})
 
 if TYPE_CHECKING:
     from orchestrator.pipeline import VerifyConfig
@@ -51,20 +58,98 @@ def _research_err(error_type: str, message: str) -> StepError:
     return StepError(step="research", error_type=error_type, message=message)
 
 
+async def _dispatch_one_query(
+    client: httpx.AsyncClient,
+    query: str,
+    backend: str,
+    errors_out: list[StepError] | None,
+) -> tuple[list[dict], str]:
+    """Run a single query against ``backend`` with per-query Brave fallback.
+
+    Returns ``(results, origin_used)`` where ``origin_used`` is the
+    backend that actually produced the results (so the acquisition
+    trace reflects reality when Tavily falls back to Brave).
+
+    Per the plan: the Tavily path falls back to Brave for that query
+    when ``TAVILY_API_KEY`` is unset, when the call raises, or when
+    Tavily is rate-limited. ``StepError(error_type="tavily_rate_limited")``
+    is appended to ``errors_out`` so the orchestrator can surface the
+    quota event without halting the run.
+    """
+    if backend == "tavily":
+        try:
+            results = await search_tavily(client, query)
+            return results, "tavily"
+        except TavilyRateLimitError as exc:
+            logger.warning("Tavily rate-limited for %r; falling back to Brave", query)
+            if errors_out is not None:
+                errors_out.append(
+                    _research_err(
+                        "tavily_rate_limited",
+                        f"Tavily rate-limited for query {query!r}: {exc}",
+                    )
+                )
+        except RuntimeError as exc:
+            # Most commonly: TAVILY_API_KEY is not set. We've already
+            # logged that condition once at startup; per-query log is
+            # debug to avoid noise across N queries.
+            logger.debug("Tavily unavailable for %r (%s); falling back to Brave", query, exc)
+        except Exception as exc:
+            logger.warning("Tavily search failed for %r (%s); falling back to Brave", query, exc)
+
+        # Per-query fallback to Brave. Stamp acquisition.origin="brave"
+        # for these results so the audit trail shows the actual origin.
+        results = await search_brave(client, query)
+        return results, "brave"
+
+    # Default / "brave" path.
+    results = await search_brave(client, query)
+    return results, "brave"
+
+
 async def execute_searches(
     queries: list[str],
     client: httpx.AsyncClient,
+    *,
+    backend: str = "brave",
+    acquisition_out: dict[str, dict] | None = None,
+    errors_out: list[StepError] | None = None,
 ) -> list[SearchCandidate]:
-    """Fan out Brave searches for all queries; deduplicate by canonical URL.
+    """Fan out web searches for all queries; deduplicate by canonical URL.
 
     The dedup key is the canonical form (lowercased host, default ports
     stripped, sorted query, dropped tracking params and fragment) so
     obvious duplicates (``http`` vs ``https`` aside) collapse to one
     candidate. The original URL is preserved on the SearchCandidate.
     Unparseable URLs are skipped rather than raising.
+
+    ``backend`` selects between ``"brave"`` (default) and ``"tavily"``.
+    Unknown values log a warning and fall back to Brave. When the
+    backend is ``"tavily"``, individual queries fall back to Brave on
+    Tavily failures; the per-URL ``acquisition`` map records which
+    backend actually produced each kept URL.
+
+    When ``acquisition_out`` is provided, the dispatcher writes one
+    entry per kept URL: ``{stage: "research", origin, query}``. The
+    caller is the audit-sidecar producer (``decomposed_research``).
     """
+    selected = backend
+    if selected not in _KNOWN_BACKENDS:
+        logger.warning(
+            "Unknown RESEARCH_SEARCH_BACKEND=%r; falling back to 'brave'",
+            selected,
+        )
+        selected = "brave"
+
+    if selected == "tavily" and not os.environ.get("TAVILY_API_KEY"):
+        # One log line at the boundary, not one per query.
+        logger.warning(
+            "RESEARCH_SEARCH_BACKEND=tavily but TAVILY_API_KEY is unset; "
+            "every query will fall back to Brave"
+        )
+
     raw_results = await asyncio.gather(
-        *[search_brave(client, q) for q in queries],
+        *[_dispatch_one_query(client, q, selected, errors_out) for q in queries],
         return_exceptions=True,
     )
     seen: set[str] = set()
@@ -73,7 +158,8 @@ async def execute_searches(
         if isinstance(result, Exception):
             logger.warning("Search failed for query %r: %s", query, result)
             continue
-        for item in result:
+        items, origin_used = result
+        for item in items:
             url = item.get("url", "")
             if not url:
                 continue
@@ -92,6 +178,12 @@ async def execute_searches(
                 from_query=query,
                 publisher_quality=classify_url_publisher_quality(url),
             ))
+            if acquisition_out is not None:
+                acquisition_out[url] = {
+                    "stage": "research",
+                    "origin": origin_used,
+                    "query": query,
+                }
     return candidates
 
 
@@ -155,7 +247,13 @@ async def decomposed_research(
         out.errors.append(_research_err("no_queries", "Research planner returned no queries"))
         return out
 
-    candidates = await execute_searches(queries, client)
+    candidates = await execute_searches(
+        queries,
+        client,
+        backend=cfg.search_backend,
+        acquisition_out=out.trace["acquisition"],
+        errors_out=out.errors,
+    )
     out.trace["candidates_seen"] = len(candidates)
     logger.info("Search executor: %d unique candidates from %d queries", len(candidates), len(queries))
 
