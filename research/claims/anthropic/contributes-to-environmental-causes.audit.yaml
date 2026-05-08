@@ -1,0 +1,134 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T19:04:43.801955+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  queries:
+  - '"Anthropic sustainability report"'
+  - Anthropic environmental initiatives
+  - '"Anthropic carbon neutrality pledge"'
+  - Anthropic climate commitment
+  - Anthropic green AI research
+  - Anthropic renewable energy usage
+  - Anthropic ESG rating
+  planner_rationale: The sub‑questions together cover first‑party disclosures, formal
+    climate pledges, concrete technical practices, and third‑party evaluations, ensuring
+    a comprehensive assessment of the claim that Anthropic contributes to environmental
+    causes. The seven concise Brave queries are allocated across these axes while
+    respecting query‑format constraints.
+  candidates_seen: 47
+  urls_kept: 15
+  urls_dropped: 33
+  scorer_rationale: Candidates were scored against the four sub‑questions using only
+    titles and snippets. Primary‑source pages from anthropic.com that announce sustainability
+    programmes, energy‑price mitigation, or carbon‑offset pledges were given high
+    scores for sq1‑sq3. Independent ESG or news articles (Fast Company, Reuters, CFA
+    Institute, Energy Digital, SiliconANGLE, DitchCarbon, Credo AI, Marketscreener)
+    received scores for sq4 and, where they mention concrete practices or commitments,
+    also for sq2‑sq3. Any result scoring <3 on every sub‑question was dropped, including
+    generic company profiles, unrelated scientific papers, and all URLs listed in
+    the Avoid list (Wikipedia). This yields 16 kept sources that collectively address
+    the claim from first‑party disclosures, announced commitments, concrete green‑AI
+    actions, and third‑party assessments.
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: What environmental sustainability initiatives does Anthropic disclose
+    on its own channels?
+  rationale: Covers first‑party publications such as sustainability pages, reports,
+    or blog posts.
+  queries:
+  - '"Anthropic sustainability report"'
+  - Anthropic environmental initiatives
+  citations:
+  - 2025/build-ai-in-america-energy-report
+  - 2025/investing-energy-america-ai-future
+  - 2026/covering-electricity-price-increases
+- id: sq2
+  question: Has Anthropic announced any climate or carbon‑offset commitments?
+  rationale: Targets public statements, press releases, or partnership announcements
+    about climate goals.
+  queries:
+  - '"Anthropic carbon neutrality pledge"'
+  - Anthropic climate commitment
+  citations:
+  - 2025/investing-energy-america-ai-future
+  - 2026/covering-electricity-price-increases
+  - 2026/anthropic-claude
+- id: sq3
+  question: What specific green AI or renewable‑energy practices has Anthropic implemented
+    in its operations or research?
+  rationale: Looks for concrete technical or operational actions (e.g., renewable
+    data‑center power, low‑carbon model training).
+  queries:
+  - Anthropic green AI research
+  - Anthropic renewable energy usage
+  citations:
+  - 2025/build-ai-in-america-energy-report
+  - 2024/anthropicclaude203html
+  - 2026/covering-electricity-price-increases
+  - 2026/anthropic-vows-protect-consumers-rising-electricity-costs
+- id: sq4
+  question: How do independent ESG or news sources describe Anthropic's contributions
+    to environmental causes?
+  rationale: Collects third‑party assessments, ESG ratings, and media coverage of
+    Anthropic’s environmental impact.
+  queries:
+  - Anthropic ESG rating
+  citations:
+  - 2024/hidden-environmental-costs-tech-ai-investments
+  - 2026/anthropic-claude
+  - 2026/anthropic-vows-protect-consumers-rising-electricity-costs
+sources_consulted:
+- id: 2025/build-ai-in-america-energy-report
+  url: https://www.anthropic.com/news/build-ai-in-america
+  title: 'Build AI in America: Anthropic Energy Report'
+  ingested: true
+- id: 2025/investing-energy-america-ai-future
+  url: https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
+  title: Investing in energy to secure America's AI future
+  ingested: true
+- id: 2024/hidden-environmental-costs-tech-ai-investments
+  url: https://blogs.cfainstitute.org/investor/2024/10/31/the-hidden-environmental-costs-of-tech-giants-ai-investments/
+  title: The Hidden Environmental Costs of Tech Giants’ AI Investments
+  ingested: true
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
+  ingested: true
+- id: 2026/covering-electricity-price-increases
+  url: https://www.anthropic.com/news/covering-electricity-price-increases
+  title: Covering electricity price increases from our data centers
+  ingested: true
+- id: 2026/anthropic-claude
+  url: https://www.credo.ai/ai-vendor-directory/anthropic-claude
+  title: Anthropic Claude
+  ingested: true
+- id: 2026/anthropic-vows-protect-consumers-rising-electricity-costs
+  url: https://siliconangle.com/2026/02/11/anthropic-vows-protect-consumers-rising-electricity-costs/
+  title: Anthropic vows to protect consumers from rising electricity costs
+  ingested: true
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

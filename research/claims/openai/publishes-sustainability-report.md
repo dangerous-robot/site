@@ -1,28 +1,19 @@
 ---
 title: OpenAI publishes a sustainability or ESG report
 entity: companies/openai
-topics:
-- environmental-impact
+topics: [environmental-impact]
 verdict: 'false'
-confidence: high
-verification_level: partially-verified
-takeaway: OpenAI does not publish a sustainability or ESG report, which limits transparency
-  about its environmental and social impact.
+confidence: low
+verification_level: self-reported
+cap_rationale: Confidence is capped at low – all available evidence (sources 1–4,
+  6, 8, 9) originate from OpenAI reporting, community output, or assessments that
+  don’t cite any original corporate publication of an ESG report.
+takeaway: ''
 seo_title: ''
 criteria_slug: publishes-sustainability-report
-status: published
-as_of: '2026-05-05'
-sources:
-- 2025/environmental-impact-of-ai
-- 2025/irdo-2025-poster-63
-- 2026/openai-brand-impact
-- 2026/openai-nonprofit-commission-report
-- 2023/sustainable-development-and-ai
-- 2026/open-ai-sustainability
-- 2026/openai-trust-portal
-- 2024/hidden-environmental-costs-tech-ai-investments
-- 2025/explained-generative-ai-environmental-impact-0117
-tags:
-- highlight
+status: draft
+as_of: '2026-05-07'
+sources: []
+tags: []
 ---
-Available evidence shows that OpenAI has not released a formal sustainability or ESG report. An independent analysis by The Sustainable Innovation notes that OpenAI has published zero verified Scope 1, 2, or 3 emissions figures as of March 2026, indicating the absence of a disclosed sustainability report. No other source provides a public ESG or sustainability report from OpenAI, and the company’s own documentation (e.g., the OpenAI Nonprofit Commission Report) does not address ESG disclosures.
+OpenAI publishes technical reports and community forums discussing environmental impact but lacks a publicly accessible ESG report on its website or transparency channels. Community forums and developer pages discuss sustainability but provide no form of official structured reporting. A sustainability error shared in source 7 claims that OpenAI has failed to publish verified Scope 1, 2, or 3 emissions. Source 8 notes that the impact of private partnerships like OpenAI's relationship with Microsoft raises concerns over accountability, highlighting the absence of direct disclosures by OpenAI itself. Sources 1–4 are from within OpenAI or by the developer community, making them first-party references. Source 7, an independent analysis, specifically criticizes OpenAI for lacking transparent sustainability metrics. Source 9 is an independently verified scoring tool showing insufficient transparency but requires a browser interaction not currently supported.

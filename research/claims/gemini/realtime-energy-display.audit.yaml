@@ -1,0 +1,153 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:52:54.897996+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Gemini Google real-time energy usage feature
+  - Gemini AI energy consumption transparency site:gemini.google.com
+  - ‘Gemini AI’ energy monitoring third-party validation
+  - Google generative AI live energy dashboard report
+  - Google Gemini energy API or backend documentation
+  planner_rationale: To validate the claim ‘Gemini displays real-time energy usage’,
+    we audit Google’s first-party disclosures, third-party scrutiny, and technical
+    transparency.
+  candidates_seen: 13
+  urls_kept: 11
+  urls_dropped: 2
+  scorer_rationale: '#### Kept Candidates (Scores >=4 on at least one sub-question):
+
+
+    **sq1 (Official Google documentation or blogs):**
+
+    - Most third-party news/secondary sources (Technology Review, Axios, Medium, DCD,
+    Adi Analytics, edie, CBS News, arXiv preprint) mention Google’s self-reported
+    energy data for Gemini, scoring **5** (primary-evidence-like since Google provided
+    data, and these are prominent third-party repetitions).
+
+    - Google Cloud blog and Gemini Support thread score **5** as primary sources (Google’s
+    own documentation/blogs).
+
+
+    **sq2 (Third-party assessments):**
+
+    - The arXiv paper (an independent academic preprint) scores **5** (professional,
+    authority-driven assessment of Google’s data, aligning with validation rationales).
+    Other secondary sources (e.g., Technology Review Downtload) discuss transparency
+    but lack assessive depth, scoring **4**.
+
+
+    **sq3 (Technical backend):**
+
+    - The Google Cloud blog’s snippet about methodology (‘*Measuring the environmental
+    impact of AI inference*’) hints at technical pipelines, scoring **4** (technical
+    details implied).
+
+
+    #### Dropped Candidates:
+
+
+    1. **Reddit post (forum):** Focused on comparative energy efficiency discussions,
+    not on Gemini’s specific real-time/display claims. Publisher quality `forum` caps
+    its score at **3**, non-overlapping with sub-questions.
+
+    2. **Google Cloud generative AI page:** Irrelevant snippet about dashboarding/reporting,
+    not tied to Gemini or energy specifics. Scores **1** across all questions.
+
+
+    #### Entity Disambiguation/Rules:
+
+    - No candidates for `gemini.com`, `deepmind.google`, or `gemini.google` were present.
+
+    - '
+  urls_after_blocklist: 11
+sub_questions:
+- id: sq1
+  question: Does Google’s official documentation or blog for Gemini mention real-time
+    energy monitoring or transparency features?
+  rationale: First-party publications like official docs and blogs are authoritative
+    sources for self-reported capabilities like energy usage display.
+  queries:
+  - Gemini Google real-time energy usage feature
+  - Gemini AI energy consumption transparency site:gemini.google.com
+  citations:
+  - 2025/google-gemini-ai-energy
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/the-real-energy-cost-of-ai-lessons-from-google
+  - 2026/ai-environment-impact-study-energy-usage-google-gemini-prompt
+  - 2025/the-download-googles-ai-energy-expenditure-and-handing-over-dna-data-to-the-police
+  - 2026/gemini-usage
+  - 2025/250815734v1
+- id: sq2
+  question: Are there third-party assessments (e.g., green tech reviews, sustainability
+    reports) evaluating Gemini’s energy transparency or live energy metrics?
+  rationale: Third-party sources can validate or challenge claims about real-time
+    energy usage without bias from the developer.
+  queries:
+  - ‘Gemini AI’ energy monitoring third-party validation
+  - Google generative AI live energy dashboard report
+  citations:
+  - 2025/250815734v1
+- id: sq3
+  question: What technical backend or data pipelines (e.g., Google Cloud, on-device
+    inference) power Gemini’s energy reporting, if any?
+  rationale: Understanding the technical mechanism clarifies whether real-time energy
+    tracking is feasible or implied.
+  queries:
+  - Google Gemini energy API or backend documentation
+  citations:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+sources_consulted:
+- id: 2025/google-gemini-ai-energy
+  url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy/
+  title: In a first, Google has released data on how much energy an AI prompt uses
+  ingested: true
+- id: 2025/measuring-the-environmental-impact-of-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference/
+  title: Measuring the environmental impact of AI inference
+  ingested: true
+- id: 2025/the-real-energy-cost-of-ai-lessons-from-google
+  url: https://adi-analytics.com/2025/08/27/the-real-energy-cost-of-ai-lessons-from-google/
+  title: 'The real energy cost of AI: Lessons from Google'
+  ingested: true
+- id: 2026/ai-environment-impact-study-energy-usage-google-gemini-prompt
+  url: https://www.cbsnews.com/news/ai-environment-impact-study-energy-usage-google-gemini-prompt/
+  title: What's the environmental cost of an AI text prompt? Google says it has an
+    answer
+  ingested: true
+- id: 2025/the-download-googles-ai-energy-expenditure-and-handing-over-dna-data-to-the-police
+  url: https://www.technologyreview.com/2025/08/22/1122350/the-download-googles-ai-energy-expenditure-and-handing-over-dna-data-to-the-police/
+  title: Google’s AI energy expenditure, and handing over DNA data to the police
+  ingested: true
+- id: 2026/gemini-usage
+  url: https://support.google.com/gemini/thread/314919607/gemini-usage?hl=en
+  title: Gemini usage
+  ingested: true
+- id: 2025/250815734v1
+  url: https://arxiv.org/html/2508.15734v1
+  title: Measuring the environmental impact of delivering AI at Google Scale
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

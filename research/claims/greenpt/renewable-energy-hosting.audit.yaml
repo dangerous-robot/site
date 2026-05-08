@@ -1,0 +1,146 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-07T23:57:03.705638+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - GreenPT.com hosting renewable energy
+  - GreenPT transparency report energy sources
+  - GreenPT hosting provider 2024
+  planner_rationale: The sub-questions cover first-party claims, technical mechanisms
+    (hosting provider), and third-party validations to comprehensively address the
+    renewable energy claim for GreenPT.
+  candidates_seen: 22
+  urls_kept: 7
+  urls_dropped: 15
+  scorer_rationale: "The scoring rationale for each candidate is as follows:\n\n1.\
+    \ **`kept` candidates:**\n   - **GreenPT website pages** (`greenpt.com`, `/sustainability`,\
+    \ `/european-ai`, `/business`, `/government/`): All explicitly address `sq1` (renewable\
+    \ energy hosting claims) as part of their official content. Pages like `/sustainability`\
+    \ and the homepage also include references to **ISO certifications**, directly\
+    \ addressing **sq3**. Only the homepage includes the **hosting provider (Scaleway)**\
+    \ and its certifications (`sq2`, `sq3`). This aligns with the official website's\
+    \ governance and provides **primary-source evidence**. \n   - **AI World article**:\
+    \ Mentions **sustainable hosting powered by renewable energy** and explicitly\
+    \ associates GreenPT with renewable infrastructure (**sq1**), and cites industry\
+    \ coverage, making it relevant to **sq4**. Scores as a high-quality **secondary\
+    \ source**. \n   - **ProductCool profile**: Focuses on **sustainability certifications**\
+    \ (e.g., compliance tools), likely confirming third-party sustainability reports\
+    \ (**sq3**), though this is borderline secondary evidence.\n\n2. **`dropped` candidates:**\n\
+    \   - **Avoided entities**: `apps.apple.com` (e.g., App Store page) or unrelated\
+    \ hosts like `account.greenpt.ai` or `camillapang.substack.com` were excluded\
+    \ recognizably. The App Store page was dropped due to being tangential and unable\
+    \ to provide sub-question-specific evidence.\n   - **Generic green hosting comparisons**:\
+    \ Pages like TechRadar, GreenGeeks, and hosting guides discuss **general green\
+    \ hosting trends** but do not explicitly link **GreenPT to verified renewable\
+    \ energy hosting** or its hosting provider. These fall below the **sq3/sq4 clarity\
+    \ threshold**. No certifications or primary source context exists here.\n   -\
+    \ **Deprecated or unrelated topics**: The `EITI`, `IEF documents`, and `Green-E\
+    \ certification` definitions lack **direct mentions of GreenPT** as their entities\
+    \ or reporting period cover generic energy transparency rather than GreenPT’s\
+    \ hosting. Competitive scaffolding articles or discussions in niche forums (e.g.,\
+    \ Reddit) repeated these gaps.\n   - **Hosting provider—but wrong entity**: The\
+    \ **20i.com** guide, covered another provider entirely; no GreenPT association\
+    \ existed.\n   - **Scholarly/academic sources**: Articles on energy sustainability\
+    \ or ESG reporting in **MDPI/journals** only indirectly discussed European energy\
+    \ companies’ transparency, providing a **negligible symbolic** or no direct disclosure\
+    \ link to GreenPT’s hosting."
+  urls_after_blocklist: 7
+sub_questions:
+- id: sq1
+  question: Does GreenPT explicitly state its use of renewable energy or carbon-neutral
+    hosting on its official website or transparency reports?
+  rationale: First-party claims are critical for evaluating transparency about renewable
+    energy usage.
+  queries:
+  - GreenPT.com hosting renewable energy
+  - GreenPT transparency report energy sources
+  citations:
+  - 2025/greenpt
+  - 2025/sustainability
+  - 2026/european-ai
+  - 2025/business
+  - 2025/greenpt-government-ai
+  - 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+- id: sq2
+  question: Has GreenPT disclosed its hosting provider or data center in any public
+    documentation?
+  rationale: Identifying the hosting provider provides a factual basis for verifying
+    renewable energy claims.
+  queries:
+  - GreenPT hosting provider 2024
+  citations:
+  - 2025/greenpt
+- id: sq3
+  question: Are there third-party certifications or sustainability reports (e.g.,
+    ISO 14001, EPA Green Power, EU Energy Efficiency Label) associated with GreenPT
+    or its hosting provider?
+  rationale: Third-party validations strengthen claims of renewable energy usage in
+    hosting.
+  queries: []
+  citations:
+  - 2025/greenpt
+  - 2025/sustainability
+  - 2026/greenpt-ai-chat-platform
+- id: sq4
+  question: Do industry databases (e.g., ESG databases, cloud provider sustainability
+    reports) or media reports mention GreenPT’s or its hosting provider’s use of renewable
+    energy?
+  rationale: Aggregated data from external sources can independently validate renewable
+    energy claims.
+  queries: []
+  citations:
+  - 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+sources_consulted:
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
+  ingested: true
+- id: 2025/sustainability
+  url: https://greenpt.com/sustainability/
+  title: Sustainable, Efficient and Renewable-Powered
+  ingested: true
+- id: 2026/european-ai
+  url: https://greenpt.com/european-ai/
+  title: European AI
+  ingested: true
+- id: 2025/business
+  url: https://greenpt.com/business/
+  title: AI with Privacy and EU Hosting for businesses
+  ingested: true
+- id: 2025/greenpt-government-ai
+  url: https://greenpt.com/government/
+  title: Secure & Sustainable AI chat for governments
+  ingested: true
+- id: 2026/greenpt-ai-chat-platform
+  url: https://www.productcool.com/product/greenpt-ai-chat-platform
+  title: GreenPT
+  ingested: true
+- id: 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  url: https://aiworld.eu/story/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  title: GreenPT builds AI chat platform on European renewable infrastructure
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

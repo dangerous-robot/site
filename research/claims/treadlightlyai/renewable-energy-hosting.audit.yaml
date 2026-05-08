@@ -1,0 +1,152 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T00:45:41.931753+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - TreadLightlyAI sustainability report hosting energy
+  - TreadLightlyAI hosting provider
+  - TreadLightlyAI energy renewal hosting policy
+  - '[ProviderName] data center renewable energy'
+  planner_rationale: The sub-questions cover first-party transparency (sq1), technical
+    mechanism (sq2), and third-party verification (sq3) to triangulate the renewable
+    energy hosting claim.
+  candidates_seen: 32
+  urls_kept: 11
+  urls_dropped: 22
+  scorer_rationale: "### Scoring Details and Rationale\n\n**Kept Candidates:**\n\n\
+    1. **Hosting Provider & Renewable Energy Documentation (sq3):**\n   - **Google\
+    \ Data Centers** (*primary*): Directly addresses sq3 with explicit documentation\
+    \ of Google's renewable energy efforts and operational sustainability policies\
+    \ (e.g., solar power, net-zero goals, and sustainable construction). This is a\
+    \ **direct** and **primary-source-like** validation of renewable-hosting guarantees.\n\
+    \n   - **Department of Energy** (*secondary*): Clearly relevant to sq3, addressing\
+    \ renewable energy solutions for data centers. While not a primary host, it provides\
+    \ foundational regulatory frameworks for evaluating providers' renewable energy\
+    \ practices.\n\n   - **AES** (*secondary*): Explicitly discusses renewable energy\
+    \ solutions for hyperscale data centers, including widespread solar and storage\
+    \ projects. This directly aligns with sq3 by focusing on providers guaranteeing\
+    \ renewable energy usage.\n\n   - **IREN** (*secondary*): Explicitly states its\
+    \ data centers run on 100% renewable power and lists AI/cloud services. This directly\
+    \ answers sq2 (hosting provider) and sq3 (renewable guarantees).\n\n   - **Uptime\
+    \ Institute** (*secondary*): Details best practices and instruments (e.g., power\
+    \ purchase agreements) for procuring renewable energy in data centers, directly\
+    \ informing sq3's scope for providers. Relevance: 4 (high clarity on provider-level\
+    \ commitments).\n\n2. **Hosting Provider Identification (sq2):**\n   - **HostAdvice\
+    \ TIAAI Hosting List**, **Tiiny Host**, **Northflank**, **Beam.cloud**, and **SiliconFlow**\
+    \ (*secondary*): All reference major providers like AWS, GCP, Azure, or specialized\
+    \ AI hosts, indirectly answering sq2. While not specific to TreadLightlyAI, they\
+    \ list platforms that **could** host AI tools. Given the absence of direct TreadLightlyAI\
+    \ provider disclosure (sq1), these are mapped to sq2 for broader hosting insight.\n\
+    \n3. **Transparency-Negative Hits (sq1):**\n   - The **TreadLightlyAI register\
+    \ page** (*secondary*) is kept due to its affiliation with the official domain\
+    \ and potential indirect transparency relevance (e.g., surfacing policy links).\
+    \ However, **no explicit sustainability/hosting phrasing** appears in the snippet,\
+    \ leaving it as a low-relevance candidate scoring only for sq1 due to publisher\
+    \ quality.\n\n**Dropped Candidates:**\n\n1. **Forum/Non-Entity References**:\n\
+    \   - All **treadlightly.org**-related URLs and **Reddit/Q&A/disccourse** (e.g.,\
+    \ webhosting thread) were flagged for `Avoid results about` or irrelevance (tread-lightlyരം\
+    \ organization).\n\n2. **Indirect/Non-Specific References**:\n   - **Brookings,\
+    \ Bloomberg/IBTimes, Brookings, Trenda**: Focus on AI/energy trends or unrelated\
+    \ entities (e.g., OpenAI, Microsoft). These lack provider-provider specificity\
+    \ or direct ties to TreadLightlyAI.\n\n3. **AI Hosting Lists Without Provider**\n\
+    \   - Precisely scored forum/scraper cull (`forum` tier) or lacking direct ties\
+    \ to TreadLightlyAI. General AI/blogging hosts (e.g., WordPress with generic AI\
+    \ links) are tossed.\n\n### Entity Disambiguation Notes\n- All `treadlightly.org`,\
+    \ `.com.au`, and non-`.ai` domains were marked as **ineligible** due to organizational\
+    \ disambiguation (not TreadLightly.AI).\n- **Tiiny Host** and **hostadvice.com**\
+    \ candidates were kept only where generic `sq2` relevance justified despite not\
+    \ disclosing TreadLightlyAI’s exact host. This preserves leads for **direct provider\
+    \ sourcing**."
+  urls_after_blocklist: 11
+sub_questions:
+- id: sq1
+  question: What transparency reports or sustainability disclosures does TreadLightlyAI
+    publish regarding its hosting provider and energy sources?
+  rationale: Determines if TreadLightlyAI proactively discloses its renewable energy
+    hosting arrangements via first-party channels.
+  queries:
+  - TreadLightlyAI sustainability report hosting energy
+  - TreadLightlyAI energy renewal hosting policy
+  citations:
+  - 2026/register
+- id: sq2
+  question: Which hosting provider does TreadLightlyAI use for its AI tool?
+  rationale: Identifies the intermediate entity responsible for infrastructure, including
+    energy sourcing.
+  queries:
+  - TreadLightlyAI hosting provider
+  citations:
+  - 2026/iren-data-centers
+  - 2025/ai-hosting
+  - 2025/ai-hosting-platforms
+- id: sq3
+  question: Does the hosting provider of TreadLightlyAI explicitly guarantee or document
+    renewable energy usage for its data centers?
+  rationale: Verifies whether the provider's own policies align with the claim, leveraging
+    third-party provider disclosures.
+  queries:
+  - '[ProviderName] data center renewable energy'
+  citations:
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/operating-sustainably
+  - 2026/technology-and-data-centers
+  - 2026/iren-data-centers
+  - 2026/renewable-energy-for-data-centers
+sources_consulted:
+- id: 2026/register
+  url: https://treadlightly.ai/register/
+  title: Sign Up
+  ingested: true
+- id: 2026/clean-energy-resources-meet-data-center-electricity-demand
+  url: https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
+  title: Clean Energy Resources to Meet Data Center Electricity Demand
+  ingested: true
+- id: 2026/operating-sustainably
+  url: https://datacenters.google/operating-sustainably/
+  title: Operating sustainably
+  ingested: true
+- id: 2026/technology-and-data-centers
+  url: https://www.aes.com/industries/technology-and-data-centers
+  title: Technology & Data Centers
+  ingested: true
+- id: 2026/iren-data-centers
+  url: https://iren.com/
+  title: Next-Gen Data Centers for AI, HPC & Sustainable Compute
+  ingested: true
+- id: 2025/ai-hosting
+  url: https://tiiny.host/blog/ai-hosting/
+  title: Top AI Hosting Platforms in 2026
+  ingested: true
+- id: 2026/renewable-energy-for-data-centers
+  url: https://uptimeinstitute.com/renewable-energy-for-data-centers
+  title: Renewable Energy for Data Centers
+  ingested: true
+- id: 2025/ai-hosting-platforms
+  url: https://northflank.com/blog/ai-hosting-platforms
+  title: Top 9 AI hosting platforms for your stack in 2026
+  ingested: true
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

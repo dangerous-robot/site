@@ -1,0 +1,152 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:49:49.755332+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Google Gemini sustainability report energy sourcing
+  - Google Gemini environmental impact disclosures
+  - Gemini AI energy mix disclosureDatabase
+  - Gemini Google carbon footprint tea data center
+  planner_rationale: The sub-questions collectively cover first-party disclosures
+    (sq1), third-party verification (sq2), and technical infrastructure (sq3), ensuring
+    a comprehensive evaluation of the energy sourcing claim.
+  candidates_seen: 17
+  urls_kept: 13
+  urls_dropped: 4
+  scorer_rationale: 'Scoring breakdown:
+
+
+    **Kept:**
+
+    1. **sq1 (Google sustainability/environmental reports):** Primary-source candidates
+    such as Google''s [official technical report](https://services.google.com/fh/files/misc/measuring_the_environmental_impact_of_delivering_ai_at_google_scale.pdf)
+    and [blog post](https://blog.google/company-news/outreach-and-initiatives/sustainability/google-ai-energy-efficiency/)
+    directly reference Gemini''s energy sourcing within sustainability contexts. Secondary
+    sources like [DevSustainability](https://www.devsustainability.com/p/the-environmental-impact-of-google),
+    [Edie.net](https://www.edie.net/google-shares-new-data-on-energy-consumption-of-gemini-ai-prompts/),
+    and [The Verge](https://www.theverge.com/2024/7/2/24190874/google-ai-climate-change-carbon-emissions-rise)
+    cite Google''s reports or data, earning a 4.
+
+
+    2. **sq2 (Third-party ESG/energy databases):** Candidates like the [Greenly study](https://greenly.earth/en-us/leaf-media/data-stories/ai-efficiency-a-gemini-reality-check-with-greenly),
+    [Carbon Credits](https://carboncredits.com/google-reveals-the-environmental-cost-of-gemini-ai-query/),
+    and [arXiv paper](https://arxiv.org/abs/2508.15734) provide independent breakdowns,
+    albeit derived from Google’s disclosures (still valid for *tracking*). Forum-quality
+    candidates were scored ≤3 unless complementary.[Medium](https://medium.com/@adnanmasood/...)
+    scores 4 for **sq3** due to technical infrastructure insights.
+
+
+    3. **sq3 (Technical documentation):** Primary sources like [Google Cloud’s methodology
+    blog](https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference/)
+    explain hosting/datacenter specifics. Secondary sources like [Medium’s analysis](https://medium.com/@adnanmasood/...)
+    focus on under-the-hood energy breakdowns, scoring 4.
+
+
+    **Dropped:**
+
+    - The towardsdatascience opinion piece scores 2-3 across all sub-questions (no
+    structured evidence).
+
+    - The empty LinkedIn snippet and FOSS Force/Google Workspace Admin Help (invalid
+    scope or non-primary support) score 1-2. Google’s Workspace Admin Help specifically
+    mentions **it does not cover Gemini**, disqualifying it from **sq1-3**.
+
+
+    **Exclusions per rules:**
+
+    - publisher_quality tied low/tertiary/secondary sources when primary options existed
+    (e.g., forums stayed ≤3).
+
+    - No sanitization of `gemini.com`/`deepmind.google` topics (none appeared).'
+  urls_after_blocklist: 13
+sub_questions:
+- id: sq1
+  question: Does Google provide energy sourcing disclosures for Gemini in its official
+    sustainability or environmental reports?
+  rationale: Assesses whether the entity directly publishes energy sourcing transparency,
+    a key aspect of the claim.
+  queries:
+  - Google Gemini sustainability report energy sourcing
+  - Google Gemini environmental impact disclosures
+  citations:
+  - 2025/the-environmental-impact-of-google
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/google-ai-energy-efficiency
+  - 2024/google-ai-climate-change-carbon-emissions-rise
+- id: sq2
+  question: Are there third-party ESG or energy databases tracking Gemini’s energy
+    sourcing practices, such as their carbon footprint or data center energy mix?
+  rationale: Validates whether independent organizations disclose energy sourcing
+    details for Gemini, complementing any first-party claims.
+  queries:
+  - Gemini AI energy mix disclosureDatabase
+  - Gemini Google carbon footprint tea data center
+  citations:
+  - 2025/ai-efficiency-a-gemini-reality-check-with-greenly
+  - 2025/google-reveals-the-environmental-cost-of-gemini-ai-query
+  - 2025/the-environmental-impact-of-google
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/250815734
+  - 2025/google-ai-energy-efficiency
+  - 2025/google-gemini-ai-energy
+- id: sq3
+  question: Does Gemini’s technical documentation or whitepapers mention its hosting
+    providers, data center locations, or energy sourcing policies?
+  rationale: Investigates whether technical disclosures reveal the underlying mechanisms,
+    such as partnerships or infrastructure choices, that tie to energy disclosure.
+  queries: []
+  citations:
+  - 2025/the-environmental-impact-of-google
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/google-ai-energy-efficiency
+sources_consulted:
+- id: 2025/ai-efficiency-a-gemini-reality-check-with-greenly
+  url: https://greenly.earth/en-us/leaf-media/data-stories/ai-efficiency-a-gemini-reality-check-with-greenly
+  title: 'AI Efficiency: A Gemini Reality Check with Greenly'
+  ingested: true
+- id: 2025/google-reveals-the-environmental-cost-of-gemini-ai-query
+  url: https://carboncredits.com/google-reveals-the-environmental-cost-of-gemini-ai-query/
+  title: Google Reveals the Environmental Cost of Gemini AI Query
+  ingested: true
+- id: 2025/the-environmental-impact-of-google
+  url: https://www.devsustainability.com/p/the-environmental-impact-of-google
+  title: The environmental impact of Google Gemini AI text prompts
+  ingested: true
+- id: 2025/measuring-the-environmental-impact-of-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference/
+  title: Measuring the environmental impact of AI inference
+  ingested: true
+- id: 2025/250815734
+  url: https://arxiv.org/abs/2508.15734
+  title: Measuring the environmental impact of delivering AI at Google Scale
+  ingested: true
+- id: 2025/google-ai-energy-efficiency
+  url: https://blog.google/company-news/outreach-and-initiatives/sustainability/google-ai-energy-efficiency/
+  title: Our approach to energy innovation and AI’s environmental footprint
+  ingested: true
+- id: 2025/google-gemini-ai-energy
+  url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy/
+  title: In a first, Google has released data on how much energy an AI prompt uses
+  ingested: true
+- id: 2024/google-ai-climate-change-carbon-emissions-rise
+  url: https://www.theverge.com/2024/7/2/24190874/google-ai-climate-change-carbon-emissions-rise
+  title: Google’s carbon footprint balloons in its Gemini AI era
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

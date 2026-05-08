@@ -1,0 +1,183 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:07:00.735449+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Claude.cli safe or excluded model sizes
+  - Claude transparency report model scale limits
+  - third-party verification Claude non-frontier models
+  - Claude model Compute Categorical technical specifications
+  - Claude model regulatory filings frontier classification
+  planner_rationale: The sub-questions cover Claude’s own definitions (sq1), third-party
+    validation (sq2), technical benchmarks (sq3), and formal disclosures (sq4), comprehensively
+    addressing the claim without overlap.
+  candidates_seen: 33
+  urls_kept: 12
+  urls_dropped: 21
+  scorer_rationale: 'Detailed scoring rationale for kept vs. dropped candidates:
+
+
+    **Kept Candidates:**
+
+
+    1. **Overviews and Model Documentation** (e.g., `https://platform.claude.com/docs/en/about-claude/models/overview`,
+    `docs.claude.com/...`): These addresses **sq1** (definition/scope) and **sq3**
+    (technical details) directly, as they pertain to Claude’s **first-party model
+    descriptions**, including comparisons and configurations. Primary/secondary sources
+    are favored for scope and technical distinctions.
+
+
+    2. **News Announcements & Transparency Reports** (e.g., `anthropic.com/news/claude-3-family`,
+    Stanford CFRM reports): These tackle **sq1** (definition, self-stated compute/limits
+    scope), **sq2** (third-party confidence via evaluative frameworks like FMTI),
+    and **sq4** (regulatory disclosures/game-changing inference like Opus vs. frontier).
+    The Stanford reports, especially, rebut or validate claims via external audits.
+
+
+    3. **Third-Party Verification and Enterprise References** (e.g., Azure blog, Microsoft
+    Foundry, Anthropic’s financial/healthcare pages): Highlight **sq3** (e.g., technical
+    benchmarks like ‘frontier reasoning’) and **sq4** (e.g., model cards via compliance
+    workflows). Primary-quality notes ensure trustworthy gatekeeping.
+
+
+    4. **Compute Constraints & Alignments** (e.g., the [MindStudio](https://www.mindstudio.ai/blog/...)
+    CNNL report): Targets **sq1**, as it echoes Anthropic’s transparency around compute
+    *shortages* and plan-specific limitations, indirectly segmenting ‘frontier’ baselines.
+
+
+
+    ---**Dropped Candidates:**---
+
+
+    1. **Anthropic.com/DevEnv/Code-Specific Pages** (e.g., `code.claude.com` docs,
+    Reddit/HackerNoon/ul\) @mentioning ‘Rate Limits’ or ‘Model APIs’): Entirely tangential
+    to **sq1**/**sq3**/**sq4**, zero technical depth. Forum snippets (Reddit threads)
+    were explicitly disallowed due to unpeer-reviewed theorizing. Code tidbits (e.g.,
+    ‘opacity frustration’) are irrelevant to **frontier-scale definitions**.
+
+
+    2. **UI Hacks & Third-Party Integrations** (e.g., ‘OpenClaw CLI,’ ‘Claudefa.st’):
+    Territories like models-as-a-3rd-party don’t quantify **FLOPs/training data**
+    or cite Anthro-partnerships re: classical definition buckets. Precluded for trying
+    to ‘pretend’ the domain name (e.g., `openclaw`).
+
+
+    3. **Surface-Level Models Lists** (e.g., `gradually.ai/en/claudemodels/`): No
+    granularity for **sq2**/**sq3**; lacks comparative benchmarks even with ‘22 models’
+    aggregation. Technical parity criteria unsupported.
+
+
+    ...**Strategy:**
+
+    → No secondary/tertiary doc had vendor-neutral assessments enough to counterbalance
+    the primaries. Down-grading of **forum** snippets absent justification ensued
+    per rules. Rotated to **primary** disclosures where the exec ops presume **delivering
+    upside on core lines**: model scale/net claims.'
+  entity_exclude_dropped:
+  - https://www.anthropic.com/news/claude-3-family
+  - https://www.anthropic.com/news/claude-for-financial-services
+  - https://www.anthropic.com/news/finance-agents
+  - https://www.anthropic.com/news/healthcare-life-sciences
+  urls_after_blocklist: 8
+sub_questions:
+- id: sq1
+  question: What is Claude's official definition or scope of 'frontier-scale models'
+    as stated on their transparency reports, sustainability pages, or public documentation?
+  rationale: Directly targets Claude's first-party statements about the specific class
+    of models excluded by their claim.
+  queries:
+  - Claude.cli safe or excluded model sizes
+  - Claude transparency report model scale limits
+  citations:
+  - 2025/anthropicfinalreportfmti2025html
+  - 2024/anthropicclaude203html
+  - 2026/overview
+  - 2026/claude
+  - 2026/anthropic-compute-shortage-claude-limits
+- id: sq2
+  question: Are there any third-party analyses or reports from AI ethics organizations
+    or ESG aggregators that verify or refute claims about Claude's model scale?
+  rationale: Validates the claim via external, independent sources to confirm factual
+    accuracy or bias.
+  queries:
+  - third-party verification Claude non-frontier models
+  citations:
+  - 2025/anthropicfinalreportfmti2025html
+- id: sq3
+  question: What technical details or computational parameters (e.g., FLOPs, training
+    data size, hardware requirements) distinguish Claude’s largest model from frontier-scale
+    benchmarks like those defined by NVIDIA or AI research papers?
+  rationale: Grounds the claim in measurable technical criteria to differentiate 'frontier-scale'
+    from Claude's offerings.
+  queries:
+  - Claude model Compute Categorical technical specifications
+  citations:
+  - 2026/overview
+  - 2026/how-kepler-built-verifiable-ai-for-financial-services-with-claude
+  - 2026/claude
+  - 2026/claude-opus-4-6-anthropics-powerful-model-for-coding-agents-and-enterprise-workflows-is-now-available-in-microsoft-foundry-on-azure
+- id: sq4
+  question: Has Claude publicly disclosed regulatory filings or model cards that reference
+    exclusions for frontier-scale systems?
+  rationale: Explores formal disclosures required by governance frameworks or voluntarily
+    published by Claude to support their claim.
+  queries:
+  - Claude model regulatory filings frontier classification
+  citations:
+  - 2025/anthropicfinalreportfmti2025html
+  - 2024/anthropicclaude203html
+sources_consulted:
+- id: 2025/anthropicfinalreportfmti2025html
+  url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Anthropic_FinalReport_FMTI2025.html
+  title: Anthropic Transparency Report
+  ingested: true
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
+  ingested: true
+- id: 2026/overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
+  ingested: true
+- id: 2026/how-kepler-built-verifiable-ai-for-financial-services-with-claude
+  url: https://claude.com/blog/how-kepler-built-verifiable-ai-for-financial-services-with-claude
+  title: How Kepler built verifiable AI for financial services with Claude
+  ingested: true
+- id: 2026/claude
+  url: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude
+  title: Anthropic's Claude models
+  ingested: true
+- id: 2026/claude-opus-4-6-anthropics-powerful-model-for-coding-agents-and-enterprise-workflows-is-now-available-in-microsoft-foundry-on-azure
+  url: https://azure.microsoft.com/en-us/blog/claude-opus-4-6-anthropics-powerful-model-for-coding-agents-and-enterprise-workflows-is-now-available-in-microsoft-foundry-on-azure/
+  title: 'Claude Opus 4.6: Anthropic''s powerful model for coding, agents, and enterprise
+    workflows is now available in Microsoft Foundry'
+  ingested: true
+- id: 2026/anthropic-compute-shortage-claude-limits
+  url: https://www.mindstudio.ai/blog/anthropic-compute-shortage-claude-limits
+  title: 'Anthropic''s Compute Shortage: Why Claude Limits Are Getting Worse'
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: unverified
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

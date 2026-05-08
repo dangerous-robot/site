@@ -1,0 +1,151 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T01:56:31.689717+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Claude.ai data usage policy training exclusion
+  - Claude user data training third-party audit
+  - Claude AI data pipeline user exclusion
+  - Claude user privacy regulator findings
+  - Anticipated user data opt-out Claude AI
+  planner_rationale: 'These sub-questions decompose the claim into distinct axes:
+    first-party disclosure (sq1), third-party validation (sq2), technical mechanism
+    (sq3), and regulatory scrutiny (sq4). Together, they comprehensively assess Claude''s
+    use of user data for training.'
+  candidates_seen: 26
+  urls_kept: 14
+  urls_dropped: 11
+  scorer_rationale: ' dropped candidates did not meet the relevance threshold (scored
+    < 4 across all sub-questions) or were about a different entity (e.g., **code.claude.com**).
+    Most forum-based results (e.g., Reddit) were scored low due to their non-primary/secondary
+    nature unless no better alternatives existed. The **Kept** list includes candidates
+    addressing specific sub-questions (sq1: Claude’s own disclosure; sq2: Third-party
+    ESG/ethics assessments; sq3: Technical mechanisms; sq4: Regulatory/auditor statements).
+    Notable exclusions include **third-party resources mentioning **anthropic.com**
+    (e.g., Apple''s App Store) and sources lacking direct relevance to **Claude’s
+    data usage policies** or **regulatory statements**.
+
+
+    Key threshold decisions:
+
+    - **sq1**: Only **Claude.ai**’s own pages were given priority for official disclosure.
+
+    - **sq2**: High-quality third-party reports (e.g., WIRED, AMST Legal) were kept
+    for validating claims.
+
+    - **sq3**: Technical/privacy-specific pages (e.g., **privacy.claude.com**, **claudeai-switches-to-opt-out-consent-model**)
+    scored higher than general security guides.
+
+    - **sq4**: Regulatory or auditor-like statements (e.g., **anthropic.com’s consumer
+    terms update**) were prioritized over non-authoritative posts.
+
+
+    URLs kept but initially lacked low sub-question scores were retained where context
+    implied indirect relevance (e.g., **anthropic.com**, despite background alignment).'
+  entity_exclude_dropped:
+  - https://www.anthropic.com/news/updates-to-our-consumer-terms
+  urls_after_blocklist: 13
+sub_questions:
+- id: sq1
+  question: What does the official Claude website disclose about its data usage policy
+    for user interactions?
+  rationale: Evaluates the entity's own transparency regarding data usage, covering
+    first-party disclosure.
+  queries:
+  - Claude.ai data usage policy training exclusion
+  citations:
+  - 2026/7996885-how-do-you-use-personal-data-in-model-training
+  - 2026/claude-ai-privacy-policy
+- id: sq2
+  question: Do third-party resources, such as ESG databases or AI ethics reports,
+    mention Claude's use of user data for training?
+  rationale: Covers third-party validation or criticism of the entity's claims about
+    data usage.
+  queries:
+  - Claude user data training third-party audit
+  citations:
+  - 2025/anthropic-using-claude-chats-for-training-how-to-opt-out
+  - 2025/claudeai-switches-to-opt-out-consent-model-for-personal-data-usage-in-ai-model-training
+  - 2026/anthropic-data-retention-policy
+  - 2026/claude-ai-privacy-policy
+  - 2025/claude-ai-will-start-training-on-your-data-soon-heres-how-to-opt-out-before-the-deadline
+- id: sq3
+  question: What technical mechanisms, if any, does Claude employ to prevent user
+    data from being included in training datasets?
+  rationale: Probes the factual and technical foundations of the claim, such as data
+    pipelines or opt-out mechanisms.
+  queries:
+  - Claude AI data pipeline user exclusion
+  - Anticipated user data opt-out Claude AI
+  citations:
+  - 2025/claude-data-retention-policies-storage-rules-and-compliance-overview
+  - 2026/7996885-how-do-you-use-personal-data-in-model-training
+  - 2025/claude-secure-usage-how-to-work-with-ai-without-sharing-sensitive-information
+- id: sq4
+  question: Have regulators or auditors issued statements about Claude's adherence
+    to data privacy and training data policies?
+  rationale: Assesses regulatory or authoritative scrutiny of Claude's claims.
+  queries:
+  - Claude user privacy regulator findings
+  citations:
+  - 2025/claudeai-switches-to-opt-out-consent-model-for-personal-data-usage-in-ai-model-training
+sources_consulted:
+- id: 2025/claude-data-retention-policies-storage-rules-and-compliance-overview
+  url: https://www.datastudios.org/post/claude-data-retention-policies-storage-rules-and-compliance-overview
+  title: 'Claude: data retention policies, storage rules, and compliance overview'
+  ingested: true
+- id: 2025/anthropic-using-claude-chats-for-training-how-to-opt-out
+  url: https://www.wired.com/story/anthropic-using-claude-chats-for-training-how-to-opt-out/
+  title: Anthropic Will Use Claude Chats for Training Data. Here’s How to Opt Out
+  ingested: true
+- id: 2026/7996885-how-do-you-use-personal-data-in-model-training
+  url: https://Privacy.claude.com/en/articles/7996885-how-do-you-use-personal-data-in-model-training
+  title: How do you use personal data in model training?
+  ingested: true
+- id: 2025/claudeai-switches-to-opt-out-consent-model-for-personal-data-usage-in-ai-model-training
+  url: https://opentermsarchive.org/en/memos/claudeai-switches-to-opt-out-consent-model-for-personal-data-usage-in-ai-model-training/
+  title: Claude.ai switches to opt-out consent model for personal data usage in AI
+    model training
+  ingested: true
+- id: 2025/claude-secure-usage-how-to-work-with-ai-without-sharing-sensitive-information
+  url: https://www.datastudios.org/post/claude-secure-usage-how-to-work-with-ai-without-sharing-sensitive-information
+  title: 'Claude secure usage: how to work with AI without sharing sensitive information'
+  ingested: true
+- id: 2026/anthropic-data-retention-policy
+  url: https://char.com/blog/anthropic-data-retention-policy/
+  title: Anthropic Claude Data Retention Policy 2026
+  ingested: true
+- id: 2026/claude-ai-privacy-policy
+  url: https://www.cape.co/blog/claude-ai-privacy-policy
+  title: 'Claude AI Privacy Policy: Takeaways for Everyday Users'
+  ingested: true
+- id: 2025/claude-ai-will-start-training-on-your-data-soon-heres-how-to-opt-out-before-the-deadline
+  url: https://www.tomsguide.com/ai/claude/claude-ai-will-start-training-on-your-data-soon-heres-how-to-opt-out-before-the-deadline
+  title: Claude AI will start training on your data soon — here's how to opt out before
+    the deadline
+  ingested: true
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

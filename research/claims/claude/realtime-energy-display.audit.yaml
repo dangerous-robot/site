@@ -1,0 +1,139 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:02:55.159894+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Claude.ai real-time energy monitoring
+  - Claude transparency report energy usage
+  - Claude sustainability report real-time energy
+  - Claude energy usage ESG disclosure
+  - Claude data center real-time energy tracking
+  planner_rationale: The decomposition focuses on the entity's first-party disclosures,
+    third-party ESG validation, and technical infrastructure to cover the claim holistically.
+  candidates_seen: 26
+  urls_kept: 14
+  urls_dropped: 16
+  scorer_rationale: "**Scoring rationale for each sub-question:**\n\n**SQ1 (Claude.claude.ai\
+    \ real-time energy usage in transparency reports)**:\n- Only the **Anthropic Transparency\
+    \ Hub** (https://www.anthropic.com/transparency/voluntary-commitments) was relevant\
+    \ (score 4). The rest either avoid anthropic.com, lack transparency reports, or\
+    \ apply to non-Claude entities.\n\n--- \n\n**SQ2 (Third-party ESG databases or\
+    \ sustainability ratings on real-time energy usage)**:\n- **EnergyCosts.co.uk**\
+    \ (discusses Claude’s energy use broadly, albeit not real-time, but relevant to\
+    \ broader ESG claims).\n- **Azvai** (discusses Claire Code’s live connections\
+    \ to emissions/ESG data `addresses sq2`).\n- **CarbonCredits** (compares Claude’s\
+    \ energy/footprint, but not fine-grained real-time data).\n- **Stanford CRFM Reports**\
+    \ (query AnthroPIC’s energy estimates, methodology, but not CLAUDE.claude revenue).\n\
+    - **Dcycle.io** (emissions data, but from third-party ESG tools, not Claude’s\
+    \ real-time API).\n- **Devera.ai** (Claude vs Gemini energy benchmarks, Eco-efficiency).\n\
+    - **CNaught** & **Fiegenbaum** (both discuss energy/footprints but no real-time\
+    \ independent verification of *CLAUDE.claude AI – vs anthropic.com*).\n- **DataCenterKnowledge**\
+    \ (scored 3 but tangential).\n- Drop candidates (e.g., Reddit, WeeT varios, forum\
+    \ posts from users/Dev, no framed ESG truthiness).\n\n--- \n\n**SQ3 (Technical/infra\
+    \ mechanisms for *enabling* energy monitoring)**:\n- **CNaught** & **Azvai + DataCenterKnowledge**\
+    \ logged 4 for SOP mechanics of sidecar data sharing features.\n\t- Dcycle also\
+    \ stays on edge of SQuired listed entities because of a *potentially scalable\
+    \ *environmental system kawaii but focused on third-party MCP. \n- Drop all non-scalars\
+    \ that mention *anthroPIC* without relevant foreign infrastructure.\n\n--- \n\n\
+    **Casters dropped:**\n- **Avoided ESG about non-*SCLUDE.claude* sites** (e.g.,\
+    \ anthropic.com, code.claude.com, teacher Reddit).\n- **Tools/Plugins** (e.g.,\
+    \ Claudemeter, Open-source monitors) lack third-party validity.\n- **Promo posts**\
+    \ (e.g., Will سي proof ‘faith romp’ with energy baseline sentiment.)"
+  entity_exclude_dropped:
+  - https://www.anthropic.com/transparency/voluntary-commitments
+  - https://demo-ai-energy-use.anthropic.com
+  urls_after_blocklist: 12
+sub_questions:
+- id: sq1
+  question: Does Claude (claude.ai) disclose any information about real-time energy
+    usage on their official website or transparency reports?
+  rationale: Assesses whether the entity directly communicates its real-time energy
+    usage claims via first-party channels.
+  queries:
+  - Claude.ai real-time energy monitoring
+  - Claude transparency report energy usage
+  - Claude sustainability report real-time energy
+  citations: []
+- id: sq2
+  question: Are there third-party ESG (Environmental, Social, and Governance) databases
+    or sustainability ratings that mention Claude's real-time energy usage or carbon-emission
+    monitoring?
+  rationale: Verifies if external, credible sources confirm or validate the claim
+    about real-time energy usage.
+  queries:
+  - Claude energy usage ESG disclosure
+  citations:
+  - 2024/anthropicclaude203html
+  - 2025/anthropicfinalreportfmti2025html
+  - 2026/anthropic-claude-ai-energy
+  - 2025/environmental-impact-of-ai
+  - 2026/how-to-actually-measure-the-carbon-footprint-of-ai-code
+  - 2026/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact
+  - 2026/mcp-server
+- id: sq3
+  question: What technical or infrastructure mechanisms (e.g., hosting providers,
+    data centers) does Claude use that *could* enable real-time energy monitoring?
+  rationale: Investigates the underlying technical capacity for monitoring real-time
+    energy usage, even if not explicitly disclosed.
+  queries:
+  - Claude data center real-time energy tracking
+  citations:
+  - 2026/how-to-actually-measure-the-carbon-footprint-of-ai-code
+sources_consulted:
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
+  ingested: true
+- id: 2025/anthropicfinalreportfmti2025html
+  url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Anthropic_FinalReport_FMTI2025.html
+  title: Anthropic Transparency Report
+  ingested: true
+- id: 2026/aes
+  url: https://claude.com/customers/aes
+  title: AES
+  ingested: true
+- id: 2026/anthropic-claude-ai-energy
+  url: https://www.energycosts.co.uk/articles/anthropic-claude-ai-energy/
+  title: How Much Energy Does Anthropic’s Claude AI Consume?
+  ingested: true
+- id: 2025/environmental-impact-of-ai
+  url: https://clune.org/posts/environmental-impact-of-ai/
+  title: Environmental Impact of AI
+  ingested: true
+- id: 2026/how-to-actually-measure-the-carbon-footprint-of-ai-code
+  url: https://www.cnaught.com/blog/how-to-actually-measure-the-carbon-footprint-of-ai-code
+  title: How to Actually Measure the Carbon Footprint of AI Code
+  ingested: true
+- id: 2026/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact
+  url: https://carboncredits.com/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact/
+  title: 'ChatGPT vs Claude AI: Carbon Footprints, Pentagon Deal, and Energy Impact'
+  ingested: true
+- id: 2026/mcp-server
+  url: https://dcycle.io/platform/mcp-server/
+  title: Dcycle MCP Server – AI for your emissions data
+  ingested: true
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

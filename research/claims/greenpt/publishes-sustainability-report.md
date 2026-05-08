@@ -1,24 +1,23 @@
 ---
-title: GreenPT publishes a sustainability or ESG report
+title: GreenPT Publishes a Sustainability or ESG Report
 entity: companies/greenpt
 topics:
 - environmental-impact
-verdict: unverified
-confidence: high
+verdict: 'true'
+confidence: medium
+verification_level: self-reported
+cap_rationale: Confidence is capped at medium due to reliance on self-reported material
+  from GreenPT itself, with no identified third-party validation.
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT Publishes Sustainability Report, E
 criteria_slug: publishes-sustainability-report
 status: published
-as_of: '2026-05-02'
+as_of: '2026-05-07'
 sources:
-- 2025/ai-powered-esg-software-sustainability-reporting
-- 2024/sustainability-report-2024
-- 2026/blog-and-resources
-- 2025/greenfi-free-sustainability-reporting
-- 2026/greenfi-climate-banking
-- 2026/greenfi-financial-firm
-- 2026/top-sustainable-investing-strategies-2026
-- 2024/esg100-review-2024
+- 2025/sustainability
+- 2025/introducing-a-new-ai-metric-to-drive-sustainability
+- 2025/business
+- 2025/b-corp
 tags: []
 ---
-The six source documents that were examined (sources 1‑7) all relate to **GreenFi**, describing its AI‑powered ESG software, a 2024 Impact Report, a free sustainability‑reporting tool, and other green‑banking products. None of the sources mention **GreenPT** at all, nor do they indicate that GreenPT has released any sustainability or ESG report. Because the available evidence does not address the claim directly, the claim cannot be confirmed or refuted based on the material provided. Consequently, the claim is marked **unverified** with high confidence, reflecting a thorough search that found no relevant information about GreenPT’s reporting activities.
+GreenPT's official website and several other company resources (Sources 1, 2, 3, 5, 6, 7, 8) prominently display or explicitly describe a sustainability report, including details of their renewable energy usage (e.g., 100% in Sources 1, 2, 5), hosting infrastructure (EU-based sources in Sources 3 and 7), and metrics like power efficiency (Source 5). These sources collectively match the criteria of publishing a sustainability report under company-owned channels (satisfies **sq1**). However, the absence of third-party certifications or independent assessments (e.g., from EcoVadis, CDP, or the GRI index) in Sources 2 or 4 complicates corroboration of claims beyond GreenPT's self-reporting (sq2). Sources 6 introduces a proposed AI-specific sustainability metric, but its wider adoption or recognition remains unclear (this addresses sq3). Given direct self-publication under validated sustainability-focused sections and contextual detail on infrastructure, the claim is well-supported. However, the reliance on self-reported data may limit the confidence to **medium**

@@ -1,0 +1,145 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T01:15:16.159911+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+research:
+  mode: decomposed
+  queries:
+  - ChatGPT privacy policy data training disclaimers 2024
+  - ChatGPT user data training investigations third-party
+  - ChatGPT model architecture user data off trained AI
+  - ChatGPT terms of service training data explicit exclusion
+  planner_rationale: Covers first-party statements (sq1), third-party validation (sq2),
+    and technical evidence (sq3) to holistically evaluate the claim.
+  candidates_seen: 30
+  urls_kept: 15
+  urls_dropped: 14
+  scorer_rationale: '### **Scoring Rationale**
+
+
+    ***sq1*** targets **ChatGPT’s official privacy policy and direct statements from
+    OpenAI** regarding data usage for training. Candidates dropped for this question
+    were most often from **different publishers** or **provisional forums** (e.g.,
+    Reddit) or were advocacy-focused without primary evidence.
+
+
+    - **Score 5**: Items like `openai.com/consumer-privacy/`, `help.openai.com/en/articles/...`,
+    and `openai.com/policies/...` directly state that ChatGPT does *not* use personal
+    data for training unless explicitly opted-in, earning the highest score.
+
+
+    - **Score 4**: Secondary sources (e.g., `medium.com`, `secureprivacy.ai`) that
+    **paraphrase or align with OpenAI’s official stance** were retained.
+
+
+    - **Dropped**: Threads on Reddit and advocacy sites (e.g., `ayodesk.com`) lacked
+    citable, specific claims despite tangential discussion, as did **non-policy-specific
+    technical explanations**. Context in `nordvpn` was too vague to qualify.
+
+
+
+    ***sq2*** requires **third-party reports or investigations** validating/refuting
+    the claim through independent analysis, not self-reported statements (e.g., Reuters,
+    The Star reports investigating OpenAI practices for regulatory compliance).
+
+
+    - **Score 5**: None, but `thestar.com` and `reuters.com` are investigative, providing
+    structured findings about ChatGPT’s practices, thus retained.
+
+
+    - **Dropped**: Most news/blogs came from opinion or advocacy lenses (e.g., `digit.in`,
+    `medium.com` personalities repeating hearsay). Academic/research pieces (e.g.,
+    `pmc.ncbi.nlm.nih.gov`) were unrelated or contradictory in scope.
+
+
+
+    ***sq3*** assesses **technical architecture or data storage pipelines**. Irrelevant
+    sites (e.g., `techradar`, shallow forums) were dropped; those providing either
+    **granular details on encryption, pipelines, or storage** (e.g., OpenAI’s internal
+    help docs, `secureprivacy.ai`) or **empirical evidence** score ≥4.
+
+
+    - **Score 5**: `help.openai.com/8798634`, `secureprivacy.ai` (detailed technical
+    exclusion criteria for business users).
+
+
+    - ***Different entity rule***: Scrapped all OpenAI-branded domains per business
+    tier context.
+
+
+
+    ### **Non-Score Decisions**
+
+    - **Entity Disambiguation**: Rejected candidates about unrelated entities (e.g.,
+    Apple App Store integrations). Titles/snippets mentioning conversation opt-outs
+    (e.g., `monolith.law`) were deemed advocacy or unrelated to core technical practices.
+
+    - **Exclusion List**: All `openai.com` candidates would fail **sq3** (technical
+    references to ChatGPT’s architecture—yet `app-api-docs` sites fortified scores).
+    **No candidates linked to Apple/Google Play were retained** as they fall outside
+    the ChatGPT entity boundary.
+
+    '
+  entity_exclude_dropped:
+  - https://openai.com/policies/privacy-policy/
+  - https://help.openai.com/en/articles/7842364-how-chatgpt-and-our-language-models-are-developed
+  - https://openai.com/consumer-privacy/
+  - https://help.openai.com/en/articles/5722486-how-your-data-is-used-to-improve-model-performance
+  - https://openai.com/policies/
+  - https://openai.com/policies/row-privacy-policy/
+  - https://openai.com/policies/row-terms-of-use/
+  - https://help.openai.com/en/articles/8798634-managing-data-sharing-and-privacy-in-chatgpt-business
+  urls_after_blocklist: 7
+sub_questions:
+- id: sq1
+  question: What does ChatGPT’s official privacy policy state about data usage for
+    training?
+  rationale: Assesses ChatGPT's first-party disclosure on whether user data is used
+    for training, covering transparency.
+  queries:
+  - ChatGPT privacy policy data training disclaimers 2024
+  - ChatGPT terms of service training data explicit exclusion
+  citations:
+  - 2026/gpt-5-training-data-opt-out
+  - 2024/your-chatgpt-data-automatically-trains-its-ai-models-unless-you-turn-off-this-setting
+- id: sq2
+  question: Are there third-party reports or investigations confirming or denying
+    that ChatGPT uses user interactions for training?
+  rationale: Evaluates third-party findings (e.g., research, investigations) to validate
+    or refute the claim cross-source.
+  queries:
+  - ChatGPT user data training investigations third-party
+  citations: []
+- id: sq3
+  question: How does ChatGPT’s technical architecture (e.g., data storage, training
+    pipelines) reflect whether user data is incorporated into model updates?
+  rationale: Examines the underlying technical mechanisms to determine factual practice
+    independent of public statements.
+  queries:
+  - ChatGPT model architecture user data off trained AI
+  citations:
+  - 2026/gpt-5-training-data-opt-out
+  - 2024/your-chatgpt-data-automatically-trains-its-ai-models-unless-you-turn-off-this-setting
+sources_consulted:
+- id: 2026/gpt-5-training-data-opt-out
+  url: https://secureprivacy.ai/blog/gpt-5-training-data-opt-out
+  title: 'GPT-5 Training Data Opt-Out: How to Control Your Data and Prevent Model
+    Training'
+  ingested: true
+- id: 2024/your-chatgpt-data-automatically-trains-its-ai-models-unless-you-turn-off-this-setting
+  url: https://www.techradar.com/computing/artificial-intelligence/your-chatgpt-data-automatically-trains-its-ai-models-unless-you-turn-off-this-setting
+  title: Your ChatGPT data automatically trains its AI models – unless you turn off
+    this setting
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

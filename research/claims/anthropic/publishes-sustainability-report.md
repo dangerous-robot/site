@@ -1,29 +1,19 @@
 ---
 title: Anthropic publishes a sustainability or ESG report
 entity: companies/anthropic
-topics:
-- environmental-impact
-verdict: 'true'
+topics: [environmental-impact]
+verdict: unverified
 confidence: low
 verification_level: claimed
-cap_rationale: Confidence is capped at low -- all sources originate from Anthropic;
+cap_rationale: Confidence is capped at low -- all sources originate from entity documentation;
   no independent source was found that conducts original analysis of this claim.
 takeaway: ''
-seo_title: Anthropic publishes ESG reports
+seo_title: ''
 criteria_slug: publishes-sustainability-report
-status: published
-as_of: '2026-05-05'
+status: draft
+as_of: '2026-05-08'
 sources:
-- 2025/build-ai-in-america-energy-report
-- 2025/investing-energy-america-ai-future
-- 2024/hidden-environmental-costs-tech-ai-investments
-- 2024/anthropicclaude203html
-- 2026/voluntary-commitments
-- 2024/updated-responsible-scaling-policy
-- 2026/anthropic-company
-- 2023/long-term-benefit-trust
-- 2026/anthropic-home
-tags:
-- highlight
+- 2026/responsible-scaling-policy-v3
+tags: []
 ---
-Anthropic has released an energy‑focused document titled *Build AI in America: Anthropic Energy Report*. The report outlines policy recommendations for expanding U.S. electric capacity to support frontier AI training and discusses the environmental dimensions of energy use for AI (e.g., required gigawatts, nuclear, geothermal, and natural‑gas sources). While it is framed as an energy policy briefing rather than a conventional ESG disclosure, it qualifies as a sustainability‑related report published by the company. (Source: Build AI in America: Anthropic Energy Report).
+The first‑party materials provided – an energy report, blog posts about a $2 million investment, and documentation of Anthropic’s Responsible Scaling Policy and voluntary commitments – do not mention a sustainability or ESG report and do not appear to be such a report. No third‑party ESG databases or rating agencies list Anthropic with a sustainability or ESG report, and no regulatory filings containing ESG statements were identified. Because the claim’s central assertion is not addressed by any source and sub‑questions sq3 and sq4 lack coverage, the claim remains unverified.

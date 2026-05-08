@@ -27,15 +27,15 @@ templates:
         - steward-ownership
         - cooperative
 
-  - slug: donates-to-ai-safety
-    text: "COMPANY donates to AI safety causes"
+  - slug: contributes-to-ai-safety
+    text: "COMPANY contributes to AI safety causes"
     entity_type: company
     topics: [ai-safety]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
 
-  - slug: donates-to-environmental-causes
-    text: "COMPANY donates to environmental causes"
+  - slug: contributes-to-environmental-causes
+    text: "COMPANY contributes to environmental causes"
     entity_type: company
     topics: [environmental-impact]
     core: true
@@ -72,14 +72,14 @@ templates:
     notes: "Transparency meta-claim: does the company say where its energy comes from?"
 
   - slug: realtime-energy-display
-    text: "PRODUCT displays real-time energy usage"
+    text: "PRODUCT displays real-time energy consumption to user"
     entity_type: product
     topics: [environmental-impact]
     core: true
     notes: "Binary: the feature exists or it doesn't"
 
   - slug: excludes-image-generation
-    text: "PRODUCT excludes image generation"
+    text: "PRODUCT excludes image generation feature"
     entity_type: product
     topics: [environmental-impact]
     core: true
@@ -101,7 +101,7 @@ templates:
     core: true
 
   - slug: fli-2025-safety-index-existential-score
-    text: "Leading ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
+    text: "All major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
     entity_type: sector
     topics: [ai-safety, industry-analysis]
     tags:

@@ -1,0 +1,165 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:05:05.655119+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Claude.ai capabilities official documentation
+  - Claude excludes image generation confirmed
+  - Claude model specs multimodal limitations
+  - Claude compared to Midjourney stability AI
+  - Claude.ai image generation statement verification
+  planner_rationale: The sub-questions collectively cover the claim by addressing
+    first-party documentation, third-party verification, technical specifics, and
+    public statements or comparisons.
+  candidates_seen: 35
+  urls_kept: 13
+  urls_dropped: 22
+  scorer_rationale: "### Dropped Candidates:\n- **Non-primary or irrelevant sources**:\
+    \ Candidates like `code.claude.com` and Reddit/Hacker News threads were dropped\
+    \ because they do not directly address sub-questions (e.g., threads discuss unrelated\
+    \ topics or lack authoritative information).\n- **Superficial mentions**: Sources\
+    \ explicitly mentioning other entities (e.g., `Midjourney` or `Stable Diffusion`)\
+    \ without focusing on Claude's image generation capabilities were demoted.\n-\
+    \ **Parent company vs. Claude**: While some Anthropic-related candidates were\
+    \ retained (e.g., `anthropic.com/news`), they were only kept if they discussed\
+    \ img generation *in the context of Claude*.\n- **Misleading titles/snippets**:\
+    \ Sites like `claudeimage.pro` or `aibernwmymind.substack.com` implied Claude\
+    \ could generate images, but snippets contradicted the claim, causing exclusion.\n\
+    \n### Kept Candidates:\n- **sq1 (First-party):**: `support.claude.com/en/articles/9002504-can-claude-produce-images`\
+    \ was kept for directly quoting Claire experts: *“Claude doesn’t generate photos\
+    \ or illustrations the way image-generation tools do.”*\n\n- **sq3 (Technical\
+    \ specs):** The `platform.claude.com` (models overview, vision docs) and Google\
+    \ Vertex AI page confirmed Claude supports **text/image input/output but does\
+    \ *not* generate raster images natively** (snippets explicitly mention “images”\
+    \ vs. charts/SVG). The Anthropic/Opus 4.7 update clarifies “*multimodal support*”\
+    \ without addressing generation, just image *processing*. The IBM and Max Productive\
+    \ pages reinforce that “multimodal” here means analysis, not imagery creation.\n\
+    \n- **sq2 (Third-party analyses):** News (IBM), academic-like articles (`Stackademic`,\
+    \ `Blockchain Council`, `Medium`, `Claila`), and tertiary without advocacy slant\
+    \ (e.g., IBM, `GlbGPT`) were retained due to strong alignment with the “*excluding*”\
+    \ claim. \n  - Notably, `Claila`, `Stackademic`, and `Blockchain Council` frame\
+    \ governance explicitly: *“extension is toward analysis in charts/SVGs”*,negaing\
+    \ text->image claims.\n  \n- **sq4 (Public statements/comparisons):** The `Claude\
+    \ Help Center` and `IBM` articles directly cite Anthropic’s messaging on image\
+    \ limitations in relation to competitors like Gemini. Posts like `GlbGPT` (secondary)\
+    \ compared output (SVG vs. pixels) with Midjourney as an example.\n\n### Edits\
+    \ & Tiebreakers:\n- All forum candidates (`*reddit.com/r/ClaudeAI/*`, Hacker News)\
+    \ were dropped for having publisher scores ≤ 3, except `Claile.com` represented\
+    \ as academical (though despite the title, the snippet yielded a Technical (5)\
+    \ for sq2 contributed for lack of image creation with quotes).\n- **Exception**:\
+    \ GlobeGPT was valued for its supportive comparative cite (SVG features vs. pixel\
+    \ scooping) vs. competitors—included as it offered rare third-party evidence without\
+    \ conflicting entities.\n\n### Final Note:\nThe analysis confirms **Claude excludes\
+    \ raster-image generation** (pixels, JPEGs), supporting capabilities exclusively\
+    \ on 1) SVG/text–based “scalar visuals” and 2) image *processing* (like taps,\
+    \ bounding boxes, OCR). Authoritative decisions are backed by official statements,\
+    \ Google Cloud technical detail verification, and IBM’s analytical framing on\
+    \ `sq2`."
+  entity_exclude_dropped:
+  - https://www.anthropic.com/news/claude-opus-4-7
+  urls_after_blocklist: 12
+sub_questions:
+- id: sq1
+  question: Does Claude's official website or documentation explicitly state whether
+    image generation is excluded from its capabilities or services?
+  rationale: First-party sources (e.g., the official website or documentation) are
+    authoritative for accurate and direct claims about capabilities or exclusions.
+  queries:
+  - Claude.ai capabilities official documentation
+  - Claude.ai image generation statement verification
+  citations:
+  - 2026/9002504-can-claude-produce-images
+- id: sq2
+  question: Are there third-party analyses or fact-checks confirming or denying that
+    Claude excludes image generation?
+  rationale: Third-party reviews or technical analyses can provide independent validation
+    or contextualization of the claim.
+  queries:
+  - Claude excludes image generation confirmed
+  citations:
+  - 2026/9002504-can-claude-produce-images
+  - 2026/no-image-with-claude
+  - 2025/can-claude-generate-images
+  - 2024/claude-ai
+- id: sq3
+  question: What are the technical specifications or limitations of Claude's models,
+    particularly regarding multimodal capabilities like image generation?
+  rationale: Technical documentation or model cards often outline specific capabilities
+    or exclusions relevant to the claim.
+  queries:
+  - Claude model specs multimodal limitations
+  citations:
+  - 2026/overview
+  - 2026/vision
+  - 2026/claude
+  - 2025/claude
+- id: sq4
+  question: Has Claude publicly addressed or compared its capabilities to other AI
+    models in a way that clarifies its approach to image generation?
+  rationale: Public statements or comparisons provide explicit clarity on excluded
+    features or design choices.
+  queries:
+  - Claude compared to Midjourney stability AI
+  citations:
+  - 2026/9002504-can-claude-produce-images
+  - 2026/no-image-with-claude
+  - 2024/claude-ai
+  - 2025/claude
+sources_consulted:
+- id: 2026/overview
+  url: https://platform.claude.com/docs/en/about-claude/models/overview
+  title: Models overview
+  ingested: true
+- id: 2026/vision
+  url: https://platform.claude.com/docs/en/vision
+  title: Vision
+  ingested: true
+- id: 2026/claude
+  url: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude
+  title: Anthropic's Claude models
+  ingested: true
+- id: 2026/9002504-can-claude-produce-images
+  url: https://support.claude.com/en/articles/9002504-can-claude-produce-images
+  title: Can Claude produce images?
+  ingested: true
+- id: 2026/no-image-with-claude
+  url: https://www.blockchain-council.org/claude-ai/no-image-with-claude/
+  title: 'No Image with Claude: Limits, Workarounds, Alternatives'
+  ingested: true
+- id: 2025/can-claude-generate-images
+  url: https://www.claila.com/blog/can-claude-generate-images
+  title: Can Claude generate images?
+  ingested: true
+- id: 2024/claude-ai
+  url: https://www.ibm.com/think/topics/claude-ai
+  title: What Is Claude AI?
+  ingested: true
+- id: 2025/claude
+  url: https://max-productive.ai/ai-tools/claude/
+  title: 'Claude AI Review 2026: Features, Pricing & Comparison Guide'
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

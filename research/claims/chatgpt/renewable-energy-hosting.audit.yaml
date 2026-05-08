@@ -1,52 +1,101 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:55:09.007761+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-08T01:14:29.536950+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
-  - analyst
-  - auditor
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
   queries:
-  - ChatGPT renewable energy usage
-  - OpenAI sustainability initiatives ChatGPT
-  - ChatGPT carbon footprint details
-  - ChatGPT hosting infrastructure environmental impact
-  - OpenAI renewable energy commitments
-  planner_rationale: 'These queries aim to find information about whether OpenAI,
-    the developer of ChatGPT, uses renewable energy to host the model. They vary in
-    their approach: some directly ask about ChatGPT''s usage, others focus on OpenAI''s
-    broader sustainability efforts, and some seek details about the environmental
-    impact of the hosting infrastructure. The queries prioritize direct information
-    and commitments from OpenAI.'
-  candidates_seen: 33
-  urls_kept: 30
-  urls_dropped: 0
-  scorer_rationale: The claim is that ChatGPT is hosted on renewable energy. Several
-    candidates discuss the energy consumption of ChatGPT, with some mentioning OpenAI's
-    efforts towards renewable energy and sustainable practices. Candidates 1, 2, 3,
-    4, 5, 6, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-    27, 28, 29, and 30 directly or indirectly relate to the energy usage and sustainability
-    of ChatGPT. The publisher quality is considered for tie-breaking, favoring primary
-    sources. Candidates 30 and 22 are more specific and directly address the claim
-    of ChatGPT being hosted on renewable energy, hence higher scores.
-  urls_after_blocklist: 24
-sources_consulted: []
-audit:
-  analyst_verdict: 'false'
-  auditor_verdict: 'true'
-  analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: false
-  confidence_agrees: true
-  needs_review: true
+  - ChatGPT sustainability report renewable energy hosting site:chatgpt.com
+  - ChatGPT transparency report energy sourcing
+  - Microsoft Azure renewable energy data center commitments
+  - ChatGPT ESG audits renewable energy
+  planner_rationale: These sub-questions, covering first-party disclosures, third-party
+    audits, and the technical mechanism of hosting providers, comprehensively address
+    whether ChatGPT is hosted on renewable energy.
+  candidates_seen: 30
+  urls_kept: 8
+  urls_dropped: 21
+  scorer_rationale: "### Scoring AnalysisPer sub-question, the following decisions\
+    \ were made:\n\n\n\n#### **sq1: Official ChatGPT/Parent Org Transparency Reports**\n\
+    - **None of the candidates provide primary-source or authoritative disclosure**\
+    \ from Microsoft (owner of Azure/ChatGPT) or OpenAI itself regarding their hosting\
+    \ infrastructure and energy sourcing.\n- All candidates either: \n  1. **Issue**:\
+    \ Are ChatGPT plugins or tools unrelated to actual hosting source (e.g. ESG reporting\
+    \ wizards, renewable energy guides for users, not the infrastructure). **Score\
+    \ 1**. \n  2. **Content**: Focus on other topics (e.g., energy consumption estimates)\
+    \ but lack direct, first-party confirmation. **Score 2**.\n\n#### **sq2: Third-Party\
+    \ Audits/ESG/Filings**\n- **None of the candidates are third-party audits, ESG\
+    \ ratings, or regulatory filings** specifically about **Microsoft’s or OpenAI's**\
+    \ hosting infrastructure for ChatGPT.\n- Some candidates mention ESG reporting\
+    \ or AI energy use broadly (e.g., Eco-Business, News Standards), but these are\
+    \ neither audits nor specific to this claim. **Score 2 or 1**.\n\n#### **sq3:\
+    \ Hosting Providers and Renewable Energy**\n- **Azure sources were the only ones\
+    \ scoring ≥4** since Azure hosts ChatGPT per public knowledge. All Microsoft Azure\
+    \ candidates explicitly link their **commitment to 100% renewable energy by 2025**,\
+    \ datacenter sustainability goals, and technologies/monitoring policies. **Score\
+    \ 5**.\n- Non-formal Reddit entries, widespread generative AI estimates (e.g.,\
+    \ Tom’s Hardware, The Guardian), and advocacy content did not qualify for higher\
+    \ scores as they lacked specificity or primary-source authority. **Score 1 or\
+    \ ≤3**.\n\n#### **Publisher Tiebreaks and Disambiguation**\n- **URLs for Reddit\
+    \ or forum debates (e.g., OpenAI/energy engineering subreddits)** scored ≤2 due\
+    \ to publisher quality rules.\n- All ChatGPT route enemies (`chatgpt.com/g/...`)\
+    \ **failed to answer the actual infrastructure questions** (`sq1`, `sq3`), scoring\
+    \ **≤2**.\n- Microsoft content from **blogs/datacenters** was prioritized due\
+    \ to clear relevance (`sq3`) and publisher authority (`primary`).\n\n### **Outlier**:\
+    \ \nMicrosoft resources frequently cited **Azure’s 2030/2025 goals** but **unambiguously\
+    \ address hosting infrastructure and renewables for their datacenters**. No sources\
+    \ confirmed if OpenAI has "
+  urls_after_blocklist: 8
+sub_questions:
+- id: sq1
+  question: Does the official ChatGPT website or its parent organization publish transparency
+    reports or sustainability disclosures regarding its hosting infrastructure and
+    energy sourcing?
+  rationale: To verify the entity's own claims about renewable energy hosting, first-party
+    disclosures are the most authoritative source.
+  queries:
+  - ChatGPT sustainability report renewable energy hosting site:chatgpt.com
+  - ChatGPT transparency report energy sourcing
+  citations: []
+- id: sq2
+  question: Are there third-party audits, ESG ratings, or regulator filings detailing
+    whether ChatGPT’s hosting infrastructure relies on renewable energy?
+  rationale: Third-party databases or audits provide independent validation of energy
+    sourcing claims.
+  queries:
+  - ChatGPT ESG audits renewable energy
+  citations: []
+- id: sq3
+  question: What cloud or hosting providers does ChatGPT use, and do those providers
+    disclose commitments to renewable energy for their data centers?
+  rationale: Underlying technical details, such as hosting providers, explain the
+    factual mechanism behind energy sourcing for ChatGPT.
+  queries:
+  - Microsoft Azure renewable energy data center commitments
+  citations:
+  - 2022/sharing-the-latest-improvements-to-efficiency-in-microsoft-s-datacenters
+  - 2020/achieving-100-percent-renewable-energy-with-247-monitoring-in-microsoft-sweden
+sources_consulted:
+- id: 2026/renewable-energy-gpt
+  url: https://chatgpt.com/g/g-WvMVuNHoF-renewable-energy
+  title: Renewable Energy
+  ingested: true
+- id: 2022/sharing-the-latest-improvements-to-efficiency-in-microsoft-s-datacenters
+  url: https://azure.microsoft.com/en-us/blog/sharing-the-latest-improvements-to-efficiency-in-microsoft-s-datacenters/
+  title: Sharing the latest improvements to efficiency in Microsoft’s datacenters
+  ingested: true
+- id: 2020/achieving-100-percent-renewable-energy-with-247-monitoring-in-microsoft-sweden
+  url: https://azure.microsoft.com/en-us/blog/achieving-100-percent-renewable-energy-with-247-monitoring-in-microsoft-sweden/
+  title: Achieving 100 percent renewable energy with 24/7 monitoring in Microsoft
+    Sweden
+  ingested: true
+audit: null
 human_review:
   reviewed_at: null
   reviewer: null

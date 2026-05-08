@@ -1,0 +1,134 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:44:09.627261+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Gemini AI privacy policy user data training
+  - Google Gemini AI transparency report data sources
+  - Gemini third-party audit data training use
+  - Gemini training data pipeline documentation
+  - Investigations Gemini user data training AI
+  planner_rationale: The sub-questions cover first-party claims (sq1), third-party
+    validations (sq2), technical training mechanisms (sq3), and investigations into
+    potential data misuse (sq4).
+  candidates_seen: 35
+  urls_kept: 15
+  urls_dropped: 14
+  scorer_rationale: "The scoring for candidates was conducted as follows:\n\n1. **Sphere\
+    \ Disambiguation**: Gemini is explicitly aligned with the `https://gemini.google.com/app`\
+    \ domain (Google’s cloud or consumer AI tools). Candidates referencing `gemini.com`,\
+    \ `deepmind.google`, or `dogemini.app` were excluded.\n\n2. **sq1: Official Statements\
+    \ on Data Usage**\n   - **5 or 4**: Google’s first-party resources (e.g., support\
+    \ pages, documentation) were scored highest where they explicitly address Gemini’s\
+    \ user data usage (e.g., `https://support.google.com/gemini/answer/13594961?hl=en`,\
+    \ `https://cloud.google.com/gemini-enterprise/faq`). The Enterprise FAQ stood\
+    \ out as unambiguous about *not* using customer data for training.\n   - **Primary\
+    \ sources prioritized**; weaker claims or indirect references did not meet level\
+    \ 5.\n\n3. **sq2: Third-Party Audits/ESG Reports**\n   - **1STM Index report**\
+    \ (`https://crfm.stanford.edu/fmti/December-2025/company-reports/Google_FinalReport_FMTI2025.html`)\
+    \ directly evaluates Gemini’s data governance.\n   - No high-quality third-party\
+    \ critiques met the bar, all Junks: tertiary or secondary`.\n\n4. **sq3: Training\
+    \ Pipeline Documentation**\n   - Training pipeline pages (e.g., `https://docs.cloud.google.com/gemini-enterprise-agent-platform/...`)\
+    \ largely describe technical workflows for loggers or custom tuning; none address\
+    \ **consumer/user** data explicitly, leaving bulk as level 3 or discarded.\n\n\
+    5. **sq4: Controversies/Investigations**\n   - **Ars Technica/`PCMag`** (`https://arstechnica.com/...`,\
+    \ `https://www.pcmag.com/...`) contextualize privacy concerns (e.g., indirect\
+    \ mentions of PII). Forum posts (e.g., `Google Groups`) were irrevelant.\n   -\
+    \ **Redact and Cape** addressed API/data terms clearly.\n\n6. **Exclusions/Drops**\n\
+    \   - Technical pipeline manuals (e.g., Vertex Ai, `Gemini Enterprise Agent Platform`)\
+    \ do not substantiate *user* data claims (sq1/sq4). \n   - Publisher tiers 3/`forum`\
+    \ (Reddit: Irene posts, Quora) and answers limited in context: dropped.\n"
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: Does Google’s official transparency report or Gemini documentation explicitly
+    state that user data is not used for training?
+  rationale: Addresses the entity's first-party claims regarding data usage for training.
+  queries:
+  - Gemini AI privacy policy user data training
+  - Google Gemini AI transparency report data sources
+  citations:
+  - 2026/data-governance
+  - 2026/13594961
+  - 2024/generative-ai-in-google-workspace-privacy-hub
+  - 2025/gemini-api-terms-2025
+  - 2026/google-gemini-privacy-policy
+  - 2026/data-and-privacy
+- id: sq2
+  question: Are there third-party audits, ESG reports, or ethical AI assessments that
+    evaluate Gemini’s data usage policies?
+  rationale: Covers third-party validation or critique of Gemini’s claimed data practices.
+  queries:
+  - Gemini third-party audit data training use
+  citations:
+  - 2025/googlefinalreportfmti2025html
+- id: sq3
+  question: How does Gemini’s training pipeline documentation describe data collection
+    and sourcing?
+  rationale: Investigates the underlying technical or factual mechanism of Gemini’s
+    training data.
+  queries:
+  - Gemini training data pipeline documentation
+  citations:
+  - 2026/data-governance
+- id: sq4
+  question: Have there been published reports or investigations into Gemini’s use
+    of user interactions or personally identifiable information?
+  rationale: Targets specific controversies or investigations that may contradict
+    the claim.
+  queries:
+  - Investigations Gemini user data training AI
+  citations:
+  - 2026/13594961
+  - 2025/gemini-api-terms-2025
+  - 2026/google-gemini-privacy-policy
+  - 2026/googles-privacy-maze-how-gemini-traps-you-and-your-data
+sources_consulted:
+- id: 2026/data-governance
+  url: https://docs.cloud.google.com/gemini/docs/discover/data-governance
+  title: How Gemini for Google Cloud uses your data
+  ingested: true
+- id: 2026/13594961
+  url: https://support.google.com/gemini/answer/13594961?hl=en
+  title: Gemini Apps Privacy Hub
+  ingested: true
+- id: 2024/generative-ai-in-google-workspace-privacy-hub
+  url: https://knowledge.workspace.google.com/admin/gemini/generative-ai-in-google-workspace-privacy-hub
+  title: Generative AI in Google Workspace Privacy Hub
+  ingested: true
+- id: 2025/gemini-api-terms-2025
+  url: https://redact.dev/blog/gemini-api-terms-2025
+  title: 'Gemini API & Data Privacy: What Google’s AI Terms Mean for You in 2025'
+  ingested: true
+- id: 2026/google-gemini-privacy-policy
+  url: https://www.cape.co/blog/google-gemini-privacy-policy
+  title: Google Gemini Privacy Policy Explained
+  ingested: true
+- id: 2026/googles-privacy-maze-how-gemini-traps-you-and-your-data
+  url: https://arstechnica.com/ai/2026/04/googles-privacy-maze-how-gemini-traps-you-and-your-data/
+  title: The hidden cost of Google's AI defaults and the illusion of choice
+  ingested: true
+- id: 2026/data-and-privacy
+  url: https://developer.android.com/studio/gemini/data-and-privacy
+  title: Data and privacy
+  ingested: true
+- id: 2025/googlefinalreportfmti2025html
+  url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Google_FinalReport_FMTI2025.html
+  title: Google Transparency Report
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

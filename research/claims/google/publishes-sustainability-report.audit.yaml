@@ -1,0 +1,133 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:20:11.001122+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Google official sustainability report site:google.com
+  - Google climate action report corporate site
+  - Google ESG data MSCI or Sustainalytics
+  - Google sustainability regulatory filings SEC or GRI
+  - Google SASB or TCFD disclosure framework
+  planner_rationale: These sub-questions and queries cover Google's first-party publications,
+    third-party ESG databases, and regulatory commitments to verify the existence
+    and scope of its sustainability or ESG reporting.
+  candidates_seen: 38
+  urls_kept: 22
+  urls_dropped: 18
+  scorer_rationale: The scoring process assessed each candidate's relevance to the
+    three sub-questions related to Google's sustainability or ESG reports, adhering
+    to strict publisher quality labels and entity disambiguation rules. **For sq1
+    (official sustainability reports on Google's channels)**, candidates linking directly
+    to Google's official domains (.google, .com docs, or regulated filings) with explicit
+    mentions of reports or sustainability were prioritized. Examples include **sustainability.google**,
+    direct links to **PDF reports**, and **Google Store sustainability pages**. Forum
+    or blog-linked candidates lacking direct report references or purely promotional
+    content (e.g., Google Cloud blogs without report links) were dropped for sq1.
+    **For sq2 (third-party ESG databases)**, only candidates explicitly analyzing
+    Google/Alphabet in an ESG context were retained, like ESG databases featuring
+    Google or Alphabet's ESG ratings or SEC disclosures referencing sustainability
+    reports. Other ESG aggregator problem set links were dropped for targeting broader
+    topics. **For sq3 (stated goals/commitments in regulatory frameworks like GRI
+    or SASB)**, Google's **public sustainability pages**, filing references to frameworks,
+    and **direct GRI/SASBoverleden** were kept, while forum-level ESG articles targeting
+    frameworks broadly were dropped. Notably, direct links to **GRI, SASB, TCFD descriptions**
+    were retained for addressing framework relevance, despite being generic. **Publisher
+    quality** ensured primary sources dominated sq3 scores, while secondary sources
+    were harmonized with clear Google/Alphabet links for sq2. Candidates about other
+    organizations or generic ESG discussions were dropped. Some overlapping scores
+    (e.g., `sustainability.google`) naturally spanned multiple sub-questions due to
+    comprehensive content.
+  entity_exclude_dropped:
+  - https://blog.google/outreach-initiatives/sustainability/report-ai-sustainability-google-cop28/
+  - https://blog.google/outreach-initiatives/sustainability/2024-environmental-report/
+  urls_after_blocklist: 20
+sub_questions:
+- id: sq1
+  question: Does Google publish an official sustainability report on its primary website
+    or designated corporate channels?
+  rationale: This sub-question targets Google's first-party publication channels to
+    verify if they disclose a sustainability or ESG report directly.
+  queries:
+  - Google official sustainability report site:google.com
+  - Google climate action report corporate site
+  citations:
+  - 2026/operating-sustainably
+  - 2026/sustainability
+  - 2026/1wrmpthyjikjcqv2stjtiu2tpdcqlou0
+  - 2026/google-sustainability-index
+  - 2025/google-2025-environmental-report
+- id: sq2
+  question: Are there third-party ESG databases or aggregators that list or analyze
+    Google’s sustainability or ESG reporting?
+  rationale: This sub-question checks external sources like ESG databases or regulators
+    to validate independently documented sustainability disclosures.
+  queries:
+  - Google ESG data MSCI or Sustainalytics
+  citations:
+  - 2023/2023-google-cloud-sustainability-survey
+  - 2022/google-cloud-2022-sustainability-year-in-review
+- id: sq3
+  question: What are Google’s stated goals or commitments related to sustainability
+    as documented in regulatory filings or frameworks like GRI or SASB?
+  rationale: This sub-question explores regulatory or industry-standard frameworks
+    to confirm if Google adheres to formal sustainability reporting requirements.
+  queries:
+  - Google sustainability regulatory filings SEC or GRI
+  - Google SASB or TCFD disclosure framework
+  citations:
+  - 2026/sustainability
+  - 2026/google-sustainability-index
+sources_consulted:
+- id: 2026/operating-sustainably
+  url: https://datacenters.google/operating-sustainably/
+  title: Operating sustainably
+  ingested: true
+- id: 2026/sustainability
+  url: https://cloud.google.com/sustainability
+  title: Sustainability
+  ingested: true
+- id: 2023/2023-google-cloud-sustainability-survey
+  url: https://cloud.google.com/blog/transform/2023-google-cloud-sustainability-survey
+  title: 2023 Google Cloud Sustainability Survey
+  ingested: true
+- id: 2022/google-cloud-2022-sustainability-year-in-review
+  url: https://cloud.google.com/blog/topics/sustainability/google-cloud-2022-sustainability-year-in-review
+  title: Google Cloud 2022 sustainability year in review
+  ingested: true
+- id: 2026/1wrmpthyjikjcqv2stjtiu2tpdcqlou0
+  url: https://drive.google.com/drive/folders/1wRMPthyjiKjcqv2sTJ_tIu2tpdcQlOU0
+  title: Sustainability Reports
+  ingested: true
+- id: 2026/google-sustainability-index
+  url: https://sustainability.google/
+  title: Sustainable Innovation & Technology
+  ingested: true
+- id: 2025/google-2025-environmental-report
+  url: https://sustainability.google/google-2025-environmental-report/
+  title: 2025 Environmental Report
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

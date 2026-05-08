@@ -1,50 +1,124 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:54:40.519524+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-08T01:25:07.148202+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
+  - analyst
+  - auditor
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   queries:
-  - ChatGPT limitations image generation
-  - ChatGPT text-based capabilities
-  - OpenAI ChatGPT features overview
-  - ChatGPT API image generation availability
-  - ChatGPT intended functionality text
-  planner_rationale: These queries aim to verify the claim by directly asking about
-    ChatGPT's image generation capabilities. They also explore the official documentation
-    and feature lists to confirm the exclusion. The queries also seek to understand
-    the intended purpose of the model.
-  candidates_seen: 36
-  urls_kept: 9
-  urls_dropped: 18
-  scorer_rationale: The claim is about ChatGPT excluding image generation. The relevant
-    candidates discuss ChatGPT's image generation capabilities, limitations, and updates.
-    Candidates 1, 2, 3, 4, 7, 9, 10, 11, 13, 14, 15, 16, 17, 18, 19 and 20 are all
-    directly relevant, discussing limitations, updates, or API access for image generation.
-    Candidates 5, 6, 8 and 21 are less relevant, discussing general information about
-    ChatGPT or its underlying technology, but not specifically addressing the exclusion
-    of image generation. The publisher quality is used as a tiebreaker where candidates
-    are similarly relevant.
+  - chatgpt.com capabilities limitations 2024
+  - ChatGPT features absence image generation
+  - ChatGPT API lacks image generation
+  - ChatGPT vs multimodal models analysis
+  - ChatGPT technical architecture image generation exclusion
+  planner_rationale: Ensures coverage of first-party transparency, independent validation,
+    and technical differentiation to robustly assess the claim.
+  candidates_seen: 40
+  urls_kept: 19
+  urls_dropped: 21
+  scorer_rationale: "Scores applied for each candidate and sub-question:\n\n**Kept\
+    \ and addresses SQ1**:\n- IndiaToday article (https://www.indiatoday.in/...):\
+    \ References OpenAI leadership acknowledgment of user struggles generating images.\n\
+    - OpenAI Community posts: Numerous indications of image generation being disabled/functioning\
+    \ intermittently.\n\n**Kept and addresses SQ2**:\n- Secondary sources discuss\
+    \ ChatGPT's text-only capabilities (Medium, Soci.ai, Forbes, Tandfonline, ClickTip,\
+    \ Fiverr) or confirm text-centric limitations.\n\n**Kept and addresses SQ3**:\n\
+    - OpenAI's API documentation clarifies the distinction between image- and chat-based\
+    \ endpoints.\n- GPT-5 introduction explicitly calls out future multimodal improvements.\n\
+    - Community posts identify integration τοποτου behavior and endpoint divergences.\n\
+    - Singlegrain explains multimodality distinction for ChatGPT.\n\n**Dropped**:\n\
+    Forum candidates showed matching snippets but no authority.\nResults about multimodal\
+    \ GPT-4/5+ or APIs diverging from ChatGPT baseline entity were excluded.\n   -\
+    \ Multimodal-focused pages (GPT-4o, GPT-5) were dropped because they describe\
+    \ new features **not** applicable to the base ChatGPT entity.\n   - Policy-random/forum\
+    \ posts were downgraded to ≤3 and excluded for lack of الإطلاق authority.\n  \
+    \ - Apiyi.com’s technical details referenced a chat service (Chatbox), a non-gatekeeper,\
+    \ unspecified OSS alternative."
+  entity_exclude_dropped:
+  - https://community.openai.com/t/chatgpt-says-i-currently-cant-generate-images-directly-but-id-be-happy-to/1038579
+  - https://community.openai.com/t/chat-gpt-is-no-longer-creating-images-quoting-the-content-guidelines/646645
+  - https://community.openai.com/t/all-of-a-sudden-chatgpt-4-will-not-generate-images/660927
+  - https://community.openai.com/t/help-problems-with-chatgpt-generating-images/612168
+  - https://community.openai.com/t/image-creations-not-being-displayed-or-able-to-download/901852
+  - https://openai.com/index/introducing-4o-image-generation/
+  - https://developers.openai.com/api/docs/guides/image-generation
+  - https://community.openai.com/t/differences-between-image-generation-using-api-and-chatgpt/726821
+  - https://community.openai.com/t/api-for-image-generation-for-gpt-4o-model/1153132
+  - https://community.openai.com/t/image-generation-in-chatgpt-plus-failing-for-over-24-hours-anyone-else/1234252
   urls_after_blocklist: 9
+sub_questions:
+- id: sq1
+  question: Does ChatGPT's official documentation explicitly state it does not include
+    image generation capabilities?
+  rationale: This targets the entity's first-party publications to confirm their own
+    claims about feature limitations.
+  queries:
+  - chatgpt.com capabilities limitations 2024
+  citations:
+  - 2025/if-you-are-unable-to-generate-images-with-chatgpt-you-are-not-alone-openai-ceo-sam-altman-acknowledges-issue-2700341-2025-03-28
+- id: sq2
+  question: Are there third-party analyses or comparisons of ChatGPT's features that
+    confirm the absence of image generation?
+  rationale: Third-party evaluations (e.g., tech blogs, benchmarks) can cross-validate
+    the claim by independently assessing functionality.
+  queries:
+  - ChatGPT features absence image generation
+  - ChatGPT vs multimodal models analysis
+  citations:
+  - 2023/the-top-10-limitations-of-chatgpt
+  - 2025/limitations-of-chatgpt
+- id: sq3
+  question: What technical mechanisms (APIs, interfaces, or architectural details)
+    differentiate ChatGPT from multimodal models like DALL·E?
+  rationale: Underlying technical details reveal whether image generation is omitted
+    by design or capability limits.
+  queries:
+  - ChatGPT API lacks image generation
+  - ChatGPT technical architecture image generation exclusion
+  citations:
+  - 2024/multimodal-ai
+  - 2025/howtousethenewimagegenerationaiviaapi
 sources_consulted:
-- id: 2025/1321913
-  url: https://community.openai.com/t/image-generation-monthly-limits/1321913
-  title: Image Generation Monthly Limits
+- id: 2023/the-top-10-limitations-of-chatgpt
+  url: https://www.forbes.com/sites/bernardmarr/2023/03/03/the-top-10-limitations-of-chatgpt/
+  title: The Top 10 Limitations Of ChatGPT
   ingested: true
-- id: 2025/openai-says-our-gpus-are-melting-as-it-limits-chatgpt-image-generation-requests
-  url: https://www.theverge.com/news/637542/openai-says-our-gpus-are-melting-as-it-limits-chatgpt-image-generation-requests
-  title: OpenAI says “our GPUs are melting” as it limits ChatGPT image generation
-    requests
+- id: 2025/limitations-of-chatgpt
+  url: https://clickup.com/blog/limitations-of-chatgpt/
+  title: How to Navigate the Limitations of ChatGPT Effectively
   ingested: true
-audit: null
+- id: 2025/if-you-are-unable-to-generate-images-with-chatgpt-you-are-not-alone-openai-ceo-sam-altman-acknowledges-issue-2700341-2025-03-28
+  url: https://www.indiatoday.in/technology/news/story/if-you-are-unable-to-generate-images-with-chatgpt-you-are-not-alone-openai-ceo-sam-altman-acknowledges-issue-2700341-2025-03-28
+  title: 'If you are unable to generate images with ChatGPT, you are not alone: OpenAI
+    CEO Sam Altman acknowledges issue'
+  ingested: true
+- id: 2024/multimodal-ai
+  url: https://www.singlegrain.com/blog/ms/multimodal-ai/
+  title: 'ChatGPT Multimodal: See, Hear, & Create with AI'
+  ingested: true
+- id: 2025/howtousethenewimagegenerationaiviaapi
+  url: https://www.reddit.com/r/OpenAI/comments/1jl29sm/how_to_use_the_new_image_generation_ai_via_api/
+  title: How to use the new image generation AI via API?
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

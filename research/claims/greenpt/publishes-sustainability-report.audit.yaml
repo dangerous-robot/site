@@ -1,84 +1,180 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-03T01:45:01.499995+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-07T23:39:16.115730+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   queries:
-  - GreenPT sustainability report
-  - GreenPT ESG report availability
-  - GreenPT environmental impact disclosure
-  - GreenPT corporate responsibility documentation
-  - GreenPT investor relations sustainability
-  planner_rationale: These queries aim to directly locate GreenPT's published sustainability
-    or ESG reports. They also explore related documentation like environmental impact
-    disclosures and corporate responsibility reports, which could serve as alternatives
-    or supplementary information. The investor relations angle targets reports specifically
-    designed for stakeholders.
-  candidates_seen: 40
-  urls_kept: 33
-  urls_dropped: 0
-  scorer_rationale: The claim is about GreenPT publishing a sustainability or ESG
-    report. Several candidates directly address this, either explicitly mentioning
-    sustainability reporting or focusing on ESG aspects.  Candidates from GreenFi
-    are highly relevant. Other candidates discuss broader ESG topics, corporate social
-    responsibility, or specific aspects like green innovation or investor relations,
-    which are tangentially related but worth noting. I prioritized candidates that
-    mention 'sustainability reporting' or 'ESG reporting'.
-  urls_after_blocklist: 24
+  - GreenPT sustainability report site:https://greenpt.com/
+  - sensorGreenPT renewable energy hosting
+  - GreenPT site:https://greenpt.com/ renewable energy policy
+  - ESG database GreenPT
+  planner_rationale: 'The decomposition targets three critical axes: (1) first-party
+    evidence of reporting on GreenPT''s official channels, (2) corroboration from
+    third party sources focusing on technical or operational details (e.g., third-party
+    databases or infrastructure related to sustainability), and (3) underlying mechanisms.'
+  candidates_seen: 26
+  urls_kept: 13
+  urls_dropped: 12
+  scorer_rationale: '[**Kept Candidates**]:
+
+
+    1. **GreenPT official website pages** (e.g., /sustainability/, /, /b-corp/, /business/,
+    /government/, /european-ai/, /greenpt-vs-gemini/, /blog/ai-carbon-footprint/):
+    All these addresses directly address **sq1** (explicit mention of sustainability,
+    transparency, or ESG-related disclosures) and **sq3** (technical/operational sustainability
+    details like renewable energy usage, PUE/WUE metrics, or AI efficiency claims).
+    For example, the `/sustainability/` page provides **primary evidence** (PUE/WUE,
+    100% renewable energy) under the official domain, strongly indicating structural
+    sustainability reporting. Publisher quality is *''primary''*, reinforcing relevance.
+
+
+    2. **Third-party ESG databases** (e.g., [Global Reporting Initiative (GRI)](https://www.globalreporting.org/),
+    [Sustainalytics](https://www.sustainalytics.com/esg-data), [World Bank ESG DataBank](https://databank.worldbank.org/)):
+    These are critical for **sq2**, as they aggregate ESG reporting data from organizations
+    like GreenPT. While none explicitly list GreenPT in the snippets, they represent
+    the **canonical sources** for verifying third-party validation (e.g., ESG scoring
+    frameworks). Publisher quality is *''secondary''*, but they are essential for
+    confirming systemic reporting existence.
+
+
+    ---
+
+
+    [**Dropped Candidates**]:
+
+
+    1. **Third-party hosting providers** (e.g., 20i, New Target, Kualo, PlanetHoster,
+    Dynadot): Despite discussing ''green hosting,'' these URLs are **not about GreenPT**
+    but generic descriptions of sustainability in web hosting. **Level: Different
+    entity**. Scored 1 for **all sub-questions** due to misalignment with the claim''s
+    scope.
+
+
+    2. **ESG/environmental databases with vague snippets** (e.g., Environmental Finance,
+    Greenscope, LSEG, Warwick LibGuides): While relevant to ESG in theory, their snippets
+    make **no mention of GreenPT or AI sustainability**. Publisher quality is *''secondary''*,
+    but the **lack of entity-specific evidence** justified a score <4 for **sq2**.
+
+
+    3. **Forum/low-quality advocacy sites** (none present here, but relevant if they
+    lacked clear Third-Party or Primary labeling).
+
+
+    ---
+
+
+    ### Key Filters Applied:
+
+
+    - **Entity Disambiguation**: Dropped non-GreenPT websites (e.g., hosting providers)
+    even if their content tangentially matched sub-questions.
+
+    - **Publisher Quality Tiebreaker**: Primary sources (GreenPT.com) were preferred
+    over secondary/tertiary for sq1/sq3. Only **canonical** third-party ESG databases
+    were kept for sq2.
+
+    - **Avoid Rules**: Excluded any discussion of **account.greenpt.ai**, **apps.apple.com**,
+    or **camillapang.substack.com** (irrelevant topics).
+
+
+    **Final Kept/Dropped Split**: Optimized for **actionable evidence** about GreenPT’s
+    **first-party transparency (sq1)**, **operational sustainability (sq3)**, and
+    **third-party validation (sq2)**.'
+  urls_after_blocklist: 13
+sub_questions:
+- id: sq1
+  question: Does GreenPT host a public sustainability report on its official website
+    or under a transparency-disclosure subsection (e.g., 'Sustainability', 'ESG',
+    'Renewable Energy')?
+  rationale: Assesses first-party publication channels, which are a primary indicator
+    of transparency for sustainability claims.
+  queries:
+  - GreenPT site:https://greenpt.com/ renewable energy policy
+  citations:
+  - 2025/greenpt-government-ai
+  - 2025/greenpt
+  - 2026/european-ai
+  - 2025/sustainability
+  - 2025/business
+  - 2025/b-corp
+- id: sq2
+  question: Are there third-party databases, ESG aggregators, or environmental ratings
+    (e.g., EcoVadis, CDP, or AI-specific sustainability indices) that mention GreenPT
+    in relation to sustainability reporting?
+  rationale: third-party validation is critical to corroborate or refute claims about
+    a sustainability report's existence or credibility.
+  queries:
+  - ESG database GreenPT
+  citations:
+  - 2026/esg-data
+- id: sq3
+  question: Does GreenPT disclose technical or operational details (e.g., hosting
+    infrastructure, renewable energy sourcing, or open-source model contributions)
+    that align with sustainability reporting frameworks (e.g., ISO 14001, GRI)?
+  rationale: Underlying technical mechanisms provide context for how sustainability
+    practices and reporting could be structured.
+  queries:
+  - sensorGreenPT renewable energy hosting
+  citations:
+  - 2025/greenpt
+  - 2026/european-ai
+  - 2025/sustainability
+  - 2025/introducing-a-new-ai-metric-to-drive-sustainability
+  - 2025/business
 sources_consulted:
-- id: 2025/ai-powered-esg-software-sustainability-reporting
-  url: https://greenfi.ai/ai-esg-software-sustainability-reporting/
-  title: AI-Powered ESG Software for Enhanced Sustainability Performance and Reporting
+- id: 2025/greenpt-government-ai
+  url: https://greenpt.com/government/
+  title: Secure & Sustainable AI chat for governments
   ingested: true
-- id: 2024/sustainability-report-2024
-  url: https://www.greenfi.com/resources/sustainability-report-2024
-  title: 2024 Impact Report
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
   ingested: true
-- id: 2026/blog-and-resources
-  url: https://www.greenfi.com/resources
-  title: Blog and Resources
+- id: 2026/european-ai
+  url: https://greenpt.com/european-ai/
+  title: European AI
   ingested: true
-- id: 2025/greenfi-free-sustainability-reporting
-  url: https://greenfi.ai/news/greenfi-introduces-free-sustainability-reporting-to-simplify-esg-compliance/
-  title: GreenFi Introduces Free Sustainability Reporting to Simplify ESG Compliance
+- id: 2026/esg-data
+  url: https://www.sustainalytics.com/esg-data
+  title: ESG Risk Ratings
   ingested: true
-- id: 2026/greenfi-climate-banking
-  url: https://www.greenfi.com/
-  title: Climate-Focused Checking, Savings, and Investment Accounts
+- id: 2025/sustainability
+  url: https://greenpt.com/sustainability/
+  title: Sustainable, Efficient and Renewable-Powered
   ingested: true
-- id: 2026/greenfi-financial-firm
-  url: https://funds.greenfi.com/
-  title: Financial Firm Built For The Planet
+- id: 2025/introducing-a-new-ai-metric-to-drive-sustainability
+  url: https://greenpt.com/blog/introducing-a-new-ai-metric-to-drive-sustainability/
+  title: Introducing a New AI Metric for Sustainability
   ingested: true
-- id: 2026/top-sustainable-investing-strategies-2026
-  url: https://www.greenfi.com/resources/top-sustainable-investing-strategies-2026
-  title: Top Sustainable Investing Strategies 2026
+- id: 2025/business
+  url: https://greenpt.com/business/
+  title: AI with Privacy and EU Hosting for businesses
   ingested: true
-- id: 2024/esg100-review-2024
-  url: https://www.positiongreen.com/esg100/
-  title: 2024 ESG100 Review
+- id: 2025/b-corp
+  url: https://greenpt.com/b-corp/
+  title: The B Corp AI chat for sustainable innovation
   ingested: true
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: high
-  auditor_confidence: high
-  verdict_agrees: true
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
   confidence_agrees: true
   needs_review: false
 human_review:
-  reviewed_at: '2026-05-02'
+  reviewed_at: '2026-05-07'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

@@ -1,0 +1,117 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:01:02.292173+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Claude.ai sustainability report energy sourcing
+  - Claude environmental impact disclosure
+  - Anthropic ESG report energy renewable sourcing
+  - Anthropic Carbon Disclosure Project filing
+  - Claude model transparency report energy infrastructure
+  planner_rationale: Coverage includes first-party pages (official website), third-party
+    ESG databases, and technical documentation to validate the claim on energy sourcing.
+  candidates_seen: 28
+  urls_kept: 9
+  urls_dropped: 18
+  scorer_rationale: "Filtering logic and scoring rationale:\n\n1. **Kept Candidates**:\n\
+    \    - **sq1 (Claude's sustainability disclosure)**: Only the official **Claude.ai**\
+    \ artifact (abdb37c2-6924-4957-8460-71f79298304b) is retained (score 5) for explicitly\
+    \ addressing Claude's own first-party digital sustainability claims. All other\
+    \ squ1 candidates were discarded for belonging to unrelated domains.\n\n    -\
+    \ **sq2 (Third-party ESG/environmental reports)**: Retained candidates directly\
+    \ reference Anthropic/Claude's Scope 1/2/3 emissions or ESG reporting gaps, scored\
+    \ 4-5. Examples:\n       - `ditchcarbon.com` (misses public Scope 1-3 disclosures),\n\
+    \       - `Earth911` confirms, \n       - `Illuminem.com` for ESG performance.\n\
+    \    \n    - **sq3 (Transparency/model documentation)**: Retained candidates include\
+    \ relevancy to compute/energy sourcing in third-party analyses:\n      - Energy-per-query\
+    \ comparison (score 5: Carboncredits, Devera),\n      - Anthropic/Stanford model\
+    \ cards (endpoint eqiv), \n      - Anthropic’s *techBlog* energy/source reports\
+    \ (primary hubs).\n\n2. **Dropped Candidates**:\n      - **Anthropic-Centric irrelevance**:\
+    \ Domains unrelated to `claude.ai` (ex. `clune.org`, `britell.com`) score 1-3:\
+    \ no direct Claude sub-question match.\n      - **NoClaudeDirectProof**: LinkedIn\
+    \ posts or unscoped forum threads (ex. Reddit) were excluded for vague “environmental\
+    \ guilt” topics without explicit sourcing/energy details.\n      - **CDP/ESG methodology**:\
+    \ Generic CDP overviews only tangentially linked Claude’s tech absence (score\
+    \ 2, dropped).\n\n3. **Publisher Quality Tiebreak**: Primary sources (double-scored\
+    \ `anthropic.com`) adjudicated energy claims over secondary analyses.\n\nEdge\
+    \ Cases Handled:\n   - `Claude-com` and `claudecarbon-tracker` (tool-focused,\
+    \ not matching entity-level claims).\n\nResult: 9 retained primary/secondary sources\
+    \ addressing 3/3 sub-questions with specificity; 14 squelched by context or disambiguation."
+  entity_exclude_dropped:
+  - https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
+  - https://www.anthropic.com/news/build-ai-in-america
+  urls_after_blocklist: 7
+sub_questions:
+- id: sq1
+  question: What does Claude's official website disclose about its energy sourcing
+    or sustainability practices?
+  rationale: First-party transparency often appears on official sustainability or
+    responsibility pages.
+  queries:
+  - Claude.ai sustainability report energy sourcing
+  - Claude environmental impact disclosure
+  citations: []
+- id: sq2
+  question: Are there third-party ESG or environmental reports available for Claude
+    (e.g., Anthropic's sustainability commitments, Carbon Disclosure Project, or ESG
+    ratings)?
+  rationale: Third-party databases aggregate disclosed environmental practices, including
+    energy sourcing.
+  queries:
+  - Anthropic ESG report energy renewable sourcing
+  - Anthropic Carbon Disclosure Project filing
+  citations:
+  - 2026/876f1f99anthropic
+- id: sq3
+  question: Does Claude mention its energy sourcing in its transparency reports or
+    model documentation?
+  rationale: Technical or operational documents may detail infrastructure or operational
+    energy sourcing.
+  queries:
+  - Claude model transparency report energy infrastructure
+  citations:
+  - 2024/anthropicclaude203html
+  - 2025/environmental-impact-ai-energy-carbon
+  - 2026/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact
+sources_consulted:
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
+  ingested: true
+- id: 2025/environmental-impact-ai-energy-carbon
+  url: https://devera.ai/resources/environmental-impact-ai-energy-carbon/
+  title: 'AI Water & Energy Usage: ChatGPT vs Claude vs Gemini (2026)'
+  ingested: true
+- id: 2026/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact
+  url: https://carboncredits.com/chatgpt-vs-claude-ai-carbon-footprints-pentagon-deal-and-energy-impact/
+  title: 'ChatGPT vs Claude AI: Carbon Footprints, Pentagon Deal, and Energy Impact'
+  ingested: true
+- id: 2026/876f1f99anthropic
+  url: https://www.data.illuminem.com/company/876f1f99_anthropic
+  title: Anthropic Sustainability Performance & ESG Data
+  ingested: true
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

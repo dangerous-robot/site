@@ -1,55 +1,171 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-03T01:45:51.110589+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-07T23:40:41.042387+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   queries:
-  - GreenPT corporate structure details
-  - GreenPT ownership model information
-  - GreenPT B-corp certification verification
-  - GreenPT employee ownership structure
-  - GreenPT organizational structure overview
-  planner_rationale: These queries aim to directly identify GreenPT's corporate structure
-    by using various terms related to ownership and organizational models. They prioritize
-    finding official descriptions or verifiable certifications (like B-corp) rather
-    than opinions or analyses. The queries vary in phrasing to capture different potential
-    descriptions of the structure.
-  candidates_seen: 39
-  urls_kept: 4
-  urls_dropped: 27
-  scorer_rationale: The claim asks about the corporate structure of GreenPT. Candidates
-    with a primary publisher quality and mentioning B Corp certification or employee
-    ownership are highly relevant. Candidates mentioning GreenPT's use of renewable
-    energy and sustainability initiatives are also relevant.  Candidates with secondary
-    publisher quality are considered if not higher quality options exist. I dropped
-    articles that were general overviews of green companies or corporate governance
-    without specific mention of GreenPT's structure.
-  urls_after_blocklist: 4
+  - GreenPT About organization type 2024
+  - GreenPT legal structure privacy policy
+  - GreenPT ownership or funding sources site:github.com
+  - ' tech blogs ''GreenPT'' ownership model'
+  - Europe-based open-source AI platform legal form
+  planner_rationale: This plan seeks to address GreenPT’s corporate structure by (1)
+    querying first-party sources for direct statements, (2) targeting objective third-party
+    sources confirming or analyzing ownership models, and (3) examining regulatory
+    context and technical affiliations to infer or corroborate how GreenPT is legally
+    and structurally organized.
+  candidates_seen: 40
+  urls_kept: 10
+  urls_dropped: 31
+  scorer_rationale: '### Scoring Rationale:
+
+
+    **Kept Candidates:**
+
+    1. **GreenPT Official Pages**: Pages like `https://greenpt.com/government/`, `https://greenpt.com/b-corp/`,
+    `https://greenpt.com/sustainability/`, and `https://greenpt.com/` are directly
+    tied to the entity itself and focus on **corporate claims (sq1, e.g., B Corp status,
+    mission, sustainability)**. The `sq1` tag is assigned due to explicit claims on
+    these pages (e.g., "B Corp AI chat", "empowers B Corps"). Other URLs are not dropped
+    due to their relevance to **direct first-party evidence about GreenPT’s corporate
+    structure**, even if not explicitly labeled.
+
+
+    2. **Third-party reviews or partnerships (e.g., `https://www.capterra.com/p/10041361/GreenPT/`)**
+    are partially relevant for **external confirmation of ownership claims (sq1)**.
+    Capterra’s profile includes clear labels about ownership publicly (no explicit
+    investor/parent labels, but contextual relevance to mission-based platforms).
+
+
+    3. **sq3 (Regulatory/Operational Obligations)**: URLs explicitly discussing **EU
+    AI Act, GDPR, and GRC obligations** (e.g., `林://www.orrick.com/en/Insights/2024/09/The-EU-AI-Act-Application-to-Open-Source-Projects`,
+    `https://huggingface.co/blog/eu-ai-act-for-oss-developers`) are included because
+    they illuminate **regulatory pressures** shaping corporate governance obligations
+    relevant to companies like GreenPT. These are coded under sq3.
+
+
+    4. **Publisher Quality Tiebreak**: Primary sources (`greenpt.com`) override secondary
+    assessment; forum or tertiary sources (e.g., Substack) are dropped for all scoring
+    categories.
+
+
+    **Dropped Candidates:**
+
+    1. **Off-topic or irrelevant snippets** (e.g., `https://thegreenlegalok.com/privacy-policy`,
+    GreenLegal, PLLC; Green Legal Group; Wikipedia’s Privacy Policy) lack direct relevance
+    to **GreenPT’s specific structure**. Singleton privacy policies from unrelated
+    entities (or EU/GDPR general discussions) lack focus.
+
+
+    2. **Camillapang.substack.com**: Dropped as an **excluded topic**. Tertiary or
+    advocate site entries (e.g., `sq1` level-> forum opinions) are also excluded post-scoring.
+
+
+    3. **General green/tech blogs**: Despite tangents (e.g., `https://www.computerweekly.com/blog/Green-Tech/`),
+    snippets fail to relate to **GreenPT’s ownership regime**. Contextual overlap
+    on "green tech" is insufficient with no mention of corporate structure or reflexivity.
+
+
+    ### Justifications for **Dropped**:
+
+    - **No clear mention of GreenPT ownership models** (sq2): Academic/regulatory
+    sources either lacked specificity to GreenPT or reflected **broader industry insights**
+    without direct echoes of ownership.
+
+    - **sq4 (Operational Partners)**: Critical details on hosting or **parent-adjacency
+    disclosures** are absent. Github links only list software-focused efforts unrelated
+    to corporate governance.
+
+
+    ### Outcome:**
+
+    Primary foci are **sq1 (direct claims) and sq3 (regulatory shape)**, with all
+    other sub-questions inadequately covered.'
+  urls_after_blocklist: 10
+sub_questions:
+- id: sq1
+  question: What is GreenPT's official corporate structure? (e.g., privacy policy,
+    about section, FAQ, blog)
+  rationale: Obtain direct, first-party evidence of GreenPT's structure from their
+    website or official statements.
+  queries:
+  - GreenPT About organization type 2024
+  - GreenPT legal structure privacy policy
+  citations:
+  - 2025/greenpt-government-ai
+  - 2025/greenpt
+  - 2025/b-corp
+  - 2025/sustainability
+- id: sq2
+  question: Are there any third-party analyses of GreenPT's organizational ownership
+    model?
+  rationale: Explore indirect, credible sources (e.g., tech/economic journals, nonprofit
+    databases) that may document their ownership structure without relying solely
+    on internal statements.
+  queries:
+  - GreenPT ownership or funding sources site:github.com
+  - ' tech blogs ''GreenPT'' ownership model'
+  citations: []
+- id: sq3
+  question: What privacy-focused regulations or reporting requirements (e.g., GDPR)
+    might framing GreenPT's legal obligations regarding its corporate governance?
+  rationale: Understand external pressures that shape or reveal GreenPT's corporate
+    structure, leveraging regulations tied to Europe/EU-based entities.
+  queries:
+  - Europe-based open-source AI platform legal form
+  citations:
+  - 2026/360061849112-gdpr-features-overview
+  - 2025/ai-act-explainer
+  - 2024/eu-ai-act-for-oss-developers
+  - 2024/the-eu-ai-act-application-to-open-source-projects
+- id: sq4
+  question: Does GreenPT list its hosting or operational partners that might also
+    disclose its ownership status?
+  rationale: Identify connections with technical providers or advisers that may discloses
+    or infer GreenPT’s ownership or funding.
+  queries: []
+  citations: []
 sources_consulted:
-- id: 2026/greenpt-api-models
-  url: https://docs.greenpt.ai/api/models
-  title: Developer and API documentation
-  ingested: true
 - id: 2025/greenpt-government-ai
   url: https://greenpt.com/government/
   title: Secure & Sustainable AI chat for governments
   ingested: true
-- id: 2026/b-corporation-home
-  url: https://www.bcorporation.net/en-us/
-  title: B Corporation Home
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
   ingested: true
-- id: 2025/greenpt-b-corp-ai
-  url: https://www.greenpt.com/b-corp/
+- id: 2025/b-corp
+  url: https://greenpt.com/b-corp/
   title: The B Corp AI chat for sustainable innovation
+  ingested: true
+- id: 2025/sustainability
+  url: https://greenpt.com/sustainability/
+  title: Sustainable, Efficient and Renewable-Powered
+  ingested: true
+- id: 2026/360061849112-gdpr-features-overview
+  url: https://support.greenhouse.io/hc/en-us/articles/360061849112-GDPR-features-overview
+  title: GDPR features overview
+  ingested: true
+- id: 2025/ai-act-explainer
+  url: https://linuxfoundation.eu/newsroom/ai-act-explainer
+  title: What Open Source Developers Need to Know about the EU AI Act
+  ingested: true
+- id: 2024/eu-ai-act-for-oss-developers
+  url: https://huggingface.co/blog/eu-ai-act-for-oss-developers
+  title: Open Source Developers Guide to the EU AI Act
+  ingested: true
+- id: 2024/the-eu-ai-act-application-to-open-source-projects
+  url: https://www.orrick.com/en/Insights/2024/09/The-EU-AI-Act-Application-to-Open-Source-Projects
+  title: 'The EU AI Act: Application to Open-Source Projects'
   ingested: true
 audit: null
 human_review:

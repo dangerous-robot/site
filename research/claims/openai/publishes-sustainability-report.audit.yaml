@@ -1,50 +1,138 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:59:09.550586+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-08T01:00:46.023472+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   queries:
-  - OpenAI sustainability report
-  - OpenAI ESG commitments
-  - OpenAI environmental impact disclosure
-  - OpenAI corporate responsibility initiatives
-  - OpenAI carbon footprint data
-  planner_rationale: These queries aim to find official reports or disclosures from
-    OpenAI regarding their sustainability efforts. They cover different aspects like
-    general reports, ESG commitments, environmental impact, broader corporate responsibility,
-    and specific data like carbon footprint. This approach seeks primary sources directly
-    from OpenAI or independent analyses of their disclosures.
-  candidates_seen: 32
-  urls_kept: 32
-  urls_dropped: 0
-  scorer_rationale: The claim asks if OpenAI publishes a sustainability or ESG report.
-    All the candidates discuss OpenAI's sustainability efforts, reports, and commitments.
-    Some explicitly mention reports, while others discuss initiatives like carbon
-    emissions, renewable energy targets, and ESG commitments. The candidates are all
-    relevant and provide varying levels of detail.
-  urls_after_blocklist: 24
-sources_consulted: []
+  - OpenAI sustainability report site:openai.com
+  - OpenAI transparency report sustainability
+  - OpenAI ESG report MSCI Sustainalytics
+  - OpenAI sustainability disclosures GRI framework
+  - OpenAI climate commitments TCFD alignment
+  planner_rationale: The sub-questions collectively cover first-party publications
+    (sq1), third-party validation (sq2), and regulatory or framework references (sq3),
+    ensuring comprehensive coverage of OpenAI's sustainability or ESG reporting.
+  candidates_seen: 27
+  urls_kept: 19
+  urls_dropped: 8
+  scorer_rationale: "**Kept Candidates:**\n- **sq1 (First-party disclosures):**\n\
+    \  All OpenAI official websites, OpenAI Academy, and OpenAI Community posts were\
+    \ scored for direct references to sustainability or ESG reporting. Candidates\
+    \ like the *Environmental Impact of AI* (Direct link, primary), *AI for Earth\
+    \ community* (Sustainability-related initiatives), *Trust and Transparency* (Mentions\
+    \ sustainability indirectly), *Community discussions about carbon offsets* (Submitted\
+    \ features/suggestions), and *Medium/Stanford mentions* (External but credible)\
+    \ were kept. Third-party sources (DitchCarbon, BrandImpact, The Sustainable Innovation)\
+    \ were also considered valuable due to their discussion of ESG-related facets.\n\
+    \n- **sq2 (Third-party databases/ESG aggregators):**\n  Sources discussing OpenAI’s\
+    \ ESG status in aggregators like *DitchCarbon*, *Climate+Tech*, *Stanford Transparency\
+    \ Index*, and even the *OpenAI Community post* mentioning Azure's carbon-neutral\
+    \ operations were retained. These provide external validation or perception of\
+    \ OpenAI’s sustainability efforts.\n\n- **sq3 (Regulatory filings/frameworks):**\n\
+    \  Only the *IRDO poster* explicitly questions regulatory commitments for standardized\
+    \ sustainability reporting. Stanford’s article references OpenAI’s *lack of disclosures*\
+    \ under frameworks but helps establish the third-party validation context.\n\n\
+    \n  **Scores of 4 or 5 (Direct/Strong Relevance):**\n  - **sq1:** Direct references\
+    \ to corporate actions, initiatives, or investments in transparency/sustainability.\
+    \ Many OpenAI’s own sources and credible third-party journalists Medium/Stanford\
+    \ reports.\n  - **sq2:** Any third-party databases/rater’s aggregation of sustainability\
+    \ linked explicitly to OpenAI.\n  - **sq3:** Mentioning regulatory standards/framework\
+    \ references."
+  urls_after_blocklist: 19
+sub_questions:
+- id: sq1
+  question: Does OpenAI publish a sustainability report or ESG-related document on
+    its official website or designated transparency channels?
+  rationale: Evaluates the entity's first-party disclosures to determine if they cover
+    sustainability or ESG metrics.
+  queries:
+  - OpenAI sustainability report site:openai.com
+  - OpenAI transparency report sustainability
+  citations:
+  - 2025/environmental-impact-of-ai
+  - 2022/collaborating-sustainable-future-ai-earth
+  - 2025/irdo-2025-poster-63
+  - 2026/open-ai-sustainability
+- id: sq2
+  question: Are there any third-party databases or ESG aggregators listing OpenAI’s
+    sustainability or environmental impact disclosures?
+  rationale: Assesses external validation or aggregation of OpenAI’s sustainability
+    claims to confirm completeness or credibility.
+  queries:
+  - OpenAI ESG report MSCI Sustainalytics
+  citations:
+  - 2025/irdo-2025-poster-63
+  - 2026/open-ai-sustainability
+  - 2024/hidden-environmental-costs-tech-ai-investments
+  - 2026/openai-brand-impact
+- id: sq3
+  question: What regulatory filings or frameworks (e.g., GRI, SASB, TCFD) reference
+    OpenAI’s sustainability or ESG reporting obligations or commitments?
+  rationale: Identifies formal commitments or requirements that may necessitate public
+    ESG reporting by OpenAI.
+  queries:
+  - OpenAI sustainability disclosures GRI framework
+  - OpenAI climate commitments TCFD alignment
+  citations:
+  - 2025/irdo-2025-poster-63
+sources_consulted:
+- id: 2025/environmental-impact-of-ai
+  url: https://academy.openai.com/public/clubs/higher-education-05x4z/resources/environmental-impact-of-ai
+  title: Environmental Impact of AI
+  ingested: true
+- id: 2023/sustainable-development-and-ai
+  url: https://community.openai.com/t/sustainable-development-and-ai/377448
+  title: Sustainable development and AI
+  ingested: true
+- id: 2026/openai-nonprofit-commission-report
+  url: https://cdn.openai.com/pdf/016dcd99-2a6c-476c-a6b4-0a976b1c1ca1/the-openai-nonprofit-commission-report.pdf
+  title: The OpenAI Nonprofit Commission Report
+  ingested: true
+- id: 2022/collaborating-sustainable-future-ai-earth
+  url: https://community.openai.com/t/collaborating-for-a-sustainable-future-ai-for-earth/24586
+  title: 'Collaborating for a Sustainable Future: AI for Earth'
+  ingested: true
+- id: 2025/environmental-responsibility-features
+  url: https://community.openai.com/t/environmental-responsibility-features/1218941
+  title: Environmental responsibility features
+  ingested: true
+- id: 2025/irdo-2025-poster-63
+  url: https://www.irdo.si/irdo2025/posters/63.pdf
+  title: IRDO 2025 Poster 63
+  ingested: true
+- id: 2026/open-ai-sustainability
+  url: https://thesustainableinnovation.com/open-ai/
+  title: Open AI Sustainability
+  ingested: true
+- id: 2024/hidden-environmental-costs-tech-ai-investments
+  url: https://blogs.cfainstitute.org/investor/2024/10/31/the-hidden-environmental-costs-of-tech-giants-ai-investments/
+  title: The Hidden Environmental Costs of Tech Giants’ AI Investments
+  ingested: true
+- id: 2026/openai-brand-impact
+  url: https://brandimpact.org/en/brands/openai
+  title: OpenAI Brand Sustainability Scoring
+  ingested: true
 audit:
   analyst_verdict: 'false'
-  auditor_verdict: 'true'
-  analyst_confidence: high
+  auditor_verdict: mostly-true
+  analyst_confidence: low
   auditor_confidence: medium
   verdict_agrees: false
   confidence_agrees: false
   needs_review: true
 human_review:
-  reviewed_at: '2026-05-06'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

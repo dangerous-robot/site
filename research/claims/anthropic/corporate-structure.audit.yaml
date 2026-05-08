@@ -1,73 +1,110 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:41:34.117620+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-08T17:26:28.129073+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:gemma3n
-  ingestor: infomaniak:google/gemma-4-31B-it
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
   analyst: infomaniak:openai/gpt-oss-120b
   auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
   queries:
-  - Anthropic corporate structure details
-  - Anthropic ownership model
-  - Anthropic legal structure
+  - Anthropic corporate structure
   - Anthropic company type
-  - Anthropic B-corp status
-  planner_rationale: These queries directly target Anthropic's corporate structure
-    and ownership. They use different phrasing to capture various potential descriptions
-    of the company's structure, aiming to find official statements, legal documents,
-    or reputable news reports detailing its organizational form. The queries are designed
-    to bypass common search engine operators and prioritize direct information.
-  candidates_seen: 30
-  urls_kept: 10
-  urls_dropped: 14
-  scorer_rationale: 'The claim asks about Anthropic''s corporate structure. Candidates
-    are scored based on whether they explicitly state or imply the company''s structure
-    (e.g., Public Benefit Corporation, PBC). Primary sources (company website, official
-    documents) receive the highest score.  The following URLs are kept: Anthropic''s
-    company page, news about the long-term benefit trust, ownership details from revenue
-    memo and rankred, information about legal webinars, the new constitution, legal
-    compliance documentation, the company''s website, Get AI Perks, Britannica, and
-    Anthropic''s official website. The following URLs are dropped because they are
-    either too general (Wikipedia, org chart), discuss related topics (OpenAI''s structure),
-    or are forum posts that don''t provide definitive information. Also, URLs with
-    lower publisher quality (forum) are dropped when higher quality alternatives are
-    available.'
-  urls_after_blocklist: 10
+  - Anthropic business profile Crunchbase
+  - Anthropic SEC filings
+  - Anthropic B Corp certification
+  - Anthropic employee ownership model
+  - Anthropic steward ownership
+  planner_rationale: These sub‑questions together cover every possible corporate‑structure
+    category mentioned in the claim, using both Anthropic’s own disclosures and independent
+    sources, while the seven concise Brave queries provide focused entry points for
+    each axis.
+  candidates_seen: 49
+  urls_kept: 5
+  urls_dropped: 44
+  scorer_rationale: Primary Anthropic webpages (company page and Long‑Term Benefit
+    Trust page) explicitly state that Anthropic is a Public Benefit Corporation, directly
+    answering sq1. The Time.com feature and the RevenuMemo and IBL Law articles also
+    discuss Anthropic's public‑benefit corporate form, giving them clear relevance
+    to sq1 (and the IBL Law piece also claims a B‑Corporation label, touching sq3).
+    All other results either lack any mention of legal entity type, focus on product
+    or funding news, or are from avoided sources (Wikipedia). Consequently, only the
+    five sources scoring >=3 on at least one sub‑question are kept; the remainder
+    are dropped.
+  urls_after_blocklist: 5
+sub_questions:
+- id: sq1
+  question: What legal entity type and corporate structure does Anthropic describe
+    for itself?
+  rationale: First‑party sources (company website, press releases, investor deck)
+    give the official description of Anthropic’s structure.
+  queries:
+  - Anthropic corporate structure
+  - Anthropic company type
+  citations:
+  - 2026/anthropic-company
+  - 2023/long-term-benefit-trust
+  - 2024/anthropic-structure-openai-incentives
+  - 2026/who-owns-anthropic
+- id: sq2
+  question: How do third‑party business databases and news outlets classify Anthropic’s
+    corporate status?
+  rationale: Independent registries (Crunchbase, Bloomberg, SEC, news articles) confirm
+    whether Anthropic is publicly‑traded, privately‑held, etc.
+  queries:
+  - Anthropic business profile Crunchbase
+  - Anthropic SEC filings
+  citations: []
+- id: sq3
+  question: Has Anthropic obtained B‑Corp certification or any similar benefit‑corp
+    designation?
+  rationale: B‑Corp status is a distinct legal designation that must be verified via
+    certification registries or announcements.
+  queries:
+  - Anthropic B Corp certification
+  citations: []
+- id: sq4
+  question: Is Anthropic structured as employee‑owned, steward‑ownership, or a cooperative?
+  rationale: Ownership models such as employee‑ownership, steward‑ownership, or cooperatives
+    are disclosed in governance docs or third‑party analyses.
+  queries:
+  - Anthropic employee ownership model
+  - Anthropic steward ownership
+  citations: []
 sources_consulted:
-- id: 2026/claude-for-legal-teams
-  url: https://www.anthropic.com/webinars/claude-for-legal-teams
-  title: Claude for Legal teams
+- id: 2026/anthropic-company
+  url: https://www.anthropic.com/company
+  title: Company
   ingested: true
-- id: 2026/claude-new-constitution
-  url: https://www.anthropic.com/news/claude-new-constitution
-  title: Claude's new constitution
+- id: 2023/long-term-benefit-trust
+  url: https://www.anthropic.com/news/the-long-term-benefit-trust
+  title: The Long-Term Benefit Trust
   ingested: true
-- id: 2026/legal-and-compliance
-  url: https://docs.anthropic.com/en/docs/claude-code/legal-and-compliance
-  title: Legal and compliance
+- id: 2024/anthropic-structure-openai-incentives
+  url: https://time.com/6983420/anthropic-structure-openai-incentives/
+  title: How Anthropic Designed Itself to Avoid OpenAI’s Mistakes
   ingested: true
-- id: 2026/anthropic-home
-  url: https://www.anthropic.com/
-  title: Home
+- id: 2026/who-owns-anthropic
+  url: https://www.revenuememo.com/p/who-owns-anthropic
+  title: Who owns Anthropic? Ownership structure explained (2026)
   ingested: true
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
-  analyst_confidence: high
+  analyst_confidence: medium
   auditor_confidence: high
   verdict_agrees: true
-  confidence_agrees: true
+  confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: '2026-05-01'
-  reviewer: brandon@dangerousrobot.org
+  reviewed_at: null
+  reviewer: null
   notes: null
   pr_url: null

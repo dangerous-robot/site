@@ -1,0 +1,136 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T03:00:06.489683+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Gemini largest model configuration official docs
+  - AI model benchmark sites classify Gemini
+  - Google public commitment excludes frontier AI models
+  - Gemini parameter count training details
+  - Gemini safe deployment limits research paper
+  planner_rationale: Sub-questions cover Gemini's self-representation (first-party),
+    third-party assessments, explicit commitments, and technical specifications, ensuring
+    all axes of the claim are addressed.
+  candidates_seen: 40
+  urls_kept: 16
+  urls_dropped: 25
+  scorer_rationale: "**Kept Candidates and Scoring:**\n\n1. **sq1 (Gemini's official\
+    \ documentation on model scale)**:\n   - Scores 5: `https://ai.google.dev/gemini-api/docs/models`,\
+    \ `https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models`, and `https://deepmind.google/models/gemini/`\
+    \ (official docs explicitly mention model configurations or versions like 'Gemini\
+    \ 2.5 Pro').\n   - Scores 4: None (only three primary sources directly address\
+    \ sq1).\n\n2. **sq2 (Third-party benchmarks classifying Gemini as frontier-scale)**:\n\
+    \   - Scores 5: None.\n   - Scores 4: `https://artificialanalysis.ai/models`,\
+    \ `https://lmcouncil.ai/benchmarks`, `https://venturebeat.com/ai/google-gemini-unexpectedly-surges-to-no-1-over-openai...`,\
+    \ `https://www.vellum.ai/blog/google-gemini-3-benchmarks` (third-party aggregate\
+    \ ratings or benchmarks explicitly compare Gemini to frontier models).\n   - Scores\
+    \ 3: Other secondary sources were downgraded due to lower direct relevance or\
+    \ lack of frontier-specific terminology.\n\n3. **sq3 (Public statements disavowing\
+    \ frontier-scale AI)**:\n   - Scores 5: None.\n   - Scores 4: `https://time.com/7313320/google-deepmind-gemini-ai-safety-pledge/`,\
+    \ `https://fortune.com/2025/04/09/google-gemini-2-5-pro-missing-model-card...`,\
+    \ `https://fortune.com/2025/08/29/british-lawmakers-accuse-google-deepmind-of-breach...`,\
+    \ `https://pauseai.info/google-deepmind-broken-promises` (articles or letters\
+    \ discussing public statements or commitments on AI safety).\n   - Scores 3: `https://ai.google/static/documents/ai-principles-2023-progress-update.pdf`\
+    \ (does not explicitly deny frontier commitments but relates to safety principles).\n\
+    \n4. **sq4 (Technical specifications of Gemini models)**:\n   - Scores 5: None.\n\
+    \   - Scores 4: `https://tomtunguz.com/gemini-3-proves-pretraining-scaling-laws-intact/`,\
+    \ `https://www.deeplearning.ai/the-batch/all-you-need-to-know-about-gemini...`,\
+    \ `https://marktechpost.com/2025/11/18/googles-gemini-3-pro-turns-sparse-moe...`,\
+    \ `https://apxml.com/models/gemini-31-pro` (specific details like parameter counts,\
+    \ training methodologies, or revisions are provided).\n   - Scores 3: Low-confidence\
+    \ secondary or user fora (e.g., Reddit) downgraded for unreliability.\n\n**Dropped\
+    \ Candidates:**\n- Low-quality (e.g., forum or tertiary sources) failing to clearly\
+    \ address **any** sub-question (e.g., Reddit estimates or unverified claims).\n\
+    - Lack of specificity on model configurations (e.g., `geminicli.com/` docs do\
+    \ not discuss scale).\n- Off-topic (e.g., military AI, unionization) or rehashing\
+    \ generic AI safety guidelines without mentioning model size or design commitments.\n\
+    \n**Exceptions:**\n- Secondary sources for sq2, sq3, or sq4 were kept only if\
+    \ they explicitly mention benchmarks, safety commitments, or specifications. Primary\
+    \ sources dominate kept candidates."
+  entity_exclude_dropped:
+  - https://deepmind.google/models/gemini/
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: What is the largest or most advanced model configuration that Gemini's
+    official documentation explicitly lists?
+  rationale: This identifies the claims made by Gemini's first-party communications
+    about model scale and capabilities.
+  queries:
+  - Gemini largest model configuration official docs
+  citations:
+  - 2026/models
+- id: sq2
+  question: Do third-party AI model benchmarks or compare sites classify Gemini as
+    a frontier-scale model?
+  rationale: Aggregate ratings or benchmarks from ESG or AI-specific third parties
+    characterize external views of Gemini's scale independently.
+  queries:
+  - AI model benchmark sites classify Gemini
+  citations:
+  - 2026/models
+  - 2026/benchmarks
+  - 2025/google-gemini-3-benchmarks
+- id: sq3
+  question: Are there any public statements from Google or Gemini explicitly stating
+    they do not deploy frontier-scale AI models?
+  rationale: Identifies whether the entity directly commits to avoiding frontier model
+    deployment beyond official documentation.
+  queries:
+  - Google public commitment excludes frontier AI models
+  - Gemini safe deployment limits research paper
+  citations:
+  - 2023/ai-principles-2023-progress-updatepdf
+  - 2025/google-deepmind-gemini-ai-safety-pledge
+  - 2025/google-gemini-2-5-pro-missing-model-card-in-apparent-violation-of-ai-safety-promises-to-us-government-international-bodies
+- id: sq4
+  question: What technical specifications (e.g., parameter count, training compute,
+    hardware use) are disclosed for Gemini models?
+  rationale: Quantitative indicators of model scale provide concrete evidence about
+    model size and exclusion from frontier tiers.
+  queries:
+  - Gemini parameter count training details
+  citations:
+  - 2026/models
+sources_consulted:
+- id: 2023/ai-principles-2023-progress-updatepdf
+  url: https://ai.google/static/documents/ai-principles-2023-progress-update.pdf
+  title: AI Principles 2023 Progress Update
+  ingested: true
+- id: 2026/models
+  url: https://ai.google.dev/gemini-api/docs/models
+  title: Models
+  ingested: true
+- id: 2026/benchmarks
+  url: https://lmcouncil.ai/benchmarks
+  title: AI Model Benchmarks May 2026
+  ingested: true
+- id: 2025/google-gemini-3-benchmarks
+  url: https://www.vellum.ai/blog/google-gemini-3-benchmarks
+  title: Google Gemini 3 Benchmarks (Explained)
+  ingested: true
+- id: 2025/google-deepmind-gemini-ai-safety-pledge
+  url: https://time.com/7313320/google-deepmind-gemini-ai-safety-pledge/
+  title: 60 U.K. Lawmakers Accuse Google of Breaking AI Safety Pledge
+  ingested: true
+- id: 2025/google-gemini-2-5-pro-missing-model-card-in-apparent-violation-of-ai-safety-promises-to-us-government-international-bodies
+  url: https://fortune.com/2025/04/09/google-gemini-2-5-pro-missing-model-card-in-apparent-violation-of-ai-safety-promises-to-us-government-international-bodies/
+  title: Google's Gemini 2.5 Pro missing key safety report in apparent violation of
+    promises
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

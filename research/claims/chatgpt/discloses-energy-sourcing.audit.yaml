@@ -1,59 +1,163 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-05T17:52:13.331989+00:00'
-  model: infomaniak:openai/gpt-oss-120b
+  ran_at: '2026-05-08T01:20:27.882856+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:gemma3n
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   queries:
-  - ChatGPT energy consumption disclosure
-  - OpenAI ChatGPT sustainability report
-  - ChatGPT carbon footprint analysis
-  - ChatGPT energy source transparency
-  - ChatGPT environmental impact statement
-  planner_rationale: These queries aim to find information about ChatGPT's energy
-    usage and sourcing. They cover direct disclosures, sustainability reports from
-    OpenAI, independent analyses of its carbon footprint, transparency initiatives,
-    and formal environmental statements. The queries are varied in their approach,
-    targeting direct disclosures, broader sustainability reports, and specific analytical
-    reports.
-  candidates_seen: 27
-  urls_kept: 17
-  urls_dropped: 8
-  scorer_rationale: The claim asks about ChatGPT's energy sourcing.  I've scored based
-    on whether the snippets directly discuss energy consumption, electricity usage,
-    carbon footprint, or water consumption related to ChatGPT.  I've also considered
-    the publisher quality, prioritizing primary sources and then secondary.
-  urls_after_blocklist: 17
+  - ChatGPT sustainability energy sourcing
+  - ChatGPT transparency report energy
+  - ChatGPT data center energy sourcing Michelin
+  - ChatGPT Microsoft Azure energy sourcing
+  - ChatGPT CDP energy disclosure
+  planner_rationale: The sub-questions cover ChatGPT’s first-party disclosures, third-party
+    documentation, and technical hosting infrastructure, all critical for verifying
+    the claim about energy sourcing transparency.
+  candidates_seen: 37
+  urls_kept: 11
+  urls_dropped: 24
+  scorer_rationale: "### **Scoring Rationale**\n\n---\n### **Kept Candidates** *(score\
+    \ ≥ 4 on at least one sub-question)*\n\n#### **First-Party Disclosures (sq1)**\n\
+    - **`https://chatgpt.com/g/g-WvMVuNHoF-renewable-energy`** (Score: **5})\n  -\
+    \ **Rationale**: This is a first-party `chatgpt.com` resource (Official website\
+    \ per inputs), explicitly addressing ChatGPT’s focus on renewable energy, though\
+    \ indirectly. Given the context of the sub-question, this is the highest-quality\
+    \ candidate for evaluating *first-party* (if limited) disclosures on energy sourcing.\
+    \ **Case: Primary-source tie.**\n\n- **`https://www.mlive.com/news/ann-arbor/2025/10/chat-gpt-creator-openai-announces-massive-new-data-center-in-michigan.html`**\
+    \ (Score: **4** for sq3, **2** for sq1)\n  - **Rationale**: While the article\
+    \ covers OpenAI’s (ChatGPT creator’s) new data center infrastructure, it doesn’t\
+    \ provide explicit first-party *ChatGPT* disclosures. Instead, it documents OpenAI’s\
+    \ sustainability pledges as a corporate partner. However, it’s *relevant to sq3*\
+    \ (physical hosting) and **kept for technical granularity**, but *scored 2 for\
+    \ sq1* since it lacks direct ChatGPT-specific disclosures.\n\n#### **Third-Party\
+    \ ESG/DBs (sq2)**\nScores **4–5** for candidates with *quantitative energy consumption*\
+    \ or *specific infrastructure claims*:\n- **`https://www.theguardian.com/technology/2025/aug/09/open-ai-chat-gpt5-energy-use`**\
+    \ (Score: **5** for sq2/3)\n  - Direct analysis of OpenAI’s (ChatGPT’s) energy\
+    \ use transparency (lack thereof) by a reputable source.\n\n- **`https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use`**/**`https://towardsdatascience.com/lets-analyze-openais-claims-about-chatgpt-energy-use/`**\
+    \ (Score: **5**) – Technical deep dives into ChatGPT’s energy modeling.\n\n- **`https://www.earthday.org/the-true-price-of-every-chatgpt-prompt/`**\
+    \ (Score: **4**) – OpenAI’s *official* 0.34 Wh/query estimate (cite-per-snippet)\n\
+    \n- **`https://hannahritchie.substack.com/p/ai-footprint-august-2025`**/**`https://towardsdatascience.com/the-carbon-footprint-of-chatgpt-66932314627d/`**\
+    \ (Scores: **4**) – Aggregator analyses citing primary sources.\n\n- **`https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/`**\
+    \ (Score: **5** for sq1/3) – Provides hard metrics per-query energy use (once\
+    \ linked back to official OpenAI estimates).\n\n#### **Hosting Infrastructure\
+    \ (sq3)**\n- **`https://news.mit.edu/2025/explained-generative-ai-environmental-impact-0117`**\
+    \ (Score: **4**) – Technical overview of broader data center demands.\n  - Explains\
+    \ the *role* of data centers in AI energy use but doesn’t ambiguously link to\
+    \ ChatGPT specifically. **Kept as a trustworthy proxy.**\n\n- **`https://www.crainsdetroit.com/economic-development/chatgpt-creator-openai-plans-massive-data-center-michigan`**\
+    \ (Score: **5** for sq3) – Primary technical details on **OpenAI’s facilities**\
+    \ (granular DTE energy sourcing dates).\n\n### **Dropped Candidates** *(scored\
+    \ < 4 on ALL sub-questions)**\n\n1. **Forum/Advocacy Content:**\n   - **Reddit**\
+    \ (`r/OpenAI`, `r/energy`, `r/AnnArbor`): Score capped at **≤ 3** unless empirical/neutral.\n\
+    \   - **`https://zeroco2.eco/`**: Mentioned OpenAI (ChatGPT creator), not ChatGPT’s\
+    \ *first-party* disclosures. Likely advocacy skew → **Dropped for sq1/sq2.**\n\
+    \n2. **Non-Entity-Specific** or **OpenAI Parent Scope** (OpenAI = **different\
+    \ entity per noted leak across rules)**:\n   - Dropped five `OpenAI` articles\
+    \ for summarizing parent company (reps msft cloud expansions, OR non-ChatGPT policies).\n\
+    \n3. **Irrelevant Technical/CDP Noise**:\n   - **CDP pages** (`greenly.cm`, `tanso.de`):\
+    \ Generic ESG reporting comparisons (not entity-specific at title/snippet).\n\
+    \   - **`TechHQ`**: Commentary lacking verifiable DOE values.\n\n4. **Superficial\
+    \ Mentions** without sourcing network derivation:\n   - `https://rejolut.com`,\
+    \ `aicontentfy.com`: Definitions lacking **direct** ChatGPT energy sourcing assertions\
+    \ → **dropped**.\n\n### **Final Tiebreakers**\n- **`Hugging Face` (or `CMU` citations)**:\
+    \ Noted as *forums* → capped scores.\n- **`<3` in specific sub-questions**: Drops\
+    \ applied if link inferential at link/snippet alone.\n---  \n### **Strategic Note**\n\
+    All **OpenAI disclosures** dropped as per entity disambiguation. However, due\
+    \ to the incumbent claim’s impetus, **sustainability blogs** kept *only if* quantititatively\
+    \ proving ChatGPT admets patterns (e.g., *Microsoft Azure*)."
+  urls_after_blocklist: 11
+sub_questions:
+- id: sq1
+  question: What information does ChatGPT provide about its energy sourcing in its
+    first-party publications, such as sustainability reports or transparency pages?
+  rationale: Understanding the entity's first-party disclosures is critical to assess
+    the claim directly from their official materials.
+  queries:
+  - ChatGPT sustainability energy sourcing
+  - ChatGPT transparency report energy
+  citations:
+  - 2026/renewable-energy-gpt
+  - 2025/chatgpt-energy-consumption-visualized
+- id: sq2
+  question: Are there third-party databases or ESG (Environmental, Social, and Governance)
+    aggregators that document ChatGPT's energy sourcing?
+  rationale: Third-party sources can provide independent verification or additional
+    context on the energy sourcing claim.
+  queries:
+  - ChatGPT CDP energy disclosure
+  citations:
+  - 2025/openai-gpt5-energy-use
+  - 2025/how-much-energy-does-chatgpt-use
+  - 2025/ai-footprint-august-2025
+  - 2026/the-true-price-of-every-chatgpt-prompt
+- id: sq3
+  question: What is the physical hosting infrastructure used by ChatGPT, and how is
+    energy sourcing for these data centers documented?
+  rationale: Hosting infrastructure often dictates energy sourcing, and technical
+    details are essential to verify the claim.
+  queries:
+  - ChatGPT data center energy sourcing Michelin
+  - ChatGPT Microsoft Azure energy sourcing
+  citations:
+  - 2025/chatgpt-energy-consumption-visualized
+  - 2025/openai-gpt5-energy-use
+  - 2025/explained-generative-ai-environmental-impact-0117
+  - 2025/how-much-energy-does-chatgpt-use
+  - 2026/the-true-price-of-every-chatgpt-prompt
+  - 2025/chatgpt-creator-openai-plans-massive-data-center-michigan
 sources_consulted:
+- id: 2026/renewable-energy-gpt
+  url: https://chatgpt.com/g/g-WvMVuNHoF-renewable-energy
+  title: Renewable Energy
+  ingested: true
+- id: 2025/chatgpt-energy-consumption-visualized
+  url: https://www.businessenergyuk.com/knowledge-hub/chatgpt-energy-consumption-visualized/
+  title: ChatGPT Energy Consumption Visualized
+  ingested: true
+- id: 2025/openai-gpt5-energy-use
+  url: https://www.theguardian.com/technology/2025/aug/09/open-ai-chat-gpt5-energy-use
+  title: OpenAI will not disclose GPT-5’s energy use
+  ingested: true
 - id: 2025/explained-generative-ai-environmental-impact-0117
   url: https://news.mit.edu/2025/explained-generative-ai-environmental-impact-0117
   title: 'Explained: Generative AI’s environmental impact'
   ingested: true
-- id: 2024/ai-brings-soaring-emissions-for-google-and-microsoft-a-major-contributor-to-climate-change
-  url: https://www.npr.org/2024/07/12/g-s1-9545/ai-brings-soaring-emissions-for-google-and-microsoft-a-major-contributor-to-climate-change
-  title: AI brings soaring emissions for Google and Microsoft, a major contributor
-    to climate change
+- id: 2025/how-much-energy-does-chatgpt-use
+  url: https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use
+  title: How much energy does ChatGPT use?
+  ingested: true
+- id: 2025/ai-footprint-august-2025
+  url: https://hannahritchie.substack.com/p/ai-footprint-august-2025
+  title: What's the carbon footprint of using ChatGPT or Gemini? [August 2025 update]
+  ingested: true
+- id: 2026/the-true-price-of-every-chatgpt-prompt
+  url: https://www.earthday.org/the-true-price-of-every-chatgpt-prompt/
+  title: The True Price of Every ChatGPT Prompt
+  ingested: true
+- id: 2025/chatgpt-creator-openai-plans-massive-data-center-michigan
+  url: https://www.crainsdetroit.com/economic-development/chatgpt-creator-openai-plans-massive-data-center-michigan
+  title: ChatGPT creator OpenAI plans massive data center near Ann Arbor with multibillion-dollar
+    investment
   ingested: true
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: 'true'
-  analyst_confidence: high
-  auditor_confidence: high
+  analyst_verdict: 'false'
+  auditor_verdict: mostly-false
+  analyst_confidence: medium
+  auditor_confidence: medium
   verdict_agrees: false
   confidence_agrees: true
   needs_review: true
 human_review:
-  reviewed_at: '2026-05-02'
+  reviewed_at: '2026-05-07'
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

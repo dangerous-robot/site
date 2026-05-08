@@ -1,0 +1,136 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:56:37.040011+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Gemini Google official features vs image generation
+  - Google Gemini image generation inclusion
+  - third-party Gemini AI image generation capability review
+  - Gemini architecture excludes image generation
+  planner_rationale: The sub-questions systematically cover first-party claims, third-party
+    validations, and technical foundations to rigorously examine the exclusion of
+    image generation in Gemini.
+  candidates_seen: 24
+  urls_kept: 13
+  urls_dropped: 22
+  scorer_rationale: " Updated scoring and kept/dropped classification based on deeper\
+    \ analysis for substring corrections. Here's the refined breakdown:\n\n\n### Kept\
+    \ Results\n**sq1 (Official Documentation):**\n- **https://gemini.google/about/**\n\
+    \  **Score: 5** for partially mentioning Nano Banana Pro but fundamentally contradicting\
+    \ the claim by admitting exclusion of certain image generation contexts. Google's\
+    \ hyperspecific reasoning describes deliberate limits, which provides relevant\
+    \ context.\n- **https://blog.google/innovation-and-ai/products/gemini/gemini-image-generation-issue/**\n\
+    \  **Score: 5** for explicitly acknowledging controllable regenerations—contradicting\
+    \ partly but directly relevant to Gemini's understanding.\n- **https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/image-generation**\
+    \  \n  **Score: 5** for outlining Gemini's effects on restricted mixtural image\
+    \ requests. The API-level reasoning aligns closely with the reconstruction limitations.\n\
+    - **https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/gemini-image-generation-limitations**\n\
+    \  **Score: 5** for specifying the technical constraints of generating new images\
+    \ per request clarity.\n- **https://help.apiyi.com/en/gemini-3-1-pro-preview-image-generation-not-supported-en.html**\
+    \ \n  **Score: 5** signifies most explicitly that 3.1 Pro Preview *excludes* image\
+    \ generation entirely—critical for claim alignment.\n- **https://support.google.com/gemini/thread/390027059/gemini-are-no-longer-able-to-create-images?hl=en**\n\
+    \  **Score: 5** due to direct reference to users reporting a decrease in image\
+    \ generation, making it a useful verification metric.\n\n**sq2 (Third-Party Reports):**\n\
+    - **https://www.mindstudio.ai/blog/gpt-image-2-vs-gemini-image-generation**\n\
+    \  **Score: 4** as it reviews current market performance, proposing good comparative\
+    \ value.\n- **https://www.mindstudio.ai/blog/what-is-gemini-2-5-flash-image**\n\
+    \  **Score: 4** as it dives into Gemini's temporal image generation variants,\
+    \ offering inclusive technical analysis.\n\n**sq3 (Technical Architectures):**\n\
+    - **https://ai.google.dev/gemini-api/docs/image-generation**, **https://deepmind.google/models/gemini/**,\
+    \ **https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/image-generation**,\
+    \ and **https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/gemini-image-generation-limitations**\n\
+    \  All score **5** or **4** owing to their involvement with Gemini’s implementation,\
+    \ discussing related multimodal setups and procedures affecting image generation.\n\
+    \n### Dropped Results\nScores ≤ **3** across all sub-questions, either due to:\n\
+    1. Lack of specifically ambiguous sub-context or not addressing any sub-question\
+    \ directly.\n2. **Forum quality publishers** (Reddit) being uncommonly irreproachable\
+    \ and shooting properties false positives.\n3. **Same-name exclusions**, such\
+    \ as ambiguous entities or emphasizes Africa on Gemini API.\n\n\nEach kept result\
+    \ sets 'addresses' to a specific sub-question (sq1, sq2, or sq3) where it provides\
+    \ substantial reviews, ensuring clarity and purpose-driven evidence gathering."
+  entity_exclude_dropped:
+  - https://gemini.google/overview/image-generation/
+  - https://gemini.google/about/
+  - https://deepmind.google/models/gemini/
+  urls_after_blocklist: 10
+sub_questions:
+- id: sq1
+  question: What does Google explicitly state about Gemini’s capabilities or limitations
+    in its official documentation, particularly regarding image generation features?
+  rationale: Clarifies the claim using the entity’s first-party sources to verify
+    whether image generation is deliberately excluded.
+  queries:
+  - Gemini Google official features vs image generation
+  - Google Gemini image generation inclusion
+  citations:
+  - 2026/image-generation
+  - 2026/gemini-image-generation-limitations
+  - 2026/gemini-are-nolonger-able-to-create-images
+- id: sq2
+  question: Are there third-party investigations or reports reviewing Gemini’s feature
+    set, and do they confirm whether image generation is included?
+  rationale: Validates third-party opinions about Gemini to assess if image generation
+    capability has been reported externally.
+  queries:
+  - third-party Gemini AI image generation capability review
+  citations:
+  - 2026/gpt-image-2-vs-gemini-image-generation
+  - 2025/what-is-gemini-2-5-flash-image
+- id: sq3
+  question: What technical information can be found about the training pipelines or
+    architectures used for Gemini, and does this imply or exclude image generation
+    capabilities?
+  rationale: Evaluates the technical or factual mechanism behind Gemini’s design to
+    infer inclusion or exclusion of image generation features.
+  queries:
+  - Gemini architecture excludes image generation
+  citations:
+  - 2026/image-generation
+  - 2026/gemini-image-generation-limitations
+sources_consulted:
+- id: 2026/gpt-image-2-vs-gemini-image-generation
+  url: https://www.mindstudio.ai/blog/gpt-image-2-vs-gemini-image-generation
+  title: 'GPT Image 2 vs Gemini Image Generation: Which AI Model Wins?'
+  ingested: true
+- id: 2026/image-generation
+  url: https://ai.google.dev/gemini-api/docs/image-generation
+  title: Image Generation
+  ingested: true
+- id: 2026/nano-banana-2
+  url: https://blog.google/innovation-and-ai/technology/ai/nano-banana-2/
+  title: 'Nano Banana 2: Combining Pro capabilities with lightning-fast speed'
+  ingested: true
+- id: 2025/what-is-gemini-2-5-flash-image
+  url: https://www.mindstudio.ai/blog/what-is-gemini-2-5-flash-image
+  title: What Is Gemini 2.5 Flash Image? Google's Fast AI Image Generator
+  ingested: true
+- id: 2026/personal-intelligence-nano-banana
+  url: https://blog.google/innovation-and-ai/products/gemini-app/personal-intelligence-nano-banana/
+  title: New ways to create personalized images in the Gemini app
+  ingested: true
+- id: 2026/gemini-image-generation-limitations
+  url: https://docs.cloud.google.com/vertex-ai/generative-ai/docs/multimodal/gemini-image-generation-limitations
+  title: Gemini image generation limitations
+  ingested: true
+- id: 2026/gemini-are-nolonger-able-to-create-images
+  url: https://support.google.com/gemini/thread/390027059/gemini-are-no_longer-able-to-create-images?hl=en
+  title: Gemini are no longer able to create images
+  ingested: true
+audit: null
+human_review:
+  reviewed_at: '2026-05-07'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

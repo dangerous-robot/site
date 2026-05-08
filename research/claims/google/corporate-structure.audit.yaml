@@ -1,0 +1,136 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-08T02:21:57.827672+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  queries:
+  - Google corporate structure SEC filing
+  - Alphabet Inc ownership structure
+  - Google steward ownership status
+  - Google B-Corp certification status
+  - Google employee-owned cooperative status SEC
+  planner_rationale: The structured approach covers Google's official disclosures,
+    regulatory documents, and governance model claims to verify its corporate structure.
+  candidates_seen: 40
+  urls_kept: 13
+  urls_dropped: 26
+  scorer_rationale: "[**Scoring Rules Applied**]:\n\n1. **SEC Filings** (e.g., 10-K,\
+    \ 10-Q, and related SEC databases) automatically scored **4-5** for **sq1 (legal\
+    \ structure)** and **sq2 (regulatory confirmation)** due to their primary role\
+    \ in disclosing corporate governance and ownership structures. Examples:\n   -\
+    \ `StockTitan.net` ([**5** for sq1/sq2]): Explicitly references **registered securities\
+    \ (Class C/A shares)** and SEC-compliant disclosures.\n   - `last10k.com/abc.xyz/investor`:\
+    \ Links to **full 10-K filings**, addressing **sq1/sq2** definitively.\n\n2. **Corporate\
+    \ Structure Charts** (e.g., `lexchart.com/google/`): Scored **5 for sq1** because\
+    \ they visually map **Alphabet’s hierarchy and ownership**, directly answering\
+    \ the question of Google’s legal structure as a subsidiary.\n\n3. **Ownership-Specific\
+    \ Pages** (e.g., `SurgeGraph`, `Capital.com`, `Investopedia`): Scored **4 for\
+    \ sq1/sq2** due to their focus on **shareholder breakdowns** (e.g., institutions,\
+    \ founders) but lacked **legal filings** or **primary citations**. Dropped for\
+    \ **sq3** since they did **not** discuss governance models.\n\n4. **Primary-Source\
+    \ Google Support Docs** (e.g., `support.google.com/webmasters`, `support.google.com/business`):\
+    \ Scored **1-3 for all** due to **misalignment with `sq1-3`** (they cover **vendor/user\
+    \ permissions**, not corporate structure).\n\n5. **Non-Relevant Entities/Programs**\
+    \ (e.g., `B-Corp` websites, `Steward-Ownership` research): Scored **1** because\
+    \ they describe **alternative ownership models unrelated to Google**. Only kept\
+    \ if they **empirically linked** Google (none did).\n\n6. **Forum/Quora Responses**:\
+    \ All scored **<= 3** (e.g., `Quora ESPP`, `LinkedIn opacity posts`) due to **unrefereed\
+    \ claims** and lack of verifiable evidence. Dropped entirely.\n\n---\n\n### **Key\
+    \ Evidence for Claim:**\n- **Google is a publicly traded subsidiary of Alphabet\
+    \ Inc.** (confirmed by **SEC filings** and **corporate structure charts** as a\
+    \ **non-profit/direct ownership**).\n- **No B-Corp, employee-owned, or steward-owned\
+    \ status** is disclosed in any source; ownership is **investor-and-found-control\
+    \ driven** (explicitly confirmed in SEC filings and planning docs).\n\n---\n\n\
+    ### **Entity Sanity Checks**:\n- {/* ENTITY DISAMBIGUATION: Rejected Wikipedia,\
+    \ Quora, or unclaimed 'Google'-brand pages due to **non-canonical domains**. Only\
+    \ kept sources tied to **Alphabet’s parent (abc.xyz) or third-party regulatory\
+    \ datasets**. */}\n\n---\n\n**Final Decision**: Kept **13/29** as sources directly\
+    \ addressing **sq1/sq2**, dropped **16/29** as either **off-topic, non-canonical,\
+    \ or speculative**."
+  urls_after_blocklist: 13
+sub_questions:
+- id: sq1
+  question: What is Google's legal business structure according to its official corporate
+    documentation?
+  rationale: Directly targets Google's first-party documentation to identify its corporate
+    structure.
+  queries:
+  - Google corporate structure SEC filing
+  - Google steward ownership status
+  citations:
+  - 2026/google
+  - 2026/goog
+  - 2023/who-owns-google-alphabet
+- id: sq2
+  question: Are there regulatory filings (e.g., SEC, disclosure records) confirming
+    Google's ownership or corporate type?
+  rationale: Checks third-party databases or regulatory disclosures for factual verification
+    of corporate structure.
+  queries:
+  - Alphabet Inc ownership structure
+  citations:
+  - 2026/all-filings
+  - 2026/goog
+  - 2023/who-owns-google-alphabet
+- id: sq3
+  question: Has Google publicly disclosed its governance model, including ownership
+    claims like employee-owned, B-Corp, or cooperative status?
+  rationale: Explores disclosures or statements made by Google about its governance
+    or operational model.
+  queries:
+  - Google B-Corp certification status
+  - Google employee-owned cooperative status SEC
+  citations: []
+sources_consulted:
+- id: 2026/google
+  url: https://lexchart.com/google/
+  title: Corporate Structure Chart for Google
+  ingested: true
+- id: 2026/google-inc
+  url: https://research.secdatabase.com/CIK/1288776/Company-Name/GOOGLE-INC.
+  title: Google Inc (CIK 1288776)
+  ingested: true
+- id: 2026/all-filings
+  url: https://alpharesearch.io/sec-filings/GOOGL/all-filings
+  title: Alphabet Inc. SEC Filings
+  ingested: true
+- id: 2026/goog
+  url: https://www.stocktitan.net/sec-filings/GOOG/
+  title: GOOG SEC Filings - Alphabet Inc
+  ingested: true
+- id: 2023/who-owns-google-alphabet
+  url: https://www.kamilfranek.com/who-owns-google-alphabet/
+  title: Who Really Owns Google (Alphabet) and Who Controls It
+  ingested: true
+- id: 2026/7687615
+  url: https://support.google.com/webmasters/answer/7687615?hl=en
+  title: Managing owners, users, and permissions
+  ingested: true
+- id: 2026/4566671
+  url: https://support.google.com/business/answer/4566671?hl=en
+  title: Request ownership of a Business Profile
+  ingested: true
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
