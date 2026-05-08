@@ -193,6 +193,12 @@ class VerifyConfig:
     # until that job lands we want primary sources behind paywalls/blocks
     # rescued via web.archive.org during the synchronous run.
     skip_wayback: bool = False
+    # Per-claim list of acquisition origins to attempt during research.
+    # Default ['brave']; tier1 paths add 'arxiv', 's2', 'openalex', 'edgar',
+    # and the companion plan adds 'tavily'. Values mirror the schema enum on
+    # audit.sources_consulted[].acquisition.origin. See
+    # docs/plans/source-pool-expansion-tier1.md § Rollout order.
+    research_origins: list[str] = field(default_factory=lambda: ["brave"])
     repo_root: str = ""
     # ``ingest_timeout_s`` is ``None`` when the caller hasn't set it, so
     # ``__post_init__`` can pick a default based on ``skip_wayback``. Callers

@@ -189,6 +189,31 @@ class TestVerifyConfigPerAgentModels:
         assert cfg.model_for("ingestor") == "anthropic:claude"
 
 
+class TestVerifyConfigResearchOrigins:
+    """Cover the activation list added for source-pool-expansion-tier1.md."""
+
+    def test_default_is_brave_only(self) -> None:
+        cfg = VerifyConfig()
+        assert cfg.research_origins == ["brave"]
+
+    def test_explicit_list_round_trips(self) -> None:
+        cfg = VerifyConfig(research_origins=["brave", "arxiv"])
+        assert cfg.research_origins == ["brave", "arxiv"]
+
+    def test_empty_list_is_valid(self) -> None:
+        """No 'must include brave' guard - empty list permitted for testing."""
+        cfg = VerifyConfig(research_origins=[])
+        assert cfg.research_origins == []
+
+    def test_default_is_not_shared_mutable(self) -> None:
+        """field(default_factory=...) gives each instance its own list."""
+        cfg_a = VerifyConfig()
+        cfg_b = VerifyConfig()
+        assert cfg_a.research_origins is not cfg_b.research_origins
+        cfg_a.research_origins.append("arxiv")
+        assert cfg_b.research_origins == ["brave"]
+
+
 class TestVerifyConfigTimeouts:
     def test_verify_config_defaults(self) -> None:
         """Default VerifyConfig exposes the four timeout knobs.
