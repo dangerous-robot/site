@@ -269,7 +269,12 @@ async def verify_claim(
 
     research_entity = resolved_entity.entity_name if resolved_entity is not None else entity_name
 
-    say = progress if cfg.show_progress else logger.info
+    # Console-only emit (no file-log mirror) — paired logger.info calls below
+    # carry the structured "Step N/M: ..." line for info.log/debug.log.
+    if cfg.show_progress:
+        say = lambda m, *a: progress(m, *a, log=False)
+    else:
+        say = lambda *a, **kw: None
 
     with bind_run_id(cfg.run_id):
         logger.info("verify_claim entry: entity=%s claim=%s", entity_name, claim_text)
@@ -824,7 +829,7 @@ async def research_claim(
         logger.info("research_claim entry: claim=%s", claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
-            progress("  › Searching")
+            progress("  › Searching", log=False)
             logger.info("Step 1/5: Searching for sources...")
             ro = await _research(client, research_entity_hint, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             urls = ro.urls
@@ -842,7 +847,7 @@ async def research_claim(
                 return result
 
             # Step 2: Ingest
-            progress("  › Ingesting")
+            progress("  › Ingesting", log=False)
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
             url_index = build_source_url_index(repo_root)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
@@ -896,7 +901,7 @@ async def research_claim(
                 return result
 
             # Step 3: Write sources to disk
-            progress("  › Writing sources")
+            progress("  › Writing sources", log=False)
             logger.info("Step 3/5: Writing %d source files...", len(source_files))
             fresh_ids = _write_source_files(source_files, repo_root)
             fresh_map = {url: sid for (url, _sf), sid in zip(source_files, fresh_ids)}
@@ -909,7 +914,7 @@ async def research_claim(
                     seen.add(sid)
 
             # Step 4: Analyse claim (analyst identifies entity)
-            progress("  › Analysing")
+            progress("  › Analysing", log=False)
             logger.info("Step 4/5: Analysing claim...")
             analyst_out = await _analyse_claim(
                 None, claim_text, result.sources, cfg,
@@ -961,7 +966,7 @@ async def research_claim(
                 result.claim_path = str(claim_path)
 
             # Step 5: Auditor check
-            progress("  › Auditing")
+            progress("  › Auditing", log=False)
             logger.info("Step 5/5: Running auditor check...")
             comparison = await _audit_claim(
                 analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
