@@ -415,24 +415,17 @@ def _write_audit_sidecar(
         # agents this run actually invoked.
         models_used = {agent: models_used.get(agent, model) for agent in agents_run}
 
-    # Per-URL acquisition trace lives on `research_trace["acquisition"]` as a
-    # url -> dict map (populated by Researcher tools and the Ingestor's wayback
-    # fallback in later commits). The writer grafts each entry onto the
-    # matching `sources_consulted[]` item — that's where the schema declares
-    # `acquisition` (`src/content.config.ts:48-56`). The map itself is then
-    # stripped from the `research:` block to avoid duplicating the same data
-    # in two places. Copy the dict before mutating so callers (e.g. the
-    # auditor-only refresh path that reads `research_trace` from an existing
-    # sidecar) aren't aliased.
+    # Graft `research_trace["acquisition"]` (url -> dict) onto matching
+    # `sources_consulted[]` entries where the schema declares `acquisition`,
+    # then strip from `research:` to avoid duplication. Copy first so the
+    # auditor-refresh path (which reads research_trace from an existing
+    # sidecar) isn't aliased.
     research_block = dict(research_trace) if research_trace else research_trace
     acquisition_by_url: dict = {}
     if isinstance(research_block, dict):
         raw_acquisition = research_block.pop("acquisition", None)
         if isinstance(raw_acquisition, dict):
             acquisition_by_url = raw_acquisition
-        # Round-trip guard: an empty `tool_outcomes` is meaningful (the
-        # producer ran and found nothing to say), so leave it as-is. We don't
-        # inject one here -- producers own that key.
 
     if acquisition_by_url:
         decorated_sources: list[dict] = []

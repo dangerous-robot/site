@@ -1,30 +1,17 @@
 """Canonical URL form for dedup-as-equivalence.
 
-Shared infrastructure for the source-pool-expansion-tier1 plan: the
-researcher will gain new candidate-source paths (Brave, OpenAlex,
-arXiv, SEC, ...) that all need to feed into a single deduplication
-key. ``canonicalize`` produces that key.
+Two URLs that should be treated as the same resource produce the same
+canonical string. The result is itself a valid URL and ``canonicalize``
+is idempotent.
 
-Design choices (deliberate; see docstring on each rule):
+Non-obvious choices: ``http`` and ``https`` stay distinct (security
+origins differ); ``www.`` is stripped from the host but punycode/IDN
+hosts are left alone; default ports are stripped; paths are NOT
+lowercased (many servers are case-sensitive); fragments are dropped;
+percent-encoding is preserved as-is to avoid double-encoding.
 
-* ``http`` and ``https`` are treated as distinct schemes. They are
-  distinct origins for security; many sites differ between them.
-* ``www.`` is stripped from the host. The dedup goal is equivalence,
-  not fetching, and ``www`` vs apex is the most common avoidable
-  duplicate. Punycode/IDN hosts are left alone.
-* Default ports (``:80`` for http, ``:443`` for https) are stripped.
-  Non-default ports are preserved.
-* Paths are NOT lowercased -- many servers are case-sensitive.
-  Trailing slashes are stripped except on the root path.
-* A small set of tracking query parameters is dropped (case-insensitive
-  on keys). Remaining query keys are sorted alphabetically; duplicate
-  keys preserve their value order.
-* Fragments are dropped entirely (client-side only).
-* Percent-encoding is left as-is. Re-encoding can double-encode
-  already-encoded URLs and is more dangerous than helpful here.
-
-Malformed input raises ``ValueError`` -- silent fallthrough to the
-original string would make dedup unreliable.
+Malformed input raises ``ValueError`` -- silent fallthrough would make
+dedup unreliable.
 """
 
 from __future__ import annotations

@@ -1,32 +1,17 @@
 """Per-host async token-bucket throttle.
 
-Shared infrastructure for source-pool-expansion-tier1: a small registry of
-named token-bucket throttles so each upstream API (arXiv, S2, OpenAlex,
-EDGAR, Tavily, Brave, ...) can declare its rate limit once and have every
-call site cooperate.
+Process-local registry of named token-bucket throttles, one per upstream
+API (arXiv, S2, OpenAlex, EDGAR, Tavily, Brave, ...). Single pipeline run
+is the unit; no cross-process coordination.
 
-Design notes
-------------
-- Process-local only. Single pipeline run is the unit. No Redis, no
-  cross-process coordination.
-- One bucket per logical host/API, identified by a string name. Buckets
-  are independent: an `acquire` on bucket A never blocks bucket B.
-- Each bucket carries its own `asyncio.Lock`. The bucket math (token
-  refill, decrement) and the wait `asyncio.sleep` both run inside the
-  lock, so concurrent acquirers serialize fairly (FIFO via the lock's
-  waiter queue) and a cancelled acquirer releases the lock without
-  having mutated `tokens`.
-- `time.monotonic()` is used for clock math (no wall-clock drift, no
-  negative deltas across NTP adjustments).
-- `register()` is idempotent for matching params and raises on mismatch
-  so two import-time registrations of the same bucket don't silently
-  diverge. `acquire()` on an unknown name raises `KeyError` rather than
-  auto-creating a default bucket - silent defaults would hide config bugs.
+Each bucket carries its own ``asyncio.Lock``. Refill, decrement, and the
+wait ``asyncio.sleep`` all run inside the lock so concurrent acquirers
+serialize FIFO and a cancelled acquirer releases the lock without
+mutating ``tokens``. Clock math uses ``time.monotonic()``.
 
-Generalises the inline 429 retry loops at
-`pipeline/researcher/agent.py:50-55` and
-`pipeline/orchestrator/pipeline.py:701-703`. Path-specific wiring lands
-with each path commit.
+``register()`` is idempotent for matching params and raises on mismatch.
+``acquire()`` on an unknown name raises ``KeyError`` -- auto-creating a
+default bucket would hide config bugs.
 """
 
 from __future__ import annotations
@@ -77,18 +62,6 @@ class Throttle:
 
     def __init__(self) -> None:
         self._buckets: dict[str, _Bucket] = {}
-        # Guards bucket creation/removal in the registry. Not held during
-        # `acquire()`; that path uses each bucket's own lock so different
-        # buckets stay independent.
-        self._registry_lock: asyncio.Lock | None = None
-
-    def _ensure_registry_lock(self) -> asyncio.Lock:
-        # Lazy: an `asyncio.Lock` created at import time would bind to
-        # whatever loop happened to be current then (often none), which
-        # breaks under pytest-asyncio's per-test loop. Bind on first use.
-        if self._registry_lock is None:
-            self._registry_lock = asyncio.Lock()
-        return self._registry_lock
 
     def register(
         self,
@@ -205,11 +178,6 @@ class Throttle:
         self._buckets.pop(name, None)
 
 
-# Module-level singleton. Path code does
-#     from common.throttle import register, acquire
-#     register('arxiv', rate_per_sec=1/3)
-#     ...
-#     await acquire('arxiv')
 default_throttle: Final[Throttle] = Throttle()
 
 

@@ -24,8 +24,9 @@ import json
 from pathlib import Path
 from typing import Any
 
-from common.content_loader import list_claims, load_claim
+from common.content_loader import list_claims
 from common.frontmatter import parse_frontmatter
+from common.models import VerificationLevel
 from common.sidecar import read_sidecar
 
 # Per-URL acquisition origins emitted by the source-pool-expansion-tier1 paths.
@@ -39,38 +40,45 @@ ACQUISITION_ORIGINS: tuple[str, ...] = (
     "edgar",
 )
 
-# Analyst-set source-pool diversity tiers from the claim frontmatter.
-# Mirror of the Zod enum at ``src/content.config.ts``; ``unset`` is the
-# sentinel bucket for claims that have no ``verification_level`` field.
-VERIFICATION_LEVELS: tuple[str, ...] = (
-    "claimed",
-    "self-reported",
-    "partially-verified",
-    "independently-verified",
-    "multiply-verified",
-)
+# Analyst-set source-pool diversity tiers; ``unset`` is the sentinel bucket
+# for claims that have no ``verification_level`` field.
+VERIFICATION_LEVELS: tuple[str, ...] = tuple(v.value for v in VerificationLevel)
 
 # Wayback / Memento outcomes that count as a "recovered" ingest.
 RECOVERY_VALUES: frozenset[str] = frozenset({"archive_org", "memento"})
 
 
-def _iter_sources_consulted(repo_root: Path):
-    """Yield every ``sources_consulted`` entry across every sidecar.
+def _scan_claims(repo_root: Path) -> tuple[list[dict], dict[str, int]]:
+    """Single pass over the claims tree.
 
-    Skips claims with no sidecar and sidecars whose payload is not a dict
-    (e.g. an unparseable file: ``read_sidecar`` returns ``{}`` on parse
-    error, which is harmless here).
+    Returns ``(source_entries, level_counts)``:
+    * ``source_entries`` — every dict in every sidecar's ``sources_consulted``.
+      Sidecars that are absent or whose payload isn't a dict are skipped.
+    * ``level_counts`` — histogram of ``verification_level`` from each claim's
+      frontmatter, including ``unset`` for missing/unrecognised/unparseable.
     """
+    level_counts: dict[str, int] = {level: 0 for level in VERIFICATION_LEVELS}
+    level_counts["unset"] = 0
+    source_entries: list[dict] = []
     for claim_path in list_claims(repo_root):
+        try:
+            fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        except ValueError:
+            fm = {}
+        level = fm.get("verification_level")
+        if isinstance(level, str) and level in level_counts:
+            level_counts[level] += 1
+        else:
+            level_counts["unset"] += 1
+
         sidecar = read_sidecar(claim_path)
         if not sidecar:
             continue
         entries = sidecar.get("sources_consulted") or []
         if not isinstance(entries, list):
             continue
-        for entry in entries:
-            if isinstance(entry, dict):
-                yield entry
+        source_entries.extend(e for e in entries if isinstance(e, dict))
+    return source_entries, level_counts
 
 
 def _compute_wayback_recovery(entries: list[dict]) -> dict[str, Any]:
@@ -128,39 +136,17 @@ def _compute_acquisition_origins(entries: list[dict]) -> dict[str, Any]:
     return {**counts, "total": total}
 
 
-def _compute_verification_levels(repo_root: Path) -> dict[str, Any]:
-    """Histogram of ``verification_level`` across all claim frontmatter.
-
-    ``verification_level`` is optional in the schema; claims that omit
-    it bucket as ``unset``. Recognised levels always appear with at
-    least a zero, again for stable output shape.
-    """
-    counts: dict[str, int] = {level: 0 for level in VERIFICATION_LEVELS}
-    counts["unset"] = 0
-    total = 0
-    for claim_path in list_claims(repo_root):
-        text = claim_path.read_text(encoding="utf-8")
-        fm, _ = parse_frontmatter(text)
-        total += 1
-        level = fm.get("verification_level")
-        if isinstance(level, str) and level in counts:
-            counts[level] += 1
-        else:
-            counts["unset"] += 1
-    return {**counts, "total": total}
-
-
 def compute_stats(repo_root: Path) -> dict[str, Any]:
     """Walk ``repo_root`` and produce the three aggregates.
 
     Pure: takes only a repo root, reads the filesystem, returns a dict.
     No CLI / printing concerns leak in.
     """
-    source_entries = list(_iter_sources_consulted(repo_root))
+    source_entries, level_counts = _scan_claims(repo_root)
     return {
         "wayback_recovery": _compute_wayback_recovery(source_entries),
         "acquisition_origins": _compute_acquisition_origins(source_entries),
-        "verification_levels": _compute_verification_levels(repo_root),
+        "verification_levels": {**level_counts, "total": sum(level_counts.values())},
     }
 
 

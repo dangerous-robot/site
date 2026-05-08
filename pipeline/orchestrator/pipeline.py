@@ -482,10 +482,6 @@ def _apply_blocklist_cap(
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
     urls = kept[: cfg.candidate_pool_size]
-    # DEBUG
-    for u in kept[cfg.candidate_pool_size:]:
-        click.echo(f"[drop:cap] {u}  reason: over candidate_pool_size={cfg.candidate_pool_size}", err=True)  # noqa: E501
-    # END DEBUG
     for d in dropped:
         out_errors.append(
             StepError(
