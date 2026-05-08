@@ -203,8 +203,12 @@ class TestDuplicateEntitySlugs:
         files = [_p("research/entities/companies/foo.md"), _p("research/entities/products/bar.md")]
         assert check_duplicate_entity_slugs(files) == []
 
-    def test_duplicate_slug_raises_error(self):
-        files = [_p("research/entities/companies/foo.md"), _p("research/entities/products/foo.md")]
+    def test_same_slug_across_types_allowed(self):
+        files = [_p("research/entities/companies/greenpt.md"), _p("research/entities/products/greenpt.md")]
+        assert check_duplicate_entity_slugs(files) == []
+
+    def test_same_slug_within_type_raises_error(self):
+        files = [_p("research/entities/companies/foo.md"), _p("research/entities/companies/foo.md")]
         issues = check_duplicate_entity_slugs(files)
         assert len(issues) == 1
         assert issues[0].check_id == "duplicate-entity-slug"

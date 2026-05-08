@@ -217,20 +217,24 @@ def check_broken_source_refs(
 def check_duplicate_entity_slugs(
     entity_files: list[Path],
 ) -> list[LintIssue]:
-    seen: dict[str, str] = {}
+    """A company and a product can share a slug (e.g. GreenPT the company makes
+    GreenPT the product); routing and `entity:` references are typed paths
+    (`companies/greenpt` vs `products/greenpt`), so collisions only matter when
+    two files live under the same type directory."""
+    seen: dict[tuple[str, str], str] = {}
     issues = []
     for path in entity_files:
-        slug = path.stem
-        if slug in seen:
+        key = (path.parent.name, path.stem)
+        if key in seen:
             issues.append(LintIssue(
                 path=str(path),
                 check_id="duplicate-entity-slug",
                 severity="error",
-                message=f'slug "{slug}" duplicates {seen[slug]}',
+                message=f'slug "{path.stem}" duplicates {seen[key]} (same {path.parent.name}/ directory)',
                 hint='rename one of the entity files to resolve the conflict',
             ))
         else:
-            seen[slug] = str(path)
+            seen[key] = str(path)
     return issues
 
 

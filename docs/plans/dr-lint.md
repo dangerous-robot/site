@@ -40,7 +40,7 @@ Runs fast, file-level checks on research content — no LLM, no network. Reads Y
 | `empty-required-string` | error | Required string field present but empty or whitespace-only (e.g., entity `description: ""`) |
 | `broken-standard-slug` | error | `standard_slug` value is set but does not match any `slug:` in `research/templates.yaml` |
 | `broken-source-ref` | error | A source ID in a claim's `sources:` list has no corresponding file in `research/sources/`. Source IDs are year-prefixed slugs (e.g., `2025/fli-safety-index`), resolving to `research/sources/{id}.md` |
-| `duplicate-entity-slug` | error | Two entity files across any type directories produce the same slug |
+| `duplicate-entity-slug` | error | Two entity files in the same type directory produce the same slug. A company and a product can share a slug (e.g., `companies/greenpt` + `products/greenpt`) because routing and `entity:` references are typed paths. |
 | `placeholder-website` | warning | Entity `website` field contains a path-only URL (e.g., `/login`) or a known placeholder domain (`example.com`) |
 | `legacy-field-name` | warning | Frontmatter contains `standard_slug` (pre-rename name); rename to `criteria_slug` once the Standards→Criteria rename lands |
 | `unknown-frontmatter-key` | warning | Frontmatter contains a key not in the canonical schema for that collection type. Canonical entity fields: `name`, `type`, `website`, `aliases`, `description`. Canonical claim fields: `title`, `entity`, `category`, `verdict`, `confidence`, `standard_slug`, `as_of`, `sources`, `recheck_cadence_days`, `next_recheck_due` |
