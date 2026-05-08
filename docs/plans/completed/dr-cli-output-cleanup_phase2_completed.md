@@ -1,8 +1,9 @@
 # Plan: cleaner `dr` CLI output — phase 2
 
-**Status**: Draft
+**Status**: Completed (commit `2839537`)
 **Created**: 2026-05-08
 **Revised**: 2026-05-08 (scoped down after review — see History)
+**Completed**: 2026-05-08
 **Predecessor**: `docs/plans/completed/dr-cli-output-cleanup_completed.md` (Phase 1 shipped in commit `5616aaa`)
 
 ## Context
