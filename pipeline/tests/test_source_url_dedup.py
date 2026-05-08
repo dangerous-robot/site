@@ -212,7 +212,7 @@ class TestTargetCap:
         sem = asyncio.Semaphore(8)
         call_count = 0
 
-        async def _fake_ingest_one(client, url, cfg, today, sem):
+        async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
             nonlocal call_count
             call_count += 1
             return (url, _make_source_file(url, f"source-{call_count}"))
@@ -238,7 +238,7 @@ class TestTargetCap:
 
         ingest_one_called = False
 
-        async def _fake_ingest_one(client, url, cfg, today, sem):
+        async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
             nonlocal ingest_one_called
             ingest_one_called = True
             return (url, _make_source_file(url, "should-not-run"))
@@ -272,7 +272,7 @@ class TestTargetCap:
         sem = asyncio.Semaphore(8)
         call_count = 0
 
-        async def _fake_ingest_one(client, url, cfg, today, sem):
+        async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
             nonlocal call_count
             call_count += 1
             return (url, _make_source_file(url, f"source-{call_count}"))

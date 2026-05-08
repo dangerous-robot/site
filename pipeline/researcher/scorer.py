@@ -13,6 +13,10 @@ class SearchCandidate(BaseModel):
     snippet: str
     from_query: str
     publisher_quality: str = "secondary"
+    # Full pre-extracted body when the search backend supplied one
+    # (Tavily's `raw_content`; Brave returns ``None``). Carried through
+    # the scorer untouched so the ingestor can skip a live fetch.
+    raw_content: str | None = None
 
 
 class ScoredCandidate(BaseModel):

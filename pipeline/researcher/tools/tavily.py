@@ -74,11 +74,13 @@ async def search_tavily(
     """Search using the Tavily Search API.
 
     Requires ``TAVILY_API_KEY`` in the environment. Returns a list of
-    dicts shaped ``{url, title, snippet}``; Tavily's per-result
-    ``content`` field maps onto ``snippet`` (parallel to Brave's
-    ``description``). The pre-extracted body content is intentionally
-    not used for fetch-skipping yet -- that's a follow-on once the
-    backend is established.
+    dicts shaped ``{url, title, snippet, raw_content}``; Tavily's
+    per-result ``content`` field maps onto ``snippet`` (parallel to
+    Brave's ``description``), and ``raw_content`` carries the full
+    pre-extracted body when Tavily provided one (Markdown/plain text
+    per the verification call). Empty/missing ``raw_content`` is
+    returned as an empty string so the ingestor short-circuit falls
+    through to a live fetch.
 
     On a single 429, sleeps per ``Retry-After`` (or a 30 s default) and
     retries once. A second 429 raises ``TavilyRateLimitError`` so the
@@ -101,6 +103,10 @@ async def search_tavily(
         "query": query,
         "max_results": max_results,
         "search_depth": "basic",
+        # Ask Tavily for the full extracted body so the ingestor can
+        # skip an httpx fetch (and the publisher's Cloudflare shield)
+        # when raw_content is present. See docs/plans/ingestor-tavily-prefetch.md.
+        "include_raw_content": True,
     }
 
     async def _fetch() -> httpx.Response:
@@ -140,9 +146,12 @@ async def search_tavily(
                 "url": url,
                 "title": item.get("title") or "",
                 # Map Tavily's `content` onto `snippet` to match the
-                # shape returned by `search_brave`. Tavily's
-                # `raw_content` (full body) is not used yet.
+                # shape returned by `search_brave`.
                 "snippet": item.get("content") or "",
+                # Full pre-extracted body when Tavily supplied it;
+                # empty string when it didn't (some publishers block
+                # Tavily's crawler too).
+                "raw_content": item.get("raw_content") or "",
             }
         )
     return out

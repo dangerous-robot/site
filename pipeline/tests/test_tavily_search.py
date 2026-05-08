@@ -50,7 +50,8 @@ def _reset_throttle():
 class TestTavilySuccess:
     @pytest.mark.asyncio
     async def test_returns_brave_compatible_shape(self) -> None:
-        """Tavily's ``content`` field maps onto ``snippet``."""
+        """Tavily's ``content`` field maps onto ``snippet``; ``raw_content`` is
+        carried through as an empty string when absent on the result."""
         with respx.mock:
             respx.post(_TAVILY_URL).mock(
                 return_value=httpx.Response(200, json=_RESULT),
@@ -63,6 +64,7 @@ class TestTavilySuccess:
                 "url": "https://example.com",
                 "title": "Ex",
                 "snippet": "tavily-content-snippet",
+                "raw_content": "",
             }
         ]
 
@@ -103,6 +105,60 @@ class TestTavilySuccess:
             async with httpx.AsyncClient() as client:
                 results = await search_tavily(client, "q")
         assert results == []
+
+    @pytest.mark.asyncio
+    async def test_request_sets_include_raw_content(self) -> None:
+        """The wrapper asks Tavily for raw_content so the ingestor can
+        skip a live fetch on Cloudflare-shielded publishers."""
+        import json
+
+        with respx.mock:
+            route = respx.post(_TAVILY_URL).mock(
+                return_value=httpx.Response(200, json=_RESULT),
+            )
+            async with httpx.AsyncClient() as client:
+                await search_tavily(client, "q")
+        body = json.loads(route.calls.last.request.content)
+        assert body["include_raw_content"] is True
+
+    @pytest.mark.asyncio
+    async def test_raw_content_carried_through_per_result(self) -> None:
+        """Per-result ``raw_content`` is mapped through; missing/empty
+        becomes an empty string so callers can fall through to live fetch."""
+        body = {
+            "results": [
+                {
+                    "url": "https://has-body.example",
+                    "title": "Has body",
+                    "content": "snippet-1",
+                    "raw_content": "# Markdown body\n\nfull text here",
+                },
+                {
+                    "url": "https://no-body.example",
+                    "title": "No body",
+                    "content": "snippet-2",
+                    # No raw_content key at all.
+                },
+                {
+                    "url": "https://null-body.example",
+                    "title": "Null body",
+                    "content": "snippet-3",
+                    "raw_content": None,
+                },
+            ]
+        }
+        with respx.mock:
+            respx.post(_TAVILY_URL).mock(
+                return_value=httpx.Response(200, json=body),
+            )
+            async with httpx.AsyncClient() as client:
+                results = await search_tavily(client, "q")
+        by_url = {r["url"]: r for r in results}
+        assert by_url["https://has-body.example"]["raw_content"] == (
+            "# Markdown body\n\nfull text here"
+        )
+        assert by_url["https://no-body.example"]["raw_content"] == ""
+        assert by_url["https://null-body.example"]["raw_content"] == ""
 
 
 class TestTavilyAuth:

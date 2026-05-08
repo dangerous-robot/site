@@ -327,7 +327,11 @@ async def verify_claim(
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
             if remaining > 0:
-                source_files, ingest_errors = await _ingest_urls(client, urls_to_ingest, cfg, _sem, target=remaining)
+                source_files, ingest_errors = await _ingest_urls(
+                    client, urls_to_ingest, cfg, _sem,
+                    target=remaining,
+                    prefetched_bodies=ro.prefetched_bodies,
+                )
             else:
                 source_files, ingest_errors = [], []
 
@@ -572,6 +576,7 @@ async def _ingest_one(
     cfg: VerifyConfig,
     today: datetime.date,
     sem: asyncio.Semaphore,
+    prefetched_body: str | None = None,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError."""
     deps = IngestorDeps(
@@ -579,6 +584,7 @@ async def _ingest_one(
         repo_root=cfg.repo_root,
         skip_wayback=cfg.skip_wayback,
         today=today,
+        prefetched_bodies={url: prefetched_body} if prefetched_body else {},
     )
     prompt = (
         f"Ingest this URL and produce a SourceFile:\n\n"
@@ -622,13 +628,21 @@ async def _ingest_urls(
     sem: asyncio.Semaphore,
     *,
     target: int | None = None,
+    prefetched_bodies: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
-    stopping once max_sources successes are collected (~2 concurrent)."""
+    stopping once max_sources successes are collected (~2 concurrent).
+
+    When ``prefetched_bodies`` is supplied, each URL's body (if present)
+    is threaded into ``IngestorDeps`` so ``web_fetch`` returns it without
+    issuing an httpx GET. Missing/empty entries fall through to a live
+    fetch.
+    """
     today = datetime.date.today()
     target = target if target is not None else cfg.max_sources
     pool = urls[: cfg.candidate_pool_size]
     dispatch_sem = asyncio.Semaphore(2)
+    bodies = prefetched_bodies or {}
 
     results: list[tuple[str, SourceFile]] = []
     errors: list[StepError] = []
@@ -640,7 +654,9 @@ async def _ingest_urls(
         async with dispatch_sem:
             if stop.is_set():
                 return
-            outcome = await _ingest_one(client, url, cfg, today, sem)
+            outcome = await _ingest_one(
+                client, url, cfg, today, sem, prefetched_body=bodies.get(url)
+            )
             if isinstance(outcome, tuple):
                 results.append(outcome)
                 if len(results) >= target:
@@ -867,7 +883,11 @@ async def research_claim(
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
             if remaining > 0:
-                source_files, ingest_errors = await _ingest_urls(client, urls_to_ingest, cfg, _sem, target=remaining)
+                source_files, ingest_errors = await _ingest_urls(
+                    client, urls_to_ingest, cfg, _sem,
+                    target=remaining,
+                    prefetched_bodies=ro.prefetched_bodies,
+                )
             else:
                 source_files, ingest_errors = [], []
 
@@ -1288,7 +1308,14 @@ async def onboard_entity(
                     urls = light_ro.urls
                     if urls:
                         entity_website = urls[0]
-                    source_files, _ = await _ingest_urls(client, urls[:1], cfg, sem) if urls else ([], [])
+                    source_files, _ = (
+                        await _ingest_urls(
+                            client, urls[:1], cfg, sem,
+                            prefetched_bodies=light_ro.prefetched_bodies,
+                        )
+                        if urls
+                        else ([], [])
+                    )
                 if source_files:
                     src_url, sf = source_files[0]
                     entity_description = sf.frontmatter.summary or ""

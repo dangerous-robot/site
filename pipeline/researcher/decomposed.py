@@ -50,6 +50,11 @@ class ResearchOutput(BaseModel):
     # before truncation/blocklist filtering. Used by the orchestrator to render
     # the audit sidecar's `sub_questions:` block.
     queries_by_sub_question: dict[str, list[str]] = Field(default_factory=dict)
+    # Map url -> pre-extracted body the search backend supplied
+    # (currently Tavily only). The orchestrator passes this into
+    # ``IngestorDeps`` so ``web_fetch`` can short-circuit. Empty/missing
+    # entries fall through to a live fetch.
+    prefetched_bodies: dict[str, str] = Field(default_factory=dict)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -177,6 +182,7 @@ async def execute_searches(
                 snippet=item.get("snippet", ""),
                 from_query=query,
                 publisher_quality=classify_url_publisher_quality(url),
+                raw_content=item.get("raw_content") or None,
             ))
             if acquisition_out is not None:
                 acquisition_out[url] = {
@@ -285,10 +291,15 @@ async def decomposed_research(
         urls = [c.url for c in candidates]
         return urls, {url: list(fallback_addrs) for url in urls}
 
+    raw_by_url: dict[str, str] = {
+        c.url: c.raw_content for c in candidates if c.raw_content
+    }
+
     def _commit(urls: list[str], addresses: dict[str, list[str]]) -> ResearchOutput:
         urls, addresses = _apply_entity_exclude(urls, addresses, avoid_topics, out.trace)
         out.urls = urls
         out.url_addresses = addresses
+        out.prefetched_bodies = {u: raw_by_url[u] for u in urls if u in raw_by_url}
         return out
 
     try:

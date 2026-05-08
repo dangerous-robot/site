@@ -36,6 +36,11 @@ class IngestorDeps:
     repo_root: str
     skip_wayback: bool = False
     today: datetime.date = field(default_factory=datetime.date.today)
+    # url -> body string supplied by the researcher (e.g., Tavily's
+    # ``raw_content``). When set, ``web_fetch`` returns the body
+    # directly instead of issuing an httpx GET, sidestepping
+    # Cloudflare-shielded publishers that 403 anonymous fetches.
+    prefetched_bodies: dict[str, str] = field(default_factory=dict)
 
 ingestor_agent = Agent(
     "test",
@@ -55,6 +60,11 @@ def _raise_if_terminal(resp: httpx.Response, url: str) -> None:
 async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """Fetch a web page and extract its title, metadata, and text content.
 
+    When ``ctx.deps.prefetched_bodies[url]`` is set, returns that body
+    directly (Markdown/plain text from Tavily's ``raw_content``) and
+    skips the httpx GET, sidestepping Cloudflare-shielded publishers
+    that 403 anonymous fetches.
+
     Terminal statuses (401/402/403/404/451) raise ``TerminalFetchError`` so the
     agent run short-circuits without calling ``wayback_check`` or consuming
     the agent retry budget. 429 gets one in-tool retry after a short sleep;
@@ -63,6 +73,17 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """
     if not url.startswith(("http://", "https://")):
         return {"error": f"Invalid URL: {url!r} (must start with http:// or https://)", "url": url}
+    prefetched = ctx.deps.prefetched_bodies.get(url)
+    if prefetched:
+        logger.info("Prefetch hit (Tavily raw_content): %s", url)
+        return {
+            "title": "",
+            "description": "",
+            "author": None,
+            "published_time": None,
+            "text": prefetched,
+            "url": url,
+        }
     try:
         resp = await ctx.deps.http_client.get(
             url, timeout=default_httpx_timeout(), follow_redirects=True

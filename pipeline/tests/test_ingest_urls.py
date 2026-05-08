@@ -46,7 +46,7 @@ async def test_ingest_urls_stops_at_target() -> None:
     sem = asyncio.Semaphore(8)
     call_count = 0
 
-    async def _fake_ingest_one(client, url, cfg, today, sem):
+    async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
         nonlocal call_count
         call_count += 1
         sf = _make_source_file(url, f"source-{call_count}")
@@ -67,7 +67,7 @@ async def test_ingest_urls_all_fail() -> None:
     cfg = _make_cfg(max_sources=6, candidate_pool_size=24)
     sem = asyncio.Semaphore(8)
 
-    async def _fake_ingest_one(client, url, cfg, today, sem):
+    async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
         return StepError(
             step="ingest",
             url=url,
@@ -91,7 +91,7 @@ async def test_ingest_urls_partial_success() -> None:
     # First 3 URLs succeed; all others fail.
     successes = set(urls[:3])
 
-    async def _fake_ingest_one(client, url, cfg, today, sem):
+    async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
         if url in successes:
             return (url, _make_source_file(url, f"source-{url[-1]}"))
         return StepError(
@@ -115,7 +115,7 @@ async def test_ingest_urls_small_pool() -> None:
     sem = asyncio.Semaphore(8)
     call_count = 0
 
-    async def _fake_ingest_one(client, url, cfg, today, sem):
+    async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None):
         nonlocal call_count
         call_count += 1
         return (url, _make_source_file(url, f"source-{call_count}"))
