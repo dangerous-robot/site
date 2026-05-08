@@ -34,16 +34,33 @@ def _safe_repo_root() -> Path | None:
     return None
 
 
+_PROVIDER_ENV: dict[str, tuple[str, ...]] = {
+    "infomaniak": ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID"),
+    "anthropic": ("ANTHROPIC_API_KEY",),
+    "openai": ("OPENAI_API_KEY",),
+    "google-gla": ("GEMINI_API_KEY",),
+    "google-vertex": ("GOOGLE_APPLICATION_CREDENTIALS",),
+}
+
+
 def _required_env_for_model(model: str) -> tuple[str, ...]:
     """Env vars required to make a request against `model`'s provider.
 
     Specs containing "test" return an empty tuple (used by TestModel paths).
+    Specs without a recognized provider prefix raise a click.UsageError so
+    the failure surfaces upfront with a clear message rather than as a deep
+    SDK error like "OPENAI_API_KEY not set" mid-run.
     """
     if "test" in model:
         return ()
-    if model.startswith("infomaniak:"):
-        return ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
-    return ("ANTHROPIC_API_KEY",)
+    prefix, sep, _ = model.partition(":")
+    if sep and prefix in _PROVIDER_ENV:
+        return _PROVIDER_ENV[prefix]
+    known = ", ".join(sorted(_PROVIDER_ENV))
+    raise click.UsageError(
+        f"Model spec {model!r} has no recognized provider prefix. "
+        f"Use one of: {known} (e.g. 'infomaniak:openai/gpt-oss-120b')."
+    )
 
 
 def _check_provider_api_keys(models: str | Iterable[str]) -> None:
@@ -783,11 +800,12 @@ def claim_refresh(
     from common.frontmatter import parse_frontmatter
     from common.models import BlockedReason, Category, ClaimStatus, Confidence, Verdict
     from common.templates import (
-        VOCABULARY_HINT_PREFIX,
+        blocked_title_message,
         get_template,
         load_templates,
         render_blocked_title,
         render_claim_text,
+        validate_analyst_title,
     )
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.entity_resolution import parse_entity_ref
@@ -982,17 +1000,20 @@ def claim_refresh(
 
     ao = vr.analyst_output
 
-    # Branch C: vocabulary-unresolved (template has vocab slots, title still contains hint prefix).
-    if template and template.vocabulary and VOCABULARY_HINT_PREFIX in ao.verdict.title:
+    # Branch C: title fails template-derivation rules (raw vocab placeholder, value
+    # outside vocabulary, paraphrase, question form, etc.).
+    if template:
+        title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
+    else:
+        title_ok, title_reason = True, None
+    if not title_ok:
         source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
         try:
             inherited_topics = [Category(t) for t in template.topics]
         except ValueError:
             inherited_topics = []
-        blocked_body = (
-            f"This claim is blocked: `{BlockedReason.ANALYST_ERROR.value}`. "
-            f"The Analyst did not resolve the vocabulary placeholder in the title. "
-            f"Re-run the pipeline with better sources, or resolve the vocabulary manually.\n"
+        blocked_body, echo_label = blocked_title_message(
+            template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
         )
         blocked_path = _write_claim_file(
             title=render_blocked_title(template, entity_name),
@@ -1027,7 +1048,7 @@ def claim_refresh(
             ),
             reset_review=True,
         )
-        click.echo(f"Blocked (unresolved vocabulary): {blocked_path}")
+        click.echo(f"Blocked ({echo_label}): {blocked_path}")
         return
 
     # Branch D: success.

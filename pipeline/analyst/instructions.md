@@ -24,34 +24,49 @@ TOPICS:
   ai-literacy, data-privacy, industry-analysis, regulation-policy
 
 TITLE:
-- Phrase the title as an affirmative assertion (no "does not", "is not", "never",
-  "lacks", "fails to"). The verdict carries the truth polarity; a negative title
-  combined with a "false" verdict creates a double negative that reads as the
-  opposite of the intended meaning.
-- This rule bans grammatical negation words only. Semantically negative verbs
-  like "excludes", "limits", or "restricts" are grammatically affirmative and
-  are permitted -- do not flip them to positive alternatives.
-- The title should restate the claim as given. Do not rephrase the core assertion,
-  invert its meaning, or add qualifiers not present in the claim text.
-- When the claim uses a vocabulary placeholder of the form "one of (A, B, C ...)",
-  replace the entire phrase with the specific option the evidence supports.
-  Inferential evidence counts: a source mentioning a stock exchange, shareholders, or
-  governance structures characteristic of a specific type supports that option even if
-  the source never uses the exact label. Do not require a source to say the exact words.
-  If no option is supported after thorough analysis, do not output this claim at all --
-  flag it as unresolvable so the orchestrator can mark it blocked.
+- The title is NOT a creative slot. It MUST be the claim text exactly as
+  rendered from the template, with only these mechanical transforms allowed:
+    1. Entity substitution -- already done for you in the claim text.
+    2. Vocabulary slot resolution -- replace the "one of (A, B, C ...)" phrase
+       with one specific allowed value (see rule below).
+    3. Article insertion -- add "a" or "an" immediately before a resolved
+       vocabulary value when it reads naturally ("a privately-held",
+       "an employee-owned"). Nothing else.
+- Do NOT rephrase, paraphrase, restructure, summarize, or add qualifiers.
+  Do NOT change verbs, swap nouns, or shift tense. Do NOT turn the claim into
+  a question. Do NOT join two vocabulary values with "or". The verdict carries
+  the truth polarity; the title's job is to restate the claim verbatim so the
+  reader can see exactly what is being assessed.
+- The orchestrator validates your title against the template after analysis;
+  any deviation beyond the three transforms above hard-blocks the claim.
+- Vocabulary slot rules: when the claim uses "one of (A, B, C ...)", pick the
+  one option the evidence supports and substitute it in. Inferential evidence
+  counts: a source mentioning a stock exchange, shareholders, or governance
+  structures characteristic of a specific type supports that option even if
+  the source never uses the exact label. If no option is supported after
+  thorough analysis, do not output this claim at all -- flag it as unresolvable
+  so the orchestrator can mark it blocked.
+- Examples:
   - Good: "Microsoft has a publicly-traded corporate structure" (verdict: true)
+  - Good: "Ecosia's AI chat runs on renewable energy" (verdict: false)
   - Bad:  "Microsoft has one of (publicly-traded, ...) corporate structure" (raw placeholder)
-- Good: "Ecosia's AI chat runs on renewable energy" (verdict: false)
-- Bad:  "Ecosia's AI chat does not run on renewable energy" (verdict: false)
-- Bad:  "ChatGPT offers image generation with tiered limits" (inverted polarity from
-  "excludes image generation" + added qualifier not in the claim)
+  - Bad:  "Anthropic's Corporate Structure: Publicly-Traded or Privately-Held?" (question + disjunction)
+  - Bad:  "Ecosia's AI chat does not run on renewable energy" (added negation; polarity belongs in verdict)
+  - Bad:  "ChatGPT offers image generation with tiered limits" (paraphrase of "excludes image generation")
 
 SEO_TITLE:
-- Only provide when `title` exceeds ~60 characters and you can express the same
-  finding in 42 characters or fewer. Omit otherwise — the full title is fine.
+- Default: omit. Only provide when `title` exceeds 60 characters AND you can
+  express the same finding in 42 characters or fewer as a complete phrase.
+- The seo_title MUST be a complete phrase that ends on a word boundary. Never
+  pad to the limit and clip mid-word. If a complete phrase would not fit in
+  42 characters, omit the seo_title entirely -- the renderer falls back to
+  the full title, which is preferable to a fragment.
+- The orchestrator drops any seo_title when `title` is already <=60 chars,
+  and drops any seo_title that ends in a 1-2 character non-abbreviation
+  fragment (e.g. "Mixed, L"). Don't rely on this -- get it right yourself.
 - Good: 95-char title → supply a 40-char version that keeps the core finding
 - Bad:  55-char title → omit (already fits in search results)
+- Bad:  "Anthropic's Environmental Giving: Mixed, L" (truncated mid-word)
 
 TAKEAWAY:
 - One sentence a reader would want to repeat or share. Include only when the

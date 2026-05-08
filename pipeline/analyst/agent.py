@@ -5,11 +5,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from pydantic_ai import Agent
 
 from common.instructions import common, load_instructions
 from common.models import Category, Confidence, EntityType, Independence, SubQuestion, Verdict, VerificationLevel
+from common.templates import SEO_TITLE_FALLBACK_THRESHOLD, looks_seo_truncated
 from common.utils import slugify
 
 if TYPE_CHECKING:
@@ -106,6 +107,17 @@ class VerdictAssessment(BaseModel):
         ),
         max_length=200,
     )
+
+    @model_validator(mode="after")
+    def _normalize_seo_title(self) -> "VerdictAssessment":
+        """Drop seo_title when the full title already fits a SERP, or when the
+        analyst-produced one looks truncated mid-word.
+        """
+        if self.seo_title is None:
+            return self
+        if len(self.title) <= SEO_TITLE_FALLBACK_THRESHOLD or looks_seo_truncated(self.seo_title):
+            self.seo_title = None
+        return self
 
 
 class AnalystOutput(BaseModel):

@@ -13,6 +13,7 @@ from common.templates import (
     render_blocked_title,
     render_claim_text,
     templates_for_entity_type,
+    validate_analyst_title,
 )
 
 
@@ -206,6 +207,107 @@ class TestRenderBlockedTitle:
             notes="test",
         )
         assert render_blocked_title(template, "ChatGPT") == "ChatGPT is hosted on renewable energy"
+
+
+class TestValidateAnalystTitle:
+    @pytest.fixture
+    def vocab_template(self) -> TemplateRecord:
+        return TemplateRecord(
+            slug="corporate-structure",
+            text="COMPANY has STRUCTURE corporate structure",
+            entity_type="company",
+            topics=["industry-analysis"],
+            core=True,
+            notes="test",
+            vocabulary={"STRUCTURE": ["publicly-traded", "privately-held", "employee-owned"]},
+        )
+
+    @pytest.fixture
+    def plain_template(self) -> TemplateRecord:
+        return TemplateRecord(
+            slug="publishes-sustainability-report",
+            text="COMPANY publishes a sustainability or ESG report",
+            entity_type="company",
+            topics=["environmental-impact"],
+            core=True,
+            notes="test",
+        )
+
+    def test_plain_template_exact_match_passes(self, plain_template: TemplateRecord) -> None:
+        ok, reason = validate_analyst_title(
+            plain_template, "Anthropic", "Anthropic publishes a sustainability or ESG report"
+        )
+        assert ok and reason is None
+
+    def test_plain_template_paraphrase_fails(self, plain_template: TemplateRecord) -> None:
+        ok, reason = validate_analyst_title(
+            plain_template, "Anthropic", "Anthropic publishes an ESG and sustainability report"
+        )
+        assert not ok and reason is not None
+
+    def test_plain_template_added_qualifier_fails(self, plain_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            plain_template, "Anthropic", "Anthropic publishes a sustainability or ESG report annually"
+        )
+        assert not ok
+
+    def test_vocab_resolved_value_passes(self, vocab_template: TemplateRecord) -> None:
+        ok, reason = validate_analyst_title(
+            vocab_template, "Microsoft", "Microsoft has publicly-traded corporate structure"
+        )
+        assert ok and reason is None
+
+    def test_vocab_resolved_with_article_passes(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template, "Microsoft", "Microsoft has a publicly-traded corporate structure"
+        )
+        assert ok
+
+    def test_vocab_resolved_with_an_article_passes(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template, "Mondragon", "Mondragon has an employee-owned corporate structure"
+        )
+        assert ok
+
+    def test_vocab_unresolved_placeholder_fails(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template,
+            "Anthropic",
+            "Anthropic has one of (publicly-traded, privately-held, employee-owned) corporate structure",
+        )
+        assert not ok
+
+    def test_vocab_disjunction_fails(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template,
+            "Anthropic",
+            "Anthropic's Corporate Structure: Publicly-Traded or Privately-Held?",
+        )
+        assert not ok
+
+    def test_vocab_value_outside_set_fails(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template, "OpenAI", "OpenAI has a for-profit Public Benefit Corporation structure"
+        )
+        assert not ok
+
+    def test_case_insensitive(self, vocab_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            vocab_template, "Microsoft", "Microsoft Has A Publicly-Traded Corporate Structure"
+        )
+        assert ok
+
+    def test_whitespace_normalization(self, plain_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            plain_template, "Anthropic", "Anthropic   publishes a  sustainability or ESG report"
+        )
+        assert ok
+
+    def test_trailing_punctuation_fails(self, plain_template: TemplateRecord) -> None:
+        ok, _ = validate_analyst_title(
+            plain_template, "Anthropic", "Anthropic publishes a sustainability or ESG report."
+        )
+        assert not ok
 
 
 class TestTemplateIsFrozen:

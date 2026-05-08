@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from analyst.agent import AnalystOutput, analyst_agent, build_analyst_prompt
-from common.models import Category, Confidence, SubQuestion, Verdict
+from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt
+from common.models import Category, Confidence, SubQuestion, Verdict, VerificationLevel
 
 
 class TestAnalystAgent:
@@ -107,3 +107,39 @@ class TestAnalystPrompt:
         )
         assert "Addresses: sq1, sq2" in prompt
         assert "Addresses: (none)" in prompt
+
+
+class TestSeoTitleNormalization:
+    def _va(self, title: str, seo_title: str | None) -> VerdictAssessment:
+        return VerdictAssessment(
+            title=title,
+            verdict=Verdict.TRUE,
+            confidence=Confidence.MEDIUM,
+            narrative="Some narrative.",
+            topics=[Category.ENVIRONMENTAL_IMPACT],
+            verification_level=VerificationLevel.INDEPENDENTLY_VERIFIED,
+            seo_title=seo_title,
+        )
+
+    def test_drops_seo_title_when_full_title_fits(self) -> None:
+        v = self._va("Anthropic donates to environmental causes", "Anthropic Donates to Env. Causes")
+        assert v.seo_title is None
+
+    def test_keeps_seo_title_when_title_is_long(self) -> None:
+        long_title = "Anthropic publishes a comprehensive sustainability report covering scope 1 2 and 3 emissions"
+        v = self._va(long_title, "Anthropic Publishes Sustainability Report")
+        assert v.seo_title == "Anthropic Publishes Sustainability Report"
+
+    def test_drops_truncated_seo_title(self) -> None:
+        long_title = "Anthropic publishes a comprehensive sustainability report covering scope 1 2 and 3 emissions"
+        v = self._va(long_title, "Anthropic's Environmental Giving: Mixed, L")
+        assert v.seo_title is None
+
+    def test_keeps_short_known_abbreviation(self) -> None:
+        long_title = "Anthropic operates major data centers in the United States and the European Union markets"
+        v = self._va(long_title, "Anthropic Data Centers in the US and EU")
+        assert v.seo_title == "Anthropic Data Centers in the US and EU"
+
+    def test_none_seo_title_is_unchanged(self) -> None:
+        v = self._va("Short title", None)
+        assert v.seo_title is None

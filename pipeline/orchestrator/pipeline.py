@@ -46,7 +46,7 @@ from common.blocklist import normalised_host, filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
-from common.templates import VOCABULARY_HINT_PREFIX, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type
+from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
@@ -1518,7 +1518,8 @@ async def onboard_entity(
                         continue
 
                     ao = vr.analyst_output
-                    if template.vocabulary and VOCABULARY_HINT_PREFIX in ao.verdict.title:
+                    title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
+                    if not title_ok:
                         source_ids = (
                             _write_source_files(vr.source_files, repo_root)
                             if vr.source_files
@@ -1528,11 +1529,8 @@ async def onboard_entity(
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
                             inherited_topics = []
-                        blocked_body = (
-                            f"This claim is blocked: `{BlockedReason.ANALYST_ERROR.value}`. "
-                            f"The Analyst did not resolve the vocabulary placeholder in the "
-                            f"title. Re-run the pipeline with better sources, or resolve "
-                            f"the vocabulary manually.\n"
+                        blocked_body, extra_label = blocked_title_message(
+                            template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
                         )
                         blocked_path = _write_claim_file(
                             title=render_blocked_title(template, entity_name),
@@ -1550,7 +1548,7 @@ async def onboard_entity(
                             blocked_reason=BlockedReason.ANALYST_ERROR,
                             criteria_slug=slug,
                         )
-                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, extra="unresolved vocabulary")
+                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, extra=extra_label)
                         result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,

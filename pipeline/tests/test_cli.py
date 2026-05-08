@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from click.testing import CliRunner
 
+import click
+
 from orchestrator.cli import (
     _check_provider_api_keys,
     _required_env_for_model,
@@ -39,17 +41,27 @@ class TestRequiredEnvForModel:
     def test_test_model_skipped(self) -> None:
         assert _required_env_for_model("test") == ()
 
-    def test_anthropic_default(self) -> None:
+    def test_anthropic_prefix(self) -> None:
         assert _required_env_for_model("anthropic:claude-haiku-4-5-20251001") == ("ANTHROPIC_API_KEY",)
 
-    def test_bare_string_treated_as_anthropic(self) -> None:
-        assert _required_env_for_model("gpt-4o-mini") == ("ANTHROPIC_API_KEY",)
+    def test_openai_prefix(self) -> None:
+        assert _required_env_for_model("openai:gpt-4o-mini") == ("OPENAI_API_KEY",)
 
     def test_infomaniak_requires_both_keys(self) -> None:
         assert _required_env_for_model("infomaniak:swiss-ai/Apertus-70B-Instruct-2509") == (
             "INFOMANIAK_API_KEY",
             "INFOMANIAK_PRODUCT_ID",
         )
+
+    def test_bare_string_rejected_with_usage_error(self) -> None:
+        with pytest.raises(click.UsageError) as exc:
+            _required_env_for_model("gpt-oss-120b")
+        assert "no recognized provider prefix" in str(exc.value)
+        assert "infomaniak" in str(exc.value)
+
+    def test_unknown_prefix_rejected(self) -> None:
+        with pytest.raises(click.UsageError):
+            _required_env_for_model("acme:something")
 
 
 class TestCheckProviderApiKeys:

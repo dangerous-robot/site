@@ -44,15 +44,15 @@ Scoring scale (applied per sub-question):
 
 Rules:
 - Score each candidate against EACH sub-question separately on the title and snippet only — do not assume body content.
-- Keep a candidate (in the `kept` list) when it scores >= 4 on AT LEAST ONE sub-question.
-- For each kept candidate, set `addresses` to the list of sub-question ids on which it scored >= 4. `addresses` must be non-empty.
-- Drop a candidate (in the `dropped` list) only when it scores < 4 on EVERY sub-question.
+- Keep a candidate (in the `kept` list) when it scores >= 3 on AT LEAST ONE sub-question.
+- For each kept candidate, set `addresses` to the list of sub-question ids on which it scored >= 3. `addresses` must be non-empty.
+- Drop a candidate (in the `dropped` list) only when it scores < 3 on EVERY sub-question.
 - Every input URL must appear in either `kept` (as a ScoredCandidate) or `dropped` (as a URL string). No omissions.
 - Return URLs as-is (exact strings from input).
 - Include a brief `rationale` summarizing the scoring decisions across sub-questions.
 - When parent company is provided, sources about the parent company are relevant to claims about the subsidiary.
 - Each candidate has a `publisher_quality` label: `primary` (company or regulatory), `secondary` (academic, research, news), `tertiary` (advocacy, community), or `forum` (Reddit, Quora, HN, etc.).
-- Use publisher quality as a per-sub-question tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 3 unless no higher-quality alternatives exist in this candidate set.
+- Use publisher quality as a per-sub-question tiebreaker: prefer primary > secondary > tertiary. Score forum candidates <= 2 unless no higher-quality alternatives exist in this candidate set.
 - ENTITY DISAMBIGUATION: when an `Official website` is provided, the entity is the organization at that domain. Score candidates whose URL belongs to a *different* organization that merely shares a similar name as 1 (level: "different entity"), even if their snippet superficially matches a sub-question. The canonical website's own pages and well-known third-party coverage of the *same* organization (its press, regulator filings, profile databases) remain in scope.
 - When `Avoid results about` is provided, candidates clearly about those topics or organizations score 1.
 """
