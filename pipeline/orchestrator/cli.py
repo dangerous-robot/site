@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from common.logging_setup import configure_logging, new_run_id, progress, run_id_var
+from common.logging_setup import configure_logging, hr, new_run_id, progress, run_id_var
 from common.models import AGENT_NAMES, DEFAULT_MODEL, resolve_model
 from orchestrator.persistence import set_claim_status
 
@@ -538,9 +538,9 @@ def step_analyze(
 # --------------------------------------------------------------------------- #
 
 def _print_verify_result(result) -> None:
-    click.echo("=" * 60)
+    hr()
     click.echo("Claim Verification Report")
-    click.echo("=" * 60)
+    hr()
     click.echo(f"Entity:  {result.entity}")
     click.echo(f"Claim:   {result.claim_text}")
     click.echo("")
@@ -602,7 +602,7 @@ def _print_verify_result(result) -> None:
             click.echo(f"  ! {err}")
         click.echo("")
 
-    click.echo("=" * 60)
+    hr()
 
 
 @main.command("claim-probe")
@@ -728,9 +728,9 @@ def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_source
 
     result = asyncio.run(research_claim(claim_text, config, checkpoint, resolved_entity=resolved_entity))
 
-    click.echo("=" * 60)
+    hr()
     click.echo("Claim-Draft Report")
-    click.echo("=" * 60)
+    hr()
     click.echo(f"Entity:  {result.entity}")
     click.echo(f"Claim:   {result.claim_text}")
     click.echo(f"URLs found: {len(result.urls_found)} | ingested: {len(result.urls_ingested)} | failed: {len(result.urls_failed)}")
@@ -751,7 +751,7 @@ def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_source
         click.echo("Errors:")
         for e in result.errors:
             click.echo(f"  ! {e}")
-    click.echo("=" * 60)
+    hr()
 
 
 # --------------------------------------------------------------------------- #
@@ -1560,9 +1560,9 @@ def onboard(
         search_hints_exclude=list(search_hint_exclude) or None,
     ))
 
-    click.echo("=" * 60)
+    hr()
     click.echo("Onboard Report")
-    click.echo("=" * 60)
+    hr()
     click.echo(f"Entity:  {result.entity_name} ({result.entity_type})")
     click.echo(f"Status:  {result.status}")
 
@@ -1590,7 +1590,7 @@ def onboard(
             click.echo("")
             click.echo("Created:")
             for path in result.claims_created:
-                click.echo(f"  + {path}")
+                click.echo(f"  ✓ {path}")
 
         if result.claims_blocked:
             click.echo("")
@@ -1602,7 +1602,7 @@ def onboard(
             click.echo("")
             click.echo("Skipped (already exist):")
             for path in result.claims_skipped:
-                click.echo(f"  = {path}")
+                click.echo(f"  - {path}")
 
     if result.templates_excluded:
         click.echo("")
@@ -1617,7 +1617,7 @@ def onboard(
         for err in result.errors:
             click.echo(f"  ! {err}")
 
-    click.echo("=" * 60)
+    hr()
 
 
 # --------------------------------------------------------------------------- #

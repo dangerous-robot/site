@@ -24,6 +24,30 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Iterator
 
+import click
+
+# Sparse glyph vocabulary shared across pipeline progress output.
+# ASCII fallbacks are used when stderr is not a TTY.
+_GLYPH_ASCII: dict[str, str] = {
+    "▶": ">",
+    "›": "-",
+    "✓": "OK",
+    "!": "!",
+    "✗": "X",
+}
+
+
+def _stderr_supports_style() -> bool:
+    """True when stderr is a TTY (color-capable). click.style honors NO_COLOR."""
+    return sys.stderr.isatty()
+
+
+def _coerce_glyph(glyph: str) -> str:
+    """Return the glyph as-is on a TTY, or its ASCII fallback otherwise."""
+    if _stderr_supports_style():
+        return glyph
+    return _GLYPH_ASCII.get(glyph, glyph)
+
 run_id_var: ContextVar[str | None] = ContextVar("run_id", default=None)
 
 
@@ -142,7 +166,7 @@ class _DropProgressOnConsole(logging.Filter):
         return record.name != _progress_logger.name
 
 
-def progress(msg: str, *args: object) -> None:
+def progress(msg: str, *args: object, glyph: str | None = None) -> None:
     """Mirror an INFO record to both stderr (real-time) and info.log.
 
     Use for operator-facing progress prints (``[1/N] Done: ...``) where
@@ -151,11 +175,33 @@ def progress(msg: str, *args: object) -> None:
     ``logger.info(msg)`` call. ``configure_logging`` filters
     ``_progress_logger`` records off the console handler, so the stderr
     line is not duplicated under ``--verbose``.
+
+    When ``glyph`` is provided, it is prepended (with a single space) to the
+    formatted message before both the stderr write and the file log emit.
+    Non-TTY stderr swaps the glyph for its ASCII fallback.
     """
     formatted = (msg % args) if args else msg
+    if glyph is not None:
+        formatted = f"{_coerce_glyph(glyph)} {formatted}"
     sys.stderr.write(formatted + "\n")
     sys.stderr.flush()
-    _progress_logger.info(msg, *args)
+    # Log the formatted (glyph-prefixed) string so info.log mirrors what the
+    # operator saw. Pre-formatting also avoids double %-substitution.
+    _progress_logger.info("%s", formatted)
+
+
+def hr() -> None:
+    """Write a horizontal rule to stderr.
+
+    Dim-cyan via ``click.style`` when stderr is a TTY (which honors
+    ``NO_COLOR`` automatically); plain ASCII dashes otherwise. Visual chrome
+    only; no logger record is emitted, so info.log/debug.log do not see it.
+    """
+    line = "-" * 60
+    if _stderr_supports_style():
+        line = click.style(line, dim=True, fg="cyan")
+    sys.stderr.write(line + "\n")
+    sys.stderr.flush()
 
 
 def configure_logging(verbose: bool, repo_root: Path | None) -> None:

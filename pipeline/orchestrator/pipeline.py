@@ -44,7 +44,7 @@ from orchestrator.entity_resolution import ResolvedEntity, SearchHints
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
-from common.logging_setup import bind_run_id, new_run_id, progress, run_id_var
+from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
 from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
@@ -275,7 +275,8 @@ async def verify_claim(
         logger.info("verify_claim entry: entity=%s claim=%s", entity_name, claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
-            say("Step 1/4: Searching for sources...")
+            say("  › Searching")
+            logger.info("Step 1/4: Searching for sources...")
             ro = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             urls = ro.urls
             research_errors = ro.errors
@@ -295,7 +296,8 @@ async def verify_claim(
                 return result
 
             # Step 2: Ingest
-            say("Step 2/4: Ingesting %d candidate URLs...", len(urls))
+            say("  › Ingesting")
+            logger.info("Step 2/4: Ingesting %d candidate URLs...", len(urls))
             repo_root = Path(cfg.repo_root or str(resolve_repo_root()))
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
@@ -370,7 +372,8 @@ async def verify_claim(
                 return result
 
             # Step 3: Analyst
-            say("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+            say("  › Analysing")
+            logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
             analyst_out = await _analyse_claim(
                 entity_name, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
@@ -385,7 +388,8 @@ async def verify_claim(
                 return result
 
             # Step 4: Auditor
-            say("Step 4/4: Running auditor check...")
+            say("  › Auditing")
+            logger.info("Step 4/4: Running auditor check...")
             comparison = await _audit_claim(
                 entity_name, claim_text, analyst_out, result.sources, cfg
             )
@@ -820,6 +824,7 @@ async def research_claim(
         logger.info("research_claim entry: claim=%s", claim_text)
         async with httpx.AsyncClient() as client:
             # Step 1: Research
+            progress("  › Searching")
             logger.info("Step 1/5: Searching for sources...")
             ro = await _research(client, research_entity_hint, claim_text, cfg, _sem, resolved_entity=resolved_entity)
             urls = ro.urls
@@ -837,6 +842,7 @@ async def research_claim(
                 return result
 
             # Step 2: Ingest
+            progress("  › Ingesting")
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
             url_index = build_source_url_index(repo_root)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
@@ -890,6 +896,7 @@ async def research_claim(
                 return result
 
             # Step 3: Write sources to disk
+            progress("  › Writing sources")
             logger.info("Step 3/5: Writing %d source files...", len(source_files))
             fresh_ids = _write_source_files(source_files, repo_root)
             fresh_map = {url: sid for (url, _sf), sid in zip(source_files, fresh_ids)}
@@ -902,6 +909,7 @@ async def research_claim(
                     seen.add(sid)
 
             # Step 4: Analyse claim (analyst identifies entity)
+            progress("  › Analysing")
             logger.info("Step 4/5: Analysing claim...")
             analyst_out = await _analyse_claim(
                 None, claim_text, result.sources, cfg,
@@ -953,6 +961,7 @@ async def research_claim(
                 result.claim_path = str(claim_path)
 
             # Step 5: Auditor check
+            progress("  › Auditing")
             logger.info("Step 5/5: Running auditor check...")
             comparison = await _audit_claim(
                 analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
@@ -1242,6 +1251,7 @@ async def onboard_entity(
         )
 
         # Step 1: Light research for entity context
+        hr()
         logger.info("Onboard step 1: light research for %s", entity_name)
         entity_description = ""
         entity_website: str | None = None
@@ -1287,6 +1297,7 @@ async def onboard_entity(
             )
 
         # Step 2: Template screening
+        hr()
         logger.info("Onboard step 2: screening templates")
         all_templates = load_templates(repo_root)
         typed_templates = templates_for_entity_type(all_templates, entity_type)
@@ -1311,6 +1322,7 @@ async def onboard_entity(
         result.templates_excluded = excluded
 
         # Step 3: Checkpoint
+        hr()
         logger.info("Onboard step 3: checkpoint review")
         decision = await gate.review_onboard(
             entity_name, entity_type, applicable_slugs, excluded,
@@ -1363,11 +1375,12 @@ async def onboard_entity(
         # records inherit this id via cfg.run_id.
         onboard_url_index = build_source_url_index(repo_root)
         total = len(applicable_slugs)
+        hr()
         logger.info("Onboard step 4: per-template research (%d templates)", total)
         for idx, slug in enumerate(applicable_slugs, 1):
             iter_cfg = dataclasses.replace(cfg, run_id=new_run_id())
             with bind_run_id(iter_cfg.run_id):
-                progress("[%d/%d] Researching: %s ...", idx, total, slug)
+                progress("[%d/%d] Researching: %s ...", idx, total, slug, glyph="▶")
                 template = get_template(all_templates, slug)
                 if not template:
                     progress("[%d/%d] ERROR: template not found: %s", idx, total, slug)
