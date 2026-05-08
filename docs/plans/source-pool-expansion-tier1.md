@@ -1,6 +1,6 @@
 # Source Pool Expansion — Tier 1
 
-**Status**: Active (ready to start coding).
+**Status**: In progress — § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Paths 1, 2, 3 + the companion search-backend plan are unblocked and may start in parallel.
 **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
 **Created**: 2026-05-08
 **Last revised**: 2026-05-08
