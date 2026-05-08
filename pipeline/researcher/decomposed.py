@@ -9,6 +9,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from common.blocklist import BlocklistEntry, filter_urls
+from common.canonical_url import canonicalize
 from common.models import SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
@@ -54,7 +55,14 @@ async def execute_searches(
     queries: list[str],
     client: httpx.AsyncClient,
 ) -> list[SearchCandidate]:
-    """Fan out Brave searches for all queries; deduplicate by exact URL string."""
+    """Fan out Brave searches for all queries; deduplicate by canonical URL.
+
+    The dedup key is the canonical form (lowercased host, default ports
+    stripped, sorted query, dropped tracking params and fragment) so
+    obvious duplicates (``http`` vs ``https`` aside) collapse to one
+    candidate. The original URL is preserved on the SearchCandidate.
+    Unparseable URLs are skipped rather than raising.
+    """
     raw_results = await asyncio.gather(
         *[search_brave(client, q) for q in queries],
         return_exceptions=True,
@@ -67,15 +75,23 @@ async def execute_searches(
             continue
         for item in result:
             url = item.get("url", "")
-            if url and url not in seen:
-                seen.add(url)
-                candidates.append(SearchCandidate(
-                    url=url,
-                    title=item.get("title", ""),
-                    snippet=item.get("snippet", ""),
-                    from_query=query,
-                    publisher_quality=classify_url_publisher_quality(url),
-                ))
+            if not url:
+                continue
+            try:
+                key = canonicalize(url)
+            except ValueError as exc:
+                logger.debug("Skipping unparseable URL %r: %s", url, exc)
+                continue
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(SearchCandidate(
+                url=url,
+                title=item.get("title", ""),
+                snippet=item.get("snippet", ""),
+                from_query=query,
+                publisher_quality=classify_url_publisher_quality(url),
+            ))
     return candidates
 
 
