@@ -80,7 +80,7 @@ class TestCategory:
 
 class TestSourceKind:
     def test_values(self) -> None:
-        expected = {"report", "article", "documentation", "dataset", "blog", "video", "index"}
+        expected = {"report", "article", "documentation", "dataset", "blog", "video", "index", "paper"}
         actual = {k.value for k in SourceKind}
         assert actual == expected
 

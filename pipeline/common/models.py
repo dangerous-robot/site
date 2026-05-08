@@ -127,6 +127,7 @@ class SourceKind(str, Enum):
     BLOG = "blog"
     VIDEO = "video"
     INDEX = "index"
+    PAPER = "paper"
 
 
 class Independence(str, Enum):

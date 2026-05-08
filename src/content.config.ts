@@ -21,6 +21,7 @@ const sources = defineCollection({
       'blog',
       'video',
       'index',
+      'paper',
     ]),
     source_type: z.enum(['primary', 'secondary', 'tertiary']).optional(),
     independence: z.enum(['first-party', 'independent', 'unknown']).optional(),
@@ -44,6 +45,15 @@ const auditSchema = z.object({
     url: z.string().url(),
     title: z.string(),
     ingested: z.boolean(),
+    acquisition: z.object({
+      stage: z.enum(['research', 'ingest']),
+      origin: z.enum(['brave', 'tavily', 'arxiv', 's2', 'openalex', 'edgar']),
+      recovered_via: z.enum(['archive_org', 'memento']).optional(),
+      outcome: z.enum(['matched', 'recovered']).optional(),
+      query: z.string().optional(),
+      paper_id: z.string().optional(),
+      filing_accession: z.string().optional(),
+    }).optional(),
   })),
   audit: z.object({
     analyst_verdict: z.string(),
@@ -221,6 +231,7 @@ const entities = defineCollection({
       include: z.array(z.string()).optional(),
       exclude: z.array(z.string()).optional(),
     }).optional(),
+    sec_cik: z.string().regex(/^\d{10}$/, { message: 'sec_cik must be a 10-digit CIK' }).optional(),
   }),
 });
 
