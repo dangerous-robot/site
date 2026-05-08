@@ -1,11 +1,11 @@
 # Source quality roadmap
 
-> **Superseded**: This plan has been superseded by [`completed/source-quality-robust-roadmap_completed.md`](completed/source-quality-robust-roadmap_completed.md) (2026-05-05). The original is retained for reference. See [`source-quality-agent-review.md`](source-quality-agent-review.md) for the strategic critique that drove the rewrite.
+> **Superseded**: This plan has been superseded by [`source-quality-robust-roadmap_completed.md`](source-quality-robust-roadmap_completed.md) (2026-05-05). The original is retained for reference. See [`source-quality-agent-review_completed.md`](source-quality-agent-review_completed.md) for the strategic critique that drove the rewrite. (Note: this file was renamed and moved to `completed/` on 2026-05-08 as part of the source-quality plan-family consolidation; in-body references that name the pre-move filenames are historical and intentionally left unrewritten.)
 
 **Status**: Superseded  
 **Created**: 2026-05-05  
 **Supersedes**: `source-trust-metadata.md` (v1 scope); retires `drafts/source-quality-do-now.md`  
-**Survey**: [`source-quality_survey.md`](source-quality_survey.md) — full signal inventory and architectural analysis  
+**Survey**: [`source-quality_survey_completed.md`](source-quality_survey_completed.md) — full signal inventory and architectural analysis  
 
 This plan defines the v1 source quality architecture: a verification scale, a simplified source schema, and a confidence cap. It consolidates items from `source-trust-metadata.md` (phases 1–5) and `drafts/source-quality-do-now.md` (groups 2–8) into a single ordered plan.
 

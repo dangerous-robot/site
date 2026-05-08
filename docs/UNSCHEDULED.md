@@ -104,7 +104,7 @@ Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/45
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | PDF attachment core (ingestion + model) | [source-pdf-attachment.md](plans/source-pdf-attachment.md) | `pdfs:` frontmatter block, `_attachments.yaml` manifest, `pdf_read` tool, `dr attach-pdf` CLI, sha256 integrity lint |
-| PDF attachment publish surface | [source-pdf-publish.md](plans/drafts/source-pdf-publish.md) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing |
+| PDF attachment publish surface | [source-quality-followups.md § PDF publish surface](plans/source-quality-followups.md#pdf-publish-surface-drafted-post-attachment) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing |
 
 ---
 
@@ -151,7 +151,7 @@ Goal: Recurring audits, queue-based intake. Trigger: enough content exists that 
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Scheduled citation audits | [scheduled-citation-audits.md](plans/drafts/scheduled-citation-audits.md) | Scheduled workflows, QUEUE.md intake |
+| Scheduled citation audits | [source-quality-followups.md § Scheduled citation audits](plans/source-quality-followups.md#scheduled-citation-audits-drafted) | Scheduled workflows, QUEUE.md intake |
 
 Downstream sync to parallax-ai: [future/downstream-sync.md](plans/future/downstream-sync.md) -- good idea, not needed now.
 
@@ -340,3 +340,14 @@ Cleanup items surfaced during the v0.1.0 vocab + multi-topic + claim-lifecycle l
 | `ClaimFrontmatter` Pydantic model as Python-side source of truth | `pipeline/linter/checks.py::CANONICAL_CLAIM_KEYS` and `pipeline/orchestrator/persistence.py::_write_claim_file`'s frontmatter dict are two parallel definitions of the claim schema. Drift between them caused the 2026-04-27 `unknown-frontmatter-key blocked_reason` lint warning when the writer added `blocked_reason` but the linter set wasn't updated. Define a `ClaimFrontmatter` Pydantic model in `pipeline/common/models.py` (mirroring the existing `SourceFrontmatter`), derive `CANONICAL_CLAIM_KEYS = set(ClaimFrontmatter.model_fields.keys())`, optionally validate `_write_claim_file` output against it. Note: `src/content.config.ts` remains the *real* source of truth (Astro consumes it at build); this only collapses the Python-internal duplication. ~1-2 hours. |
 | Backfill `criteria_slug` on 7 published claims (lint blocker) | The new `published-without-criterion` lint check (2026-04-27) errors on these 7 published claims that lack `criteria_slug`: `research/claims/claude/{no-training-on-user-data,realtime-energy-display,renewable-energy-hosting}.md`, `research/claims/gemini/{excludes-image-generation,no-training-on-user-data,realtime-energy-display,renewable-energy-training}.md`. CI is red until each gets a slug from `research/templates.yaml` (or is reverted to `status: draft`). |
 | Wire `show_progress` into `research_claim()` | `pipeline/orchestrator/pipeline.py::research_claim` (lines ~712-905) has the same 4-step structure as `verify_claim` but is not wired to the `show_progress` flag added in `0477ef6` (2026-05-06). No CLI command currently invokes `research_claim` directly; if one is added, mirror the `progress()` plumbing or it will look hung from the first moment. |
+
+---
+
+## Pipeline markdown emitter bugs (2026-05-08)
+
+Two markdownlint failures surfaced during a research-content WIP commit on 2026-05-08. Both originate from generated claim narratives, not hand-edited content. The two offending files were deleted to land the commit; regeneration after the fix should produce passing markdown.
+
+| Work Item | Notes |
+|-----------|-------|
+| Empty-link references in claim narrative (MD042) | Narrative writer emits `[2026/claude](#)` and similar `(#)` placeholder links inline (4 occurrences in the deleted `research/claims/claude/excludes-image-generation.md`). Fix: emit plain-text source IDs (e.g., `[2026/claude]`) without the `(#)` href, or wire real internal links to the source pages. Suspect site of emission: the analyst/narrative writer prompt or a post-processing step that converts `[id]` references to links and falls back to `(#)` when no URL is resolved. |
+| Lists missing surrounding blank lines (MD032) | Narrative writer emits a bullet list (`- Source 4 …`) immediately after a paragraph with no blank line between (1 occurrence in the deleted `research/claims/claude/realtime-energy-display.md` line 31). Fix: ensure the renderer inserts a blank line before any bulleted list. Likely a join/concat step in the narrative writer or a Markdown formatter post-step. |

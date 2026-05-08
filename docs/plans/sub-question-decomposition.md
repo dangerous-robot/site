@@ -26,8 +26,8 @@ The change is data-shape-light and prompt-heavy. No state machine. The claim lif
 - Audit sidecar version bump (additive only).
 - Claim-page UI surfacing of sub-questions (defer until corpus rerun confirms verdict-quality gain).
 - Code-level verdict aggregation rules (instructions-only for first release).
-- Iterative gap-fill / second research round (deferred; tracked in `docs/plans/research-quality-ideas.md`).
-- Tool-using analyst with a `gap_search` tool (deferred; tracked in `docs/plans/research-quality-ideas.md`).
+- Iterative gap-fill / second research round (deferred; tracked in `docs/plans/source-quality-followups.md` § Idea backlog).
+- Tool-using analyst with a `gap_search` tool (deferred; tracked in `docs/plans/source-quality-followups.md` § Idea backlog).
 
 ## Naming changes
 
@@ -323,7 +323,7 @@ Cost: one extra analyst-shape call per sub-question (~3× narrow analyst calls p
 
 ## Open questions
 
-These are tunable defaults, not blockers. `OPEN-N` ids match the open-questions register in `docs/plans/research-quality-ideas.md`.
+These are tunable defaults, not blockers. The `OPEN-N` ids historically tracked the open-questions register in `research-quality-ideas.md`; that file's content is now absorbed into `docs/plans/source-quality-followups.md` § Idea backlog (the numbered register is no longer maintained — these `OPEN-N` ids are local to this plan).
 
 1. `OPEN-2`: Per-sub-question source budget. Today: `max_sources=8` total, `candidate_pool_size=24` total. Soft per-sub-question caps may help avoid one axis dominating the pool. Tune empirically after the rerun.
 2. `OPEN-7`: Threshold floor numbers. Today's `< 4 usable sources` claim-level floor is preserved; revisit if rerun shows it's too strict for the per-sub-question regime.
@@ -348,7 +348,7 @@ These are tunable defaults, not blockers. `OPEN-N` ids match the open-questions 
 
 ## Cross-references
 
-- `docs/plans/research-quality-ideas.md` — ideas backlog this draws from
+- `docs/plans/source-quality-followups.md` § Idea backlog — ideas backlog this draws from
 - `docs/plans/drafts/analyst-decomposition_stub.md` — orthogonal decomposition (decomposes the analyst itself)
 - `docs/architecture/research-flow.md` — current pipeline diagrams
 - `docs/architecture/source-quality.md` — verification scale, cap_rationale (unchanged by this plan)

@@ -2,14 +2,14 @@
 
 **Status**: ready
 **Date**: 2026-04-23
-**Scope**: ingestion + content model only. The site-publish half lives in `source-pdf-publish.md` (drafted separately).
+**Scope**: ingestion + content model only. The site-publish half is drafted under `source-quality-followups.md` § PDF publish surface.
 **Related plans**: `ingestor-fail-fast-403.md`, `audit-trail.md`, `researcher-host-blocklist.md`, `dr-lint.md`
 
 ## Problem
 
 The ingestor reaches an origin via `web_fetch` (`pipeline/ingestor/agent.py`). Per `ingestor-fail-fast-403.md`, terminal HTTP codes (401/402/403/451) short-circuit the run and the URL is recorded as a `StepError`. When the document is real — a paywalled paper, a government PDF on a 403-locked CDN, a policy served only to approved regions — the source is unreachable to the agent. Researchers frequently have the PDF in hand (library access, FOIA response, Wayback `application/pdf` snapshot, direct share) but the content model has no slot for it today. We need a durable content surface that lets a PDF stand in for a URL body, serving the ingestion agent's extraction pass and the audit trail that grounds claim verdicts.
 
-This plan covers the ingestion and data-model halves. A companion plan (`source-pdf-publish.md`) handles the separate concern of republishing redistributable PDFs on the public site, which has its own licensing and rendering discussion.
+This plan covers the ingestion and data-model halves. The companion publish-surface design — republishing redistributable PDFs on the public site, with its own licensing and rendering discussion — is drafted under `source-quality-followups.md` § PDF publish surface (drafted, post-attachment).
 
 ## Design
 
@@ -106,7 +106,7 @@ pdfs:
 - `sha256` — integrity anchor. Computed at attach; verified at lint and build.
 - `captured_date` — distinct from `accessed_date` (consultation) and `published_date` (origin publication). The date the snapshot was taken.
 - `page_count` — tool-written, never hand-edited. Surfaces on the site as a reading hint.
-- `republish` — licensing switch for the publication surface (see `source-pdf-publish.md`). Default `false`. Named `republish`, not `redistribute`, because the PDF is already in a public git repo; this flag governs only whether dangerousrobot.org additionally serves it.
+- `republish` — licensing switch for the publication surface (see `source-quality-followups.md` § PDF publish surface). Default `false`. Named `republish`, not `redistribute`, because the PDF is already in a public git repo; this flag governs only whether dangerousrobot.org additionally serves it.
 - `license_note` — required when `republish: true`. Human-written reason: CC license, public domain, granted permission, US federal work, etc.
 
 ### Public-repo reality
@@ -417,7 +417,7 @@ No path requires hand-editing frontmatter or the manifest. Hand-editing remains 
 
 ### Follow-ups outside this plan
 
-- **Site republication surface** — `source-pdf-publish.md`. Handles the Astro page block, build-time asset copy, `_headers` `X-Robots-Tag: noindex` on PDFs, and the `republish: true` render path.
+- **Site republication surface** — `source-quality-followups.md` § PDF publish surface. Handles the Astro page block, build-time asset copy, `_headers` `X-Robots-Tag: noindex` on PDFs, and the `republish: true` render path.
 - **Triage tooling** — `dr list-attachment-candidates`, a small command that enumerates recent `StepError(error_type="http_4xx")` URLs from `checkpoints.json` and produces a worklist for researchers to attach PDFs against. Separate plan; depends on the `audit-trail.md` persistence contract.
 - **OCR** — scanned PDFs return no text from `pypdf`. A future `.ocr.txt` sibling populated by a separate tool is the reserved namespace; implementation is out of scope.
 
@@ -518,8 +518,8 @@ Manual round-trip:
 
 ## Out of scope
 
-- Site rendering of attached PDFs (download link, inline viewer, meta block) — `source-pdf-publish.md`.
-- Build-time copy of `republish: true` PDFs to `dist/` and `_headers` `noindex` — `source-pdf-publish.md`.
+- Site rendering of attached PDFs (download link, inline viewer, meta block) — `source-quality-followups.md` § PDF publish surface.
+- Build-time copy of `republish: true` PDFs to `dist/` and `_headers` `noindex` — `source-quality-followups.md` § PDF publish surface.
 - OCR of scanned / image-only PDFs.
 - Multi-file attachments per source. Schema supports lists; CLI and validators cap at one in v1.
 - Non-PDF attachments (images, video, audio, spreadsheets).

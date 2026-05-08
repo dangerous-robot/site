@@ -1,7 +1,7 @@
 # Source quality roadmap: agent review
 
 **Date**: 2026-05-05  
-**Reviewed**: [`source-quality-roadmap.md`](source-quality-roadmap.md)  
+**Reviewed**: [`source-quality-roadmap_superseded.md`](source-quality-roadmap_superseded.md)  
 **Reviewers**: Product advisor, research director, newspaper editor (separate agents, no coordination)  
 **Purpose**: Strategic critique before implementation — identify weaknesses and major gaps at the plan level, not the implementation level.
 
