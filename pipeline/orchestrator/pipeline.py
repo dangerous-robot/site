@@ -1363,6 +1363,7 @@ async def onboard_entity(
         # records inherit this id via cfg.run_id.
         onboard_url_index = build_source_url_index(repo_root)
         total = len(applicable_slugs)
+        logger.info("Onboard step 4: per-template research (%d templates)", total)
         for idx, slug in enumerate(applicable_slugs, 1):
             iter_cfg = dataclasses.replace(cfg, run_id=new_run_id())
             with bind_run_id(iter_cfg.run_id):

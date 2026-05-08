@@ -12,11 +12,13 @@ from pathlib import Path
 import pytest
 
 from common.logging_setup import (
+    _NOISY_LOGGERS,
     JsonFormatter,
     RunIdFilter,
     bind_run_id,
     configure_logging,
     new_run_id,
+    progress,
     run_id_var,
 )
 from orchestrator.pipeline import VerifyConfig
@@ -35,6 +37,11 @@ def _reset_root_logger():
     saved_handlers = list(root.handlers)
     saved_filters = list(root.filters)
     saved_level = root.level
+    # configure_logging mutates the level on these third-party loggers;
+    # snapshot so it doesn't leak across the test session.
+    saved_noisy_levels = {
+        name: logging.getLogger(name).level for name in _NOISY_LOGGERS
+    }
     yield
     for h in list(root.handlers):
         root.removeHandler(h)
@@ -45,6 +52,8 @@ def _reset_root_logger():
     for f in saved_filters:
         root.addFilter(f)
     root.setLevel(saved_level)
+    for name, level in saved_noisy_levels.items():
+        logging.getLogger(name).setLevel(level)
 
 
 def test_configure_logging_creates_handlers(tmp_path: Path) -> None:
@@ -222,6 +231,42 @@ def test_cli_invocation_emits_non_null_run_id(tmp_path: Path, monkeypatch: pytes
     banner = next((r for r in records if r["msg"].startswith("dr lint:")), None)
     assert banner is not None, f"no banner record; output={result.output!r}"
     assert banner["run_id"] is not None, f"banner run_id is null: {banner!r}"
+
+
+def test_noisy_third_party_loggers_clamped_to_warning(tmp_path: Path) -> None:
+    """The _NOISY_LOGGERS list must stay at WARNING even with --verbose."""
+    configure_logging(verbose=True, repo_root=tmp_path)
+    for name in _NOISY_LOGGERS:
+        assert logging.getLogger(name).level == logging.WARNING, (
+            f"{name} logger should be clamped to WARNING, "
+            f"got {logging.getLogger(name).level}"
+        )
+
+
+def test_progress_does_not_duplicate_on_console_under_verbose(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """progress() must reach stderr exactly once under --verbose, and
+    write one record to info.log."""
+    configure_logging(verbose=True, repo_root=tmp_path)
+
+    progress("hello")
+
+    captured = capsys.readouterr()
+    # Exactly one stderr line containing "hello" — no duplicate from the
+    # console handler picking up _progress_logger's record.
+    hello_lines = [line for line in captured.err.splitlines() if "hello" in line]
+    assert len(hello_lines) == 1, (
+        f"expected one 'hello' stderr line, got {len(hello_lines)}: {hello_lines!r}"
+    )
+
+    # info.log still captured the logger record.
+    info_text = (tmp_path / "logs" / "info.log").read_text(encoding="utf-8")
+    info_hello_lines = [line for line in info_text.splitlines() if "hello" in line]
+    assert len(info_hello_lines) == 1, (
+        f"expected one 'hello' record in info.log, got {len(info_hello_lines)}: "
+        f"{info_hello_lines!r}"
+    )
 
 
 def test_timestamp_is_utc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

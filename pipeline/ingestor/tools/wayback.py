@@ -35,7 +35,10 @@ async def check_wayback(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
                 "archived_url": snapshot.get("url"),
             }
     except (httpx.HTTPError, KeyError, ValueError) as exc:
-        logger.warning("Wayback availability check failed for %s: %s", url, exc)
+        status = getattr(getattr(exc, "response", None), "status_code", "?")
+        logger.warning(
+            "Wayback availability check failed (HTTP %s) for %s", status, url
+        )
 
     return {"available": False, "archived_url": None}
 
@@ -68,6 +71,7 @@ async def save_to_wayback(client: httpx.AsyncClient, url: str) -> str | None:
             "Wayback save returned status %d for %s", resp.status_code, url
         )
     except httpx.HTTPError as exc:
-        logger.warning("Wayback save failed for %s: %s", url, exc)
+        status = getattr(getattr(exc, "response", None), "status_code", "?")
+        logger.warning("Wayback save failed (HTTP %s) for %s", status, url)
 
     return None

@@ -27,6 +27,7 @@ async def search_brave(
     any document verbatim; without this fallback those queries silently
     yield no candidates.
     """
+    logger.info("Brave search: %s", query)
     api_key = os.environ.get("BRAVE_WEB_SEARCH_API_KEY")
     if not api_key:
         raise RuntimeError("BRAVE_WEB_SEARCH_API_KEY is not set")

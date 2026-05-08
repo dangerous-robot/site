@@ -127,7 +127,19 @@ class HumanFormatter(logging.Formatter):
         return line
 
 
-_progress_logger = logging.getLogger(__name__)
+# Distinct child name so configure_logging's console filter can drop
+# only progress() records without affecting any other logger in this
+# module.
+_progress_logger = logging.getLogger(__name__ + ".progress")
+
+
+# Third-party loggers clamped to WARNING regardless of --verbose.
+_NOISY_LOGGERS: tuple[str, ...] = ("httpx", "httpcore", "urllib3")
+
+
+class _DropProgressOnConsole(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.name != _progress_logger.name
 
 
 def progress(msg: str, *args: object) -> None:
@@ -136,11 +148,9 @@ def progress(msg: str, *args: object) -> None:
     Use for operator-facing progress prints (``[1/N] Done: ...``) where
     you want the message visible without ``--verbose`` AND persisted in
     ``logs/info.log``. Equivalent to ``click.echo(msg, err=True)`` plus a
-    ``logger.info(msg)`` call.
-
-    With ``--verbose``, the same message reaches stderr twice (once from
-    this direct write, once from the logger's console handler). That is
-    the accepted tradeoff of mirroring.
+    ``logger.info(msg)`` call. ``configure_logging`` filters
+    ``_progress_logger`` records off the console handler, so the stderr
+    line is not duplicated under ``--verbose``.
     """
     formatted = (msg % args) if args else msg
     sys.stderr.write(formatted + "\n")
@@ -211,4 +221,8 @@ def configure_logging(verbose: bool, repo_root: Path | None) -> None:
     console.setLevel(logging.INFO if verbose else logging.WARNING)
     console.setFormatter(logging.Formatter("%(levelname)s [%(name)s] %(message)s"))
     console.addFilter(run_id_filter)
+    console.addFilter(_DropProgressOnConsole())
     root.addHandler(console)
+
+    for noisy in _NOISY_LOGGERS:
+        logging.getLogger(noisy).setLevel(logging.WARNING)
