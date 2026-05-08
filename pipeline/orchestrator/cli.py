@@ -101,7 +101,7 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
 # New commands not listed here fall into the "Other" bucket so they stay visible.
 _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Read-only (dry run, no files written)",
-     ["lint", "step-research", "step-ingest", "step-analyze", "step-audit", "claim-probe"]),
+     ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit", "claim-probe"]),
     ("Creates or overwrites claim files",
      ["onboard", "claim-draft", "claim-refresh", "claim-promote"]),
     ("Modifies existing files in place",
@@ -2109,6 +2109,55 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
     errors = [i for i in issues if i.severity == "error"]
     if errors:
         sys.exit(1)
+
+
+# --------------------------------------------------------------------------- #
+# dr stats                                                                      #
+# --------------------------------------------------------------------------- #
+
+
+@main.command()
+@click.option(
+    "--format", "output_format", default="text", type=click.Choice(["text", "json"]),
+    help="Output format. Mirrors `dr lint --format` and `dr review-queue --format`.",
+)
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.pass_context
+def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None:
+    """Aggregate read-only counters from claims and audit sidecars; no LLM, no network.
+
+    Reports three aggregates that back the success-criteria table in
+    docs/plans/source-pool-expansion-tier1.md:
+
+    \b
+      - wayback_recovery: Path 1 archive_org/memento recovery rate
+      - acquisition_origins: per-origin distribution (brave/tavily/arxiv/...)
+      - verification_levels: analyst-derived source-pool level distribution
+
+    Empty-state safe: a corpus with no `acquisition` blocks (the current
+    state) reports zero counts and a null rate rather than crashing.
+
+    \b
+    Examples:
+      dr stats
+      dr stats --format json | jq '.wayback_recovery.rate'
+    """
+    logger.info("dr stats: format=%s", output_format)
+
+    from common.content_loader import resolve_repo_root as _resolve_root
+    from orchestrator.stats import (
+        compute_stats,
+        format_json_report,
+        format_text_report,
+    )
+
+    resolved_root = Path(repo_root) if repo_root else _resolve_root()
+    aggregates = compute_stats(resolved_root)
+
+    if output_format == "json":
+        click.echo(format_json_report(aggregates))
+    else:
+        click.echo(format_text_report(aggregates))
 
 
 if __name__ == "__main__":
