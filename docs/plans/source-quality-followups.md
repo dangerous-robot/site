@@ -75,7 +75,7 @@ The researcher generates candidate URLs from web search. If a URL already exists
 - If matched, skip ingest and pass the existing source file to the analyst.
 
 **Research impact**: Medium. Primarily coherence and cost; also prevents divergent summaries of the same source across claims.
-**Cost**: Low for URL match; depends on dedup canonicalization work already tracked in `docs/UNSCHEDULED.md` (Dedup detection) and partly delivered by `source-pool-expansion-tier1.md` § Shared infrastructure (URL canonicalizer).
+**Cost**: Low for URL match; depends on dedup canonicalization work already tracked in `docs/UNSCHEDULED.md` (Dedup detection) and partly delivered by `source-pool-expansion-tier1.md` § Shared infrastructure (prerequisite for Paths 1–3) (URL canonicalizer).
 
 #### Negative site signals in search results
 
@@ -112,7 +112,7 @@ Company entities today carry minimal structured data. Adding structured fields w
 - `official_website` (used as a signal for primary-source classification)
 - `parent_company` (holding companies, acquisition history)
 - `subsidiaries` (cross-link to related entities)
-- `sec_cik` — landing first, via [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Path 3
+- `sec_cik` — landing first, via [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Schema prerequisites (used by § Path 3)
 
 **Research impact**: Medium. Most valuable when combined with COI detection and entity-context scoring.
 **Cost**: Low for schema addition; medium for backfill and any agent-side use.
@@ -148,7 +148,7 @@ Outlined plans that are post-Tier-1 by design. Each subsection has enough scope 
 
 ### Source pool — Tier 2 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md).
+**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
 
 Tier 2 builds on the foundations laid by Tier 1: once new acquisition paths exist, these items improve their hit rate, surface area, or fallback options. None are blockers for v1.
 
@@ -199,7 +199,7 @@ Not in scope (yet): building a new MCP server (only evaluating existing ones); n
 
 ### Source pool — Tier 3 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md), Tier 2 above.
+**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md), Tier 2 above.
 
 Tier 3 covers ideas that are real but lower priority. They either have narrower applicability, depend on relationships that take time to build, or address gaps Tier 1 and Tier 2 already mostly cover.
 
@@ -372,7 +372,8 @@ Historical and superseded source-quality documents, retained for context.
 
 These are not source-quality plans per se, but they affect source pool quality enough to cross-reference:
 
-- [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: search backend swap (Tavily/Exa), academic APIs (arXiv, Semantic Scholar, OpenAlex), SEC EDGAR, Wayback gap-filling.
+- [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, academic APIs (arXiv, Semantic Scholar, OpenAlex), SEC EDGAR, Wayback gap-filling.
+- [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
 - [`source-pdf-attachment.md`](source-pdf-attachment.md) — PDF attachment as an alternate ingestion surface for paywalled / 403-locked documents.
 - [`researcher-host-blocklist.md`](researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
 - [`wayback-archive-job.md`](wayback-archive-job.md) — background-job framework, with wayback archival as the first concrete job.
