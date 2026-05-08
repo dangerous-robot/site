@@ -111,7 +111,15 @@ async def decomposed_research(
     ``research:`` block. Trace fields are populated as each step
     succeeds; partial outputs are returned on early-exit error paths.
     """
-    out = ResearchOutput(urls=[], trace={"mode": "decomposed"})
+    # `acquisition` is a per-URL map (url -> acquisition payload) consumed by
+    # `_write_audit_sidecar` and grafted onto matching `sources_consulted[]`
+    # entries. `tool_outcomes` is a runtime "tool fired but found nothing"
+    # log (arxiv_no_results, edgar_no_match, …). Both are pre-initialized so
+    # producers landing in later commits can append without checking presence.
+    out = ResearchOutput(
+        urls=[],
+        trace={"mode": "decomposed", "acquisition": {}, "tool_outcomes": []},
+    )
 
     entity_ctx = build_entity_context(resolved_entity, entity_name)
     planner_prompt = (

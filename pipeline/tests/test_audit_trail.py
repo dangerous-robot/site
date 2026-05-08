@@ -444,6 +444,211 @@ class TestWriteAuditSidecar:
 
 
 # ---------------------------------------------------------------------------
+# _write_audit_sidecar — acquisition + tool_outcomes plumbing (tier1)
+# ---------------------------------------------------------------------------
+
+class TestAcquisitionAndToolOutcomes:
+    """Source-pool-expansion-tier1 audit-trail plumbing.
+
+    The writer threads two pieces of trace data added in tier1:
+
+    1. Per-URL ``acquisition`` (read off ``research_trace["acquisition"]``,
+       grafted onto matching ``sources_consulted[]`` entries by URL).
+    2. ``tool_outcomes`` array on the ``research:`` block (flows through
+       ``research_trace`` as-is).
+
+    These tests pin the writer's behaviour ahead of the producer commits
+    (Path 1 / Path 2 / Path 3) that will populate the keys.
+    """
+
+    def _entry(self, source_id: str, url: str, title: str = "T") -> dict:
+        return {"id": source_id, "url": url, "title": title, "ingested": True}
+
+    def test_no_acquisition_means_no_key_on_entries(self, tmp_path):
+        """Sources consulted with no acquisition info must NOT carry the key.
+
+        The schema field is optional; emitting ``acquisition: {}`` or
+        ``acquisition: null`` would clutter the sidecar and trip readers
+        that key off ``"acquisition" in entry``.
+        """
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        sources = [self._entry("2026/a", "https://a.example")]
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=sources,
+            agents_run=["researcher"],
+            research_trace={"mode": "decomposed"},
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert len(data["sources_consulted"]) == 1
+        assert "acquisition" not in data["sources_consulted"][0]
+
+    def test_per_url_acquisition_grafts_onto_matching_entry(self, tmp_path):
+        """Trace acquisition map keyed by URL; writer attaches to the entry
+        whose ``url`` matches. Other entries pass through unchanged."""
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        sources = [
+            self._entry("2026/a", "https://a.example", "A"),
+            self._entry("2026/b", "https://b.example", "B"),
+        ]
+        trace = {
+            "mode": "decomposed",
+            "acquisition": {
+                "https://a.example": {
+                    "stage": "research",
+                    "origin": "arxiv",
+                    "paper_id": "2401.12345",
+                    "query": "carbon footprint LLM training",
+                },
+            },
+        }
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=sources,
+            agents_run=["researcher"],
+            research_trace=trace,
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        first, second = data["sources_consulted"]
+        assert first["acquisition"] == {
+            "stage": "research",
+            "origin": "arxiv",
+            "paper_id": "2401.12345",
+            "query": "carbon footprint LLM training",
+        }
+        assert "acquisition" not in second
+        # The map was popped off the research block to avoid duplicating
+        # the same data in two places.
+        assert "acquisition" not in data["research"]
+
+    def test_acquisition_does_not_mutate_caller_inputs(self, tmp_path):
+        """Writer must not mutate the caller's research_trace or sources list.
+
+        The auditor-only refresh path (cli.py:1390) reads ``research`` off an
+        existing sidecar and passes it back in; aliasing surprises there.
+        """
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        sources_in = [self._entry("2026/a", "https://a.example")]
+        trace_in = {
+            "mode": "decomposed",
+            "acquisition": {
+                "https://a.example": {"stage": "research", "origin": "brave"},
+            },
+        }
+
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=sources_in,
+            agents_run=["researcher"],
+            research_trace=trace_in,
+        )
+
+        assert "acquisition" in trace_in
+        assert trace_in["acquisition"] == {
+            "https://a.example": {"stage": "research", "origin": "brave"},
+        }
+        assert "acquisition" not in sources_in[0]
+
+    def test_tool_outcomes_empty_round_trips(self, tmp_path):
+        """Empty ``tool_outcomes`` survives YAML serialize/parse intact.
+
+        Producers (Paths 2 and 3) will append entries; until then the
+        empty list must round-trip so an unproduced run isn't ambiguous
+        between "no producers ran" and "producers ran and stayed quiet".
+        """
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        trace = {"mode": "decomposed", "tool_outcomes": []}
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher"],
+            research_trace=trace,
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["research"]["tool_outcomes"] == []
+
+    def test_tool_outcomes_populated_round_trips(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        trace = {
+            "mode": "decomposed",
+            "tool_outcomes": [
+                {"tool": "arxiv", "outcome": "no_results", "query": "foo"},
+                {"tool": "edgar", "outcome": "no_match", "cik": "0000320193"},
+            ],
+        }
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=None,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["researcher"],
+            research_trace=trace,
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["research"]["tool_outcomes"] == trace["tool_outcomes"]
+
+    def test_pretier1_sidecar_without_acquisition_loads_cleanly(self, tmp_path):
+        """An existing sidecar with no ``acquisition`` key on entries
+        and no ``tool_outcomes`` (i.e., everything pre-tier1) must parse.
+
+        Read it in via ``yaml.safe_load`` — same path Astro / the human-review
+        flow uses — and confirm the schema-relevant keys are present.
+        Backwards compat is enforced by the Zod ``.optional()`` on the
+        Astro side; the Python writer never required these keys.
+        """
+        sidecar_path = tmp_path / "pretier1.audit.yaml"
+        _write_minimal_sidecar(sidecar_path)
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["schema_version"] == 1
+        # No acquisition key on any sources_consulted entry (the list is
+        # empty in the minimal fixture).
+        assert all("acquisition" not in entry for entry in data["sources_consulted"])
+        # No research block / no tool_outcomes — both should be tolerated.
+        assert "research" not in data or data.get("research") is None
+
+    def test_decomposed_researcher_initialises_trace_keys(self):
+        """``decomposed.py`` seeds ``acquisition`` (dict) and
+        ``tool_outcomes`` (list) on ``out.trace`` so producer code in
+        later commits can append without presence checks."""
+        from researcher.decomposed import ResearchOutput
+
+        # Mirror the seed in decomposed_research():
+        out = ResearchOutput(
+            urls=[],
+            trace={"mode": "decomposed", "acquisition": {}, "tool_outcomes": []},
+        )
+        assert out.trace["acquisition"] == {}
+        assert out.trace["tool_outcomes"] == []
+
+
+# ---------------------------------------------------------------------------
 # _write_claim_file — overwrite protection
 # ---------------------------------------------------------------------------
 

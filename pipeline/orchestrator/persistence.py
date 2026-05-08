@@ -415,6 +415,39 @@ def _write_audit_sidecar(
         # agents this run actually invoked.
         models_used = {agent: models_used.get(agent, model) for agent in agents_run}
 
+    # Per-URL acquisition trace lives on `research_trace["acquisition"]` as a
+    # url -> dict map (populated by Researcher tools and the Ingestor's wayback
+    # fallback in later commits). The writer grafts each entry onto the
+    # matching `sources_consulted[]` item — that's where the schema declares
+    # `acquisition` (`src/content.config.ts:48-56`). The map itself is then
+    # stripped from the `research:` block to avoid duplicating the same data
+    # in two places. Copy the dict before mutating so callers (e.g. the
+    # auditor-only refresh path that reads `research_trace` from an existing
+    # sidecar) aren't aliased.
+    research_block = dict(research_trace) if research_trace else research_trace
+    acquisition_by_url: dict = {}
+    if isinstance(research_block, dict):
+        raw_acquisition = research_block.pop("acquisition", None)
+        if isinstance(raw_acquisition, dict):
+            acquisition_by_url = raw_acquisition
+        # Round-trip guard: an empty `tool_outcomes` is meaningful (the
+        # producer ran and found nothing to say), so leave it as-is. We don't
+        # inject one here -- producers own that key.
+
+    if acquisition_by_url:
+        decorated_sources: list[dict] = []
+        for entry in sources_consulted:
+            url = entry.get("url")
+            acquisition = acquisition_by_url.get(url) if url else None
+            if isinstance(acquisition, dict) and acquisition:
+                # Shallow-copy the entry so the caller's list isn't mutated.
+                new_entry = dict(entry)
+                new_entry["acquisition"] = acquisition
+                decorated_sources.append(new_entry)
+            else:
+                decorated_sources.append(entry)
+        sources_consulted = decorated_sources
+
     sidecar_data: dict = {
         "schema_version": 1,
         "pipeline_run": {
@@ -423,7 +456,7 @@ def _write_audit_sidecar(
             "agents": agents_run,
         },
         "models_used": models_used,
-        "research": research_trace,
+        "research": research_block,
     }
     if sub_questions_block is not None:
         sidecar_data["sub_questions"] = sub_questions_block
