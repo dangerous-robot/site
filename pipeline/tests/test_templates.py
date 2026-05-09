@@ -325,7 +325,7 @@ class TestTemplateIsFrozen:
 
 
 class TestSubjectTemplateSchema:
-    """D2: validate the subjects: field on Template.
+    """Validate the subjects: field on Template.
 
     Required-iff-subject and forbidden-otherwise. Each subject ref must match
     ``^subjects/[a-z0-9-]+$``.
@@ -391,7 +391,7 @@ class TestSubjectTemplateSchema:
 
 
 class TestTemplatesForEntityTypeSubjectFanOut:
-    """D2: subject fan-out filters by template.subjects: list membership."""
+    """Subject fan-out filters by template.subjects: list membership."""
 
     @staticmethod
     def _mk(slug: str, subjects: list[str]) -> TemplateRecord:

@@ -1447,8 +1447,6 @@ async def onboard_entity(
         hr()
         logger.info("Onboard step 2: screening templates")
         all_templates = load_templates(repo_root)
-        # For subject fan-out, extract the slug from the entity_ref so the
-        # template filter can match on subjects: list membership.
         onboard_entity_slug: str | None = None
         if entity_type == "subject" and entity_ref and "/" in entity_ref:
             onboard_entity_slug = entity_ref.split("/", 1)[1]

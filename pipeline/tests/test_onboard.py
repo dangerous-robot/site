@@ -716,7 +716,7 @@ class TestOnboardSearchHintsPersisted:
 
 
 class TestOnboardSubjectFanOut:
-    """D2: subject onboarding queues only templates whose subjects: list names the subject."""
+    """Subject onboarding queues only templates whose subjects: list names the subject."""
 
     def _write_subject_entity(self, tmp_path: Path, slug: str, name: str) -> str:
         """Pre-create a subject entity file so onboard_entity skips light research and template-fan-out is exercised in isolation."""

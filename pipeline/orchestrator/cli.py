@@ -34,6 +34,14 @@ def _safe_repo_root() -> Path | None:
     return None
 
 
+_ENTITY_TYPE_CHOICES: tuple[str, ...] = ("company", "product", "subject")
+_ENTITY_TYPE_PLACEHOLDERS: dict[str, str] = {
+    "company": "COMPANY",
+    "product": "PRODUCT",
+    "subject": "ENTITY",
+}
+
+
 _PROVIDER_ENV: dict[str, tuple[str, ...]] = {
     "infomaniak": ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID"),
     "anthropic": ("ANTHROPIC_API_KEY",),
@@ -1183,15 +1191,13 @@ def claim_promote(
     template_slug = click.prompt("Template slug (e.g. publishes-sustainability-report)")
     entity_type_input = click.prompt(
         "Entity type",
-        type=click.Choice(["company", "product", "subject"]),
+        type=click.Choice(list(_ENTITY_TYPE_CHOICES)),
     )
     topics_input = click.prompt("Topics (comma-separated, e.g. environmental-impact,ai-safety)")
     core_input = click.prompt("Core template?", default="Y", show_default=True)
     notes_input = click.prompt("Notes (optional)", default="", show_default=False)
 
-    # Derive template text by replacing entity name with type-appropriate placeholder.
-    placeholder_map = {"company": "COMPANY", "product": "PRODUCT", "subject": "ENTITY"}
-    placeholder = placeholder_map[entity_type_input]
+    placeholder = _ENTITY_TYPE_PLACEHOLDERS[entity_type_input]
     template_text = claim_title.replace(entity_name, placeholder) if entity_name and entity_name in claim_title else claim_title
 
     topics_list = [t.strip() for t in topics_input.split(",") if t.strip()]
@@ -1228,10 +1234,8 @@ def claim_promote(
     # comments and field ordering. For bare-list-format files (test fixtures),
     # do a read-modify-write so the YAML stays valid.
     topics_yaml = "[" + ", ".join(topics_list) + "]"
-    # For subject templates, derive the subjects: list from the claim's entity ref
-    # so the generated template satisfies the Template validator (subjects required
-    # and non-empty when entity_type == 'subject'). Operators can hand-edit later
-    # to add cross-subject pairings.
+    # Subject templates require a non-empty subjects: list (Template validator);
+    # operators can hand-edit later to add cross-subject pairings.
     subjects_line = ""
     if entity_type_input == "subject":
         subject_slug = (
@@ -1497,7 +1501,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @main.command()
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
-@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(["company", "product", "subject"]), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
+@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(list(_ENTITY_TYPE_CHOICES)), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst per template (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
