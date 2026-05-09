@@ -76,8 +76,8 @@ class TestIngestorAgent:
 
 
 class TestBuildAnalystPrompt:
-    def _make_resolved(self) -> ResolvedEntity:
-        return ResolvedEntity(
+    def _make_resolved(self, **overrides) -> ResolvedEntity:
+        defaults = dict(
             entity_ref="products/chatgpt",
             entity_name="ChatGPT",
             entity_type=EntityType.PRODUCT,
@@ -85,6 +85,8 @@ class TestBuildAnalystPrompt:
             aliases=["GPT"],
             parent_company="OpenAI",
         )
+        defaults.update(overrides)
+        return ResolvedEntity(**defaults)
 
     def test_with_resolved_entity_emits_pre_resolved_block(self) -> None:
         resolved = self._make_resolved()
@@ -112,61 +114,24 @@ class TestBuildAnalystPrompt:
         assert "pre-resolved" not in prompt_no_name
 
     def test_analyst_prompt_emits_legal_name(self) -> None:
-        """When ResolvedEntity.legal_name is set, the analyst prompt emits a
-        `Legal name:` line in the entity block."""
-        resolved = ResolvedEntity(
-            entity_ref="companies/openai",
-            entity_name="OpenAI",
-            entity_type=EntityType.COMPANY,
-            entity_description="An AI lab.",
-            legal_name="OpenAI, LLC",
-        )
+        resolved = self._make_resolved(legal_name="OpenAI, LLC")
         prompt = build_analyst_prompt(None, "OpenAI is safe", [], resolved_entity=resolved)
-        assert "Legal name: OpenAI, LLC" in prompt, (
-            f"Expected `Legal name: OpenAI, LLC` in analyst prompt:\n{prompt}"
-        )
+        assert "Legal name: OpenAI, LLC" in prompt
 
     def test_analyst_prompt_omits_legal_name_when_absent(self) -> None:
-        """When ResolvedEntity.legal_name is None, no Legal name line is emitted
-        (keeps the common-path prompt identical to today)."""
-        resolved = ResolvedEntity(
-            entity_ref="products/chatgpt",
-            entity_name="ChatGPT",
-            entity_type=EntityType.PRODUCT,
-            entity_description="A conversational AI product.",
-        )
+        resolved = self._make_resolved()
         prompt = build_analyst_prompt(None, "ChatGPT is safe", [], resolved_entity=resolved)
-        assert "Legal name:" not in prompt, (
-            f"Did not expect a `Legal name:` line when legal_name is absent:\n{prompt}"
-        )
+        assert "Legal name:" not in prompt
 
     def test_analyst_prompt_emits_verification_when_not_verified(self) -> None:
-        """When verification_status != 'verified', the analyst prompt emits a
-        `Verification:` line so the analyst can weight sparse-evidence claims."""
-        resolved = ResolvedEntity(
-            entity_ref="products/treadlightlyai",
-            entity_name="TreadLightlyAI",
-            entity_type=EntityType.PRODUCT,
-            entity_description="An AI thinking tool.",
-            verification_status="unverified-startup",
-        )
-        prompt = build_analyst_prompt(None, "TreadLightlyAI is novel", [], resolved_entity=resolved)
-        assert "Verification: unverified-startup" in prompt, (
-            f"Expected `Verification: unverified-startup` in analyst prompt:\n{prompt}"
-        )
+        resolved = self._make_resolved(verification_status="unverified-startup")
+        prompt = build_analyst_prompt(None, "Product is novel", [], resolved_entity=resolved)
+        assert "Verification: unverified-startup" in prompt
 
-    def test_analyst_prompt_omits_verification_when_verified(self) -> None:
-        """Default `verified` status is suppressed so the common-path prompt is
-        identical to today's prompts (no churn for established entities)."""
-        resolved = ResolvedEntity(
-            entity_ref="companies/openai",
-            entity_name="OpenAI",
-            entity_type=EntityType.COMPANY,
-            entity_description="An AI lab.",
-            # verification_status defaults to "verified"
-        )
-        assert resolved.verification_status == "verified"
-        prompt = build_analyst_prompt(None, "OpenAI is safe", [], resolved_entity=resolved)
-        assert "Verification:" not in prompt, (
-            f"Did not expect a `Verification:` line for the default status:\n{prompt}"
-        )
+    def test_analyst_prompt_omits_verification_by_default(self) -> None:
+        # Absent verification_status (None) suppresses the line, keeping the
+        # common-path prompt identical to today's prompts.
+        resolved = self._make_resolved()
+        assert resolved.verification_status is None
+        prompt = build_analyst_prompt(None, "ChatGPT is safe", [], resolved_entity=resolved)
+        assert "Verification:" not in prompt

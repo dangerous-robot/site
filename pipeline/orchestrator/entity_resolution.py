@@ -35,8 +35,16 @@ class ResolvedEntity:
     parent_company: str | None = None
     website: str | None = None
     legal_name: str | None = None
-    verification_status: str = "verified"
+    verification_status: str | None = None
     search_hints: SearchHints | None = None
+
+
+def _normalize_verification_status(raw: object) -> str | None:
+    # Treat absent and explicit `verified` identically: None means "default".
+    # Any non-default value (e.g. `unverified-startup`) flows through.
+    if not isinstance(raw, str) or not raw or raw == "verified":
+        return None
+    return raw
 
 
 def resolve_parent_name(raw: str | None) -> str | None:
@@ -123,6 +131,6 @@ def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
         parent_company=fm.get("parent_company") or None,
         website=fm.get("website") or None,
         legal_name=fm.get("legal_name") or None,
-        verification_status=fm.get("verification_status") or "verified",
+        verification_status=_normalize_verification_status(fm.get("verification_status")),
         search_hints=search_hints,
     )

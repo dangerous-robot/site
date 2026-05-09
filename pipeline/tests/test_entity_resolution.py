@@ -126,9 +126,7 @@ class TestParseEntityRef:
     def test_resolved_entity_verification_status_default(self, tmp_path: Path) -> None:
         _write_entity(tmp_path, "products", "widget", _MINIMAL)
         result = parse_entity_ref("products/widget", tmp_path)
-        # Absent field defaults to "verified" so analyst/render layers can
-        # branch on a single string without a None check.
-        assert result.verification_status == "verified"
+        assert result.verification_status is None
 
     def test_resolved_entity_verification_status_explicit(self, tmp_path: Path) -> None:
         _write_entity(

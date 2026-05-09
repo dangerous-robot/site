@@ -45,20 +45,14 @@ def _entity_frontmatter(
     status: str | None = None,
     search_hints: "SearchHints | None" = None,
     legal_name: str | None = None,
-    verification_status: str = "verified",
+    verification_status: str | None = None,
 ) -> dict:
     # Ensure description is never empty -- the linter rejects blank required strings.
     description = entity_description.strip() or f"{entity_name} ({entity_type.value})."
-    # Suppress the default `verified` value so existing files (which carry no
-    # verification_status) round-trip unchanged. Emit explicitly only when the
-    # operator has set a non-default value.
-    emitted_verification = (
-        verification_status if verification_status and verification_status != "verified" else None
-    )
     return {
         "name": entity_name,
         "type": entity_type,
-        "verification_status": emitted_verification,
+        "verification_status": verification_status,
         "website": website,
         "aliases": aliases or None,
         "legal_name": legal_name,

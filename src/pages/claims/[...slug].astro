@@ -4,7 +4,7 @@ import { getCollection, render } from "astro:content";
 import PageHeader from "../../components/PageHeader.astro";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import DisclosureIndicator from "../../components/DisclosureIndicator.astro";
-import { getEntityParent } from "../../lib/entityTypes";
+import { buildEntityMap, getEntityParent, resolveMadeBy } from "../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
 import { shouldNoindex } from "../../lib/seo";
 import {
@@ -36,28 +36,12 @@ const stem = claim.id.split("/").pop() ?? claim.id;
 const criteriaSlug = claim.data.criteria_slug ?? stem;
 const matchedCriteria = criteria.find(s => s.id === criteriaSlug);
 
-const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
+const entityMap = buildEntityMap(entities);
+const entityEntry = entityMap.get(claim.data.entity) ?? null;
 const typeParent = entityEntry ? getEntityParent(entityEntry.data.type) : null;
 const entityLabel = entityEntry?.data.name ?? claim.data.entity;
 
-const entityMap = new Map(entities.map(e => [e.id, e]));
-
-// JS mirror of pipeline `resolve_parent_name` (entity_resolution.py); fallback
-// label when the parent_company ref doesn't resolve to an existing entity.
-const titleCaseSlug = (slug: string) =>
-  slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-const madeBy = (() => {
-  if (!entityEntry || entityEntry.data.type !== 'product') return null;
-  const parentRef = entityEntry.data.parent_company;
-  if (!parentRef) return null;
-  return {
-    href: `/entities/${parentRef}`,
-    label:
-      entityMap.get(parentRef)?.data.name ??
-      titleCaseSlug(parentRef.split('/').pop()!),
-  };
-})();
+const madeBy = resolveMadeBy(entityEntry, entityMap);
 
 const claimCrumbs = [
   { label: "Home", href: "/" },

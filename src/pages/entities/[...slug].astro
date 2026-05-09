@@ -6,7 +6,13 @@ import { CATEGORY_LABELS } from "../../lib/research";
 import VerdictBadge from "../../components/VerdictBadge.astro";
 import NotAssessedCell from "../../components/NotAssessedCell.astro";
 import PageHeader from "../../components/PageHeader.astro";
-import { getEntityParent } from "../../lib/entityTypes";
+import {
+  VERIFICATION_STATUS_BADGE_TEXT,
+  buildEntityMap,
+  getEntityParent,
+  resolveMadeBy,
+  type VerificationStatus,
+} from "../../lib/entityTypes";
 import { shouldNoindex } from "../../lib/seo";
 
 export async function getStaticPaths() {
@@ -29,32 +35,14 @@ const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
 
-const entityMap = new Map(entities.map(e => [e.id, e]));
+const entityMap = buildEntityMap(entities);
+const madeBy = resolveMadeBy(entity, entityMap);
 
-// JS mirror of pipeline `resolve_parent_name` (entity_resolution.py): converts
-// a slug like `companies/anthropic` (or just `anthropic`) into a Title Case
-// display label. Used as a fallback when the parent_company ref points at an
-// entity file that does not exist in the collection.
-const titleCaseSlug = (slug: string) =>
-  slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-
-const madeBy =
-  entity.data.type === 'product' && entity.data.parent_company
-    ? {
-        href: `/entities/${entity.data.parent_company}`,
-        label:
-          entityMap.get(entity.data.parent_company)?.data.name ??
-          titleCaseSlug(entity.data.parent_company.split('/').pop()!),
-      }
-    : null;
-
-const verificationStatus = entity.data.verification_status;
-const showVerificationBadge =
-  verificationStatus && verificationStatus !== 'verified';
+const verificationStatus = entity.data.verification_status as VerificationStatus | undefined;
 const verificationBadgeText =
-  verificationStatus === 'unverified-startup'
-    ? 'Unverified — sparse public documentation (early-stage / startup)'
-    : 'Unverified — limited public corroboration';
+  verificationStatus && verificationStatus !== 'verified'
+    ? VERIFICATION_STATUS_BADGE_TEXT[verificationStatus]
+    : '';
 
 // Group claims by topic. A claim with topics [a, b] appears in both
 // /entities/<slug>'s "a" and "b" groups; this is intentional so the page
@@ -109,7 +97,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
         </a>
       )}
       <p class="description">{entity.data.description}</p>
-      {showVerificationBadge && (
+      {verificationBadgeText && (
         <p class="verification-badge" data-status={verificationStatus}>
           {verificationBadgeText}
         </p>
