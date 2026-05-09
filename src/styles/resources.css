@@ -1,0 +1,192 @@
+/* =========================================================
+   resources.css — scoped to .resources-page
+   Loaded only by ResourcePage.astro and the resources hub.
+   ========================================================= */
+
+.resources-page {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ---------------------------------------------------------
+   Wallpaper layer — fixed, behind content, masked corner
+   --------------------------------------------------------- */
+.resources-wallpaper {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  width: min(46vw, 640px);
+  max-height: 70vh;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.06;
+  mask-image: linear-gradient(135deg, transparent 0%, transparent 30%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,1) 100%);
+  -webkit-mask-image: linear-gradient(135deg, transparent 0%, transparent 30%, rgba(0,0,0,0.85) 70%, rgba(0,0,0,1) 100%);
+}
+
+.resources-wallpaper img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  object-position: bottom right;
+}
+
+/* SVG wallpapers were authored on white. Invert in dark theme so the line
+   art reads against a dark background. */
+[data-theme="dark"] .resources-wallpaper.is-svg img {
+  filter: invert(1);
+}
+
+@media (max-width: 768px) {
+  .resources-wallpaper {
+    width: 80vw;
+    opacity: 0.04;
+  }
+}
+
+/* ---------------------------------------------------------
+   Paper-grain overlay — fixed, on top of wallpaper, behind content
+   --------------------------------------------------------- */
+.resources-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  background-repeat: repeat;
+  background-size: 240px 240px;
+}
+
+[data-theme="dark"] .resources-grain {
+  mix-blend-mode: screen;
+  opacity: 0.025;
+}
+
+/* Avoid theme-switch flicker. */
+.resources-grain,
+.resources-wallpaper {
+  transition: none;
+}
+
+/* Motion-reduce: drop the decorative layers entirely. They are static, but
+   removing them under reduced-motion preference keeps the page calmer for
+   readers who opted in via the A11yControl. */
+@media (prefers-reduced-motion: reduce) {
+  .resources-wallpaper,
+  .resources-grain { display: none; }
+}
+:root[data-motion="reduce"] .resources-wallpaper { display: none; }
+:root[data-motion="reduce"] .resources-grain { display: none; }
+
+/* ---------------------------------------------------------
+   Hero (page-top header inside ResourcePage)
+   --------------------------------------------------------- */
+.resources-hero {
+  margin: var(--space-lg) 0 var(--space-xl);
+}
+
+.resources-hero .eyebrow {
+  margin: 0 0 var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.resources-hero h1 {
+  margin: 0 0 var(--space-md);
+  font-family: var(--font-heading);
+  font-size: clamp(2rem, 4.5vw, 2.75rem);
+  line-height: 1.1;
+  color: var(--color-text-heading);
+  font-weight: 400;
+}
+
+.resources-hero .lede {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: var(--line-height-body);
+  color: var(--color-text-muted);
+  max-width: 40rem;
+}
+
+/* ---------------------------------------------------------
+   Pill nav — used by guide/matrix layouts for in-page sections
+   --------------------------------------------------------- */
+.resources-pill-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-xl);
+  padding: 0;
+  list-style: none;
+}
+
+.resources-pill-nav a {
+  display: inline-block;
+  padding: 0.35rem 0.9rem;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-body);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.resources-pill-nav a:hover,
+.resources-pill-nav a[aria-current="true"] {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  text-decoration: none;
+}
+
+/* ---------------------------------------------------------
+   Callout — left-accent boxes (e.g. "What doesn't work")
+   --------------------------------------------------------- */
+.resources-callout {
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-code-bg);
+  padding: var(--space-sm) var(--space-md);
+  margin: var(--space-lg) 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.resources-callout-label {
+  display: block;
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  font-weight: 600;
+}
+
+.resources-callout p {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  line-height: var(--line-height-body);
+}
+
+/* ---------------------------------------------------------
+   <details> footnote groups
+   --------------------------------------------------------- */
+.resources-details {
+  border-top: 1px solid var(--color-border);
+  padding: var(--space-sm) 0;
+}
+
+.resources-details summary {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  list-style: none;
+}
+
+.resources-details summary::-webkit-details-marker { display: none; }

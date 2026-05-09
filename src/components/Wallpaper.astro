@@ -1,0 +1,23 @@
+---
+type Variant = 'default' | 'ai-safety' | 'responsible-ai' | 'none';
+
+interface Props {
+  variant?: Variant;
+}
+
+const { variant = 'default' } = Astro.props;
+
+const ASSETS: Record<Exclude<Variant, 'none'>, string> = {
+  default: '/resources/wallpapers/default.svg',
+  'ai-safety': '/resources/wallpapers/ai-safety.svg',
+  'responsible-ai': '/resources/wallpapers/responsible-ai.png',
+};
+
+const src = variant === 'none' ? null : ASSETS[variant];
+const isSvg = variant !== 'none' && variant !== 'responsible-ai';
+---
+{src && (
+  <div class={`resources-wallpaper ${isSvg ? 'is-svg' : 'is-raster'}`} aria-hidden="true">
+    <img src={src} alt="" loading="lazy" decoding="async" />
+  </div>
+)}

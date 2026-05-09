@@ -1,0 +1,52 @@
+---
+import Base from './Base.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import Wallpaper from '../components/Wallpaper.astro';
+import PaperGrain from '../components/PaperGrain.astro';
+import '../styles/resources.css';
+
+type Wallpaper = 'default' | 'ai-safety' | 'responsible-ai' | 'none';
+type Layout = 'reading' | 'wide' | 'bare';
+
+interface Props {
+  title: string;
+  description?: string;
+  eyebrow?: string;
+  lede?: string;
+  wallpaper?: Wallpaper;
+  layout?: Layout;
+  noindex?: boolean;
+  /** Breadcrumb tail; Home and Resources are prepended automatically. */
+  crumb?: string;
+}
+
+const {
+  title,
+  description,
+  eyebrow,
+  lede,
+  wallpaper = 'default',
+  layout = 'reading',
+  noindex = false,
+  crumb,
+} = Astro.props;
+
+const crumbs: { label: string; href?: string }[] = [
+  { label: 'Home', href: '/' },
+  { label: 'Resources', href: '/resources' },
+];
+if (crumb) crumbs.push({ label: crumb });
+---
+<Base title={title} description={description} layout={layout} noindex={noindex}>
+  <Wallpaper variant={wallpaper} />
+  <PaperGrain />
+  <div class="resources-page">
+    <Breadcrumb crumbs={crumbs} />
+    <header class="resources-hero" id="top">
+      {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+      <h1>{title}</h1>
+      {lede && <p class="lede">{lede}</p>}
+    </header>
+    <slot />
+  </div>
+</Base>
