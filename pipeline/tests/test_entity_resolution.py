@@ -151,7 +151,7 @@ class TestCanonicalEntityKeysLockstep:
         for key in ("legal_name", "verification_status", "sec_cik", "status"):
             assert key in CANONICAL_ENTITY_KEYS, (
                 f"{key!r} missing from CANONICAL_ENTITY_KEYS — drift from "
-                f"writer / Zod schema. See docs/plans/entity-metadata-surface.md."
+                f"writer / Zod schema. See docs/plans/completed/entity-metadata-surface_completed.md."
             )
 
 

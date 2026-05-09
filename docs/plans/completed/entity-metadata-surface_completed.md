@@ -1,6 +1,6 @@
 # Plan: Entity metadata surface — `legal_name` + `parent_company` rendering
 
-**Status**: ready
+**Status**: completed (2026-05-09; commits `cf93b87` feat + `67b1dc4` /simplify pass)
 **Created**: 2026-05-09
 **Related plans**: `completed/scorer-quality-signals.md` (Item C: parent_company injection into scorer/planner already shipped); `completed/source-quality-robust-roadmap_completed.md` (independence + verification scale); `source-pool-expansion-tier1.md` (sec_cik schema landing); `parent-company-inference.md` (post-v1 automation, not a dependency)
 **Promoted from**: `source-quality-followups.md` § Section 5 Bucket 2 (Entity metadata surface)
