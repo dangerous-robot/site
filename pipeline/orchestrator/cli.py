@@ -1654,6 +1654,14 @@ def onboard(
         for slug, reason in result.templates_excluded:
             click.echo(f"  - {slug}: {reason}")
 
+    # Non-fatal advisories surface above errors so the operator sees
+    # them even when the run otherwise looks clean.
+    if result.warnings:
+        click.echo("")
+        click.echo("Warnings:")
+        for warning in result.warnings:
+            click.echo(f"  ~ {warning}")
+
     # Full error stream; "Blocked:" above already shows the top-line cause per claim.
     if result.errors:
         click.echo("")

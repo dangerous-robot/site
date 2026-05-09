@@ -1179,6 +1179,10 @@ class OnboardResult:
     templates_applied: list[str] = field(default_factory=list)
     templates_excluded: list[tuple[str, str]] = field(default_factory=list)
     errors: list[str] = field(default_factory=list)
+    # Non-fatal advisories surfaced in the report without halting the
+    # run. Currently used for "subject onboarded, no template
+    # subjects: hit"; reserved for similar advisory rows.
+    warnings: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -1726,9 +1730,25 @@ async def onboard_entity(
         )
 
         if not typed_templates:
-            result.errors.append(f"No core templates found for entity_type={entity_type}")
-            result.status = "rejected"
-            return result
+            # Subjects without a matching ``subjects:`` entry are
+            # legitimate first-class onboards — the entity file should
+            # still land. Emit a warning row and fall through so the
+            # entity gets verified, enriched, and persisted with zero
+            # claims fanned out. Company / product have no per-entity
+            # template gating, so an empty set there is still an error.
+            if entity_type == "subject":
+                slug_for_warning = onboard_entity_slug or slugify(entity_name)
+                result.warnings.append(
+                    f"No template's subjects: list references "
+                    f"subjects/{slug_for_warning}; "
+                    f"entity will be onboarded with zero claims."
+                )
+            else:
+                result.errors.append(
+                    f"No core templates found for entity_type={entity_type}"
+                )
+                result.status = "rejected"
+                return result
 
         applicable_slugs, excluded = _screen_templates(entity_description, typed_templates)
 

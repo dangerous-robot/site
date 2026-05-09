@@ -936,9 +936,15 @@ class TestOnboardSubjectFanOut:
         }
 
     @pytest.mark.asyncio
-    async def test_unreferenced_subject_queues_zero_templates(
+    async def test_unreferenced_subject_warns_and_proceeds(
         self, tmp_path: Path, monkeypatch
     ) -> None:
+        """Subject onboard with no matching ``subjects:`` template warns; does not halt.
+
+        The entity is first-class — the file should still land. Per the
+        plan's Step 10: surface a warning row in the report rather
+        than aborting the run.
+        """
         _setup_tmp_repo(tmp_path)
         ref = self._write_subject_entity(tmp_path, "unreferenced-test-subject", "Unreferenced Test Subject")
 
@@ -958,7 +964,11 @@ class TestOnboardSubjectFanOut:
                 "Unreferenced Test Subject", "subject", config=config, entity_ref=ref,
             )
 
-        # No template applies, so onboard rejects with the standard "No core templates" error.
-        assert result.status == "rejected"
-        assert any("No core templates" in e for e in result.errors)
+        assert result.status == "accepted"
         assert result.templates_applied == []
+        assert any(
+            "subjects/unreferenced-test-subject" in w for w in result.warnings
+        ), f"expected subject-warning in result.warnings, got {result.warnings!r}"
+        # The "No core templates" rejection is reserved for company /
+        # product paths now; subjects warn rather than halt.
+        assert not any("No core templates" in e for e in result.errors)
