@@ -27,6 +27,14 @@ Use the display `Name:` for narrative prose. The two may be identical (e.g.
 absent — its absence is information that the operator has not yet recorded the
 legal entity, not license to fabricate one.
 
+FOUNDED YEAR:
+When the pre-resolved entity block carries a `Founded:` line, treat that year
+as authoritative for tenure-of-operation reasoning. Claims of the form "X has
+been operating since Y" or "X has run for N years" should be evaluated against
+this canonical founded year rather than against any year a source happens to
+mention. The absence of a `Founded:` line means the operator has not recorded
+a founded year; do not infer one from sources for verdict purposes.
+
 VERIFICATION STATUS:
 When the pre-resolved entity block carries a `Verification:` line with a value
 other than `verified` (e.g., `unverified-startup`, `unverified-other`), the

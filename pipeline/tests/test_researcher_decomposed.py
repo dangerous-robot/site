@@ -1039,3 +1039,44 @@ def test_legal_name_absent_no_line_in_prompt() -> None:
     assert "Legal name:" not in prompt, (
         f"Did not expect a 'Legal name:' line when legal_name is None:\n{prompt}"
     )
+
+
+# --------------------------------------------------------------------------- #
+# Entity metadata: founded injected into scorer prompt                        #
+# --------------------------------------------------------------------------- #
+
+def test_founded_in_scorer_prompt_when_populated() -> None:
+    """build_scorer_prompt emits a `Founded:` line when populated."""
+    from researcher.scorer import build_scorer_prompt
+
+    candidates = [
+        SearchCandidate(url="https://anthropic.com/about", title="About", snippet="info", from_query="q1"),
+    ]
+    prompt = build_scorer_prompt(
+        "Anthropic",
+        "test claim",
+        candidates,
+        _stub_sub_questions(),
+        founded=2021,
+    )
+    assert "Founded: 2021" in prompt, (
+        f"Expected 'Founded: 2021' in prompt:\n{prompt}"
+    )
+
+
+def test_founded_omitted_from_scorer_prompt_when_unset() -> None:
+    """build_scorer_prompt omits the `Founded:` line when founded is None."""
+    from researcher.scorer import build_scorer_prompt
+
+    candidates = [
+        SearchCandidate(url="https://example.com", title="X", snippet="x", from_query="q1"),
+    ]
+    prompt = build_scorer_prompt(
+        "TestEntity",
+        "test claim",
+        candidates,
+        _stub_sub_questions(),
+    )
+    assert "Founded:" not in prompt, (
+        f"Did not expect a 'Founded:' line when founded is None:\n{prompt}"
+    )

@@ -109,6 +109,50 @@ class TestAnalystPrompt:
         assert "Addresses: sq1, sq2" in prompt
         assert "Addresses: (none)" in prompt
 
+    def test_founded_in_analyst_prompt_when_populated(self) -> None:
+        """build_analyst_prompt emits a `Founded:` line when populated on the
+        resolved entity."""
+        from common.models import EntityType
+        from orchestrator.entity_resolution import ResolvedEntity
+
+        resolved = ResolvedEntity(
+            entity_ref="companies/anthropic",
+            entity_name="Anthropic",
+            entity_type=EntityType.COMPANY,
+            entity_description="An AI safety company.",
+            founded=2021,
+        )
+        prompt = build_analyst_prompt(
+            "Anthropic",
+            "Anthropic has been operating since 2021",
+            [],
+            resolved_entity=resolved,
+        )
+        assert "Founded: 2021" in prompt, (
+            f"Expected 'Founded: 2021' in prompt:\n{prompt}"
+        )
+
+    def test_founded_omitted_from_analyst_prompt_when_unset(self) -> None:
+        """build_analyst_prompt omits the `Founded:` line when founded is None."""
+        from common.models import EntityType
+        from orchestrator.entity_resolution import ResolvedEntity
+
+        resolved = ResolvedEntity(
+            entity_ref="companies/example",
+            entity_name="Example",
+            entity_type=EntityType.COMPANY,
+            entity_description="A company without a founded year.",
+        )
+        prompt = build_analyst_prompt(
+            "Example",
+            "test claim",
+            [],
+            resolved_entity=resolved,
+        )
+        assert "Founded:" not in prompt, (
+            f"Did not expect a 'Founded:' line when founded is None:\n{prompt}"
+        )
+
 
 class TestSeoTitleField:
     """seo_title is required on every claim, 1-42 chars, no mid-word

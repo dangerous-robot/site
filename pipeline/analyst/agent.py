@@ -258,6 +258,8 @@ def build_analyst_prompt(
         parts.append(f"Aliases: {aliases_str}")
         if resolved_entity.legal_name:
             parts.append(f"Legal name: {resolved_entity.legal_name}")
+        if resolved_entity.founded is not None:
+            parts.append(f"Founded: {resolved_entity.founded}")
         parts.append(f"Parent company: {parent_str}")
         if resolved_entity.verification_status:
             parts.append(f"Verification: {resolved_entity.verification_status}")

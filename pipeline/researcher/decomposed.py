@@ -423,6 +423,7 @@ async def decomposed_research(
     parent_name = resolve_parent_name(resolved_entity.parent_company if resolved_entity else None)
     entity_website = resolved_entity.website if resolved_entity else None
     entity_legal_name = resolved_entity.legal_name if resolved_entity else None
+    entity_founded = resolved_entity.founded if resolved_entity else None
     avoid_topics = (
         list(resolved_entity.search_hints.exclude)
         if resolved_entity and resolved_entity.search_hints
@@ -437,6 +438,7 @@ async def decomposed_research(
         website=entity_website,
         avoid=avoid_topics or None,
         legal_name=entity_legal_name,
+        founded=entity_founded,
     )
     def _fallback_to_candidates() -> tuple[list[str], dict[str, list[str]]]:
         # Without scorer output we have no per-URL addresses; tag every
