@@ -22,7 +22,6 @@ from orchestrator.pipeline import (
     VerifyConfig,
     _merge_search_hints,
     _probe_collision_suggestions,
-    _tighten_entity_description,
     onboard_entity,
 )
 
@@ -468,89 +467,6 @@ class TestOnboardVocabularyResolution:
 class _AgentResult:
     def __init__(self, output) -> None:
         self.output = output
-
-
-class TestTightenEntityDescription:
-    @pytest.mark.asyncio
-    async def test_calls_llm_to_rewrite(self) -> None:
-        """Description rewrite is delegated to the LLM agent; on success its
-        output replaces the raw page summary."""
-        from orchestrator import pipeline as pipeline_mod
-        cfg = VerifyConfig(model="test")
-
-        async def fake_run(prompt, *args, **kwargs):
-            assert "TreadLightly AI" in prompt
-            return _AgentResult(pipeline_mod._EntityDescription(
-                description="TreadLightly AI is an AI thinking tool with seven modes.",
-            ))
-
-        with (
-            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=fake_run),
-            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-        ):
-            out = await _tighten_entity_description(
-                "Landing page for TreadLightly AI, an AI thinking tool with seven modes.",
-                "TreadLightly AI",
-                "https://treadlightly.ai/",
-                "https://treadlightly.ai",
-                cfg,
-            )
-        assert out == "TreadLightly AI is an AI thinking tool with seven modes."
-
-    @pytest.mark.asyncio
-    async def test_blanks_when_source_domain_mismatches_canonical(self) -> None:
-        """Domain-mismatch guard runs BEFORE the LLM and short-circuits to empty."""
-        cfg = VerifyConfig(model="test")
-        out = await _tighten_entity_description(
-            "Tread Lightly! is a non-profit organization promoting responsible recreation.",
-            "TreadLightly AI",
-            "https://treadlightly.org/about-us/",
-            "https://treadlightly.ai",
-            cfg,
-        )
-        assert out == ""
-
-    @pytest.mark.asyncio
-    async def test_subdomain_of_canonical_is_kept(self) -> None:
-        """www.acme.example matches acme.example; the rewrite proceeds."""
-        from orchestrator import pipeline as pipeline_mod
-        cfg = VerifyConfig(model="test")
-
-        async def fake_run(prompt, *args, **kwargs):
-            return _AgentResult(pipeline_mod._EntityDescription(
-                description="Acme makes things.",
-            ))
-
-        with (
-            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=fake_run),
-            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-        ):
-            out = await _tighten_entity_description(
-                "Acme makes things.",
-                "Acme",
-                "https://www.acme.example/about",
-                "https://acme.example",
-                cfg,
-            )
-        assert out == "Acme makes things."
-
-    @pytest.mark.asyncio
-    async def test_falls_back_to_raw_on_llm_failure(self) -> None:
-        """If the rewrite call raises, return the raw summary unchanged."""
-        from orchestrator import pipeline as pipeline_mod
-        cfg = VerifyConfig(model="test")
-
-        async def boom(*a, **kw):
-            raise RuntimeError("model exploded")
-
-        with (
-            patch.object(pipeline_mod._entity_description_agent, "run", side_effect=boom),
-            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-        ):
-            out = await _tighten_entity_description(
-                "Acme is a thing.", "Acme", "https://acme.example", "https://acme.example", cfg,
-            )
-        assert out == "Acme is a thing."
 
 
 class TestProbeCollisionSuggestions:

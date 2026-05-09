@@ -1216,19 +1216,6 @@ def _screen_templates(
     return applicable, excluded
 
 
-def _wrong_entity_source(
-    source_url: str | None, entity_website: str | None
-) -> bool:
-    """True when the source URL's registered domain differs from the canonical."""
-    if not (entity_website and source_url):
-        return False
-    canon = normalised_host(entity_website)
-    src = normalised_host(source_url)
-    if not (canon and src):
-        return False
-    return canon != src and not src.endswith("." + canon)
-
-
 @dataclass(frozen=True)
 class LightResearchBundle:
     """Shared input for the entity verifier and enricher agents.
@@ -1238,8 +1225,8 @@ class LightResearchBundle:
     ``enrich_entity`` helper build one of these and pass it forward.
 
     ``raw_description`` is the untightened webpage summary as the ingestor
-    saw it. The enricher subsumes the tightening step that
-    ``_tighten_entity_description`` used to perform.
+    saw it. The enricher's ``description`` field is the canonical
+    tightened one-sentence description.
     """
 
     entity_name: str
@@ -1271,9 +1258,9 @@ async def gather_light_research(
     were collected.
 
     Returns the **raw** webpage summary in ``raw_description``. The
-    standalone tightening helper (``_tighten_entity_description``) and
-    the enricher agent are the consumers that derive a tightened
-    one-sentence description from it; this helper does not call either.
+    enricher (``researcher.entity_enricher``) is the consumer that
+    derives a tightened one-sentence description from it; this helper
+    does not call the enricher.
     """
     raw_description = ""
     entity_website: str | None = None
@@ -1322,67 +1309,6 @@ async def gather_light_research(
         description_source_url=description_source_url,
         probe_excludes=probe_excludes,
     )
-
-
-class _EntityDescription(BaseModel):
-    description: str = Field(
-        description="One sentence describing the organization (not the webpage)."
-    )
-
-
-_ENTITY_DESCRIPTION_INSTRUCTIONS = """\
-You rewrite a webpage summary into a one-sentence description of the organization the page is about.
-
-Rules:
-- Output a single sentence.
-- The subject is the organization, not the webpage. Do not start with "Landing page", "Homepage", "Website", etc.
-- Preserve concrete facts from the source (what the organization does, key products or focus). Do not invent new facts.
-- If the source summary does not actually describe an organization, return an empty string.
-"""
-
-
-_entity_description_agent = Agent(
-    "test",
-    output_type=_EntityDescription,
-    system_prompt=_ENTITY_DESCRIPTION_INSTRUCTIONS,
-    retries=1,
-)
-
-
-async def _tighten_entity_description(
-    description: str,
-    entity_name: str,
-    source_url: str | None,
-    entity_website: str | None,
-    cfg: VerifyConfig,
-) -> str:
-    """Rewrite the source-derived summary into a one-sentence org description.
-
-    Blanks the description when the source URL belongs to a different registered
-    domain than the canonical website (a wrong-entity blurb is worse than none).
-    Otherwise calls a small LLM to recast the page summary as an organization
-    description; falls back to the raw summary if the call fails.
-    """
-    description = (description or "").strip()
-    if not description:
-        return ""
-    if _wrong_entity_source(source_url, entity_website):
-        logger.info(
-            "Onboard: source domain mismatches canonical website; blanking description"
-        )
-        return ""
-    prompt = f"Entity name: {entity_name}\nWebpage summary: {description}"
-    try:
-        with _entity_description_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
-            res = await asyncio.wait_for(
-                _entity_description_agent.run(prompt),
-                timeout=cfg.research_timeout_s,
-            )
-        rewritten = (res.output.description or "").strip()
-        return rewritten or description
-    except Exception as exc:
-        logger.warning("Entity description rewrite failed (%s); using raw summary", exc)
-        return description
 
 
 async def _probe_collision_suggestions(
@@ -1632,17 +1558,60 @@ async def onboard_entity(
             bundle = await gather_light_research(
                 entity_name, et, cfg, sem, client, seed_url=seed_url,
             )
-            # ``gather_light_research`` returns the raw page summary; the
-            # tightening LLM call still lives here so this commit's
-            # behavior is unchanged. Phase C wiring (a later step) replaces
-            # this with the enricher's ``description`` field, after which
-            # ``_tighten_entity_description`` is removed.
-            entity_description = await _tighten_entity_description(
-                bundle.raw_description, entity_name,
-                bundle.description_source_url, bundle.entity_website, cfg,
-            )
         entity_website = bundle.entity_website
         probe_excludes = bundle.probe_excludes
+
+        # Phase C: enricher (operator-review checkpoint)
+        # The enricher subsumes the previous standalone tightening agent:
+        # ``EnrichmentDraft.description`` is the new one-sentence
+        # description; ``founded`` and ``history_markdown`` populate
+        # surfaces the renderer learned about in Step 2.
+        # Phase B (verifier) lands in Commit 2; until then, the
+        # operator-review checkpoint is the only defense against
+        # enriching the wrong entity.
+        from researcher.entity_enricher import (
+            build_entity_enricher_prompt,
+            entity_enricher_agent,
+        )
+
+        enrichment_draft = None
+        entity_description = bundle.raw_description
+        founded_year: int | None = None
+        history_markdown: str | None = None
+        try:
+            prompt = build_entity_enricher_prompt(bundle)
+            with entity_enricher_agent.override(
+                model=resolve_model(cfg.model_for("researcher")),
+            ):
+                run_res = await asyncio.wait_for(
+                    entity_enricher_agent.run(prompt),
+                    timeout=cfg.research_timeout_s,
+                )
+            enrichment_draft = run_res.output
+        except Exception as exc:
+            logger.warning(
+                "Enricher failed; falling back to raw page summary: %s", exc
+            )
+
+        if enrichment_draft is not None:
+            decision = await gate.review_entity_enrichment(
+                entity_name, enrichment_draft,
+            )
+            if decision == "accept":
+                # Empty description means the enricher judged the inputs
+                # not to describe the entity — keep the raw summary
+                # rather than ship a blank field through the writer.
+                if enrichment_draft.description.strip():
+                    entity_description = enrichment_draft.description.strip()
+                founded_year = enrichment_draft.founded
+                history_markdown = (
+                    enrichment_draft.history_markdown
+                    if enrichment_draft.history_markdown
+                    and enrichment_draft.history_markdown.strip()
+                    else None
+                )
+            else:
+                logger.info("Enricher draft rejected; keeping raw summary")
 
         merged_search_hints = _merge_search_hints(
             search_hints_include, search_hints_exclude, probe_excludes,
@@ -1703,6 +1672,8 @@ async def onboard_entity(
                 repo_root=repo_root,
                 website=entity_website,
                 search_hints=merged_search_hints,
+                founded=founded_year,
+                history_markdown=history_markdown,
             )
             result.entity_ref = draft_ref
             return result
@@ -1720,6 +1691,8 @@ async def onboard_entity(
                 repo_root=repo_root,
                 website=entity_website,
                 search_hints=merged_search_hints,
+                founded=founded_year,
+                history_markdown=history_markdown,
             )
         result.entity_ref = entity_ref
 

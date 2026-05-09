@@ -6,9 +6,9 @@ assembled by the orchestrator's light-research pass and emits an
 ``EnrichmentDraft`` that the operator reviews before the writer commits
 the fields to the entity file.
 
-This module subsumes the standalone ``_tighten_entity_description`` agent
-in ``orchestrator/pipeline.py``. The ``description`` field on the draft
-replaces what that helper produced.
+The ``description`` field is the canonical one-sentence tightened
+description for the entity; the orchestrator no longer runs a separate
+description-tightening agent.
 """
 from __future__ import annotations
 
