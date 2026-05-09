@@ -1195,6 +1195,11 @@ class EnrichmentResult:
 
     ``founded`` / ``description`` / ``history_markdown`` capture the
     fields that were actually persisted (only populated for ``accepted``).
+
+    ``"refused"`` is reserved on the Literal for callers that want to
+    surface a pre-flight refusal without raising; the current ``dr
+    entity-enrich`` CLI raises ``ClickException`` before calling
+    ``enrich_entity`` and so never produces this status.
     """
 
     entity_ref: str
@@ -1695,6 +1700,25 @@ async def onboard_entity(
                 history_markdown=history_markdown,
             )
         result.entity_ref = entity_ref
+
+        # _write_entity_file early-returns on existing files. When --force
+        # is in play and the enricher produced a draft this run, splice
+        # it into the existing file so onboard --force actually persists
+        # the new founded / description / history rather than dropping
+        # them on the floor. Spares a redundant Phase A + Phase C in the
+        # CLI's `enrich_entity` follow-up.
+        if cfg.force_overwrite and enrichment_draft is not None:
+            from orchestrator.persistence import update_entity_enrichment
+            entity_path = (
+                repo_root / "research" / "entities" / f"{entity_ref}.md"
+            )
+            if entity_path.exists():
+                update_entity_enrichment(
+                    entity_path,
+                    description=entity_description,
+                    founded=founded_year,
+                    history_markdown=history_markdown,
+                )
 
         # Without this resolved entity, the just-persisted search_hints would
         # not reach the per-template researcher on the run that wrote them.

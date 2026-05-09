@@ -1663,17 +1663,11 @@ def onboard(
 
     hr()
 
-    if force:
-        # Re-enrich after the existing --force overwrite work so the
-        # entity file picks up tightened description, founded year, and
-        # history body in the same pass.
-        from orchestrator.pipeline import enrich_entity
-
-        if result.entity_ref and "drafts/" not in result.entity_ref:
-            enrichment = asyncio.run(
-                enrich_entity(result.entity_ref, config=config, checkpoint=checkpoint)
-            )
-            _render_enrichment_outcome(enrichment)
+    # ``onboard_entity`` already runs Phase C (the enricher) on every
+    # call and, when ``--force`` is set, splices the draft into an
+    # existing entity file via ``update_entity_enrichment``. So no extra
+    # ``enrich_entity`` call is needed here — the CLI report stops at the
+    # OnboardReport above.
 
 
 def _render_enrichment_outcome(result) -> None:
