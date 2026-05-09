@@ -92,7 +92,7 @@ templates:
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
 
-  # --- AI/LLM Producers (Sector) ---
+  # --- AI Model Producers (Sector) ---
 
   - slug: ai-producers-signed-safety-commitments
     text: "All major ENTITY have signed AI safety commitments"
@@ -106,6 +106,15 @@ templates:
     topics: [ai-safety, industry-analysis]
     tags:
     - highlight
+    core: true
+
+  # --- Generative AI (Sector) ---
+
+  - slug: using-generative-ai-harms-cognitive-ability
+    text: "Using generative AI can harm cognitive ability"
+    entity_type: sector
+    topics: [ai-safety]
+    tags: [highlight]
     core: true
 
 

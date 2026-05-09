@@ -20,7 +20,7 @@ from common.templates import (
 class TestLoadTemplates:
     def test_loads_active_templates_from_yaml(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
-        assert len(templates) == 13
+        assert len(templates) == 14
 
     def test_returns_template_records(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
