@@ -750,11 +750,11 @@ class TestSelectResearchOrigins:
         assert _select_research_origins(cfg, []) == []
 
     def test_arxiv_disabled_in_config_excludes_arxiv(self) -> None:
-        """Default ``research_origins=['tavily']`` keeps arXiv off even on
-        an academic topic."""
+        """Explicit ``research_origins=['tavily']`` keeps arXiv off even on
+        an academic topic. (The shipped default now includes ``arxiv``;
+        operators opt out by overriding this list.)"""
         from orchestrator.pipeline import VerifyConfig
-        cfg = VerifyConfig()
-        assert cfg.research_origins == ["tavily"]
+        cfg = VerifyConfig(research_origins=["tavily"])
         assert _select_research_origins(cfg, ["ai-safety"]) == []
 
     def test_general_web_origins_filtered_out(self) -> None:

@@ -192,9 +192,9 @@ class TestVerifyConfigPerAgentModels:
 class TestVerifyConfigResearchOrigins:
     """Cover the activation list added for source-pool-expansion-tier1.md."""
 
-    def test_default_is_tavily_only(self) -> None:
+    def test_default_includes_tavily_and_arxiv(self) -> None:
         cfg = VerifyConfig()
-        assert cfg.research_origins == ["tavily"]
+        assert cfg.research_origins == ["tavily", "arxiv"]
 
     def test_explicit_list_round_trips(self) -> None:
         cfg = VerifyConfig(research_origins=["brave", "arxiv"])
@@ -210,8 +210,8 @@ class TestVerifyConfigResearchOrigins:
         cfg_a = VerifyConfig()
         cfg_b = VerifyConfig()
         assert cfg_a.research_origins is not cfg_b.research_origins
-        cfg_a.research_origins.append("arxiv")
-        assert cfg_b.research_origins == ["tavily"]
+        cfg_a.research_origins.append("edgar")
+        assert cfg_b.research_origins == ["tavily", "arxiv"]
 
 
 class TestVerifyConfigTimeouts:

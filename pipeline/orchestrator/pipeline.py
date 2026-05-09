@@ -195,10 +195,11 @@ class VerifyConfig:
     # rescued via web.archive.org during the synchronous run.
     skip_wayback: bool = False
     # Per-claim list of acquisition origins to attempt during research.
-    # Default ['tavily']; Brave remains available via search_backend for
-    # per-query fallback. Values mirror the schema enum on
-    # audit.sources_consulted[].acquisition.origin.
-    research_origins: list[str] = field(default_factory=lambda: ["tavily"])
+    # Default ['tavily', 'arxiv']; Brave remains available via search_backend
+    # for per-query fallback. arXiv only fires when the claim's topics
+    # intersect ACADEMIC_TOPICS (see _select_research_origins). Values mirror
+    # the schema enum on audit.sources_consulted[].acquisition.origin.
+    research_origins: list[str] = field(default_factory=lambda: ["tavily", "arxiv"])
     # Search backend used by the decomposed researcher's `execute_searches`
     # step. Today: 'tavily' (default) or 'brave'. Read once from
     # RESEARCH_SEARCH_BACKEND at construction time; tests can override by
