@@ -886,7 +886,13 @@ def claim_refresh(
     progress("Refreshing %s (model=%s)...", claim_ref, model)
 
     # Run full pipeline; writes are handled below per branch.
-    vr = asyncio.run(verify_claim(entity_name, claim_text, cfg, gate, resolved_entity=resolved_entity))
+    refresh_topics = list(template.topics or []) if template else []
+    vr = asyncio.run(
+        verify_claim(
+            entity_name, claim_text, cfg, gate,
+            resolved_entity=resolved_entity, topics=refresh_topics,
+        )
+    )
 
     if vr.errors:
         for err in vr.errors:
@@ -2146,12 +2152,13 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
 def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None:
     """Aggregate read-only counters from claims and audit sidecars; no LLM, no network.
 
-    Reports three aggregates that back the success-criteria table in
+    Reports four aggregates that back the success-criteria table in
     docs/plans/source-pool-expansion-tier1.md:
 
     \b
       - wayback_recovery: Path 1 archive_org recovery rate
       - acquisition_origins: per-origin distribution (brave/tavily/arxiv/...)
+      - academic_topic_coverage: Path 2 hit-rate on academic-tagged claims
       - verification_levels: analyst-derived source-pool level distribution
 
     Empty-state safe: a corpus with no `acquisition` blocks (the current
@@ -2161,6 +2168,7 @@ def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None
     Examples:
       dr stats
       dr stats --format json | jq '.wayback_recovery.rate'
+      dr stats --format json | jq '.academic_topic_coverage.rate'
     """
     logger.info("dr stats: format=%s", output_format)
 

@@ -1,6 +1,6 @@
 # Source Pool Expansion — Tier 1
 
-**Status**: In progress — § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Paths 1, 2, 3 + the companion search-backend plan are unblocked and may start in parallel.
+**Status**: In progress — § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Path 1 shipped 2026-05-08 (commit `a8e5dd5`). Path 2 shipped 2026-05-08 (commit pending merge). Path 3 remains open; companion search-backend plan moved to `completed/`.
 **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
 **Created**: 2026-05-08
 **Last revised**: 2026-05-08
@@ -180,6 +180,8 @@ Also extend `pipeline/tests/test_step_error_vocab.py` to confirm `memento_unavai
 **Effort**: 1.5–2 days (Memento helper + `IngestorDeps` side-channel plumbing + orchestrator drain + 5 respx test cases + smoke-test extension). Gates on § Schema prerequisites (`acquisition`) + § Shared infrastructure (`throttle.register('memento', ...)`, `StepError` vocabulary already documented).
 
 ## Path 2 — arXiv (academic API; simplified to single source)
+
+**Status: shipped 2026-05-08** (commit pending merge). Topic plumbing, arXiv tool (`pipeline/researcher/tools/arxiv.py`), `_select_research_origins` selector + `execute_searches` gather-and-merge refactor, and `dr stats` `academic_topic_coverage` aggregate all landed in one commit. AGENTS.md notes arXiv as the only academic origin in Tier 1; Tier 2 will add `SEMANTIC_SCHOLAR_API_KEY` / `OPENALEX_MAILTO`.
 
 **Where**: Researcher, parallel to `search_brave` / `search_tavily`. New `search_arxiv` tool function invoked from `decomposed.py:execute_searches` via the selector function (see § Codebase touchpoints). Results merge into the same `SearchCandidate` list before the URL scorer runs.
 

@@ -167,6 +167,8 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 | `RESEARCH_SEARCH_BACKEND` | No (default `brave`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
 | `TAVILY_API_KEY` | No | Researcher (`search_tavily`) | Required only when `RESEARCH_SEARCH_BACKEND=tavily`. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
 
+**arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; off by default. Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
+
 **Tavily data-handling note.** When `RESEARCH_SEARCH_BACKEND=tavily` is set, claim text and entity names are sent to Tavily on each query. The published research is already public, but verify Tavily's retention/reuse posture before flipping the default. The plan at `docs/plans/source-pool-expansion-tier1-search-backend.md` tracks the evaluation that gates a default flip.
 
 ## File Naming

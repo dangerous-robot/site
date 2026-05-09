@@ -35,13 +35,14 @@ def _write_claim(
     entity: str,
     slug: str,
     verification_level: str | None = None,
+    topics: list[str] | None = None,
     sidecar_data: dict | None = None,
 ) -> tuple[Path, Path]:
     """Write a minimal claim + optional sidecar under ``tmp_path``.
 
-    The claim frontmatter is intentionally bare (only ``title`` and an
-    optional ``verification_level``); the stats aggregator only reads
-    ``verification_level`` so we don't need a schema-complete file.
+    The claim frontmatter is intentionally bare (``title`` plus optional
+    ``verification_level`` / ``topics``); the stats aggregator only reads
+    those fields so we don't need a schema-complete file.
     """
     entity_dir = tmp_path / "research" / "claims" / entity
     entity_dir.mkdir(parents=True, exist_ok=True)
@@ -50,6 +51,9 @@ def _write_claim(
     fm_lines = ["---", "title: Test Claim"]
     if verification_level is not None:
         fm_lines.append(f"verification_level: {verification_level}")
+    if topics is not None:
+        # YAML flow-style list keeps the synthetic frontmatter simple.
+        fm_lines.append("topics: [" + ", ".join(topics) + "]")
     fm_lines.extend(["---", "Body.", ""])
     claim_path.write_text("\n".join(fm_lines), encoding="utf-8")
 
@@ -184,6 +188,119 @@ class TestComputeStats:
         # 2 ingest entries, 1 recovered.
         assert wr == {"recovered": 1, "total": 2, "rate": 0.5}
 
+    def test_academic_topic_coverage_empty_corpus_rate_none(self, tmp_path: Path) -> None:
+        """Empty corpus: zero academic-tagged claims, ``rate=None`` so
+        callers can distinguish "no data" from "data and zero coverage"."""
+        atc = compute_stats(tmp_path)["academic_topic_coverage"]
+        assert atc == {"covered": 0, "total": 0, "rate": None}
+
+    def test_academic_topic_coverage_claim_with_arxiv_source(self, tmp_path: Path) -> None:
+        """Academic-tagged claim + at least one arxiv-origin source ->
+        covered=1."""
+        _write_claim(
+            tmp_path,
+            entity="anthropic",
+            slug="ai-safety-research",
+            topics=["ai-safety"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/p", "url": "https://arxiv.org/abs/1.2", "title": "P",
+                    "ingested": True,
+                    "acquisition": {
+                        "stage": "research", "origin": "arxiv",
+                        "paper_id": "2106.04560",
+                    },
+                },
+            ]),
+        )
+        atc = compute_stats(tmp_path)["academic_topic_coverage"]
+        assert atc == {"covered": 1, "total": 1, "rate": 1.0}
+
+    def test_academic_topic_coverage_claim_without_arxiv_source(self, tmp_path: Path) -> None:
+        """Academic-tagged claim with only general-web sources counts
+        toward ``total`` but not ``covered`` (rate=0.0, not None)."""
+        _write_claim(
+            tmp_path,
+            entity="anthropic",
+            slug="env-impact",
+            topics=["environmental-impact"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/q", "url": "https://news.example/q", "title": "Q",
+                    "ingested": True,
+                    "acquisition": {"stage": "research", "origin": "tavily"},
+                },
+            ]),
+        )
+        atc = compute_stats(tmp_path)["academic_topic_coverage"]
+        assert atc == {"covered": 0, "total": 1, "rate": 0.0}
+
+    def test_academic_topic_coverage_non_academic_topic_ignored(self, tmp_path: Path) -> None:
+        """Non-academic topic doesn't enter the denominator at all."""
+        _write_claim(
+            tmp_path,
+            entity="ecosia",
+            slug="data-handling",
+            topics=["data-handling"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/r", "url": "https://news.example/r", "title": "R",
+                    "ingested": True,
+                    "acquisition": {"stage": "research", "origin": "tavily"},
+                },
+            ]),
+        )
+        atc = compute_stats(tmp_path)["academic_topic_coverage"]
+        assert atc == {"covered": 0, "total": 0, "rate": None}
+
+    def test_academic_topic_coverage_mixed_corpus(self, tmp_path: Path) -> None:
+        """Mix of covered/uncovered/non-academic claims yields the
+        right ratio over the academic-tagged subset."""
+        # Covered: academic topic + arxiv source.
+        _write_claim(
+            tmp_path,
+            entity="anthropic",
+            slug="cov",
+            topics=["ai-safety"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/x", "url": "https://arxiv.org/abs/1.1", "title": "X",
+                    "ingested": True,
+                    "acquisition": {"stage": "research", "origin": "arxiv"},
+                },
+            ]),
+        )
+        # Uncovered: academic topic, no arxiv source.
+        _write_claim(
+            tmp_path,
+            entity="anthropic",
+            slug="uncov",
+            topics=["industry-analysis"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/y", "url": "https://news.example/y", "title": "Y",
+                    "ingested": True,
+                    "acquisition": {"stage": "research", "origin": "brave"},
+                },
+            ]),
+        )
+        # Out-of-scope: non-academic topic, ignored entirely.
+        _write_claim(
+            tmp_path,
+            entity="ecosia",
+            slug="off",
+            topics=["data-handling"],
+            sidecar_data=_sidecar_with_sources([
+                {
+                    "id": "2026/z", "url": "https://news.example/z", "title": "Z",
+                    "ingested": True,
+                    "acquisition": {"stage": "research", "origin": "arxiv"},
+                },
+            ]),
+        )
+        atc = compute_stats(tmp_path)["academic_topic_coverage"]
+        assert atc == {"covered": 1, "total": 2, "rate": 0.5}
+
     def test_verification_level_distribution(self, tmp_path: Path) -> None:
         """Histogram counts each known level + the `unset` sentinel."""
         _write_claim(tmp_path, entity="e1", slug="c1", verification_level="claimed")
@@ -227,7 +344,7 @@ class TestDrStatsCli:
         assert "dr stats" in result.output
         assert "Wayback recovery" in result.output
 
-    def test_json_format_parses_and_has_three_top_level_keys(self, tmp_path: Path) -> None:
+    def test_json_format_parses_and_has_expected_top_level_keys(self, tmp_path: Path) -> None:
         _write_claim(
             tmp_path,
             entity="ecosia",
@@ -252,7 +369,10 @@ class TestDrStatsCli:
         assert result.exit_code == 0, result.output
         data = json.loads(result.output)  # parses cleanly
         assert set(data.keys()) == {
-            "wayback_recovery", "acquisition_origins", "verification_levels"
+            "wayback_recovery",
+            "acquisition_origins",
+            "academic_topic_coverage",
+            "verification_levels",
         }
         assert data["wayback_recovery"] == {"recovered": 1, "total": 1, "rate": 1.0}
         assert data["acquisition_origins"]["brave"] == 1

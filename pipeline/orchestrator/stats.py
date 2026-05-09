@@ -4,12 +4,13 @@ Backs the ``dr stats`` CLI subcommand. Pure data: no I/O beyond reading
 the existing claim files and their paired ``.audit.yaml`` sidecars via
 ``content_loader`` and ``sidecar`` helpers.
 
-Three aggregates land here so Tier 1 source-pool expansion can measure
+Four aggregates land here so Tier 1 source-pool expansion can measure
 its target metrics as Paths 1-3 ship (see
 ``docs/plans/source-pool-expansion-tier1.md``):
 
 * ``wayback_recovery`` — Path 1 recovery rate (archive.org TimeGate hits).
 * ``acquisition_origins`` — Path 2/3 per-origin distribution.
+* ``academic_topic_coverage`` — Path 2 hit-rate on academic-tagged claims.
 * ``verification_levels`` — analyst-derived level distribution across all claims.
 
 Empty-state behavior is deliberate: a corpus with no ``acquisition``
@@ -26,7 +27,7 @@ from typing import Any
 
 from common.content_loader import list_claims
 from common.frontmatter import parse_frontmatter
-from common.models import VerificationLevel
+from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, VerificationLevel
 from common.sidecar import read_sidecar
 
 # Per-URL acquisition origins emitted by the source-pool-expansion-tier1 paths.
@@ -48,18 +49,28 @@ VERIFICATION_LEVELS: tuple[str, ...] = tuple(v.value for v in VerificationLevel)
 RECOVERY_VALUES: frozenset[str] = frozenset({"archive_org"})
 
 
-def _scan_claims(repo_root: Path) -> tuple[list[dict], dict[str, int]]:
+def _scan_claims(
+    repo_root: Path,
+) -> tuple[list[dict], dict[str, int], list[dict]]:
     """Single pass over the claims tree.
 
-    Returns ``(source_entries, level_counts)``:
-    * ``source_entries`` — every dict in every sidecar's ``sources_consulted``.
-      Sidecars that are absent or whose payload isn't a dict are skipped.
-    * ``level_counts`` — histogram of ``verification_level`` from each claim's
-      frontmatter, including ``unset`` for missing/unrecognised/unparseable.
+    Returns ``(source_entries, level_counts, claims)``:
+
+    * ``source_entries`` — every dict in every sidecar's
+      ``sources_consulted``. Sidecars that are absent or whose payload
+      isn't a dict are skipped.
+    * ``level_counts`` — histogram of ``verification_level`` from each
+      claim's frontmatter, including ``unset`` for missing /
+      unrecognised / unparseable.
+    * ``claims`` — per-claim summary used by topic-scoped aggregates,
+      shaped ``{topics: list[str], has_academic_source: bool}``. Empty
+      ``topics`` is normal for ad-hoc / draft claims; the academic-topic
+      aggregate filters them out via the topic intersection.
     """
     level_counts: dict[str, int] = {level: 0 for level in VERIFICATION_LEVELS}
     level_counts["unset"] = 0
     source_entries: list[dict] = []
+    claims: list[dict] = []
     for claim_path in list_claims(repo_root):
         try:
             fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
@@ -71,14 +82,27 @@ def _scan_claims(repo_root: Path) -> tuple[list[dict], dict[str, int]]:
         else:
             level_counts["unset"] += 1
 
+        raw_topics = fm.get("topics") or []
+        topics = [t for t in raw_topics if isinstance(t, str)] if isinstance(raw_topics, list) else []
+
         sidecar = read_sidecar(claim_path)
-        if not sidecar:
-            continue
-        entries = sidecar.get("sources_consulted") or []
-        if not isinstance(entries, list):
-            continue
-        source_entries.extend(e for e in entries if isinstance(e, dict))
-    return source_entries, level_counts
+        claim_entries: list[dict] = []
+        if sidecar:
+            entries = sidecar.get("sources_consulted") or []
+            if isinstance(entries, list):
+                claim_entries = [e for e in entries if isinstance(e, dict)]
+        source_entries.extend(claim_entries)
+
+        has_academic = any(
+            isinstance(e.get("acquisition"), dict)
+            and e["acquisition"].get("origin") in ACADEMIC_ORIGINS
+            for e in claim_entries
+        )
+        claims.append({
+            "topics": topics,
+            "has_academic_source": has_academic,
+        })
+    return source_entries, level_counts, claims
 
 
 def _compute_wayback_recovery(entries: list[dict]) -> dict[str, Any]:
@@ -136,16 +160,44 @@ def _compute_acquisition_origins(entries: list[dict]) -> dict[str, Any]:
     return {**counts, "total": total}
 
 
+def _compute_academic_topic_coverage(claims: list[dict]) -> dict[str, Any]:
+    """Hit-rate of academic-API ingests on academic-tagged claims.
+
+    Denominator: claims whose ``topics`` intersects ``ACADEMIC_TOPICS``
+    (i.e., claims for which the Path 2 selector activates academic
+    dispatch). Numerator: subset of those with at least one source whose
+    ``acquisition.origin`` is in ``ACADEMIC_ORIGINS``.
+
+    Returns ``{"covered": int, "total": int, "rate": float | None}``.
+    Rate is ``None`` when ``total == 0`` so callers can distinguish
+    "no academic-tagged claims" from "academic-tagged claims with zero
+    coverage". Mirrors the empty-state convention used by
+    ``_compute_wayback_recovery``.
+    """
+    covered = 0
+    total = 0
+    for claim in claims:
+        topics = claim.get("topics") or []
+        if not (set(topics) & ACADEMIC_TOPICS):
+            continue
+        total += 1
+        if claim.get("has_academic_source"):
+            covered += 1
+    rate = (covered / total) if total else None
+    return {"covered": covered, "total": total, "rate": rate}
+
+
 def compute_stats(repo_root: Path) -> dict[str, Any]:
-    """Walk ``repo_root`` and produce the three aggregates.
+    """Walk ``repo_root`` and produce the four aggregates.
 
     Pure: takes only a repo root, reads the filesystem, returns a dict.
     No CLI / printing concerns leak in.
     """
-    source_entries, level_counts = _scan_claims(repo_root)
+    source_entries, level_counts, claims = _scan_claims(repo_root)
     return {
         "wayback_recovery": _compute_wayback_recovery(source_entries),
         "acquisition_origins": _compute_acquisition_origins(source_entries),
+        "academic_topic_coverage": _compute_academic_topic_coverage(claims),
         "verification_levels": {**level_counts, "total": sum(level_counts.values())},
     }
 
@@ -154,6 +206,7 @@ def format_text_report(stats: dict[str, Any]) -> str:
     """Human-readable report mirroring ``dr lint``'s text style."""
     wr = stats["wayback_recovery"]
     ao = stats["acquisition_origins"]
+    atc = stats["academic_topic_coverage"]
     vl = stats["verification_levels"]
 
     lines = [
@@ -181,6 +234,20 @@ def format_text_report(stats: dict[str, Any]) -> str:
     else:
         for origin in [*ACQUISITION_ORIGINS, "unknown"]:
             lines.append(f"  {origin:<12} {ao[origin]}")
+
+    # --- Academic-topic coverage (Path 2 success metric) ---
+    lines.append("")
+    lines.append("Academic-topic coverage")
+    if atc["total"] == 0:
+        lines.append("  no academic-tagged claims")
+    elif atc["rate"] is None:
+        lines.append(f"  {atc['covered']}/{atc['total']} (rate unavailable)")
+    else:
+        pct = f"{atc['rate'] * 100:.1f}%"
+        lines.append(
+            f"  {atc['covered']}/{atc['total']} academic-tagged claims with "
+            f">=1 academic source ({pct})"
+        )
 
     # --- Verification levels ---
     lines.append("")

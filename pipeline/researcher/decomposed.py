@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from common.blocklist import BlocklistEntry, filter_urls
 from common.canonical_url import canonicalize
-from common.models import SubQuestion, resolve_model
+from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
 from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
@@ -24,6 +24,7 @@ from researcher.scorer import (
     build_scorer_prompt,
     url_scorer_agent,
 )
+from researcher.tools.arxiv import search_arxiv
 from researcher.tools.tavily import TavilyRateLimitError, search_tavily
 
 # Backends that ``execute_searches`` knows how to dispatch to. Unknown
@@ -61,6 +62,66 @@ class ResearchOutput(BaseModel):
 
 def _research_err(error_type: str, message: str) -> StepError:
     return StepError(step="research", error_type=error_type, message=message)
+
+
+def _select_research_origins(
+    cfg: "VerifyConfig", topics: list[str]
+) -> list[str]:
+    """Subset of ``cfg.research_origins`` to dispatch as academic origins.
+
+    Returns ``[]`` unless ``topics`` intersects ``ACADEMIC_TOPICS``.
+    The general-web spine (Brave/Tavily, selected by
+    ``cfg.search_backend``) is dispatched independently and is never
+    part of the returned list.
+    """
+    if not topics:
+        return []
+    if not (set(topics) & ACADEMIC_TOPICS):
+        return []
+    return [
+        origin
+        for origin in cfg.research_origins
+        if origin in ACADEMIC_ORIGINS
+    ]
+
+
+async def _dispatch_arxiv_one_query(
+    client: httpx.AsyncClient,
+    query: str,
+    errors_out: list[StepError] | None,
+    tool_outcomes_out: list[dict] | None,
+) -> list[dict]:
+    """Run a single arXiv query; map failures to existing StepError vocab.
+
+    No fallback (contrast Tavily->Brave at ``_dispatch_one_query``).
+    Timeouts -> ``timeout``; everything else (HTTPStatusError, transport
+    errors, unexpected exceptions) -> ``http_error``. Lumped because
+    arXiv is a non-LLM transport and a finer split would force a new
+    StepError literal without giving the operator a meaningfully
+    different action.
+
+    A clean miss (HTTP 200, zero entries) is not an error: it appends
+    ``{tool: 'arxiv', query, outcome: 'no_results'}`` and returns ``[]``.
+    """
+    try:
+        results = await search_arxiv(client, query)
+    except Exception as exc:
+        error_type = "timeout" if isinstance(exc, httpx.TimeoutException) else "http_error"
+        logger.warning("arXiv search %s for %r: %s", error_type, query, exc)
+        if errors_out is not None:
+            errors_out.append(
+                _research_err(
+                    error_type,
+                    f"arXiv search failed for query {query!r}: {exc}",
+                )
+            )
+        return []
+
+    if not results and tool_outcomes_out is not None:
+        tool_outcomes_out.append(
+            {"tool": "arxiv", "query": query, "outcome": "no_results"}
+        )
+    return results
 
 
 async def _dispatch_one_query(
@@ -117,8 +178,10 @@ async def execute_searches(
     client: httpx.AsyncClient,
     *,
     backend: str = "brave",
+    extra_origins: list[str] | None = None,
     acquisition_out: dict[str, dict] | None = None,
     errors_out: list[StepError] | None = None,
+    tool_outcomes_out: list[dict] | None = None,
 ) -> list[SearchCandidate]:
     """Fan out web searches for all queries; deduplicate by canonical URL.
 
@@ -128,15 +191,31 @@ async def execute_searches(
     candidate. The original URL is preserved on the SearchCandidate.
     Unparseable URLs are skipped rather than raising.
 
-    ``backend`` selects between ``"brave"`` (default) and ``"tavily"``.
-    Unknown values log a warning and fall back to Brave. When the
-    backend is ``"tavily"``, individual queries fall back to Brave on
-    Tavily failures; the per-URL ``acquisition`` map records which
-    backend actually produced each kept URL.
+    ``backend`` selects between ``"brave"`` (default) and ``"tavily"``
+    for the always-on general-web spine. Unknown values log a warning
+    and fall back to Brave. When the backend is ``"tavily"``, individual
+    queries fall back to Brave on Tavily failures; the per-URL
+    ``acquisition`` map records which backend actually produced each
+    kept URL.
+
+    ``extra_origins`` is the selector-decided list of academic origins
+    (currently just ``"arxiv"``; Tier 2 will add ``"s2"`` and
+    ``"openalex"``). They are dispatched alongside the general-web spine
+    and merged into the same dedup'd candidate list. The first origin
+    to contribute a URL claims its ``acquisition`` entry -- subsequent
+    origins seeing the same canonical URL within the same call do not
+    overwrite the entry (matches the "one acquisition per URL"
+    invariant the audit sidecar relies on).
 
     When ``acquisition_out`` is provided, the dispatcher writes one
-    entry per kept URL: ``{stage: "research", origin, query}``. The
-    caller is the audit-sidecar producer (``decomposed_research``).
+    entry per kept URL: ``{stage: "research", origin, query, ...}``.
+    arXiv entries also carry ``paper_id``. The caller is the
+    audit-sidecar producer (``decomposed_research``).
+
+    When ``tool_outcomes_out`` is provided, per-tool clean misses
+    (e.g., arXiv returns zero entries for a query) append
+    ``{tool, query, outcome: 'no_results'}`` so the audit trail can
+    distinguish "fired but found nothing" from "did not fire".
     """
     selected = backend
     if selected not in _KNOWN_BACKENDS:
@@ -153,17 +232,51 @@ async def execute_searches(
             "every query will fall back to Brave"
         )
 
-    raw_results = await asyncio.gather(
-        *[_dispatch_one_query(client, q, selected, errors_out) for q in queries],
-        return_exceptions=True,
+    extra = list(extra_origins or [])
+
+    # General-web spine: one task per query, returning (items, origin_used).
+    spine_tasks = [
+        _dispatch_one_query(client, q, selected, errors_out) for q in queries
+    ]
+
+    # Academic origins: one task per (origin, query) returning a flat dict list
+    # whose origin is known by position (academic_origin_by_index below).
+    academic_tasks: list = []
+    academic_origin_by_index: list[str] = []
+    academic_query_by_index: list[str] = []
+    for origin in extra:
+        if origin == "arxiv":
+            for q in queries:
+                academic_tasks.append(
+                    _dispatch_arxiv_one_query(
+                        client, q, errors_out, tool_outcomes_out,
+                    )
+                )
+                academic_origin_by_index.append(origin)
+                academic_query_by_index.append(q)
+        else:
+            # Tier 2 will add s2/openalex; logging an unknown academic
+            # origin keeps a typo from silently disabling academic
+            # dispatch without surfacing a signal.
+            logger.warning(
+                "Unknown academic research origin %r; skipping", origin,
+            )
+
+    spine_results, academic_results = await asyncio.gather(
+        asyncio.gather(*spine_tasks, return_exceptions=True),
+        asyncio.gather(*academic_tasks, return_exceptions=True),
     )
+
     seen: set[str] = set()
     candidates: list[SearchCandidate] = []
-    for query, result in zip(queries, raw_results):
-        if isinstance(result, Exception):
-            logger.warning("Search failed for query %r: %s", query, result)
-            continue
-        items, origin_used = result
+
+    def _ingest_items(
+        items: list[dict],
+        query: str,
+        origin: str,
+    ) -> None:
+        """Merge an origin's per-query results into ``candidates`` /
+        ``acquisition_out`` under the shared dedup ``seen`` set."""
         for item in items:
             url = item.get("url", "")
             if not url:
@@ -174,6 +287,10 @@ async def execute_searches(
                 logger.debug("Skipping unparseable URL %r: %s", url, exc)
                 continue
             if key in seen:
+                # First contributor wins. The acquisition entry already
+                # stamped by an earlier origin (spine or another
+                # academic origin within this call) is the authoritative
+                # one for the audit trail.
                 continue
             seen.add(key)
             candidates.append(SearchCandidate(
@@ -185,11 +302,43 @@ async def execute_searches(
                 raw_content=item.get("raw_content"),
             ))
             if acquisition_out is not None:
-                acquisition_out[url] = {
+                entry: dict = {
                     "stage": "research",
-                    "origin": origin_used,
+                    "origin": origin,
                     "query": query,
                 }
+                paper_id = item.get("paper_id")
+                if paper_id:
+                    entry["paper_id"] = paper_id
+                acquisition_out[url] = entry
+
+    # Spine first so it claims the acquisition slot for any URL also
+    # surfaced by an academic origin in this call. (Within the same
+    # call ordering is deterministic; across calls dispatch order is
+    # by query, then tool within query, per the plan.)
+    for query, result in zip(queries, spine_results):
+        if isinstance(result, Exception):
+            logger.warning("Search failed for query %r: %s", query, result)
+            continue
+        items, origin_used = result
+        _ingest_items(items, query, origin_used)
+
+    for idx, result in enumerate(academic_results):
+        query = academic_query_by_index[idx]
+        origin = academic_origin_by_index[idx]
+        if isinstance(result, Exception):
+            # _dispatch_arxiv_one_query already converts known transport
+            # exceptions to StepError entries; reaching here means the
+            # dispatcher itself blew up unexpectedly. Log and continue
+            # so a single bad academic call doesn't stop the spine
+            # results from being processed.
+            logger.warning(
+                "%s search dispatcher failed for query %r: %s",
+                origin, query, result,
+            )
+            continue
+        _ingest_items(result, query, origin)
+
     return candidates
 
 
@@ -200,6 +349,7 @@ async def decomposed_research(
     sem: asyncio.Semaphore,
     client: httpx.AsyncClient,
     resolved_entity: ResolvedEntity | None = None,
+    topics: list[str] | None = None,
 ) -> ResearchOutput:
     """Run the 3-step decomposed researcher.
 
@@ -253,12 +403,15 @@ async def decomposed_research(
         out.errors.append(_research_err("no_queries", "Research planner returned no queries"))
         return out
 
+    extra_origins = _select_research_origins(cfg, list(topics or []))
     candidates = await execute_searches(
         queries,
         client,
         backend=cfg.search_backend,
+        extra_origins=extra_origins,
         acquisition_out=out.trace["acquisition"],
         errors_out=out.errors,
+        tool_outcomes_out=out.trace["tool_outcomes"],
     )
     out.trace["candidates_seen"] = len(candidates)
     logger.info("Search executor: %d unique candidates from %d queries", len(candidates), len(queries))

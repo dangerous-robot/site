@@ -254,6 +254,7 @@ async def verify_claim(
     sem: asyncio.Semaphore | None = None,
     resolved_entity: ResolvedEntity | None = None,
     url_index: dict[str, str] | None = None,
+    topics: list[str] | None = None,
 ) -> VerificationResult:
     """Run the full verification pipeline.
 
@@ -296,7 +297,10 @@ async def verify_claim(
             # Step 1: Research
             say("  › Searching")
             logger.info("Step 1/4: Searching for sources...")
-            ro = await _research(client, research_entity, claim_text, cfg, _sem, resolved_entity=resolved_entity)
+            ro = await _research(
+                client, research_entity, claim_text, cfg, _sem,
+                resolved_entity=resolved_entity, topics=topics,
+            )
             urls = ro.urls
             research_errors = ro.errors
             result.urls_found = urls
@@ -548,16 +552,23 @@ async def _research(
     cfg: VerifyConfig,
     sem: asyncio.Semaphore,
     resolved_entity: "ResolvedEntity | None" = None,
+    topics: list[str] | None = None,
 ) -> "ResearchOutput":
     """Run the decomposed researcher and return a ``ResearchOutput``.
 
     The returned ``trace`` dict is suitable for the audit sidecar's
     ``research:`` block. Always populated with at least ``mode``; further
     fields depend on how far the researcher got before any error.
+
+    ``topics`` is the criterion's topic list (per ``template.topics``);
+    threaded through to ``decomposed_research`` so the academic-API
+    selector (Path 2 arXiv, future S2/OpenAlex) can decide whether to
+    fire. Empty / ``None`` keeps academic dispatch off.
     """
     from researcher.decomposed import decomposed_research
     out = await decomposed_research(
-        claim_text, entity_name, cfg, sem, client, resolved_entity=resolved_entity
+        claim_text, entity_name, cfg, sem, client,
+        resolved_entity=resolved_entity, topics=topics,
     )
     urls, errors = _apply_blocklist_cap(out.urls, cfg, out.errors)
     logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
@@ -1547,6 +1558,7 @@ async def onboard_entity(
                         entity_name, claim_text, iter_cfg, gate,
                         sem=sem, url_index=onboard_url_index,
                         resolved_entity=onboard_resolved_entity,
+                        topics=list(template.topics or []),
                     )
 
                     if vr.errors:

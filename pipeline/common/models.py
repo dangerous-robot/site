@@ -119,6 +119,20 @@ class Category(str, Enum):
     REGULATION_POLICY = "regulation-policy"
 
 
+# Topics that activate academic-API dispatch (Path 2 selector + dr stats
+# academic-coverage aggregate). Single source of truth so a Category
+# rename doesn't drift the two consumers out of sync.
+ACADEMIC_TOPICS: frozenset[str] = frozenset({
+    Category.AI_SAFETY.value,
+    Category.ENVIRONMENTAL_IMPACT.value,
+    Category.INDUSTRY_ANALYSIS.value,
+})
+
+# Origins counted as academic by the selector and the coverage aggregate.
+# Tier 2 will extend with ``s2`` and ``openalex``.
+ACADEMIC_ORIGINS: frozenset[str] = frozenset({"arxiv"})
+
+
 class SourceKind(str, Enum):
     REPORT = "report"
     ARTICLE = "article"

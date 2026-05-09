@@ -11,7 +11,11 @@ from pydantic_ai.models.test import TestModel
 
 from researcher.planner import PlannedQuery, ResearchPlan, research_planner_agent
 from researcher.scorer import ScoredCandidate, ScoredURLs, SearchCandidate, url_scorer_agent
-from researcher.decomposed import execute_searches, decomposed_research
+from researcher.decomposed import (
+    _select_research_origins,
+    decomposed_research,
+    execute_searches,
+)
 from orchestrator.checkpoints import StepError
 from orchestrator.entity_resolution import ResolvedEntity
 from common.models import BlockedReason, EntityType, SubQuestion
@@ -678,7 +682,7 @@ async def test_decomposed_research_writes_acquisition_trace() -> None:
     audit-sidecar graft in `_write_audit_sidecar`."""
     cfg = _make_cfg(max_initial_queries=2)
 
-    async def fake_execute(queries, client, *, backend, acquisition_out, errors_out):
+    async def fake_execute(queries, client, *, backend, acquisition_out, errors_out, **_kw):
         # Simulate the dispatcher writing into acquisition_out.
         acquisition_out["https://a.com"] = {"stage": "research", "origin": backend, "query": queries[0]}
         acquisition_out["https://b.com"] = {"stage": "research", "origin": backend, "query": queries[0]}
@@ -709,3 +713,288 @@ async def test_decomposed_research_writes_acquisition_trace() -> None:
     assert isinstance(acquisition, dict)
     assert acquisition["https://a.com"] == {"stage": "research", "origin": "tavily", "query": "q1"}
     assert acquisition["https://b.com"] == {"stage": "research", "origin": "tavily", "query": "q1"}
+
+
+# --------------------------------------------------------------------------- #
+# Path 2 — academic-API dispatch (arXiv selector + execute_searches wiring)    #
+# --------------------------------------------------------------------------- #
+
+
+class TestSelectResearchOrigins:
+    """``_select_research_origins`` decides which academic origins fire.
+
+    The general-web spine (Brave/Tavily) is dispatched independently via
+    ``cfg.search_backend`` and is not part of the returned list -- the
+    selector only governs academic origins.
+    """
+
+    def test_tagged_topic_with_arxiv_enabled_includes_arxiv(self) -> None:
+        """An academic topic + ``arxiv`` in research_origins activates arXiv."""
+        from orchestrator.pipeline import VerifyConfig
+        cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
+        assert _select_research_origins(cfg, ["ai-safety"]) == ["arxiv"]
+
+    def test_untagged_topic_excludes_arxiv(self) -> None:
+        """A non-academic topic returns no academic origins, even when
+        ``arxiv`` is in ``research_origins``."""
+        from orchestrator.pipeline import VerifyConfig
+        cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
+        assert _select_research_origins(cfg, ["data-privacy"]) == []
+
+    def test_empty_topics_excludes_arxiv(self) -> None:
+        """No criterion context (e.g., ``dr claim-probe``) keeps academic
+        origins off; the operator can re-run claim-refresh once a
+        ``criteria_slug`` exists."""
+        from orchestrator.pipeline import VerifyConfig
+        cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
+        assert _select_research_origins(cfg, []) == []
+
+    def test_arxiv_disabled_in_config_excludes_arxiv(self) -> None:
+        """Default ``research_origins=['tavily']`` keeps arXiv off even on
+        an academic topic."""
+        from orchestrator.pipeline import VerifyConfig
+        cfg = VerifyConfig()
+        assert cfg.research_origins == ["tavily"]
+        assert _select_research_origins(cfg, ["ai-safety"]) == []
+
+    def test_general_web_origins_filtered_out(self) -> None:
+        """``brave`` / ``tavily`` are dispatched via ``cfg.search_backend``
+        and never appear in the selector's output, even when present in
+        ``research_origins``."""
+        from orchestrator.pipeline import VerifyConfig
+        cfg = VerifyConfig(research_origins=["brave", "tavily", "arxiv"])
+        assert _select_research_origins(cfg, ["ai-safety"]) == ["arxiv"]
+
+
+class TestExecuteSearchesArxivDispatch:
+    """``execute_searches`` fans out academic origins alongside the spine.
+
+    The spine fires for every query regardless of ``extra_origins``; the
+    selector's job is to decide whether arxiv (or, in Tier 2, S2 /
+    OpenAlex) ALSO fires. Within a call, the first contributor of a
+    canonical URL claims its acquisition entry.
+    """
+
+    @pytest.mark.asyncio
+    async def test_arxiv_dispatched_when_in_extra_origins(self) -> None:
+        """``extra_origins=['arxiv']`` runs the arxiv tool once per
+        query; spine still runs."""
+        spine_results = [{"url": "https://b.example", "title": "B", "snippet": "spine"}]
+        arxiv_results = [
+            {
+                "url": "https://arxiv.org/abs/2106.04560",
+                "title": "Carbon",
+                "snippet": "abstract",
+                "paper_id": "2106.04560",
+                "raw_content": None,
+            }
+        ]
+        acquisition: dict[str, dict] = {}
+        with (
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=spine_results),
+            ) as brave_mock,
+            patch(
+                "researcher.decomposed.search_arxiv",
+                new=AsyncMock(return_value=arxiv_results),
+            ) as arxiv_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1"], client,
+                    backend="brave",
+                    extra_origins=["arxiv"],
+                    acquisition_out=acquisition,
+                )
+        assert brave_mock.await_count == 1
+        assert arxiv_mock.await_count == 1
+        urls = {c.url for c in candidates}
+        assert "https://b.example" in urls
+        assert "https://arxiv.org/abs/2106.04560" in urls
+        assert acquisition["https://b.example"] == {
+            "stage": "research", "origin": "brave", "query": "q1",
+        }
+        assert acquisition["https://arxiv.org/abs/2106.04560"] == {
+            "stage": "research",
+            "origin": "arxiv",
+            "query": "q1",
+            "paper_id": "2106.04560",
+        }
+
+    @pytest.mark.asyncio
+    async def test_arxiv_skipped_when_extra_origins_empty(self) -> None:
+        """Empty ``extra_origins`` keeps arxiv off; spine still runs."""
+        spine_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+        with (
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=spine_results),
+            ) as brave_mock,
+            patch(
+                "researcher.decomposed.search_arxiv",
+                new=AsyncMock(return_value=[]),
+            ) as arxiv_mock,
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(["q1"], client, backend="brave")
+        assert brave_mock.await_count == 1
+        assert arxiv_mock.await_count == 0
+        assert [c.url for c in candidates] == ["https://b.example"]
+
+    @pytest.mark.asyncio
+    async def test_arxiv_no_results_records_tool_outcome(self) -> None:
+        """Empty arxiv results append a ``no_results`` entry to
+        ``tool_outcomes_out`` -- not a StepError."""
+        spine_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+        outcomes: list[dict] = []
+        errors: list[StepError] = []
+        with (
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=spine_results),
+            ),
+            patch(
+                "researcher.decomposed.search_arxiv",
+                new=AsyncMock(return_value=[]),
+            ),
+        ):
+            async with httpx.AsyncClient() as client:
+                await execute_searches(
+                    ["q1"], client,
+                    backend="brave",
+                    extra_origins=["arxiv"],
+                    tool_outcomes_out=outcomes,
+                    errors_out=errors,
+                )
+        assert outcomes == [{"tool": "arxiv", "query": "q1", "outcome": "no_results"}]
+        assert errors == []
+
+    @pytest.mark.asyncio
+    async def test_arxiv_timeout_emits_step_error(self) -> None:
+        """``httpx.ReadTimeout`` from arxiv maps to
+        ``StepError(error_type='timeout')``; spine results still flow."""
+        spine_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+        errors: list[StepError] = []
+        with (
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=spine_results),
+            ),
+            patch(
+                "researcher.decomposed.search_arxiv",
+                new=AsyncMock(side_effect=httpx.ReadTimeout("slow")),
+            ),
+        ):
+            async with httpx.AsyncClient() as client:
+                candidates = await execute_searches(
+                    ["q1"], client,
+                    backend="brave",
+                    extra_origins=["arxiv"],
+                    errors_out=errors,
+                )
+        assert [c.url for c in candidates] == ["https://b.example"]
+        timeout_errs = [e for e in errors if e.error_type == "timeout"]
+        assert len(timeout_errs) == 1
+        assert timeout_errs[0].step == "research"
+
+    @pytest.mark.asyncio
+    async def test_arxiv_http_error_emits_step_error(self) -> None:
+        """``httpx.HTTPStatusError`` from arxiv maps to
+        ``StepError(error_type='http_error')``."""
+        spine_results = [{"url": "https://b.example", "title": "B", "snippet": "ok"}]
+        errors: list[StepError] = []
+
+        # Simulate raise_for_status path inside search_arxiv.
+        fake_response = httpx.Response(503, text="boom")
+        fake_request = httpx.Request("GET", "https://export.arxiv.org/api/query")
+        http_err = httpx.HTTPStatusError(
+            "503 Service Unavailable", request=fake_request, response=fake_response,
+        )
+        with (
+            patch(
+                "researcher.decomposed.search_brave",
+                new=AsyncMock(return_value=spine_results),
+            ),
+            patch(
+                "researcher.decomposed.search_arxiv",
+                new=AsyncMock(side_effect=http_err),
+            ),
+        ):
+            async with httpx.AsyncClient() as client:
+                await execute_searches(
+                    ["q1"], client,
+                    backend="brave",
+                    extra_origins=["arxiv"],
+                    errors_out=errors,
+                )
+        http_errs = [e for e in errors if e.error_type == "http_error"]
+        assert len(http_errs) == 1
+
+
+@pytest.mark.asyncio
+async def test_topics_flow_through_to_select_research_origins() -> None:
+    """End-to-end: ``topics`` provided to ``decomposed_research`` reaches
+    ``_select_research_origins``. Load-bearing for Path 2 -- if this
+    breaks, arxiv silently never fires even when configured."""
+    from orchestrator.pipeline import VerifyConfig
+
+    cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
+
+    # No-op execute_searches to skip the actual search call.
+    async def _noop_execute(queries, client, **_kw):
+        return []
+
+    fake_plan = _plan(["q1"], "ok")
+
+    captured_topics: list[list[str]] = []
+
+    def _spy_selector(_cfg, topics):
+        captured_topics.append(list(topics))
+        return ["arxiv"]
+
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch("researcher.decomposed.execute_searches", side_effect=_noop_execute),
+        patch("researcher.decomposed._select_research_origins", side_effect=_spy_selector),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            await decomposed_research(
+                "test claim", "TestEntity", cfg, sem, client,
+                topics=["ai-safety", "industry-analysis"],
+            )
+
+    assert captured_topics == [["ai-safety", "industry-analysis"]]
+
+
+@pytest.mark.asyncio
+async def test_topics_default_to_empty_when_unset() -> None:
+    """``decomposed_research`` accepts ``topics=None`` (back-compat for
+    callers like ``research_claim`` and the onboard light-research path)
+    and renders it as an empty list to the selector."""
+    from orchestrator.pipeline import VerifyConfig
+
+    cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
+
+    async def _noop_execute(queries, client, **_kw):
+        return []
+
+    fake_plan = _plan(["q1"], "ok")
+
+    captured: list[list[str]] = []
+
+    def _spy_selector(_cfg, topics):
+        captured.append(list(topics))
+        return []
+
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_plan))),
+        patch("researcher.decomposed.execute_searches", side_effect=_noop_execute),
+        patch("researcher.decomposed._select_research_origins", side_effect=_spy_selector),
+    ):
+        sem = asyncio.Semaphore(8)
+        async with httpx.AsyncClient() as client:
+            await decomposed_research("test claim", "TestEntity", cfg, sem, client)
+
+    assert captured == [[]]
