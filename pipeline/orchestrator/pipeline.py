@@ -1204,6 +1204,101 @@ def _wrong_entity_source(
     return canon != src and not src.endswith("." + canon)
 
 
+@dataclass(frozen=True)
+class LightResearchBundle:
+    """Shared input for the entity verifier and enricher agents.
+
+    Carries everything the orchestrator's light-research pass collected
+    about an entity. Both ``onboard_entity`` (Phase A) and the standalone
+    ``enrich_entity`` helper build one of these and pass it forward.
+
+    ``raw_description`` is the untightened webpage summary as the ingestor
+    saw it. The enricher subsumes the tightening step that
+    ``_tighten_entity_description`` used to perform.
+    """
+
+    entity_name: str
+    entity_type: EntityType
+    raw_description: str
+    entity_website: str | None
+    description_source_url: str | None
+    probe_excludes: list[str]
+    # Reserved for future verifier use; light research currently only
+    # ingests the top URL and discards the rest, so this is an empty list
+    # for now. Kept on the dataclass so the verifier can populate it
+    # without a signature change in Commit 2.
+    search_candidates: list = field(default_factory=list)
+
+
+async def gather_light_research(
+    entity_name: str,
+    entity_type: EntityType,
+    cfg: "VerifyConfig",
+    sem: asyncio.Semaphore,
+    client: httpx.AsyncClient,
+    seed_url: str | None = None,
+) -> LightResearchBundle:
+    """Run the orchestrator's light-research pass and return a bundle.
+
+    Replaces the inline block previously embedded in ``onboard_entity``
+    Phase A. Errors during fetch/probe are non-fatal (logged and
+    swallowed) so onboarding can still proceed with whatever signals
+    were collected.
+
+    Returns the **raw** webpage summary in ``raw_description``. The
+    standalone tightening helper (``_tighten_entity_description``) and
+    the enricher agent are the consumers that derive a tightened
+    one-sentence description from it; this helper does not call either.
+    """
+    raw_description = ""
+    entity_website: str | None = None
+    description_source_url: str | None = None
+    probe_excludes: list[str] = []
+
+    try:
+        if seed_url:
+            url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
+            entity_website = url
+            logger.info("Light research: ingesting seed URL %s", url)
+            source_files, _ = await _ingest_urls(client, [url], cfg, sem)
+        else:
+            query = f"{entity_name} official website"
+            light_ro = await _research(client, entity_name, query, cfg, sem)
+            urls = light_ro.urls
+            if urls:
+                entity_website = urls[0]
+            source_files, _ = (
+                await _ingest_urls(
+                    client, urls[:1], cfg, sem,
+                    prefetched_bodies=light_ro.prefetched_bodies,
+                )
+                if urls
+                else ([], [])
+            )
+        if source_files:
+            src_url, sf = source_files[0]
+            raw_description = sf.frontmatter.summary or ""
+            description_source_url = src_url
+        # Probe (Brave) has no data dependency on the page summary; runs
+        # solo here. Description tightening, formerly run concurrently
+        # with the probe, now happens at the call site (or, after Phase C
+        # wiring lands, inside the enricher).
+        probe_excludes = await _probe_collision_suggestions(
+            client, entity_name, entity_website
+        )
+    except Exception as exc:
+        logger.warning("Light research failed: %s", exc)
+
+    return LightResearchBundle(
+        entity_name=entity_name,
+        entity_type=entity_type,
+        raw_description=raw_description,
+        entity_website=entity_website,
+        description_source_url=description_source_url,
+        probe_excludes=probe_excludes,
+    )
+
+
 class _EntityDescription(BaseModel):
     description: str = Field(
         description="One sentence describing the organization (not the webpage)."
@@ -1390,49 +1485,24 @@ async def onboard_entity(
             seed_url,
         )
 
-        # Step 1: Light research for entity context
+        # Phase A: Light research for entity context
         hr()
-        logger.info("Onboard step 1: light research for %s", entity_name)
-        entity_description = ""
-        entity_website: str | None = None
-        description_source_url: str | None = None
-        probe_excludes: list[str] = []
-        try:
-            async with httpx.AsyncClient() as client:
-                if seed_url:
-                    _url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
-                    entity_website = _url
-                    logger.info("Onboard step 1: ingesting seed URL %s", _url)
-                    source_files, _ = await _ingest_urls(client, [_url], cfg, sem)
-                else:
-                    query = f"{entity_name} official website"
-                    light_ro = await _research(client, entity_name, query, cfg, sem)
-                    urls = light_ro.urls
-                    if urls:
-                        entity_website = urls[0]
-                    source_files, _ = (
-                        await _ingest_urls(
-                            client, urls[:1], cfg, sem,
-                            prefetched_bodies=light_ro.prefetched_bodies,
-                        )
-                        if urls
-                        else ([], [])
-                    )
-                if source_files:
-                    src_url, sf = source_files[0]
-                    entity_description = sf.frontmatter.summary or ""
-                    description_source_url = src_url
-                # Probe (Brave) and description rewrite (LLM) have no mutual
-                # data dependency; run them concurrently.
-                probe_excludes, entity_description = await asyncio.gather(
-                    _probe_collision_suggestions(client, entity_name, entity_website),
-                    _tighten_entity_description(
-                        entity_description, entity_name,
-                        description_source_url, entity_website, cfg,
-                    ),
-                )
-        except Exception as exc:
-            logger.warning("Light research failed: %s", exc)
+        logger.info("Onboard phase A: light research for %s", entity_name)
+        async with httpx.AsyncClient() as client:
+            bundle = await gather_light_research(
+                entity_name, et, cfg, sem, client, seed_url=seed_url,
+            )
+            # ``gather_light_research`` returns the raw page summary; the
+            # tightening LLM call still lives here so this commit's
+            # behavior is unchanged. Phase C wiring (a later step) replaces
+            # this with the enricher's ``description`` field, after which
+            # ``_tighten_entity_description`` is removed.
+            entity_description = await _tighten_entity_description(
+                bundle.raw_description, entity_name,
+                bundle.description_source_url, bundle.entity_website, cfg,
+            )
+        entity_website = bundle.entity_website
+        probe_excludes = bundle.probe_excludes
 
         merged_search_hints = _merge_search_hints(
             search_hints_include, search_hints_exclude, probe_excludes,
