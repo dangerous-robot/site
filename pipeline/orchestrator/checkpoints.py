@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Literal, runtime_checkable, Protocol
+from typing import TYPE_CHECKING, Literal, runtime_checkable, Protocol
 
 import click
 
 from auditor.models import ComparisonResult
+
+if TYPE_CHECKING:
+    from researcher.entity_enricher import EnrichmentDraft
 
 
 class StepError:
@@ -125,6 +128,19 @@ class CheckpointHandler(Protocol):
         """Return 'accept', 'reject', or an edited list of template slugs."""
         ...
 
+    async def review_entity_enrichment(
+        self,
+        entity_name: str,
+        draft: "EnrichmentDraft",
+    ) -> Literal["accept", "reject"]:
+        """Surface an enricher draft to the operator and return their decision.
+
+        ``"accept"`` writes the draft to the entity file. ``"reject"`` aborts
+        the enrichment without writing. The auto-approve handler returns
+        ``"accept"``; CI / tests therefore pick up enricher output verbatim.
+        """
+        ...
+
 
 class CLICheckpointHandler:
     """Interactive CLI checkpoints via click.confirm()."""
@@ -187,6 +203,24 @@ class CLICheckpointHandler:
             return [s.strip() for s in raw.split(",") if s.strip()]
         return choice
 
+    async def review_entity_enrichment(
+        self,
+        entity_name: str,
+        draft: "EnrichmentDraft",
+    ) -> Literal["accept", "reject"]:
+        click.echo(f"\nEnrichment draft: {entity_name}")
+        if draft.founded is not None:
+            click.echo(f"Founded: {draft.founded}")
+        click.echo(f"Description: {draft.description}")
+        click.echo("History:")
+        click.echo(draft.history_markdown.rstrip() or "  (empty)")
+        choice = click.prompt(
+            "Action",
+            type=click.Choice(["accept", "reject"]),
+            default="accept",
+        )
+        return choice
+
 
 class AutoApproveCheckpointHandler:
     """Auto-approves all checkpoints. For tests and CI.
@@ -223,4 +257,12 @@ class AutoApproveCheckpointHandler:
         entity_description: str = "",
     ) -> Literal["accept", "reject"] | list[str]:
         self.calls.append("review_onboard")
+        return "accept"
+
+    async def review_entity_enrichment(
+        self,
+        entity_name: str,
+        draft: "EnrichmentDraft",
+    ) -> Literal["accept", "reject"]:
+        self.calls.append("review_entity_enrichment")
         return "accept"
