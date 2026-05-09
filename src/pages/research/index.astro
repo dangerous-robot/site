@@ -1,0 +1,535 @@
+---
+import Base from '../../layouts/Base.astro';
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is this site?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Dangerous Robot is a structured research project that routes human questions through a Python pipeline using LLM agents to find sources, fetch content, evaluate evidence, and draft a verdict. Every published claim is reviewed and approved by a human operator before appearing on the site. The goal is to verify what AI companies and products actually do, especially around environmental impact, safety practices, and transparency.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What topics are covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claims made by or about AI companies and AI products regarding environmental impact, energy use, carbon footprint, sustainability practices, safety claims, transparency disclosures, and responsible AI practices. Any AI company or product where a verifiable claim can be evaluated against publicly accessible sources.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What is not covered?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Financial or investment advice, legal or regulatory interpretation, non-AI technology companies, claims about individuals, claims relying solely on paywalled sources with no accessible backup, and general technology product reviews unrelated to environmental impact, energy use, sustainability, safety, or responsible AI practices.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What methodology is used for research?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claims move through a pipeline: (1) Research, an AI agent searches for sources. (2) Analysis, an analyst agent evaluates evidence and drafts a verdict; an auditor agent checks for consistency. (3) Human review, an operator approves, rejects, or requests revision. Nothing publishes without human sign-off. (4) Schema validation, all data is validated by Zod schemas at build time.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "How does work enter this site?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Six channels put new research in the queue: a new criterion (fans out drafts to all applicable entities), a new company or product (fans out drafts across active criteria), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What types of sources are used?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sources are classified into three tiers: Primary (company disclosures, official documentation, regulatory filings), Secondary (journalism, academic papers, analyst reports), and Tertiary (advocacy, opinion, consumer guides). Every source is linked from the claim page that cites it.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What is the content license?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Research content is published under CC-BY-4.0. Site code is MIT licensed.",
+      },
+    },
+    {
+      "@type": "Question",
+      "name": "What conflicts of interest exist?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Dangerous Robot and TreadLightly AI share the same founder. Many claims here back assertions on the TreadLightly site, which shapes what gets researched. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.",
+      },
+    },
+  ],
+};
+---
+<Base title="How this works" layout="reading">
+  <article class="research-explainer">
+    <header class="hero">
+      <p class="eyebrow">The research tool</p>
+      <h1>How this site works</h1>
+      <p class="lede">
+        Dangerous Robot tracks claims about AI companies and products: what they
+        say about energy use, environmental impact, safety practices, and
+        transparency, checked against public sources by an AI-assisted pipeline
+        with human review on every published verdict.
+      </p>
+    </header>
+
+    <section class="explainer-grid">
+      <div class="explainer-card">
+        <h2>What the verdicts mean</h2>
+        <p>
+          Each claim carries a verdict (true, mostly true, mixed, mostly false,
+          false, unverified, or N/A) and a confidence level (high, medium, low).
+          The verdict reflects what evidence supports; confidence reflects how
+          strong that evidence is. The "as of" date shows when evidence was
+          last reviewed.
+        </p>
+      </div>
+
+      <div class="explainer-card">
+        <h2>How to read a claim page</h2>
+        <p>
+          A claim opens with the verdict, confidence, and a one-line takeaway.
+          Below sit the rationale, the sources cited, the criterion the claim
+          maps to, and a research-process disclosure showing which agents ran,
+          what models were used, and when a human reviewed it.
+        </p>
+      </div>
+
+      <div class="explainer-card">
+        <h2>Where to start</h2>
+        <p>
+          Browse by <a href="/research/subjects">subject</a>,
+          <a href="/research/companies">company</a>,
+          <a href="/research/products">product</a>, or
+          <a href="/research/topics">topic</a>. The full
+          <a href="/research/claims">claims index</a> lists every published
+          assessment; <a href="/research/criteria">criteria</a> shows the
+          reusable templates that drive most of the work.
+        </p>
+      </div>
+
+      <div class="explainer-card">
+        <h2>What is in alpha</h2>
+        <p>
+          Detail pages under <code>/research/claims/</code>,
+          <code>/research/sources/</code>, and
+          <code>/research/entities/</code> are flagged
+          <code>noindex</code> while content stabilizes. URLs are stable across
+          the alpha-to-public flip; only the indexing changes.
+        </p>
+      </div>
+    </section>
+
+    <section class="faq-section">
+      <h2 class="faq-heading">Frequently asked questions</h2>
+
+      <details>
+        <summary>What is this site?</summary>
+        <div class="answer">
+          <p>
+            Dangerous Robot is a structured research project. It starts with a
+            human question, <em>is this claim true?</em>, and routes it through
+            a Python pipeline that uses LLM agents to find sources, fetch
+            content, evaluate evidence, and draft a verdict. Every published
+            claim aspires to be reviewed and approved by a human operator
+            before it appears on the site.
+          </p>
+          <p>
+            The goal is to make it easier to verify what AI companies and
+            products actually do, especially around environmental impact,
+            safety practices, and transparency.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What topics are covered?</summary>
+        <div class="answer">
+          <p>Research on this site focuses on:</p>
+          <ul>
+            <li>
+              Claims made by or about AI companies and AI products regarding
+              environmental impact, energy use, carbon footprint, sustainability
+              practices, safety claims, transparency disclosures, and responsible
+              AI practices.
+            </li>
+            <li>
+              Any AI company or product where a verifiable claim can be evaluated,
+              including new and smaller players. No minimum size or prominence
+              required.
+            </li>
+            <li>Claims that can be evaluated against sources that are publicly accessible.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>What is not covered?</summary>
+        <div class="answer">
+          <ul>
+            <li>Financial or investment advice about AI companies.</li>
+            <li>Legal or regulatory interpretation.</li>
+            <li>Non-AI technology companies. Coverage is limited to the AI sector.</li>
+            <li>Claims about individuals rather than organizations.</li>
+            <li>
+              Claims that rely solely on non-public or paywalled sources with no
+              accessible backup.
+            </li>
+            <li>
+              General technology product reviews unrelated to environmental
+              impact, energy use, sustainability, safety, or responsible AI
+              practices.
+            </li>
+            <li>Medical or health claims unrelated to AI environmental or AI safety practices.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details id="methodology">
+        <summary>What methodology is used for research?</summary>
+        <div class="answer">
+          <h3>How a claim is published</h3>
+          <p>Claims move through a pipeline before they appear on the site:</p>
+          <ol>
+            <li>
+              <strong>Research.</strong> An AI agent searches for sources relevant to the claim.
+              A second agent fetches and stores those sources.
+            </li>
+            <li>
+              <strong>Analysis.</strong> An analyst agent evaluates the evidence and drafts a
+              verdict with supporting reasoning. An auditor agent checks the draft for consistency
+              with the sources.
+            </li>
+            <li>
+              <strong>Human review.</strong> An operator reviews the draft via the
+              <code>dr</code> CLI and either approves it, rejects it, or requests a revision.
+              Nothing is published without human sign-off.
+            </li>
+            <li>
+              <strong>Schema validation.</strong> All claims, sources, and entity data are
+              validated by Zod schemas at build time. A claim that fails validation cannot be
+              built into the site.
+            </li>
+          </ol>
+
+          <h3>Verdicts</h3>
+          <ul>
+            <li><strong>True</strong>, accurate and well-supported by evidence.</li>
+            <li><strong>Mostly true</strong>, substantially accurate but with minor inaccuracies, missing context, or outdated details.</li>
+            <li><strong>Mixed</strong>, partially accurate; evidence supports some aspects but contradicts or fails to support others.</li>
+            <li><strong>Mostly false</strong>, contains a kernel of truth but is misleading in its overall characterization.</li>
+            <li><strong>False</strong>, contradicted by available evidence.</li>
+            <li><strong>Unverified</strong>, insufficient publicly available evidence to reach a verdict.</li>
+            <li><strong>N/A (not applicable)</strong>, this criterion does not apply to this entity.</li>
+          </ul>
+
+          <h3>Confidence levels</h3>
+          <ul>
+            <li>
+              <strong>High</strong>, multiple independent primary sources confirm the verdict.
+              Evidence is consistent with little meaningful uncertainty.
+            </li>
+            <li>
+              <strong>Medium</strong>, evidence is present but incomplete. Sources may be
+              partially secondary, limited in scope, or not fully consistent. Reasonable but
+              not definitive.
+            </li>
+            <li>
+              <strong>Low</strong>, sources are limited, conflicting, or carry significant
+              uncertainty. Best available assessment; treat with caution.
+            </li>
+          </ul>
+
+          <h3>Rechecks and "as of" dates</h3>
+          <p>
+            Each claim has a recheck cadence, typically 60 days (pricing: 14 to 30 days; policy:
+            90 to 180 days). When due, the pipeline re-researches and the operator reviews again
+            before any change publishes. The "as of" date shows when evidence was last reviewed.
+          </p>
+
+          <h3>Limits</h3>
+          <ul>
+            <li>
+              <strong>Point-in-time.</strong> Verdicts do not update automatically. Check the
+              "as of" date.
+            </li>
+            <li>
+              <strong>AI-assisted, human-reviewed.</strong> Agents do the initial work.
+              Operators approve. Human reviewers can be wrong.
+            </li>
+            <li>
+              <strong>Coverage is not comprehensive.</strong> Gaps exist and are expected.
+            </li>
+            <li>
+              <strong>No paid research.</strong> No commissions, no sponsored verdicts.
+            </li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>How does work enter this site?</summary>
+        <div class="answer">
+          <p>Six channels can put new research in the queue. The first four are operator-driven; the last two are public submission paths.</p>
+          <ol>
+            <li>
+              <strong>A new criterion.</strong> A reusable claim template is added to the template library. The system fans out a draft claim for every entity the criterion applies to.
+            </li>
+            <li>
+              <strong>A new company or product.</strong> An operator onboards an entity. The system fans out a draft claim across every active criterion.
+            </li>
+            <li>
+              <strong>A new source.</strong> An operator adds a citable reference. The system matches it to existing criteria (queuing new claim work) or to existing claims (queuing a reassessment).
+            </li>
+            <li>
+              <strong>A topic or URL drop.</strong> An operator adds free-form work to the queue file for triage and routing.
+            </li>
+            <li>
+              <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. An operator reviews and ingests if accepted.
+            </li>
+            <li>
+              <strong>A public claim request.</strong> Planned, not yet live. Anyone will be able to propose a claim worth investigating; an operator triages.
+            </li>
+          </ol>
+          <p>None of these channels publish anything directly. Every claim goes through the methodology pipeline above before it appears on the site.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What types of sources are used?</summary>
+        <div class="answer">
+          <p>Sources are classified into three tiers:</p>
+          <ul>
+            <li>
+              <strong>Primary</strong>, the organization's own output: company disclosures,
+              official documentation, sustainability reports, regulatory filings.
+            </li>
+            <li>
+              <strong>Secondary</strong>, independent reporting or research: journalism,
+              academic papers, analyst reports, third-party certification records.
+            </li>
+            <li>
+              <strong>Tertiary</strong>, advocacy, opinion, consumer guides, review aggregators.
+            </li>
+          </ul>
+          <p>
+            Every source is linked and accessible from the claim page that cites it. Sources
+            marked with an archived copy include a cached version in case the original is removed.
+          </p>
+        </div>
+      </details>
+
+      <details>
+        <summary>What is the content license?</summary>
+        <div class="answer">
+          <p>
+            Research content is published under
+            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>.
+            Site code is MIT licensed. Sources are cited inline on each claim page.
+          </p>
+        </div>
+      </details>
+
+      <details id="conflicts-of-interest">
+        <summary>What conflicts of interest exist?</summary>
+        <div class="answer">
+          <p>
+            Dangerous Robot and <a href="https://treadlightly.ai" target="_blank" rel="noopener noreferrer">TreadLightly AI</a> share the same founder.
+            Many claims here back assertions on the TreadLightly site, so it's worth reading with
+            that in mind: what gets researched is shaped by that work.
+          </p>
+          <p>
+            No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or
+            paid advisory role with the AI companies covered here, and will note it on the relevant
+            entity page if that changes.
+          </p>
+          <p>
+            If a verdict looks shaped by this, flag it on
+            <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">GitHub</a>
+            with the claim slug and your reasoning.
+          </p>
+        </div>
+      </details>
+
+      <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+    </section>
+  </article>
+</Base>
+
+<style>
+  .research-explainer {
+    padding-top: var(--space-lg);
+  }
+
+  .hero {
+    margin-bottom: var(--space-2xl, var(--space-xl));
+  }
+
+  .eyebrow {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+
+  .hero h1 {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-heading);
+    font-size: clamp(2.25rem, 5vw, 3.25rem);
+    line-height: 1.1;
+    color: var(--color-text-heading);
+  }
+
+  .lede {
+    margin: 0;
+    font-size: 1.15rem;
+    line-height: var(--line-height-body);
+    color: var(--color-text);
+    max-width: 42rem;
+  }
+
+  .explainer-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--space-lg);
+    margin: var(--space-xl) 0;
+  }
+
+  .explainer-card {
+    border-top: 2px solid var(--color-accent);
+    padding: var(--space-md) 0 0;
+  }
+
+  .explainer-card h2 {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    color: var(--color-text-heading);
+  }
+
+  .explainer-card p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-body);
+    color: var(--color-text);
+  }
+
+  .explainer-card a {
+    color: var(--color-accent);
+  }
+
+  .explainer-card code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--color-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+  }
+
+  .faq-section {
+    margin-top: var(--space-2xl, var(--space-xl));
+  }
+
+  .faq-heading {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: var(--color-text-heading);
+  }
+
+  details {
+    border-top: 1px solid var(--color-border);
+    padding: var(--space-sm) 0;
+  }
+
+  details:last-of-type {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  summary {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text);
+    cursor: pointer;
+    padding: var(--space-sm) 0;
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  summary::after {
+    content: '+';
+    font-size: 1.2rem;
+    font-weight: 300;
+    color: var(--color-text-faint);
+    flex-shrink: 0;
+    margin-left: var(--space-md);
+  }
+
+  details[open] summary::after {
+    content: '−';
+  }
+
+  .answer {
+    padding: var(--space-sm) 0 var(--space-md);
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .answer p,
+  .answer ul,
+  .answer ol {
+    margin-bottom: var(--space-md);
+  }
+
+  .answer h3 {
+    font-size: var(--font-size-base);
+    margin-top: var(--space-lg);
+    margin-bottom: var(--space-xs);
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-family: var(--font-body);
+  }
+
+  .answer h3:first-child {
+    margin-top: var(--space-sm);
+  }
+
+  .answer ul,
+  .answer ol {
+    padding-left: var(--space-xl);
+  }
+
+  .answer li {
+    margin-bottom: var(--space-sm);
+  }
+
+  .answer code {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    background: var(--color-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+  }
+</style>
