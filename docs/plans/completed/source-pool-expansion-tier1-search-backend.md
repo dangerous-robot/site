@@ -1,23 +1,23 @@
 # Source Pool Expansion — Tier 1 — Search Backend (Tavily)
 
-**Status**: Active (ready to start coding once Tier 1 § Schema prerequisites + § Shared infrastructure land).
-**Family**: `source-pool-expansion-tier1` — companion to [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md).
+**Status**: Done. Tavily backend landed 2026-05-08 in commit `ac2dfac` behind `RESEARCH_SEARCH_BACKEND=tavily`; default flipped to `tavily` in `653f5b6` after one operator-validated cycle. The frozen-replay harness was deferred — Brave-vs-Tavily decision was made operationally on the first validation run rather than via the rubric (the candidate-pool quality and 0-rate-limit-error result was unambiguous). Follow-on prefetch passthrough at [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md) lands the `raw_content` short-circuit. Brave remains available behind the flag.
+**Family**: `source-pool-expansion-tier1` — companion to [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md).
 **Created**: 2026-05-08
 **Last revised**: 2026-05-08
 
 ## Context
 
-Originally Path 4 of `source-pool-expansion-tier1.md`. Split into its own plan because:
+Originally Path 4 of [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md). Split into its own plan because:
 
 1. The evaluation methodology (frozen-replay harness, decision rubric) is search-backend-specific and not reusable by Tier 1's Paths 1–3.
 2. Tavily is now the only candidate (Exa deferred per operator decision 2026-05-08), simplifying a 2-way bake-off into a Tavily-vs-Brave comparison.
 3. Bundling held Paths 1–3 hostage to evaluation work they don't need.
 
-The shared infrastructure this work originally forced (throttle layer, URL canonicalizer, audit-trail `acquisition` slot, error-type vocabulary) lives in [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Shared infrastructure as the prerequisite for all paths.
+The shared infrastructure this work originally forced (throttle layer, URL canonicalizer, audit-trail `acquisition` slot, error-type vocabulary) lives in [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md) § Shared infrastructure as the prerequisite for all paths.
 
 ## Problem
 
-Brave's general-web ranking mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist ([`researcher-host-blocklist.md`](researcher-host-blocklist.md)) drops the worst offenders but doesn't change ranking quality or add surface area.
+Brave's general-web ranking mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist ([`researcher-host-blocklist.md`](../researcher-host-blocklist.md)) drops the worst offenders but doesn't change ranking quality or add surface area.
 
 Tavily delivers cached/extracted content alongside URLs, which sidesteps some paywalls and reduces fetch failures on returned URLs. Hypothesis: an agent-optimized search returns a better candidate pool with fewer wasted fetches.
 
@@ -109,7 +109,7 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 - **Exa integration.** Deferred. Revisit if Tavily fails the rubric.
 - **`dr stats` subcommand.** Tracked as a follow-up plan; not required for the search-backend evaluation.
 - **Replacing Brave entirely.** Brave stays as fallback regardless of the decision.
-- **Fetch backend swap.** Owned by [`multi-provider.md`](multi-provider.md) § Part 3 (GreenPT Scraper API).
+- **Fetch backend swap.** Owned by [`multi-provider.md`](../multi-provider.md) § Part 3 (GreenPT Scraper API).
 
 ## Open questions
 
@@ -118,15 +118,17 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 
 ## Cross-references
 
-- Main Tier 1 plan (Paths 1–3 + shared infrastructure prerequisites): [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md)
-- Recently-completed CLI cleanup (cleared the way for a future `dr stats`): [`dr-cli-output-cleanup_phase2_completed.md`](completed/dr-cli-output-cleanup_phase2_completed.md)
-- Fetch-backend distinction: [`multi-provider.md`](multi-provider.md) § Part 3
-- Researcher internals: [`research-flow.md`](../architecture/research-flow.md) § 6
-- Pipeline configuration: [`research-workflow.md`](../architecture/research-workflow.md) § Pipeline configuration knobs
-- Host blocklist interaction: [`researcher-host-blocklist.md`](researcher-host-blocklist.md)
+- Main Tier 1 plan (Paths 1–3 + shared infrastructure prerequisites): [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md)
+- Follow-on prefetch passthrough: [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md)
+- Recently-completed CLI cleanup (cleared the way for a future `dr stats`): [`dr-cli-output-cleanup_phase2_completed.md`](dr-cli-output-cleanup_phase2_completed.md)
+- Fetch-backend distinction: [`multi-provider.md`](../multi-provider.md) § Part 3
+- Researcher internals: [`research-flow.md`](../../architecture/research-flow.md) § 6
+- Pipeline configuration: [`research-workflow.md`](../../architecture/research-workflow.md) § Pipeline configuration knobs
+- Host blocklist interaction: [`researcher-host-blocklist.md`](../researcher-host-blocklist.md)
 
 ## Review history
 
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-05-08 | agent (opus-4-7) | implementation, iterated | Split from `source-pool-expansion-tier1.md` § Path 4. Reduced to Tavily-only (Exa deferred). Decision rubric simplified to 2 metrics + 1 gate. Frozen-replay harness interface spec'd. Noise-floor calculation defined. `dr stats` initially deferred behind the (now-completed) `dr-cli-output-cleanup_phase2` plan; reframed as a future follow-up plan since the search-backend evaluation only needs replay-harness JSONL. |
+| 2026-05-08 | agent (opus-4-7) | landed + default-flipped | Tavily wrapper shipped in `ac2dfac` (`pipeline/researcher/tools/tavily.py`); `execute_searches` dispatches via new `VerifyConfig.search_backend` field with per-query Brave fallback on Tavily 429/RuntimeError/exception; per-URL `acquisition.origin` records the actual backend used. Made default in `653f5b6` after one operator-validated `dr onboard` cycle on `contributes-to-environmental-causes` (7/7 queries fired, 51 candidates, no rate-limit errors). The frozen-replay harness was deferred — operational evidence on the validation run was unambiguous and the harness work didn't justify the day-2/3 budget. Marking the plan done; if a future regression suspects Tavily quality, the harness can be revived as a separate follow-up. Follow-on prefetch plan (`ingestor-tavily-prefetch.md`) implements the `raw_content` short-circuit Brave doesn't support. |

@@ -1,7 +1,7 @@
 # Source Pool Expansion — Tier 1
 
 **Status**: In progress — § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Paths 1, 2, 3 + the companion search-backend plan are unblocked and may start in parallel.
-**Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
+**Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
 **Created**: 2026-05-08
 **Last revised**: 2026-05-08
 
@@ -20,7 +20,7 @@ Add three never-paywalled, mostly-independent acquisition surfaces (Wayback gap-
 
 Tier 1 also fills two documented v1 imprecisions in `source-quality.md` (regulator filings, academic affiliation) and lays the shared infrastructure (throttle, dedup, audit-trail slots, lightweight `dr stats`) that Tier 2, Tier 3, and the companion search-backend plan all reuse.
 
-The search-backend swap (originally Path 4) is now a separate companion plan; see [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
+The search-backend swap (originally Path 4) is now a separate companion plan; see [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
 
 ## Codebase touchpoints
 
@@ -230,7 +230,7 @@ Paths 1–3 are parallel-able after step 2. Path 1 is small enough to ride along
    - **`dr stats` (lightweight)** — ~0.5–1 day. Read-only; no flag.
    - **Path 2 (arXiv + S2 + OpenAlex + affiliation rules)** — 4–6 days. Activated via `VerifyConfig.research_origins`.
    - **Path 3 (SEC EDGAR + subject-relevance classifier + classification override)** — 5–7 days. Activated via `VerifyConfig.research_origins`.
-   - **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — ~4 days. Behind `RESEARCH_SEARCH_BACKEND` (the companion plan owns its own gating).
+   - **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — ~4 days. Behind `RESEARCH_SEARCH_BACKEND` (the companion plan owns its own gating).
 
 None of these blocks depend on each other; only on step 1. Default activations happen after one operator-validated cycle on the audit-trail data (now readable via `dr stats`).
 
@@ -251,7 +251,7 @@ Measured via `dr stats --format json` (lands between Path 1 and Path 2, per § O
 
 ## Out of scope
 
-- **Search-backend swap (Tavily).** Owned by [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
+- **Search-backend swap (Tavily).** Owned by [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
 - **Flipping `skip_wayback` back to `True`.** Owned by `wayback-archive-job.md` (background-job ship).
 - **Automated PDF text extraction.** Path 2 ingests metadata + abstract; full PDF reading is Tier 2 (or a follow-on plan to `source-pdf-attachment.md`).
 - **Energy telemetry.** Tracked in `multi-provider.md` Part 3.
@@ -291,7 +291,8 @@ Resolved:
 
 ## Cross-references
 
-- Companion search-backend plan (Tavily): [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md)
+- Companion search-backend plan (Tavily): [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md)
+- Follow-on to the Tavily search-backend plan (`raw_content` passthrough to skip httpx fetch on Cloudflare-shielded URLs): [`ingestor-tavily-prefetch.md`](completed/ingestor-tavily-prefetch.md). Inherits Tier 1's `acquisition` schema unchanged — no new enum values or keys.
 - Independence accounting and amendments: [`docs/architecture/source-quality.md`](../architecture/source-quality.md)
 - Researcher internals (parallel tool dispatch): [`docs/architecture/research-flow.md`](../architecture/research-flow.md) § 6
 - `VerifyConfig` knobs: [`docs/architecture/research-workflow.md`](../architecture/research-workflow.md) § Pipeline configuration knobs
@@ -310,4 +311,5 @@ Resolved:
 | 2026-05-08 | agent (opus-4-7) | iterated | Cross-references rewritten as part of the source-quality plan-family consolidation: `research-quality-ideas.md` and `drafts/source-pool-expansion-tier{2,3}.md` were absorbed into the new `source-quality-followups.md` collector, so this plan now points at the collector's sections instead. Plan body is unchanged. |
 | 2026-05-08 | agent (opus-4-7) | implementation, iterated | Three-lens review (correctness, structure, executability/simplification) found 2 schema gaps and recommended structural changes. Changes applied: (1) split Path 4 (search-backend swap) into companion plan `source-pool-expansion-tier1-search-backend.md`, reduced to Tavily-only (Exa deferred), with simplified 2-metric+gate decision rubric and frozen-replay harness interface spec'd; (2) added explicit § Schema prerequisites section with concrete Zod edits (`kind: 'paper'`, `audit.acquisition`, `sec_cik`) sequenced as the first commit; (3) reordered so § Shared infrastructure precedes the Path subsections and renamed it as a prerequisite for Paths 1–3; (4) added § Commit sequence with five focused commits; (5) reframed `dr stats` from "deferred behind CLI cleanup" to "future follow-up plan" after the CLI cleanup landed mid-review; (6) marked two open questions as resolved (sec_cik lookup, negative-cache); (7) added `memento_unavailable` to error vocab; (8) re-baselined effort to 12–17 days for Tier 1 (search-backend's ~4 days lives in the companion plan). |
 | 2026-05-08 | agent (opus-4-7) | post-implementation findings | Schema commit + 6 shared-infra commits landed. Two corrections folded back into the plan: (1) the `StepError.error_type` "currently in-use" enumeration in § Two event channels missed `api_key_missing` (`pipeline.py:485`) and `http_error` (`pipeline.py:535`); both now listed and the smoke test guards against further drift. (2) Added a § Audit-trail acquisition plumbing → "Known limitation — auditor-only refresh path" note flagging that `cli.py:1390`'s `dr re-audit` flow drops the `acquisition` map on rewrite; the first path commit producing real `acquisition` data must preserve it (read-from-existing-sidecar) or re-derive it. Acceptable until then since no producers exist. |
+| 2026-05-08 | agent (opus-4-7) | family cross-review (prefetch follow-on) | Added `ingestor-tavily-prefetch.md` to § Cross-references as a follow-on to the Tavily companion plan. No schema-prerequisite edits: cross-review confirmed that the prefetch plan's audit-trail design rides on the existing `acquisition` shape (`origin: 'tavily'`, `stage: 'research'`) without adding keys or enum values. Verification: the prefetch plan's own draft initially proposed an `acquisition[url]["prefetched"] = True` stamp; that contradicted its "no schema change" claim and was dropped during cross-review (recorded in the prefetch plan's review history). |
 | 2026-05-08 | parallel agents (opus-4-7) | concrete-readiness + architectural-lens review | Two-agent parallel review against five seed questions (dr-stats inclusion, schema/infra readiness, language clarity, state-machine direction, small-models-for-small-tasks). Findings applied: **(1)** `dr stats` folded into Tier 1 as a small ~0.5–1 day commit between Path 1 and Path 2; CLI-cleanup blocker shipped in `2839537`. **(2)** Schema corrections — `acquisition` now lives per-URL inside `sources_consulted[]` items (not a top-level array); reshaped to `{stage, origin, recovered_via?, query?, paper_id?, filing_accession?, outcome?}` to stop conflating search backends, fetch fallbacks, and origin APIs under one `path` enum; "Pydantic mirror" framing dropped (no audit Pydantic class exists; `_write_audit_sidecar` is dict-based at `persistence.py:418`); only Python-side schema touch is `SourceKind.PAPER`. **(3)** Wayback throttle precedent claim corrected — `wayback.py` has timeouts only; closest existing precedent is `pipeline/researcher/agent.py:50-55` and `pipeline/orchestrator/pipeline.py:701-703`. **(4)** `StepError.error_type` reframed as the free-form `str` it already is (not a closed enum); event channels split — failures stay on `StepError`, per-URL outcomes ride on `acquisition.outcome`, per-tool "no results" goes to `research_trace["tool_outcomes"]`. **(5)** `execute_searches` reframed as thin gather-and-merge over a selector-chosen tool set, isolating activation decisions for future state-machine extraction. **(6)** Three per-path booleans collapsed into one `VerifyConfig.research_origins: list[str]` field, ports cleanly to a per-claim workspace listing later. **(7)** Two small-model classifiers added: `IndependenceCall` for mixed-authorship affiliation (resolves the threshold open question), `SubjectRelevance` for EDGAR full-text disambiguation (keeps subject-vs-keyword work out of the URL scorer). Filer-vs-subject CIK rule flagged as correctly deterministic. **(8)** `v1.x amendments` subsection renamed to `Independence override rules`. Effort re-baselined to 12.5–18 days. **(Reverted in same session)**: An interim Path → Origin section-heading rename was reverted because it broke "Paths 1–3" / "Path 4" cross-references in `source-pool-expansion-tier1-search-backend.md` and `source-quality-followups.md`. Section organization stays "Path 1/2/3"; `origin` lives only as the per-URL schema enum value and as the `research_origins` config field name (its values are per-URL source categories — `'brave'`, `'arxiv'`, `'edgar'`, …). |
