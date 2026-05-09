@@ -1,0 +1,187 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T20:55:01.364994+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Brave Software environmental initiatives
+  - Brave sustainability report 2023
+  - Brave Software ESG rating
+  - Brave Software carbon footprint assessment
+  - Brave energy-efficient server initiative
+  - Brave renewable energy commitments
+  - Brave Software environmental technical measures
+  planner_rationale: These sub-questions cover first-party disclosures, independent
+    assessments, and technical strategies to comprehensively evaluate Brave's contributions
+    to environmental causes.
+  candidates_seen: 114
+  urls_kept: 10
+  urls_dropped: 49
+  scorer_rationale: "- **`sq1` (Environmental Initiatives/Commitments by Brave Software):**\
+    \ Several candidates were retained due to their relevance to Brave Software's\
+    \ **first-party environmental commitments or self-reported sustainability initiatives**.\
+    \ These include discussions about ecological footprints, carbon savings, sustainability\
+    \ strategies, or partnerships. Specifically:\n  - **Community discussions** (e.g.,\
+    \ [ecological footprint thread](https://community.brave.app/t/ecological-footprint/404963),\
+    \ [Sustainability Report 2023](https://bravefoundation.org.au/wp-content/uploads/2024/02/Impact-Report-2023-web.pdf))\
+    \ directly address Brave’s own commitments or comparisons with similar companies.\
+    \ \n  - **Green Media partnership announcements** (e.g., [BRAVE green media](https://www.thebrave.io/green-media/))\
+    \ and **sustainability reports** align with Brave’s official branding or strategy.\n\
+    \  - **Instagram teaser for a 2023 Sustainability Report** ([Instagram link](https://www.instagram.com/p/C6GOlBYN8mZ/))\
+    \ was scored high for potentially detailing first-party claims.\n  - **Brave’s\
+    \ own podcast and blog posts** (e.g., [AMA with Kindhumans](https://brave.com/blog/guest-ama-with-kindhumans/),\
+    \ [podcast on environmental stewardship](https://brave.com/podcast/e26/)) mention\
+    \ environmental themes or collaborations, though some lack direct substance.\n\
+    \n  Dismissed items either focused on unrelated **third-party organizations**\
+    \ (e.g., OTB Group, PNNL, ARPA-H) or were entirely off-topic (e.g., Wikipedia,\
+    \ software engineering papers).\n\n- **`sq2` (Third-Party ESG Ratings or Audits):**\
+    \ No candidates directly assessed **third-party evaluations, audits, or ESG ratings**\
+    \ for Brave Software itself. Most high-quality candidates centered on **first-party\
+    \ or non-standardized claims**, not formal third-party certifications, filings,\
+    \ or ratings.\n\n- **`sq3` (Technical Strategies for Environmental Impact):**\
+    \ Candidates with actionable technical details—such as **energy-saving features\
+    \ in Brave’s browser**, ad-blocking as a CO2-saving tool ([CO2 footprint thread](https://community.brave.app/t/co2-footprint-in-dashboard-through-adblocking-xg-co2-saving-sustainability/102283)),\
+    \ and **forums discussing energy efficiency** (e.g., [Reddit](https://www.reddit.com/r/BATProject/comments/o0mja9/why_brave_is_esg_favorable_and_why_this_matters/))—were\
+    \ retained. Direct links to Brave’s **Energy Saver documentation** were also considered\
+    \ technically relevant, whileirrelevant discussions (e.g., biopreparedness programs,\
+    \ unrelated 'BRAVE' acronyms, or software engineering papers) were dropped.\n\n\
+    -%BAED Practice:\n  ---> Where **ambiguity** existed (e.g., broad mentions of\
+    \ sustainability without specifics), lower scores (3-4) avoided overinflation,\
+    \ while **clearly irrelevant** drives (e.g., software engineering, unrelated projects)\
+    \ were dismissed as `1`. \n  ---> Adherence to the `secondary` label did not dismiss\
+    \ results *per se*; tightened criteria ensured focus on real-world Brave initiatives,\
+    \ excluding related omnibus claims (e.g., generic ESG software demo pages)."
+  urls_after_blocklist: 10
+sub_questions:
+- id: sq1
+  question: What environmental initiatives or commitments has Brave Software publicly
+    disclosed on its first-party channels (e.g., website, sustainability reports,
+    blogs)?
+  rationale: First-party sources like the website or transparency reports are reliable
+    for Brave's self-reported environmental efforts.
+  queries:
+  - Brave Software environmental initiatives
+  - Brave sustainability report 2023
+  citations:
+  - 2022/ecological-footprint
+  - 2026/green-media
+  - 2026/e26
+  - 2026/guest-ama-with-kindhumans
+  - 2024/c6golbyn8mz
+- id: sq2
+  question: Are there third-party assessments (e.g., ESG ratings, regulator filings,
+    or environmental audits) that evaluate Brave Software's environmental impact or
+    initiatives?
+  rationale: Third-party evaluations provide unbiased or standardized assessments
+    of environmental practices.
+  queries:
+  - Brave Software ESG rating
+  - Brave Software carbon footprint assessment
+  citations: []
+- id: sq3
+  question: What technical strategies does Brave Software implement to reduce its
+    environmental footprint (e.g., energy-efficient servers, carbon offsets, renewable
+    energy use)?
+  rationale: Understanding the technical mechanisms behind environmental efforts clarifies
+    their feasibility and impact.
+  queries:
+  - Brave energy-efficient server initiative
+  - Brave renewable energy commitments
+  - Brave Software environmental technical measures
+  citations:
+  - 2022/ecological-footprint
+  - 2025/brave-android-performance-tests
+  - 2026/102283
+sources_consulted:
+- id: 2022/ecological-footprint
+  url: https://community.brave.app/t/ecological-footprint/404963
+  title: Ecological footprint
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software environmental initiatives
+- id: 2026/green-media
+  url: https://www.thebrave.io/green-media/
+  title: BRAVE Green Media for Brand Advertising
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software environmental initiatives
+- id: 2026/e26
+  url: https://brave.com/podcast/e26/
+  title: Balancing Environmental Stewardship with Technological Progress
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software environmental initiatives
+- id: 2023/web-environment-integrity-locking-down-the-web
+  url: https://brave.com/web-standards-at-brave/9-web-environment-integrity/
+  title: '“Web Environment Integrity”: Locking Down the Web'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software environmental initiatives
+- id: 2026/guest-ama-with-kindhumans
+  url: https://brave.com/blog/guest-ama-with-kindhumans/
+  title: Guest AMA with Kindhumans
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software environmental initiatives
+- id: 2025/brave-android-performance-tests
+  url: https://brave.com/blog/brave-android-one-eight-zero-plus-performance/
+  title: Brave for Android continues to outperform other browsers in speed and performance,
+    based on recent tests
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave energy-efficient server initiative
+- id: 2024/c6golbyn8mz
+  url: https://www.instagram.com/p/C6GOlBYN8mZ/
+  title: OTB 2023 Sustainability Report Announcement
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave sustainability report 2023
+- id: 2026/102283
+  url: https://community.brave.app/t/co2-footprint-in-dashboard-through-adblocking-xg-co2-saving-sustainability/102283
+  title: CO2-Footprint in Dashboard? 'through adblocking Xg CO2-saving' (Sustainability)
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software carbon footprint assessment
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mixed
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

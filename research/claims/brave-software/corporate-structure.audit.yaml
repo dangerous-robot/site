@@ -1,0 +1,156 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T19:12:50.950457+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Brave Software corporate structure official statement
+  - Brave Software ownership disclosure CEO interview
+  - Brave Software SEC filings or IRS tax documents
+  - Brave Software B Corp certification status
+  - Brave Software cooperatively-owned declaration
+  - Brave Software privately-held vs publicly-traded confirmation
+  - Brave Software legal entity type California
+  planner_rationale: The sub-questions cover the claim by examining Brave's official
+    disclosures (sq1), regulatory filings (sq2), independent certifications (sq3),
+    and leadership statements (sq4), ensuring a comprehensive audit of its corporate
+    structure.
+  candidates_seen: 102
+  urls_kept: 21
+  urls_dropped: 45
+  scorer_rationale: ''
+  urls_after_blocklist: 19
+sub_questions:
+- id: sq1
+  question: What corporate structure does Brave Software explicitly disclose on its
+    official website or public statements?
+  rationale: This targets Brave's own first-party publications to clarify its corporate
+    identity directly from a trusted source.
+  queries:
+  - Brave Software corporate structure official statement
+  - Brave Software privately-held vs publicly-traded confirmation
+  citations:
+  - 2026/brave-software-inc-profile
+  - 2026/about
+- id: sq2
+  question: Are there regulatory filings, tax documents, or legal disclosures identifying
+    Brave Software's ownership structure (e.g., SEC, IRS, or state regulatory agencies)?
+  rationale: Regulatory or financial filings can provide verifiable details about
+    corporate structure, especially for legal compliance.
+  queries:
+  - Brave Software SEC filings or IRS tax documents
+  - Brave Software legal entity type California
+  citations:
+  - 2026/brave-software-inc-profile
+  - 2026/brave-software
+  - 2025/braveipo
+  - 2026/brave
+- id: sq3
+  question: Has Brave Software been independently evaluated or certified (e.g., B
+    Corp, cooperative, employee-owned) by third-party organizations?
+  rationale: Third-party certifications and evaluations can confirm claims about corporate
+    structure, especially if affiliated with standards like B Corp.
+  queries:
+  - Brave Software B Corp certification status
+  - Brave Software cooperatively-owned declaration
+  citations:
+  - 2023/brave-technology-coop
+  - 2026/dvvjlbddjmg
+- id: sq4
+  question: Are there public statements, interviews, or news articles from Brave Software's
+    leadership mentioning or implying their corporate structure?
+  rationale: Direct quotes or statements from leaders can clarify structure, even
+    if not explicitly formalized in documentation.
+  queries:
+  - Brave Software ownership disclosure CEO interview
+  citations:
+  - 2026/watch
+sources_consulted:
+- id: 2026/brave-software-inc-profile
+  url: https://www.dnb.com/business-directory/company-profiles.brave_software_inc.ac0f62f386160937497980dbba53359e.html
+  title: Brave Software, Inc. Company Profile
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software legal entity type California
+- id: 2026/about
+  url: https://brave.com/about/
+  title: What is Brave?
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software corporate structure official statement
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2023/brave-technology-coop
+  url: https://www.bcorporation.net/find-a-b-corp/company/brave-technology-coop/
+  title: Brave Technology Coop
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software B Corp certification status
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/brave-software
+  url: https://www.nasdaqprivatemarket.com/company/brave-software/
+  title: Brave Software Stock
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software privately-held vs publicly-traded confirmation
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/watch
+  url: https://www.youtube.com/watch?v=dVgBBfZ9MqM
+  title: Brave's CEO denies user tracking claims, calls allegations a smear campaign
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software corporate structure official statement
+- id: 2025/braveipo
+  url: https://forgeglobal.com/brave_ipo/
+  title: Brave IPO
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software privately-held vs publicly-traded confirmation
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/dvvjlbddjmg
+  url: https://www.instagram.com/p/DVVjlbdDJmG/
+  title: Instagram Post DVVjlbdDJmG
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software B Corp certification status
+- id: 2026/brave
+  url: https://notice.co/c/brave
+  title: Brave Stock
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software privately-held vs publicly-traded confirmation
+audit: null
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
