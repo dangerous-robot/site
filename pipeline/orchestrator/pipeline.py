@@ -1181,6 +1181,31 @@ class OnboardResult:
     errors: list[str] = field(default_factory=list)
 
 
+@dataclass
+class EnrichmentResult:
+    """Outcome of running the enricher against one entity.
+
+    ``status``:
+        - ``"accepted"``  – operator accepted the draft; entity file updated.
+        - ``"rejected"``  – operator rejected the draft; nothing written.
+        - ``"refused"``   – pre-flight check refused (e.g. non-empty body
+          without ``--force``); nothing written.
+        - ``"failed"``    – enricher agent or write step raised; see
+          ``errors``.
+
+    ``founded`` / ``description`` / ``history_markdown`` capture the
+    fields that were actually persisted (only populated for ``accepted``).
+    """
+
+    entity_ref: str
+    entity_name: str
+    status: Literal["accepted", "rejected", "refused", "failed"]
+    founded: int | None = None
+    description: str | None = None
+    history_markdown: str | None = None
+    errors: list[str] = field(default_factory=list)
+
+
 def _screen_templates(
     entity_description: str,
     templates: list,
@@ -1427,6 +1452,121 @@ def _dedup(items: list[str]) -> list[str]:
         seen.add(s)
         out.append(s)
     return out
+
+
+async def enrich_entity(
+    entity_ref: str,
+    config: VerifyConfig | None = None,
+    checkpoint: CheckpointHandler | None = None,
+) -> EnrichmentResult:
+    """Re-run the enricher against an existing entity file.
+
+    Loads the entity, runs ``gather_light_research``, calls the
+    enricher agent, surfaces the draft via the ``review_entity_enrichment``
+    checkpoint, and on accept splices ``founded`` / ``description`` /
+    ``history_markdown`` into the file in place. Other fields
+    (aliases, parent_company, search_hints, etc.) are preserved untouched.
+
+    Both ``dr entity-enrich`` and ``dr onboard --force`` call this
+    helper so the re-enrichment path stays single-sourced.
+    """
+    from common.models import resolve_model
+    from orchestrator.entity_resolution import parse_entity_ref
+    from orchestrator.persistence import update_entity_enrichment
+    from researcher.entity_enricher import (
+        build_entity_enricher_prompt,
+        entity_enricher_agent,
+    )
+
+    cfg = config or VerifyConfig()
+    if not cfg.repo_root:
+        cfg.repo_root = str(resolve_repo_root())
+    repo_root = Path(cfg.repo_root)
+    gate = checkpoint or AutoApproveCheckpointHandler()
+
+    try:
+        resolved = parse_entity_ref(entity_ref, repo_root)
+    except ValueError as exc:
+        return EnrichmentResult(
+            entity_ref=entity_ref,
+            entity_name=entity_ref,
+            status="failed",
+            errors=[f"could not load entity: {exc}"],
+        )
+
+    entity_path = (
+        repo_root / "research" / "entities" / f"{entity_ref}.md"
+    )
+
+    sem = asyncio.Semaphore(cfg.llm_concurrency)
+    with bind_run_id(cfg.run_id):
+        logger.info("enrich_entity entry: ref=%s", entity_ref)
+
+        # Phase A (shared with onboard_entity): light research.
+        async with httpx.AsyncClient() as client:
+            bundle = await gather_light_research(
+                resolved.entity_name,
+                resolved.entity_type,
+                cfg,
+                sem,
+                client,
+                seed_url=resolved.website,
+            )
+
+        # Phase C: enricher agent.
+        prompt = build_entity_enricher_prompt(bundle)
+        try:
+            with entity_enricher_agent.override(
+                model=resolve_model(cfg.model_for("researcher")),
+            ):
+                run_res = await asyncio.wait_for(
+                    entity_enricher_agent.run(prompt),
+                    timeout=cfg.research_timeout_s,
+                )
+            draft = run_res.output
+        except Exception as exc:
+            logger.warning("Enricher failed: %s", exc)
+            return EnrichmentResult(
+                entity_ref=entity_ref,
+                entity_name=resolved.entity_name,
+                status="failed",
+                errors=[f"enricher failed: {exc}"],
+            )
+
+        decision = await gate.review_entity_enrichment(
+            resolved.entity_name, draft,
+        )
+        if decision == "reject":
+            return EnrichmentResult(
+                entity_ref=entity_ref,
+                entity_name=resolved.entity_name,
+                status="rejected",
+            )
+
+        try:
+            update_entity_enrichment(
+                entity_path,
+                description=draft.description,
+                founded=draft.founded,
+                history_markdown=draft.history_markdown,
+            )
+        except Exception as exc:
+            logger.warning("Entity write failed: %s", exc)
+            return EnrichmentResult(
+                entity_ref=entity_ref,
+                entity_name=resolved.entity_name,
+                status="failed",
+                errors=[f"write failed: {exc}"],
+            )
+
+    return EnrichmentResult(
+        entity_ref=entity_ref,
+        entity_name=resolved.entity_name,
+        status="accepted",
+        founded=draft.founded,
+        description=draft.description,
+        history_markdown=draft.history_markdown,
+    )
 
 
 async def onboard_entity(

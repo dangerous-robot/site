@@ -113,7 +113,7 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Creates or overwrites claim files",
      ["onboard", "claim-draft", "claim-refresh", "claim-promote"]),
     ("Modifies existing files in place",
-     ["publish", "review", "review-queue"]),
+     ["entity-enrich", "publish", "review", "review-queue"]),
 ]
 
 
@@ -1508,7 +1508,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
-@click.option("--force", is_flag=True, help="Overwrite existing claim files if present")
+@click.option("--force", is_flag=True, help="Overwrite existing claim files and re-run the enricher on the entity")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.option(
@@ -1662,6 +1662,121 @@ def onboard(
             click.echo(f"  ! {err}")
 
     hr()
+
+    if force:
+        # Re-enrich after the existing --force overwrite work so the
+        # entity file picks up tightened description, founded year, and
+        # history body in the same pass.
+        from orchestrator.pipeline import enrich_entity
+
+        if result.entity_ref and "drafts/" not in result.entity_ref:
+            enrichment = asyncio.run(
+                enrich_entity(result.entity_ref, config=config, checkpoint=checkpoint)
+            )
+            _render_enrichment_outcome(enrichment)
+
+
+def _render_enrichment_outcome(result) -> None:
+    """Render an EnrichmentResult to stdout.
+
+    Shared between ``dr entity-enrich`` and ``dr onboard --force`` so the
+    operator-facing summary stays consistent across both surfaces.
+    """
+    hr()
+    click.echo("Enrichment Report")
+    hr()
+    click.echo(f"Entity:  {result.entity_name}")
+    click.echo(f"Ref:     {result.entity_ref}")
+    click.echo(f"Status:  {result.status}")
+    if result.status == "accepted":
+        if result.founded is not None:
+            click.echo(f"Founded: {result.founded}")
+        if result.description:
+            click.echo(f"Description: {result.description}")
+        if result.history_markdown:
+            paragraphs = [
+                p for p in result.history_markdown.split("\n\n") if p.strip()
+            ]
+            click.echo(f"History: {len(paragraphs)} paragraph(s) written")
+    if result.errors:
+        click.echo("")
+        click.echo("Errors:")
+        for err in result.errors:
+            click.echo(f"  ! {err}")
+    hr()
+
+
+# --------------------------------------------------------------------------- #
+# dr entity-enrich                                                              #
+# --------------------------------------------------------------------------- #
+
+@main.command(name="entity-enrich")
+@click.argument("entity_ref")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
+@click.option("--force", is_flag=True, help="Re-enrich even when the entity already has a non-empty history body")
+@click.pass_context
+def entity_enrich(
+    ctx: click.Context,
+    entity_ref: str,
+    repo_root: str | None,
+    interactive: bool,
+    force: bool,
+) -> None:
+    """Re-run the enricher on an existing entity. Splices founded, description, and history into the file.
+
+    ENTITY_REF is a type/slug ref like ``companies/anthropic`` or
+    ``products/claude``. The enricher reads the entity, runs light
+    research, drafts the new fields, and (with the interactive
+    checkpoint) prompts before writing.
+
+    Refuses without ``--force`` when the entity's body already has a
+    non-empty history block — operator edits should not be silently
+    overwritten.
+
+    Example:
+        dr entity-enrich companies/anthropic
+        dr entity-enrich products/claude --force --interactive
+    """
+    from common.content_loader import resolve_repo_root as _resolve_repo_root
+    from common.frontmatter import parse_frontmatter
+
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
+
+    repo_root_path = Path(repo_root) if repo_root else _resolve_repo_root()
+    entity_path = repo_root_path / "research" / "entities" / f"{entity_ref}.md"
+
+    if not entity_path.exists():
+        raise click.UsageError(f"Entity file not found: {entity_path}")
+
+    if not force:
+        try:
+            _fm, body = parse_frontmatter(entity_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            raise click.UsageError(
+                f"Could not read entity file {entity_path}: {exc}"
+            ) from exc
+        if body.strip():
+            raise click.ClickException(
+                f"{entity_ref} already has a non-empty history body. "
+                f"Pass --force to re-run the enricher and overwrite it."
+            )
+
+    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
+    from orchestrator.pipeline import VerifyConfig, enrich_entity
+
+    model = ctx.obj["model"]
+    config = VerifyConfig(
+        model=model,
+        repo_root=str(repo_root_path),
+        **_ctx_per_agent_kwargs(ctx),
+    )
+    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
+
+    result = asyncio.run(enrich_entity(entity_ref, config=config, checkpoint=checkpoint))
+    _render_enrichment_outcome(result)
+    if result.status == "failed":
+        ctx.exit(1)
 
 
 # --------------------------------------------------------------------------- #

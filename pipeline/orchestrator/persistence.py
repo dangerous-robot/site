@@ -592,9 +592,7 @@ def _write_entity_history(entity_path: Path, history_markdown: str | None) -> No
     """Replace the body of an existing entity file with ``history_markdown``.
 
     Reads the entity file, preserves the frontmatter, and rewrites the body.
-    A None or empty ``history_markdown`` leaves the body untouched. The
-    enricher will call this on re-enrichment passes; current callers in this
-    commit do not invoke it.
+    A None or empty ``history_markdown`` leaves the body untouched.
     """
     if not history_markdown:
         return
@@ -605,3 +603,37 @@ def _write_entity_history(entity_path: Path, history_markdown: str | None) -> No
         encoding="utf-8",
     )
     logger.info("Wrote entity history: %s", entity_path)
+
+
+def update_entity_enrichment(
+    entity_path: Path,
+    description: str | None = None,
+    founded: int | None = None,
+    history_markdown: str | None = None,
+) -> None:
+    """Splice enricher output into an existing entity file in place.
+
+    Preserves every other frontmatter field. Pass ``None`` to leave a
+    given field untouched (note: ``founded`` cannot currently be cleared
+    via this helper; the enricher is the only caller and emits a year or
+    leaves it unset). ``description`` is overwritten only when a non-empty
+    value is supplied — an empty string from the enricher means "the
+    inputs did not describe the entity," in which case the prior
+    description should win over a worse rewrite.
+
+    The body is overwritten when ``history_markdown`` is non-empty; an
+    empty value leaves the existing body alone.
+    """
+    text = entity_path.read_text(encoding="utf-8")
+    fm, existing_body = parse_frontmatter(text)
+    if description and description.strip():
+        fm["description"] = description.strip()
+    if founded is not None:
+        fm["founded"] = founded
+    body = (
+        _entity_body(history_markdown)
+        if history_markdown and history_markdown.strip()
+        else existing_body
+    )
+    entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+    logger.info("Updated entity enrichment: %s", entity_path)

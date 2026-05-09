@@ -585,3 +585,137 @@ class TestClaimPromoteCLI:
             assert expected_placeholder in written_text, (
                 f"Expected '{expected_placeholder}' in template text for entity_type={entity_type!r}, got: {written_text!r}"
             )
+
+
+class TestEntityEnrichCLI:
+    """Tests for `dr entity-enrich <entity-ref>`."""
+
+    def _write_entity_minimal(
+        self,
+        tmp_path,
+        type_dir: str,
+        slug: str,
+        body: str = "",
+    ) -> None:
+        entity_dir = tmp_path / "research" / "entities" / type_dir
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        (entity_dir / f"{slug}.md").write_text(
+            f"---\nname: Test {slug.title()}\ntype: company\n"
+            f"description: Existing description.\n---\n{body}",
+            encoding="utf-8",
+        )
+
+    def test_help_lists_force_flag(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["entity-enrich", "--help"])
+        assert result.exit_code == 0
+        assert "--force" in result.output
+        assert "history body" in result.output.lower()
+
+    def test_refuses_when_history_body_present_without_force(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A non-empty body must block re-enrichment unless --force is given."""
+        self._write_entity_minimal(
+            tmp_path,
+            "companies",
+            "acme",
+            body="Existing operator-edited history paragraph.\n",
+        )
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["entity-enrich", "companies/acme"],
+        )
+        assert result.exit_code != 0
+        # Click's ClickException prints to stderr; mix_stderr defaults to True.
+        out = result.output + (result.stderr if hasattr(result, "stderr") else "")
+        assert "non-empty history body" in out.lower()
+        assert "--force" in out
+
+    def test_refuses_when_entity_missing(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            ["entity-enrich", "companies/does-not-exist"],
+        )
+        assert result.exit_code != 0
+        out = result.output + (result.stderr if hasattr(result, "stderr") else "")
+        assert "not found" in out.lower()
+
+    def test_smoke_writes_founded_and_history(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """End-to-end: valid call against a TestModel-backed enricher updates the file."""
+        from contextlib import contextmanager
+        from unittest.mock import patch
+
+        from common.frontmatter import parse_frontmatter
+        from pydantic_ai import Agent
+        from pydantic_ai.models.test import TestModel
+        from researcher.entity_enricher import entity_enricher_agent
+
+        self._write_entity_minimal(tmp_path, "companies", "acme", body="")
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        # Stub light research so the smoke test stays offline.
+        async def _fake_gather(entity_name, entity_type, cfg, sem, client, seed_url=None):
+            from orchestrator.pipeline import LightResearchBundle
+            return LightResearchBundle(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                raw_description="Acme makes widgets.",
+                entity_website="https://acme.example.com",
+                description_source_url="https://acme.example.com",
+                probe_excludes=[],
+            )
+
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research", _fake_gather
+        )
+
+        canned = {
+            "founded": 1999,
+            "description": "Acme is a widget company.",
+            "history_markdown": "Founded in 1999.\n\nMakes widgets.",
+        }
+
+        @contextmanager
+        def _noop(**kwargs):
+            yield
+
+        runner = CliRunner()
+        # ``enrich_entity`` calls ``entity_enricher_agent.override(model=...)``
+        # which would otherwise clobber the TestModel override. Patch
+        # ``Agent.override`` to a no-op for the duration of the call so
+        # the canned TestModel sticks (mirrors the pattern in
+        # test_onboard.py).
+        with (
+            entity_enricher_agent.override(model=TestModel(custom_output_args=canned)),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            result = runner.invoke(
+                main,
+                ["entity-enrich", "companies/acme"],
+            )
+
+        assert result.exit_code == 0, f"unexpected exit: {result.output}"
+        entity_path = tmp_path / "research" / "entities" / "companies" / "acme.md"
+        fm, body = parse_frontmatter(entity_path.read_text(encoding="utf-8"))
+        # founded landed
+        assert fm.get("founded") == 1999
+        # description was updated
+        assert fm.get("description") == "Acme is a widget company."
+        # name and type are preserved
+        assert fm.get("name") == "Test Acme"
+        assert fm.get("type") == "company"
+        # history written
+        assert "Makes widgets" in body
