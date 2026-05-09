@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-08T17:25:55.494177+00:00'
+  ran_at: '2026-05-09T06:47:07.097047+00:00'
   model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
@@ -14,113 +14,153 @@ models_used:
   auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
+  tool_outcomes: []
   queries:
-  - '"Anthropic" sustainability report'
-  - '"Anthropic" ESG report'
-  - Anthropic climate impact page
-  - '"Anthropic" press release sustainability'
-  - '"Anthropic" ESG announcement'
-  - Anthropic ESG rating MSCI
-  - Anthropic sustainability profile Sustainalytics
-  planner_rationale: The four sub‑questions collectively verify the claim by looking
-    at Anthropic’s own site, public announcements, third‑party ESG listings, and regulatory
-    filings. Seven concise Brave queries are distributed across these sub‑questions,
-    respecting the required format and avoiding disallowed operators.
-  candidates_seen: 44
-  urls_kept: 14
-  urls_dropped: 66
-  scorer_rationale: The claim concerns whether Anthropic has published a sustainability/ESG
-    report. Sub‑question 1 requires a first‑party report on anthropic.com; pages that
-    host an energy report, the Responsible Scaling Policy, or the Transparency Hub
-    qualify (scored >=3). Sub‑question 2 seeks press‑release‑style announcements;
-    several Anthropic news posts and third‑party sustainability‑magazine articles
-    meet this. Sub‑question 3 asks for third‑party ESG database listings; DitchCarbon
-    and multiple MarketScreener articles that mention Anthropic’s MSCI ESG rating
-    are clearly relevant. No candidate addressed regulatory filings (sq4). All kept
-    URLs scored 3 or higher on at least one sub‑question, while the dropped set either
-    lacked any ESG relevance or referred to unrelated topics (e.g., academic climate
-    papers, generic MSCI pages, Reddit discussions).
-  urls_after_blocklist: 14
+  - '"Anthropic sustainability report"'
+  - '"Anthropic ESG report" pdf'
+  - Anthropic ESG rating
+  - Anthropic sustainability disclosures
+  - Anthropic releases sustainability report
+  - Anthropic climate commitments news
+  - Anthropic SEC filing ESG
+  planner_rationale: 'The sub‑questions together cover the claim’s full scope: internal
+    publication, third‑party acknowledgment, public announcement, and regulatory filing.
+    The seven short queries (3‑7 words, one quoted phrase where needed) are formatted
+    for Brave Search and avoid Google‑specific operators or excluded domains.'
+  candidates_seen: 43
+  urls_kept: 13
+  urls_dropped: 30
+  scorer_rationale: For sq1 (primary‑source ESG/sustainability report) the only items
+    that mention a report hosted on Anthropic’s own site are the "Build AI in America"
+    news release and its PDF version, and two Stanford transparency reports that contain
+    a sustainability note. These received a score of 3, meeting the keep threshold.
+    For sq2 (third‑party ESG databases) the Illuminem profile, DitchCarbon page, Safer‑AI
+    rating and Credo AI vendor profile each directly list ESG or sustainability metrics
+    for Anthropic, earning scores of 4‑5. For sq3 (press/news announcing ESG or sustainability
+    actions) several news articles – Sustainability Mag, Anthropic’s own press about
+    electricity‑price coverage, AI Magazine, and LinkedIn posts – discuss Anthropic’s
+    climate‑related commitments and thus score 3‑4. No candidate showed clear regulatory
+    ESG disclosure, so sq4 received no keep scores. All other URLs either lacked any
+    indication of ESG reporting, were unrelated, forum‑type, or were duplicates, and
+    therefore were dropped.
+  urls_after_blocklist: 12
 sub_questions:
 - id: sq1
-  question: Is there a sustainability or ESG report published on Anthropic’s official
-    website?
-  rationale: Checks Anthropic’s own first‑party publications, the primary source for
-    any official report.
+  question: Has Anthropic issued a sustainability or ESG report on its own website?
+  rationale: Directly checks the primary source for any published sustainability/ESG
+    documentation.
   queries:
-  - '"Anthropic" sustainability report'
-  - '"Anthropic" ESG report'
-  - Anthropic climate impact page
+  - '"Anthropic sustainability report"'
+  - '"Anthropic ESG report" pdf'
   citations:
+  - 2024/anthropicclaude203html
   - 2025/build-ai-in-america-energy-report
-  - 2024/updated-responsible-scaling-policy
-  - 2026/voluntary-commitments
-  - 2026/responsible-scaling-policy
-  - 2026/responsible-scaling-policy-v3
+  - 2025/anthropicfinalreportfmti2025html
 - id: sq2
-  question: Has Anthropic announced a sustainability or ESG report in press releases
-    or news articles?
-  rationale: Captures announcements that may be hosted on corporate blogs, news sites,
-    or PR distribution services.
+  question: Is Anthropic listed in third‑party ESG or sustainability databases and
+    ratings?
+  rationale: External ESG aggregators (e.g., Bloomberg, MSCI, Refinitiv) often track
+    corporate ESG disclosures.
   queries:
-  - '"Anthropic" press release sustainability'
-  - '"Anthropic" ESG announcement'
+  - Anthropic ESG rating
+  - Anthropic sustainability disclosures
   citations:
-  - 2025/build-ai-in-america-energy-report
-  - 2025/investing-energy-america-ai-future
-  - 2024/updated-responsible-scaling-policy
-  - 2026/responsible-scaling-policy-v3
+  - 2026/876f1f99anthropic
+  - 2026/anthropic-claude
 - id: sq3
-  question: Do third‑party ESG databases or rating agencies list Anthropic with a
-    sustainability or ESG report?
-  rationale: Ensures coverage of external ESG aggregators (e.g., MSCI, Sustainalytics,
-    Refinitiv) that track corporate disclosures.
+  question: Are there press releases or news articles announcing an Anthropic sustainability
+    or ESG report?
+  rationale: Corporate announcements may be covered by tech or business news outlets.
   queries:
-  - Anthropic ESG rating MSCI
-  - Anthropic sustainability profile Sustainalytics
-  citations: []
+  - Anthropic releases sustainability report
+  - Anthropic climate commitments news
+  citations:
+  - 2026/why-anthropic-pledging-offset-ai-energy-costs
+  - 2025/build-ai-in-america-energy-report
+  - 2026/covering-electricity-price-increases
+  - 2026/why-anthropic-is-offsetting-grid-impacts-of-its-data-centres
 - id: sq4
-  question: Are Anthropic’s regulatory filings (e.g., SEC, Companies House) containing
-    a sustainability or ESG statement?
-  rationale: Regulatory filings often include ESG disclosures even when a standalone
-    report is not on the website.
-  queries: []
+  question: Do regulatory filings (e.g., SEC, EU) contain Anthropic’s ESG or sustainability
+    disclosures?
+  rationale: Some jurisdictions require ESG reporting in formal filings.
+  queries:
+  - Anthropic SEC filing ESG
   citations: []
 sources_consulted:
+- id: 2024/anthropicclaude203html
+  url: https://crfm.stanford.edu/fmti/May-2024/company-reports/Anthropic_Claude%203.html
+  title: 'Anthropic: Claude 3'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Anthropic sustainability report"'
+- id: 2026/876f1f99anthropic
+  url: https://www.data.illuminem.com/company/876f1f99_anthropic
+  title: Anthropic Sustainability Performance & ESG Data
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Anthropic sustainability report"'
+- id: 2026/why-anthropic-pledging-offset-ai-energy-costs
+  url: https://sustainabilitymag.com/news/why-anthropic-pledging-offset-ai-energy-costs
+  title: Why is Anthropic Pledging to Offset its AI Energy Costs?
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Anthropic sustainability report"'
 - id: 2025/build-ai-in-america-energy-report
   url: https://www.anthropic.com/news/build-ai-in-america
   title: 'Build AI in America: Anthropic Energy Report'
   ingested: true
-- id: 2025/investing-energy-america-ai-future
-  url: https://www.anthropic.com/news/investing-in-energy-to-secure-america-s-ai-future
-  title: Investing in energy to secure America's AI future
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Anthropic sustainability report"'
+- id: 2025/anthropicfinalreportfmti2025html
+  url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Anthropic_FinalReport_FMTI2025.html
+  title: Anthropic Transparency Report
   ingested: true
-- id: 2024/updated-responsible-scaling-policy
-  url: https://www.anthropic.com/news/announcing-our-updated-responsible-scaling-policy
-  title: Announcing our updated Responsible Scaling Policy
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Anthropic ESG report" pdf'
+- id: 2026/anthropic-claude
+  url: https://www.credo.ai/ai-vendor-directory/anthropic-claude
+  title: Anthropic Claude
   ingested: true
-- id: 2026/voluntary-commitments
-  url: https://www.anthropic.com/transparency/voluntary-commitments
-  title: Voluntary Commitments
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic ESG rating
+- id: 2026/covering-electricity-price-increases
+  url: https://www.anthropic.com/news/covering-electricity-price-increases
+  title: Covering electricity price increases from our data centers
   ingested: true
-- id: 2026/responsible-scaling-policy
-  url: https://www.anthropic.com/responsible-scaling-policy
-  title: Responsible Scaling Policy Updates
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic climate commitments news
+- id: 2026/why-anthropic-is-offsetting-grid-impacts-of-its-data-centres
+  url: https://aimagazine.com/news/why-anthropic-is-offsetting-grid-impacts-of-its-data-centres
+  title: Why Anthropic is Offsetting Grid Impacts of its Data Centres
   ingested: true
-- id: 2026/responsible-scaling-policy-v3
-  url: https://www.anthropic.com/news/responsible-scaling-policy-v3
-  title: Responsible Scaling Policy Version 3.0
-  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic climate commitments news
 audit:
   analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: low
+  auditor_verdict: 'true'
+  analyst_confidence: medium
   auditor_confidence: low
-  verdict_agrees: true
-  confidence_agrees: true
-  needs_review: false
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-05-08'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null

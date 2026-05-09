@@ -1,0 +1,173 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T06:49:12.435006+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Anthropic AI safety research
+  - Anthropic AI safety grants
+  - Anthropic Claude safety features
+  - Anthropic AI alignment tools
+  - Anthropic AI safety education
+  - Anthropic AI safety partnerships
+  - Anthropic AI safety transparency
+  planner_rationale: These sub‑questions together cover the full claim—research output,
+    safety‑focused products, community‑building efforts, and public reporting—while
+    the concise Brave‑compatible queries target first‑party and third‑party sources
+    without using prohibited operators.
+  candidates_seen: 57
+  urls_kept: 43
+  urls_dropped: 34
+  scorer_rationale: All kept URLs score a 3 or higher on at least one sub‑question,
+    using the title/snippet and publisher quality. Primary sources (Anthropic’s own
+    blogs, research pages, transparency hub, product safety announcements, and the
+    Fellows program) receive the highest scores for sq1‑sq4. Secondary news articles
+    and community summaries that mention research initiatives, safety‑focused products,
+    educational collaborations or public disclosures receive scores of 3‑4. Forum
+    and low‑quality sources are either scored ≤2 or dropped. The Skilljar URL is explicitly
+    listed in the ‘avoid results’ list and is therefore dropped with a score of 1
+    on every sub‑question.
+  urls_after_blocklist: 32
+sub_questions:
+- id: sq1
+  question: What AI‑safety research initiatives has Anthropic published or funded?
+  rationale: Covers the core contribution of research papers, reports, and grant‑funded
+    projects that advance AI safety.
+  queries:
+  - Anthropic AI safety research
+  - Anthropic AI safety grants
+  citations:
+  - 2024/anthropic-fellows-program
+  - 2023/core-views-on-ai-safety
+  - 2026/anthropic-home
+  - 2026/anthropic-research
+  - 2026/anthropic-fellows-program-2026
+  - 2025/recommended-directions
+  - 2026/anthropic-s-core-views-on-ai-safety
+- id: sq2
+  question: Which AI‑safety‑focused products or tools does Anthropic offer?
+  rationale: Looks at concrete artifacts (e.g., Claude, safety layers, open‑source
+    libraries) that embody safety work.
+  queries:
+  - Anthropic Claude safety features
+  - Anthropic AI alignment tools
+  citations:
+  - 2026/anthropic-home
+- id: sq3
+  question: What educational resources or collaborations does Anthropic provide to
+    promote AI safety?
+  rationale: Captures workshops, curricula, partnerships with academia or NGOs that
+    spread safety knowledge.
+  queries:
+  - Anthropic AI safety education
+  - Anthropic AI safety partnerships
+  citations:
+  - 2024/anthropic-fellows-program
+  - 2026/anthropic-fellows-program-2026
+  - 2026/anu-partners-with-ai-safety-company-anthropic-to-strengthen-its-ai-research-and-teaching
+- id: sq4
+  question: How does Anthropic publicly disclose its AI‑safety contributions?
+  rationale: Seeks transparency reports, blog posts, or other official communications
+    that document the effort.
+  queries:
+  - Anthropic AI safety transparency
+  citations:
+  - 2023/core-views-on-ai-safety
+  - 2026/anthropic-research
+  - 2026/anthropic-s-core-views-on-ai-safety
+sources_consulted:
+- id: 2024/anthropic-fellows-program
+  url: https://alignment.anthropic.com/2024/anthropic-fellows-program/
+  title: Introducing the Anthropic Fellows Program
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety research
+- id: 2023/core-views-on-ai-safety
+  url: https://www.anthropic.com/news/core-views-on-ai-safety
+  title: 'Core Views on AI Safety: When, Why, What, and How'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety research
+- id: 2026/anthropic-home
+  url: https://www.anthropic.com/
+  title: Home
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety research
+- id: 2026/anthropic-research
+  url: https://www.anthropic.com/research
+  title: Research
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety research
+- id: 2026/anthropic-fellows-program-2026
+  url: https://alignment.anthropic.com/2025/anthropic-fellows-program-2026/
+  title: 'Anthropic Fellows Program for AI safety research: applications open for
+    May & July 2026'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety grants
+- id: 2026/anu-partners-with-ai-safety-company-anthropic-to-strengthen-its-ai-research-and-teaching
+  url: https://www.anu.edu.au/news/all-news/anu-partners-with-ai-safety-company-anthropic-to-strengthen-its-ai-research-and-teaching
+  title: ANU partners with AI safety company Anthropic to strengthen its AI research
+    and teaching
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic AI safety partnerships
+- id: 2025/recommended-directions
+  url: https://alignment.anthropic.com/2025/recommended-directions/
+  title: Recommendations for Technical AI Safety Research Directions
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic AI safety research
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/anthropic-s-core-views-on-ai-safety
+  url: https://www.lesswrong.com/posts/xhKr5KtvdJRssMeJ3/anthropic-s-core-views-on-ai-safety
+  title: Anthropic's Core Views on AI Safety
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic AI safety research
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-08'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

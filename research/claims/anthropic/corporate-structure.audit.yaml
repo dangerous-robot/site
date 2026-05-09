@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-08T17:26:28.129073+00:00'
+  ran_at: '2026-05-09T06:48:05.422276+00:00'
   model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
@@ -14,87 +14,156 @@ models_used:
   auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
+  tool_outcomes: []
   queries:
   - Anthropic corporate structure
-  - Anthropic company type
-  - Anthropic business profile Crunchbase
-  - Anthropic SEC filings
+  - Anthropic legal entity type
+  - Anthropic stock ticker
+  - Anthropic publicly traded status
   - Anthropic B Corp certification
-  - Anthropic employee ownership model
-  - Anthropic steward ownership
-  planner_rationale: These sub‑questions together cover every possible corporate‑structure
-    category mentioned in the claim, using both Anthropic’s own disclosures and independent
-    sources, while the seven concise Brave queries provide focused entry points for
-    each axis.
-  candidates_seen: 49
-  urls_kept: 5
-  urls_dropped: 44
-  scorer_rationale: Primary Anthropic webpages (company page and Long‑Term Benefit
-    Trust page) explicitly state that Anthropic is a Public Benefit Corporation, directly
-    answering sq1. The Time.com feature and the RevenuMemo and IBL Law articles also
-    discuss Anthropic's public‑benefit corporate form, giving them clear relevance
-    to sq1 (and the IBL Law piece also claims a B‑Corporation label, touching sq3).
-    All other results either lack any mention of legal entity type, focus on product
-    or funding news, or are from avoided sources (Wikipedia). Consequently, only the
-    five sources scoring >=3 on at least one sub‑question are kept; the remainder
-    are dropped.
-  urls_after_blocklist: 5
+  - Anthropic employee ownership
+  - Anthropic non profit status
+  planner_rationale: These sub‑questions together exhaust the possible corporate‑structure
+    categories listed in the claim. The seven short Brave queries are distributed
+    across the sub‑questions to retrieve official filings, press releases, and third‑party
+    directories (e.g., SEC filings, B Corp registry, company blog, news articles)
+    while avoiding disallowed sites and operators.
+  candidates_seen: 54
+  urls_kept: 24
+  urls_dropped: 22
+  scorer_rationale: The claim asks about Anthropic’s corporate legal form and whether
+    it is publicly‑traded, a B‑Corp, employee‑owned/cooperative/steward‑owned, or
+    a non‑profit. Only sources that explicitly mention Anthropic’s legal entity type
+    (public benefit corporation, PBC, or limited company) score high for sq1; these
+    are primarily the company’s own blog pages, the Trust announcement, Trademarkia,
+    the Harvard Law blog, and the Companies House filing. No source in the set confirms
+    B‑Corp certification, employee‑ownership, cooperative or non‑profit status for
+    the core company, so sq3‑sq5 receive no high‑scoring evidence. Several articles
+    discuss Anthropic’s IPO plans or state that it is still private, which directly
+    address sq2 (publicly‑traded status) and earn a score ≥3. All items scoring ≥3
+    on any sub‑question are kept, with the specific sub‑questions listed in the `addresses`
+    array. The Wikipedia entry is explicitly avoided per the instruction, and all
+    forum, Reddit, or unrelated promotional pages are dropped because they either
+    lack primary evidence or score ≤2.
+  urls_after_blocklist: 23
 sub_questions:
 - id: sq1
-  question: What legal entity type and corporate structure does Anthropic describe
-    for itself?
-  rationale: First‑party sources (company website, press releases, investor deck)
-    give the official description of Anthropic’s structure.
+  question: What legal corporate form does Anthropic have?
+  rationale: Identifies the basic entity type (e.g., corporation, LLC) which is needed
+    to evaluate all other structure claims.
   queries:
   - Anthropic corporate structure
-  - Anthropic company type
+  - Anthropic legal entity type
   citations:
-  - 2026/anthropic-company
-  - 2023/long-term-benefit-trust
+  - 2026/corporate-structure-ethical-ai-daniela-amodei
   - 2024/anthropic-structure-openai-incentives
-  - 2026/who-owns-anthropic
+  - 2023/long-term-benefit-trust
+  - 2026/anthropic
+  - 2026/trust-center
+  - 2023/anthropic-long-term-benefit-trust
 - id: sq2
-  question: How do third‑party business databases and news outlets classify Anthropic’s
-    corporate status?
-  rationale: Independent registries (Crunchbase, Bloomberg, SEC, news articles) confirm
-    whether Anthropic is publicly‑traded, privately‑held, etc.
+  question: Is Anthropic a publicly traded company?
+  rationale: Determines whether the company is listed on a stock exchange, covering
+    the “publicly‑traded” option.
   queries:
-  - Anthropic business profile Crunchbase
-  - Anthropic SEC filings
-  citations: []
+  - Anthropic stock ticker
+  - Anthropic publicly traded status
+  citations:
+  - 2025/anthropics-2026-ipo-path-structure-governance-and-valuation-29a91157fcc0
+  - 2026/466959-97
 - id: sq3
-  question: Has Anthropic obtained B‑Corp certification or any similar benefit‑corp
-    designation?
-  rationale: B‑Corp status is a distinct legal designation that must be verified via
-    certification registries or announcements.
+  question: Does Anthropic have B Corp certification?
+  rationale: Checks the specific sustainability/benefit corporation status mentioned
+    in the claim.
   queries:
   - Anthropic B Corp certification
   citations: []
 - id: sq4
-  question: Is Anthropic structured as employee‑owned, steward‑ownership, or a cooperative?
-  rationale: Ownership models such as employee‑ownership, steward‑ownership, or cooperatives
-    are disclosed in governance docs or third‑party analyses.
+  question: Is Anthropic employee‑owned, cooperative, or steward‑owned?
+  rationale: Covers the ownership‑structure options (employee‑owned, cooperative,
+    steward‑ownership).
   queries:
-  - Anthropic employee ownership model
-  - Anthropic steward ownership
+  - Anthropic employee ownership
+  citations: []
+- id: sq5
+  question: Is Anthropic organized as a non‑profit organization?
+  rationale: Addresses the “non‑profit” possibility directly.
+  queries:
+  - Anthropic non profit status
   citations: []
 sources_consulted:
-- id: 2026/anthropic-company
-  url: https://www.anthropic.com/company
-  title: Company
+- id: 2026/corporate-structure-ethical-ai-daniela-amodei
+  url: https://www.youtube.com/watch?v=UMF1nf3Iy3Q
+  title: Corporate Structure for Ethical AI - Daniela Amodei
   ingested: true
-- id: 2023/long-term-benefit-trust
-  url: https://www.anthropic.com/news/the-long-term-benefit-trust
-  title: The Long-Term Benefit Trust
-  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic corporate structure
 - id: 2024/anthropic-structure-openai-incentives
   url: https://time.com/6983420/anthropic-structure-openai-incentives/
   title: How Anthropic Designed Itself to Avoid OpenAI’s Mistakes
   ingested: true
-- id: 2026/who-owns-anthropic
-  url: https://www.revenuememo.com/p/who-owns-anthropic
-  title: Who owns Anthropic? Ownership structure explained (2026)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic corporate structure
+- id: 2023/long-term-benefit-trust
+  url: https://www.anthropic.com/news/the-long-term-benefit-trust
+  title: The Long-Term Benefit Trust
   ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic corporate structure
+- id: 2026/anthropic
+  url: https://creately.com/org-chart/major-startups/anthropic/
+  title: Anthropic PBC Organizational Structure
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic corporate structure
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/anthropics-2026-ipo-path-structure-governance-and-valuation-29a91157fcc0
+  url: https://medium.com/@nalynelima783/anthropics-2026-ipo-path-structure-governance-and-valuation-29a91157fcc0
+  title: 'Anthropic’s 2026 IPO Path: Structure, Governance, and Valuation'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic corporate structure
+- id: 2026/trust-center
+  url: https://trust.anthropic.com/
+  title: Trust Center
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic legal entity type
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2023/anthropic-long-term-benefit-trust
+  url: https://corpgov.law.harvard.edu/2023/10/28/anthropic-long-term-benefit-trust/
+  title: Anthropic Long-Term Benefit Trust
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic corporate structure
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/466959-97
+  url: https://pitchbook.com/profiles/company/466959-97
+  title: 'Anthropic 2026 Company Profile: Valuation, Funding & Investors'
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Anthropic legal entity type
+    recovered_via: archive_org
+    outcome: recovered
 audit:
   analyst_verdict: 'true'
   auditor_verdict: 'true'
@@ -104,7 +173,7 @@ audit:
   confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-05-08'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
