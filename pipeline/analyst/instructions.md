@@ -97,6 +97,10 @@ RULES:
   and the verdict is `mixed`.
 - Do not inflate confidence -- "medium" is the right default for most claims
   with limited sourcing
+- The `narrative` field is rendered as Markdown. Any bulleted or numbered list
+  MUST be preceded by a blank line (markdownlint rule MD032). Concretely: when
+  a paragraph or label like "**Sub-question coverage**:" is immediately
+  followed by a `-` or `1.` list, insert a blank line between them.
 
 SUB-QUESTION COVERAGE:
 
