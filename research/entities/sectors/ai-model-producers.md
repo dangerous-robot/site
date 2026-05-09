@@ -1,5 +1,5 @@
 ---
-name: AI/LLM Producers
+name: AI Model Producers
 type: sector
 aliases:
   - AI companies

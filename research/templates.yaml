@@ -95,12 +95,12 @@ templates:
   # --- AI/LLM Producers (Sector) ---
 
   - slug: ai-producers-signed-safety-commitments
-    text: "Leading ENTITY has signed AI safety commitments"
+    text: "All major ENTITY have signed AI safety commitments"
     entity_type: sector
     topics: [ai-safety]
     core: true
 
-  - slug: fli-2025-safety-index-existential-score
+  - slug: ai-producers-existential-score
     text: "All major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
     entity_type: sector
     topics: [ai-safety, industry-analysis]
