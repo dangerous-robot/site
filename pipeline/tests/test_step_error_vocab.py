@@ -79,6 +79,13 @@ _FSTRING_RE = re.compile(r"error_type\s*=\s*f['\"]([^'\"]*)")
 # miss every researcher error_type and silently allow drift there.
 _RESEARCH_ERR_RE = re.compile(r"_research_err\(\s*['\"]([^'\"]+)['\"]")
 
+# Match `"error_type": "literal"` -- the dict-literal form used by
+# side-channel emitters (e.g. ``IngestorDeps.wayback_failures`` in
+# ingestor/agent.py) that the orchestrator drain converts to
+# ``StepError(error_type=...)``. Without this rule, side-channel drift
+# could silently rename a tag without the smoke test noticing.
+_DICT_RE = re.compile(r"['\"]error_type['\"]\s*:\s*['\"]([^'\"]+)['\"]")
+
 
 def _pipeline_root() -> Path:
     # tests/ live inside pipeline/, so the parent of this file's parent is
@@ -120,6 +127,9 @@ def _scan_for_error_type_literals() -> dict[str, list[str]]:
                 findings.setdefault(prefix, []).append(rel)
 
         for match in _RESEARCH_ERR_RE.finditer(text):
+            findings.setdefault(match.group(1), []).append(rel)
+
+        for match in _DICT_RE.finditer(text):
             findings.setdefault(match.group(1), []).append(rel)
     return findings
 
@@ -200,3 +210,24 @@ def test_scanner_finds_known_literals() -> None:
         f"Scanner failed to find expected literals: {missing}. "
         "The error_type regex may be broken."
     )
+
+
+def test_wayback_and_memento_literals_are_emitted_in_production() -> None:
+    """Path 1 (Tier 1 source-pool expansion) shipped: ``wayback_unavailable``
+    and ``memento_unavailable`` must now appear at a real ``StepError``
+    construction site, not just in the docstring's "Reserved" list.
+
+    Without this assertion, a future refactor could rip the Memento drain
+    out of ``_ingest_urls`` (or rename the literals) and the smoke test
+    above would still pass — the docstring lists them as reserved, after
+    all. This test fails loudly the moment the production emit-site
+    disappears.
+    """
+    findings = _scan_for_error_type_literals()
+    for literal in ("wayback_unavailable", "memento_unavailable"):
+        assert literal in findings, (
+            f"Expected {literal!r} to be constructed in production code "
+            "(Tier 1 Path 1 — Wayback/Memento gap-fill). Either restore "
+            "the StepError emit site in the orchestrator drain or remove "
+            "the literal from DOCUMENTED_LITERALS as no-longer-reserved."
+        )

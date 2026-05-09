@@ -328,6 +328,7 @@ async def verify_claim(
                     client, urls_to_ingest, cfg, _sem,
                     target=remaining,
                     prefetched_bodies=ro.prefetched_bodies,
+                    acquisition_out=_trace_acquisition_sink(result.research_trace),
                 )
             else:
                 source_files, ingest_errors = [], []
@@ -570,6 +571,22 @@ async def _research(
     return out
 
 
+_WAYBACK_FAILURE_TAGS = frozenset({"wayback_unavailable", "memento_unavailable"})
+
+
+def _trace_acquisition_sink(research_trace: object) -> dict | None:
+    """Return the ``acquisition`` map on ``research_trace`` for ``_ingest_urls``.
+
+    Acts as ``setdefault`` so repeated calls return the same dict.
+    Returns ``None`` if ``research_trace`` isn't a dict (defensive against
+    error variants of ``ResearchOutput``); in that case ``_ingest_urls``
+    drops acquisition writes silently rather than blowing up the run.
+    """
+    if not isinstance(research_trace, dict):
+        return None
+    return research_trace.setdefault("acquisition", {})
+
+
 async def _ingest_one(
     client: httpx.AsyncClient,
     url: str,
@@ -577,8 +594,24 @@ async def _ingest_one(
     today: datetime.date,
     sem: asyncio.Semaphore,
     prefetched_body: str | None = None,
+    acquisition_out: dict[str, dict] | None = None,
+    failures_out: list[dict] | None = None,
 ) -> tuple[str, SourceFile] | StepError:
-    """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError."""
+    """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError.
+
+    ``acquisition_out`` and ``failures_out`` are optional output sinks
+    populated from the ``wayback_check`` tool's side-channel on
+    ``IngestorDeps``. Defaults preserve the historical signature for
+    direct callers (e.g., ``test_terminal_fetch.py``) that don't care
+    about wayback provenance.
+
+    * ``acquisition_out`` (dict): per-URL recovery writes shaped
+      ``{recovered_via, stage, outcome}``. Merged into the caller's map.
+    * ``failures_out`` (list): wayback transport-failure dicts
+      ``{stage, error_type, message}``. The caller decides whether to
+      promote these to ``StepError`` (see ``_ingest_urls`` — only for
+      URLs whose ingest itself failed terminally).
+    """
     deps = IngestorDeps(
         http_client=client,
         repo_root=cfg.repo_root,
@@ -602,13 +635,15 @@ async def _ingest_one(
         if derived:
             sf.slug = derived
         logger.info("Ingested: %s -> %s", url, sf.frontmatter.title)
-        return (url, sf)
+        outcome: tuple[str, SourceFile] | StepError = (url, sf)
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
-        return StepError(step="ingest", url=url, error_type="timeout", message="Ingest timed out")
+        outcome = StepError(
+            step="ingest", url=url, error_type="timeout", message="Ingest timed out"
+        )
     except TerminalFetchError as exc:
         logger.info("Skipped terminal fetch (%d): %s", exc.status_code, url)
-        return StepError(
+        outcome = StepError(
             step="ingest",
             url=url,
             error_type=f"http_{exc.status_code}",
@@ -618,7 +653,14 @@ async def _ingest_one(
     except Exception as exc:
         error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
         logger.warning("Failed to ingest %s: %s", url, exc)
-        return StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
+        outcome = StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
+
+    if acquisition_out is not None:
+        acquisition_out.update(deps.acquisition_writes)
+    if failures_out is not None:
+        failures_out.extend(deps.wayback_failures)
+
+    return outcome
 
 
 async def _ingest_urls(
@@ -629,6 +671,7 @@ async def _ingest_urls(
     *,
     target: int | None = None,
     prefetched_bodies: dict[str, str] | None = None,
+    acquisition_out: dict[str, dict] | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
     stopping once max_sources successes are collected (~2 concurrent).
@@ -637,6 +680,19 @@ async def _ingest_urls(
     is threaded into ``IngestorDeps`` so ``web_fetch`` returns it without
     issuing an httpx GET. Missing/empty entries fall through to a live
     fetch.
+
+    ``acquisition_out`` is an optional output map: when supplied, the
+    per-URL ``{recovered_via, ...}`` writes drained from the
+    ``wayback_check`` side-channel are merged into it. Mirrors the
+    ``acquisition_out`` parameter on ``researcher.execute_searches`` —
+    the orchestrator passes ``research_trace["acquisition"]`` so the
+    audit sidecar can graft the provenance onto matching
+    ``sources_consulted[]`` entries.
+
+    ``errors`` includes any ``wayback_unavailable`` / ``memento_unavailable``
+    ``StepError`` entries derived from the side-channel — but only for
+    URLs whose ingest itself failed terminally. Successful ingests with a
+    transient archive blip stay quiet.
     """
     today = datetime.date.today()
     target = target if target is not None else cfg.max_sources
@@ -654,9 +710,16 @@ async def _ingest_urls(
         async with dispatch_sem:
             if stop.is_set():
                 return
+            # Per-URL: only promote transport failures to StepError when
+            # this URL also failed terminally.
+            url_failures: list[dict] = []
             outcome = await _ingest_one(
-                client, url, cfg, today, sem, prefetched_body=bodies.get(url)
+                client, url, cfg, today, sem,
+                prefetched_body=bodies.get(url),
+                acquisition_out=acquisition_out,
+                failures_out=url_failures,
             )
+
             if isinstance(outcome, tuple):
                 results.append(outcome)
                 if len(results) >= target:
@@ -666,6 +729,16 @@ async def _ingest_urls(
                     stop.set()
             else:
                 errors.append(outcome)
+                for failure in url_failures:
+                    tag = failure.get("error_type")
+                    if tag not in _WAYBACK_FAILURE_TAGS:
+                        continue
+                    errors.append(StepError(
+                        step=failure.get("stage", "ingest"),
+                        url=url,
+                        error_type=tag,
+                        message=failure.get("message", ""),
+                    ))
 
     tasks = [asyncio.create_task(_worker(url)) for url in pool]
     await asyncio.gather(*tasks, return_exceptions=True)
@@ -887,6 +960,7 @@ async def research_claim(
                     client, urls_to_ingest, cfg, _sem,
                     target=remaining,
                     prefetched_bodies=ro.prefetched_bodies,
+                    acquisition_out=_trace_acquisition_sink(result.research_trace),
                 )
             else:
                 source_files, ingest_errors = [], []

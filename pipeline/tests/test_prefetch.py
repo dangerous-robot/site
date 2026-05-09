@@ -112,7 +112,7 @@ class TestIngestUrlsPrefetched:
         seen: dict[str, str | None] = {}
 
         async def _fake_ingest_one(
-            client, url, cfg, today, sem, prefetched_body=None
+            client, url, cfg, today, sem, prefetched_body=None, **_
         ):
             seen[url] = prefetched_body
             from ingestor.models import SourceFile, SourceFrontmatter
