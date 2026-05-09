@@ -152,6 +152,24 @@ Outlined plans that are post-Tier-1 by design. Each subsection has enough scope 
 
 Tier 2 builds on the foundations laid by Tier 1: once new acquisition paths exist, these items improve their hit rate, surface area, or fallback options. None are blockers for v1.
 
+#### Semantic Scholar + OpenAlex + affiliation override (deferred from Tier 1 Path 2)
+
+Tier 1 ships arXiv-only as the academic API (see [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Path 2 → Why arXiv-only). Tier 2 reintroduces the broader scope that the original Path 2 design carried:
+
+- **Semantic Scholar tool** — `pipeline/researcher/tools/semantic_scholar.py`. Graph v1 endpoint with optional `SEMANTIC_SCHOLAR_API_KEY` (1/s anon, 10/s with key). Activates the `s2` value of the `acquisition.origin` enum (already shipped as a reserved value in Tier 1's schema commit; no schema change needed).
+- **OpenAlex tool** — `pipeline/researcher/tools/openalex.py`. Polite-pool endpoint with optional `OPENALEX_MAILTO` (1/s anon, 10/s polite). Returns structured `institutions[]` per author, which feeds the affiliation override below. Activates the `openalex` enum value (already shipped, reserved).
+- **Affiliation override (cross-stage)** — new optional Zod sub-field `acquisition.affiliation_decision: { label, rationale, source }` on `auditSchema.sources_consulted[]`; new `IngestorDeps.acquisition_in: dict[str, dict]` side-channel (sibling to `prefetched_bodies` and `acquisition_writes`) so the OpenAlex-time decision reaches the Ingestor; new `apply_affiliation_override(base_independence, override_label) -> str` helper in `pipeline/common/source_classification.py`.
+- **`IndependenceCall` classifier** — `pipeline/researcher/independence_classifier.py` (Haiku-class agent, same shape as `planner.py` / `scorer.py`). Two-pass logic: deterministic substring match against `entity_name` / `parent_company` / sibling-entity aliases first; small-model classifier only on mixed-authorship OpenAlex results. arXiv / S2 don't carry structured affiliation so the deterministic pass returns `unknown` and the classifier never fires for them.
+- **`source-quality.md` § Independence override rules academic-affiliation amendment** — resolves the documented "entity employees publishing on arXiv tagged as `independent`" failure mode that Tier 1 left as architectural debt. Lands in the same subsection Path 3 introduces (regulator-authority).
+- **Publisher-quality tags** — add `semanticscholar` and `openalex` to `_SECONDARY_PUBLISHERS` in `pipeline/common/source_classification.py`. `pipeline/common/publisher_quality.py` re-imports the same set.
+- **`dr stats` `academic_topic_coverage`** — extend the set-shaped origin filter from `{arxiv}` to `{arxiv, s2, openalex}` (the Tier 1 aggregate is shaped for this extension; no aggregate-shape change). Revise the success metric upward — Tier 1 ships ≥40% single-source target; Tier 2 restores the original ≥60% three-source target.
+- **Test surface** — port the per-API success/failure cases, the deterministic-vs-classifier branches, and the cross-stage end-to-end affiliation-override test from the original Path 2 plan.
+- **`AGENTS.md` § Tooling** — document `SEMANTIC_SCHOLAR_API_KEY` and `OPENALEX_MAILTO`.
+
+**Effort estimate**: ~3–4 days (down from the 5–7-day original three-source design, because Tier 1 already shipped: topic plumbing through `verify_claim` / `_research` / `decomposed_research`, the `_select_research_origins` selector, the per-URL `acquisition` write site in `execute_searches`, and the `academic_topic_coverage` aggregate scaffold). Re-baseline at planning time.
+
+**Affiliation threshold open question** (re-opened from the Tier 1 plan's "Resolved" list when Path 2 was simplified): the substring-match algorithm + same-parent subsidiary alias resolution + classifier-on-mixed-authorship design from the original Path 2 stays the proposed answer; verify it against real OpenAlex payloads during Tier 2 implementation.
+
 #### Curated allowlist of independent AI research orgs
 
 A small, hand-maintained list of high-trust, freely-accessible AI watchdog and research domains. Bias the URL scorer and `publisher_quality` classifier toward these.
@@ -163,12 +181,12 @@ A small, hand-maintained list of high-trust, freely-accessible AI watchdog and r
 - How is independence handled? Some of these (FLI, Epoch) are funded by AI labs — is that a COI flag or background context?
 - Refresh cadence — who reviews the list and how often?
 
-#### MCP servers for Tier 1 APIs
+#### MCP servers for Tier 1/2 APIs
 
-Rather than building bespoke pipeline integrations for arXiv, Semantic Scholar, and SEC EDGAR, evaluate existing community MCP servers and wire them into the Researcher's tool surface.
+Rather than building bespoke pipeline integrations for the academic and regulator APIs (Tier 1 ships native code for arXiv and SEC EDGAR; Tier 2 will add Semantic Scholar and OpenAlex), evaluate existing community MCP servers and wire them into the Researcher's tool surface.
 
 **To evaluate**:
-- Existing community MCP servers for arXiv, Semantic Scholar, SEC EDGAR — survey what's available, what's maintained, what's reliable.
+- Existing community MCP servers for arXiv, Semantic Scholar, OpenAlex, SEC EDGAR — survey what's available, what's maintained, what's reliable.
 - Trade-off: less code to maintain vs. less control over query shape, error handling, and rate limits.
 - Authentication and key management for hosted MCP servers vs. local servers.
 
@@ -372,7 +390,7 @@ Historical and superseded source-quality documents, retained for context.
 
 These are not source-quality plans per se, but they affect source pool quality enough to cross-reference:
 
-- [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, academic APIs (arXiv, Semantic Scholar, OpenAlex), SEC EDGAR, Wayback gap-filling.
+- [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, arXiv (academic API), SEC EDGAR, Wayback gap-filling. Semantic Scholar / OpenAlex / affiliation override deferred to § Source pool — Tier 2 above.
 - [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
 - [`source-pdf-attachment.md`](source-pdf-attachment.md) — PDF attachment as an alternate ingestion surface for paywalled / 403-locked documents.
 - [`researcher-host-blocklist.md`](researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
