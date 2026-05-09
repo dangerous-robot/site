@@ -566,6 +566,9 @@ async def _research(
     out.urls = urls
     out.errors = errors
     out.url_addresses = {u: out.url_addresses.get(u, []) for u in urls}
+    out.prefetched_bodies = {
+        u: out.prefetched_bodies[u] for u in urls if u in out.prefetched_bodies
+    }
     out.trace["urls_after_blocklist"] = len(urls)
     return out
 
