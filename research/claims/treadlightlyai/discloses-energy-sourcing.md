@@ -1,7 +1,8 @@
 ---
 title: TreadLightlyAI discloses its energy sourcing
 entity: products/treadlightlyai
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: unverified
 confidence: low
 verification_level: self-reported
@@ -13,7 +14,7 @@ cap_rationale: Confidence is capped at low because the primary sources relied on
 takeaway: ''
 seo_title: ''
 criteria_slug: discloses-energy-sourcing
-status: draft
+status: published
 as_of: '2026-05-07'
 sources:
 - 2025/ai-energy-usage-climate-footprint-big-tech
