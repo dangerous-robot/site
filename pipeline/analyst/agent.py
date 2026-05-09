@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
 from common.instructions import common, load_instructions
@@ -14,6 +15,83 @@ from common.utils import slugify
 
 if TYPE_CHECKING:
     from orchestrator.entity_resolution import ResolvedEntity
+
+
+_LIST_MARKER_RE = re.compile(r"^(?:[-*+]\s|\d+\.\s)")
+
+
+def _surround_lists_with_blanks(text: str) -> str:
+    """Insert blank lines around contiguous list blocks (markdownlint MD032).
+
+    The analyst instructions already require this, but the LLM occasionally
+    forgets and the result fails `markdownlint`. Inserts a blank line only at
+    the boundary entering or leaving a list block, preserving indented
+    list-item continuations inside the block.
+    """
+    out: list[str] = []
+    in_list = False
+    for line in text.split("\n"):
+        is_marker = bool(_LIST_MARKER_RE.match(line))
+        is_blank = not line.strip()
+        is_indented = bool(line) and line[0] in (" ", "\t")
+
+        if is_marker:
+            if not in_list and out and out[-1].strip():
+                out.append("")
+            in_list = True
+        else:
+            if in_list and is_blank:
+                in_list = False
+            elif in_list and not is_indented:
+                out.append("")
+                in_list = False
+
+        out.append(line)
+    return "\n".join(out)
+
+
+_DANGLING_TRAILING_WORDS = frozenset({
+    "a", "an", "the",
+    "of", "for", "to", "in", "on", "at", "with", "by", "from", "as",
+    "is", "are", "was", "were", "be", "been", "being",
+    "and", "or", "but",
+})
+
+
+def _reject_if_truncated(value: str, *, require_sentence_end: bool) -> None:
+    """Heuristically reject values that look clipped at a length limit.
+
+    Pydantic's `max_length` is a hard cap, but the analyst LLM has been
+    observed to fill the cap with content and clip mid-phrase. These checks
+    surface common truncation shapes so PydanticAI can ask for a retry.
+    Pydantic wraps the raised `ValueError` with the offending field path.
+    """
+    s = value.strip()
+    if not s:
+        return
+
+    if s.count("(") != s.count(")"):
+        raise ValueError("unbalanced parentheses (likely truncated)")
+    if s.count("[") != s.count("]"):
+        raise ValueError("unbalanced brackets (likely truncated)")
+
+    last = s[-1]
+    if last in "(,;:":
+        raise ValueError(f"ends with {last!r} (likely truncated)")
+    if last in ("'", '"'):
+        # Possessive `'s` makes parity alone unreliable; a trailing quote
+        # after a space (e.g. "...Impact: A '") is the surer signal.
+        if len(s) >= 2 and s[-2] == " ":
+            raise ValueError(f"ends with standalone {last!r} (likely truncated)")
+        if s.count(last) % 2 != 0:
+            raise ValueError(f"ends with unpaired {last!r} (likely truncated)")
+
+    last_token = s.rsplit(maxsplit=1)[-1].rstrip(".,;:!?\"')]")
+    if last_token.lower() in _DANGLING_TRAILING_WORDS:
+        raise ValueError(f"ends with dangling word {last_token!r} (likely truncated)")
+
+    if require_sentence_end and last not in ".!?":
+        raise ValueError("must end with '.', '!', or '?' (or omit field)")
 
 
 class EntityResolution(BaseModel):
@@ -107,6 +185,25 @@ class VerdictAssessment(BaseModel):
         ),
         max_length=200,
     )
+
+    @field_validator("narrative")
+    @classmethod
+    def _normalize_narrative_lists(cls, v: str) -> str:
+        return _surround_lists_with_blanks(v)
+
+    @field_validator("seo_title")
+    @classmethod
+    def _seo_title_complete_phrase(cls, v: str) -> str:
+        _reject_if_truncated(v, require_sentence_end=False)
+        return v
+
+    @field_validator("takeaway")
+    @classmethod
+    def _takeaway_complete_sentence(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        _reject_if_truncated(v, require_sentence_end=True)
+        return v
 
 
 class AnalystOutput(BaseModel):
