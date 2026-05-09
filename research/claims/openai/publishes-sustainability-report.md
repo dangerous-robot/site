@@ -1,19 +1,19 @@
 ---
 title: OpenAI publishes a sustainability or ESG report
 entity: companies/openai
-topics: [environmental-impact]
-verdict: 'false'
-confidence: low
-verification_level: self-reported
-cap_rationale: Confidence is capped at low – all available evidence (sources 1–4,
-  6, 8, 9) originate from OpenAI reporting, community output, or assessments that
-  don’t cite any original corporate publication of an ESG report.
+topics:
+- environmental-impact
+verdict: unverified
+confidence: medium
+verification_level: multiply-verified
 takeaway: ''
 seo_title: ''
 criteria_slug: publishes-sustainability-report
-status: draft
-as_of: '2026-05-07'
-sources: []
+status: published
+as_of: '2026-05-08'
+sources:
+- 2025/openai
+- 2024/open-ai-d00bc051ff85
 tags: []
 ---
-OpenAI publishes technical reports and community forums discussing environmental impact but lacks a publicly accessible ESG report on its website or transparency channels. Community forums and developer pages discuss sustainability but provide no form of official structured reporting. A sustainability error shared in source 7 claims that OpenAI has failed to publish verified Scope 1, 2, or 3 emissions. Source 8 notes that the impact of private partnerships like OpenAI's relationship with Microsoft raises concerns over accountability, highlighting the absence of direct disclosures by OpenAI itself. Sources 1–4 are from within OpenAI or by the developer community, making them first-party references. Source 7, an independent analysis, specifically criticizes OpenAI for lacking transparent sustainability metrics. Source 9 is an independently verified scoring tool showing insufficient transparency but requires a browser interaction not currently supported.
+No direct evidence was found that OpenAI itself publishes a sustainability or ESG report. The available first‑party material (Source 2) discusses OpenAI’s environmental impact but does not point to a dedicated sustainability/ESG page on its website, leaving sub‑question sq1 unanswered. No OpenAI‑issued PDF, press release, or similar document confirming a formal ESG report was identified; the source that mentions an ESG report (Source 5) is a third‑party analysis rather than a report released by OpenAI, so sub‑question sq2 remains unaddressed. Independent ESG databases and rating agencies do list OpenAI’s sustainability profile and ESG scores (Sources 1, 3, 4, 5), satisfying sub‑question sq3, and Source 5 provides a creation date of June 11 2024 for its analysis, addressing sub‑question sq4. Because the claim requires evidence of an OpenAI‑authored report, and such evidence is absent, the claim cannot be verified.

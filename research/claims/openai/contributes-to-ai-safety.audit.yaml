@@ -1,0 +1,184 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T06:55:31.729585+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - openai AI safety initiatives
+  - openai safety research program
+  - openai partnership AI safety research
+  - openai grant artificial intelligence safety
+  - openai donation AI safety organizations
+  - openai model release safety measures
+  - openai internal AI safety policy
+  planner_rationale: 'The sub‑questions cover: OpenAI’s own safety‑related announcements,
+    external partnerships/grants, financial donations, and technical safety mechanisms.
+    The queries are short, avoid prohibited sites, and follow Brave’s keyword format.'
+  candidates_seen: 55
+  urls_kept: 37
+  urls_dropped: 18
+  scorer_rationale: Each candidate was scored against the four sub‑questions using
+    only the title and snippet. Primary OpenAI pages (e.g., safety hub, model spec,
+    safety updates, grant announcements) received the highest scores (5) for sq1,
+    sq3 or sq4 where they directly describe OpenAI’s own safety programs, policies,
+    model‑release safeguards, or financial commitments. Secondary news articles that
+    explicitly mention OpenAI’s partnerships with external safety institutes, the
+    US AI Safety Institute, or grant programs were scored 4‑5 for sq2 or sq3. Forum
+    and low‑quality sources were capped at 2, and any result from an avoided domain
+    (x.com) or unrelated entities was given a score of 1 and dropped. All URLs that
+    attained a score ≥3 on any sub‑question were retained in the kept list with the
+    specific sub‑question identifiers they address; the remainder were placed in the
+    dropped list.
+  urls_after_blocklist: 32
+sub_questions:
+- id: sq1
+  question: What AI‑safety initiatives or programs does OpenAI publicly announce or
+    support?
+  rationale: Covers OpenAI’s own first‑party statements, blog posts, and safety‑focused
+    pages.
+  queries:
+  - openai AI safety initiatives
+  - openai safety research program
+  citations:
+  - 2026/openai-safety-fellowship-applications
+  - 2026/what-are-openais-safety-protocols-for-ai
+  - 2026/how-we-think-about-safety-alignment
+  - 2026/safety
+  - 2023/our-approach-to-ai-safety
+  - 2025/openai-safety-framework-manipulation-deception-critical-risk
+- id: sq2
+  question: Which external AI‑safety research projects or organizations has OpenAI
+    partnered with or funded?
+  rationale: Looks for third‑party reports, press releases, and grant announcements.
+  queries:
+  - openai partnership AI safety research
+  - openai grant artificial intelligence safety
+  citations:
+  - 2026/openai-safety-fellowship-applications
+- id: sq3
+  question: What financial donations or grants has OpenAI made specifically to AI‑safety
+    NGOs or labs?
+  rationale: Seeks concrete monetary contributions to safety‑focused entities.
+  queries:
+  - openai donation AI safety organizations
+  citations:
+  - 2026/openai-nonprofit-child-safety
+- id: sq4
+  question: How do OpenAI’s model releases and internal policies reflect its commitment
+    to AI safety?
+  rationale: Examines technical documentation, model cards, and policy posts that
+    embody safety practices.
+  queries:
+  - openai model release safety measures
+  - openai internal AI safety policy
+  citations:
+  - 2026/what-are-openais-safety-protocols-for-ai
+  - 2026/how-we-think-about-safety-alignment
+  - 2026/safety
+  - 2023/our-approach-to-ai-safety
+  - 2025/openai-safety-framework-manipulation-deception-critical-risk
+  - 2026/1095986999304424
+sources_consulted:
+- id: 2026/openai-safety-fellowship-applications
+  url: https://www.helpnetsecurity.com/2026/04/07/openai-safety-fellowship-applications/
+  title: OpenAI opens applications for an external AI safety research fellowship
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: openai safety research program
+- id: 2026/openai-nonprofit-child-safety
+  url: https://futurism.com/artificial-intelligence/openai-nonprofit-child-safety
+  title: Nonprofit Research Groups Disturbed to Learn That OpenAI Has Secretly Been
+    Funding Their Work
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: openai grant artificial intelligence safety
+- id: 2026/what-are-openais-safety-protocols-for-ai
+  url: https://milvus.io/ai-quick-reference/what-are-openais-safety-protocols-for-ai
+  title: What are OpenAI's safety protocols for AI?
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/how-we-think-about-safety-alignment
+  url: https://openai.com/safety/how-we-think-about-safety-alignment/
+  title: How we think about safety and alignment
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/safety
+  url: https://openai.com/safety/
+  title: Safety & responsibility
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2023/our-approach-to-ai-safety
+  url: https://openai.com/index/our-approach-to-ai-safety/
+  title: Our approach to AI safety
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/openai-safety-framework-manipulation-deception-critical-risk
+  url: https://fortune.com/2025/04/16/openai-safety-framework-manipulation-deception-critical-risk/
+  title: OpenAI updated its safety framework—but no longer sees mass manipulation
+    and disinformation as a critical risk
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/1095986999304424
+  url: https://www.facebook.com/NewsNationNow/videos/openai-to-roll-out-new-safety-features-for-chatgpt-morning-in-america/1095986999304424/
+  title: OpenAI to roll out new safety features for ChatGPT
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: openai AI safety initiatives
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
