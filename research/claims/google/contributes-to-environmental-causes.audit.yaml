@@ -1,0 +1,151 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T07:15:53.049743+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Google sustainability report
+  - Google environmental initiatives
+  - Google green energy projects
+  - Google CDP climate score
+  - Google ESG rating
+  - Google sustainability ranking
+  - Google renewable energy purchases
+  planner_rationale: These queries are concise (3‑7 words), avoid prohibited operators,
+    and target the three key axes needed to evaluate the claim that Google contributes
+    to environmental causes.
+  candidates_seen: 52
+  urls_kept: 30
+  urls_dropped: 20
+  scorer_rationale: Primary‑source pages on sustainability.google, cloud.google.com,
+    datacenters.google, and related Google‑owned domains directly describe Google's
+    own environmental initiatives (sq1) and report concrete metrics such as renewable‑energy
+    purchases, emissions reductions, water replenishment, etc. (sq3), so they receive
+    scores ≥5 for those sub‑questions and are kept. Independent ESG and rating sites
+    (Ethos ESG, Fast Company, CSRHub, KnowESG, S&P Global, Morningstar, BrandScore,
+    SustainabilityOnline) provide third‑party assessments of Google's environmental
+    performance, satisfying sq2 and are therefore kept. Articles about specific actions
+    (SolarPowerWorld, ESG Today, Renewable Institute, Energy‑Storage.News, Investors.com)
+    contain measurable outcomes, meeting sq3. Blog.google URLs are explicitly avoided
+    per the "Avoid results about" list and are given a score of 1 across all sub‑questions,
+    resulting in their removal. Forum and generic CDP methodology pages lack the required
+    specificity or primary/independent evidence and score below 3 on all sub‑questions,
+    so they are dropped.
+  urls_after_blocklist: 30
+sub_questions:
+- id: sq1
+  question: What environmental initiatives and sustainability programs does Google
+    publish about on its own platforms?
+  rationale: First‑party sources (reports, blogs, press releases) are the primary
+    evidence of Google’s claimed contributions.
+  queries:
+  - Google sustainability report
+  - Google environmental initiatives
+  - Google green energy projects
+  citations:
+  - 2025/google-2025-environmental-report
+  - 2026/stories
+  - 2026/operations
+  - 2026/google-sustainability-index
+  - 2024/google-2024-environmental-report
+  - 2026/sustainability
+- id: sq2
+  question: How do independent third‑party ESG and climate rating organizations assess
+    Google’s environmental performance?
+  rationale: External assessments (CDP, ESG ratings, sustainability indexes) provide
+    objective validation or critique of Google’s contributions.
+  queries:
+  - Google CDP climate score
+  - Google ESG rating
+  - Google sustainability ranking
+  citations: []
+- id: sq3
+  question: What concrete, measurable actions (e.g., renewable‑energy procurement,
+    carbon‑free energy targets) has Google achieved?
+  rationale: Quantitative outcomes illustrate the real impact of Google’s environmental
+    efforts.
+  queries:
+  - Google renewable energy purchases
+  citations:
+  - 2025/google-2025-environmental-report
+  - 2026/stories
+  - 2026/operations
+  - 2026/google-sustainability-index
+  - 2024/google-2024-environmental-report
+  - 2026/sustainability
+sources_consulted:
+- id: 2025/google-2025-environmental-report
+  url: https://sustainability.google/google-2025-environmental-report/
+  title: 2025 Environmental Report
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google sustainability report
+- id: 2026/stories
+  url: https://sustainability.google/stories/
+  title: Sustainable Innovation & Technology
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google sustainability report
+- id: 2026/operations
+  url: https://sustainability.google/operations/
+  title: Our operations
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google sustainability report
+- id: 2026/google-sustainability-index
+  url: https://sustainability.google/
+  title: Sustainable Innovation & Technology
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google sustainability report
+- id: 2024/google-2024-environmental-report
+  url: https://sustainability.google/reports/google-2024-environmental-report/
+  title: 2024 Environmental Report
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Google sustainability report
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/sustainability
+  url: https://cloud.google.com/sustainability
+  title: Sustainability
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google sustainability report
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: 'true'
+  analyst_confidence: low
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

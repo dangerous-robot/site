@@ -1,6 +1,6 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-08T02:20:11.001122+00:00'
+  ran_at: '2026-05-09T07:12:14.041188+00:00'
   model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
@@ -8,123 +8,157 @@ pipeline_run:
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
-  ingestor: infomaniak:google/gemma-4-31B-it
-  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
-  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
 research:
   mode: decomposed
+  tool_outcomes: []
   queries:
-  - Google official sustainability report site:google.com
-  - Google climate action report corporate site
-  - Google ESG data MSCI or Sustainalytics
-  - Google sustainability regulatory filings SEC or GRI
-  - Google SASB or TCFD disclosure framework
-  planner_rationale: These sub-questions and queries cover Google's first-party publications,
-    third-party ESG databases, and regulatory commitments to verify the existence
-    and scope of its sustainability or ESG reporting.
-  candidates_seen: 38
-  urls_kept: 22
-  urls_dropped: 18
-  scorer_rationale: The scoring process assessed each candidate's relevance to the
-    three sub-questions related to Google's sustainability or ESG reports, adhering
-    to strict publisher quality labels and entity disambiguation rules. **For sq1
-    (official sustainability reports on Google's channels)**, candidates linking directly
-    to Google's official domains (.google, .com docs, or regulated filings) with explicit
-    mentions of reports or sustainability were prioritized. Examples include **sustainability.google**,
-    direct links to **PDF reports**, and **Google Store sustainability pages**. Forum
-    or blog-linked candidates lacking direct report references or purely promotional
-    content (e.g., Google Cloud blogs without report links) were dropped for sq1.
-    **For sq2 (third-party ESG databases)**, only candidates explicitly analyzing
-    Google/Alphabet in an ESG context were retained, like ESG databases featuring
-    Google or Alphabet's ESG ratings or SEC disclosures referencing sustainability
-    reports. Other ESG aggregator problem set links were dropped for targeting broader
-    topics. **For sq3 (stated goals/commitments in regulatory frameworks like GRI
-    or SASB)**, Google's **public sustainability pages**, filing references to frameworks,
-    and **direct GRI/SASBoverleden** were kept, while forum-level ESG articles targeting
-    frameworks broadly were dropped. Notably, direct links to **GRI, SASB, TCFD descriptions**
-    were retained for addressing framework relevance, despite being generic. **Publisher
-    quality** ensured primary sources dominated sq3 scores, while secondary sources
-    were harmonized with clear Google/Alphabet links for sq2. Candidates about other
-    organizations or generic ESG discussions were dropped. Some overlapping scores
-    (e.g., `sustainability.google`) naturally spanned multiple sub-questions due to
-    comprehensive content.
-  entity_exclude_dropped:
-  - https://blog.google/outreach-initiatives/sustainability/report-ai-sustainability-google-cop28/
-  - https://blog.google/outreach-initiatives/sustainability/2024-environmental-report/
-  urls_after_blocklist: 20
+  - '"Google sustainability report"'
+  - '"Google ESG disclosure"'
+  - '"Google sustainability page"'
+  - '"Google ESG report download"'
+  - '"Google sustainability report 2023"'
+  - '"Google ESG rating MSCI"'
+  - '"Google sustainability rating Sustainalytics"'
+  planner_rationale: The sub‑questions cover (1) existence of a report, (2) its hosting
+    location, (3) the most recent publication year, and (4) independent ESG confirmations.
+    The seven short Brave‑compatible queries are distributed to retrieve evidence
+    for each facet while respecting the no‑site‑operator rule and limiting quoted
+    phrases to a single proper‑noun phrase per query.
+  candidates_seen: 47
+  urls_kept: 12
+  urls_dropped: 35
+  scorer_rationale: Primary Google sustainability pages (2024, 2025, 2023 reports
+    and their PDFs) directly confirm that Google publishes official ESG/sustainability
+    reports, provide the location to download them, and indicate the report year,
+    thus scoring 5‑4 on sq1‑sq3. The generic "Stories and reports" page, while less
+    specific, still mentions reports and therefore meets the threshold for sq1. ResponsibilityReports.com
+    hosts Google’s ESG reports and supplies the same information, earning high scores
+    despite being secondary. All other results either live on avoided domains (blog.google),
+    are forum‑type discussions, focus on unrelated topics (AI playbook, corporate
+    policy, product pages), or are generic ESG‑rating provider pages that do not explicitly
+    list Google, so they score <3 on every sub‑question and are dropped.
+  urls_after_blocklist: 12
 sub_questions:
 - id: sq1
-  question: Does Google publish an official sustainability report on its primary website
-    or designated corporate channels?
-  rationale: This sub-question targets Google's first-party publication channels to
-    verify if they disclose a sustainability or ESG report directly.
+  question: Does Google provide an official sustainability report?
+  rationale: Establishes whether Google publishes any sustainability/ESG documentation
+    directly.
   queries:
-  - Google official sustainability report site:google.com
-  - Google climate action report corporate site
+  - '"Google sustainability report"'
+  - '"Google ESG disclosure"'
   citations:
-  - 2026/operating-sustainably
-  - 2026/sustainability
-  - 2026/1wrmpthyjikjcqv2stjtiu2tpdcqlou0
-  - 2026/google-sustainability-index
   - 2025/google-2025-environmental-report
+  - 2026/stories
+  - 2023/google-2023-environmental-report
+  - 2026/google-environmental-report-2023
+  - 2023/google-2023-environmental-reportpdf
+  - 2024/google-2024-environmental-report
+  - 2026/google-inc
 - id: sq2
-  question: Are there third-party ESG databases or aggregators that list or analyze
-    Google’s sustainability or ESG reporting?
-  rationale: This sub-question checks external sources like ESG databases or regulators
-    to validate independently documented sustainability disclosures.
+  question: Where can the latest Google ESG report be accessed?
+  rationale: Identifies the specific location (webpage, portal) where the report is
+    hosted.
   queries:
-  - Google ESG data MSCI or Sustainalytics
+  - '"Google sustainability page"'
+  - '"Google ESG report download"'
   citations:
-  - 2023/2023-google-cloud-sustainability-survey
-  - 2022/google-cloud-2022-sustainability-year-in-review
+  - 2025/google-2025-environmental-report
+  - 2023/google-2023-environmental-report
+  - 2026/google-environmental-report-2023
+  - 2023/google-2023-environmental-reportpdf
+  - 2024/google-2024-environmental-report
+  - 2026/google-inc
 - id: sq3
-  question: What are Google’s stated goals or commitments related to sustainability
-    as documented in regulatory filings or frameworks like GRI or SASB?
-  rationale: This sub-question explores regulatory or industry-standard frameworks
-    to confirm if Google adheres to formal sustainability reporting requirements.
+  question: What year was the most recent Google sustainability report released?
+  rationale: Determines the recency of the publication to assess current relevance.
   queries:
-  - Google sustainability regulatory filings SEC or GRI
-  - Google SASB or TCFD disclosure framework
+  - '"Google sustainability report 2023"'
   citations:
-  - 2026/sustainability
-  - 2026/google-sustainability-index
+  - 2025/google-2025-environmental-report
+  - 2023/google-2023-environmental-report
+  - 2026/google-environmental-report-2023
+  - 2023/google-2023-environmental-reportpdf
+  - 2024/google-2024-environmental-report
+  - 2026/google-inc
+- id: sq4
+  question: Which third‑party ESG rating agencies list Google’s sustainability performance?
+  rationale: Verifies the claim through independent ESG data providers.
+  queries:
+  - '"Google ESG rating MSCI"'
+  - '"Google sustainability rating Sustainalytics"'
+  citations: []
 sources_consulted:
-- id: 2026/operating-sustainably
-  url: https://datacenters.google/operating-sustainably/
-  title: Operating sustainably
-  ingested: true
-- id: 2026/sustainability
-  url: https://cloud.google.com/sustainability
-  title: Sustainability
-  ingested: true
-- id: 2023/2023-google-cloud-sustainability-survey
-  url: https://cloud.google.com/blog/transform/2023-google-cloud-sustainability-survey
-  title: 2023 Google Cloud Sustainability Survey
-  ingested: true
-- id: 2022/google-cloud-2022-sustainability-year-in-review
-  url: https://cloud.google.com/blog/topics/sustainability/google-cloud-2022-sustainability-year-in-review
-  title: Google Cloud 2022 sustainability year in review
-  ingested: true
-- id: 2026/1wrmpthyjikjcqv2stjtiu2tpdcqlou0
-  url: https://drive.google.com/drive/folders/1wRMPthyjiKjcqv2sTJ_tIu2tpdcQlOU0
-  title: Sustainability Reports
-  ingested: true
-- id: 2026/google-sustainability-index
-  url: https://sustainability.google/
-  title: Sustainable Innovation & Technology
-  ingested: true
 - id: 2025/google-2025-environmental-report
   url: https://sustainability.google/google-2025-environmental-report/
   title: 2025 Environmental Report
   ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Google sustainability report"'
+- id: 2026/stories
+  url: https://sustainability.google/stories/
+  title: Sustainable Innovation & Technology
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Google sustainability report"'
+- id: 2023/google-2023-environmental-report
+  url: https://sustainability.google/reports/google-2023-environmental-report/
+  title: 2023 Environmental Report
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Google ESG report download"'
+- id: 2026/google-environmental-report-2023
+  url: https://sustainablefuture.cio.com/building-on-intelligent-infrastructure/google-environmental-report-2023/
+  title: Google Environmental Report 2023 - Driving a sustainable future with cloud
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Google sustainability report 2023"'
+- id: 2023/google-2023-environmental-reportpdf
+  url: https://iabhongkong.com/sites/default/files/2023-08/Google-2023-Environmental-Report.pdf
+  title: Google 2023 Environmental Report
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"Google sustainability report 2023"'
+- id: 2024/google-2024-environmental-report
+  url: https://sustainability.google/reports/google-2024-environmental-report/
+  title: 2024 Environmental Report
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: '"Google sustainability report"'
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/google-inc
+  url: https://www.responsibilityreports.com/Company/google-inc
+  title: Google Inc.
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: '"Google ESG disclosure"'
+    recovered_via: archive_org
+    outcome: recovered
 audit:
   analyst_verdict: 'true'
-  auditor_verdict: mostly-true
+  auditor_verdict: 'true'
   analyst_confidence: medium
-  auditor_confidence: medium
-  verdict_agrees: false
-  confidence_agrees: true
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
   needs_review: false
 human_review:
   reviewed_at: '2026-05-07'
