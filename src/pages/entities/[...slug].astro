@@ -20,13 +20,41 @@ export async function getStaticPaths() {
 const { entity } = Astro.props;
 const { Content } = await render(entity);
 
-const [allClaims, criteria] = await Promise.all([
+const [allClaims, criteria, entities] = await Promise.all([
   getCollection("claims", ({ data }) => data.status === "published"),
   getCollection("criteria"),
+  getCollection("entities"),
 ]);
 const relatedClaims = allClaims.filter(
   (claim) => claim.data.entity === entity.id
 );
+
+const entityMap = new Map(entities.map(e => [e.id, e]));
+
+// JS mirror of pipeline `resolve_parent_name` (entity_resolution.py): converts
+// a slug like `companies/anthropic` (or just `anthropic`) into a Title Case
+// display label. Used as a fallback when the parent_company ref points at an
+// entity file that does not exist in the collection.
+const titleCaseSlug = (slug: string) =>
+  slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+const madeBy =
+  entity.data.type === 'product' && entity.data.parent_company
+    ? {
+        href: `/entities/${entity.data.parent_company}`,
+        label:
+          entityMap.get(entity.data.parent_company)?.data.name ??
+          titleCaseSlug(entity.data.parent_company.split('/').pop()!),
+      }
+    : null;
+
+const verificationStatus = entity.data.verification_status;
+const showVerificationBadge =
+  verificationStatus && verificationStatus !== 'verified';
+const verificationBadgeText =
+  verificationStatus === 'unverified-startup'
+    ? 'Unverified — sparse public documentation (early-stage / startup)'
+    : 'Unverified — limited public corroboration';
 
 // Group claims by topic. A claim with topics [a, b] appears in both
 // /entities/<slug>'s "a" and "b" groups; this is intentional so the page
@@ -81,6 +109,19 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
         </a>
       )}
       <p class="description">{entity.data.description}</p>
+      {showVerificationBadge && (
+        <p class="verification-badge" data-status={verificationStatus}>
+          {verificationBadgeText}
+        </p>
+      )}
+      {madeBy && (
+        <p class="made-by">
+          Made by <a href={madeBy.href}>{madeBy.label}</a>
+        </p>
+      )}
+      {entity.data.type === 'company' && entity.data.legal_name && entity.data.legal_name !== entity.data.name && (
+        <p class="legal-name">Legal name: <span>{entity.data.legal_name}</span></p>
+      )}
     </PageHeader>
 
     <section class="body-content">
@@ -151,6 +192,40 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
     font-size: var(--font-size-sm);
     display: block;
     margin-bottom: var(--space-sm);
+  }
+
+  .made-by {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: var(--space-xs) 0 0;
+  }
+
+  .made-by a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .made-by a:hover {
+    text-decoration: underline;
+  }
+
+  .legal-name {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: var(--space-xs) 0 0;
+  }
+
+  .legal-name span {
+    color: var(--color-text);
+  }
+
+  .verification-badge {
+    font-size: var(--font-size-sm);
+    font-style: italic;
+    color: var(--color-text-muted);
+    border-left: 2px solid var(--color-text-faint);
+    padding-left: var(--space-sm);
+    margin: var(--space-sm) 0;
   }
 
   .description {

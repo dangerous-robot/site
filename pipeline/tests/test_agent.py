@@ -110,3 +110,63 @@ class TestBuildAnalystPrompt:
         prompt_no_name = build_analyst_prompt(None, "Something is safe", [])
         assert "## Entity:" not in prompt_no_name
         assert "pre-resolved" not in prompt_no_name
+
+    def test_analyst_prompt_emits_legal_name(self) -> None:
+        """When ResolvedEntity.legal_name is set, the analyst prompt emits a
+        `Legal name:` line in the entity block."""
+        resolved = ResolvedEntity(
+            entity_ref="companies/openai",
+            entity_name="OpenAI",
+            entity_type=EntityType.COMPANY,
+            entity_description="An AI lab.",
+            legal_name="OpenAI, LLC",
+        )
+        prompt = build_analyst_prompt(None, "OpenAI is safe", [], resolved_entity=resolved)
+        assert "Legal name: OpenAI, LLC" in prompt, (
+            f"Expected `Legal name: OpenAI, LLC` in analyst prompt:\n{prompt}"
+        )
+
+    def test_analyst_prompt_omits_legal_name_when_absent(self) -> None:
+        """When ResolvedEntity.legal_name is None, no Legal name line is emitted
+        (keeps the common-path prompt identical to today)."""
+        resolved = ResolvedEntity(
+            entity_ref="products/chatgpt",
+            entity_name="ChatGPT",
+            entity_type=EntityType.PRODUCT,
+            entity_description="A conversational AI product.",
+        )
+        prompt = build_analyst_prompt(None, "ChatGPT is safe", [], resolved_entity=resolved)
+        assert "Legal name:" not in prompt, (
+            f"Did not expect a `Legal name:` line when legal_name is absent:\n{prompt}"
+        )
+
+    def test_analyst_prompt_emits_verification_when_not_verified(self) -> None:
+        """When verification_status != 'verified', the analyst prompt emits a
+        `Verification:` line so the analyst can weight sparse-evidence claims."""
+        resolved = ResolvedEntity(
+            entity_ref="products/treadlightlyai",
+            entity_name="TreadLightlyAI",
+            entity_type=EntityType.PRODUCT,
+            entity_description="An AI thinking tool.",
+            verification_status="unverified-startup",
+        )
+        prompt = build_analyst_prompt(None, "TreadLightlyAI is novel", [], resolved_entity=resolved)
+        assert "Verification: unverified-startup" in prompt, (
+            f"Expected `Verification: unverified-startup` in analyst prompt:\n{prompt}"
+        )
+
+    def test_analyst_prompt_omits_verification_when_verified(self) -> None:
+        """Default `verified` status is suppressed so the common-path prompt is
+        identical to today's prompts (no churn for established entities)."""
+        resolved = ResolvedEntity(
+            entity_ref="companies/openai",
+            entity_name="OpenAI",
+            entity_type=EntityType.COMPANY,
+            entity_description="An AI lab.",
+            # verification_status defaults to "verified"
+        )
+        assert resolved.verification_status == "verified"
+        prompt = build_analyst_prompt(None, "OpenAI is safe", [], resolved_entity=resolved)
+        assert "Verification:" not in prompt, (
+            f"Did not expect a `Verification:` line for the default status:\n{prompt}"
+        )

@@ -40,6 +40,25 @@ const entityEntry = entities.find(e => e.id === claim.data.entity) ?? null;
 const typeParent = entityEntry ? getEntityParent(entityEntry.data.type) : null;
 const entityLabel = entityEntry?.data.name ?? claim.data.entity;
 
+const entityMap = new Map(entities.map(e => [e.id, e]));
+
+// JS mirror of pipeline `resolve_parent_name` (entity_resolution.py); fallback
+// label when the parent_company ref doesn't resolve to an existing entity.
+const titleCaseSlug = (slug: string) =>
+  slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+const madeBy = (() => {
+  if (!entityEntry || entityEntry.data.type !== 'product') return null;
+  const parentRef = entityEntry.data.parent_company;
+  if (!parentRef) return null;
+  return {
+    href: `/entities/${parentRef}`,
+    label:
+      entityMap.get(parentRef)?.data.name ??
+      titleCaseSlug(parentRef.split('/').pop()!),
+  };
+})();
+
 const claimCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),
@@ -120,6 +139,11 @@ const claimReview = {
       </p>
     )}
     <PageHeader crumbs={claimCrumbs} type="claim" title={claim.data.title}>
+      {madeBy && (
+        <p class="made-by">
+          Made by <a href={madeBy.href}>{madeBy.label}</a>
+        </p>
+      )}
       <div class="meta">
         <VerdictBadge verdict={claim.data.verdict} />
         <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
@@ -281,6 +305,21 @@ const claimReview = {
   }
 
   .criterion-ref a:hover {
+    text-decoration: underline;
+  }
+
+  .made-by {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 0.5rem;
+  }
+
+  .made-by a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+
+  .made-by a:hover {
     text-decoration: underline;
   }
 

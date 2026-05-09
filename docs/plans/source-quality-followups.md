@@ -130,6 +130,10 @@ Several sectors (financial analysis, technology press, energy reporting) have do
 **Cost**: High (manual curation of publisher map; ongoing maintenance).
 **Cross-reference**: Section 3 below — Phase 7 of the v1.x trust schema is the implementation vehicle.
 
+#### Entity onboarding research (verification gate + enrichment)
+
+Promoted to drafted-plan stub: [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md) (2026-05-09). Single onboarding-research agent across `company` / `product` / `subject` entities — same workflow, per-type prompt section. Verifier halts on typo / collision / sparse-evidence cases (`goooogle`, `greenpt`, `treadlightlyai` examples). Enricher populates structured + narrative fields on verified entities. Schema seat (`verification_status`) lands separately in [`entity-metadata-surface.md`](entity-metadata-surface.md). See stub for the full design space.
+
 #### Subject entity type support
 
 **Status: implemented.** `SUBJECT = "subject"` is in `EntityType` (`pipeline/common/models.py`) and `dr onboard --type subject` is supported. Included here as a capability marker: the schema can represent subject-level entities, but subject-specific research strategies (e.g., identifying industry-level sources vs. company sources) are still maturing.
@@ -398,6 +402,70 @@ These are not source-quality plans per se, but they affect source pool quality e
 
 ---
 
+## Section 5 — Cost/benefit triage (2026-05-09)
+
+Triage of the open backlog after a `completed/` re-review. Items already shipped were dropped (see § Already shipped below). Items partially shipped were restored to the open list with a narrowed scope.
+
+Scale: cost and benefit each 1–10 (1 = trivial / marginal, 10 = months / transformative). Ratio = cost ÷ benefit; smaller is better. Rough estimates — re-baseline at planning time.
+
+### Already shipped (dropped from triage)
+
+- **Source reuse before fetching** → `completed/onboard-reuse-verify-sources.md`.
+- **Pass entity name + parent_company into scorer / planner prompts** (Section 1 "Scoring with entity context"; Section 3 Phase 8) → `completed/scorer-quality-signals.md` Item C.
+- **First-party source weighting in analyst reasoning** (Section 1 "Source independence signals") → analyst instructions already weight `first-party` heavily per `completed/source-quality-robust-roadmap_completed.md`. Auditor mirror could still be added as a small follow-up.
+
+### Partial landings restored to the open list
+
+- **Path 2 completion** — Tier 1 Path 2 only shipped arXiv (`commit 6fcb0ed`). Semantic Scholar + OpenAlex tools + cross-stage affiliation override + `source-quality.md` independence-amendment were carved out as "Tier 2" in § Section 2 above; restored here as Tier 1 leftover work.
+- **Source freshness** — `published_date` schema field already exists on both `SourceFrontmatter` (`pipeline/ingestor/models.py:19`) and Zod (`src/content.config.ts:14`), but ingestor extraction + analyst reference are unwired. Counted as a partial.
+
+### Triage table — sorted smallest ratio first
+
+| Technical change | Benefit | Cost / Benefit (ratio) |
+|---|---|---|
+| Path 2 completion: Semantic Scholar + OpenAlex tools + cross-stage affiliation override classifier + `source-quality.md` § Independence override amendment | Restores ≥60% 3-source academic coverage; fills documented "entity employees on arXiv tagged independent" architectural debt | C:4 / B:7 = **0.57** — Tier 1 scaffolding already shipped; enum slots reserved |
+| Negative site signals: extend `researcher-host-blocklist` to low-trust categories + pre-scorer drop of `tertiary` candidates | Cleaner candidate pool; kills Reddit/Quora forum-result false-positives observed during recent content sprint | C:3 / B:5 = **0.60** — `source_classification.py` patterns ready to reuse |
+| Curated allowlist of independent AI research orgs (HAI, Epoch, METR, FLI…) biasing scorer + publisher_quality | High-trust watchdog content rises in candidate ranking | C:2 / B:3 = **0.67** — small static list; FLI/Epoch COI flag is the open question |
+| Source freshness: wire ingestor `published_date` extraction + analyst instruction to weight age (schema field already exists) | Catches stale sources on fast-changing claims (regulatory, energy metrics) | C:3 / B:4 = **0.75** — half-shipped (schema only); ingestor parser + instruction remain |
+| Path 3: SEC EDGAR tool + subject-relevance classifier + filer-vs-subject independence override + `source-quality.md` amendment | Regulator-authority sources for OpenAI (via Microsoft) and Anthropic (via Amazon/Alphabet); resolves "regulator filings about not by entity" gap | C:6 / B:6 = **1.00** — 5–7 days; gated on `'edgar'` in `research_origins` and `SEC_EDGAR_USER_AGENT` |
+| ~~Render `parent_company` on product entity pages~~ | Promoted to [`entity-metadata-surface.md`](entity-metadata-surface.md) (2026-05-09). Bundled with company entity fields into one plan. | — |
+| ~~Company entity fields + `legal_name` + render surfaces~~ | Promoted to [`entity-metadata-surface.md`](entity-metadata-surface.md) (2026-05-09). `subsidiaries` punted from the bucket; remains in § Section 1 (Schema quality) as a candidate field. `official_website` not added — existing `website` field already plays that role. | — |
+| News API integration (GDELT or NewsAPI) as additional Researcher backend | Systematic news coverage with cleaner metadata vs. ad-hoc Tavily/Brave | C:5 / B:4 = **1.25** — open: third backend vs. event-stream abstraction |
+| PDF publish surface: build-time copy of `republish: true` PDFs to `dist/sources/<year>/<slug>.pdf` + `_headers` `noindex` | Readers can audit grounding documents when origin URL dies | C:4 / B:3 = **1.33** — depends on `source-pdf-attachment.md` landing first |
+| Phase 7 / §1 white-label: `research/publisher-groups.yaml` + `publisher_group` field on sources + analyst warning on same-group corroboration | Defeats syndication-as-independence false-positive (3 "independent" Hearst sites = 1) | C:7 / B:5 = **1.40** — manual curation + ongoing maintenance |
+| Phase 6: ingestor agent classifier for `site_trust` / `document_type` / `authority` / `independence` + full backfill of all source files | Trust signals on every source, not just `independence`; foundation for Phase 7 | C:7 / B:5 = **1.40** — agent prompt + held-out validation + backfill of 146+ files |
+| Seattle Public Library digital catalog (ProQuest, EBSCOhost, Statista) ingest path | Unlocks paywalled trade/academic content via library access | C:7 / B:5 = **1.40** — ToS risk; manual workflow likely; `dr ingest` local-file path may be prereq |
+| Eval community MCP servers for arXiv / S2 / OpenAlex / EDGAR | Less bespoke integration code | C:3 / B:2 = **1.50** — late: Tier 1 already shipped native code; ROI weakens after Path 3 |
+| Scheduled citation audits via `.github/workflows/audit.yml` + `QUEUE.md` intake | Weekly stale-claim scan + agent-driven re-audit at content scale | C:6 / B:4 = **1.50** — gated on Phase 4 agents existing; CI LLM key is open |
+| Direct partnerships (ProPublica, MIT TR, AIID, Mozilla) for research-grade access | Permission-based access to sources engineering can't reach | C:8 / B:5 = **1.60** — relationship track, slowest payoff |
+| RSS feed aggregation from 30–50 AI publications | Full-content access where HTML returns 403 to bots | C:6 / B:3 = **2.00** — pushes toward event-driven mode the pipeline lacks |
+
+### Recommended bucketing for the six top items
+
+The six lowest-ratio items cluster naturally by shared file surface and shared review pass. Three buckets reduce friction (one prompt-eval pass, one schema review, one analyst-instruction review per bucket) while letting buckets ship in parallel.
+
+**Bucket 1 — Scoring quality (ship first; ~1–2 days total)**
+- Negative site signals (blocklist categories + pre-scorer tertiary drop)
+- Curated allowlist of independent AI research orgs
+
+*Why together*: both touch `pipeline/researcher/scorer.py` (prompt) and `pipeline/common/source_classification.py` / `publisher_quality.py`. Single eval pass tests both. (3) is subtractive (drop noise) and (1) is additive (boost trusted) — opposing levers on the same rank list, so co-tuning catches over-correction. Ship as one PR; revert is one revert.
+
+**Bucket 2 — Entity metadata surface** — Promoted to [`entity-metadata-surface.md`](entity-metadata-surface.md) (2026-05-09); shipped 2026-05-09 in a single commit covering schema, ResolvedEntity passthrough, writer + linter mirrors, render across product / company / claim pages (incl. verification badge), pipeline reads (scorer + analyst prompts and instructions), one-time `parent_company` backfill on all five product files (`claude`, `chatgpt`, `gemini`, `greenpt`, `treadlightlyai`), `verification_status: unverified-startup` on `products/treadlightlyai.md`, drive-by linter fixes for `sec_cik` and `status`, and the `## Entity metadata` amendment in [`docs/architecture/source-quality.md`](../architecture/source-quality.md).
+
+**Bucket 3 — Source provenance (3–5 days total, mostly Path 2)**
+- Source freshness wiring (ingestor `published_date` extraction + analyst instruction)
+- Path 2 completion (Semantic Scholar + OpenAlex + affiliation override)
+
+*Why together*: both add per-source provenance metadata that the analyst should weigh. Both require an analyst-instruction pass and a `source-quality.md` amendment. Same review surface; same regression set. Ship freshness first as a small commit (~half day) so the analyst-instruction pattern is in place, then Path 2 lands the larger researcher-tool work against that pattern.
+
+**Friction-reduction summary**
+- Each bucket touches a coherent slice of the codebase: scorer prompt + classification (1), entity schema + Astro (2), ingestor + analyst instructions + researcher tools (3).
+- Buckets are independent — any two can ship in parallel without merge collisions.
+- Within each bucket, item ordering is dictated by the smaller item warming up the analyst/eval surface for the larger one.
+- An alternative four-bucket split would carve Path 2 off on its own track (it's the largest single item); use that if Path 2 needs different reviewers or longer cadence than freshness wiring.
+
+---
+
 ## Open questions
 
 These are open questions for the *collector*, not items inside specific entries.
@@ -413,3 +481,6 @@ These are open questions for the *collector*, not items inside specific entries.
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-05-08 | agent (opus-4-7) | iterated | Initial creation. Subsumes `research-quality-ideas.md` (Section 1), `drafts/source-pool-expansion-tier{2,3}.md` (Section 2), `drafts/source-pdf-publish.md` (Section 2), `drafts/scheduled-citation-audits.md` (Section 2). Phases 6–8 of `source-trust-metadata.md` digested into Section 3 (full text retained in `completed/source-trust-metadata_superseded.md`). `source-quality_survey.md`, `source-quality-agent-review.md`, `source-quality-roadmap.md`, and `source-trust-metadata.md` moved to `completed/` with `_completed` / `_superseded` suffixes per AGENTS.md naming table. Tightened only obvious internal redundancy in the absorbed material; substance preserved. |
+| 2026-05-09 | agent (opus-4-7) | added | Section 5 — Cost/benefit triage. Triaged backlog after a `completed/` re-review: dropped three already-shipped ideas (source reuse, parent_company-in-scorer / Phase 8, first-party analyst weighting); restored Path 2 leftover (S2 + OpenAlex + affiliation override) and source-freshness wiring as partials. Sorted-by-ratio table + 3-bucket sequencing recommendation (Scoring quality → Entity metadata → Source provenance) for the six lowest-ratio items. |
+| 2026-05-09 | agent (opus-4-7) | promoted | Promoted Bucket 2 (Entity metadata surface) to [`entity-metadata-surface.md`](entity-metadata-surface.md). Triage table rows for the company-entity-fields and parent_company-render items collapsed into the single new plan stub. `subsidiaries` field explicitly dropped from the bucket; remains in § Section 1 as a candidate field for future COI work. `official_website` decision resolved: not adding it — existing `website` field already plays that role. Bucket 1 (Scoring quality) and Bucket 3 (Source provenance) untouched. |
+| 2026-05-09 | operator | added | Two new ideas surfaced during entity-metadata-surface planning ("Pipeline-driven company entity enrichment" + "Onboarding verification gate / entity verification status"). Operator chose a single shared onboarding-research agent across all three entity types (same workflow, per-type prompt section). Both ideas collapsed into a Section 1 pointer at [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md), which holds the full design space. The lightweight `verification_status` schema seat + render badge folded into [`entity-metadata-surface.md`](entity-metadata-surface.md) so the agent has a place to plug in. |

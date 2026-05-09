@@ -202,7 +202,7 @@ From architectural review (2026-04-18) and TODO.md:
 ### Site gaps
 
 - **List/index pages** -- No pages exist at `/claims/`, `/sources/`, or `/entities/`. Add index pages listing all entries. Add `/about` page.
-- **`parent_company` not rendered** -- The field is schema-only; nothing in `src/` reads or displays it. All three current product entities have it populated (`claude` → anthropic, `gemini` → google, `chatgpt` → openai as of 2026-04-29), but readers can't see the relationship. Rendering depends on entity detail pages (see "Per-entity detail pages" above); inference automation is tracked in `plans/parent-company-inference.md` (post-v1).
+- ~~**`parent_company` not rendered**~~ -- Rendered as of [`plans/entity-metadata-surface.md`](plans/entity-metadata-surface.md) (2026-05-09). All five product entity pages and any claim whose subject is a product render "Made by [Parent]" linking back to the company entity page. Inference automation for `parent_company` itself remains in `plans/parent-company-inference.md` (post-v1).
 - **Entity reference validation** -- Claims reference entities by path string with no build-time validation. Use Astro's `reference('entities')` helper or add entity-ref checking to `scripts/check-citations.ts`.
 - **Source reference upgrade** -- Replace `z.array(z.string())` with `z.array(z.string().min(1)).min(1)` for claims `sources` field. Current schema permits empty arrays.
 - **Deploy workflow quality checks** -- `deploy.yml` only runs `npm run build`, skipping lint and citation checks. Add checks to deploy.yml or require CI status checks via branch protection.

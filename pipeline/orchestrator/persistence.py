@@ -44,14 +44,24 @@ def _entity_frontmatter(
     aliases: list[str] | None = None,
     status: str | None = None,
     search_hints: "SearchHints | None" = None,
+    legal_name: str | None = None,
+    verification_status: str = "verified",
 ) -> dict:
     # Ensure description is never empty -- the linter rejects blank required strings.
     description = entity_description.strip() or f"{entity_name} ({entity_type.value})."
+    # Suppress the default `verified` value so existing files (which carry no
+    # verification_status) round-trip unchanged. Emit explicitly only when the
+    # operator has set a non-default value.
+    emitted_verification = (
+        verification_status if verification_status and verification_status != "verified" else None
+    )
     return {
         "name": entity_name,
         "type": entity_type,
+        "verification_status": emitted_verification,
         "website": website,
         "aliases": aliases or None,
+        "legal_name": legal_name,
         "description": description,
         "status": status,
         "search_hints": _search_hints_dict(search_hints),
@@ -165,6 +175,8 @@ def _write_entity_file(
     website: str | None = None,
     aliases: list[str] | None = None,
     search_hints: "SearchHints | None" = None,
+    legal_name: str | None = None,
+    verification_status: str = "verified",
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
     entity_slug = slugify(entity_name)
@@ -182,6 +194,8 @@ def _write_entity_file(
     fm = _entity_frontmatter(
         entity_name, entity_type, entity_description, website, aliases,
         search_hints=search_hints,
+        legal_name=legal_name,
+        verification_status=verification_status,
     )
     entity_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote entity: %s", entity_path)
@@ -533,6 +547,8 @@ def _write_draft_entity_file(
     website: str | None = None,
     aliases: list[str] | None = None,
     search_hints: "SearchHints | None" = None,
+    legal_name: str | None = None,
+    verification_status: str = "verified",
 ) -> str:
     """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
     entity_slug = slugify(entity_name)
@@ -546,6 +562,8 @@ def _write_draft_entity_file(
     fm = _entity_frontmatter(
         entity_name, entity_type, entity_description, website, aliases,
         status="draft", search_hints=search_hints,
+        legal_name=legal_name,
+        verification_status=verification_status,
     )
     draft_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
     logger.info("Wrote draft entity: %s", draft_path)

@@ -17,6 +17,27 @@ ENTITY IDENTIFICATION:
   If it mentions a company without a specific product, the entity is the company.
   If it is about a general topic (e.g. "AI regulation"), the entity is a topic.
 
+LEGAL NAME AND DISAMBIGUATION:
+When the pre-resolved entity block carries a `Legal name:` line, the legal
+name is the canonical identifier for COI / restatement-test reasoning and for
+distinguishing this organization from others sharing a similar display name.
+Use the display `Name:` for narrative prose. The two may be identical (e.g.
+"Anthropic" vs "Anthropic, PBC"); they may differ substantially (e.g.
+"OpenAI" vs "OpenAI, LLC"). Do not invent or speculate when `Legal name:` is
+absent — its absence is information that the operator has not yet recorded the
+legal entity, not license to fabricate one.
+
+VERIFICATION STATUS:
+When the pre-resolved entity block carries a `Verification:` line with a value
+other than `verified` (e.g., `unverified-startup`, `unverified-other`), the
+entity has sparse public documentation. Be conservative about claims that
+depend on the entity's documented track record, and weigh single-source or
+self-published evidence accordingly. Sparse public coverage is a valid reason
+to lower confidence and to reach for `unverified` when sources do not
+substantively engage with the claim — it is not a reason to manufacture or
+speculate. The default state (`verified`, suppressed from the prompt) requires
+no special handling.
+
 VERDICT SCALE and CONFIDENCE SCALE: see appended common/verdict-scale.md.
 
 TOPICS:

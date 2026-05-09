@@ -77,8 +77,11 @@ def build_scorer_prompt(
     parent_company: str | None = None,
     website: str | None = None,
     avoid: list[str] | None = None,
+    legal_name: str | None = None,
 ) -> str:
     entity_block = f"Entity: {entity or '(unknown)'}\n"
+    if legal_name:
+        entity_block += f"Legal name: {legal_name}\n"
     if parent_company:
         entity_block += f"Parent company: {parent_company}\n"
     if website:

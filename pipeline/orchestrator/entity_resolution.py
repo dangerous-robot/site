@@ -34,6 +34,8 @@ class ResolvedEntity:
     aliases: list[str] = field(default_factory=list)
     parent_company: str | None = None
     website: str | None = None
+    legal_name: str | None = None
+    verification_status: str = "verified"
     search_hints: SearchHints | None = None
 
 
@@ -120,5 +122,7 @@ def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
         aliases=fm.get("aliases") or [],
         parent_company=fm.get("parent_company") or None,
         website=fm.get("website") or None,
+        legal_name=fm.get("legal_name") or None,
+        verification_status=fm.get("verification_status") or "verified",
         search_hints=search_hints,
     )

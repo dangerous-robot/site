@@ -152,7 +152,14 @@ def build_analyst_prompt(
         parts.append(f"Type: {resolved_entity.entity_type.value}")
         parts.append(f"Description: {resolved_entity.entity_description}")
         parts.append(f"Aliases: {aliases_str}")
+        if resolved_entity.legal_name:
+            parts.append(f"Legal name: {resolved_entity.legal_name}")
         parts.append(f"Parent company: {parent_str}")
+        # Suppress the line in the default-`verified` case so the common-path
+        # prompt is identical to today; emit only when the operator marked the
+        # entity as something other than verified.
+        if resolved_entity.verification_status and resolved_entity.verification_status != "verified":
+            parts.append(f"Verification: {resolved_entity.verification_status}")
         parts.append("")
         parts.append("The entity above is authoritative. Produce only a VerdictAssessment.")
     elif entity_name:

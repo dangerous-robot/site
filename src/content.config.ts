@@ -222,6 +222,12 @@ const entities = defineCollection({
     name: z.string(),
     type: z.enum(['company', 'product', 'subject']),
     website: z.string().url().optional(),
+    legal_name: z.string().min(1).optional(),
+    verification_status: z.enum([
+      'verified',
+      'unverified-startup',
+      'unverified-other',
+    ]).optional(),
     aliases: z.array(z.string()).optional(),
     description: z.string(),
     parent_company: z.string().regex(/^companies\/[a-z0-9-]+$/, {

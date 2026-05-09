@@ -107,3 +107,70 @@ class TestParseEntityRef:
         _write_entity(tmp_path, "products", "widget", _WITH_PARENT)
         result = parse_entity_ref("products/widget", tmp_path)
         assert result.parent_company == "Acme Corp"
+
+    def test_resolved_entity_legal_name_populated(self, tmp_path: Path) -> None:
+        _write_entity(
+            tmp_path,
+            "companies",
+            "openai",
+            "---\nname: OpenAI\ntype: company\nlegal_name: 'OpenAI, LLC'\ndescription: AI lab.\n---\n",
+        )
+        result = parse_entity_ref("companies/openai", tmp_path)
+        assert result.legal_name == "OpenAI, LLC"
+
+    def test_resolved_entity_legal_name_absent(self, tmp_path: Path) -> None:
+        _write_entity(tmp_path, "products", "widget", _MINIMAL)
+        result = parse_entity_ref("products/widget", tmp_path)
+        assert result.legal_name is None
+
+    def test_resolved_entity_verification_status_default(self, tmp_path: Path) -> None:
+        _write_entity(tmp_path, "products", "widget", _MINIMAL)
+        result = parse_entity_ref("products/widget", tmp_path)
+        # Absent field defaults to "verified" so analyst/render layers can
+        # branch on a single string without a None check.
+        assert result.verification_status == "verified"
+
+    def test_resolved_entity_verification_status_explicit(self, tmp_path: Path) -> None:
+        _write_entity(
+            tmp_path,
+            "products",
+            "newco",
+            "---\nname: Newco\ntype: product\ndescription: Demo.\nverification_status: unverified-startup\n---\n",
+        )
+        result = parse_entity_ref("products/newco", tmp_path)
+        assert result.verification_status == "unverified-startup"
+
+
+class TestCanonicalEntityKeysLockstep:
+    """Guard the linter set against drift from the Zod schema and writer."""
+
+    def test_canonical_entity_keys_lockstep(self) -> None:
+        from linter.checks import CANONICAL_ENTITY_KEYS
+
+        # Keys this plan adds (legal_name, verification_status) plus the
+        # drive-by fixes (sec_cik shipped via source-pool-expansion-tier1.md;
+        # status emitted by _entity_frontmatter for drafts).
+        for key in ("legal_name", "verification_status", "sec_cik", "status"):
+            assert key in CANONICAL_ENTITY_KEYS, (
+                f"{key!r} missing from CANONICAL_ENTITY_KEYS — drift from "
+                f"writer / Zod schema. See docs/plans/entity-metadata-surface.md."
+            )
+
+
+class TestVerificationStatusEnumLockstep:
+    """Drift guard: the writer's suppression branch and analyst-prompt branch
+    compare against literal strings; if those strings drift from the Zod enum
+    in src/content.config.ts, the discrepancy goes silent. Re-read the Zod
+    source and check the three literals are present."""
+
+    def test_verification_status_enum_lockstep(self) -> None:
+        # tests dir -> pipeline -> site root -> src/content.config.ts
+        site_root = Path(__file__).resolve().parents[2]
+        zod_source = (site_root / "src" / "content.config.ts").read_text(encoding="utf-8")
+        # The Zod enum lives inline; checking literal presence is sufficient
+        # without parsing TypeScript. Any rename will fail the test.
+        for literal in ("'verified'", "'unverified-startup'", "'unverified-other'"):
+            assert literal in zod_source, (
+                f"Zod enum literal {literal} missing from src/content.config.ts — "
+                f"verification_status branches in writer/analyst will drift silently."
+            )

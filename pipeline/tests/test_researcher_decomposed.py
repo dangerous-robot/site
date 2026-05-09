@@ -998,3 +998,44 @@ async def test_topics_default_to_empty_when_unset() -> None:
             await decomposed_research("test claim", "TestEntity", cfg, sem, client)
 
     assert captured == [[]]
+
+
+# --------------------------------------------------------------------------- #
+# Entity metadata: legal_name injected into scorer prompt                     #
+# --------------------------------------------------------------------------- #
+
+def test_legal_name_injected_into_scorer_prompt() -> None:
+    """build_scorer_prompt emits a `Legal name:` line when populated."""
+    from researcher.scorer import build_scorer_prompt
+
+    candidates = [
+        SearchCandidate(url="https://openai.com/about", title="About OpenAI", snippet="info", from_query="q1"),
+    ]
+    prompt = build_scorer_prompt(
+        "ChatGPT",
+        "test claim",
+        candidates,
+        _stub_sub_questions(),
+        legal_name="OpenAI, LLC",
+    )
+    assert "Legal name: OpenAI, LLC" in prompt, (
+        f"Expected 'Legal name: OpenAI, LLC' in prompt:\n{prompt}"
+    )
+
+
+def test_legal_name_absent_no_line_in_prompt() -> None:
+    """build_scorer_prompt omits the `Legal name:` line when the field is None."""
+    from researcher.scorer import build_scorer_prompt
+
+    candidates = [
+        SearchCandidate(url="https://example.com", title="X", snippet="x", from_query="q1"),
+    ]
+    prompt = build_scorer_prompt(
+        "TestEntity",
+        "test claim",
+        candidates,
+        _stub_sub_questions(),
+    )
+    assert "Legal name:" not in prompt, (
+        f"Did not expect a 'Legal name:' line when legal_name is None:\n{prompt}"
+    )

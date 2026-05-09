@@ -11,7 +11,15 @@ from common.models import Confidence, VerificationLevel
 from .models import LintIssue
 
 REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
-CANONICAL_ENTITY_KEYS = {"name", "type", "website", "aliases", "description", "parent_company", "search_hints"}
+CANONICAL_ENTITY_KEYS = {
+    "name", "type", "website", "aliases", "description", "parent_company", "search_hints",
+    # `sec_cik` shipped via source-pool-expansion-tier1.md without a linter add;
+    # `status` is emitted by _entity_frontmatter for drafts but was missing here.
+    "sec_cik", "status",
+    # Entity-metadata-surface plan: legal_name (COI/disambiguation) and
+    # verification_status (analyst-weighting + render badge).
+    "legal_name", "verification_status",
+}
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",
     "verification_level", "cap_rationale", "source_overrides",
