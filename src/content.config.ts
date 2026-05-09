@@ -220,7 +220,7 @@ const entities = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/entities' }),
   schema: z.object({
     name: z.string(),
-    type: z.enum(['company', 'product', 'topic', 'sector']),
+    type: z.enum(['company', 'product', 'subject']),
     website: z.string().url().optional(),
     aliases: z.array(z.string()).optional(),
     description: z.string(),
@@ -245,7 +245,7 @@ const criteria = defineCollection({
   schema: z.object({
     slug: z.string(),
     text: z.string(),
-    entity_type: z.enum(['company', 'product', 'sector']),
+    entity_type: z.enum(['company', 'product', 'subject']),
     topics: z.array(z.enum([
       'ai-safety',
       'environmental-impact',
@@ -258,7 +258,25 @@ const criteria = defineCollection({
     ])).min(1).max(3),
     core: z.boolean().default(false),
     notes: z.string().optional(),
+    subjects: z.array(z.string().regex(/^subjects\/[a-z0-9-]+$/)).optional(),
     vocabulary: z.record(z.string(), z.array(z.string())).optional(),
+  }).superRefine((data, ctx) => {
+    const isSubject = data.entity_type === 'subject';
+    const hasSubjects = !!data.subjects && data.subjects.length > 0;
+    if (isSubject && !hasSubjects) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['subjects'],
+        message: "subjects: required and non-empty when entity_type === 'subject'",
+      });
+    }
+    if (!isSubject && hasSubjects) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['subjects'],
+        message: "subjects: forbidden when entity_type !== 'subject'",
+      });
+    }
   }),
 });
 

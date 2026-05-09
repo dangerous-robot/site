@@ -94,7 +94,7 @@ class TestSourceKind:
 
 class TestEntityType:
     def test_values(self) -> None:
-        expected = {"company", "product", "topic", "sector"}
+        expected = {"company", "product", "subject"}
         actual = {e.value for e in EntityType}
         assert actual == expected
 

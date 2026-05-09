@@ -106,7 +106,7 @@ All full titles are under 50 chars. Well within the SERP limit.
 
 **Edge case — long entity names:** If `entity.data.name` exceeds 25 characters, the title may approach 60 chars before the layout suffix. Example: `"Google DeepMind AI Company Claims - Dangerous Robot"` = 52 chars — fine. No special handling needed for current entities; note the constraint for future onboarding.
 
-**Edge case — topic and sector entities:** The entity `type` field includes `topic` and `sector`. These are not publicly routed as `/companies/` or `/products/` pages (the topics directory is currently empty). If an entity page ever renders for a topic or sector type, fall back to `"{entity.data.name} — Dangerous Robot"` rather than emitting an awkward `"X AI Topic Claims"` title.
+**Edge case — subject entities:** The entity `type` field includes `subject`. These are routed at `/subjects/`. If an entity page renders for a subject type, fall back to `"{entity.data.name} — Dangerous Robot"` rather than emitting an awkward `"X AI Subject Claims"` title.
 
 ### Topic pages
 

@@ -82,18 +82,18 @@ dr claim-promote microsoft/microsoft-does-x           # promote ad-hoc claim to 
 
 ## Implementation steps
 
-### 0. Prerequisite fix: `_substitute_entity` for sector entities (`pipeline/common/templates.py`)
+### 0. Prerequisite fix: `_substitute_entity` for subject entities (`pipeline/common/templates.py`)
 
-`_substitute_entity` (templates.py:78-84) falls through to `return text` for any `entity_type` other than `"product"` or `"company"`. Sector templates use `ENTITY` as the placeholder, so without this fix `render_claim_text` passes `"ENTITY has signed AI safety commitments"` to the LLM rather than the sector name.
+`_substitute_entity` (templates.py:78-84) falls through to `return text` for any `entity_type` other than `"product"` or `"company"`. Subject templates use `ENTITY` as the placeholder, so without this fix `render_claim_text` passes `"ENTITY has signed AI safety commitments"` to the LLM rather than the subject name.
 
 Add before the final `return text` at line 84:
 
 ```python
-if template.entity_type == "sector":
+if template.entity_type == "subject":
     return text.replace("ENTITY", entity_name)
 ```
 
-This is required for `claim-refresh` correctness on sector claims and also fixes `render_blocked_title` for sectors.
+This is required for `claim-refresh` correctness on subject claims and also fixes `render_blocked_title` for subjects.
 
 ### 1. CLI command renames and removals (`pipeline/orchestrator/cli.py`)
 
@@ -156,7 +156,7 @@ Steps:
 3. Replace entity name in title with the type-appropriate placeholder to produce template `text`:
    - `company`: `template_text = fm["title"].replace(entity_name, "COMPANY")`
    - `product`: `template_text = fm["title"].replace(entity_name, "PRODUCT")`
-   - `sector`: `template_text = fm["title"].replace(entity_name, "ENTITY")`
+   - `subject`: `template_text = fm["title"].replace(entity_name, "ENTITY")`
 4. Print proposed template fields to terminal.
 5. Prompt: `Template slug:`, `Core template? [Y/n]:`, `Notes (optional):`.
 6. Validate slug is unique in `research/templates.yaml` (load via `load_templates`, check for collision).
@@ -165,7 +165,7 @@ Steps:
 ```yaml
   - slug: <slug>
     text: "<template text with COMPANY/PRODUCT placeholder>"
-    entity_type: <company|product|sector>
+    entity_type: <company|product|subject>
     topics: [<topic1>]
     core: <true|false>
     notes: "<operator-supplied notes>"

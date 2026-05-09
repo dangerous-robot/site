@@ -713,3 +713,75 @@ class TestOnboardSearchHintsPersisted:
         assert resolved.search_hints is not None
         assert resolved.search_hints.include == ["prefer-this"]
         assert resolved.search_hints.exclude == ["operator-bad.example", "evil.example"]
+
+
+class TestOnboardSubjectFanOut:
+    """D2: subject onboarding queues only templates whose subjects: list names the subject."""
+
+    def _write_subject_entity(self, tmp_path: Path, slug: str, name: str) -> str:
+        """Pre-create a subject entity file so onboard_entity skips light research and template-fan-out is exercised in isolation."""
+        path = tmp_path / "research" / "entities" / "subjects" / f"{slug}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"---\nname: {name}\ntype: subject\ndescription: A test subject.\n---\n"
+        )
+        return f"subjects/{slug}"
+
+    @pytest.mark.asyncio
+    async def test_referenced_subject_queues_only_matching_templates(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        _setup_tmp_repo(tmp_path)
+        ref = self._write_subject_entity(tmp_path, "ai-model-producers", "AI Model Producers")
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=1, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "AI Model Producers", "subject", config=config, entity_ref=ref,
+            )
+
+        assert result.status == "accepted"
+        # templates.yaml lists exactly two subject templates pairing with subjects/ai-model-producers
+        applied = set(result.templates_applied)
+        assert applied == {
+            "ai-producers-signed-safety-commitments",
+            "ai-producers-existential-score",
+        }
+
+    @pytest.mark.asyncio
+    async def test_unreferenced_subject_queues_zero_templates(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        _setup_tmp_repo(tmp_path)
+        ref = self._write_subject_entity(tmp_path, "unreferenced-test-subject", "Unreferenced Test Subject")
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=1, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "Unreferenced Test Subject", "subject", config=config, entity_ref=ref,
+            )
+
+        # No template applies, so onboard rejects with the standard "No core templates" error.
+        assert result.status == "rejected"
+        assert any("No core templates" in e for e in result.errors)
+        assert result.templates_applied == []

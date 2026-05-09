@@ -1447,7 +1447,17 @@ async def onboard_entity(
         hr()
         logger.info("Onboard step 2: screening templates")
         all_templates = load_templates(repo_root)
-        typed_templates = templates_for_entity_type(all_templates, entity_type)
+        # For subject fan-out, extract the slug from the entity_ref so the
+        # template filter can match on subjects: list membership.
+        onboard_entity_slug: str | None = None
+        if entity_type == "subject" and entity_ref and "/" in entity_ref:
+            onboard_entity_slug = entity_ref.split("/", 1)[1]
+        elif entity_type == "subject":
+            from common.utils import slugify as _slugify
+            onboard_entity_slug = _slugify(entity_name)
+        typed_templates = templates_for_entity_type(
+            all_templates, entity_type, entity_slug=onboard_entity_slug
+        )
 
         if not typed_templates:
             result.errors.append(f"No core templates found for entity_type={entity_type}")

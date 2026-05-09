@@ -32,8 +32,7 @@ logger = logging.getLogger(__name__)
 _ENTITY_TYPE_DIR = {
     EntityType.COMPANY: "companies",
     EntityType.PRODUCT: "products",
-    EntityType.TOPIC: "topics",
-    EntityType.SECTOR: "sectors",
+    EntityType.SUBJECT: "subjects",
 }
 
 
@@ -193,7 +192,7 @@ def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) ->
     """Return the claims directory for an entity.
 
     Companies and products use a flat layout (research/claims/<slug>/) for
-    backward compat; all other types (sectors, …) include the type prefix.
+    backward compat; all other types (subjects, …) include the type prefix.
     """
     if entity_ref and "/" in entity_ref:
         ref_parts = entity_ref.split("/")

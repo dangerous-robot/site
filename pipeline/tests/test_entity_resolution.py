@@ -61,15 +61,10 @@ class TestParseEntityRef:
         assert result.entity_name == "Test Entity"
         assert result.entity_type == EntityType.PRODUCT
 
-    def test_valid_sector_ref(self, tmp_path: Path) -> None:
-        _write_entity(tmp_path, "sectors", "ai-llm", "---\nname: AI LLM\ntype: sector\ndescription: LLM sector.\n---\n")
-        result = parse_entity_ref("sectors/ai-llm", tmp_path)
-        assert result.entity_type == EntityType.SECTOR
-
-    def test_valid_topic_ref(self, tmp_path: Path) -> None:
-        _write_entity(tmp_path, "topics", "ai-safety", "---\nname: AI Safety\ntype: topic\ndescription: Safety topic.\n---\n")
-        result = parse_entity_ref("topics/ai-safety", tmp_path)
-        assert result.entity_type == EntityType.TOPIC
+    def test_valid_subject_ref(self, tmp_path: Path) -> None:
+        _write_entity(tmp_path, "subjects", "ai-llm", "---\nname: AI LLM\ntype: subject\ndescription: LLM subject.\n---\n")
+        result = parse_entity_ref("subjects/ai-llm", tmp_path)
+        assert result.entity_type == EntityType.SUBJECT
 
     def test_missing_slash_raises(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="expected '\\{type_dir\\}/\\{slug\\}'"):

@@ -4,7 +4,7 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 
 ## How the system works
 
-The system tracks four object types: **criteria** (reusable claim templates), **entities** (companies, products, sectors), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
+The system tracks four object types: **criteria** (reusable claim templates), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
 
 For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
@@ -12,7 +12,7 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
 | Term | What it is | Lives at |
 |---|---|---|
-| **Entity** | A stable subject (company, product, sector, or topic) that claims are about | `research/entities/{type}/{slug}.md` |
+| **Entity** | A stable subject (company, product, or subject) that claims are about | `research/entities/{type}/{slug}.md` |
 | **Claim** | A single factual assertion with a verdict, confidence, evidence links, and recheck schedule | `research/claims/{entity-slug}/{claim-id}.md` |
 | **Source** | A citable reference -- "cite once, reference many" | `research/sources/{yyyy}/{slug}.md` |
 | **Criterion** | A reusable claim template applied uniformly across entities | `research/templates.yaml` |

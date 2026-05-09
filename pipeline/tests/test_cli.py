@@ -363,20 +363,20 @@ class TestClaimRefreshCLI:
         # The slug referenced in the pipeline invocation should match the original filename stem.
         assert "publishes-sustainability-report" in str(received.get("claim_text", "")).lower() or result.exit_code == 0
 
-    def test_sector_entity_claim_refresh(self, monkeypatch, tmp_path) -> None:
-        """A sector-backed claim refresh substitutes the sector name in claim text (no raw ENTITY placeholder)."""
+    def test_subject_entity_claim_refresh(self, monkeypatch, tmp_path) -> None:
+        """A subject-backed claim refresh substitutes the subject name in claim text (no raw ENTITY placeholder)."""
         import asyncio
         from click.testing import CliRunner
         from orchestrator.cli import main
 
-        self._write_claim(tmp_path, "sectors/ai-llm-producers", "signed-ai-safety-commitments", {
+        self._write_claim(tmp_path, "subjects/ai-model-producers", "signed-ai-safety-commitments", {
             "status": "blocked",
             "blocked_reason": "insufficient_sources",
             "criteria_slug": "signed-ai-safety-commitments",
-            "claim": "AI LLM Producers sector: signed-ai-safety-commitments",
+            "claim": "AI Model Producers subject: signed-ai-safety-commitments",
         })
         self._write_templates_yaml(tmp_path, [
-            {"slug": "signed-ai-safety-commitments", "text": "ENTITY has signed AI safety commitments", "entity_type": "sector", "topics": ["ai-safety"], "core": True},
+            {"slug": "signed-ai-safety-commitments", "text": "ENTITY has signed AI safety commitments", "entity_type": "subject", "subjects": ["subjects/ai-model-producers"], "topics": ["ai-safety"], "core": True},
         ])
 
         received: dict = {}
@@ -403,7 +403,7 @@ class TestClaimRefreshCLI:
         monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
 
         runner = CliRunner()
-        result = runner.invoke(main, ["claim-refresh", "sectors/ai-llm-producers/signed-ai-safety-commitments"])
+        result = runner.invoke(main, ["claim-refresh", "subjects/ai-model-producers/signed-ai-safety-commitments"])
         assert result.exit_code == 0
         assert "ENTITY" not in received["claim_text"]
 
@@ -534,7 +534,7 @@ class TestClaimPromoteCLI:
     @pytest.mark.parametrize("entity_type,expected_placeholder", [
         ("company", "COMPANY"),
         ("product", "PRODUCT"),
-        ("sector", "ENTITY"),
+        ("subject", "ENTITY"),
     ])
     def test_placeholder_substituted_by_entity_type(self, monkeypatch, tmp_path, entity_type, expected_placeholder) -> None:
         """The written template text should contain the appropriate ENTITY-TYPE placeholder.
@@ -550,12 +550,12 @@ class TestClaimPromoteCLI:
         entity_dirs = {
             "company": "acme-corp",
             "product": "widget-pro",
-            "sector": "the-sector",
+            "subject": "the-subject",
         }
         claim_texts = {
             "company": "Acme Corp discloses water usage.",
             "product": "Widget Pro reports carbon footprint.",
-            "sector": "The Sector reports aggregate emissions.",
+            "subject": "The Subject reports aggregate emissions.",
         }
         entity_dir = entity_dirs[entity_type]
         claim_slug = f"discloses-usage-{entity_type}"

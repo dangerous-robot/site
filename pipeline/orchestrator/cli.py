@@ -789,7 +789,7 @@ def claim_refresh(
     \b
     Examples:
         dr claim-refresh microsoft/publishes-sustainability-report
-        dr claim-refresh sectors/ai-llm-producers/signed-ai-safety-commitments
+        dr claim-refresh subjects/ai-model-producers/signed-ai-safety-commitments
     """
     import datetime
 
@@ -1183,14 +1183,14 @@ def claim_promote(
     template_slug = click.prompt("Template slug (e.g. publishes-sustainability-report)")
     entity_type_input = click.prompt(
         "Entity type",
-        type=click.Choice(["company", "product", "sector"]),
+        type=click.Choice(["company", "product", "subject"]),
     )
     topics_input = click.prompt("Topics (comma-separated, e.g. environmental-impact,ai-safety)")
     core_input = click.prompt("Core template?", default="Y", show_default=True)
     notes_input = click.prompt("Notes (optional)", default="", show_default=False)
 
     # Derive template text by replacing entity name with type-appropriate placeholder.
-    placeholder_map = {"company": "COMPANY", "product": "PRODUCT", "sector": "ENTITY"}
+    placeholder_map = {"company": "COMPANY", "product": "PRODUCT", "subject": "ENTITY"}
     placeholder = placeholder_map[entity_type_input]
     template_text = claim_title.replace(entity_name, placeholder) if entity_name and entity_name in claim_title else claim_title
 
@@ -1228,11 +1228,23 @@ def claim_promote(
     # comments and field ordering. For bare-list-format files (test fixtures),
     # do a read-modify-write so the YAML stays valid.
     topics_yaml = "[" + ", ".join(topics_list) + "]"
+    # For subject templates, derive the subjects: list from the claim's entity ref
+    # so the generated template satisfies the Template validator (subjects required
+    # and non-empty when entity_type == 'subject'). Operators can hand-edit later
+    # to add cross-subject pairings.
+    subjects_line = ""
+    if entity_type_input == "subject":
+        subject_slug = (
+            entity_ref.split("/", 1)[1] if entity_ref and "/" in entity_ref
+            else claim_path.parent.name
+        )
+        subjects_line = f"  subjects: [subjects/{subject_slug}]\n"
     entry_fragment = (
         f"- slug: {template_slug}\n"
         f'  text: "{template_text}"\n'
         f"  entity_type: {entity_type_input}\n"
-        f"  topics: {topics_yaml}\n"
+        + subjects_line
+        + f"  topics: {topics_yaml}\n"
         f"  core: {'true' if core_bool else 'false'}\n"
         + (f'  notes: "{notes_input}"\n' if notes_input else "")
     )
@@ -1485,7 +1497,7 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 @main.command()
 @click.argument("entity_name")
 @click.argument("homepage_url", required=False, default=None)
-@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(["company", "product", "sector"]), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
+@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(["company", "product", "subject"]), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst per template (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
@@ -1528,7 +1540,9 @@ def onboard(
     """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
 
     ENTITY_NAME can be a bare display name (requires --type) or a type/slug ref like
-    sectors/ai-llm-producers (type inferred; skips entity-file creation).
+    subjects/ai-model-producers (type inferred; skips entity-file creation).
+    Subject claims are gated by templates' ``subjects:`` field — onboarding a
+    subject not referenced by any template queues zero claims.
 
     HOMEPAGE_URL is optional. If provided, it is used directly for entity
     light research instead of searching for the homepage.
@@ -1536,7 +1550,7 @@ def onboard(
     Example:
         dr onboard "Ecosia AI" --type product
         dr onboard "TreadLightlyAI" treadlightly.ai --type company --interactive
-        dr onboard sectors/ai-llm-producers
+        dr onboard subjects/ai-model-producers
     """
     resolved_entity_ref: str | None = None
     if "/" in entity_name:

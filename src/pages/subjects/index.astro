@@ -5,7 +5,7 @@ import EntityCard from '../../components/EntityCard.astro';
 import EmptyState from '../../components/EmptyState.astro';
 import PageHeader from '../../components/PageHeader.astro';
 
-const entities = await getCollection('entities', e => e.data.type === 'sector');
+const entities = await getCollection('entities', e => e.data.type === 'subject');
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
 const cards = entities.map(entity => {
@@ -20,21 +20,21 @@ const cards = entities.map(entity => {
   };
 }).sort((a, b) => a.name.localeCompare(b.name));
 ---
-<Base title="Sectors" layout="wide">
-  <PageHeader variant="index" type="sector" title="Sectors" />
+<Base title="Subjects" layout="wide">
+  <PageHeader variant="index" type="subject" title="Subjects" />
   <div class="entity-grid" id="entity-grid">
     {cards.length > 0
       ? cards.map(card => (
           <EntityCard
             name={card.name}
             slug={card.slug}
-            entityType="sector"
+            entityType="subject"
             description={card.description}
             verdicts={card.verdicts}
             claimCount={card.claimCount}
           />
         ))
-      : <EmptyState message="No sectors tracked yet." />
+      : <EmptyState message="No subjects tracked yet." />
     }
   </div>
 </Base>

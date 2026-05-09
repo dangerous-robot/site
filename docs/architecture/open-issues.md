@@ -21,7 +21,7 @@ Resolved and moved to plans:
 The stub is labeled "MVP" but there is no design for what applicability means. Some concrete cases:
 
 - A hardware company has no "data retention policy" template result to evaluate
-- A product entity has no "existential safety score" because that concept applies at the sector or company level
+- A product entity has no "existential safety score" because that concept applies at the subject or company level
 - A topic entity might not have pricing claims
 
 **The question**: What rule determines whether a template applies to a given entity? Options include:

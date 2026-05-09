@@ -3,13 +3,13 @@ import VerdictDistribution from './VerdictDistribution.astro';
 interface Props {
   name: string;
   slug: string;
-  entityType: 'company' | 'product' | 'sector';
+  entityType: 'company' | 'product' | 'subject';
   description?: string;
   verdicts: string[];
   claimCount: number;
 }
 const { name, slug, entityType, description, verdicts, claimCount } = Astro.props;
-const typeSegment = entityType === 'company' ? 'companies' : entityType === 'product' ? 'products' : 'sectors';
+const typeSegment = entityType === 'company' ? 'companies' : entityType === 'product' ? 'products' : 'subjects';
 const href = `/entities/${typeSegment}/${slug}`;
 ---
 <a href={href} class="entity-card">

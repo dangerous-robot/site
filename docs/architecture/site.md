@@ -24,7 +24,7 @@ Four collections are defined:
 |-------------|----------------------------------------|----------------------------------------------------------|
 | `claims`    | custom `claims-with-audit` loader      | title, entity, topics, verdict, confidence, as_of, sources, audit (sidecar) |
 | `sources`   | `glob()` from `research/sources`       | url, title, publisher, kind, summary, key_quotes         |
-| `entities`  | `glob()` from `research/entities`      | name, type (company/product/sector/topic), website, description |
+| `entities`  | `glob()` from `research/entities`      | name, type (company/product/subject), website, description |
 | `criteria` | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
@@ -46,8 +46,7 @@ research/
     companies/ecosia.md
     companies/greenpt.md
     products/...
-    sectors/...
-    topics/...
+    subjects/...
   sources/
     2025/earthday-chatgpt-prompt-cost.md
     2025/fli-safety-index.md
@@ -70,7 +69,8 @@ All routes are statically generated at build time via `getStaticPaths()`.
 | `/entities/[...slug]`  | `src/pages/entities/[...slug].astro`    | `entities` collection                      |
 | `/companies`           | `src/pages/companies/index.astro`       | `entities` collection (company type)       |
 | `/products`            | `src/pages/products/index.astro`        | `entities` collection (product type)       |
-| `/topics`              | `src/pages/topics/index.astro`          | `entities` collection (topic type)         |
+| `/subjects`            | `src/pages/subjects/index.astro`        | `entities` collection (subject type)       |
+| `/topics`              | `src/pages/topics/index.astro`          | `claims` collection (cross-cutting taxonomy)|
 | `/topics/[topic]`      | `src/pages/topics/[topic].astro`        | `claims` collection (filtered by topic)    |
 | `/criteria`            | `src/pages/criteria/index.astro`        | `criteria` collection                      |
 | `/criteria/[slug]`     | `src/pages/criteria/[slug].astro`       | `criteria` collection                      |
@@ -79,7 +79,7 @@ All routes are statically generated at build time via `getStaticPaths()`.
 
 The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/claims/anthropic/existential-safety-score`).
 
-Entities of type `sector` do not have a dedicated index route. They appear via `/entities/[...slug]` detail pages only.
+Entities of type `subject` are listed at `/subjects/` and have detail pages at `/entities/subjects/[slug]`.
 
 ### How dynamic routes work
 

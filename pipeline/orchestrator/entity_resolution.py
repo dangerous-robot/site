@@ -15,8 +15,7 @@ from common.models import EntityType
 _DIR_ENTITY_TYPE: dict[str, EntityType] = {
     "companies": EntityType.COMPANY,
     "products": EntityType.PRODUCT,
-    "topics": EntityType.TOPIC,
-    "sectors": EntityType.SECTOR,
+    "subjects": EntityType.SUBJECT,
 }
 
 

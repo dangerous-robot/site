@@ -20,8 +20,7 @@ research/
   entities/
     companies/{slug}.md      # e.g. anthropic.md
     products/{slug}.md
-    topics/{slug}.md
-    sectors/{slug}.md
+    subjects/{slug}.md
   claims/
     {entity-slug}/            # matches the entity filename
       {claim-id}.md           # e.g. existential-safety-score.md
@@ -33,7 +32,7 @@ research/
 **Naming rules:**
 
 - Lowercase kebab-case for all slugs
-- Entity files sit in a subdirectory matching their type (`companies/`, `products/`, `topics/`, `sectors/`)
+- Entity files sit in a subdirectory matching their type (`companies/`, `products/`, `subjects/`)
 - Claim files are grouped by entity slug (the entity filename without extension)
 - Source files are grouped by publication year
 
@@ -44,7 +43,7 @@ research/
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `name` | string | yes | Display name |
-| `type` | enum | yes | `company`, `product`, `topic`, or `sector` |
+| `type` | enum | yes | `company`, `product`, or `subject` |
 | `website` | URL string | no | Official website |
 | `aliases` | string[] | no | Alternate names (e.g. product names associated with a company) |
 | `description` | string | yes | Short description of the entity |

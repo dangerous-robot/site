@@ -25,17 +25,42 @@ import yaml
 VOCABULARY_HINT_PREFIX = "one of "
 
 
+_SUBJECT_REF_RE = re.compile(r"^subjects/[a-z0-9-]+$")
+
+
 @dataclass(frozen=True)
 class TemplateRecord:
     """A single claim template definition."""
 
     slug: str
     text: str  # e.g. "PRODUCT is hosted on renewable energy"
-    entity_type: str  # "company" or "product"
+    entity_type: str  # "company", "product", or "subject"
     topics: list[str]  # 1-3 kebab-case topic slugs
     core: bool
     notes: str = ""
     vocabulary: dict[str, list[str]] = field(default_factory=dict)
+    # For entity_type == "subject", the list of subject refs (e.g. "subjects/ai-model-producers")
+    # this template applies to. Required and non-empty for subject templates; forbidden for
+    # company/product templates. Each entry must match ^subjects/[a-z0-9-]+$.
+    subjects: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if self.entity_type == "subject":
+            if not self.subjects:
+                raise ValueError(
+                    f"Template {self.slug!r}: subjects required and non-empty when entity_type == 'subject'"
+                )
+            for ref in self.subjects:
+                if not _SUBJECT_REF_RE.match(ref):
+                    raise ValueError(
+                        f"Template {self.slug!r}: invalid subject ref {ref!r}; "
+                        f"must match ^subjects/[a-z0-9-]+$"
+                    )
+        else:
+            if self.subjects:
+                raise ValueError(
+                    f"Template {self.slug!r}: subjects forbidden when entity_type == {self.entity_type!r}"
+                )
 
 
 def load_templates(repo_root: Path) -> list[TemplateRecord]:
@@ -52,18 +77,34 @@ def load_templates(repo_root: Path) -> list[TemplateRecord]:
             core=entry["core"],
             notes=entry.get("notes") or "",
             vocabulary=entry.get("vocabulary") or {},
+            subjects=list(entry.get("subjects") or []),
         )
         for entry in data["templates"]
     ]
 
 
 def templates_for_entity_type(
-    templates: list[TemplateRecord], entity_type: str
+    templates: list[TemplateRecord],
+    entity_type: str,
+    entity_slug: str | None = None,
 ) -> list[TemplateRecord]:
-    """Filter to templates matching entity_type, core only."""
-    return [
-        t for t in templates if t.entity_type == entity_type and t.core
-    ]
+    """Filter templates by entity_type (core only).
+
+    For ``company`` and ``product``, ``entity_slug`` is ignored and behavior matches
+    the historical "all core templates of that type" rule.
+
+    For ``subject``, the filter additionally requires that the template's
+    ``subjects:`` list contain ``f"subjects/{entity_slug}"``. With
+    ``entity_slug=None`` no fan-out is possible, so the function returns ``[]``;
+    returning all subject templates would silently break the N:M pairing.
+    """
+    typed_core = [t for t in templates if t.entity_type == entity_type and t.core]
+    if entity_type != "subject":
+        return typed_core
+    if entity_slug is None:
+        return []
+    target_ref = f"subjects/{entity_slug}"
+    return [t for t in typed_core if target_ref in t.subjects]
 
 
 def get_template(
@@ -82,7 +123,7 @@ def _substitute_entity(template: TemplateRecord, entity_name: str) -> str:
         return text.replace("PRODUCT", entity_name)
     if template.entity_type == "company":
         return text.replace("COMPANY", entity_name)
-    if template.entity_type == "sector":
+    if template.entity_type == "subject":
         return text.replace("ENTITY", entity_name)
     return text
 

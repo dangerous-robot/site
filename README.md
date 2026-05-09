@@ -12,7 +12,7 @@ published. Every published claim cites its sources and records when it was last 
 
 - `src/` — Astro 6.x site source. Public pages: `/`, `/companies`, `/products`, `/criteria`,
   `/claims`, `/sources`, `/topics`, `/faq`.
-- `research/` — the corpus. `entities/` (companies, products, sectors), `claims/`
+- `research/` — the corpus. `entities/` (companies, products, subjects), `claims/`
   (verdicts), `sources/` (citable references), `templates.yaml` (reusable claim templates).
 - `pipeline/` — Python agents (Researcher, Ingestor, Analyst, Evaluator) plus the
   Orchestrator and the `dr` CLI.

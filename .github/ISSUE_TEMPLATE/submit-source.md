@@ -12,12 +12,12 @@ labels: source-submission
 ## What does this source say?
 
 <!-- One or two sentences. What does the source assert that is relevant to an AI company,
-product, or sector covered on dangerousrobot.org? -->
+product, or subject covered on dangerousrobot.org? -->
 
 ## Which entity does it relate to?
 
-<!-- Company, product, or sector. Use the slug if you know it (e.g., `companies/anthropic`,
-`products/claude`, `sectors/ai-llm-producers`). If unsure, name the organization. -->
+<!-- Company, product, or subject. Use the slug if you know it (e.g., `companies/anthropic`,
+`products/claude`, `subjects/ai-model-producers`). If unsure, name the organization. -->
 
 ## Which existing claim does it inform, if any?
 

@@ -92,27 +92,30 @@ templates:
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
 
-  # --- AI Model Producers (Sector) ---
+  # --- AI Model Producers (Subject) ---
 
   - slug: ai-producers-signed-safety-commitments
     text: "All major ENTITY have signed AI safety commitments"
-    entity_type: sector
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
     topics: [ai-safety]
     core: true
 
   - slug: ai-producers-existential-score
     text: "All major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
-    entity_type: sector
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
     topics: [ai-safety, industry-analysis]
     tags:
     - highlight
     core: true
 
-  # --- Generative AI (Sector) ---
+  # --- Generative AI (Subject) ---
 
   - slug: using-generative-ai-harms-cognitive-ability
     text: "Using generative AI can harm cognitive ability"
-    entity_type: sector
+    entity_type: subject
+    subjects: [subjects/generative-ai]
     topics: [ai-safety]
     tags: [highlight]
     core: true

@@ -1,0 +1,175 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T13:36:11.499536+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - '"generative AI" cognitive decline study'
+  - generative AI memory impairment research
+  - generative AI critical thinking effects
+  - AI generated content reasoning impairment
+  - students using generative AI cognition
+  - workplace AI usage cognitive fatigue
+  - Google Cloud AI ethics cognitive impact
+  planner_rationale: The queries are short (3‑7 words), each includes at most one
+    quoted phrase for exact titles, and avoid Google‑specific operators. They collectively
+    address the empirical evidence, mechanisms, affected groups, and official mitigation
+    guidance needed to evaluate the claim that using generative AI can harm cognitive
+    ability.
+  candidates_seen: 95
+  urls_kept: 14
+  urls_dropped: 70
+  scorer_rationale: Candidates were scored on each sub‑question using only the title
+    and snippet. Primary‑source Microsoft Research and peer‑reviewed journal articles
+    (PMC, Cambridge Core) earned high relevance for sq1‑sq3. Google Cloud official
+    pages and DeepMind blog directly provide ethical guidelines, thus were kept for
+    sq4. All other items either lack peer‑reviewed evidence, do not discuss specific
+    cognitive processes or user groups, or are forums/opinion pieces, so they scored
+    <3 on every sub‑question and were dropped.
+  urls_after_blocklist: 14
+sub_questions:
+- id: sq1
+  question: What peer‑reviewed studies report that using generative AI reduces cognitive
+    abilities such as memory or attention?
+  rationale: Establishes empirical evidence for the claim.
+  queries:
+  - '"generative AI" cognitive decline study'
+  - generative AI memory impairment research
+  citations:
+  - 2025/pmc12255134
+  - 2025/generative-ai-the-risk-of-cognitive-atrophy
+  - 2026/ai-chatgpt-google-learning-school
+  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
+- id: sq2
+  question: Which cognitive processes (e.g., critical thinking, problem‑solving) are
+    reported to be impaired by reliance on generative AI outputs?
+  rationale: Identifies the specific mechanisms behind any cognitive harm.
+  queries:
+  - generative AI critical thinking effects
+  - AI generated content reasoning impairment
+  citations:
+  - 2025/pmc12255134
+  - 2025/generative-ai-the-risk-of-cognitive-atrophy
+  - 2026/ai-chatgpt-google-learning-school
+  - 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
+- id: sq3
+  question: Are particular user groups—students, professionals, or hobbyists—shown
+    to experience greater cognitive decline when using generative AI tools?
+  rationale: Clarifies whether the effect is universal or demographic‑specific.
+  queries:
+  - students using generative AI cognition
+  - workplace AI usage cognitive fatigue
+  citations:
+  - 2026/ai-chatgpt-google-learning-school
+- id: sq4
+  question: What guidelines or mitigation strategies have Google Cloud or AI ethics
+    bodies published to protect cognitive health when using generative AI?
+  rationale: Looks for official or expert recommendations that address the concern.
+  queries:
+  - Google Cloud AI ethics cognitive impact
+  citations:
+  - 2026/principles
+  - 2026/responsible-ai
+  - 2025/ethics
+  - 2026/the-ethics-of-advanced-ai-assistants
+sources_consulted:
+- id: 2026/principles
+  url: https://ai.google/principles/
+  title: AI Principles
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Cloud AI ethics cognitive impact
+- id: 2025/pmc12255134
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12255134/
+  title: 'Effects of generative artificial intelligence on cognitive effort and task
+    performance: study protocol for a randomized controlled experiment among college
+    students'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"generative AI" cognitive decline study'
+- id: 2025/generative-ai-the-risk-of-cognitive-atrophy
+  url: https://www.polytechnique-insights.com/en/columns/neuroscience/generative-ai-the-risk-of-cognitive-atrophy/
+  title: 'Generative AI: the risk of cognitive atrophy'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"generative AI" cognitive decline study'
+- id: 2026/ai-chatgpt-google-learning-school
+  url: https://time.com/7295195/ai-chatgpt-google-learning-school/
+  title: ChatGPT May Be Eroding Critical Thinking Skills, According to a New MIT Study
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"generative AI" cognitive decline study'
+- id: 2026/responsible-ai
+  url: https://cloud.google.com/responsible-ai
+  title: Responsible AI
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Google Cloud AI ethics cognitive impact
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/ethics
+  url: https://developers.google.com/machine-learning/managing-ml-projects/ethics
+  title: AI and ML ethics and safety
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Google Cloud AI ethics cognitive impact
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/the-ethics-of-advanced-ai-assistants
+  url: https://deepmind.google/blog/the-ethics-of-advanced-ai-assistants/
+  title: The ethics of advanced AI assistants
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Google Cloud AI ethics cognitive impact
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers
+  url: https://www.microsoft.com/en-us/research/publication/the-impact-of-generative-ai-on-critical-thinking-self-reported-reductions-in-cognitive-effort-and-confidence-effects-from-a-survey-of-knowledge-workers/
+  title: 'The Impact of Generative AI on Critical Thinking: Self-Reported Reductions
+    in Cognitive Effort and Confidence Effects From a Survey of Knowledge Workers'
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: '"generative AI" cognitive decline study'
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: false
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

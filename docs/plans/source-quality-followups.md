@@ -130,11 +130,11 @@ Several sectors (financial analysis, technology press, energy reporting) have do
 **Cost**: High (manual curation of publisher map; ongoing maintenance).
 **Cross-reference**: Section 3 below — Phase 7 of the v1.x trust schema is the implementation vehicle.
 
-#### Sector entity type support
+#### Subject entity type support
 
-**Status: implemented.** `SECTOR = "sector"` is in `EntityType` (`pipeline/common/models.py`) and `dr onboard --type sector` is supported. Included here as a capability marker: the schema can represent sector-level entities, but sector-scoped claim templates and sector-specific research strategies (e.g., identifying industry-level sources vs. company sources) are not yet developed.
+**Status: implemented.** `SUBJECT = "subject"` is in `EntityType` (`pipeline/common/models.py`) and `dr onboard --type subject` is supported. Included here as a capability marker: the schema can represent subject-level entities, but subject-specific research strategies (e.g., identifying industry-level sources vs. company sources) are still maturing.
 
-**Schema extension opportunity**: Sectors could carry additional metadata that improves claim context — dominant publishers in the sector, regulatory bodies, common conflict-of-interest patterns.
+**Schema extension opportunity**: Subjects could carry additional metadata that improves claim context — dominant publishers in the area, regulatory bodies, common conflict-of-interest patterns.
 
 ### Notes from prior doc
 

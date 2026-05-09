@@ -27,8 +27,7 @@ PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 ENTITY_DIR_TO_TYPE = {
     "companies": "company",
     "products": "product",
-    "topics": "topic",
-    "sectors": "sector",
+    "subjects": "subject",
 }
 
 

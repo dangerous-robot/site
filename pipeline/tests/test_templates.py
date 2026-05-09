@@ -58,7 +58,7 @@ class TestTemplatesForEntityType:
 
     def test_unknown_type_returns_empty(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
-        result = templates_for_entity_type(templates, "topic")
+        result = templates_for_entity_type(templates, "unknown-type")
         assert result == []
 
     def test_only_returns_core_templates(self, repo_root: Path) -> None:
@@ -322,3 +322,119 @@ class TestTemplateIsFrozen:
         )
         with pytest.raises(AttributeError):
             template.slug = "modified"  # type: ignore[misc]
+
+
+class TestSubjectTemplateSchema:
+    """D2: validate the subjects: field on Template.
+
+    Required-iff-subject and forbidden-otherwise. Each subject ref must match
+    ``^subjects/[a-z0-9-]+$``.
+
+    TODO: gate this test in CI on changes to research/templates.yaml so a
+    malformed subjects: list can't merge undetected. Until per-path CI exists,
+    this test runs with the rest of pytest.
+    """
+
+    def test_subject_template_with_valid_subjects_passes(self) -> None:
+        template = TemplateRecord(
+            slug="x",
+            text="ENTITY does Y",
+            entity_type="subject",
+            topics=["ai-safety"],
+            core=True,
+            subjects=["subjects/ai-model-producers"],
+        )
+        assert template.subjects == ["subjects/ai-model-producers"]
+
+    def test_subject_template_missing_subjects_fails(self) -> None:
+        with pytest.raises(ValueError, match="subjects required"):
+            TemplateRecord(
+                slug="x",
+                text="ENTITY does Y",
+                entity_type="subject",
+                topics=["ai-safety"],
+                core=True,
+            )
+
+    def test_subject_template_empty_subjects_fails(self) -> None:
+        with pytest.raises(ValueError, match="subjects required"):
+            TemplateRecord(
+                slug="x",
+                text="ENTITY does Y",
+                entity_type="subject",
+                topics=["ai-safety"],
+                core=True,
+                subjects=[],
+            )
+
+    def test_non_subject_template_with_subjects_fails(self) -> None:
+        with pytest.raises(ValueError, match="subjects forbidden"):
+            TemplateRecord(
+                slug="x",
+                text="COMPANY does Y",
+                entity_type="company",
+                topics=["ai-safety"],
+                core=True,
+                subjects=["subjects/whatever"],
+            )
+
+    def test_subject_template_invalid_ref_fails(self) -> None:
+        with pytest.raises(ValueError, match="invalid subject ref"):
+            TemplateRecord(
+                slug="x",
+                text="ENTITY does Y",
+                entity_type="subject",
+                topics=["ai-safety"],
+                core=True,
+                subjects=["companies/foo"],
+            )
+
+
+class TestTemplatesForEntityTypeSubjectFanOut:
+    """D2: subject fan-out filters by template.subjects: list membership."""
+
+    @staticmethod
+    def _mk(slug: str, subjects: list[str]) -> TemplateRecord:
+        return TemplateRecord(
+            slug=slug,
+            text="ENTITY does Y",
+            entity_type="subject",
+            topics=["ai-safety"],
+            core=True,
+            subjects=subjects,
+        )
+
+    def test_returns_only_templates_naming_the_subject(self) -> None:
+        templates = [
+            self._mk("a", ["subjects/foo"]),
+            self._mk("b", ["subjects/bar"]),
+            self._mk("c", ["subjects/foo", "subjects/bar"]),
+        ]
+        out = templates_for_entity_type(templates, "subject", entity_slug="foo")
+        slugs = sorted(t.slug for t in out)
+        assert slugs == ["a", "c"]
+
+    def test_subject_with_no_matching_template_returns_empty(self) -> None:
+        templates = [self._mk("a", ["subjects/foo"])]
+        out = templates_for_entity_type(templates, "subject", entity_slug="unreferenced")
+        assert out == []
+
+    def test_subject_with_none_slug_returns_empty(self) -> None:
+        """entity_slug=None for subject is undefined; conservative: return [].
+
+        Returning all subject templates would silently break N:M filtering.
+        """
+        templates = [self._mk("a", ["subjects/foo"])]
+        out = templates_for_entity_type(templates, "subject", entity_slug=None)
+        assert out == []
+
+    def test_company_ignores_entity_slug(self) -> None:
+        company_t = TemplateRecord(
+            slug="ct",
+            text="COMPANY does X",
+            entity_type="company",
+            topics=["ai-safety"],
+            core=True,
+        )
+        out = templates_for_entity_type([company_t], "company", entity_slug="anything")
+        assert [t.slug for t in out] == ["ct"]

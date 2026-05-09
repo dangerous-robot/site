@@ -6,7 +6,7 @@ Work known but not yet assigned to a release. Items here are candidates for the 
 
 ## Per-entity detail pages
 
-Goal: Render company / product / sector detail pages so entity body content (e.g. the COI blockquote on `research/entities/products/treadlightlyai.md`) is actually visible to readers. Today only `index.astro` exists for `companies/` and `products/`, and the entity body is dropped at build. The treadlightlyai COI block was added 2026-04-27 in anticipation of these pages; until they ship, the canonical disclosure is the FAQ accordion.
+Goal: Render company / product / subject detail pages so entity body content (e.g. the COI blockquote on `research/entities/products/treadlightlyai.md`) is actually visible to readers. Today only `index.astro` exists for `companies/` and `products/`, and the entity body is dropped at build. The treadlightlyai COI block was added 2026-04-27 in anticipation of these pages; until they ship, the canonical disclosure is the FAQ accordion.
 
 Also unlocks: rendering `parent_company` cross-links from product pages back to the company page (and vice versa via a query of the entity collection).
 
@@ -365,16 +365,14 @@ Two markdownlint failures surfaced during a research-content WIP commit on 2026-
 
 ---
 
-## Generalize claim target: "sector" → "subject"
+## Decouple subject from entity model
 
-Goal: Rename `sector` to `subject` across researcher / analyst / auditor logic, and broaden the concept so a claim's target is no longer required to be an entity (or group of entities). A subject can be an abstract or natural-world topic — e.g., *love*, *hurricanes* — not just a company, product, or industry sector.
+Goal: Today subjects resolve to entity files under `research/entities/subjects/`. Decide whether non-entity subjects get a lighter-weight record (e.g., `research/subjects/<slug>.md` with minimal frontmatter) or whether the entity collection grows a `kind: subject` variant. Either way, researcher/analyst/auditor must stop assuming the subject has a website, parent_company, or other entity-shaped fields. Subjects can be abstract or natural-world topics — e.g., *love*, *hurricanes* — not just a company, product, or industry sector.
 
 | Work Item | Notes |
 |-----------|-------|
-| Rename `sector` → `subject` across pipeline + content | Touches researcher/analyst/auditor prompts and code paths, `research/entities/sectors/` directory, frontmatter keys, templates.yaml taxonomy, lint checks, and any Astro collection/loader references. Also update `AGENTS.md` and architecture docs. |
-| Decouple subject from entity model | Subjects today resolve to entity files under `research/entities/sectors/`. Decide whether non-entity subjects get a lighter-weight record (e.g., `research/subjects/<slug>.md` with minimal frontmatter) or whether the entity collection grows a `kind: subject` variant. Either way, researcher/analyst/auditor must stop assuming the subject has a website, parent_company, or other entity-shaped fields. |
+| Lighter-weight subject record | Decide between `research/subjects/<slug>.md` with minimal frontmatter or an entity-collection `kind: subject` variant. |
 | Update agent instructions for non-entity subjects | Researcher: don't try to find an "official" source for a subject like "love"; lean on encyclopedic/scholarly sources. Analyst: entity-stance reasoning collapses when the subject isn't an actor; verdict logic must handle subject-as-topic framing. Auditor: independence/COI heuristics keyed on the subject being an entity need a fallback path. |
-| Migration plan for existing sector entities | The current `research/entities/sectors/` files (e.g., `ai-model-producers.md`, `generative-ai.md`) need to either become subjects or remain as entity-flavored sectors with subjects layered on top. Decide before renaming so the migration is one-shot, not staged.
 
 ---
 

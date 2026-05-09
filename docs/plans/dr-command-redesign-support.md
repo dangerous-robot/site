@@ -81,7 +81,7 @@ Add a new class with the following five test methods. All use `CliRunner` and mo
 2. `test_ad_hoc_draft_rejected`: create a claim file with no `criteria_slug` in frontmatter; invoke `claim-refresh` on it; assert `exit_code != 0`, assert `"claim-promote"` appears in output.
 3. `test_blocked_claim_with_criteria_slug_allowed`: create a claim file with `status: blocked` and a `criteria_slug` present; monkeypatch the pipeline call to succeed; assert `exit_code == 0`.
 4. `test_template_backed_claim_writes_same_path`: create a claim file with `status: published` and a `criteria_slug`; monkeypatch the write call to capture the `claim_slug` argument; assert the written slug matches the original filename stem.
-5. `test_sector_entity_claim_refresh`: create a claim file backed by a sector template (e.g. `sectors/ai-llm-producers`, `criteria_slug: signed-ai-safety-commitments`); monkeypatch `render_claim_text` to return a sector-name-substituted string; assert the pipeline call receives the substituted claim text (not the raw `ENTITY ...` placeholder text).
+5. `test_subject_entity_claim_refresh`: create a claim file backed by a subject template (e.g. `subjects/ai-model-producers`, `criteria_slug: signed-ai-safety-commitments`); monkeypatch `render_claim_text` to return a subject-name-substituted string; assert the pipeline call receives the substituted claim text (not the raw `ENTITY ...` placeholder text).
 
 #### New class: `TestRemovedCommands`
 
@@ -97,7 +97,7 @@ Add a new class with the following four test methods. Use a temporary `templates
 1. `test_already_template_backed_rejected`: claim file has `criteria_slug` set; assert `exit_code != 0`, assert `"already template-backed"` in output.
 2. `test_slug_collision_rejected`: claim file has no `criteria_slug`; templates.yaml already has the slug the user enters; assert `exit_code != 0`, assert "already exists" or similar in output.
 3. `test_happy_path_appends_template_yaml`: happy path with interactive input; assert `exit_code == 0`, assert new YAML entry exists in templates.yaml with field order `slug/text/entity_type/topics/core/notes`.
-4. `test_placeholder_substituted_by_entity_type`: parametrize over all three entity types. For `company`: assert `COMPANY` appears in the written `text` field. For `product`: assert `PRODUCT`. For `sector`: assert `ENTITY`. Use a distinct claim title per variant so the substitution is unambiguous.
+4. `test_placeholder_substituted_by_entity_type`: parametrize over all three entity types. For `company`: assert `COMPANY` appears in the written `text` field. For `product`: assert `PRODUCT`. For `subject`: assert `ENTITY`. Use a distinct claim title per variant so the substitution is unambiguous.
 
 ---
 

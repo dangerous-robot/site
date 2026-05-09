@@ -173,8 +173,7 @@ class VerificationLevel(str, Enum):
 class EntityType(str, Enum):
     COMPANY = "company"
     PRODUCT = "product"
-    TOPIC = "topic"
-    SECTOR = "sector"
+    SUBJECT = "subject"
 
 
 class VerdictSeverity(str, Enum):

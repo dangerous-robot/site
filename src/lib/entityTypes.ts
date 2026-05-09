@@ -1,15 +1,13 @@
 export const ENTITY_TYPE_PARENTS = {
   company: { label: "Companies", href: "/companies" },
   product: { label: "Products",  href: "/products"  },
-  topic:   { label: "Topics",    href: "/topics"    },
-  sector:  { label: "Sectors",   href: "/sectors"   },
+  subject: { label: "Subjects",  href: "/subjects"  },
 } as const;
 
 export const ENTITY_TYPE_LABELS: Record<string, string> = {
-  sector:    "Sector",
+  subject:   "Subject",
   company:   "Company",
   product:   "Product",
-  topic:     "Topic",
   claim:     "Claim",
   source:    "Source",
   criterion: "Criterion",

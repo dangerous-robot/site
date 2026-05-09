@@ -21,7 +21,7 @@ The question this plan answers: is parent-company inference a fit for the small-
 
 ## Non-goals
 
-- Inferring parent company for entities other than products. Companies, sectors, and topics don't have one.
+- Inferring parent company for entities other than products. Companies and subjects don't have one.
 - Reverse direction (`products: [...]` on company entities). Single-direction reference, written on the product side only.
 - Backfilling existing product entities — they're already populated by hand (claude → anthropic, gemini → google) or have no parent (treadlightlyai).
 - Maintaining the link over time. If a product changes ownership (Activision → Microsoft), the operator updates the field by hand. No watcher.

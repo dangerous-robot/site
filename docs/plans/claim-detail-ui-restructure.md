@@ -31,14 +31,13 @@ Single source of truth for entity-type to parent-page mapping. Used by both clai
 export const ENTITY_TYPE_PARENTS = {
   company: { label: "Companies", href: "/companies" },
   product: { label: "Products",  href: "/products"  },
-  topic:   { label: "Topics",    href: "/topics"    },
-  sector:  { label: "Sectors",   href: "/sectors"   },
+  subject: { label: "Subjects",  href: "/subjects"  },
 } as const;
 
 export type EntityType = keyof typeof ENTITY_TYPE_PARENTS;
 ```
 
-The schema (`src/content.config.ts`) defines `entity.type` as `z.enum(['company', 'product', 'topic', 'sector'])`, so all four are covered. Verify each parent index page exists before merging; if any is missing, omit that crumb rather than ship a 404.
+The schema (`src/content.config.ts`) defines `entity.type` as `z.enum(['company', 'product', 'subject'])`, so all three are covered. Verify each parent index page exists before merging; if any is missing, omit that crumb rather than ship a 404.
 
 ### 2. New: `src/components/Breadcrumb.astro`
 
@@ -220,7 +219,7 @@ Two commits, in order, each independently reviewable and revertible:
 
 - **Entity lookup miss**: claim's `entity` value not found in collection. Breadcrumb falls back to raw entity ID as a non-linked label. No crash.
 - **Source not in collection**: audit-trail item renders an external link with no metadata badge.
-- **Missing parent index**: if `/companies`, `/products`, `/topics`, or `/sectors` does not exist, omit that crumb rather than 404.
+- **Missing parent index**: if `/companies`, `/products`, or `/subjects` does not exist, omit that crumb rather than 404.
 
 ## Acceptance
 
@@ -230,7 +229,7 @@ Two commits, in order, each independently reviewable and revertible:
 - [ ] A claim with `audit.human_review.reviewer === null` renders the outlined "Unreviewed" chip.
 - [ ] A claim whose `entity` frontmatter does not match any entity falls back to a non-linked crumb without crashing.
 - [ ] An audit `sources_consulted` entry whose `id` is not in the sources collection renders an external link with no metadata.
-- [ ] A sector-typed entity page renders `Home / Sectors / [name]`.
+- [ ] A subject-typed entity page renders `Home / Subjects / [name]`.
 - [ ] Source detail page renders `Home / Sources / [title]`.
 - [ ] Criterion detail page renders `Home / Criteria / [text]`.
 - [ ] Keyboard tab order through breadcrumb links matches DOM order; focus ring visible.

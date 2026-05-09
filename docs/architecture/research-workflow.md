@@ -4,7 +4,7 @@ How research content moves from idea to published claim on dangerousrobot.org.
 
 ## What this is
 
-dangerousrobot.org is a research hub that publishes structured, citable fact-checks about AI companies, products, and sectors. Each claim carries a verdict, a confidence level, source references, and a recheck date, all captured as Markdown with YAML frontmatter. Two audiences consume the published content: humans reading the site directly, and the upstream TreadLightly AI site, which ingests the same files as structured data. The workflow below exists to keep claims auditable (every assertion traces to cited sources), agent-processable (the schema is stable enough for pipeline automation), and decoupled from the rendered site (content lives in `research/` and can move to its own repo later without breaking consumers).
+dangerousrobot.org is a research hub that publishes structured, citable fact-checks about AI companies, products, and subjects. Each claim carries a verdict, a confidence level, source references, and a recheck date, all captured as Markdown with YAML frontmatter. Two audiences consume the published content: humans reading the site directly, and the upstream TreadLightly AI site, which ingests the same files as structured data. The workflow below exists to keep claims auditable (every assertion traces to cited sources), agent-processable (the schema is stable enough for pipeline automation), and decoupled from the rendered site (content lives in `research/` and can move to its own repo later without breaking consumers).
 
 ## Content Model
 
