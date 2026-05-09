@@ -36,6 +36,7 @@ class ResolvedEntity:
     website: str | None = None
     legal_name: str | None = None
     verification_status: str | None = None
+    founded: int | None = None
     search_hints: SearchHints | None = None
 
 
@@ -132,5 +133,6 @@ def parse_entity_ref(entity_ref: str, repo_root: Path) -> ResolvedEntity:
         website=fm.get("website") or None,
         legal_name=fm.get("legal_name") or None,
         verification_status=_normalize_verification_status(fm.get("verification_status")),
+        founded=fm.get("founded") if isinstance(fm.get("founded"), int) else None,
         search_hints=search_hints,
     )

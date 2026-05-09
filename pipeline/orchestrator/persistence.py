@@ -46,6 +46,7 @@ def _entity_frontmatter(
     search_hints: "SearchHints | None" = None,
     legal_name: str | None = None,
     verification_status: str | None = None,
+    founded: int | None = None,
 ) -> dict:
     # Ensure description is never empty -- the linter rejects blank required strings.
     description = entity_description.strip() or f"{entity_name} ({entity_type.value})."
@@ -57,6 +58,7 @@ def _entity_frontmatter(
         "aliases": aliases or None,
         "legal_name": legal_name,
         "description": description,
+        "founded": founded,
         "status": status,
         "search_hints": _search_hints_dict(search_hints),
     }
@@ -171,6 +173,8 @@ def _write_entity_file(
     search_hints: "SearchHints | None" = None,
     legal_name: str | None = None,
     verification_status: str = "verified",
+    founded: int | None = None,
+    history_markdown: str | None = None,
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
     entity_slug = slugify(entity_name)
@@ -190,8 +194,10 @@ def _write_entity_file(
         search_hints=search_hints,
         legal_name=legal_name,
         verification_status=verification_status,
+        founded=founded,
     )
-    entity_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
+    body = _entity_body(history_markdown)
+    entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
     logger.info("Wrote entity: %s", entity_path)
     return entity_ref
 
@@ -543,6 +549,8 @@ def _write_draft_entity_file(
     search_hints: "SearchHints | None" = None,
     legal_name: str | None = None,
     verification_status: str = "verified",
+    founded: int | None = None,
+    history_markdown: str | None = None,
 ) -> str:
     """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
     entity_slug = slugify(entity_name)
@@ -558,7 +566,42 @@ def _write_draft_entity_file(
         status="draft", search_hints=search_hints,
         legal_name=legal_name,
         verification_status=verification_status,
+        founded=founded,
     )
-    draft_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
+    body = _entity_body(history_markdown)
+    draft_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
     logger.info("Wrote draft entity: %s", draft_path)
     return entity_ref
+
+
+def _entity_body(history_markdown: str | None) -> str:
+    """Render the markdown body for an entity file.
+
+    When ``history_markdown`` is non-empty, returns it normalized with a
+    trailing newline so ``serialize_frontmatter`` produces consistent output.
+    Returns an empty string when there is no history content. The standalone
+    helper exists so the enricher (later step) and any future body-writing
+    callers can share the same body-rendering rule.
+    """
+    if not history_markdown:
+        return ""
+    return history_markdown.rstrip() + "\n"
+
+
+def _write_entity_history(entity_path: Path, history_markdown: str | None) -> None:
+    """Replace the body of an existing entity file with ``history_markdown``.
+
+    Reads the entity file, preserves the frontmatter, and rewrites the body.
+    A None or empty ``history_markdown`` leaves the body untouched. The
+    enricher will call this on re-enrichment passes; current callers in this
+    commit do not invoke it.
+    """
+    if not history_markdown:
+        return
+    text = entity_path.read_text(encoding="utf-8")
+    fm, _existing_body = parse_frontmatter(text)
+    entity_path.write_text(
+        serialize_frontmatter(fm, _entity_body(history_markdown)),
+        encoding="utf-8",
+    )
+    logger.info("Wrote entity history: %s", entity_path)

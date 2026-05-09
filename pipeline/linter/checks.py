@@ -19,6 +19,9 @@ CANONICAL_ENTITY_KEYS = {
     # Entity-metadata-surface plan: legal_name (COI/disambiguation) and
     # verification_status (analyst-weighting + render badge).
     "legal_name", "verification_status",
+    # Entity-onboarding-research plan: `founded` (1800..current year) for
+    # company / product entities; rendered in the entity Facts subsection.
+    "founded",
 }
 CANONICAL_CLAIM_KEYS = {
     "title", "entity", "topics", "verdict", "confidence",

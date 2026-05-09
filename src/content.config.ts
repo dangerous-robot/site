@@ -230,6 +230,7 @@ const entities = defineCollection({
     ]).optional(),
     aliases: z.array(z.string()).optional(),
     description: z.string(),
+    founded: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
     parent_company: z.string().regex(/^companies\/[a-z0-9-]+$/, {
       message: 'parent_company must be a slug ref of the form "companies/<slug>"',
     }).optional(),

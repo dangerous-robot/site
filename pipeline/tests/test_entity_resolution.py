@@ -138,6 +138,48 @@ class TestParseEntityRef:
         result = parse_entity_ref("products/newco", tmp_path)
         assert result.verification_status == "unverified-startup"
 
+    def test_resolved_entity_founded_absent(self, tmp_path: Path) -> None:
+        _write_entity(tmp_path, "products", "widget", _MINIMAL)
+        result = parse_entity_ref("products/widget", tmp_path)
+        assert result.founded is None
+
+    def test_resolved_entity_founded_populated(self, tmp_path: Path) -> None:
+        _write_entity(
+            tmp_path,
+            "companies",
+            "anthropic",
+            "---\nname: Anthropic\ntype: company\ndescription: AI lab.\nfounded: 2021\n---\n",
+        )
+        result = parse_entity_ref("companies/anthropic", tmp_path)
+        assert result.founded == 2021
+
+    def test_founded_round_trip_through_writer(self, tmp_path: Path) -> None:
+        """Writer emits `founded`; re-parsing the file restores the value."""
+        from orchestrator.persistence import _write_entity_file
+
+        _write_entity_file(
+            entity_name="Anthropic",
+            entity_type=EntityType.COMPANY,
+            entity_description="AI lab.",
+            repo_root=tmp_path,
+            founded=2021,
+        )
+        result = parse_entity_ref("companies/anthropic", tmp_path)
+        assert result.founded == 2021
+
+    def test_founded_omitted_when_unset(self, tmp_path: Path) -> None:
+        """When `founded` is None, the frontmatter must not carry the key."""
+        from orchestrator.persistence import _write_entity_file
+
+        _write_entity_file(
+            entity_name="Widget",
+            entity_type=EntityType.PRODUCT,
+            entity_description="A widget.",
+            repo_root=tmp_path,
+        )
+        text = (tmp_path / "research" / "entities" / "products" / "widget.md").read_text()
+        assert "founded:" not in text
+
 
 class TestCanonicalEntityKeysLockstep:
     """Guard the linter set against drift from the Zod schema and writer."""
@@ -147,12 +189,22 @@ class TestCanonicalEntityKeysLockstep:
 
         # Keys this plan adds (legal_name, verification_status) plus the
         # drive-by fixes (sec_cik shipped via source-pool-expansion-tier1.md;
-        # status emitted by _entity_frontmatter for drafts).
-        for key in ("legal_name", "verification_status", "sec_cik", "status"):
+        # status emitted by _entity_frontmatter for drafts). `founded` lands
+        # via docs/plans/entity-onboarding-research.md.
+        for key in ("legal_name", "verification_status", "sec_cik", "status", "founded"):
             assert key in CANONICAL_ENTITY_KEYS, (
                 f"{key!r} missing from CANONICAL_ENTITY_KEYS — drift from "
                 f"writer / Zod schema. See docs/plans/completed/entity-metadata-surface_completed.md."
             )
+
+    def test_founded_present_in_zod_schema(self) -> None:
+        """Drift guard: `founded` must remain in the Zod entity schema."""
+        site_root = Path(__file__).resolve().parents[2]
+        zod_source = (site_root / "src" / "content.config.ts").read_text(encoding="utf-8")
+        assert "founded:" in zod_source, (
+            "`founded` field missing from src/content.config.ts entity schema — "
+            "drift from CANONICAL_ENTITY_KEYS / writer."
+        )
 
 
 class TestVerificationStatusEnumLockstep:
