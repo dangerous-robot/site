@@ -123,6 +123,8 @@ The source file's `independence` is unchanged; the override is scoped to the one
 
 The entity-level `website` field doubles as the canonical-website / primary-source-disambiguation signal. The scorer treats sources whose URL matches `website` as the entity's first-party content (see `pipeline/researcher/scorer.py`'s "ENTITY DISAMBIGUATION" rule). When an entity carries a `legal_name` distinct from its display `name`, COI and restatement-test reasoning in the analyst use the legal name. When an entity carries `verification_status` other than the default `verified` (e.g., `unverified-startup`), the analyst weights sparse-evidence claims about that entity more conservatively, and the entity page renders an "unverified" badge.
 
+The `entity_enricher` agent (`pipeline/researcher/entity_enricher.py`) populates `founded` and the entity's narrative `history` body during `dr onboard` and `dr entity-enrich`; `founded` is then injected into the analyst and scorer prompts so source-date horizons can be reasoned about against the entity's actual lifespan.
+
 ## Publisher registry
 
 Bigger registry-driven trust signals (`site_trust`, `publisher_group`) are deferred to v1.x. The reasoning:
