@@ -343,6 +343,17 @@ Cleanup items surfaced during the v0.1.0 vocab + multi-topic + claim-lifecycle l
 
 ---
 
+## Pipeline code-quality refactors (2026-05-08)
+
+Surfaced during the post-tier1 simplify pass (commit `ce045ce`). Both are pre-existing; neither is blocking.
+
+| Work Item | Notes |
+|-----------|-------|
+| `_write_audit_sidecar` decomposition | `pipeline/orchestrator/persistence.py:356-474` is a 118-line function with 10 parameters (`claim_path`, `comparison`, `model`, `ran_at`, `sources_consulted`, `agents_run`, `models_used`, `research_trace`, `sub_questions_block`, `reset_review`) doing six things: human_review preservation, models_used resolution, acquisition grafting, sub_questions block insertion, sidecar dict assembly, write. Wrap inputs in a `SidecarInputs` dataclass and extract `_resolve_human_review` / `_resolve_models_used` helpers; the orchestration body should be ~20 lines. |
+| `verify_claim` ↔ `research_claim` deduplication | `pipeline/orchestrator/pipeline.py:288-356` (verify) and `838-888` (research) share ~70 lines of near-identical Step 1 (research) + Step 2 (ingest+dedup+address-attach+coverage) logic, diverging only in `progress()`/`say()` plumbing. The new `research_origins` field will multiply the divergence as tier1 paths land. Extract a shared `_run_research_and_ingest(client, cfg, sem, ...) -> (urls, urls_failed, all_errors, sub_question_coverage, cached_sources, source_files)` callable from both entry points. |
+
+---
+
 ## Pipeline markdown emitter bugs (2026-05-08)
 
 Two markdownlint failures surfaced during a research-content WIP commit on 2026-05-08. Both originate from generated claim narratives, not hand-edited content. The two offending files were deleted to land the commit; regeneration after the fix should produce passing markdown.
