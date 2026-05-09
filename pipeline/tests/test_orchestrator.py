@@ -655,6 +655,7 @@ class TestResearchClaimWithResolvedEntity:
                     narrative="narrative",
                     topics=[Category("data-privacy")],
                     verification_level=VerificationLevel.PARTIALLY_VERIFIED,
+                    seo_title="ChatGPT trains on data",
                 ),
             )
 
@@ -730,6 +731,7 @@ class TestResearchClaimWithResolvedEntity:
                     narrative="narrative",
                     topics=[Category("data-privacy")],
                     verification_level=VerificationLevel.PARTIALLY_VERIFIED,
+                    seo_title="ChatGPT trains on data",
                 ),
             )
 

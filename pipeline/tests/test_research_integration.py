@@ -58,6 +58,7 @@ def _analyst_model() -> TestModel:
                 "confidence": "medium",
                 "narrative": "The evidence is mixed.",
                 "verification_level": "partially-verified",
+                "seo_title": "test-claim",
             },
         },
     )

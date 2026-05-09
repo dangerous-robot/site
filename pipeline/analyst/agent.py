@@ -5,12 +5,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from common.instructions import common, load_instructions
 from common.models import Category, Confidence, EntityType, Independence, SubQuestion, Verdict, VerificationLevel
-from common.templates import SEO_TITLE_FALLBACK_THRESHOLD, looks_seo_truncated
 from common.utils import slugify
 
 if TYPE_CHECKING:
@@ -87,14 +86,15 @@ class VerdictAssessment(BaseModel):
             "disclosure for this claim. Omit when no overrides apply."
         ),
     )
-    seo_title: str | None = Field(
-        default=None,
+    seo_title: str = Field(
         description=(
-            "Short page title for search results (max 42 chars). Only provide when "
-            "`title` exceeds ~60 characters and a shorter version conveys the same "
-            "finding. Omit if the full title already fits or if shortening would "
-            "lose the core finding."
+            "Short page title for search results. Always provide; "
+            "max 42 chars; must be a complete phrase that ends on a word "
+            "boundary (no mid-word truncation). When `title` already fits in "
+            "42 chars it can be copied verbatim; longer titles must be "
+            "compressed while preserving the core finding."
         ),
+        min_length=1,
         max_length=42,
     )
     takeaway: str | None = Field(
@@ -107,17 +107,6 @@ class VerdictAssessment(BaseModel):
         ),
         max_length=200,
     )
-
-    @model_validator(mode="after")
-    def _normalize_seo_title(self) -> "VerdictAssessment":
-        """Drop seo_title when the full title already fits a SERP, or when the
-        analyst-produced one looks truncated mid-word.
-        """
-        if self.seo_title is None:
-            return self
-        if len(self.title) <= SEO_TITLE_FALLBACK_THRESHOLD or looks_seo_truncated(self.seo_title):
-            self.seo_title = None
-        return self
 
 
 class AnalystOutput(BaseModel):

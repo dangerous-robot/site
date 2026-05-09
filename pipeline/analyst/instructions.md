@@ -55,18 +55,18 @@ TITLE:
   - Bad:  "ChatGPT offers image generation with tiered limits" (paraphrase of "excludes image generation")
 
 SEO_TITLE:
-- Default: omit. Only provide when `title` exceeds 60 characters AND you can
-  express the same finding in 42 characters or fewer as a complete phrase.
-- The seo_title MUST be a complete phrase that ends on a word boundary. Never
-  pad to the limit and clip mid-word. If a complete phrase would not fit in
-  42 characters, omit the seo_title entirely -- the renderer falls back to
-  the full title, which is preferable to a fragment.
-- The orchestrator drops any seo_title when `title` is already <=60 chars,
-  and drops any seo_title that ends in a 1-2 character non-abbreviation
-  fragment (e.g. "Mixed, L"). Don't rely on this -- get it right yourself.
+- Always provide. The seo_title controls how the claim appears in search
+  results and is required on every claim.
+- Max 42 characters. MUST be a complete phrase that ends on a word boundary.
+  Never pad to the limit and clip mid-word; if a complete phrase would not
+  fit in 42 characters, drop the lowest-information words (articles,
+  qualifiers) until it does.
+- When `title` already fits in 42 characters, you may copy it verbatim.
+  Longer titles must be compressed while preserving the core finding.
+- Good: "Anthropic contributes to AI safety causes" (41 chars; copy of title)
 - Good: 95-char title → supply a 40-char version that keeps the core finding
-- Bad:  55-char title → omit (already fits in search results)
 - Bad:  "Anthropic's Environmental Giving: Mixed, L" (truncated mid-word)
+- Bad:  empty or omitted (the field is required)
 
 TAKEAWAY:
 - One sentence a reader would want to repeat or share. Include only when the

@@ -31,6 +31,7 @@ class TestAnalystAgent:
                         "confidence": "medium",
                         "narrative": "The evidence is mixed on this claim.",
                         "verification_level": "partially-verified",
+                        "seo_title": "Test claim about renewable energy",
                     },
                 },
             )
@@ -109,8 +110,13 @@ class TestAnalystPrompt:
         assert "Addresses: (none)" in prompt
 
 
-class TestSeoTitleNormalization:
-    def _va(self, title: str, seo_title: str | None) -> VerdictAssessment:
+class TestSeoTitleField:
+    """seo_title is required on every claim, 1-42 chars, no mid-word
+    truncation. The model itself enforces length; the analyst's
+    instructions tell the LLM to always supply a complete phrase.
+    """
+
+    def _va(self, title: str, seo_title: str) -> VerdictAssessment:
         return VerdictAssessment(
             title=title,
             verdict=Verdict.TRUE,
@@ -121,25 +127,30 @@ class TestSeoTitleNormalization:
             seo_title=seo_title,
         )
 
-    def test_drops_seo_title_when_full_title_fits(self) -> None:
+    def test_keeps_seo_title_when_full_title_fits(self) -> None:
         v = self._va("Anthropic donates to environmental causes", "Anthropic Donates to Env. Causes")
-        assert v.seo_title is None
+        assert v.seo_title == "Anthropic Donates to Env. Causes"
 
     def test_keeps_seo_title_when_title_is_long(self) -> None:
         long_title = "Anthropic publishes a comprehensive sustainability report covering scope 1 2 and 3 emissions"
         v = self._va(long_title, "Anthropic Publishes Sustainability Report")
         assert v.seo_title == "Anthropic Publishes Sustainability Report"
 
-    def test_drops_truncated_seo_title(self) -> None:
-        long_title = "Anthropic publishes a comprehensive sustainability report covering scope 1 2 and 3 emissions"
-        v = self._va(long_title, "Anthropic's Environmental Giving: Mixed, L")
-        assert v.seo_title is None
+    def test_seo_title_is_required(self) -> None:
+        with pytest.raises(ValueError):
+            VerdictAssessment(
+                title="Short title",
+                verdict=Verdict.TRUE,
+                confidence=Confidence.MEDIUM,
+                narrative="Some narrative.",
+                topics=[Category.ENVIRONMENTAL_IMPACT],
+                verification_level=VerificationLevel.INDEPENDENTLY_VERIFIED,
+            )
 
-    def test_keeps_short_known_abbreviation(self) -> None:
-        long_title = "Anthropic operates major data centers in the United States and the European Union markets"
-        v = self._va(long_title, "Anthropic Data Centers in the US and EU")
-        assert v.seo_title == "Anthropic Data Centers in the US and EU"
+    def test_empty_seo_title_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            self._va("Short title", "")
 
-    def test_none_seo_title_is_unchanged(self) -> None:
-        v = self._va("Short title", None)
-        assert v.seo_title is None
+    def test_seo_title_over_42_chars_rejected(self) -> None:
+        with pytest.raises(ValueError):
+            self._va("Some title", "A" * 43)
