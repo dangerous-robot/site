@@ -435,7 +435,13 @@ def _write_audit_sidecar(
             if isinstance(acquisition, dict) and acquisition:
                 # Shallow-copy the entry so the caller's list isn't mutated.
                 new_entry = dict(entry)
-                new_entry["acquisition"] = acquisition
+                # Merge with any pre-existing ``acquisition`` so research-stage
+                # fields (origin, query) survive an ingest-stage overlay.
+                existing = entry.get("acquisition")
+                if isinstance(existing, dict):
+                    new_entry["acquisition"] = {**existing, **acquisition}
+                else:
+                    new_entry["acquisition"] = acquisition
                 decorated_sources.append(new_entry)
             else:
                 decorated_sources.append(entry)

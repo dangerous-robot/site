@@ -51,7 +51,6 @@ DOCUMENTED_LITERALS: frozenset[str] = frozenset(
         "scorer_dropped_all",
         # Reserved (tier1 source-pool expansion)
         "wayback_unavailable",
-        "memento_unavailable",
         "edgar_ua_missing",
         "edgar_rate_limited",
         "tavily_rate_limited",
@@ -212,22 +211,22 @@ def test_scanner_finds_known_literals() -> None:
     )
 
 
-def test_wayback_and_memento_literals_are_emitted_in_production() -> None:
+def test_wayback_unavailable_literal_is_emitted_in_production() -> None:
     """Path 1 (Tier 1 source-pool expansion) shipped: ``wayback_unavailable``
-    and ``memento_unavailable`` must now appear at a real ``StepError``
-    construction site, not just in the docstring's "Reserved" list.
+    must appear at a real ``StepError`` construction site, not just in the
+    docstring's "Reserved" list.
 
-    Without this assertion, a future refactor could rip the Memento drain
-    out of ``_ingest_urls`` (or rename the literals) and the smoke test
-    above would still pass — the docstring lists them as reserved, after
-    all. This test fails loudly the moment the production emit-site
-    disappears.
+    Without this assertion, a future refactor could rip the archive.org
+    TimeGate drain out of ``_ingest_urls`` (or rename the literal) and
+    the smoke test above would still pass — the docstring lists it as
+    reserved, after all. This test fails loudly the moment the production
+    emit-site disappears.
     """
     findings = _scan_for_error_type_literals()
-    for literal in ("wayback_unavailable", "memento_unavailable"):
-        assert literal in findings, (
-            f"Expected {literal!r} to be constructed in production code "
-            "(Tier 1 Path 1 — Wayback/Memento gap-fill). Either restore "
-            "the StepError emit site in the orchestrator drain or remove "
-            "the literal from DOCUMENTED_LITERALS as no-longer-reserved."
-        )
+    literal = "wayback_unavailable"
+    assert literal in findings, (
+        f"Expected {literal!r} to be constructed in production code "
+        "(Tier 1 Path 1 — archive.org TimeGate gap-fill). Either restore "
+        "the StepError emit site in the orchestrator drain or remove "
+        "the literal from DOCUMENTED_LITERALS as no-longer-reserved."
+    )

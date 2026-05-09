@@ -14,7 +14,7 @@ from pydantic_ai import Agent, RunContext
 from common.instructions import load_instructions
 from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
-from ingestor.tools.wayback import check_memento, check_wayback, save_to_wayback
+from ingestor.tools.wayback import check_archive_org_timegate, save_to_wayback
 from ingestor.tools.web_fetch import (
     TERMINAL_STATUS_CODES,
     TerminalFetchError,
@@ -119,36 +119,37 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
 async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """Check archival fallbacks for ``url`` and surface the recovered archive.
 
-    Tries archive.org's availability API first; on "no snapshot" falls
-    back to Memento Time Travel; only then tries ``save_to_wayback``.
+    Queries archive.org's TimeGate (CDX-indexed) for the closest snapshot
+    to "now"; on "no snapshot" falls through to ``save_to_wayback`` which
+    asks the Wayback Machine to capture the live URL.
 
     Populates two side-channels on ``ctx.deps`` for the orchestrator to
     drain post-run:
 
     * ``acquisition_writes[url]``: ``{stage, recovered_via, outcome}``
-      on a recovery via archive.org or Memento. ``save_to_wayback``
-      success does *not* write acquisition — save creates a fresh
-      archive of a still-reachable URL, not a recovery.
-    * ``wayback_failures``: ``{stage, error_type, message}`` per
-      transport-failed leg. The orchestrator promotes to ``StepError``
-      only when the ingest itself failed terminally.
+      on a TimeGate hit. ``save_to_wayback`` success does *not* write
+      acquisition — save creates a fresh archive of a still-reachable
+      URL, not a recovery of a lost one.
+    * ``wayback_failures``: ``{stage, error_type, message}`` for the
+      TimeGate leg on transport failure. The orchestrator promotes to
+      ``StepError`` only when the ingest itself failed terminally.
     """
     if not url.startswith(("http://", "https://")):
         return {"available": False, "archived_url": None, "error": f"Invalid URL: {url!r}"}
     if ctx.deps.skip_wayback:
         return {"available": False, "archived_url": None, "skipped": True}
 
-    archive_result = await check_wayback(ctx.deps.http_client, url)
-    if archive_result.get("error"):
+    timegate_result = await check_archive_org_timegate(ctx.deps.http_client, url)
+    if timegate_result.get("error"):
         ctx.deps.wayback_failures.append(
             {
                 "stage": "ingest",
                 "error_type": "wayback_unavailable",
-                "message": archive_result["error"],
+                "message": timegate_result["error"],
             }
         )
 
-    if archive_result["available"]:
+    if timegate_result["available"]:
         ctx.deps.acquisition_writes[url] = {
             "stage": "ingest",
             "recovered_via": "archive_org",
@@ -156,35 +157,10 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
         }
         return {
             "available": True,
-            "archived_url": archive_result["archived_url"],
+            "archived_url": timegate_result["archived_url"],
         }
 
-    # Archive.org returned no snapshot (or its transport failed). Try
-    # Memento before falling through to save_to_wayback.
-    memento_result = await check_memento(ctx.deps.http_client, url)
-    if memento_result.get("error"):
-        ctx.deps.wayback_failures.append(
-            {
-                "stage": "ingest",
-                "error_type": "memento_unavailable",
-                "message": memento_result["error"],
-            }
-        )
-
-    if memento_result["available"]:
-        ctx.deps.acquisition_writes[url] = {
-            "stage": "ingest",
-            "recovered_via": "memento",
-            "outcome": "recovered",
-        }
-        return {
-            "available": True,
-            "archived_url": memento_result["archived_url"],
-        }
-
-    # Last resort: ask the Wayback save endpoint to capture the live
-    # URL. Save success isn't a "recovery" (no acquisition write — see
-    # docstring) but it still gives the agent an archived pointer.
+    # Save isn't a recovery (no acquisition write; see docstring).
     archived_url = await save_to_wayback(ctx.deps.http_client, url)
     if archived_url:
         return {"available": True, "archived_url": archived_url}

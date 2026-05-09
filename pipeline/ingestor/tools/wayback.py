@@ -1,17 +1,21 @@
-"""Wayback Machine availability check, save API, and Memento fallback.
+"""archive.org TimeGate lookup and Save Page Now capture.
 
-The ``check_wayback`` and ``check_memento`` helpers share a return shape:
-``{available: bool, archived_url: str | None, error: str | None}``. The
-``error`` key is set **only** for transport failures (``httpx.HTTPError``
-family: timeouts, connection errors, 5xx via ``raise_for_status``). A
-malformed-JSON response or an HTTP 200 with an empty ``mementos: {}``
-payload is treated as a silent "no snapshot" — ``error`` stays absent so
-the orchestrator drain doesn't mint a ``StepError`` for it.
+The ``check_archive_org_timegate`` helper queries archive.org's TimeGate
+endpoint (``https://web.archive.org/web/{datetime}/{url}``) which returns
+a 302 to the snapshot closest to the requested datetime, or 404 if no
+snapshot exists. This is the CDX-indexed lookup, materially more reliable
+than the legacy ``/wayback/available`` API (which has been observed to
+return ``archived_snapshots: {}`` for URLs that have thousands of
+snapshots).
 
-Memento Time Travel (``timetravel.mementoweb.org``) is invoked by the
-``wayback_check`` tool only when the archive.org leg returns no snapshot.
-It aggregates across non-archive.org archives; ``mementos.closest.uri``
-is the recovered URL.
+Return shape: ``{available: bool, archived_url: str | None, error?: str}``.
+``error`` is set only on transport failures (``httpx.HTTPError`` family)
+or 5xx; 404 and unexpected statuses are silent misses so the orchestrator
+drain doesn't mint a ``StepError`` for routine "no snapshot" outcomes.
+
+``save_to_wayback`` is the second-and-final fallback in the
+``wayback_check`` waterfall: when TimeGate has no snapshot, it asks the
+Wayback Machine to capture the live URL.
 """
 
 from __future__ import annotations
@@ -23,127 +27,69 @@ from typing import Any
 import httpx
 
 from common.timeouts import WAYBACK_CHECK_S, WAYBACK_SAVE_S
-from common.throttle import acquire as throttle_acquire
-from common.throttle import is_registered as throttle_is_registered
-from common.throttle import register as throttle_register
 
 logger = logging.getLogger(__name__)
 
-_AVAILABILITY_URL = "https://archive.org/wayback/available"
+_TIMEGATE_URL_TEMPLATE = "https://web.archive.org/web/{datetime}/{url}"
 _SAVE_URL = "https://web.archive.org/save/"
-_MEMENTO_URL = "http://timetravel.mementoweb.org/api/json/{datetime}/{url}"
 
-# Memento Time Travel aggregator. 5 req/s leaves headroom under
-# Memento's documented ~10 rps ceiling and avoids serializing the
-# ingestor's concurrent-URL hot path behind the bucket when many URLs
-# fail and need the fallback.
-_MEMENTO_RATE_PER_SEC = 5.0
-_MEMENTO_BURST = 5.0
+# Statuses where the snapshot URL is in the ``Location`` header.
+_REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 
 
-def _ensure_memento_throttle_registered() -> None:
-    """Register the ``memento`` bucket on the module-level throttle.
+def _normalize_archive_url(url: str) -> str:
+    # Validation requires ``https://web.archive.org`` (see validation.py:
+    # _check_archived_url_domain). TimeGate occasionally returns ``http://``
+    # in the Location header; canonicalize the scheme so committed sidecars
+    # never carry plaintext archive URLs.
+    if url.startswith("http://web.archive.org"):
+        return "https://" + url[len("http://"):]
+    return url
 
-    Idempotent for matching params; safe to call from concurrent tasks.
-    Tests that ``reset()`` the throttle re-register on the next call.
+
+async def check_archive_org_timegate(
+    client: httpx.AsyncClient, url: str
+) -> dict[str, Any]:
+    """Query archive.org's TimeGate for the snapshot closest to "now".
+
+    Same return shape as the rest of this module:
+    ``{available, archived_url, error?}``. The ``error`` key is set only
+    on transport failures (``httpx.HTTPError`` family) and 5xx. 404,
+    redirect-without-Location, and unexpected 2xx are silent misses.
     """
-    if not throttle_is_registered("memento"):
-        throttle_register(
-            "memento",
-            rate_per_sec=_MEMENTO_RATE_PER_SEC,
-            burst=_MEMENTO_BURST,
-        )
-
-
-# Register at import so concurrent first calls don't race the check.
-_ensure_memento_throttle_registered()
-
-
-async def _fetch_archive_json(
-    client: httpx.AsyncClient,
-    *,
-    request_url: str,
-    label: str,
-    target_url: str,
-    params: dict | None = None,
-) -> tuple[dict | None, str | None]:
-    """GET ``request_url`` and return ``(parsed JSON, transport error)``.
-
-    Returns ``(data, None)`` on success, ``(None, error)`` on transport
-    failures (``httpx.HTTPError`` family — timeouts, connection errors,
-    5xx), and ``(None, None)`` on malformed JSON. The malformed case is
-    deliberately silent so the orchestrator doesn't mint a ``StepError``
-    for upstream APIs that occasionally serve empty bodies.
-    """
+    now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
+    request_url = _TIMEGATE_URL_TEMPLATE.format(datetime=now, url=url)
+    label = "archive.org TimeGate check"
     try:
-        resp = await client.get(request_url, params=params, timeout=WAYBACK_CHECK_S)
-        resp.raise_for_status()
-        return resp.json(), None
+        resp = await client.get(
+            request_url, timeout=WAYBACK_CHECK_S, follow_redirects=False
+        )
     except httpx.HTTPError as exc:
-        status = getattr(getattr(exc, "response", None), "status_code", "?")
-        logger.warning("%s failed (HTTP %s) for %s", label, status, target_url)
-        return None, f"{label} failed (HTTP {status}): {exc}"
-    except ValueError as exc:
-        logger.warning("%s returned malformed payload for %s: %s", label, target_url, exc)
-        return None, None
+        cls = type(exc).__name__
+        logger.warning("%s failed (%s) for %s: %s", label, cls, url, exc)
+        return {
+            "available": False,
+            "archived_url": None,
+            "error": f"{label} failed ({cls}): {exc}",
+        }
 
+    if resp.status_code in _REDIRECT_STATUSES:
+        location = resp.headers.get("location")
+        if location:
+            return {
+                "available": True,
+                "archived_url": _normalize_archive_url(location),
+            }
+        return {"available": False, "archived_url": None}
 
-async def check_wayback(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
-    """Check if a URL is available in the Wayback Machine.
+    if 500 <= resp.status_code < 600:
+        logger.warning("%s failed (HTTP %d) for %s", label, resp.status_code, url)
+        return {
+            "available": False,
+            "archived_url": None,
+            "error": f"{label} failed (HTTP {resp.status_code})",
+        }
 
-    Returns a dict with ``available`` (bool), ``archived_url`` (str or
-    ``None``), and an optional ``error`` key set to a short string when
-    the call failed at the transport layer (``httpx.HTTPError`` family —
-    timeout, connection error, 5xx). Malformed JSON / missing keys are
-    silent ("no snapshot"); ``error`` stays absent so the orchestrator
-    drain doesn't mint a ``wayback_unavailable`` ``StepError`` for them.
-    """
-    data, error = await _fetch_archive_json(
-        client,
-        request_url=_AVAILABILITY_URL,
-        label="archive.org availability check",
-        target_url=url,
-        params={"url": url},
-    )
-    if error:
-        return {"available": False, "archived_url": None, "error": error}
-    if data:
-        snapshot = data.get("archived_snapshots", {}).get("closest")
-        if snapshot and snapshot.get("available"):
-            return {"available": True, "archived_url": snapshot.get("url")}
-    return {"available": False, "archived_url": None}
-
-
-async def check_memento(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
-    """Check the Memento Time Travel aggregator for a snapshot of ``url``.
-
-    Asks ``timetravel.mementoweb.org`` for the closest snapshot to "now"
-    across non-archive.org archives. Returns the same shape as
-    ``check_wayback``: ``{available, archived_url, error?}``. Throttled
-    through the module-level ``'memento'`` bucket.
-    """
-    _ensure_memento_throttle_registered()
-    await throttle_acquire("memento")
-
-    now = datetime.datetime.now(tz=datetime.timezone.utc).strftime("%Y%m%d%H%M%S")
-    request_url = _MEMENTO_URL.format(datetime=now, url=url)
-    data, error = await _fetch_archive_json(
-        client,
-        request_url=request_url,
-        label="Memento aggregator check",
-        target_url=url,
-    )
-    if error:
-        return {"available": False, "archived_url": None, "error": error}
-    if data:
-        closest = (data.get("mementos") or {}).get("closest") or {}
-        archived = closest.get("uri")
-        # ``uri`` is documented as a list of mirror URIs; some deployments
-        # return a single string. Accept either.
-        if isinstance(archived, list):
-            archived = archived[0] if archived else None
-        if archived:
-            return {"available": True, "archived_url": archived}
     return {"available": False, "archived_url": None}
 
 
@@ -168,14 +114,13 @@ async def save_to_wayback(client: httpx.AsyncClient, url: str) -> str | None:
                     if location.startswith("http")
                     else f"https://web.archive.org{location}"
                 )
-                return archived
-            # Fallback: construct URL from the save endpoint
+                return _normalize_archive_url(archived)
             return f"https://web.archive.org/web/{url}"
         logger.warning(
             "Wayback save returned status %d for %s", resp.status_code, url
         )
     except httpx.HTTPError as exc:
-        status = getattr(getattr(exc, "response", None), "status_code", "?")
-        logger.warning("Wayback save failed (HTTP %s) for %s", status, url)
+        cls = type(exc).__name__
+        logger.warning("Wayback save failed (%s) for %s: %s", cls, url, exc)
 
     return None

@@ -47,8 +47,7 @@ class StepError:
     search-backend plan. These literals are documented up-front so paths
     can be implemented in any order without doc churn:
 
-        - ``wayback_unavailable``      -- Path 1: Wayback Machine API down
-        - ``memento_unavailable``      -- Path 1: Memento aggregator API down
+        - ``wayback_unavailable``      -- Path 1: archive.org TimeGate API down
         - ``edgar_ua_missing``         -- Path 3: SEC EDGAR User-Agent header
           not configured
         - ``edgar_rate_limited``       -- Path 3: SEC EDGAR rate limit hit

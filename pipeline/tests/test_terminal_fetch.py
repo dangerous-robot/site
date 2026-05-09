@@ -166,11 +166,11 @@ class TestSoftStatuses:
 class TestWaybackNotCalledOnTerminal:
     @pytest.mark.asyncio
     async def test_no_wayback_call_on_403(self) -> None:
-        """Spy on check_wayback; a 403 fetch must not invoke it."""
+        """Spy on the TimeGate helper; a 403 fetch must not invoke it."""
         url = "https://example.com/forbidden2"
         calls: list[str] = []
 
-        async def spy_check_wayback(client, u):
+        async def spy_check_timegate(client, u):
             calls.append(u)
             return {"available": False, "archived_url": None}
 
@@ -178,7 +178,9 @@ class TestWaybackNotCalledOnTerminal:
             respx.get(url).mock(return_value=httpx.Response(403))
             async with httpx.AsyncClient() as client:
                 ctx = _make_ctx(client)
-                with patch.object(wayback_module, "check_wayback", spy_check_wayback):
+                with patch.object(
+                    wayback_module, "check_archive_org_timegate", spy_check_timegate
+                ):
                     with pytest.raises(TerminalFetchError):
                         await web_fetch(ctx, url)
         assert calls == []

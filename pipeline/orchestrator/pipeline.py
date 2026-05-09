@@ -571,7 +571,23 @@ async def _research(
     return out
 
 
-_WAYBACK_FAILURE_TAGS = frozenset({"wayback_unavailable", "memento_unavailable"})
+_WAYBACK_FAILURE_TAGS = frozenset({"wayback_unavailable"})
+
+
+def _merge_acquisition_writes(
+    acquisition_out: dict[str, dict], writes: dict[str, dict]
+) -> None:
+    """Merge per-URL ingest-stage writes into a research-stage map in place.
+
+    Preserves research-stage fields (``origin``, ``query``) when an
+    ingest-stage write supplies ``stage``/``recovered_via``/``outcome``.
+    The Astro schema requires ``origin`` on every acquisition entry; a
+    plain ``dict.update`` would drop it whenever the same URL was both
+    discovered (research) and recovered (ingest).
+    """
+    for url, write in writes.items():
+        existing = acquisition_out.get(url) or {}
+        acquisition_out[url] = {**existing, **write}
 
 
 def _trace_acquisition_sink(research_trace: object) -> dict | None:
@@ -656,7 +672,7 @@ async def _ingest_one(
         outcome = StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
 
     if acquisition_out is not None:
-        acquisition_out.update(deps.acquisition_writes)
+        _merge_acquisition_writes(acquisition_out, deps.acquisition_writes)
     if failures_out is not None:
         failures_out.extend(deps.wayback_failures)
 
@@ -689,7 +705,7 @@ async def _ingest_urls(
     audit sidecar can graft the provenance onto matching
     ``sources_consulted[]`` entries.
 
-    ``errors`` includes any ``wayback_unavailable`` / ``memento_unavailable``
+    ``errors`` includes any ``wayback_unavailable``
     ``StepError`` entries derived from the side-channel — but only for
     URLs whose ingest itself failed terminally. Successful ingests with a
     transient archive blip stay quiet.

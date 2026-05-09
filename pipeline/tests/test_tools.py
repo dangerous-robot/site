@@ -14,9 +14,8 @@ from pydantic_ai import RunContext
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
-from common import throttle as throttle_mod
 from ingestor.agent import IngestorDeps, wayback_check, web_fetch
-from ingestor.tools.wayback import check_memento, check_wayback, save_to_wayback
+from ingestor.tools.wayback import check_archive_org_timegate, save_to_wayback
 from ingestor.tools.web_fetch import extract_page_data
 from orchestrator.checkpoints import StepError
 from orchestrator.pipeline import VerifyConfig, _ingest_urls
@@ -97,52 +96,113 @@ class TestExtractPageData:
         assert "Copyright" not in data["text"]
 
 
-class TestCheckWayback:
+_TIMEGATE_URL_RE = re.compile(
+    r"https://web\.archive\.org/web/\d{14}/.+"
+)
+
+
+class TestCheckArchiveOrgTimeGate:
+    """Helper-level tests for ``check_archive_org_timegate``.
+
+    Mocks the TimeGate endpoint with respx; verifies the helper's return
+    contract in isolation. The integration matrix lives in
+    ``TestWaybackCheckTool``.
+    """
+
     @pytest.mark.asyncio
-    async def test_available(self):
+    async def test_redirect_with_location_returns_archived_url(self) -> None:
+        archived = "https://web.archive.org/web/20250315000000/https://example.com/"
         with respx.mock:
-            respx.get("https://archive.org/wayback/available").mock(
+            respx.get(_TIMEGATE_URL_RE).mock(
+                return_value=httpx.Response(302, headers={"location": archived})
+            )
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is True
+        assert result["archived_url"] == archived
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_http_location_is_normalized_to_https(self) -> None:
+        """archive.org occasionally returns ``http://`` Locations; the helper
+        canonicalizes to ``https://`` so committed sidecars never carry
+        plaintext archive URLs."""
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(
                 return_value=httpx.Response(
-                    200,
-                    json={
-                        "archived_snapshots": {
-                            "closest": {
-                                "available": True,
-                                "url": "https://web.archive.org/web/2025/https://example.com",
-                                "timestamp": "20250315",
-                            }
-                        }
+                    302,
+                    headers={
+                        "location": "http://web.archive.org/web/20250315000000/https://example.com/"
                     },
                 )
             )
             async with httpx.AsyncClient() as client:
-                result = await check_wayback(client, "https://example.com")
-            assert result["available"] is True
-            assert result["archived_url"] == "https://web.archive.org/web/2025/https://example.com"
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["archived_url"] == (
+            "https://web.archive.org/web/20250315000000/https://example.com/"
+        )
 
     @pytest.mark.asyncio
-    async def test_not_available(self):
+    async def test_redirect_without_location_is_silent_miss(self) -> None:
         with respx.mock:
-            respx.get("https://archive.org/wayback/available").mock(
-                return_value=httpx.Response(
-                    200,
-                    json={"archived_snapshots": {}},
-                )
-            )
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(302))
             async with httpx.AsyncClient() as client:
-                result = await check_wayback(client, "https://example.com")
-            assert result["available"] is False
-            assert result["archived_url"] is None
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert result["archived_url"] is None
+        assert "error" not in result
 
     @pytest.mark.asyncio
-    async def test_api_error(self):
+    async def test_404_is_silent_miss(self) -> None:
+        """No snapshot is *not* a transport error."""
         with respx.mock:
-            respx.get("https://archive.org/wayback/available").mock(
-                return_value=httpx.Response(500)
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_unexpected_200_is_silent_miss(self) -> None:
+        """A 200 (rather than 302) means the request didn't redirect to
+        a snapshot; treat as miss without raising."""
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(200, text=""))
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert "error" not in result
+
+    @pytest.mark.asyncio
+    async def test_5xx_sets_error_key(self) -> None:
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(503))
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert result.get("error"), "5xx should set the transport-failure error key"
+
+    @pytest.mark.asyncio
+    async def test_timeout_sets_error_key(self) -> None:
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(
+                side_effect=httpx.ReadTimeout("timegate timeout")
             )
             async with httpx.AsyncClient() as client:
-                result = await check_wayback(client, "https://example.com")
-            assert result["available"] is False
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert result.get("error"), "timeout should set the transport-failure error key"
+
+    @pytest.mark.asyncio
+    async def test_connect_error_includes_class_in_error(self) -> None:
+        """Empty-message transport exceptions still produce a diagnosable
+        error string — class name is logged so we can tell ConnectError
+        from ReadTimeout."""
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(side_effect=httpx.ConnectError(""))
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert "ConnectError" in result.get("error", "")
 
 
 class TestSaveToWayback:
@@ -227,131 +287,8 @@ class TestWebFetchTimeouts:
         assert result["url"] == url
 
 
-# Match the Memento Time Travel API path regardless of the dynamic
-# ``YYYYMMDDHHMMSS`` segment the helper computes at call time.
-_MEMENTO_URL_RE = re.compile(
-    r"http://timetravel\.mementoweb\.org/api/json/\d{14}/.+"
-)
-
-
-@pytest.fixture
-def _reset_memento_throttle():
-    """Drop the module-level memento bucket between tests so import-order
-    quirks (e.g. a previous reset() that re-creates buckets on next call)
-    don't bleed state across tests. Mirrors ``test_tavily_search.py``."""
-    yield
-    throttle_mod.reset("memento")
-
-
-class TestCheckMemento:
-    """Helper-level tests for ``check_memento``.
-
-    Mirrors the ``TestCheckWayback`` pattern: respx mocks, no on-disk
-    fixtures. The five-case integration matrix lives in
-    ``TestWaybackCheckTool``; this class verifies the helper's return
-    contract in isolation.
-    """
-
-    @pytest.mark.asyncio
-    async def test_returns_archived_url_on_hit(
-        self, _reset_memento_throttle
-    ) -> None:
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(
-                    200,
-                    json={
-                        "mementos": {
-                            "closest": {
-                                "uri": "https://web.archive.example/2025/example.com",
-                                "datetime": "Wed, 15 Mar 2025 00:00:00 GMT",
-                            }
-                        }
-                    },
-                )
-            )
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is True
-        assert result["archived_url"] == "https://web.archive.example/2025/example.com"
-        assert "error" not in result
-
-    @pytest.mark.asyncio
-    async def test_accepts_uri_as_list(self, _reset_memento_throttle) -> None:
-        """Some Memento deployments return ``uri`` as a list of mirrors."""
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(
-                    200,
-                    json={
-                        "mementos": {
-                            "closest": {
-                                "uri": [
-                                    "https://web.archive.example/m1/example.com",
-                                    "https://web.archive.example/m2/example.com",
-                                ],
-                            }
-                        }
-                    },
-                )
-            )
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is True
-        assert result["archived_url"] == "https://web.archive.example/m1/example.com"
-
-    @pytest.mark.asyncio
-    async def test_empty_mementos_is_silent_miss(
-        self, _reset_memento_throttle
-    ) -> None:
-        """An HTTP 200 with no closest snapshot is *not* a transport error."""
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(200, json={"mementos": {}}),
-            )
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is False
-        assert result["archived_url"] is None
-        assert "error" not in result
-
-    @pytest.mark.asyncio
-    async def test_5xx_sets_error_key(self, _reset_memento_throttle) -> None:
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(return_value=httpx.Response(503))
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is False
-        assert result.get("error"), "5xx should set the transport-failure error key"
-
-    @pytest.mark.asyncio
-    async def test_timeout_sets_error_key(self, _reset_memento_throttle) -> None:
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(
-                side_effect=httpx.ReadTimeout("memento timeout")
-            )
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is False
-        assert result.get("error"), "timeout should set the transport-failure error key"
-
-    @pytest.mark.asyncio
-    async def test_malformed_json_is_silent_miss(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Garbage payload counts as 'no snapshot', not transport failure."""
-        with respx.mock:
-            respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(200, content=b"not json"),
-            )
-            async with httpx.AsyncClient() as client:
-                result = await check_memento(client, "https://example.com")
-        assert result["available"] is False
-        assert "error" not in result
-
-
 class TestWaybackCheckTool:
-    """Five-case matrix for the ``wayback_check`` tool side-channel.
+    """Three-case matrix for the ``wayback_check`` tool side-channel.
 
     Each case asserts on ``deps.acquisition_writes`` and
     ``deps.wayback_failures`` after invoking the tool — these are what
@@ -360,27 +297,15 @@ class TestWaybackCheckTool:
     """
 
     URL = "https://example.com/article"
+    ARCHIVED = "https://web.archive.org/web/20250315000000/https://example.com/article"
 
-    def _mock_archive_available(self) -> None:
-        respx.get("https://archive.org/wayback/available").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "archived_snapshots": {
-                        "closest": {
-                            "available": True,
-                            "url": "https://web.archive.org/web/2025/https://example.com/article",
-                            "timestamp": "20250315",
-                        }
-                    }
-                },
-            )
+    def _mock_timegate_hit(self) -> None:
+        respx.get(_TIMEGATE_URL_RE).mock(
+            return_value=httpx.Response(302, headers={"location": self.ARCHIVED})
         )
 
-    def _mock_archive_empty(self) -> None:
-        respx.get("https://archive.org/wayback/available").mock(
-            return_value=httpx.Response(200, json={"archived_snapshots": {}})
-        )
+    def _mock_timegate_miss(self) -> None:
+        respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
 
     def _mock_save_silent(self) -> None:
         """Mock the save endpoint as a benign 404 so 'no rescue at all' tests
@@ -390,111 +315,97 @@ class TestWaybackCheckTool:
         )
 
     @pytest.mark.asyncio
-    async def test_archive_only_success_no_memento_call(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Archive returns ``available: True`` → no Memento call, acquisition=archive_org."""
+    async def test_timegate_hit_skips_save(self) -> None:
+        """TimeGate 302 → acquisition=archive_org; save endpoint must not be called."""
         with respx.mock:
-            self._mock_archive_available()
-            memento_route = respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(200, json={"mementos": {}})
-            )
+            self._mock_timegate_hit()
+            save_route = respx.post(
+                re.compile(r"https://web\.archive\.org/save/.+")
+            ).mock(return_value=httpx.Response(404))
             async with httpx.AsyncClient() as client:
                 ctx = _make_ingest_ctx(client, skip_wayback=False)
                 result = await wayback_check(ctx, self.URL)
         assert result["available"] is True
+        assert result["archived_url"] == self.ARCHIVED
         assert ctx.deps.acquisition_writes[self.URL] == {
             "stage": "ingest",
             "recovered_via": "archive_org",
             "outcome": "recovered",
         }
         assert ctx.deps.wayback_failures == []
-        assert memento_route.called is False, "Memento must not be called on archive hit"
+        assert save_route.called is False, (
+            "save must not be called when TimeGate already returned a snapshot"
+        )
 
     @pytest.mark.asyncio
-    async def test_memento_rescue_when_archive_empty(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Archive empty + Memento hit → acquisition=memento, archived_url from Memento."""
+    async def test_timegate_miss_then_save_succeeds(self) -> None:
+        """TimeGate 404 → save captures live URL; no acquisition write
+        (save is fresh capture, not recovery), no failure recorded."""
+        save_archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
         with respx.mock:
-            self._mock_archive_empty()
-            respx.get(_MEMENTO_URL_RE).mock(
+            self._mock_timegate_miss()
+            respx.post(re.compile(r"https://web\.archive\.org/save/.+")).mock(
                 return_value=httpx.Response(
-                    200,
-                    json={
-                        "mementos": {
-                            "closest": {
-                                "uri": "https://other-archive.example/2025/example.com/article",
-                            }
-                        }
-                    },
+                    200, headers={"content-location": save_archived}
                 )
             )
             async with httpx.AsyncClient() as client:
                 ctx = _make_ingest_ctx(client, skip_wayback=False)
                 result = await wayback_check(ctx, self.URL)
         assert result["available"] is True
-        assert result["archived_url"] == "https://other-archive.example/2025/example.com/article"
-        assert ctx.deps.acquisition_writes[self.URL] == {
-            "stage": "ingest",
-            "recovered_via": "memento",
-            "outcome": "recovered",
-        }
+        assert result["archived_url"] == save_archived
+        assert ctx.deps.acquisition_writes == {}
         assert ctx.deps.wayback_failures == []
 
     @pytest.mark.asyncio
-    async def test_both_no_snapshot_silent_miss(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Archive empty + Memento empty → no acquisition write, no wayback_failure."""
+    async def test_timegate_down_records_failure_and_save_fails(self) -> None:
+        """TimeGate 5xx → wayback_unavailable on the failure channel; save
+        also fails → no archived URL surfaced."""
         with respx.mock:
-            self._mock_archive_empty()
-            respx.get(_MEMENTO_URL_RE).mock(
-                return_value=httpx.Response(200, json={"mementos": {}})
-            )
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(503))
             self._mock_save_silent()
             async with httpx.AsyncClient() as client:
                 ctx = _make_ingest_ctx(client, skip_wayback=False)
                 result = await wayback_check(ctx, self.URL)
         assert result["available"] is False
-        assert ctx.deps.acquisition_writes == {}
-        assert ctx.deps.wayback_failures == []
-
-    @pytest.mark.asyncio
-    async def test_memento_aggregator_down_records_failure(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Archive empty + Memento 503 → memento_unavailable on the failure channel."""
-        with respx.mock:
-            self._mock_archive_empty()
-            respx.get(_MEMENTO_URL_RE).mock(return_value=httpx.Response(503))
-            self._mock_save_silent()
-            async with httpx.AsyncClient() as client:
-                ctx = _make_ingest_ctx(client, skip_wayback=False)
-                await wayback_check(ctx, self.URL)
         types = [f["error_type"] for f in ctx.deps.wayback_failures]
-        assert types == ["memento_unavailable"]
+        assert types == ["wayback_unavailable"]
         assert ctx.deps.acquisition_writes == {}
 
-    @pytest.mark.asyncio
-    async def test_both_unavailable_records_both_failures(
-        self, _reset_memento_throttle
-    ) -> None:
-        """Archive 500 + Memento timeout → both error literals on the failure channel."""
-        with respx.mock:
-            respx.get("https://archive.org/wayback/available").mock(
-                return_value=httpx.Response(500)
-            )
-            respx.get(_MEMENTO_URL_RE).mock(
-                side_effect=httpx.ReadTimeout("memento timeout")
-            )
-            self._mock_save_silent()
-            async with httpx.AsyncClient() as client:
-                ctx = _make_ingest_ctx(client, skip_wayback=False)
-                await wayback_check(ctx, self.URL)
-        types = [f["error_type"] for f in ctx.deps.wayback_failures]
-        assert sorted(types) == ["memento_unavailable", "wayback_unavailable"]
-        assert ctx.deps.acquisition_writes == {}
+
+class TestMergeAcquisitionWrites:
+    """The ingest-stage drain must merge into the research-stage map, not
+    overwrite — the Astro schema requires ``origin`` on every acquisition
+    entry, and a plain ``dict.update`` would drop it whenever the same URL
+    was both discovered (research) and recovered (ingest)."""
+
+    def test_research_stage_origin_survives_ingest_stage_write(self) -> None:
+        from orchestrator.pipeline import _merge_acquisition_writes
+
+        url = "https://example.com/recovered"
+        acquisition_out = {
+            url: {"stage": "research", "origin": "tavily", "query": "x"}
+        }
+        _merge_acquisition_writes(
+            acquisition_out,
+            {url: {"stage": "ingest", "recovered_via": "archive_org", "outcome": "recovered"}},
+        )
+        assert acquisition_out[url] == {
+            "stage": "ingest",
+            "origin": "tavily",
+            "query": "x",
+            "recovered_via": "archive_org",
+            "outcome": "recovered",
+        }
+
+    def test_no_existing_entry_just_adds_the_write(self) -> None:
+        from orchestrator.pipeline import _merge_acquisition_writes
+
+        url = "https://example.com/fresh"
+        acquisition_out: dict[str, dict] = {}
+        write = {"stage": "ingest", "recovered_via": "archive_org", "outcome": "recovered"}
+        _merge_acquisition_writes(acquisition_out, {url: write})
+        assert acquisition_out[url] == write
 
 
 class TestIngestUrlsAcquisitionDrain:
@@ -589,8 +500,8 @@ class TestIngestUrlsAcquisitionDrain:
         ):
             failure = {
                 "stage": "ingest",
-                "error_type": "memento_unavailable",
-                "message": "Memento aggregator check failed (HTTP 503)",
+                "error_type": "wayback_unavailable",
+                "message": "archive.org TimeGate check failed (HTTP 503)",
             }
             if failures_out is not None:
                 failures_out.append(failure)
@@ -612,7 +523,7 @@ class TestIngestUrlsAcquisitionDrain:
         # promoted to StepError. The ok URL stays silent.
         types_for_bad = [e.error_type for e in errors if e.url == url_bad]
         assert "http_error" in types_for_bad
-        assert "memento_unavailable" in types_for_bad
+        assert "wayback_unavailable" in types_for_bad
         assert all(e.url != url_ok for e in errors), (
             "Successful ingest must not surface wayback failures as StepErrors"
         )

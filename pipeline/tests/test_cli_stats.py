@@ -162,14 +162,6 @@ class TestComputeStats:
                     "recovered_via": "archive_org", "outcome": "recovered",
                 },
             },
-            # Recovered via memento.
-            {
-                "id": "2026/b", "url": "https://e.org/b", "title": "B", "ingested": True,
-                "acquisition": {
-                    "stage": "ingest", "origin": "tavily",
-                    "recovered_via": "memento", "outcome": "recovered",
-                },
-            },
             # Ingest-stage but matched directly (no recovery).
             {
                 "id": "2026/c", "url": "https://e.org/c", "title": "C", "ingested": True,
@@ -189,8 +181,8 @@ class TestComputeStats:
         )
 
         wr = compute_stats(tmp_path)["wayback_recovery"]
-        # 3 ingest entries, 2 recovered.
-        assert wr == {"recovered": 2, "total": 3, "rate": 2 / 3}
+        # 2 ingest entries, 1 recovered.
+        assert wr == {"recovered": 1, "total": 2, "rate": 0.5}
 
     def test_verification_level_distribution(self, tmp_path: Path) -> None:
         """Histogram counts each known level + the `unset` sentinel."""

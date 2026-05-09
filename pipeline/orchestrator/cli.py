@@ -2150,7 +2150,7 @@ def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None
     docs/plans/source-pool-expansion-tier1.md:
 
     \b
-      - wayback_recovery: Path 1 archive_org/memento recovery rate
+      - wayback_recovery: Path 1 archive_org recovery rate
       - acquisition_origins: per-origin distribution (brave/tavily/arxiv/...)
       - verification_levels: analyst-derived source-pool level distribution
 

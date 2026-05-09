@@ -8,7 +8,7 @@ Three aggregates land here so Tier 1 source-pool expansion can measure
 its target metrics as Paths 1-3 ship (see
 ``docs/plans/source-pool-expansion-tier1.md``):
 
-* ``wayback_recovery`` — Path 1 recovery rate (Wayback / Memento).
+* ``wayback_recovery`` — Path 1 recovery rate (archive.org TimeGate hits).
 * ``acquisition_origins`` — Path 2/3 per-origin distribution.
 * ``verification_levels`` — analyst-derived level distribution across all claims.
 
@@ -44,8 +44,8 @@ ACQUISITION_ORIGINS: tuple[str, ...] = (
 # for claims that have no ``verification_level`` field.
 VERIFICATION_LEVELS: tuple[str, ...] = tuple(v.value for v in VerificationLevel)
 
-# Wayback / Memento outcomes that count as a "recovered" ingest.
-RECOVERY_VALUES: frozenset[str] = frozenset({"archive_org", "memento"})
+# archive.org TimeGate outcomes that count as a "recovered" ingest.
+RECOVERY_VALUES: frozenset[str] = frozenset({"archive_org"})
 
 
 def _scan_claims(repo_root: Path) -> tuple[list[dict], dict[str, int]]:
