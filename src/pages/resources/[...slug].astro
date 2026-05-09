@@ -1,0 +1,103 @@
+---
+import { getCollection, render } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import ResourcePage from '../../layouts/ResourcePage.astro';
+import TurnOffGuide from '../../components/TurnOffGuide.astro';
+
+export async function getStaticPaths() {
+  const entries = await getCollection('resources');
+  return entries.map((entry) => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<'resources'>;
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const { title, description, layout, wallpaper, data } = entry.data;
+
+const articleSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: title,
+  description,
+  datePublished: entry.data.pubDate.toISOString(),
+  author: { '@type': 'Organization', name: 'Dangerous Robot' },
+};
+
+// Pull a freshest-modified date for guides whose payload carries per-platform
+// last_verified ISO dates.
+function maxLastVerified(payload: unknown): string | undefined {
+  const platforms = (payload as { platforms?: { last_verified?: string }[] } | undefined)?.platforms;
+  if (!Array.isArray(platforms)) return undefined;
+  const dates = platforms
+    .map((p) => p?.last_verified)
+    .filter((s): s is string => typeof s === 'string')
+    .map((s) => new Date(s))
+    .filter((d) => !isNaN(d.getTime()));
+  if (dates.length === 0) return undefined;
+  return new Date(Math.max(...dates.map((d) => d.getTime()))).toISOString();
+}
+
+const dateModified = layout === 'guide' ? maxLastVerified(data) : undefined;
+if (dateModified) {
+  (articleSchema as Record<string, unknown>).dateModified = dateModified;
+}
+---
+<ResourcePage
+  title={title}
+  description={description}
+  wallpaper={wallpaper}
+  crumb={title}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+
+  {layout === 'guide' && (
+    <TurnOffGuide data={data}>
+      <Content />
+    </TurnOffGuide>
+  )}
+
+  {layout === 'article' && (
+    <article class="resource-article">
+      <Content />
+    </article>
+  )}
+
+  {layout === 'matrix' && (
+    <article class="resource-article">
+      <Content />
+      <p class="layout-pending">
+        Matrix layout is not yet implemented. Check back soon.
+      </p>
+    </article>
+  )}
+
+  {layout === 'tool' && (
+    <article class="resource-article">
+      <Content />
+      <p class="layout-pending">
+        Interactive tool layout is not yet implemented. Check back soon.
+      </p>
+    </article>
+  )}
+</ResourcePage>
+
+<style>
+  .resource-article {
+    max-width: 40rem;
+  }
+
+  .layout-pending {
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+</style>

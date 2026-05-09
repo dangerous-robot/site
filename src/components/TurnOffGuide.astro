@@ -1,0 +1,26 @@
+---
+interface Props {
+  data: unknown;
+}
+
+const { data } = Astro.props;
+
+const _data = data as { platforms?: unknown[] } | undefined;
+const platformCount = Array.isArray(_data?.platforms) ? _data.platforms.length : 0;
+---
+<section>
+  <slot />
+  {platformCount === 0 && (
+    <p class="placeholder">
+      Guide content is being assembled. Check back shortly.
+    </p>
+  )}
+</section>
+
+<style>
+  .placeholder {
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin-top: var(--space-lg);
+  }
+</style>

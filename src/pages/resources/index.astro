@@ -1,0 +1,170 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import Wallpaper from '../../components/Wallpaper.astro';
+import PaperGrain from '../../components/PaperGrain.astro';
+import '../../styles/resources.css';
+
+const entries = (await getCollection('resources'))
+  .filter((e) => !e.data.noindex)
+  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+
+const FURTHER_READING = [
+  {
+    title: 'Center for Humane Technology',
+    url: 'https://www.humanetech.com/',
+    description: 'Advocacy for technology that serves humanity.',
+  },
+  {
+    title: 'Future of Life Institute',
+    url: 'https://futureoflife.org/',
+    description: 'Research and policy for existential risk from AI.',
+  },
+  {
+    title: 'AI Incident Database',
+    url: 'https://incidentdatabase.ai/',
+    description: 'Tracking real-world AI harms and failures.',
+  },
+  {
+    title: 'Electronic Frontier Foundation: AI',
+    url: 'https://www.eff.org/issues/ai',
+    description: 'Digital rights and civil liberties in the age of AI.',
+  },
+  {
+    title: 'Human Statement',
+    url: 'https://humanstatement.org/',
+    description: 'A declaration that AI should serve humanity, not the reverse.',
+  },
+];
+
+function fmtDate(d: Date): string {
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+}
+---
+<Base title="Resources" description="AI literacy resources for people who didn't ask to live in the future but ended up here anyway." layout="reading">
+  <Wallpaper variant="default" />
+  <PaperGrain />
+  <div class="resources-page">
+    <Breadcrumb crumbs={[{ label: 'Home', href: '/' }, { label: 'Resources' }]} />
+    <header class="resources-hero" id="top">
+      <p class="eyebrow">Resources</p>
+      <h1>AI literacy for people who didn&rsquo;t ask</h1>
+      <p class="lede">
+        AI literacy resources for people who didn&rsquo;t ask to live in the
+        future but ended up here anyway.
+      </p>
+    </header>
+
+    <hr />
+
+    <div class="hub-grid">
+      <section class="hub-col">
+        <h2 class="hub-col-label">Our resources</h2>
+        {entries.length === 0
+          ? <p class="empty">More guides coming soon.</p>
+          : <ul class="hub-list">
+              {entries.map((entry) => (
+                <li>
+                  <a href={`/resources/${entry.id}`} class="hub-item">
+                    <span class="hub-title">{entry.data.title}</span>
+                    <span class="hub-desc">{entry.data.description}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>}
+      </section>
+
+      <section class="hub-col">
+        <h2 class="hub-col-label">Elsewhere</h2>
+        <ul class="hub-list">
+          {FURTHER_READING.map((link) => (
+            <li>
+              <a href={link.url} target="_blank" rel="noopener noreferrer" class="hub-item">
+                <span class="hub-title">{link.title}</span>
+                <span class="hub-desc">{link.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+
+    <hr />
+
+    <p class="footer-note">
+      These resources are free, untracked, and updated as things change.
+    </p>
+  </div>
+</Base>
+
+<style>
+  .hub-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2xl);
+    margin: var(--space-xl) 0;
+  }
+
+  @media (max-width: 640px) {
+    .hub-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-xl);
+    }
+  }
+
+  .hub-col-label {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+    font-weight: 600;
+  }
+
+  .hub-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .hub-item {
+    display: block;
+    text-decoration: none;
+    padding: 0;
+  }
+
+  .hub-item:hover .hub-title {
+    text-decoration: underline;
+  }
+
+  .hub-title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    color: var(--color-accent);
+    margin-bottom: 0.25rem;
+  }
+
+  .hub-desc {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    line-height: var(--line-height-body);
+  }
+
+  .empty {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  .footer-note {
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    margin: var(--space-lg) 0;
+  }
+</style>
