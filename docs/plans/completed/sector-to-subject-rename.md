@@ -1,5 +1,7 @@
 # Migration: `sector` → `subject`
 
+**Status**: shipped 2026-05-09 — atomic schema/code/content rename in commit `a0edbec`; follow-up cleanup in `156fdba`. New subject template `using-generative-ai-harms-cognitive-ability` added in `1c2b9b5`; the `ai-llm-producers` → `ai-model-producers` slug fix and `ai-producers-existential-score` claim landed in `12bec94`.
+
 ## Context
 
 The `sector` entity_type currently holds two semantically different things:
