@@ -141,6 +141,29 @@ class CheckpointHandler(Protocol):
         """
         ...
 
+    async def review_entity_disambiguation(
+        self,
+        entity_name: str,
+        candidates: list[str],
+    ) -> Literal["accept", "reject"] | str:
+        """Surface a candidate list to the operator and return their decision.
+
+        Mirrors ``review_onboard``'s sentinel-or-payload signature:
+
+        - ``"accept"`` — proceed using the first candidate as-is
+        - ``"reject"`` — abort the run
+        - ``str`` — use this name verbatim (one of the candidates, or a
+          free-text override)
+
+        Doubles as the channel for the verifier's ``unverified`` halt:
+        the orchestrator passes ``['unverified-startup',
+        'unverified-other']`` and writes the operator's pick into the
+        entity's ``verification_status``. The auto-approve handler
+        returns ``"reject"`` — auto-approve in the disambiguation case
+        is conservative; it aborts.
+        """
+        ...
+
 
 class CLICheckpointHandler:
     """Interactive CLI checkpoints via click.confirm()."""
@@ -221,6 +244,29 @@ class CLICheckpointHandler:
         )
         return choice
 
+    async def review_entity_disambiguation(
+        self,
+        entity_name: str,
+        candidates: list[str],
+    ) -> Literal["accept", "reject"] | str:
+        click.echo(f"\nDisambiguation: {entity_name}")
+        click.echo("Candidates:")
+        for idx, name in enumerate(candidates, 1):
+            click.echo(f"  {idx}. {name}")
+        click.echo(
+            "Reply 'accept' (use #1), 'reject' (abort), a number (1.."
+            f"{len(candidates)}), or a name to use verbatim."
+        )
+        raw = click.prompt("Choice", default="reject").strip()
+        if raw in ("accept", "reject"):
+            return raw
+        if raw.isdigit():
+            n = int(raw)
+            if 1 <= n <= len(candidates):
+                return candidates[n - 1]
+            click.echo(f"Out of range; treating {raw!r} as a literal name.")
+        return raw
+
 
 class AutoApproveCheckpointHandler:
     """Auto-approves all checkpoints. For tests and CI.
@@ -266,3 +312,13 @@ class AutoApproveCheckpointHandler:
     ) -> Literal["accept", "reject"]:
         self.calls.append("review_entity_enrichment")
         return "accept"
+
+    async def review_entity_disambiguation(
+        self,
+        entity_name: str,
+        candidates: list[str],
+    ) -> Literal["accept", "reject"] | str:
+        self.calls.append("review_entity_disambiguation")
+        # Conservative default: auto-approve in the disambiguation /
+        # unverified case aborts rather than picking the first candidate.
+        return "reject"

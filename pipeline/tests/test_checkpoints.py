@@ -43,3 +43,24 @@ class TestAutoApproveReviewEntityEnrichment:
         # new method would fail isinstance against CheckpointHandler.
         handler = AutoApproveCheckpointHandler()
         assert isinstance(handler, CheckpointHandler)
+
+
+class TestAutoApproveReviewEntityDisambiguation:
+    @pytest.mark.asyncio
+    async def test_returns_reject(self) -> None:
+        """Auto-approve in the disambiguation case is conservative: aborts."""
+        handler = AutoApproveCheckpointHandler()
+        result = await handler.review_entity_disambiguation(
+            entity_name="Apple",
+            candidates=["Apple Inc.", "Apple Records"],
+        )
+        assert result == "reject"
+
+    @pytest.mark.asyncio
+    async def test_records_call_in_calls(self) -> None:
+        handler = AutoApproveCheckpointHandler()
+        await handler.review_entity_disambiguation(
+            entity_name="Apple",
+            candidates=["Apple Inc.", "Apple Records"],
+        )
+        assert "review_entity_disambiguation" in handler.calls
