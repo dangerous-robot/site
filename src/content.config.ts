@@ -287,4 +287,28 @@ const criteria = defineCollection({
   }),
 });
 
-export const collections = { sources, claims, entities, criteria };
+const resources = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: 'src/content/resources' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().max(200),
+    pubDate: z.coerce.date(),
+    layout: z.enum(['article', 'matrix', 'guide', 'tool']).default('article'),
+    wallpaper: z.enum(['default', 'ai-safety', 'responsible-ai', 'none']).default('default'),
+    topics: z.array(z.enum([
+      'ai-literacy', 'ai-safety', 'consumer-guide', 'responsible-ai',
+    ])).min(1).max(3),
+    /** Layout-specific structured payload. Validated per-layout at render time. */
+    data: z.unknown().optional(),
+    noindex: z.boolean().default(false),
+    /** External resources to surface with the entry on the hub page. */
+    further_reading: z.array(z.object({
+      title: z.string(),
+      url: z.string().url(),
+      publisher: z.string().optional(),
+      last_checked: z.coerce.date().optional(),
+    })).optional(),
+  }),
+});
+
+export const collections = { sources, claims, entities, criteria, resources };
