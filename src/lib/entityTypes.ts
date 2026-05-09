@@ -1,7 +1,7 @@
 export const ENTITY_TYPE_PARENTS = {
-  company: { label: "Companies", href: "/companies" },
-  product: { label: "Products",  href: "/products"  },
-  subject: { label: "Subjects",  href: "/subjects"  },
+  company: { label: "Companies", href: "/research/companies" },
+  product: { label: "Products",  href: "/research/products"  },
+  subject: { label: "Subjects",  href: "/research/subjects"  },
 } as const;
 
 export const ENTITY_TYPE_LABELS: Record<string, string> = {
@@ -53,7 +53,7 @@ export function resolveMadeBy<T extends EntityLike>(
   const parentRef = entity.data.parent_company;
   if (!parentRef) return null;
   return {
-    href: `/entities/${parentRef}`,
+    href: `/research/entities/${parentRef}`,
     label:
       entityMap.get(parentRef)?.data.name ??
       titleCaseSlug(parentRef.split('/').pop()!),

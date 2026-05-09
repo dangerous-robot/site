@@ -28,7 +28,7 @@ const notAssessed = rows.filter(r => !r.verdict);
         <tr>
           <td>
             {row.claimId
-              ? <a href={`/claims/${row.claimId}`}>{row.name}</a>
+              ? <a href={`/research/claims/${row.claimId}`}>{row.name}</a>
               : row.name}
           </td>
           <td><VerdictBadge verdict={row.verdict!} /></td>
@@ -53,7 +53,7 @@ const notAssessed = rows.filter(r => !r.verdict);
         </summary>
         <div class="matrix-detail">
           {row.claimId
-            ? <a href={`/claims/${row.claimId}`}>View claim →</a>
+            ? <a href={`/research/claims/${row.claimId}`}>View claim →</a>
             : <span class="muted">No claim on file</span>}
         </div>
       </details>

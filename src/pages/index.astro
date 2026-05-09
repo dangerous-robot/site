@@ -22,25 +22,25 @@ const products = entities.filter((e) => e.data.type === 'product');
 const subjectEntities = entities.filter((e) => e.data.type === 'subject');
 
 const sections = [
-  { n: '01', label: 'Subjects',  meta: `${subjectEntities.length} tracked`, href: '/subjects' },
-  { n: '02', label: 'Companies', meta: `${companies.length} tracked`,        href: '/companies' },
-  { n: '03', label: 'Products',  meta: `${products.length} tracked`,         href: '/products' },
-  { n: '04', label: 'Topics',    meta: `${CATEGORIES.length} areas`,         href: '/topics' },
-  { n: '05', label: 'Claims',    meta: `${allClaims.length} assessed`,       href: '/claims' },
-  { n: '06', label: 'Sources',   meta: `${allSources.length} indexed`,       href: '/sources' },
-  { n: '07', label: 'Criteria',  meta: '',                                   href: '/criteria' },
-  { n: '08', label: 'FAQ',       meta: '',                                   href: '/faq' },
+  { n: '01', label: 'Subjects',  meta: `${subjectEntities.length} tracked`, href: '/research/subjects' },
+  { n: '02', label: 'Companies', meta: `${companies.length} tracked`,        href: '/research/companies' },
+  { n: '03', label: 'Products',  meta: `${products.length} tracked`,         href: '/research/products' },
+  { n: '04', label: 'Topics',    meta: `${CATEGORIES.length} areas`,         href: '/research/topics' },
+  { n: '05', label: 'Claims',    meta: `${allClaims.length} assessed`,       href: '/research/claims' },
+  { n: '06', label: 'Sources',   meta: `${allSources.length} indexed`,       href: '/research/sources' },
+  { n: '07', label: 'Criteria',  meta: '',                                   href: '/research/criteria' },
+  { n: '08', label: 'FAQ',       meta: '',                                   href: '/research' },
 ];
 
 const navLinks = [
-  { href: '/subjects',  label: 'Subjects' },
-  { href: '/companies', label: 'Companies' },
-  { href: '/products',  label: 'Products' },
-  { href: '/topics',    label: 'Topics' },
-  { href: '/claims',    label: 'Claims' },
-  { href: '/sources',   label: 'Sources' },
-  { href: '/criteria',  label: 'Criteria' },
-  { href: '/faq',       label: 'FAQ' },
+  { href: '/research/subjects',  label: 'Subjects' },
+  { href: '/research/companies', label: 'Companies' },
+  { href: '/research/products',  label: 'Products' },
+  { href: '/research/topics',    label: 'Topics' },
+  { href: '/research/claims',    label: 'Claims' },
+  { href: '/research/sources',   label: 'Sources' },
+  { href: '/research/criteria',  label: 'Criteria' },
+  { href: '/research',           label: 'FAQ' },
 ];
 
 const subjectHighlights = allClaims
@@ -85,14 +85,14 @@ const scatterItems = [
     verdict: c.data.verdict as string,
     title: c.data.title as string,
     titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
-    href: `/claims/${c.id}`,
+    href: `/research/claims/${c.id}`,
     isSubject: false,
   })),
   ...subjectHighlights.map((c) => ({
     verdict: c.data.verdict as string,
     title: c.data.title as string,
     titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
-    href: `/claims/${c.id}`,
+    href: `/research/claims/${c.id}`,
     isSubject: true,
   })),
 ];

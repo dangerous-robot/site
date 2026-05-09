@@ -1,10 +1,10 @@
 ---
-import Base from "../../layouts/Base.astro";
+import Base from "../../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
-import { buildCitationIndex } from "../../lib/citations";
-import ClaimRow from "../../components/ClaimRow.astro";
-import PageHeader from "../../components/PageHeader.astro";
-import { shouldNoindex } from "../../lib/seo";
+import { buildCitationIndex } from "../../../lib/citations";
+import ClaimRow from "../../../components/ClaimRow.astro";
+import PageHeader from "../../../components/PageHeader.astro";
+import { shouldNoindex } from "../../../lib/seo";
 
 export async function getStaticPaths() {
   const sources = await getCollection("sources");
@@ -46,7 +46,7 @@ const publishedDate = source.data.published_date instanceof Date
 
 const sourceCrumbs = [
   { label: "Home", href: "/" },
-  { label: "Sources", href: "/sources" },
+  { label: "Sources", href: "/research/sources" },
 ];
 
 const sourceDescription = source.data.summary

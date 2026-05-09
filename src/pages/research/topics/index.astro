@@ -1,9 +1,9 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Base from '../../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
-import VerdictDistribution from '../../components/VerdictDistribution.astro';
-import PageHeader from '../../components/PageHeader.astro';
+import { CATEGORY_LABELS, CATEGORIES } from '../../../lib/research';
+import VerdictDistribution from '../../../components/VerdictDistribution.astro';
+import PageHeader from '../../../components/PageHeader.astro';
 
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 
@@ -27,7 +27,7 @@ const topicStats = CATEGORIES.map(cat => {
   <PageHeader variant="index" type="topic" title="Topics" />
   <div class="topics-grid">
     {topicStats.map(stat => (
-      <a href={`/topics/${stat.topic}`} class="topic-card">
+      <a href={`/research/topics/${stat.topic}`} class="topic-card">
         <div class="topic-header">
           <span class="topic-label">{stat.label}</span>
           <span class="topic-count">{stat.count} claims</span>

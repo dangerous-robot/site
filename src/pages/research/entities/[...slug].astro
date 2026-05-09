@@ -1,19 +1,19 @@
 ---
-import Base from "../../layouts/Base.astro";
+import Base from "../../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
-import { buildCriteriaIndex } from "../../lib/criteria";
-import { CATEGORY_LABELS } from "../../lib/research";
-import VerdictBadge from "../../components/VerdictBadge.astro";
-import NotAssessedCell from "../../components/NotAssessedCell.astro";
-import PageHeader from "../../components/PageHeader.astro";
+import { buildCriteriaIndex } from "../../../lib/criteria";
+import { CATEGORY_LABELS } from "../../../lib/research";
+import VerdictBadge from "../../../components/VerdictBadge.astro";
+import NotAssessedCell from "../../../components/NotAssessedCell.astro";
+import PageHeader from "../../../components/PageHeader.astro";
 import {
   VERIFICATION_STATUS_BADGE_TEXT,
   buildEntityMap,
   getEntityParent,
   resolveMadeBy,
   type VerificationStatus,
-} from "../../lib/entityTypes";
-import { shouldNoindex } from "../../lib/seo";
+} from "../../../lib/entityTypes";
+import { shouldNoindex } from "../../../lib/seo";
 
 export async function getStaticPaths() {
   const entities = await getCollection("entities");
@@ -149,7 +149,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
                 {derivedProducts.map((product, i) => (
                   <>
                     {i > 0 && <span class="fact-sep"> &middot; </span>}
-                    <a href={`/entities/${product.id}`}>{product.data.name}</a>
+                    <a href={`/research/entities/${product.id}`}>{product.data.name}</a>
                   </>
                 ))}
               </dd>
@@ -180,7 +180,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
               {claimsByCategory.get(cat)!.map((claim) => (
                 <li>
                   <VerdictBadge verdict={claim.data.verdict} size="sm" />
-                  <a href={`/claims/${claim.id}`}>
+                  <a href={`/research/claims/${claim.id}`}>
                     {claim.data.title}
                   </a>
                 </li>
@@ -207,7 +207,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
                 const topClaim = entityClaims[0];
                 return (
                   <div class="std-row">
-                    <a href={`/criteria/${std.id}`} class="std-text">{std.data.text}</a>
+                    <a href={`/research/criteria/${std.id}`} class="std-text">{std.data.text}</a>
                     <div class="std-verdict">
                       {topClaim
                         ? <VerdictBadge verdict={topClaim.verdict} size="sm" />

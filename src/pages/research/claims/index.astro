@@ -1,12 +1,12 @@
 ---
-import Base from '../../layouts/Base.astro';
+import Base from '../../../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import ClaimRow from '../../components/ClaimRow.astro';
-import FilterBar from '../../components/FilterBar.astro';
-import EmptyState from '../../components/EmptyState.astro';
-import PageHeader from '../../components/PageHeader.astro';
-import { VERDICT_ORDER, VERDICT_LABELS } from '../../lib/verdict';
-import { CATEGORY_LABELS, CATEGORIES } from '../../lib/research';
+import ClaimRow from '../../../components/ClaimRow.astro';
+import FilterBar from '../../../components/FilterBar.astro';
+import EmptyState from '../../../components/EmptyState.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import { VERDICT_ORDER, VERDICT_LABELS } from '../../../lib/verdict';
+import { CATEGORY_LABELS, CATEGORIES } from '../../../lib/research';
 
 const claims = await getCollection('claims', ({ data }) => data.status === 'published');
 const sorted = [...claims].sort((a, b) =>

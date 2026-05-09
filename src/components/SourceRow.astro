@@ -9,7 +9,7 @@ interface Props {
 }
 const { id, title, publisher, kind, year, citationCount } = Astro.props;
 ---
-<a href={`/sources/${id}`} class="source-row" data-kind={kind}>
+<a href={`/research/sources/${id}`} class="source-row" data-kind={kind}>
   <span class:list={['chip', 'kind-badge', `kind-${kind}`]}>{kind}</span>
   <span class="source-info">
     <span class="publisher">{publisher}</span>

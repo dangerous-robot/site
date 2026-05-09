@@ -19,17 +19,25 @@ export default defineConfig({
         return !isAlphaDetailPath(pathname);
       },
       serialize(item) {
-        if (item.url.includes("/claims/")) {
+        if (item.url.includes("/research/claims/")) {
           return { ...item, changefreq: "monthly", priority: 0.9 };
         }
-        if (item.url.includes("/entities/") || item.url.includes("/companies/") || item.url.includes("/products/")) {
+        if (
+          item.url.includes("/research/entities/") ||
+          item.url.includes("/research/companies/") ||
+          item.url.includes("/research/products/") ||
+          item.url.includes("/research/subjects/")
+        ) {
           return { ...item, changefreq: "weekly", priority: 0.8 };
         }
-        if (item.url === "https://dangerousrobot.org/sources") {
+        if (item.url === "https://dangerousrobot.org/research/sources") {
           return { ...item, changefreq: "weekly", priority: 0.5 };
         }
-        if (item.url.includes("/sources/")) {
+        if (item.url.includes("/research/sources/")) {
           return { ...item, changefreq: "monthly", priority: 0.4 };
+        }
+        if (item.url.includes("/resources/") || item.url.endsWith("/resources")) {
+          return { ...item, changefreq: "monthly", priority: 0.7 };
         }
         return { ...item, changefreq: "weekly", priority: 0.7 };
       },

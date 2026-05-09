@@ -17,16 +17,17 @@ export const INDEX_ALPHA_DETAIL_PAGES = false as boolean;
 
 /**
  * Patterns that match agent-generated detail pages. Anchored to be
- * exact: list/index pages like /claims and /sources do NOT match.
+ * exact: list/index pages like /research/claims and /research/sources
+ * do NOT match.
  *
- * - /claims/{entity}/{claim}
- * - /sources/{yyyy}/{slug}
- * - /entities/{anything-after}
+ * - /research/claims/{entity}/{claim}
+ * - /research/sources/{yyyy}/{slug}
+ * - /research/entities/{anything-after}
  */
 const ALPHA_DETAIL_PATTERNS: readonly RegExp[] = [
-  /^\/claims\/[^/]+\/[^/]+\/?$/,
-  /^\/sources\/\d{4}\/[^/]+\/?$/,
-  /^\/entities\/.+/,
+  /^\/research\/claims\/[^/]+\/[^/]+\/?$/,
+  /^\/research\/sources\/\d{4}\/[^/]+\/?$/,
+  /^\/research\/entities\/.+/,
 ];
 
 /** True when `pathname` is an alpha-stage detail page. */

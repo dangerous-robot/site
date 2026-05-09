@@ -10,7 +10,7 @@ interface Props {
 }
 const { name, slug, entityType, description, verdicts, claimCount } = Astro.props;
 const typeSegment = entityType === 'company' ? 'companies' : entityType === 'product' ? 'products' : 'subjects';
-const href = `/entities/${typeSegment}/${slug}`;
+const href = `/research/entities/${typeSegment}/${slug}`;
 ---
 <a href={href} class="entity-card">
   <div class="card-header">

@@ -1,12 +1,12 @@
 ---
-import Base from "../../layouts/Base.astro";
+import Base from "../../../layouts/Base.astro";
 import { getCollection, render } from "astro:content";
-import PageHeader from "../../components/PageHeader.astro";
-import VerdictBadge from "../../components/VerdictBadge.astro";
-import DisclosureIndicator from "../../components/DisclosureIndicator.astro";
-import { buildEntityMap, getEntityParent, resolveMadeBy } from "../../lib/entityTypes";
-import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../lib/verdict";
-import { shouldNoindex } from "../../lib/seo";
+import PageHeader from "../../../components/PageHeader.astro";
+import VerdictBadge from "../../../components/VerdictBadge.astro";
+import DisclosureIndicator from "../../../components/DisclosureIndicator.astro";
+import { buildEntityMap, getEntityParent, resolveMadeBy } from "../../../lib/entityTypes";
+import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../../lib/verdict";
+import { shouldNoindex } from "../../../lib/seo";
 import {
   CAPPED_VERIFICATION_LEVELS,
   VERIFICATION_LEVEL_GLOSS,
@@ -14,7 +14,7 @@ import {
   countSourcesByIndependence,
   formatSourceCounts,
   type VerificationLevel,
-} from "../../lib/sourceQuality";
+} from "../../../lib/sourceQuality";
 
 export async function getStaticPaths() {
   const claims = await getCollection("claims");
@@ -46,7 +46,7 @@ const madeBy = resolveMadeBy(entityEntry, entityMap);
 const claimCrumbs = [
   { label: "Home", href: "/" },
   ...(typeParent ? [typeParent] : []),
-  { label: entityLabel, href: `/entities/${claim.data.entity}` },
+  { label: entityLabel, href: `/research/entities/${claim.data.entity}` },
 ];
 
 const confidenceLabels: Record<string, string> = {
@@ -175,7 +175,7 @@ const claimReview = {
                   return (
                     <li>
                       {meta
-                        ? <a href={`/sources/${src.id}`}>{src.title}</a>
+                        ? <a href={`/research/sources/${src.id}`}>{src.title}</a>
                         : <a href={src.url} target="_blank" rel="noopener noreferrer">{src.title} ↗</a>}
                       {meta && (
                         <span class="source-meta">
@@ -240,7 +240,7 @@ const claimReview = {
         <ul class="source-list">
           {claim.data.sources.map((sourceRef: string) => (
             <li>
-              <a href={`/sources/${sourceRef}`}>{sourceRef}</a>
+              <a href={`/research/sources/${sourceRef}`}>{sourceRef}</a>
             </li>
           ))}
         </ul>
@@ -249,7 +249,7 @@ const claimReview = {
 
     {matchedCriteria && (
       <p class="criterion-ref">
-        Criterion: <a href={`/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
+        Criterion: <a href={`/research/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
       </p>
     )}
 
