@@ -150,9 +150,6 @@ def render_blocked_title(template: TemplateRecord, entity_name: str) -> str:
 
 _WHITESPACE_RE = re.compile(r"\s+")
 
-SEO_TITLE_FALLBACK_THRESHOLD = 60
-_SEO_SAFE_SHORT_WORDS = frozenset({"a", "i", "ai", "us", "uk", "eu", "ok", "ny", "la", "dc", "tv"})
-
 
 def _normalize_title(text: str) -> str:
     return _WHITESPACE_RE.sub(" ", text.strip()).lower()
@@ -231,14 +228,3 @@ def blocked_title_message(
         f"Analyst title: {analyst_title!r}. Reason: {title_reason}\n"
     )
     return body, "title rewritten"
-
-
-def looks_seo_truncated(seo_title: str) -> bool:
-    """Heuristic: last word is a 1-2 char fragment that isn't a common abbreviation.
-    Catches LLM outputs that hit the max_length boundary mid-word.
-    """
-    stripped = seo_title.rstrip(" .,;:!?")
-    if not stripped:
-        return False
-    last = stripped.rsplit(None, 1)[-1].rstrip("-")
-    return len(last) <= 2 and last.lower() not in _SEO_SAFE_SHORT_WORDS
