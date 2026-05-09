@@ -1,26 +1,442 @@
 ---
+import { ArrowUp, ExternalLink } from 'lucide-astro';
+
+interface SubSection {
+  title: string;
+  preamble?: string;
+  steps: string[];
+  post_note?: string;
+}
+
+interface Platform {
+  id: string;
+  name: string;
+  where_it_shows: string;
+  context: string;
+  sub_sections: SubSection[];
+  what_doesnt_work: string;
+  last_verified: string;
+  last_verified_label?: string;
+}
+
+interface FurtherReadingItem {
+  title: string;
+  url: string;
+  source: string;
+  description: string;
+}
+
+interface GuideData {
+  platforms: Platform[];
+  further_reading?: FurtherReadingItem[];
+}
+
 interface Props {
   data: unknown;
 }
 
-const { data } = Astro.props;
+const { data } = Astro.props as { data: GuideData };
+const platforms = Array.isArray(data?.platforms) ? data.platforms : [];
+const furtherReading = Array.isArray(data?.further_reading) ? data.further_reading : [];
 
-const _data = data as { platforms?: unknown[] } | undefined;
-const platformCount = Array.isArray(_data?.platforms) ? _data.platforms.length : 0;
+function stripMd(text: string): string {
+  return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+}
+
+// Inline-format text: **bold** then `code`. Returns array of segments where
+// each segment is { kind: 'plain'|'bold'|'code', text: string, inner?: segments }.
+type Seg =
+  | { kind: 'plain'; text: string }
+  | { kind: 'code'; text: string }
+  | { kind: 'bold'; inner: Seg[] };
+
+function parseInline(text: string): Seg[] {
+  const out: Seg[] = [];
+  const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
+  for (const part of boldParts) {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      out.push({ kind: 'bold', inner: parseCode(part.slice(2, -2)) });
+    } else if (part.length > 0) {
+      out.push(...parseCode(part));
+    }
+  }
+  return out;
+}
+
+function parseCode(text: string): Seg[] {
+  const out: Seg[] = [];
+  const parts = text.split(/(`[^`]+`)/g);
+  for (const part of parts) {
+    if (part.startsWith('`') && part.endsWith('`')) {
+      out.push({ kind: 'code', text: part.slice(1, -1) });
+    } else if (part.length > 0) {
+      out.push({ kind: 'plain', text: part });
+    }
+  }
+  return out;
+}
+
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: platforms.map((p) => ({
+    '@type': 'Question',
+    name: `How do I turn off ${p.name}?`,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: [
+        ...p.sub_sections.flatMap((s) => s.steps.map(stripMd)),
+        `Note: ${stripMd(p.what_doesnt_work)}`,
+      ].join(' '),
+    },
+  })),
+};
+
+function fmtDate(iso: string, label?: string): string {
+  if (label) return label;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+}
 ---
-<section>
-  <slot />
-  {platformCount === 0 && (
-    <p class="placeholder">
-      Guide content is being assembled. Check back shortly.
-    </p>
+<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+
+<div class="turn-off-guide">
+  <div class="intro">
+    <slot />
+  </div>
+
+  <nav class="resources-pill-nav" aria-label="Jump to platform">
+    {platforms.map((p) => (
+      <a href={`#${p.id}`} data-pill-target={p.id}>{p.name}</a>
+    ))}
+  </nav>
+
+  {platforms.map((platform, idx) => (
+    <section id={platform.id} class="platform" data-platform-id={platform.id}>
+      {idx > 0 && <hr class="platform-sep" />}
+      <h2 class="platform-name">
+        {platform.name}
+        <a href="#top" class="return-top" aria-label="Return to top">
+          <ArrowUp size={16} aria-hidden="true" />
+        </a>
+      </h2>
+      <p class="where-it-shows">{platform.where_it_shows}</p>
+      <p class="context">
+        {parseInline(platform.context).map((seg) => (
+          seg.kind === 'plain' ? seg.text :
+          seg.kind === 'code' ? <code>{seg.text}</code> :
+          <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+        ))}
+      </p>
+
+      {platform.sub_sections.map((sub) => (
+        <div class="sub">
+          <h3>{sub.title}</h3>
+          {sub.preamble && (
+            <p class="preamble">
+              {parseInline(sub.preamble).map((seg) => (
+                seg.kind === 'plain' ? seg.text :
+                seg.kind === 'code' ? <code>{seg.text}</code> :
+                <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+              ))}
+            </p>
+          )}
+          <ol class="steps">
+            {sub.steps.map((step, i) => (
+              <li>
+                <span class="step-num">{i + 1}.</span>
+                <span class="step-text">
+                  {parseInline(step).map((seg) => (
+                    seg.kind === 'plain' ? seg.text :
+                    seg.kind === 'code' ? <code>{seg.text}</code> :
+                    <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ol>
+          {sub.post_note && (
+            <p class="post-note">
+              {parseInline(sub.post_note).map((seg) => (
+                seg.kind === 'plain' ? seg.text :
+                seg.kind === 'code' ? <code>{seg.text}</code> :
+                <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+              ))}
+            </p>
+          )}
+        </div>
+      ))}
+
+      <aside class="resources-callout">
+        <span class="resources-callout-label">What doesn&rsquo;t work</span>
+        <p>
+          {parseInline(platform.what_doesnt_work).map((seg) => (
+            seg.kind === 'plain' ? seg.text :
+            seg.kind === 'code' ? <code>{seg.text}</code> :
+            <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+          ))}
+        </p>
+      </aside>
+
+      <p class="last-verified">Last verified: {fmtDate(platform.last_verified, platform.last_verified_label)}</p>
+    </section>
+  ))}
+
+  {furtherReading.length > 0 && (
+    <section class="further-reading">
+      <hr class="platform-sep" />
+      <h2>Further reading</h2>
+      <p class="further-intro">
+        These guides cover more platforms and provide additional context on
+        why opt-out mechanisms are so unreliable.
+      </p>
+      <ul class="further-list">
+        {furtherReading.map((item) => (
+          <li class="further-item">
+            <div class="further-head">
+              <a href={item.url} target="_blank" rel="noopener noreferrer">
+                {item.title}
+                <ExternalLink size={12} aria-hidden="true" />
+              </a>
+              <span class="further-source">{item.source}</span>
+            </div>
+            <p class="further-desc">{item.description}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   )}
-</section>
+</div>
 
 <style>
-  .placeholder {
+  .turn-off-guide {
+    max-width: 40rem;
+  }
+
+  .intro {
+    margin-bottom: var(--space-xl);
     color: var(--color-text-muted);
-    font-style: italic;
-    margin-top: var(--space-lg);
+    font-size: 1.05rem;
+    line-height: var(--line-height-body);
+  }
+
+  .platform {
+    scroll-margin-top: 5rem;
+  }
+
+  .platform-sep {
+    margin: var(--space-2xl) 0;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .platform-name {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 400;
+    margin: 0 0 var(--space-xs);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+  }
+
+  .return-top {
+    color: var(--color-text-faint);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .return-top:hover { color: var(--color-accent); }
+
+  .where-it-shows {
+    margin: 0 0 var(--space-md);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-text-faint);
+  }
+
+  .context {
+    margin: 0 0 var(--space-lg);
+    color: var(--color-text);
+  }
+
+  .sub {
+    margin: 0 0 var(--space-lg);
+  }
+
+  .sub h3 {
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .preamble {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+  }
+
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .steps li {
+    display: flex;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-body);
+  }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 1.5rem;
+    text-align: right;
+    color: var(--color-text-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .step-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .step-text code,
+  .context code,
+  .preamble code,
+  .post-note code {
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+    background: var(--color-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: var(--radius-sm);
+    word-break: break-word;
+  }
+
+  .post-note {
+    margin: var(--space-sm) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-xs);
+  }
+
+  .last-verified {
+    margin: var(--space-md) 0 0;
+    color: var(--color-text-faint);
+    font-size: var(--font-size-xs);
+  }
+
+  /* Sticky pill nav variant */
+  .turn-off-guide .resources-pill-nav {
+    position: sticky;
+    top: var(--space-md);
+    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    padding: var(--space-sm) 0;
+    z-index: 5;
+  }
+
+  .further-reading h2 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 400;
+    margin: 0 0 var(--space-sm);
+  }
+
+  .further-intro {
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-lg);
+    font-size: var(--font-size-sm);
+  }
+
+  .further-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .further-item {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  }
+
+  .further-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm);
+  }
+
+  .further-head a {
+    font-weight: 500;
+    color: var(--color-accent);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+
+  .further-head a:hover { text-decoration: underline; }
+
+  .further-source {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .further-desc {
+    margin: var(--space-xs) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
   }
 </style>
+
+<script>
+  // Scroll-spy: mark the pill matching the visible platform with aria-current.
+  (function () {
+    const pillNav = document.querySelector<HTMLElement>('.turn-off-guide .resources-pill-nav');
+    if (!pillNav) return;
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('.turn-off-guide .platform'));
+    if (sections.length === 0) return;
+
+    const pillFor = (id: string) =>
+      pillNav.querySelector<HTMLAnchorElement>(`a[data-pill-target="${id}"]`);
+
+    function setCurrent(id: string | null) {
+      pillNav!.querySelectorAll<HTMLAnchorElement>('a[data-pill-target]').forEach((a) => {
+        a.removeAttribute('aria-current');
+      });
+      if (id) {
+        const pill = pillFor(id);
+        if (pill) pill.setAttribute('aria-current', 'true');
+      }
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top);
+        if (visible.length > 0) {
+          const id = (visible[0].target as HTMLElement).dataset.platformId;
+          if (id) setCurrent(id);
+        }
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    );
+
+    sections.forEach((s) => observer.observe(s));
+  })();
+</script>
