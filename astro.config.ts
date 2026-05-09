@@ -5,6 +5,21 @@ import { isAlphaDetailPath, INDEX_ALPHA_DETAIL_PAGES } from "./src/lib/seo";
 export default defineConfig({
   site: "https://dangerousrobot.org",
   trailingSlash: "never",
+  redirects: {
+    "/faq": "/research",
+    "/claims": "/research/claims",
+    "/claims/[...slug]": "/research/claims/[...slug]",
+    "/entities/[...slug]": "/research/entities/[...slug]",
+    "/companies": "/research/companies",
+    "/products": "/research/products",
+    "/subjects": "/research/subjects",
+    "/topics": "/research/topics",
+    "/topics/[topic]": "/research/topics/[topic]",
+    "/sources": "/research/sources",
+    "/sources/[...slug]": "/research/sources/[...slug]",
+    "/criteria": "/research/criteria",
+    "/criteria/[slug]": "/research/criteria/[slug]",
+  },
   integrations: [
     sitemap({
       changefreq: "weekly",
