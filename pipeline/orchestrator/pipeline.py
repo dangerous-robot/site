@@ -1192,23 +1192,15 @@ class EnrichmentResult:
     ``status``:
         - ``"accepted"``  – operator accepted the draft; entity file updated.
         - ``"rejected"``  – operator rejected the draft; nothing written.
-        - ``"refused"``   – pre-flight check refused (e.g. non-empty body
-          without ``--force``); nothing written.
-        - ``"failed"``    – enricher agent or write step raised; see
-          ``errors``.
+        - ``"failed"``    – enricher agent or write step raised; see ``errors``.
 
     ``founded`` / ``description`` / ``history_markdown`` capture the
     fields that were actually persisted (only populated for ``accepted``).
-
-    ``"refused"`` is reserved on the Literal for callers that want to
-    surface a pre-flight refusal without raising; the current ``dr
-    entity-enrich`` CLI raises ``ClickException`` before calling
-    ``enrich_entity`` and so never produces this status.
     """
 
     entity_ref: str
     entity_name: str
-    status: Literal["accepted", "rejected", "refused", "failed"]
+    status: Literal["accepted", "rejected", "failed"]
     founded: int | None = None
     description: str | None = None
     history_markdown: str | None = None
@@ -1229,26 +1221,15 @@ def _screen_templates(
 class LightResearchBundle:
     """Shared input for the entity verifier and enricher agents.
 
-    Carries everything the orchestrator's light-research pass collected
-    about an entity. Both ``onboard_entity`` (Phase A) and the standalone
-    ``enrich_entity`` helper build one of these and pass it forward.
-
-    ``raw_description`` is the untightened webpage summary as the ingestor
-    saw it. The enricher's ``description`` field is the canonical
-    tightened one-sentence description.
+    ``raw_description`` is the untightened webpage summary; the enricher
+    produces the tightened one-sentence ``description``.
     """
 
     entity_name: str
     entity_type: EntityType
     raw_description: str
     entity_website: str | None
-    description_source_url: str | None
     probe_excludes: list[str]
-    # Reserved for future verifier use; light research currently only
-    # ingests the top URL and discards the rest, so this is an empty list
-    # for now. Kept on the dataclass so the verifier can populate it
-    # without a signature change in Commit 2.
-    search_candidates: list = field(default_factory=list)
 
 
 async def gather_light_research(
@@ -1261,19 +1242,13 @@ async def gather_light_research(
 ) -> LightResearchBundle:
     """Run the orchestrator's light-research pass and return a bundle.
 
-    Replaces the inline block previously embedded in ``onboard_entity``
-    Phase A. Errors during fetch/probe are non-fatal (logged and
-    swallowed) so onboarding can still proceed with whatever signals
-    were collected.
-
-    Returns the **raw** webpage summary in ``raw_description``. The
-    enricher (``researcher.entity_enricher``) is the consumer that
-    derives a tightened one-sentence description from it; this helper
-    does not call the enricher.
+    Errors during fetch/probe are non-fatal (logged and swallowed) so
+    onboarding can still proceed with whatever signals were collected.
+    Returns the raw webpage summary; the enricher produces the tightened
+    one-sentence ``description``.
     """
     raw_description = ""
     entity_website: str | None = None
-    description_source_url: str | None = None
     probe_excludes: list[str] = []
 
     try:
@@ -1297,13 +1272,8 @@ async def gather_light_research(
                 else ([], [])
             )
         if source_files:
-            src_url, sf = source_files[0]
+            _src_url, sf = source_files[0]
             raw_description = sf.frontmatter.summary or ""
-            description_source_url = src_url
-        # Probe (Brave) has no data dependency on the page summary; runs
-        # solo here. Description tightening, formerly run concurrently
-        # with the probe, now happens at the call site (or, after Phase C
-        # wiring lands, inside the enricher).
         probe_excludes = await _probe_collision_suggestions(
             client, entity_name, entity_website
         )
@@ -1315,7 +1285,6 @@ async def gather_light_research(
         entity_type=entity_type,
         raw_description=raw_description,
         entity_website=entity_website,
-        description_source_url=description_source_url,
         probe_excludes=probe_excludes,
     )
 

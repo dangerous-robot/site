@@ -1679,11 +1679,7 @@ def onboard(
 
 
 def _render_enrichment_outcome(result) -> None:
-    """Render an EnrichmentResult to stdout.
-
-    Shared between ``dr entity-enrich`` and ``dr onboard --force`` so the
-    operator-facing summary stays consistent across both surfaces.
-    """
+    """Render an EnrichmentResult to stdout for ``dr entity-enrich``."""
     hr()
     click.echo("Enrichment Report")
     hr()

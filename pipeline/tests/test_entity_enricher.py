@@ -20,7 +20,6 @@ def _bundle(entity_type: EntityType, **overrides) -> LightResearchBundle:
         entity_type=entity_type,
         raw_description="Acme Corp is a company that makes things.",
         entity_website="https://acme.example.com",
-        description_source_url="https://acme.example.com",
         probe_excludes=[],
     )
     base.update(overrides)

@@ -575,34 +575,10 @@ def _write_draft_entity_file(
 
 
 def _entity_body(history_markdown: str | None) -> str:
-    """Render the markdown body for an entity file.
-
-    When ``history_markdown`` is non-empty, returns it normalized with a
-    trailing newline so ``serialize_frontmatter`` produces consistent output.
-    Returns an empty string when there is no history content. The standalone
-    helper exists so the enricher (later step) and any future body-writing
-    callers can share the same body-rendering rule.
-    """
+    """Normalize the history markdown to a body string with a trailing newline."""
     if not history_markdown:
         return ""
     return history_markdown.rstrip() + "\n"
-
-
-def _write_entity_history(entity_path: Path, history_markdown: str | None) -> None:
-    """Replace the body of an existing entity file with ``history_markdown``.
-
-    Reads the entity file, preserves the frontmatter, and rewrites the body.
-    A None or empty ``history_markdown`` leaves the body untouched.
-    """
-    if not history_markdown:
-        return
-    text = entity_path.read_text(encoding="utf-8")
-    fm, _existing_body = parse_frontmatter(text)
-    entity_path.write_text(
-        serialize_frontmatter(fm, _entity_body(history_markdown)),
-        encoding="utf-8",
-    )
-    logger.info("Wrote entity history: %s", entity_path)
 
 
 def update_entity_enrichment(
@@ -613,27 +589,24 @@ def update_entity_enrichment(
 ) -> None:
     """Splice enricher output into an existing entity file in place.
 
-    Preserves every other frontmatter field. Pass ``None`` to leave a
-    given field untouched (note: ``founded`` cannot currently be cleared
-    via this helper; the enricher is the only caller and emits a year or
-    leaves it unset). ``description`` is overwritten only when a non-empty
-    value is supplied — an empty string from the enricher means "the
-    inputs did not describe the entity," in which case the prior
-    description should win over a worse rewrite.
-
-    The body is overwritten when ``history_markdown`` is non-empty; an
-    empty value leaves the existing body alone.
+    Preserves every other frontmatter field. ``description`` is overwritten
+    only when a non-empty value is supplied — an empty string from the
+    enricher means "the inputs did not describe the entity," in which case
+    the prior description should win over a worse rewrite. The body is
+    overwritten when ``history_markdown`` is non-empty; an empty value
+    leaves the existing body alone.
     """
+    has_description = bool(description and description.strip())
+    has_history = bool(history_markdown and history_markdown.strip())
+    if not has_description and founded is None and not has_history:
+        return
+
     text = entity_path.read_text(encoding="utf-8")
     fm, existing_body = parse_frontmatter(text)
-    if description and description.strip():
+    if has_description:
         fm["description"] = description.strip()
     if founded is not None:
         fm["founded"] = founded
-    body = (
-        _entity_body(history_markdown)
-        if history_markdown and history_markdown.strip()
-        else existing_body
-    )
+    body = _entity_body(history_markdown) if has_history else existing_body
     entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
     logger.info("Updated entity enrichment: %s", entity_path)

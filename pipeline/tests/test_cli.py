@@ -674,7 +674,6 @@ class TestEntityEnrichCLI:
                 entity_type=entity_type,
                 raw_description="Acme makes widgets.",
                 entity_website="https://acme.example.com",
-                description_source_url="https://acme.example.com",
                 probe_excludes=[],
             )
 
@@ -754,7 +753,6 @@ class TestOnboardCLIPhaseB:
                 entity_type=entity_type,
                 raw_description="Apple. The fruit. Or the company. Or the records label.",
                 entity_website="https://apple.example",
-                description_source_url="https://apple.example",
                 probe_excludes=[],
             )
 
@@ -817,7 +815,6 @@ class TestOnboardCLIPhaseB:
                 entity_type=entity_type,
                 raw_description="OpenAI is an AI research and deployment company.",
                 entity_website="https://openai.example",
-                description_source_url="https://openai.example",
                 probe_excludes=[],
             )
 
@@ -901,7 +898,6 @@ class TestOnboardCLIPhaseB:
                 entity_type=entity_type,
                 raw_description="AI model producers are companies that train models.",
                 entity_website=None,
-                description_source_url=None,
                 probe_excludes=[],
             )
 
