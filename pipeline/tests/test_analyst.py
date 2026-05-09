@@ -252,3 +252,8 @@ class TestNarrativeListNormalization:
     def test_preserves_indented_continuation(self) -> None:
         original = "Intro.\n\n- item one\n  continuation of one\n- item two\n\nOutro."
         assert self._va(original).narrative == original
+
+    def test_preserves_fenced_code_block(self) -> None:
+        # `- foo` inside a fence is content, not a list marker; don't inject blanks.
+        original = "Intro.\n\n```\n- not a list\n- still not\n```\n\nOutro."
+        assert self._va(original).narrative == original

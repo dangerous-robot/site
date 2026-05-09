@@ -18,33 +18,40 @@ if TYPE_CHECKING:
 
 
 _LIST_MARKER_RE = re.compile(r"^(?:[-*+]\s|\d+\.\s)")
+_FENCE_RE = re.compile(r"^(?:```|~~~)")
 
 
 def _surround_lists_with_blanks(text: str) -> str:
     """Insert blank lines around contiguous list blocks (markdownlint MD032).
 
     The analyst instructions already require this, but the LLM occasionally
-    forgets and the result fails `markdownlint`. Inserts a blank line only at
-    the boundary entering or leaving a list block, preserving indented
-    list-item continuations inside the block.
+    forgets and the result fails `markdownlint`. Indented list-item
+    continuations and fenced code blocks (where `- ` is content, not a
+    marker) are passed through unchanged.
     """
     out: list[str] = []
     in_list = False
+    in_fence = False
     for line in text.split("\n"):
+        if _FENCE_RE.match(line):
+            in_fence = not in_fence
+            out.append(line)
+            continue
+        if in_fence:
+            out.append(line)
+            continue
+
         is_marker = bool(_LIST_MARKER_RE.match(line))
-        is_blank = not line.strip()
         is_indented = bool(line) and line[0] in (" ", "\t")
 
         if is_marker:
             if not in_list and out and out[-1].strip():
                 out.append("")
             in_list = True
-        else:
-            if in_list and is_blank:
-                in_list = False
-            elif in_list and not is_indented:
+        elif in_list and not is_indented:
+            if line.strip():
                 out.append("")
-                in_list = False
+            in_list = False
 
         out.append(line)
     return "\n".join(out)
