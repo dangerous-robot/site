@@ -233,30 +233,34 @@ Notes:
 
 ## 6. Researcher internals (decomposed path)
 
-When `researcher_mode=decomposed`, the Researcher participant in diagram 3 internally runs this 3-step sequence. All LLM calls are guarded by the `llm_concurrency` semaphore.
+When `researcher_mode=decomposed`, the Researcher participant in diagram 3 internally runs the sequence below. The dispatch step fans out across `research_origins` (default `["tavily", "arxiv"]`); the web origin is powered by `search_backend` (`tavily` default, `brave` fallback) and arXiv fires only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`). All LLM calls are guarded by the `llm_concurrency` semaphore.
 
 ```mermaid
 sequenceDiagram
     participant Orchestrator
     participant QueryPlanner as Query Planner (Haiku)
-    participant BraveAPI as Brave Search API
+    participant Web as Web Search (Tavily default; Brave fallback)
+    participant ArXiv as arXiv API (academic origin)
     participant URLScorer as URL Scorer (Haiku)
 
     Orchestrator->>QueryPlanner: claim text + entity context (name, parent_company if set)
     Note over QueryPlanner: structured output, no tools
     QueryPlanner-->>Orchestrator: QueryPlan (queries list, rationale)
 
-    Note over Orchestrator: hard-truncate to max_initial_queries
+    Note over Orchestrator: hard-truncate to max_initial_queries; select origins per claim topics
 
-    par per query (asyncio.gather)
-        Orchestrator->>BraveAPI: query 1
-        BraveAPI-->>Orchestrator: results 1
+    par web origin (per query, asyncio.gather)
+        Orchestrator->>Web: query 1
+        Web-->>Orchestrator: results 1
     and
-        Orchestrator->>BraveAPI: query N
-        BraveAPI-->>Orchestrator: results N
+        Orchestrator->>Web: query N
+        Web-->>Orchestrator: results N
+    and academic origin (only if topics ∩ ACADEMIC_TOPICS ≠ ∅)
+        Orchestrator->>ArXiv: claim-derived query
+        ArXiv-->>Orchestrator: paper candidates
     end
 
-    Note over Orchestrator: deduplicate by exact URL string; classify each candidate with publisher_quality label (primary/secondary/tertiary/forum)
+    Note over Orchestrator: merge web + academic candidates; deduplicate by exact URL string; classify each web candidate with publisher_quality label (primary/secondary/tertiary/forum). Academic candidates carry origin=arxiv on the audit sidecar.
 
     Orchestrator->>URLScorer: claim + entity context (name, parent_company if set) + candidates (title, snippet, publisher_quality)
     Note over URLScorer: structured output, no tools

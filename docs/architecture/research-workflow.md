@@ -72,9 +72,11 @@ There is no automated scheduling for reviews today. The Citation Auditor role is
 
 ## Pipeline configuration knobs
 
-Two operator-visible fields on `VerifyConfig` control researcher effort and LLM call concurrency:
+Operator-visible fields on `VerifyConfig` controlling researcher reach, dispatch, and LLM concurrency:
 
-- **`max_initial_queries`** -- how many search queries the Researcher's query planner generates per claim (default: 3). Lower values reduce API cost and latency; higher values improve recall.
+- **`max_initial_queries`** -- cap on how many search queries the Researcher dispatches per claim. The query planner's output is hard-truncated to this count before searches run (default: 7). Lower values reduce API cost and latency; higher values improve recall.
+- **`research_origins`** -- list of dispatch types attempted per claim (default: `["tavily", "arxiv"]`). Web origins always fire; academic origins (`arxiv` today; `s2` and `openalex` planned for Tier 2) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`).
+- **`search_backend`** -- which API powers the web leg: `tavily` (default) or `brave`. Read from the `RESEARCH_SEARCH_BACKEND` env var at `VerifyConfig` construction; tests can override directly. Orthogonal to `research_origins`.
 - **`llm_concurrency`** -- cap on concurrent LLM calls across the pipeline (default: 8), enforced via `asyncio.Semaphore`. Relevant during `dr onboard`, which runs multiple claim templates concurrently.
 
 ## Quality Gates

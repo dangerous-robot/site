@@ -8,7 +8,7 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 | Type | Purpose | Base path |
 |------|---------|-----------|
-| **Entity** | A stable subject we make claims about (company, product, or topic) | `research/entities/` |
+| **Entity** | A stable subject we make claims about (company, product, or subject) | `research/entities/` |
 | **Claim** | A single factual assertion about an entity, with verdict and evidence | `research/claims/` |
 | **Source** | A citable reference -- cite once, reference from many claims | `research/sources/` |
 | **Criterion** | A reusable claim template applied uniformly across entities | `research/templates.yaml` |
@@ -55,6 +55,7 @@ The Markdown body provides extended context about the entity.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `title` | string | yes | Human-readable claim statement |
+| `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; falls back to `title` if absent. |
 | `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
@@ -63,7 +64,7 @@ The Markdown body provides extended context about the entity.
 | `criteria_slug` | string | no | Optional back-reference to the criterion template this claim was generated from |
 | `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived`, `blocked` |
 | `phase` | enum | no | Pipeline progress while in flight; absent on terminal states. One of `researching`, `ingesting`, `analyzing`, `evaluating` |
-| `blocked_reason` | enum | no | Set together with `status: blocked`; one of `insufficient_sources`, `terminal_fetch_error` |
+| `blocked_reason` | enum | no | Set together with `status: blocked`; one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error` |
 | `as_of` | date | yes | Date the verdict was last evaluated |
 | `sources` | string[] | yes | List of source IDs (e.g. `2025/fli-safety-index`) |
 | `recheck_cadence_days` | number | no | Days between reviews; defaults to 60 |
@@ -126,11 +127,14 @@ Criteria are loaded from a single YAML file (`research/templates.yaml`), not via
 |-------|------|----------|-------|
 | `slug` | string | yes | Unique identifier |
 | `text` | string | yes | The claim template text |
-| `entity_type` | enum | yes | `company` or `product` |
+| `entity_type` | enum | yes | `company`, `product`, or `subject` |
+| `subjects` | string[] | conditional | Required and non-empty when `entity_type === 'subject'`; forbidden otherwise. Each value is a path of the form `subjects/{slug}` pinning the criterion to specific subject entities. |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy)) |
 | `core` | boolean | yes (default: false) | Whether this is a core/required criterion |
 | `notes` | string | no | Editorial notes |
 | `vocabulary` | map | no | Entity-type-specific vocabulary substitutions |
+
+Subject-type criteria use `subjects` for explicit pairing with subject entities; company/product criteria match by `entity_type` alone.
 
 ## Relationships
 

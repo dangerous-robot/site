@@ -65,6 +65,7 @@ See `pipeline/orchestrator/checkpoints.py` for the handler interface.
 - Templates are tagged `core: true` or `core: false` in `research/templates.yaml`. Core templates are screened automatically during onboard.
 - Non-core templates are available for manual or topic-driven runs.
 - Onboarding is per entity type: a company and its products are distinct `dr onboard` operations, each receiving the templates whose `entity_type` matches.
+- Subject-type templates (`entity_type: subject`) are pinned to specific subject entities via the `subjects:` array in the template definition (e.g., `ai-producers-existential-score` is paired with `subjects/ai-model-producers`). Subjects are not yet a `dr onboard` intake in v1; subject claims are generated through other paths and the company/product onboard ignores subject templates.
 
 The active template set lives in `research/templates.yaml`. Refer to that file for the current core list — it changes more often than this doc and is the source of truth.
 

@@ -25,8 +25,9 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 | **Confidence** | Claim | Certainty level: high, medium, low |
 | **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total). Field name is `topics` (renamed from singular `category` per `docs/plans/multi-topic.md`). |
 | **Takeaway** | Claim | Optional reader-facing one-liner (≤200 chars) rendered under the verdict badge. Operators add this by hand during review in v1. |
+| **seo_title** | Claim | Short title for the rendered page's `<title>` tag (≤42 chars, leaving room for ` - Dangerous Robot`). The Analyst writes one on every generated claim; the schema marks it optional so hand-written legacy claims still validate. Falls back to `title` when absent. |
 | **Phase** | Claim | Optional pipeline-progress field, set by the Orchestrator while a claim is in flight; absent on terminal states. Enum: `researching`, `ingesting`, `analyzing`, `evaluating`. |
-| **blocked_reason** | Claim | Optional reason field paired with `status: blocked`. Enum: `insufficient_sources`, `terminal_fetch_error`. |
+| **blocked_reason** | Claim | Optional reason field paired with `status: blocked`. Enum: `insufficient_sources`, `terminal_fetch_error`, `analyst_error`. |
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index |
 | **source_type** | Source | Optional authority classification: `primary`, `secondary`, `tertiary`. Set by `pipeline/common/source_classification.py` during ingest. |
 | **as_of** | Claim | Date when verdict was last evaluated |
@@ -101,9 +102,13 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
 | **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
-| **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. |
+| **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. Default: 7. |
 | **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`verify_claim`, `research_claim`, `onboard_entity`). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
 | **`publisher_quality`** | Pre-ingest domain quality label on `SearchCandidate`: `primary`, `secondary`, `tertiary`, or `forum`. Classified from the URL hostname by `pipeline/common/publisher_quality.py` during `execute_searches`; injected into the scorer prompt as a tiebreaker signal. Not persisted. Contrast with `source_type` (post-ingest, written to source frontmatter). |
+| **`research_origins`** | List of dispatch types the Researcher attempts for a claim. Default: `["tavily", "arxiv"]`. Web origins (`tavily`) always fire; academic origins (`arxiv`, and later `s2`/`openalex`) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (see row below). Mirrors the schema enum on `audit.sources_consulted[].acquisition.origin`. Distinct from `search_backend`, which selects the API powering the web origin. |
+| **`search_backend`** | Which API powers the web (non-academic) leg of `research_origins`. Today `tavily` (default) or `brave`. Read once at `VerifyConfig` construction from `RESEARCH_SEARCH_BACKEND`; unknown values fall back to `brave` with a warning. Distinct from `research_origins`, which lists dispatch types. |
+| **`ACADEMIC_TOPICS`** | Frozen set of topic slugs that activate academic-API dispatch (currently `ai-safety`, `environmental-impact`, `industry-analysis`). Defined in `pipeline/common/models.py` as the single source of truth shared by `_select_research_origins` and the `dr stats academic-coverage` aggregate. |
+| **Archive recovery chain** | Ingestor lookup waterfall when a URL's live fetch fails or no `archived_url` is yet known: archive.org TimeGate (CDX-indexed snapshots) → Memento Time Travel aggregator (non-archive.org archives, via `timetravel.mementoweb.org`) → archive.org Save Page Now (capture on miss). Per-URL outcomes are recorded as `acquisition.recovered_via ∈ {archive_org, memento}` on the audit sidecar's `sources_consulted[]`. Implemented in `pipeline/ingestor/tools/wayback.py`. |
 
 ## Agent tasks
 
@@ -135,7 +140,7 @@ Claim states. Schema source of truth: `src/content.config.ts` § claims (`status
 |---|---|---|---|
 | **queued** | Intake recorded, pipeline not yet run | `QUEUE.md` | (no schema field; `QUEUE.md` only) |
 | **in-progress** | Pipeline is working it | (transient frontmatter) | `phase` ∈ {researching, ingesting, analyzing, evaluating} |
-| **blocked** | Pipeline halted before Analyst: < 4 usable sources or terminal fetch error | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error} |
+| **blocked** | Pipeline halted: insufficient sources, terminal fetch error, or an analyst-step failure | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error, analyst_error} |
 | **draft** | Pipeline produced a draft verdict; awaiting review | `status: draft` | `status: draft` |
 | **published** | Operator approved | `status: published` | `status: published` |
 | **archived** | Retired | `status: archived` | `status: archived` |
