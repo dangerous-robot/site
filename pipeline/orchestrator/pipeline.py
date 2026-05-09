@@ -1834,8 +1834,9 @@ async def onboard_entity(
                     history_markdown=history_markdown,
                 )
 
-        # Without this resolved entity, the just-persisted search_hints would
-        # not reach the per-template researcher on the run that wrote them.
+        # Without this resolved entity, the just-persisted search_hints,
+        # founded year, and verification_status would not reach the
+        # per-template researcher on the run that wrote them.
         onboard_resolved_entity = ResolvedEntity(
             entity_ref=entity_ref,
             entity_name=entity_name,
@@ -1843,6 +1844,8 @@ async def onboard_entity(
             entity_description=entity_description,
             website=entity_website,
             search_hints=merged_search_hints,
+            founded=founded_year,
+            verification_status=verification_status,
         )
 
         # Step 5: Per-template research pipeline. Each template gets its own
