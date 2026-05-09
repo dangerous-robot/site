@@ -1,8 +1,6 @@
 """Tavily Search client used by the decomposed researcher.
 
-Selectable as the search backend via ``RESEARCH_SEARCH_BACKEND=tavily``;
-default remains Brave. See
-``docs/plans/source-pool-expansion-tier1-search-backend.md``.
+Selectable as the search backend via ``RESEARCH_SEARCH_BACKEND``.
 
 Auth: ``TAVILY_API_KEY`` (sent as ``Authorization: Bearer ...``).
 Endpoint: ``POST https://api.tavily.com/search`` with a JSON body.
@@ -76,11 +74,10 @@ async def search_tavily(
     Requires ``TAVILY_API_KEY`` in the environment. Returns a list of
     dicts shaped ``{url, title, snippet, raw_content}``; Tavily's
     per-result ``content`` field maps onto ``snippet`` (parallel to
-    Brave's ``description``), and ``raw_content`` carries the full
-    pre-extracted body when Tavily provided one (Markdown/plain text
-    per the verification call). Empty/missing ``raw_content`` is
-    returned as an empty string so the ingestor short-circuit falls
-    through to a live fetch.
+    Brave's ``description``), and ``raw_content`` is the full
+    pre-extracted body (Markdown/plain text) when Tavily supplied one,
+    else ``None``. The ingestor short-circuits on a truthy body and
+    falls through to a live fetch otherwise.
 
     On a single 429, sleeps per ``Retry-After`` (or a 30 s default) and
     retries once. A second 429 raises ``TavilyRateLimitError`` so the
@@ -105,7 +102,7 @@ async def search_tavily(
         "search_depth": "basic",
         # Ask Tavily for the full extracted body so the ingestor can
         # skip an httpx fetch (and the publisher's Cloudflare shield)
-        # when raw_content is present. See docs/plans/ingestor-tavily-prefetch.md.
+        # when raw_content is present.
         "include_raw_content": True,
     }
 
@@ -148,10 +145,11 @@ async def search_tavily(
                 # Map Tavily's `content` onto `snippet` to match the
                 # shape returned by `search_brave`.
                 "snippet": item.get("content") or "",
-                # Full pre-extracted body when Tavily supplied it;
-                # empty string when it didn't (some publishers block
-                # Tavily's crawler too).
-                "raw_content": item.get("raw_content") or "",
+                # Full pre-extracted body when Tavily supplied one;
+                # ``None`` when it didn't (some publishers block Tavily's
+                # crawler too) so the ingestor falls through to a live
+                # fetch.
+                "raw_content": item.get("raw_content") or None,
             }
         )
     return out

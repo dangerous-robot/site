@@ -1400,9 +1400,7 @@ def step_audit(
                         # it again on this rewrite. Without this, a re-audit
                         # silently drops the acquisition data the original
                         # research run produced (the auditor doesn't re-run
-                        # research). See
-                        # docs/plans/source-pool-expansion-tier1.md
-                        # § Audit-trail acquisition plumbing — known limitation.
+                        # research).
                         existing_sources = existing.get("sources_consulted") or []
                         prior_acquisition = {
                             s["url"]: s["acquisition"]

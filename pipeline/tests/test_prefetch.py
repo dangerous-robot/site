@@ -2,7 +2,7 @@
 
 Covers ``IngestorDeps.prefetched_bodies`` short-circuiting ``web_fetch``
 and the orchestrator handoff that threads bodies through ``_ingest_urls``
-into per-URL ``IngestorDeps``. See ``docs/plans/ingestor-tavily-prefetch.md``.
+into per-URL ``IngestorDeps``.
 """
 
 from __future__ import annotations

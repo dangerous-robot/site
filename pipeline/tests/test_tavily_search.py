@@ -50,8 +50,8 @@ def _reset_throttle():
 class TestTavilySuccess:
     @pytest.mark.asyncio
     async def test_returns_brave_compatible_shape(self) -> None:
-        """Tavily's ``content`` field maps onto ``snippet``; ``raw_content`` is
-        carried through as an empty string when absent on the result."""
+        """Tavily's ``content`` field maps onto ``snippet``; ``raw_content``
+        is ``None`` when absent on the result."""
         with respx.mock:
             respx.post(_TAVILY_URL).mock(
                 return_value=httpx.Response(200, json=_RESULT),
@@ -64,7 +64,7 @@ class TestTavilySuccess:
                 "url": "https://example.com",
                 "title": "Ex",
                 "snippet": "tavily-content-snippet",
-                "raw_content": "",
+                "raw_content": None,
             }
         ]
 
@@ -124,7 +124,7 @@ class TestTavilySuccess:
     @pytest.mark.asyncio
     async def test_raw_content_carried_through_per_result(self) -> None:
         """Per-result ``raw_content`` is mapped through; missing/empty
-        becomes an empty string so callers can fall through to live fetch."""
+        becomes ``None`` so callers can fall through to live fetch."""
         body = {
             "results": [
                 {
@@ -157,8 +157,8 @@ class TestTavilySuccess:
         assert by_url["https://has-body.example"]["raw_content"] == (
             "# Markdown body\n\nfull text here"
         )
-        assert by_url["https://no-body.example"]["raw_content"] == ""
-        assert by_url["https://null-body.example"]["raw_content"] == ""
+        assert by_url["https://no-body.example"]["raw_content"] is None
+        assert by_url["https://null-body.example"]["raw_content"] is None
 
 
 class TestTavilyAuth:

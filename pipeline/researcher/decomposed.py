@@ -75,9 +75,9 @@ async def _dispatch_one_query(
     backend that actually produced the results (so the acquisition
     trace reflects reality when Tavily falls back to Brave).
 
-    Per the plan: the Tavily path falls back to Brave for that query
-    when ``TAVILY_API_KEY`` is unset, when the call raises, or when
-    Tavily is rate-limited. ``StepError(error_type="tavily_rate_limited")``
+    The Tavily path falls back to Brave for that query when
+    ``TAVILY_API_KEY`` is unset, when the call raises, or when Tavily
+    is rate-limited. ``StepError(error_type="tavily_rate_limited")``
     is appended to ``errors_out`` so the orchestrator can surface the
     quota event without halting the run.
     """
@@ -182,7 +182,7 @@ async def execute_searches(
                 snippet=item.get("snippet", ""),
                 from_query=query,
                 publisher_quality=classify_url_publisher_quality(url),
-                raw_content=item.get("raw_content") or None,
+                raw_content=item.get("raw_content"),
             ))
             if acquisition_out is not None:
                 acquisition_out[url] = {
