@@ -1566,14 +1566,98 @@ async def onboard_entity(
         entity_website = bundle.entity_website
         probe_excludes = bundle.probe_excludes
 
+        # Phase B: verifier — gate against name collisions before the
+        # enricher burns compute on the wrong entity.
+        # ``verified`` proceeds to Phase C with the default
+        # ``verification_status`` (verified). ``needs-disambiguation``
+        # surfaces candidates to the operator; ``reject`` halts the run
+        # with the candidates in errors, ``accept`` uses the first
+        # candidate, a free-text ``str`` renames to that pick. The
+        # ``unverified`` outcome reuses the same checkpoint with the
+        # two ``verification_status`` enum values as candidates; the
+        # operator's pick becomes the persisted status.
+        from researcher.entity_verifier import (
+            build_entity_verifier_prompt,
+            entity_verifier_agent,
+        )
+
+        verification_status: str | None = None
+        try:
+            prompt = build_entity_verifier_prompt(bundle)
+            with entity_verifier_agent.override(
+                model=resolve_model(cfg.model_for("researcher")),
+            ):
+                vr_run = await asyncio.wait_for(
+                    entity_verifier_agent.run(prompt),
+                    timeout=cfg.research_timeout_s,
+                )
+            outcome = vr_run.output
+        except Exception as exc:
+            logger.warning(
+                "Verifier failed; proceeding without disambiguation gate: %s",
+                exc,
+            )
+            outcome = None
+
+        if outcome is not None and outcome.status == "needs-disambiguation":
+            decision = await gate.review_entity_disambiguation(
+                entity_name, list(outcome.candidates),
+            )
+            if decision == "reject":
+                result.status = "rejected"
+                cands = ", ".join(outcome.candidates) or "(none)"
+                result.errors.append(
+                    f"verifier flagged needs-disambiguation; candidates: {cands}"
+                )
+                return result
+            if decision == "accept":
+                if outcome.candidates:
+                    entity_name = outcome.candidates[0]
+                    result.entity_name = entity_name
+            elif isinstance(decision, str):
+                entity_name = decision
+                result.entity_name = entity_name
+            # Re-run light research under the operator-picked name so
+            # downstream prompts (enricher, scorer, analyst) align with
+            # the resolved entity rather than the original ambiguous one.
+            async with httpx.AsyncClient() as client:
+                bundle = await gather_light_research(
+                    entity_name, et, cfg, sem, client, seed_url=seed_url,
+                )
+            entity_website = bundle.entity_website
+            probe_excludes = bundle.probe_excludes
+        elif outcome is not None and outcome.status == "unverified":
+            decision = await gate.review_entity_disambiguation(
+                entity_name,
+                ["unverified-startup", "unverified-other"],
+            )
+            if decision == "reject":
+                result.status = "rejected"
+                result.errors.append(
+                    "verifier flagged unverified; operator declined to "
+                    "pick a verification_status"
+                )
+                return result
+            if decision == "accept":
+                verification_status = "unverified-startup"
+            elif isinstance(decision, str):
+                if decision in ("unverified-startup", "unverified-other"):
+                    verification_status = decision
+                else:
+                    # Free-text outside the schema enum: treat as a
+                    # rejection so we don't write a non-schema value.
+                    result.status = "rejected"
+                    result.errors.append(
+                        f"verifier flagged unverified; operator pick "
+                        f"{decision!r} is not a valid verification_status"
+                    )
+                    return result
+
         # Phase C: enricher (operator-review checkpoint)
         # The enricher subsumes the previous standalone tightening agent:
         # ``EnrichmentDraft.description`` is the new one-sentence
         # description; ``founded`` and ``history_markdown`` populate
         # surfaces the renderer learned about in Step 2.
-        # Phase B (verifier) lands in Commit 2; until then, the
-        # operator-review checkpoint is the only defense against
-        # enriching the wrong entity.
         from researcher.entity_enricher import (
             build_entity_enricher_prompt,
             entity_enricher_agent,
@@ -1668,6 +1752,14 @@ async def onboard_entity(
             entity_description=entity_description,
         )
 
+        # Per-call ``verification_status`` only flows through when the
+        # verifier returned ``unverified`` and the operator picked an
+        # enum value. ``verified`` (the default) leaves frontmatter
+        # absent of the field, matching ``entity-metadata-surface``.
+        write_kwargs: dict = {}
+        if verification_status is not None:
+            write_kwargs["verification_status"] = verification_status
+
         if decision == "reject":
             result.status = "rejected"
             draft_ref = _write_draft_entity_file(
@@ -1679,6 +1771,7 @@ async def onboard_entity(
                 search_hints=merged_search_hints,
                 founded=founded_year,
                 history_markdown=history_markdown,
+                **write_kwargs,
             )
             result.entity_ref = draft_ref
             return result
@@ -1698,6 +1791,7 @@ async def onboard_entity(
                 search_hints=merged_search_hints,
                 founded=founded_year,
                 history_markdown=history_markdown,
+                **write_kwargs,
             )
         result.entity_ref = entity_ref
 

@@ -719,3 +719,230 @@ class TestEntityEnrichCLI:
         assert fm.get("type") == "company"
         # history written
         assert "Makes widgets" in body
+
+
+class TestOnboardCLIPhaseB:
+    """End-to-end CLI tests for Commit 2's Phase B + subject onboard wiring."""
+
+    def _setup_repo(self, tmp_path) -> None:
+        import shutil
+        from common.content_loader import resolve_repo_root as _rrr
+        templates_src = _rrr() / "research" / "templates.yaml"
+        templates_dst = tmp_path / "research" / "templates.yaml"
+        templates_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(templates_src, templates_dst)
+
+    def test_onboard_apple_product_disambiguation_rejects(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`dr onboard "Apple" --type product` with verifier returning needs-disambiguation rejects."""
+        from contextlib import contextmanager
+        from unittest.mock import patch
+
+        from pydantic_ai import Agent
+        from pydantic_ai.models.test import TestModel
+        from researcher.entity_verifier import entity_verifier_agent
+
+        self._setup_repo(tmp_path)
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        async def _fake_gather(entity_name, entity_type, cfg, sem, client, seed_url=None):
+            from orchestrator.pipeline import LightResearchBundle
+            return LightResearchBundle(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                raw_description="Apple. The fruit. Or the company. Or the records label.",
+                entity_website="https://apple.example",
+                description_source_url="https://apple.example",
+                probe_excludes=[],
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather)
+
+        canned = {
+            "status": "needs-disambiguation",
+            "candidates": ["Apple Inc.", "Apple Records"],
+            "reasoning": "Two well-known entities named Apple in unrelated industries.",
+        }
+
+        @contextmanager
+        def _noop(**kwargs):
+            yield
+
+        runner = CliRunner()
+        with (
+            entity_verifier_agent.override(model=TestModel(custom_output_args=canned)),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            result = runner.invoke(
+                main,
+                ["onboard", "Apple", "--type", "product", "--repo-root", str(tmp_path)],
+            )
+
+        assert "rejected" in result.output.lower()
+        assert "Apple Inc." in result.output
+        assert "Apple Records" in result.output
+
+    def test_onboard_openai_company_force_re_enriches(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`dr onboard "OpenAI" --type company --force` re-runs enricher; persists updated fields."""
+        from contextlib import contextmanager
+        from unittest.mock import patch
+
+        from common.frontmatter import parse_frontmatter
+        from pydantic_ai import Agent
+        from pydantic_ai.models.test import TestModel
+        from researcher.entity_enricher import entity_enricher_agent
+        from researcher.entity_verifier import entity_verifier_agent
+
+        self._setup_repo(tmp_path)
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        # Pre-create the entity file so onboard takes the existing-entity path.
+        entity_dir = tmp_path / "research" / "entities" / "companies"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        existing = entity_dir / "openai.md"
+        existing.write_text(
+            "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n",
+            encoding="utf-8",
+        )
+
+        async def _fake_gather(entity_name, entity_type, cfg, sem, client, seed_url=None):
+            from orchestrator.pipeline import LightResearchBundle
+            return LightResearchBundle(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                raw_description="OpenAI is an AI research and deployment company.",
+                entity_website="https://openai.example",
+                description_source_url="https://openai.example",
+                probe_excludes=[],
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather)
+
+        async def _fake_research(*args, **kwargs):
+            from researcher.decomposed import ResearchOutput
+            return ResearchOutput(urls=[], errors=[], trace={"mode": "test"}, sub_questions=[], url_addresses={})
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+
+        verifier_canned = {
+            "status": "verified",
+            "candidates": [],
+            "reasoning": "OpenAI has unambiguous public signals.",
+        }
+        enricher_canned = {
+            "founded": 2015,
+            "description": "OpenAI is an AI research and deployment company.",
+            "history_markdown": "Founded in 2015.\n\nReleased ChatGPT in 2022.",
+        }
+
+        @contextmanager
+        def _noop(**kwargs):
+            yield
+
+        runner = CliRunner()
+        with (
+            entity_verifier_agent.override(model=TestModel(custom_output_args=verifier_canned)),
+            entity_enricher_agent.override(model=TestModel(custom_output_args=enricher_canned)),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            result = runner.invoke(
+                main,
+                [
+                    "onboard", "OpenAI", "--type", "company",
+                    "--force", "--repo-root", str(tmp_path),
+                ],
+                catch_exceptions=False,
+            )
+
+        # Existing entity file should now carry founded + new description + history.
+        text = existing.read_text()
+        fm, body = parse_frontmatter(text)
+        assert fm.get("founded") == 2015
+        assert "research and deployment" in fm.get("description", "")
+        assert "Founded in 2015" in body
+        # CLI exits 0 even if some templates blocked (no live URLs).
+        assert "OpenAI" in result.output
+
+    def test_onboard_subject_happy_path(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`dr onboard subjects/ai-model-producers` runs end-to-end via TestModel."""
+        from contextlib import contextmanager
+        from unittest.mock import patch
+
+        from pydantic_ai import Agent
+        from pydantic_ai.models.test import TestModel
+        from researcher.entity_enricher import entity_enricher_agent
+        from researcher.entity_verifier import entity_verifier_agent
+
+        self._setup_repo(tmp_path)
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        # Pre-create the subject entity file (the templates.yaml already
+        # references subjects/ai-model-producers).
+        subj_dir = tmp_path / "research" / "entities" / "subjects"
+        subj_dir.mkdir(parents=True, exist_ok=True)
+        (subj_dir / "ai-model-producers.md").write_text(
+            "---\nname: AI Model Producers\ntype: subject\n"
+            "description: Companies that make AI models.\n---\n",
+            encoding="utf-8",
+        )
+
+        async def _fake_gather(entity_name, entity_type, cfg, sem, client, seed_url=None):
+            from orchestrator.pipeline import LightResearchBundle
+            return LightResearchBundle(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                raw_description="AI model producers are companies that train models.",
+                entity_website=None,
+                description_source_url=None,
+                probe_excludes=[],
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather)
+
+        async def _fake_research(*args, **kwargs):
+            from researcher.decomposed import ResearchOutput
+            return ResearchOutput(urls=[], errors=[], trace={"mode": "test"}, sub_questions=[], url_addresses={})
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+
+        @contextmanager
+        def _noop(**kwargs):
+            yield
+
+        runner = CliRunner()
+        with (
+            entity_verifier_agent.override(
+                model=TestModel(custom_output_args={
+                    "status": "verified", "candidates": [],
+                    "reasoning": "Term has encyclopedic consensus.",
+                }),
+            ),
+            entity_enricher_agent.override(
+                model=TestModel(custom_output_args={
+                    "founded": None,
+                    "description": "AI model producers are companies that build foundation models.",
+                    "history_markdown": "The category emerged in the 2010s.\n\nIt encompasses OpenAI, Anthropic, and others.",
+                }),
+            ),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            result = runner.invoke(
+                main,
+                [
+                    "onboard", "subjects/ai-model-producers",
+                    "--repo-root", str(tmp_path),
+                ],
+                catch_exceptions=False,
+            )
+
+        assert result.exit_code == 0, f"unexpected exit: {result.output}"
+        # Status accepted; templates_applied non-zero (templates.yaml references this subject).
+        assert "accepted" in result.output.lower() or "rejected" not in result.output.lower()

@@ -497,6 +497,267 @@ class TestProbeCollisionSuggestions:
         )
         assert suggestions == []
 
+
+def _verifier_model(status: str, candidates: list[str] | None = None) -> TestModel:
+    """TestModel returning a canned VerificationOutcome."""
+    return TestModel(
+        custom_output_args={
+            "status": status,
+            "candidates": list(candidates or []),
+            "reasoning": f"canned {status} outcome for tests",
+        },
+    )
+
+
+def _enricher_model(
+    *,
+    founded: int | None = 2021,
+    description: str = "TestCorp is a test company.",
+    history_markdown: str = "Para 1.\n\nPara 2.",
+) -> TestModel:
+    """TestModel returning a canned EnrichmentDraft."""
+    return TestModel(
+        custom_output_args={
+            "founded": founded,
+            "description": description,
+            "history_markdown": history_markdown,
+        },
+    )
+
+
+class TestOnboardPhaseBVerifier:
+    """Phase B verifier wiring: needs-disambiguation, unverified, verified."""
+
+    @pytest.mark.asyncio
+    async def test_needs_disambiguation_with_auto_approve_rejects(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Auto-approve handler returns 'reject' on disambiguation; run halts rejected."""
+        _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            entity_verifier_agent.override(
+                model=_verifier_model(
+                    "needs-disambiguation",
+                    candidates=["Apple Inc.", "Apple Records"],
+                ),
+            ),
+            entity_enricher_agent.override(model=_enricher_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity("Apple", "company", config=config)
+
+        assert result.status == "rejected"
+        assert any("needs-disambiguation" in e for e in result.errors)
+        assert any("Apple Inc." in e for e in result.errors)
+        assert any("Apple Records" in e for e in result.errors)
+        # No entity file should have been written.
+        entity_path = tmp_path / "research" / "entities" / "companies" / "apple.md"
+        assert not entity_path.exists()
+
+    @pytest.mark.asyncio
+    async def test_unverified_with_auto_approve_rejects(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Auto-approve handler returns 'reject' on unverified; run halts rejected."""
+        _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            entity_verifier_agent.override(model=_verifier_model("unverified")),
+            entity_enricher_agent.override(model=_enricher_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "Obscure Startup", "company", config=config,
+            )
+
+        assert result.status == "rejected"
+        assert any("unverified" in e for e in result.errors)
+
+    @pytest.mark.asyncio
+    async def test_unverified_with_operator_pick_persists_status(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Operator returns 'unverified-startup'; that becomes verification_status."""
+        _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        class PickStartupHandler(AutoApproveCheckpointHandler):
+            async def review_entity_disambiguation(self, entity_name, candidates):
+                self.calls.append("review_entity_disambiguation")
+                return "unverified-startup"
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("unverified")),
+            entity_enricher_agent.override(model=_enricher_model()),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            handler = PickStartupHandler()
+            result = await onboard_entity(
+                "Obscure Startup", "company", config=config, checkpoint=handler,
+            )
+
+        assert result.status == "accepted"
+        assert "review_entity_disambiguation" in handler.calls
+        # Entity file should record the operator-picked verification_status.
+        entity_path = (
+            tmp_path / "research" / "entities" / "companies" / "obscure-startup.md"
+        )
+        assert entity_path.exists()
+        fm, _ = parse_frontmatter(entity_path.read_text())
+        assert fm.get("verification_status") == "unverified-startup"
+
+    @pytest.mark.asyncio
+    async def test_verified_proceeds_to_enricher(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """verified outcome proceeds to enricher; entity file lands with Facts and History."""
+        _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(
+                    founded=2021,
+                    description="Anthropic is an AI safety lab.",
+                    history_markdown="Founded in 2021.\n\nBuilds Claude.",
+                ),
+            ),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            result = await onboard_entity("Anthropic", "company", config=config)
+
+        assert result.status == "accepted"
+        entity_path = (
+            tmp_path / "research" / "entities" / "companies" / "anthropic.md"
+        )
+        assert entity_path.exists()
+        text = entity_path.read_text()
+        fm, body = parse_frontmatter(text)
+        # Facts: founded persisted, description tightened.
+        assert fm.get("founded") == 2021
+        assert "AI safety lab" in fm.get("description", "")
+        # History: body populated by the enricher.
+        assert "Founded in 2021" in body
+        # No verification_status written when verifier returned 'verified'.
+        assert fm.get("verification_status") in (None, "verified")
+
+    @pytest.mark.asyncio
+    async def test_force_re_enriches_existing_entity(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """dr onboard --force re-runs the enricher and splices into existing file."""
+        _setup_tmp_repo(tmp_path)
+        # Pre-create the entity file so onboard takes the existing-entity path.
+        entity_dir = tmp_path / "research" / "entities" / "companies"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        existing = entity_dir / "openai.md"
+        existing.write_text(
+            "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n",
+            encoding="utf-8",
+        )
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(
+                    founded=2015,
+                    description="OpenAI is an AI research and deployment company.",
+                    history_markdown="Founded in 2015.\n\nReleased ChatGPT in 2022.",
+                ),
+            ),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+                force_overwrite=True,
+            )
+            result = await onboard_entity("OpenAI", "company", config=config)
+
+        assert result.status == "accepted"
+        text = existing.read_text()
+        fm, body = parse_frontmatter(text)
+        assert fm.get("founded") == 2015
+        assert "research and deployment" in fm.get("description", "")
+        assert "Founded in 2015" in body
+
     @pytest.mark.asyncio
     async def test_swallows_search_failures(self, monkeypatch) -> None:
         async def boom(client, query, max_results=8):
