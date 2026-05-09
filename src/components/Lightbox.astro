@@ -1,0 +1,110 @@
+---
+/**
+ * Page-scoped lightbox using a native <dialog>. Triggers are any element with
+ * class "lightbox-trigger" and a data-lightbox-src attribute. Optional
+ * data-lightbox-alt sets the alt text on the enlarged image. ESC and click on
+ * the backdrop close the dialog.
+ */
+---
+<dialog class="lightbox" aria-label="Enlarged image">
+  <button type="button" class="lightbox-close" aria-label="Close enlarged image">
+    ESC to close
+  </button>
+  <img class="lightbox-img" src="" alt="" />
+</dialog>
+
+<style>
+  .lightbox {
+    padding: 0;
+    border: none;
+    background: transparent;
+    max-width: 100vw;
+    max-height: 100vh;
+    width: 100vw;
+    height: 100vh;
+    color: #fff;
+  }
+
+  .lightbox::backdrop {
+    background: rgba(0, 0, 0, 0.92);
+  }
+
+  .lightbox[open] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: zoom-out;
+  }
+
+  .lightbox-img {
+    max-width: 95vw;
+    max-height: 95vh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .lightbox-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .lightbox-close:hover,
+  .lightbox-close:focus-visible {
+    color: #fff;
+  }
+
+  :global(.lightbox-trigger) {
+    cursor: zoom-in;
+  }
+</style>
+
+<script>
+  (function () {
+    const dialog = document.querySelector<HTMLDialogElement>('dialog.lightbox');
+    if (!dialog) return;
+    const img = dialog.querySelector<HTMLImageElement>('.lightbox-img');
+    const closeBtn = dialog.querySelector<HTMLButtonElement>('.lightbox-close');
+    if (!img || !closeBtn) return;
+
+    function open(src: string, alt: string) {
+      img!.src = src;
+      img!.alt = alt;
+      dialog!.showModal();
+    }
+
+    function close() {
+      dialog!.close();
+      img!.src = '';
+      img!.alt = '';
+    }
+
+    document.querySelectorAll<HTMLElement>('.lightbox-trigger').forEach((el) => {
+      el.addEventListener('click', (e) => {
+        const src = el.dataset.lightboxSrc || (el as HTMLImageElement).src;
+        const alt = el.dataset.lightboxAlt || (el as HTMLImageElement).alt || '';
+        if (!src) return;
+        e.preventDefault();
+        open(src, alt);
+      });
+    });
+
+    closeBtn.addEventListener('click', close);
+
+    // Click on backdrop (the dialog itself, outside the image) closes too.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) close();
+    });
+  })();
+</script>

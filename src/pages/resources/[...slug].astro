@@ -3,6 +3,8 @@ import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
 import ResourcePage from '../../layouts/ResourcePage.astro';
 import TurnOffGuide from '../../components/TurnOffGuide.astro';
+import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
+import Lightbox from '../../components/Lightbox.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -65,15 +67,14 @@ if (dateModified) {
   {layout === 'article' && (
     <article class="resource-article">
       <Content />
+      <Lightbox />
     </article>
   )}
 
   {layout === 'matrix' && (
-    <article class="resource-article">
+    <article class="resource-matrix">
       <Content />
-      <p class="layout-pending">
-        Matrix layout is not yet implemented. Check back soon.
-      </p>
+      <ResponsibleAIMatrix data={data} />
     </article>
   )}
 
@@ -92,6 +93,10 @@ if (dateModified) {
     max-width: 40rem;
   }
 
+  .resource-matrix {
+    max-width: 64rem;
+  }
+
   .layout-pending {
     margin-top: var(--space-xl);
     padding: var(--space-md);
@@ -99,5 +104,74 @@ if (dateModified) {
     border-radius: var(--radius-sm);
     color: var(--color-text-muted);
     font-style: italic;
+  }
+
+  /* Article body styles for ai-safety scorecard figure and category list. */
+  .resource-article :global(figure.scorecard) {
+    margin: var(--space-xl) 0;
+  }
+
+  .resource-article :global(figure.scorecard img) {
+    width: 100%;
+    height: auto;
+    display: block;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface);
+  }
+
+  .resource-article :global(figure.scorecard figcaption) {
+    margin-top: var(--space-sm);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    text-align: center;
+  }
+
+  .resource-article :global(h2) {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 400;
+    color: var(--color-text-heading);
+    margin: var(--space-2xl) 0 var(--space-md);
+    line-height: 1.2;
+  }
+
+  .resource-article :global(dl.categories) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-xl) var(--space-2xl);
+    margin: var(--space-lg) 0;
+  }
+
+  @media (max-width: 640px) {
+    .resource-article :global(dl.categories) {
+      grid-template-columns: 1fr;
+      gap: var(--space-lg);
+    }
+  }
+
+  .resource-article :global(dl.categories > dt) {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--space-xs);
+  }
+
+  .resource-article :global(dl.categories > dd) {
+    margin: 0 0 var(--space-sm);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-body);
+  }
+
+  .resource-article :global(dl.categories > dd.definition) {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    background: var(--color-code-bg);
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-heading);
   }
 </style>

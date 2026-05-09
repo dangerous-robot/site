@@ -1,0 +1,21 @@
+---
+interface Props {
+  data: unknown;
+}
+
+const _ = Astro.props;
+---
+<p class="layout-pending">
+  Responsible AI matrix is not yet implemented. Check back soon.
+</p>
+
+<style>
+  .layout-pending {
+    margin-top: var(--space-xl);
+    padding: var(--space-md);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+</style>
