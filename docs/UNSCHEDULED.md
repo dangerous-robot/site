@@ -362,3 +362,57 @@ Two markdownlint failures surfaced during a research-content WIP commit on 2026-
 |-----------|-------|
 | Empty-link references in claim narrative (MD042) | Narrative writer emits `[2026/claude](#)` and similar `(#)` placeholder links inline (4 occurrences in the deleted `research/claims/claude/excludes-image-generation.md`). Fix: emit plain-text source IDs (e.g., `[2026/claude]`) without the `(#)` href, or wire real internal links to the source pages. Suspect site of emission: the analyst/narrative writer prompt or a post-processing step that converts `[id]` references to links and falls back to `(#)` when no URL is resolved. |
 | Lists missing surrounding blank lines (MD032) | Narrative writer emits a bullet list (`- Source 4 …`) immediately after a paragraph with no blank line between (1 occurrence in the deleted `research/claims/claude/realtime-energy-display.md` line 31). Fix: ensure the renderer inserts a blank line before any bulleted list. Likely a join/concat step in the narrative writer or a Markdown formatter post-step. |
+
+---
+
+## Generalize claim target: "sector" → "subject"
+
+Goal: Rename `sector` to `subject` across researcher / analyst / auditor logic, and broaden the concept so a claim's target is no longer required to be an entity (or group of entities). A subject can be an abstract or natural-world topic — e.g., *love*, *hurricanes* — not just a company, product, or industry sector.
+
+| Work Item | Notes |
+|-----------|-------|
+| Rename `sector` → `subject` across pipeline + content | Touches researcher/analyst/auditor prompts and code paths, `research/entities/sectors/` directory, frontmatter keys, templates.yaml taxonomy, lint checks, and any Astro collection/loader references. Also update `AGENTS.md` and architecture docs. |
+| Decouple subject from entity model | Subjects today resolve to entity files under `research/entities/sectors/`. Decide whether non-entity subjects get a lighter-weight record (e.g., `research/subjects/<slug>.md` with minimal frontmatter) or whether the entity collection grows a `kind: subject` variant. Either way, researcher/analyst/auditor must stop assuming the subject has a website, parent_company, or other entity-shaped fields. |
+| Update agent instructions for non-entity subjects | Researcher: don't try to find an "official" source for a subject like "love"; lean on encyclopedic/scholarly sources. Analyst: entity-stance reasoning collapses when the subject isn't an actor; verdict logic must handle subject-as-topic framing. Auditor: independence/COI heuristics keyed on the subject being an entity need a fallback path. |
+| Migration plan for existing sector entities | The current `research/entities/sectors/` files (e.g., `ai-model-producers.md`, `generative-ai.md`) need to either become subjects or remain as entity-flavored sectors with subjects layered on top. Decide before renaming so the migration is one-shot, not staged.
+
+---
+
+## Improve source slug generation
+
+Goal: Produce more readable, stable, less collision-prone slugs for source files. Today the URL-derived slug feature (shipped 2026-05-03) prevents *new* duplicates but still emits awkward names (e.g., `full.md`, `pmc12036037.md`, `lee2025aicriticalthinkingsurveypdf.md`).
+
+| Work Item | Notes |
+|-----------|-------|
+| Audit current slug derivation logic | Locate the slug builder in the ingestor and catalog the failure modes: bare path tails (`/full` → `full.md`), opaque IDs (`pmc12036037`), squashed/unhyphenated PDF filenames (`lee2025aicriticalthinkingsurveypdf`). |
+| Prefer `<title>` or OG title over URL path | When the page yields a meaningful title, slugify *that* (truncated to ~6-8 words). Fall back to URL path tail only when title extraction fails. |
+| Add domain prefix for generic path tails | When the URL tail is a stop-word-ish slug (`full`, `index`, `article`, `default`, `home`) or shorter than N chars, prefix with a short host token (e.g., `nature-full`, `pmc-12036037`). |
+| Re-segment squashed PDF filenames | Detect `…YYYYsomethinglongstring` patterns and either insert hyphens at obvious boundaries or fall back to title-based slugs for PDFs. |
+| Backfill rename pass (optional) | One-shot script to rename existing badly-named sources and update claim `sources:` references. Lower priority; new ingests benefit immediately from the fix.
+
+---
+
+## Local source-search prefilter (analysis only)
+
+Goal: Decide whether the researcher should search the local source corpus *before* (or alongside) external searches. The intuition is that as the corpus grows, an existing source already covers a new sub-question often enough to justify the lookup cost — but de-dup on ingest already prevents repeated work, so the marginal value may be small.
+
+| Work Item | Notes |
+|-----------|-------|
+| Quantify the opportunity | Sample N recent claim runs and count how many fetched sources turned out to overlap (post-dedup canonical URL or near-duplicate content) with sources already in the corpus. If overlap is rare, the feature isn't worth building. |
+| Compare against dedup coverage | Dedup catches identical URLs after fetch. A local prefilter would catch them *before* fetch — savings = (avoided fetches × ingest cost). Estimate per-run savings vs. corpus-search latency added to every researcher call. |
+| Sketch retrieval shape if it pencils out | Options: (a) keyword/title BM25 over `research/sources/**/*.md`, (b) embedding index, (c) tag/topic facet match. Each has different freshness + accuracy tradeoffs. Document, don't build, until the value analysis lands. |
+| Decision artifact | A short memo in `docs/plans/drafts/` with the numbers and a build/skip recommendation. No implementation work is on the table until that exists.
+
+---
+
+## Curated list of exceptional sources/sites
+
+Goal: Maintain a hand-curated allowlist (or "trusted set") of sources and sites known to be high-signal, primary, or otherwise exceptional — usable by researcher prompts as preferred starting points, by the auditor as a quality signal, and by readers as a transparency artifact.
+
+| Work Item | Notes |
+|-----------|-------|
+| Define schema and storage | A YAML file (e.g., `research/exceptional-sources.yaml`) listing entries with `url`, `domain`, `name`, `kind` (primary/scholarly/regulator/etc), `why_exceptional`, optional `topics`. Decide whether entries are *sites* (domain-level), *sources* (URL-level), or both. |
+| Seed the list | First pass: regulators/standards bodies (NIST, FTC, UNESCO), academic indexes (arXiv, PubMed Central), credible reporters/labs (FMTI, AI Lab Watch, Epoch AI), and any others surfaced during current research. |
+| Wire into researcher prompts | Pass the curated list (or topic-filtered subset) into the researcher as a "prefer these when relevant" hint, not a hard filter. |
+| Wire into auditor / source-trust signal | Use membership as one input to source independence/trust scoring. Avoid making it the sole signal — curated lists go stale. |
+| Surface to readers (later) | A `/sources/exceptional` or `/about/sources` page renders the list with the `why_exceptional` rationale, making the editorial choice visible. Lower priority than backend wiring.
