@@ -1,21 +1,393 @@
 ---
+import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro';
+
+type CellType =
+  | 'yes'
+  | 'no'
+  | 'no-good'
+  | 'partial'
+  | 'planned'
+  | 'text'
+  | 'unknown'
+  | 'na';
+
+interface Cell {
+  type: CellType;
+  detail?: string;
+}
+
+interface Product {
+  key: string;
+  name: string;
+  url: string;
+}
+
+interface Dimension {
+  label: string;
+  cells: Record<string, Cell>;
+}
+
+interface ExcludedProduct {
+  name: string;
+  reason: string;
+}
+
+interface Footnote {
+  subject: string;
+  text: string;
+}
+
+interface MatrixData {
+  lede?: string;
+  caption?: string;
+  products: Product[];
+  dimensions: Dimension[];
+  excluded_products?: ExcludedProduct[];
+  footnotes?: Footnote[];
+}
+
 interface Props {
   data: unknown;
 }
 
-const _ = Astro.props;
+const { data } = Astro.props as { data: MatrixData };
+const products = Array.isArray(data?.products) ? data.products : [];
+const dimensions = Array.isArray(data?.dimensions) ? data.dimensions : [];
+const excluded = Array.isArray(data?.excluded_products) ? data.excluded_products : [];
+const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
 ---
-<p class="layout-pending">
-  Responsible AI matrix is not yet implemented. Check back soon.
-</p>
+<div class="responsible-matrix">
+  {data?.lede && <p class="lede">{data.lede}</p>}
+
+  <section id="chatbots" class="matrix-section">
+    <h2>
+      Chatbots
+      <a href="#top" class="return-top" aria-label="Return to top">
+        <ArrowUp size={14} aria-hidden="true" />
+      </a>
+    </h2>
+
+    <div class="table-scroll">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th scope="col" class="dim-col">
+              <span class="sr-only">Dimension</span>
+            </th>
+            {products.map((p) => (
+              <th scope="col" class="product-col">
+                <a href={p.url} target="_blank" rel="noopener noreferrer">
+                  {p.name}
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {dimensions.map((dim) => (
+            <tr>
+              <th scope="row" class="dim-label">{dim.label}</th>
+              {products.map((p) => {
+                const cell = dim.cells?.[p.key] ?? { type: 'na' as CellType };
+                return (
+                  <td class={`cell cell--${cell.type}`}>
+                    {cell.type === 'yes' && (
+                      <span class="cell-inline">
+                        <Check size={16} aria-hidden="true" />
+                        <span class="sr-only">Yes</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'no' && (
+                      <span class="cell-inline">
+                        <X size={16} aria-hidden="true" />
+                        <span class="sr-only">No</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'no-good' && (
+                      <span class="cell-inline">
+                        <X size={16} aria-hidden="true" />
+                        <span class="sr-only">No (negative)</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'partial' && (
+                      <span class="cell-inline">
+                        <Minus size={16} aria-hidden="true" />
+                        <span class="sr-only">Partial</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'planned' && (
+                      <span class="cell-inline">
+                        <ArrowUp size={16} aria-hidden="true" />
+                        <span class="sr-only">Planned</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'text' && (
+                      <span class="detail">{cell.detail}</span>
+                    )}
+                    {cell.type === 'unknown' && (
+                      <span class="cell-inline">
+                        <HelpCircle size={16} aria-hidden="true" />
+                        <span class="sr-only">Unknown</span>
+                        {cell.detail && <span class="detail">{cell.detail}</span>}
+                      </span>
+                    )}
+                    {cell.type === 'na' && (
+                      <span class="na" aria-label="Not applicable">&ndash;</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    {data?.caption && <p class="caption">{data.caption}</p>}
+
+    {excluded.length > 0 && (
+      <div class="excluded">
+        <h3>Not listed above</h3>
+        <ul>
+          {excluded.map((p) => (
+            <li>
+              <strong>{p.name}</strong> &mdash; {p.reason}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {footnotes.length > 0 && (
+      <details class="resources-details">
+        <summary>[+] Sources and context</summary>
+        <ol class="footnotes">
+          {footnotes.map((note) => (
+            <li>
+              <strong>{note.subject}:</strong> {note.text}
+            </li>
+          ))}
+        </ol>
+      </details>
+    )}
+  </section>
+</div>
 
 <style>
-  .layout-pending {
-    margin-top: var(--space-xl);
-    padding: var(--space-md);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-sm);
+  .responsible-matrix {
+    color: var(--color-text);
+  }
+
+  .lede {
+    font-family: var(--font-heading);
+    font-size: 1.1rem;
     color: var(--color-text-muted);
-    font-style: italic;
+    margin: 0 0 var(--space-xl);
+    max-width: 36rem;
+  }
+
+  .matrix-section {
+    scroll-margin-top: 5rem;
+  }
+
+  .matrix-section h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-md);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+  }
+
+  .return-top {
+    color: var(--color-text-faint);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .return-top:hover { color: var(--color-accent); }
+
+  .table-scroll {
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--space-md));
+    padding: 0 var(--space-md);
+  }
+
+  .matrix-table {
+    width: 100%;
+    min-width: 44rem;
+    border-collapse: collapse;
+    font-size: var(--font-size-sm);
+  }
+
+  .matrix-table th,
+  .matrix-table td {
+    padding: 0.6rem 0.75rem;
+    vertical-align: top;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .matrix-table thead th {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .dim-col {
+    width: 14rem;
+  }
+
+  .product-col {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .product-col a {
+    color: var(--color-text-heading);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+  }
+
+  .product-col a:hover { color: var(--color-accent); }
+
+  .dim-label {
+    font-weight: 400;
+    color: var(--color-text-heading);
+  }
+
+  .cell {
+    color: var(--color-text);
+  }
+
+  .cell-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .detail {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .cell--yes :global(svg) {
+    color: var(--color-verdict-true);
+    flex-shrink: 0;
+  }
+
+  .cell--no :global(svg) {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .cell--no-good :global(svg) {
+    color: var(--color-verdict-false);
+    flex-shrink: 0;
+  }
+
+  .cell--partial :global(svg) {
+    color: var(--color-verdict-mixed);
+    flex-shrink: 0;
+  }
+
+  .cell--planned :global(svg) {
+    color: var(--color-kind-report);
+    flex-shrink: 0;
+  }
+
+  .cell--unknown :global(svg) {
+    color: var(--color-text-faint);
+    flex-shrink: 0;
+  }
+
+  .na {
+    color: var(--color-text-faint);
+  }
+
+  .product-col :global(svg) {
+    color: var(--color-text-faint);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .caption {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    margin: var(--space-md) 0 var(--space-xl);
+  }
+
+  .excluded {
+    margin: var(--space-xl) 0;
+  }
+
+  .excluded h3 {
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .excluded ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .excluded li {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .excluded strong {
+    color: var(--color-text-heading);
+  }
+
+  .resources-details {
+    margin-top: var(--space-xl);
+  }
+
+  .footnotes {
+    margin: var(--space-md) 0 0;
+    padding-left: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .footnotes li {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    line-height: 1.55;
+  }
+
+  .footnotes strong {
+    color: var(--color-text-heading);
   }
 </style>
