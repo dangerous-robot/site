@@ -44,6 +44,26 @@ const verificationBadgeText =
     ? VERIFICATION_STATUS_BADGE_TEXT[verificationStatus]
     : '';
 
+// Derived products list for company pages: scan entities for products whose
+// parent_company points at this company. Sorted alphabetically by display name.
+// No schema field; the source of truth is each product's parent_company ref.
+const derivedProducts = entity.data.type === 'company'
+  ? entities
+      .filter(e => e.data.type === 'product' && e.data.parent_company === entity.id)
+      .sort((a, b) => a.data.name.localeCompare(b.data.name))
+  : [];
+
+const founded = entity.data.founded as number | undefined;
+
+// Subjects ignore `founded` per plan; only company/product render Facts.
+const showFacts =
+  (entity.data.type === 'company' && (founded || derivedProducts.length > 0)) ||
+  (entity.data.type === 'product' && Boolean(founded));
+
+// History renders the markdown body under an <h2>. Only show when the entity
+// file has a non-empty body; otherwise the heading would sit above nothing.
+const hasHistory = Boolean(entity.body?.trim());
+
 // Group claims by topic. A claim with topics [a, b] appears in both
 // /entities/<slug>'s "a" and "b" groups; this is intentional so the page
 // reflects the multi-topic lens.
@@ -112,9 +132,39 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
       )}
     </PageHeader>
 
-    <section class="body-content">
-      <Content />
-    </section>
+    {showFacts && (
+      <section class="facts">
+        <h2>Facts</h2>
+        <dl class="facts-list">
+          {founded && (
+            <div class="fact">
+              <dt>Founded</dt>
+              <dd>{founded}</dd>
+            </div>
+          )}
+          {entity.data.type === 'company' && derivedProducts.length > 0 && (
+            <div class="fact">
+              <dt>Products</dt>
+              <dd>
+                {derivedProducts.map((product, i) => (
+                  <>
+                    {i > 0 && <span class="fact-sep"> &middot; </span>}
+                    <a href={`/entities/${product.id}`}>{product.data.name}</a>
+                  </>
+                ))}
+              </dd>
+            </div>
+          )}
+        </dl>
+      </section>
+    )}
+
+    {hasHistory && (
+      <section class="history body-content">
+        <h2>History</h2>
+        <Content />
+      </section>
+    )}
 
     <section class="related-claims">
       <h2>Claims</h2>
@@ -230,6 +280,49 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
   .body-content :global(h2),
   .body-content :global(h3) {
     margin-top: var(--space-lg);
+  }
+
+  .facts {
+    margin-bottom: var(--space-lg);
+  }
+
+  .facts h2,
+  .history h2 {
+    font-size: 1.2rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .facts-list {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .fact {
+    display: flex;
+    gap: var(--space-sm);
+    font-size: var(--font-size-sm);
+    margin: 0;
+  }
+
+  .fact dt {
+    color: var(--color-text-faint);
+    font-weight: 600;
+    min-width: 5.5rem;
+  }
+
+  .fact dd {
+    color: var(--color-text);
+    margin: 0;
+  }
+
+  .fact-sep {
+    color: var(--color-text-faint);
+  }
+
+  .history {
+    margin-bottom: var(--space-xl);
   }
 
   .related-claims {
