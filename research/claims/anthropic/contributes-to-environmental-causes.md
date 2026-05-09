@@ -8,7 +8,7 @@ confidence: medium
 verification_level: multiply-verified
 takeaway: Anthropic funds grid‑upgrade offsets and energy research, but its models
   consume considerable power.
-seo_title: ''
+seo_title: Anthropic environmental contributions
 criteria_slug: contributes-to-environmental-causes
 status: published
 as_of: '2026-05-08'

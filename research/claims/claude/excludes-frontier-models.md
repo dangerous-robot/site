@@ -13,7 +13,7 @@ cap_rationale: The available evidence comes from a single independent source and
   but suggest much of Claude's capabilities are actively marketed in high-demand applications.
   However, limitations are discussed in terms of compute and resource
 takeaway: ''
-seo_title: ''
+seo_title: Claude excludes frontier-scale models
 criteria_slug: excludes-frontier-models
 status: published
 as_of: '2026-05-07'

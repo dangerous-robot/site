@@ -7,7 +7,7 @@ verdict: unverified
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT contributes to AI safety causes
 criteria_slug: contributes-to-ai-safety
 status: published
 as_of: '2026-05-08'

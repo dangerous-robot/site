@@ -7,7 +7,7 @@ verdict: unverified
 confidence: medium
 verification_level: multiply-verified
 takeaway: ''
-seo_title: ''
+seo_title: OpenAI publishes sustainability report
 criteria_slug: publishes-sustainability-report
 status: published
 as_of: '2026-05-08'

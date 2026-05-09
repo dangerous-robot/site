@@ -12,7 +12,7 @@ cap_rationale: Confidence is capped at low — while independent sources (like S
   absence of use). The entity itself states non-use is only operating in opt-out mode;
   no source independently confirms zero data use in practice. This aligns with 'unexc
 takeaway: ''
-seo_title: ''
+seo_title: Claude does not use user data for training
 criteria_slug: no-training-on-user-data
 status: published
 as_of: '2026-05-07'

@@ -15,7 +15,7 @@ cap_rationale: The sources are from the entity (first-party) but provide details
   confidence is tempered to 'partially-verified' as the evidence is self-reported
   but
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT excludes frontier-scale models
 criteria_slug: excludes-frontier-models
 status: published
 as_of: '2026-05-07'

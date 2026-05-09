@@ -7,7 +7,7 @@ verdict: 'true'
 confidence: medium
 verification_level: independently-verified
 takeaway: ''
-seo_title: ''
+seo_title: Anthropic contributes to AI safety causes
 criteria_slug: contributes-to-ai-safety
 status: published
 as_of: '2026-05-08'

@@ -11,7 +11,7 @@ cap_rationale: Confidence is capped at medium — most sources are from or about
   (like MIT Tech Review) rephrase Google’s aggregated data but do not independently
   verify real-time measurement
 takeaway: ''
-seo_title: ''
+seo_title: Gemini displays real-time energy usage
 criteria_slug: realtime-energy-display
 status: published
 as_of: '2026-05-07'

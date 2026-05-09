@@ -12,7 +12,7 @@ cap_rationale: Confidence is capped at medium due to GreenPT's self-reporting an
   some operational details, but external validation (including Source 6 and 7) is
   supporting but indirect.
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT is hosted on renewable energy
 criteria_slug: renewable-energy-hosting
 status: published
 as_of: '2026-05-07'

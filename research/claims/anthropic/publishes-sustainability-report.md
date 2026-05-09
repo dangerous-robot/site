@@ -7,7 +7,7 @@ verdict: unverified
 confidence: medium
 verification_level: independently-verified
 takeaway: ''
-seo_title: ''
+seo_title: Anthropic publishes sustainability report
 criteria_slug: publishes-sustainability-report
 status: published
 as_of: '2026-05-08'

@@ -12,7 +12,7 @@ cap_rationale: Confidence is capped at low because the primary sources relied on
   documentation could provide more nuanced answers, but until then, independent sources
   miss this key aspect of the claim. Public reports automatically default to 'un
 takeaway: ''
-seo_title: ''
+seo_title: TreadLightlyAI discloses energy sourcing
 criteria_slug: discloses-energy-sourcing
 status: published
 as_of: '2026-05-07'

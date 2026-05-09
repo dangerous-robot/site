@@ -9,7 +9,7 @@ verification_level: independently-verified
 takeaway: GreenPT claims and an independent article show it builds its AI platform
   on renewable energy and tracks emissions, but concrete third‑party impact measurements
   are missing.
-seo_title: ''
+seo_title: GreenPT environmental contributions
 criteria_slug: contributes-to-environmental-causes
 status: published
 as_of: '2026-05-08'

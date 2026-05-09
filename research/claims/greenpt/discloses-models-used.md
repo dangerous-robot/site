@@ -10,7 +10,7 @@ cap_rationale: Some sources are first-party, while one independent, but reliance
   GreenPT's documentation for model identity and third-party mentions still requires
   inference.
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT discloses which models it uses
 criteria_slug: discloses-models-used
 status: published
 as_of: '2026-05-07'

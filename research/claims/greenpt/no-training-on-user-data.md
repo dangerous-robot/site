@@ -12,7 +12,7 @@ cap_rationale: Confidence is capped at medium due to all primary evidence coming
   regulation reports are absent from the evaluated pool. The sources primarily restate
   the company's commitments without original, external analysis.
 takeaway: ''
-seo_title: ''
+seo_title: GreenPT does not train on user data
 criteria_slug: no-training-on-user-data
 status: published
 as_of: '2026-05-07'

@@ -12,7 +12,7 @@ cap_rationale: Confidence is capped due to primarily self-reported data from the
   but does not specify energy sourcing. The comparison study in Source 3 highlights
   energy usage differences but does not confirm renewables independently
 takeaway: ''
-seo_title: ''
+seo_title: Claude discloses its energy sourcing
 criteria_slug: discloses-energy-sourcing
 status: published
 as_of: '2026-05-07'
