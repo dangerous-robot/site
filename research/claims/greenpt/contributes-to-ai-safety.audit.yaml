@@ -1,0 +1,137 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T06:43:58.411277+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - '"GreenPT" AI safety announcement'
+  - GreenPT AI safety blog post
+  - GreenPT donations AI safety research
+  - GreenPT partnership AI safety organization
+  - GreenPT content moderation system
+  - GreenPT GPT safety mechanisms
+  - GreenPT AI safety coverage news
+  planner_rationale: The sub‑questions separate (1) GreenPT’s own statements, (2)
+    financial or partnership support for AI‑safety research, (3) technical safety
+    mechanisms in its product, and (4) independent media coverage. The queries are
+    brief (3‑7 words), include a single quoted proper noun when needed, and avoid
+    prohibited operators, complying with Brave‑search syntax.
+  candidates_seen: 55
+  urls_kept: 4
+  urls_dropped: 43
+  scorer_rationale: For sq1 (public statements on AI safety) the only GreenPT‑owned
+    pages that explicitly discuss safety or present a formal statement were the Government
+    landing page and the main Blog index; both received a relevance score of 3 or
+    higher. All other GreenPT pages focus on sustainability or privacy without mentioning
+    safety, so they scored below 3. For sq2 (financial support to AI‑safety research)
+    none of the candidate pages listed grants or partnerships with recognized AI‑safety
+    organisations, so all scored <3. For sq3 (technical safety/alignment features)
+    the examined pages mention security, transparency and sustainability but not concrete
+    moderation, red‑team or prompt‑filtering mechanisms, giving them scores of 1‑2.
+    For sq4 (independent media coverage of GreenPT’s safety contributions) the only
+    sources that discussed GreenPT in any safety‑related context were the Ecosend
+    podcast episode (which touches on ethics and safety) and a YouTube interview with
+    the founder; both earned a score of 3. All other third‑party articles either focus
+    on climate impact or general product description and lack safety content, receiving
+    scores <3. Consequently, only the four URLs above meet the >=3 threshold for at
+    least one sub‑question and are kept; the rest are dropped.
+  urls_after_blocklist: 4
+sub_questions:
+- id: sq1
+  question: What public statements or announcements has GreenPT made regarding AI
+    safety?
+  rationale: Covers first‑party disclosures such as blog posts, press releases, or
+    transparency pages.
+  queries:
+  - '"GreenPT" AI safety announcement'
+  - GreenPT AI safety blog post
+  citations:
+  - 2025/greenpt-government-ai
+  - 2026/blog
+- id: sq2
+  question: Does GreenPT financially support or partner with AI‑safety research organizations?
+  rationale: Captures any donations, grants, or collaborations that indicate contribution
+    to safety causes.
+  queries:
+  - GreenPT donations AI safety research
+  - GreenPT partnership AI safety organization
+  citations: []
+- id: sq3
+  question: What safety or alignment features are built into GreenPT’s GPT chat platform?
+  rationale: Looks for technical mechanisms (moderation, red‑teaming, prompt‑filtering)
+    that reflect an AI‑safety focus.
+  queries:
+  - GreenPT content moderation system
+  - GreenPT GPT safety mechanisms
+  citations: []
+- id: sq4
+  question: How do independent media or third‑party sources describe GreenPT’s contributions
+    to AI safety?
+  rationale: Provides external validation or critique of the entity’s safety work.
+  queries:
+  - GreenPT AI safety coverage news
+  citations:
+  - 2025/s7e3-could-ai-ever-go-green-with-robert-keus-of-greenpt
+  - 2026/watch
+sources_consulted:
+- id: 2025/greenpt-government-ai
+  url: https://greenpt.com/government/
+  title: Secure & Sustainable AI chat for governments
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: '"GreenPT" AI safety announcement'
+- id: 2026/blog
+  url: https://greenpt.com/blog/
+  title: Blog & News
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT AI safety blog post
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/s7e3-could-ai-ever-go-green-with-robert-keus-of-greenpt
+  url: https://ecosend.io/podcast/s7e3-could-ai-ever-go-green-with-robert-keus-of-greenpt
+  title: Can AI ever go Green? with Robert Keus of GreenPT
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT AI safety blog post
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/watch
+  url: https://www.youtube.com/watch?v=iqyMqaI0Kz4
+  title: Episode 3 - Is GreenPT the most sustainable AI chat? I asked Robert Keus
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT partnership AI safety organization
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+human_review:
+  reviewed_at: '2026-05-08'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

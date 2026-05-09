@@ -1,0 +1,177 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-09T06:44:53.899113+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:openai/gpt-oss-120b
+  ingestor: infomaniak:openai/gpt-oss-120b
+  analyst: infomaniak:openai/gpt-oss-120b
+  auditor: infomaniak:openai/gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - GreenPT sustainability page
+  - GreenPT renewable energy usage
+  - GreenPT CO2 tracking API
+  - GreenPT environmental impact news
+  - GreenPT ESG rating
+  - GreenPT renewable data centers Europe
+  - GreenPT carbon offset certification
+  planner_rationale: The three sub‑questions together cover (1) GreenPT’s own sustainability
+    communications, (2) external verification or reporting, and (3) the concrete technical
+    and quantitative aspects of its claimed environmental contributions. The seven
+    short Brave‑compatible queries are distributed across these axes to retrieve relevant
+    evidence while respecting the query length constraints.
+  candidates_seen: 53
+  urls_kept: 22
+  urls_dropped: 25
+  scorer_rationale: Candidates were scored against the three sub‑questions using only
+    titles and snippets. Primary sources from GreenPT (official docs, website, blog,
+    about page, sustainability pages) received high scores for sq1 (official statements)
+    and sq3 (technical infrastructure) and were kept. Secondary third‑party news or
+    analysis pieces that discuss GreenPT’s environmental impact were kept for sq2
+    (independent assessment) and often also for sq3 when they describe the infrastructure.
+    Forum and purely social‑media posts without substantive claims scored ≤2 and were
+    dropped. The Apple App Store link and the Substack article were explicitly listed
+    in the ‘Avoid results about’ set and were therefore dropped regardless of content.
+    All remaining URLs either scored ≥3 on at least one sub‑question or were required
+    to be listed as dropped.
+  urls_after_blocklist: 18
+sub_questions:
+- id: sq1
+  question: What official statements or documentation does GreenPT provide about its
+    environmental contributions?
+  rationale: First‑party sources (website, reports, blog posts) reveal the company's
+    own claims regarding sustainability.
+  queries:
+  - GreenPT sustainability page
+  - GreenPT renewable energy usage
+  - GreenPT CO2 tracking API
+  citations:
+  - 2025/greenpt
+  - 2025/greenpt-vs-chatgpt
+  - 2026/greenpt-vs-gemini
+  - 2026/general
+  - 2025/08keusgreenptpdf
+  - 2026/partners
+  - 2026/greenpt-search
+- id: sq2
+  question: What third‑party assessments, news coverage, or ESG ratings mention GreenPT’s
+    environmental impact?
+  rationale: Independent sources can confirm or challenge the company’s self‑reported
+    claims.
+  queries:
+  - GreenPT environmental impact news
+  - GreenPT ESG rating
+  citations:
+  - 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  - 2025/08keusgreenptpdf
+- id: sq3
+  question: How does GreenPT’s infrastructure (renewable energy, carbon‑tracking,
+    offsets) work and what measurable impact is reported?
+  rationale: Understanding the technical mechanisms and any quantified results helps
+    evaluate the real contribution.
+  queries:
+  - GreenPT renewable data centers Europe
+  - GreenPT carbon offset certification
+  citations:
+  - 2025/greenpt
+  - 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  - 2025/greenpt-vs-chatgpt
+  - 2026/greenpt-vs-gemini
+  - 2026/general
+  - 2025/08keusgreenptpdf
+  - 2026/partners
+  - 2026/greenpt-search
+sources_consulted:
+- id: 2025/greenpt
+  url: https://greenpt.com/
+  title: GreenPT
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT sustainability page
+- id: 2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  url: https://aiworld.eu/story/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure
+  title: GreenPT builds AI chat platform on European renewable infrastructure
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT sustainability page
+- id: 2025/greenpt-vs-chatgpt
+  url: https://greenpt.com/greenpt-vs-chatgpt/
+  title: GreenPT vs ChatGPT | EU-Hosted AI Platform Alternative
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT ESG rating
+- id: 2026/greenpt-vs-gemini
+  url: https://greenpt.com/greenpt-vs-gemini/
+  title: GreenPT vs Gemini
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT renewable data centers Europe
+- id: 2026/general
+  url: https://docs.greenpt.ai/sustainability/general
+  title: GreenPT Documentation
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT sustainability page
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/08keusgreenptpdf
+  url: https://www.eco-compute.io/files/slides_2025/01_Thursday/01_SoHa/08_Keus_GreenPT.pdf
+  title: How to Build a Sustainable AI Infrastructure
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT sustainability page
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/partners
+  url: https://wordpress.greenpt.ai/partners/
+  title: Partner with GreenPT
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT sustainability page
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/greenpt-search
+  url: https://search.greenpt.ai/
+  title: GreenPT Search - Sustainable Web Search
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: GreenPT sustainability page
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+human_review:
+  reviewed_at: '2026-05-08'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null

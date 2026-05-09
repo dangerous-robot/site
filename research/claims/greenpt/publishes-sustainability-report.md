@@ -1,23 +1,19 @@
 ---
-title: GreenPT Publishes a Sustainability or ESG Report
+title: GreenPT publishes a sustainability or ESG report
 entity: companies/greenpt
-topics:
-- environmental-impact
-verdict: 'true'
+topics: [environmental-impact]
+verdict: unverified
 confidence: medium
-verification_level: self-reported
-cap_rationale: Confidence is capped at medium due to reliance on self-reported material
-  from GreenPT itself, with no identified third-party validation.
+verification_level: multiply-verified
 takeaway: ''
 seo_title: GreenPT Publishes Sustainability Report, E
 criteria_slug: publishes-sustainability-report
-status: published
-as_of: '2026-05-07'
+status: draft
+as_of: '2026-05-08'
 sources:
-- 2025/sustainability
-- 2025/introducing-a-new-ai-metric-to-drive-sustainability
-- 2025/business
-- 2025/b-corp
+- 2026/general
+- 2026/blog
+- 2025/0qcxtyjcioi1slwzbex3kx
 tags: []
 ---
-GreenPT's official website and several other company resources (Sources 1, 2, 3, 5, 6, 7, 8) prominently display or explicitly describe a sustainability report, including details of their renewable energy usage (e.g., 100% in Sources 1, 2, 5), hosting infrastructure (EU-based sources in Sources 3 and 7), and metrics like power efficiency (Source 5). These sources collectively match the criteria of publishing a sustainability report under company-owned channels (satisfies **sq1**). However, the absence of third-party certifications or independent assessments (e.g., from EcoVadis, CDP, or the GRI index) in Sources 2 or 4 complicates corroboration of claims beyond GreenPT's self-reporting (sq2). Sources 6 introduces a proposed AI-specific sustainability metric, but its wider adoption or recognition remains unclear (this addresses sq3). Given direct self-publication under validated sustainability-focused sections and contextual detail on infrastructure, the claim is well-supported. However, the reliance on self-reported data may limit the confidence to **medium**
+A review of GreenPT’s own website (sources 2025/greenpt, 2025/sustainability, 2025/b-corp, 2026/general) describes the company’s renewable‑energy infrastructure and sustainability metrics, but none of these pages present a dedicated sustainability or ESG report. Independent coverage of the company in an AI World article (2025/greenpt-builds-ai-chat-platform-on-european-renewable-infrastructure), a GreenPT blog post (2025/introducing-a-new-ai-metric-to-drive-sustainability), the company’s blog index (2026/blog), and a podcast interview (2025/0qcxtyjcioi1slwzbex3kx) also discuss its green design but do not reference a published ESG report. No third‑party ESG or sustainability databases (sq2) list such a report, and no EU corporate‑social‑responsibility filings (sq4) were found. Because none of the sources provide a concrete sustainability or ESG report from GreenPT, the claim cannot be confirmed nor refuted.
