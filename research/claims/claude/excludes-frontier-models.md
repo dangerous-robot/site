@@ -1,7 +1,9 @@
 ---
 title: Claude excludes frontier-scale models
 entity: products/claude
-topics: [ai-safety, environmental-impact]
+topics:
+- ai-safety
+- environmental-impact
 verdict: 'false'
 confidence: medium
 verification_level: partially-verified
@@ -13,7 +15,7 @@ cap_rationale: The available evidence comes from a single independent source and
 takeaway: ''
 seo_title: ''
 criteria_slug: excludes-frontier-models
-status: draft
+status: published
 as_of: '2026-05-07'
 sources:
 - 2026/overview

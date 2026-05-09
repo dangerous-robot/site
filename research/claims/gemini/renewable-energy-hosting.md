@@ -1,7 +1,8 @@
 ---
 title: Google's Gemini AI is hosted on 100% renewable energy
 entity: products/gemini
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: mixed
 confidence: medium
 verification_level: partially-verified
@@ -13,7 +14,7 @@ cap_rationale: Confidence is capped at medium because sources are a mix of first
 takeaway: ''
 seo_title: 'Google''s Gemini AI: Mixed on Renewable, On'
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-05-07'
 sources:
 - 2025/google-reveals-the-environmental-cost-of-gemini-ai-query

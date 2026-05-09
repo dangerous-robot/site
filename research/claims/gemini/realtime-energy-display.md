@@ -1,7 +1,8 @@
 ---
 title: Gemini displays real-time energy usage
 entity: products/gemini
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'false'
 confidence: medium
 verification_level: self-reported
@@ -12,7 +13,7 @@ cap_rationale: Confidence is capped at medium — most sources are from or about
 takeaway: ''
 seo_title: ''
 criteria_slug: realtime-energy-display
-status: draft
+status: published
 as_of: '2026-05-07'
 sources:
 - 2025/google-gemini-ai-energy

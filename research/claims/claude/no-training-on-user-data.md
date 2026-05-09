@@ -1,7 +1,8 @@
 ---
 title: Claude does not use user data for training
 entity: products/claude
-topics: [data-privacy]
+topics:
+- data-privacy
 verdict: 'false'
 confidence: medium
 verification_level: partially-verified
@@ -13,7 +14,7 @@ cap_rationale: Confidence is capped at low — while independent sources (like S
 takeaway: ''
 seo_title: ''
 criteria_slug: no-training-on-user-data
-status: draft
+status: published
 as_of: '2026-05-07'
 sources:
 - 2025/claude-data-retention-policies-storage-rules-and-compliance-overview
