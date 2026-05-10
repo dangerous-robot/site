@@ -1,0 +1,193 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-05-10T00:03:13.065752+00:00'
+  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:google/gemma-4-31B-it
+  analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Brave Software hosting providers renewable energy pledge
+  - Brave official website renewable energy hosting claims
+  - Brave Browser data centers renewable energy verified
+  - Brave Software carbon-neutral hosting provider
+  - Brave hosting infrastructure third-party energy audit
+  - Brave renewable energy hosting verified by ESG
+  - Brave Software hosting renewable energy certification
+  planner_rationale: These sub-questions cover the claim by examining (1) Brave’s
+    first-party disclosures about hosting and sustainability, (2) the technical mechanism
+    (hosting providers) behind its operations, and (3) independent verification from
+    third-party audits or databases.
+  candidates_seen: 66
+  urls_kept: 11
+  urls_dropped: 45
+  scorer_rationale: "Scoring rationale supporting kept and dropped URLs:\n\n**Kept\
+    \ URLs:**\n1. **https://brave.com/blog/brave-website-challenge/**\n   - Score\
+    \ 3 for **sq3**: Discloses community engagement with green themes (*e.g.*, “browser\
+    \ building on-chain Web experiences”), indirectly invoking sustainability.\n \
+    \  - Others: **sq1 (3)** due to corporate transparency-focused content (blog).\n\
+    \n2. **https://brave.com/faq/**\n   - Score 4 for **sq1**: Confirms Brave’s hosting\
+    \ and operational domains (hosted on brave.com), a strong signal of first-party\
+    \ transparency.\n\n3. **https://brave.com/blog/page/6/**\n   - Score 3 for **sq1**:\
+    \ Lists announcements, likely including corporate updates on practices.\n   -\
+    \ Publishers are primary/secondary; kept due to **Brave’s first-party entity**.\n\
+    \n4. **https://meegle.com/en_us/topics/web-browser/web-browsers-for-renewable-energy**\n\
+    \   - Score 4 for **sq1/sq3**: Aggregates green features of browsers, including\
+    \ Brave’s ad-blocking == lower energy use. **Brave is mentioned explicitly**.\n\
+    \n5. **https://community.brave.app/t/ecological-footprint/...**\n   - Score 4\
+    \ for **sq1/sq3**: Direct community thread questioning carbon footprint, implying\
+    \ transparency opportunities.\n\n6. **https://ditchcarbon.com/organizations/brave-software-inc**\n\
+    \   - Score 5 for **sq1/sq3**: Independent third-party carbon profile and sustainability\
+    \ comparisons—directly verifies commitments.\n\n\n**Dropped URLs:**\nAll others\
+    \ failed ≤ 2 on **all sub-questions** for one reason or another:\n   - **Unrelated\
+    \ org**: Any Brave *Energy*, *Enterprises*, or unrelated URLs = **1 (different\
+    \ entity)**. Even if snippets mentioned “solar” or “energy,” they did not address\
+    \ *Brave Browser’s hosting*.\n   - **Lack of technical specificity**: Outside\
+    \ Brave’s hosting (e.g., green trends in general, vague AI/PC energy debates)\
+    \ = **2 (unlikely)**.\n   - **Wikipedia/play.google.com/wp filters**: **1**.\n\
+    \   - **Pro-solar energy corporate pledges (non-Brave)**: **Ignored** incl. Trump’s\
+    \ tech pledges, Amazon/Google “energy agreements” since zero **Brave-specific\
+    \ evidence** was implied.\n   - **Community/advocacy posts**: **2 forum/3 secondary\
+    \ (kept: 0)** for *lack of concrete claims* about Brave’s hosting;\n\n**Tiebreaker\
+    \ Priority**: Favorable Sense=all kept gotten from Brave’s **official site or\
+    \ second-party addressing the same org**. Others (e.g., renewable data centers,\
+    \ roof-solar systems) are **generic tech energy** not directly tied to hosting\
+    \ suppliers.\n\n**Final note**: sq2 lost by omission—**no candidates mentioned\
+    \ hosting providers** (e.g., OVH, AWS, Cloudflare, etc.) Name-fchecked. References\
+    \ to *Brave’s servers* are vague or unpublishable snippets like “we host X domains,”\
+    \ so ingegnity of labelers.\n\n---\nEvery candidate’s dismissal or retention here\
+    \ is grounded on **canonical entity hosting visibility rule**, publisher quality,\
+    \ or **time spent aligning exclusively** to SQ1–SQ3 definition scope."
+  urls_after_blocklist: 11
+sub_questions:
+- id: sq1
+  question: Does Brave Software publish its hosting sustainability or renewable energy
+    commitments on its official website, blog, or corporate transparency reports?
+  rationale: Brave Software may disclose its hosting providers or sustainability practices
+    directly on its first-party communication channels like its website, blog, or
+    formal reports.
+  queries:
+  - Brave Software hosting providers renewable energy pledge
+  - Brave official website renewable energy hosting claims
+  citations:
+  - 2022/ecological-footprint
+  - 2026/faq
+  - 2026/6
+  - 2026/about
+- id: sq2
+  question: Which hosting providers does Brave Browser use, and do any of them run
+    on renewable energy or offer carbon-neutral hosting plans?
+  rationale: Determining the technical mechanism (hosting providers) behind Brave
+    Browser is critical to assess whether renewable energy sources are used.
+  queries:
+  - Brave Browser data centers renewable energy verified
+  - Brave Software carbon-neutral hosting provider
+  citations: []
+- id: sq3
+  question: Are there third-party evaluations or audits of Brave's hosting infrastructure
+    that confirm its reliance on renewable energy or carbon-neutral operations?
+  rationale: Third-party databases, aggregators, or audits can provide independent
+    verification of Brave's sustainability claims regarding its hosting.
+  queries:
+  - Brave hosting infrastructure third-party energy audit
+  - Brave renewable energy hosting verified by ESG
+  - Brave Software hosting renewable energy certification
+  citations:
+  - 2021/ecosia
+  - 2022/ecological-footprint
+  - 2025/brave-website-challenge
+  - 2021/unstoppable-domains
+sources_consulted:
+- id: 2021/ecosia
+  url: https://brave.com/blog/ecosia/
+  title: Ecosia is now an Official Search Engine Option on Brave
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software carbon-neutral hosting provider
+- id: 2022/ecological-footprint
+  url: https://community.brave.app/t/ecological-footprint/404963
+  title: Ecological footprint
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Browser data centers renewable energy verified
+- id: 2025/brave-website-challenge
+  url: https://www.brave.com/blog/brave-website-challenge/
+  title: The .brave Website-Building Challenge
+  ingested: true
+- id: 2026/faq
+  url: https://brave.com/faq/
+  title: Frequently Asked Questions
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave official website renewable energy hosting claims
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/6
+  url: https://brave.com/blog/page/6/
+  title: Latest News
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave official website renewable energy hosting claims
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2021/unstoppable-domains
+  url: https://brave.com/blog/unstoppable-domains/
+  title: Unstoppable Domains and Brave to Provide Millions of Users Access to the
+    Decentralized Web
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software carbon-neutral hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/about
+  url: https://brave.com/about/
+  title: What is Brave?
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software carbon-neutral hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/brave-browser-home
+  url: https://brave.com/
+  title: Brave Browser
+  ingested: true
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Brave Software carbon-neutral hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

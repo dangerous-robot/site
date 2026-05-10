@@ -2,16 +2,16 @@
 name: Brave Software
 type: company
 website: https://brave.com/about/#company-info
-description: Brave Software develops privacy-focused web browsers and search engines
-  built on open-source technology, rejecting third-party tracking and ads replaced
-  by an optional attention-based cryptocurrency incentivizing users.
+description: A privacy-focused software company developing the Brave web browser and
+  search engine, which emphasizes user data protection through features like an independent
+  search index and ad-free experiences supported by optional crypto microtransactions.
 search_hints:
   exclude:
   - play.google.com
   - apps.apple.com
   - en.wikipedia.org
-founded: 2016
+founded: 2018
 ---
-Brave Software debuted in 2016 as a project led by Brendan Eich, the creator of JavaScript and former CEO of Mozilla and Firefox. The company’s mission centered on reconstructing the web experience by defaulting to ad and tracker blocking, leveraging Chromium’s open-source engine but stripping controversial features like telemetry and data mining. Its initial product, the Brave browser, gained traction quickly through its hands-off approach to user privacy, while introducing a privacy-preserving ad system (funded by Brave Rewards tokens) to offer an alternative to invasive behavioral ads.
+Brave Software was founded in 2018 by Brendan Eich, the creator of JavaScript and co-founder of Mozilla Firefox. The company emerged from a desire to build a web browser that prioritized user privacy, contrasting with widely used browsers that rely on tracking-based advertising. Brave's initial release focused on blocking third-party ads and trackers by default, along with built-in ad and token-based rewards for users through its Brave Rewards system.
 
-By 2020, Brave expanded its ecosystem with privacy-oriented components like the Brave Search engine, avoiding reliance on traditional data-leaking advertising models. The company’s compelling blend of technical scrutiny and user autonomy-positioning attracted significant Series A and B funding from venture capitalists like ARCH and Pantera Capital, with total disbursed capital nearing $40 million. Strategic technical pivots—such as early integrations with blockchain-based incentive models—further cemented Brave’s outlier status in the browser sector, catering to both privacy-first enthusiasts and mainstream users alike.
+In its early years, Brave expanded its ecosystem to include a privacy-centric search engine, powered by an independent index to reduce data collection compared to industry giants like Google. The company also introduced the Basic Attention Token (BAT), a cryptocurrency designed to facilitate direct transactions between users and content creators, bypassing traditional ad intermediaries. Funding played a key role in Brave’s growth, with significant investments from major crypto-focused venture capital firms and individual contributions from Eich and early adopters. By mitigating reliance on third-party ad networks, Brave positioned itself as a competitor in the privacy-forward segment of the browser market, appealing to users frustrated with tracking and data surveillance.

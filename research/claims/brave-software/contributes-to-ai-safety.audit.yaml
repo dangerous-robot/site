@@ -1,160 +1,117 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-09T19:16:05.518504+00:00'
+  ran_at: '2026-05-09T23:42:07.921877+00:00'
   model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
+  - auditor
 models_used:
   researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
   analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   tool_outcomes: []
   queries:
-  - Brave AI safety initiatives
-  - Brave Software transparency report AI safety
-  - Brave Software AI safety collaborations
-  - Brave Software AI safety research funding
-  - Brave AI safety conferences or events
-  - Brave browser technical measures AI safety
-  - Brave AI products safety features
-  planner_rationale: The sub-questions cover Brave Software's contributions to AI
-    safety by examining first-party statements, third-party validations, participation
-    in safety initiatives, and technical implementations, ensuring a comprehensive
-    review.
-  candidates_seen: 69
-  urls_kept: 14
-  urls_dropped: 25
-  scorer_rationale: '[**Candidates Dropped**]:
-
-    - **Medical unrelated (BRAVE AI)**: The URL refers to a medical AI initiative
-    entirely unrelated to Brave Software (different entity with similar acronym).
-
-    - **Reddit/forum posts**: All forum candidates scored **≤ 2** for sq1-sq3 due
-    to low publisher quality and lack of direct, verifiable information.
-
-    - **Financial/revenue profiles**: URLs like Crunchbase, Sacra, and GetLatka describe
-    funding/valuation but offer **no details on AI safety commitments or technical
-    measures** (sq1-sq4).
-
-    - **Conferences and unrelated AI initiatives**: Events not tied to Brave (e.g.,
-    AI Safety Lab, AI Risk Summit, Future of Life Institute) or Brave’s involvement
-    were dropped unless directly mentioned in other high-quality sources.
-
-    - **General promotion/revenue pages**: Pages like `brave.com/` or `brave.com/features`
-    did not directly address sub-questions about AI safety initiatives or third-party
-    collaborations.
-
-    - **Research dir:** Research page focuses broadly on privacy/security but lacks
-    specific AI safety project details.
-
-
-
-    ---
-
-
-    [**Candidates Kept**]:
-
-    **SQ1 (Public commitments/first-party statements):**
-
-    - **sq1-supported sources**: `brave.com/podcast/e6` (Kleomenis Katevas discusses
-    privacy-preserving AI), `brave.com/transparency/` (general transparency page but
-    kept for partial alignment), and `brave.com/blog/browser-ai-tee/` (Brave''s technical
-    commitment to privacy standards).
-
-
-    **SQ2 (Third-party reports/funding):**
-
-    - **sq2-supported sources**: `brave.com/podcast/e83` (AI safety discussions),
-    `brave.com/podcast/e56/` (ethics/governance), `brave.com/podcast/e44/` (academic
-    collaboration), and `brave.com/podcast/e10/` (ethics/safety research). LinkedIn
-    posts (`karmendrachoudhary_` and serious threats linked to Brave research) provide
-    secondary verification.
-
-
-    **SQ3 (Conferences/sponsorships):**
-
-    - **sq3-supported sources**: `brave.com/podcast/e83/` (AI safety topics), `brave.com/podcast/e10/`
-    (discussions of risks/alignments), `brave.com/series/security-privacy-in-agentic-browsing/`
-    (celebrated research), and related LinkedIn posts highlighting team expertise.
-
-
-    **SQ4 (Technical-measure insights):**
-
-    - **sq4-supported sources**: Technically granular sources like `brave.com/blog/ai-browsing/`
-    (third-party testing methodology), `brave.com/blog/browser-ai-tee/` (verified
-    LLMs), `seraphicsecurity.com/` (Brave-specific security inspections), `support.brave.app`
-    (practical safeguards for Leo), `brave.com/privacy-features/` (default privacy
-    controls), `brave.com/podcast/e6/` (privacy-centered priorities). Some LinkedIn
-    posts (`varunmayya_`) mention vulnerabilities aligned with Brave’s browser features.
-
-
-
-    **[Tagged dropped]**: Candidates not linked to Brave Software proper, or lacking
-    actionable content tied to AI safety, were excluded. The rationale sides with
-    higher-publisher-quality sources for direct answers and welaves away from biased/opinionated
-    topics.'
-  urls_after_blocklist: 12
+  - Brave AI safety commitments official statement
+  - Brave Software AI responsibility policy
+  - Brave Software AI safety third-party reports
+  - Brave Software ESG database AI safety
+  - Brave partnerships AI safety organizations
+  - Brave AI safety research collaborations
+  - Brave AI ethical guidelines technical disclosures
+  planner_rationale: The sub-questions cover first-party claims, third-party validation,
+    and technical/partnership details to comprehensively assess Brave's contribution
+    to AI safety.
+  candidates_seen: 95
+  urls_kept: 20
+  urls_dropped: 39
+  scorer_rationale: "The scoring followed these principles:\n\n1. **SQ1 (Own Announcements):**\n\
+    \   - Directly identifiable through Brave's **About page** (`https://brave.com/about/`)\
+    \ which mentions its AI initiatives (**kept with `sq3` due to indirect relevance**).\n\
+    \   - No sources explicitly addressed SQ1, as Brave does not publicly announce\
+    \ or document standalone AI safety initiatives on the main page.\n\n2. **SQ2 (Third-party\
+    \ Reports, ESG, Regulatory):**\n   - High-quality resources from White House (`https://bidenwhitehouse.archives.gov/...`),\
+    \ Microsoft (`https://blogs.microsoft.com/...`), and Google (`https://publicpolicy.google/resources/...`)\
+    \ were **kept** for explicitly linking AI safety within industry-wide voluntary\
+    \ commitments.\n   - Cannot assume forums (`Reddit`, `HackerOne`) or non-reputable\
+    \ sources provide robust external proof for Brave-specific actions.\n\n3. **SQ3\
+    \ (Technical Implementations, Partnerships):**\n   - All first-party sources mentioning\
+    \ **Brave's AI implementations, research, or security focus** (`e.g., `https://brave.com/blog/ai-browsing/`,\
+    \ `https://brave.com/podcast/e6/`, `https://support.brave.app/hc/...`) were **kept**\
+    \ due to direct organizational disclosure.\n   - LinkedIn mentions of **Brave's\
+    \ AI findings** (`e.g., `https://www.linkedin.com/posts/karmendrachoudhary_...`)\
+    \ and **TechCrunch usage** (`https://techcrunch.com/...` independently verify\
+    \ third-party technical integrations.\n\n4. **Scoringomatics:**\n   - **Kept sources**:\
+    \ Must score ≥3 on **at least 1 sub-question**. Forum, marketing, or ambiguous\
+    \ content (`Reddit`, affiliations like `BRAVE AI for healthcare` unrelated to\
+    \ core software) was scored **≤2**. They lack rigorous source trust or direct\
+    \ relevance.\n   - **Regulatory/primary sources** (`White House, Google, Microsoft,\
+    \ Harvard`) are prioritized for **sq2** verification.\n   - Brave mentions in\
+    \ **neutral or consonant third-party sources** (`e.g., TechCrunch`) were retained\
+    \ as external validation of AI integration.\n\n5. **Disqualifications:**\n   -\
+    \ Dropped URLs (**e.g., Wikipedia**, Reddit, fractional sources like `BRAVE AI\
+    \ project mislinked to healthcare`) are either `wrong entity` or low-quality.\n\
+    \   - **All arXiv resources** were deemed **사와 least 3 sub-questions;шћfəiათs\
+    \ tertiary material lacking direct sourcing.**\n\n**Final Rule Compliance:** Every\
+    \ relevant Brave domain/credible third party is included; all lower-quality or\
+    \ off-topic links are discarded in `dropped`."
+  urls_after_blocklist: 18
 sub_questions:
 - id: sq1
-  question: What are Brave Software's public commitments or initiatives related to
-    AI safety, as stated on their official website or transparency reports?
-  rationale: This addresses Brave's first-party statements about their involvement
-    in AI safety, directly tied to their official communications.
+  question: What AI safety initiatives or commitments has Brave Software publicly
+    announced or documented on their first-party channels?
+  rationale: Directly targets Brave's own publications to uncover self-reported contributions
+    to AI safety.
   queries:
-  - Brave AI safety initiatives
-  - Brave Software transparency report AI safety
-  citations:
-  - 2025/browser-ai-tee
-  - 2026/transparency-data-feed
-  - 2026/e6
+  - Brave AI safety commitments official statement
+  - Brave Software AI responsibility policy
+  citations: []
 - id: sq2
-  question: Are there third-party reports, academic collaborations, or fundings involving
-    Brave Software that demonstrate their contribution to AI safety?
-  rationale: This explores Brave's contributions to AI safety as acknowledged by external
-    sources, collaborations, or funding initiatives.
+  question: Are there third-party reports, ESG databases, or regulatory filings explicitly
+    linking Brave Software to AI safety research, partnerships, or funding?
+  rationale: Verifies claims of AI safety involvement through external, credible sources.
   queries:
-  - Brave Software AI safety collaborations
-  - Brave Software AI safety research funding
-  citations:
-  - 2025/ai-safety-scam-tactics-threat-mitigation
-  - 2026/e6
+  - Brave Software AI safety third-party reports
+  - Brave Software ESG database AI safety
+  citations: []
 - id: sq3
-  question: Does Brave Software participate in or sponsor AI safety conferences, research
-    projects, or public discussions?
-  rationale: This investigates Brave's active participation in the broader AI safety
-    community, including events or partnerships.
+  question: Has Brave disclosed technical implementations, partnerships, or collaborations
+    with AI safety organizations, research institutions, or projects?
+  rationale: Explores concrete actions or affiliations demonstrating Brave's commitment
+    to AI safety.
   queries:
-  - Brave AI safety conferences or events
+  - Brave partnerships AI safety organizations
+  - Brave AI safety research collaborations
+  - Brave AI ethical guidelines technical disclosures
   citations:
-  - 2025/ai-safety-scam-tactics-threat-mitigation
-  - 2026/security-privacy-in-agentic-browsing
-- id: sq4
-  question: What technical measures or features does Brave implement in its browser,
-    search, or AI products to address AI safety risks?
-  rationale: This examines the underlying mechanisms or solutions Brave has developed
-    to mitigate AI safety risks.
-  queries:
-  - Brave browser technical measures AI safety
-  - Brave AI products safety features
-  citations:
-  - 2025/browser-ai-tee
+  - 2026/e6
   - 2026/ai-browsing
-  - 2025/brave-browser-ai-features-pros-cons-and-security-concerns
-  - 2026/security-privacy-in-agentic-browsing
-  - 2026/33049
+  - 2025/browser-ai-tee
+  - 2026/e35
+  - 2024/e10
+  - 2026/about
+  - 2026/e56
 sources_consulted:
-- id: 2025/ai-safety-scam-tactics-threat-mitigation
-  url: https://brave.com/podcast/e83/
-  title: AI Safety, Scam Tactics and Threat Mitigation
+- id: 2026/e6
+  url: https://brave.com/podcast/e6/
+  title: Privacy Protecting AI and Building Consumer Trust
   ingested: true
   acquisition:
     stage: research
     origin: tavily
-    query: Brave AI safety initiatives
+    query: Brave Software ESG database AI safety
+- id: 2026/ai-browsing
+  url: https://brave.com/blog/ai-browsing/
+  title: AI browsing now available for early testing in Brave
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software ESG database AI safety
 - id: 2025/browser-ai-tee
   url: https://brave.com/blog/browser-ai-tee/
   title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
@@ -162,66 +119,61 @@ sources_consulted:
   acquisition:
     stage: research
     origin: tavily
-    query: Brave Software transparency report AI safety
-- id: 2026/transparency-data-feed
-  url: https://brave.com/transparency/
-  title: Transparency Data Feed
+    query: Brave Software AI responsibility policy
+- id: 2026/e35
+  url: https://brave.com/podcast/e35/
+  title: Creating Inclusive and Responsible AI for the World of Tomorrow
   ingested: true
   acquisition:
     stage: research
     origin: tavily
-    query: Brave Software transparency report AI safety
-- id: 2026/ai-browsing
-  url: https://brave.com/blog/ai-browsing/
-  title: AI browsing now available for early testing in Brave
+    query: Brave Software AI responsibility policy
+- id: 2026/ai-lab-commitments
+  url: https://ailabwatch.org/resources/commitments
+  title: Commitments
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave AI safety commitments official statement
+- id: 2024/e10
+  url: https://brave.com/podcast/e10/
+  title: 'AI Ethics & Safety: What Could Go Wrong and How to Stop It'
   ingested: true
   acquisition:
     stage: ingest
     origin: tavily
-    query: Brave AI safety initiatives
+    query: Brave AI ethical guidelines technical disclosures
     recovered_via: archive_org
     outcome: recovered
-- id: 2025/brave-browser-ai-features-pros-cons-and-security-concerns
-  url: https://seraphicsecurity.com/learn/ai-browser/brave-browser-ai-features-pros-cons-and-security-concerns/
-  title: Brave Browser AI Features, Pros/Cons, and Security Concerns
+- id: 2026/about
+  url: https://brave.com/about/
+  title: What is Brave?
   ingested: true
   acquisition:
     stage: ingest
     origin: tavily
-    query: Brave AI safety initiatives
+    query: Brave AI safety commitments official statement
     recovered_via: archive_org
     outcome: recovered
-- id: 2026/e6
-  url: https://brave.com/podcast/e6/
-  title: Privacy Protecting AI and Building Consumer Trust
+- id: 2026/e56
+  url: https://brave.com/podcast/e56/
+  title: 'Future-Proofing AI: Ethics, Accountability and Governance'
   ingested: true
   acquisition:
     stage: ingest
     origin: tavily
-    query: Brave AI safety initiatives
+    query: Brave Software AI responsibility policy
     recovered_via: archive_org
     outcome: recovered
-- id: 2026/security-privacy-in-agentic-browsing
-  url: https://brave.com/series/security-privacy-in-agentic-browsing/
-  title: Security & Privacy in Agentic Browsing
-  ingested: true
-  acquisition:
-    stage: ingest
-    origin: tavily
-    query: Brave AI safety initiatives
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2026/33049
-  url: https://discuss.privacyguides.net/t/verifiable-privacy-and-transparency-a-new-frontier-for-brave-ai-privacy/33049
-  title: 'Verifiable Privacy and Transparency: A new frontier for Brave AI privacy'
-  ingested: true
-  acquisition:
-    stage: ingest
-    origin: tavily
-    query: Brave Software transparency report AI safety
-    recovered_via: archive_org
-    outcome: recovered
-audit: null
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: low
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
 human_review:
   reviewed_at: null
   reviewer: null

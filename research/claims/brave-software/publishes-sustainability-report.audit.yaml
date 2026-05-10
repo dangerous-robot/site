@@ -1,97 +1,112 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-09T19:10:01.441195+00:00'
+  ran_at: '2026-05-09T23:33:56.279538+00:00'
   model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
   agents:
   - researcher
   - ingestor
   - analyst
+  - auditor
 models_used:
   researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:google/gemma-4-31B-it
   analyst: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  auditor: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
 research:
   mode: decomposed
   tool_outcomes: []
   queries:
-  - Brave Software ESG report site:brave.com
   - Brave Software sustainability report
-  - Brave Software ESG disclosure third-party sources
-  - Brave ESG rating or sustainability assessment
-  - Brave Software sustainability press release
-  - Brave blog ESG environment
-  - Brave Software ESG report news coverage
-  planner_rationale: The sub-questions cover first-party official sources, third-party
-    verification, and public disclosures or news coverage to comprehensively assess
-    whether Brave Software publishes a sustainability or ESG report.
-  candidates_seen: 88
-  urls_kept: 10
-  urls_dropped: 69
-  scorer_rationale: 'The scoring process prioritized relevance to Brave Software''s
-    ESG or sustainability claims while adhering to the instructions to avoid wikipedia.org,
-    play.google.com, and apps.apple.com sources. **Kept Candidates:**   1. **sq1 (Official
-    Website Addressing ESG):**   - Candidates like `https://brave.com/about/` and
-    `https://brave.com/transparency/` were retained due to their alignment with Brave''s
-    official site and potential coverage of sustainability topics. Both were unlikely
-    to address ESG directly in their snippets but were trusted due to Brave''s domain
-    authority.   2. **sq2 (Third-Party Aggregators):**   - `https://blog.bravegen.com/annual-sustainability-report-fy21-22`
-    and `https://blog.bravegen.com/tag/esg` were kept because the BraveGen tag specifically
-    references ESG. `https://rebalanceproject.org/events/launch-of-the-rebalance-brave-database-on-corporate-human-rights-and-environmental-abuses/`
-    discusses environmental and corporate abuses related to Brave, highlighting ESG
-    documentation efforts.   3. **sq3 (Press Releases, Blog Posts, News):**   - Sites
-    like `https://brave.com/blog/100m-mau/`, `https://brave.com/blog/eprivacy-letter-to-eu/`,
-    and presssuch as `https://www.prnewswire.com/news-releases/brave-launches-next-generation-browser-that-puts-users-in-charge-of-their-internet-experience-with-unmatched-privacy-and-rewards-300957360`
-    are business updates, discussions of sustainability as a business priority, and
-    other high-level mentions of ethical practices.   **Dropped Candidates:**   -
-    **Non-ESG topics/irrelevance**: Most were security reports, Reddit threads not
-    focused on ESG, unrelated arXiv papers on sustainability in non-Brave domains,
-    or wikipedia-esque information under different entity names (e.g., `https://brav.com/responsibility/esg-in-brav`
-    is excluded due to being a distinct entity despite surface similarities).   -
-    **Forum posts**: Reddit candidates (`https://www.reddit.com/r/browsers/comments/19ax9ig/do_you_trust-the-company-behind-brave`
-    and `https://www.reddit.com/r/BATProject/comments/o0mja9/why_brave_is_esg_favorable_and_why_this_matters/`)
-    were dropped perPublisherQuality guidelines, except when no fewer biased sources
-    were available.   - **Misleading Noise**: Links like `https://www.lexisnexis.com/community/insights/legal/.../brave-new-world-five-tips-for-starting-an-esg-strategy`
-    were excluded since they broadly discuss ESG strategies without clearly addressing
-    Brave Software’s specific practices.'
-  urls_after_blocklist: 9
+  - Brave Software ESG report site:brave.com
+  - Global Reporting Initiative Brave software
+  - MSCI ESG Brave Software assessment
+  - Brave Software environmental impact research paper
+  - Brave Software social responsibility initiatives
+  - Brave transparency report sustainability
+  planner_rationale: The sub-questions cover Brave Software’s first-party publications,
+    third-party ESG evaluations, and indirect public disclosures, ensuring comprehensive
+    coverage of the claim.
+  candidates_seen: 95
+  urls_after_blocklist: 32
 sub_questions:
 - id: sq1
-  question: Does Brave Software have a dedicated page or section on its official website
-    addressing sustainability or ESG initiatives?
-  rationale: First-party transparency often appears on official websites, directly
-    addressing the claim about sustainability reporting.
+  question: Does Brave Software publish its own sustainability or ESG reports on its
+    official website or transparency channels?
+  rationale: First-party publications are the most direct source of claims about sustainability
+    or ESG efforts.
   queries:
-  - Brave Software ESG report site:brave.com
   - Brave Software sustainability report
-  citations:
-  - 2026/transparency-data-feed
-  - 2026/about
-- id: sq2
-  question: Are there third-party aggregators or databases, such as ESG ratings platforms,
-    that mention Brave Software’s sustainability or ESG report?
-  rationale: Third-party databases or ESG aggregators may independently verify or
-    reference the existence of such a report.
-  queries:
-  - Brave Software ESG disclosure third-party sources
-  - Brave ESG rating or sustainability assessment
+  - Brave Software ESG report site:brave.com
+  - Brave transparency report sustainability
   citations:
   - 2022/annual-sustainability-report-fy21-22
-  - 2026/esg
-- id: sq3
-  question: Has Brave Software publicly disclosed any sustainability or ESG-related
-    commitments, policies, or reports in press releases, blog posts, or news articles?
-  rationale: Public disclosures often appear in press materials, blogs, or news coverage,
-    potentially confirming the existence of an ESG report.
-  queries:
-  - Brave Software sustainability press release
-  - Brave blog ESG environment
-  - Brave Software ESG report news coverage
-  citations:
+  - 2022/ecological-footprint
   - 2025/100m-mau
-  - 2018/eprivacy-letter-to-eu
-  - 2026/braves-search-engine-starts-offering-privacy-preserving-ads
+  - 2026/transparency-data-feed
+  - 2026/web-standards-at-brave
+  - 2026/e35
   - 2026/policy-legislation
+  - 2026/esg-ratings
+- id: sq2
+  question: Are there third-party ESG databases or frameworks (e.g., Global Reporting
+    Initiative, MSCI, Sustainalytics) that evaluate Brave Software’s sustainability
+    or ESG performance?
+  rationale: Third-party databases often aggregate or verify corporate sustainability
+    claims.
+  queries:
+  - Global Reporting Initiative Brave software
+  - MSCI ESG Brave Software assessment
+  citations:
+  - 2022/annual-sustainability-report-fy21-22
+  - 2022/ecological-footprint
+  - 2025/100m-mau
+  - 2026/transparency-data-feed
+  - 2026/web-standards-at-brave
+  - 2026/e35
+  - 2026/policy-legislation
+  - 2026/esg-ratings
+- id: sq3
+  question: Has Brave Software disclosed any environmental or social impact initiatives
+    in research papers, case studies, or public commitments?
+  rationale: Public commitments or research papers may indirectly reference ESG or
+    sustainability efforts.
+  queries:
+  - Brave Software environmental impact research paper
+  - Brave Software social responsibility initiatives
+  citations:
+  - 2022/annual-sustainability-report-fy21-22
+  - 2022/ecological-footprint
+  - 2025/100m-mau
+  - 2026/transparency-data-feed
+  - 2026/web-standards-at-brave
+  - 2026/e35
+  - 2026/policy-legislation
+  - 2026/esg-ratings
 sources_consulted:
+- id: 2022/annual-sustainability-report-fy21-22
+  url: https://blog.bravegen.com/annual-sustainability-report-fy21-22
+  title: ESP’s Annual Sustainability Report FY21-22
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software sustainability report
+- id: 2022/ecological-footprint
+  url: https://community.brave.app/t/ecological-footprint/404963
+  title: Ecological footprint
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software sustainability report
+- id: 2025/100m-mau
+  url: https://brave.com/blog/100m-mau/
+  title: Brave browser passes 100 million monthly active users
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Brave Software sustainability report
 - id: 2026/transparency-data-feed
   url: https://brave.com/transparency/
   title: Transparency Data Feed
@@ -100,77 +115,38 @@ sources_consulted:
     stage: research
     origin: tavily
     query: Brave Software sustainability report
-- id: 2022/annual-sustainability-report-fy21-22
-  url: https://blog.bravegen.com/annual-sustainability-report-fy21-22
-  title: ESP’s Annual Sustainability Report FY21-22
+- id: 2026/web-standards-at-brave
+  url: https://brave.com/web-standards-at-brave/
+  title: WebStandards@Brave
   ingested: true
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
     query: Brave Software sustainability report
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2026/about
-  url: https://brave.com/about/
-  title: What is Brave?
+- id: 2026/e35
+  url: https://brave.com/podcast/e35/
+  title: Creating Inclusive and Responsible AI for the World of Tomorrow
   ingested: true
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
     query: Brave Software sustainability report
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2025/100m-mau
-  url: https://brave.com/blog/100m-mau/
-  title: Brave browser passes 100 million monthly active users
-  ingested: true
-  acquisition:
-    stage: ingest
-    origin: tavily
-    query: Brave Software sustainability report
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2018/eprivacy-letter-to-eu
-  url: https://brave.com/blog/eprivacy-letter-to-eu/
-  title: Brave Writes to All 28 EU Member States, Defending ePrivacy Regulation’s
-    “Privacy By Design and By Default”
-  ingested: true
-  acquisition:
-    stage: ingest
-    origin: tavily
-    query: Brave Software ESG disclosure third-party sources
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2026/braves-search-engine-starts-offering-privacy-preserving-ads
-  url: https://www.pcmag.com/news/braves-search-engine-starts-offering-privacy-preserving-ads
-  title: Brave's Search Engine Starts Offering 'Privacy-Preserving Ads'
-  ingested: true
-  acquisition:
-    stage: ingest
-    origin: tavily
-    query: Brave Software ESG disclosure third-party sources
-    recovered_via: archive_org
-    outcome: recovered
 - id: 2026/policy-legislation
   url: https://brave.com/category/policy-legislation/
   title: Policy & legislation
   ingested: true
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
-    query: Brave Software ESG disclosure third-party sources
-    recovered_via: archive_org
-    outcome: recovered
-- id: 2026/esg
-  url: https://blog.bravegen.com/tag/esg
-  title: ESG Tag Archive
+    query: Global Reporting Initiative Brave software
+- id: 2026/esg-ratings
+  url: https://www.msci.com/data-and-analytics/sustainability-solutions/esg-ratings
+  title: ESG Ratings
   ingested: true
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
-    query: Brave blog ESG environment
-    recovered_via: archive_org
-    outcome: recovered
+    query: MSCI ESG Brave Software assessment
 audit: null
 human_review:
   reviewed_at: null
