@@ -32,12 +32,47 @@ const {
 const ogTitle = `${title} - Dangerous Robot`;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
-const isResearchSection =
-  Astro.url.pathname === '/research' || Astro.url.pathname.startsWith('/research/');
-const isResourcesSection =
-  Astro.url.pathname === '/resources' || Astro.url.pathname.startsWith('/resources/');
-const sectionLabel = isResearchSection ? 'Research' : isResourcesSection ? 'Resources' : null;
-const sectionHref = isResearchSection ? '/research' : isResourcesSection ? '/resources' : null;
+type NavLink = { href: string; label: string };
+type Section = { href: string; label: string; links: NavLink[] };
+
+const SECTIONS: Section[] = [
+  {
+    href: '/research',
+    label: 'Research',
+    links: [
+      { href: '/resources',          label: 'Resources' },
+      { href: '/research/subjects',  label: 'Subjects' },
+      { href: '/research/companies', label: 'Companies' },
+      { href: '/research/products',  label: 'Products' },
+      { href: '/research/topics',    label: 'Topics' },
+      { href: '/research/claims',    label: 'Claims' },
+      { href: '/research/sources',   label: 'Sources' },
+      { href: '/research/criteria',  label: 'Criteria' },
+    ],
+  },
+  {
+    href: '/resources',
+    label: 'Resources',
+    links: [
+      { href: '/research',                 label: 'Research' },
+      { href: '/resources/should-i',       label: 'Should I Use AI?' },
+      { href: '/resources/ai-safety',      label: 'AI Safety Index' },
+      { href: '/resources/turn-off-ai',    label: 'Turn Off AI' },
+      { href: '/resources/responsible-ai', label: 'Responsible AI' },
+    ],
+  },
+];
+
+const NEUTRAL_LINKS: NavLink[] = [
+  { href: '/research',  label: 'Research' },
+  { href: '/resources', label: 'Resources' },
+];
+
+const pathname = Astro.url.pathname;
+const currentSection = SECTIONS.find(
+  (s) => pathname === s.href || pathname.startsWith(s.href + '/'),
+) ?? null;
+const navLinks: NavLink[] = currentSection?.links ?? NEUTRAL_LINKS;
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -128,35 +163,15 @@ const orgSchema = {
               <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
               Dangerous Robot
             </a>
-            {sectionLabel && sectionHref && (
-              <a href={sectionHref} class="site-section-eyebrow">{sectionLabel}</a>
+            {currentSection && (
+              <a href={currentSection.href} class="site-section-eyebrow">{currentSection.label}</a>
             )}
           </div>
-          {isResearchSection ? (
-            <ul class="nav-links" id="nav-links">
-              <li><a href="/resources">Resources</a></li>
-              <li><a href="/research/subjects">Subjects</a></li>
-              <li><a href="/research/companies">Companies</a></li>
-              <li><a href="/research/products">Products</a></li>
-              <li><a href="/research/topics">Topics</a></li>
-              <li><a href="/research/claims">Claims</a></li>
-              <li><a href="/research/sources">Sources</a></li>
-              <li><a href="/research/criteria">Criteria</a></li>
-            </ul>
-          ) : isResourcesSection ? (
-            <ul class="nav-links" id="nav-links">
-              <li><a href="/research">Research</a></li>
-              <li><a href="/resources/should-i">Should I Use AI?</a></li>
-              <li><a href="/resources/ai-safety">AI Safety Index</a></li>
-              <li><a href="/resources/turn-off-ai">Turn Off AI</a></li>
-              <li><a href="/resources/responsible-ai">Responsible AI</a></li>
-            </ul>
-          ) : (
-            <ul class="nav-links" id="nav-links">
-              <li><a href="/research">Research</a></li>
-              <li><a href="/resources">Resources</a></li>
-            </ul>
-          )}
+          <ul class="nav-links" id="nav-links">
+            {navLinks.map((l) => (
+              <li><a href={l.href}>{l.label}</a></li>
+            ))}
+          </ul>
           <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
             <span aria-hidden="true">&#9776;</span>
           </button>
