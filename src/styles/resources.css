@@ -115,6 +115,7 @@
 }
 
 .resources-hero--lede-hero .lede {
+  font-family: var(--font-heading);
   font-size: var(--font-size-hero-lede);
   line-height: 1.2;
   color: var(--color-text-heading);
