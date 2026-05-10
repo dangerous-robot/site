@@ -1,5 +1,6 @@
 ---
 import { ArrowUp, ExternalLink } from 'lucide-astro';
+import InlineMd, { stripMd } from './InlineMd.astro';
 
 interface SubSection {
   title: string;
@@ -38,43 +39,6 @@ interface Props {
 const { data } = Astro.props as { data: GuideData };
 const platforms = Array.isArray(data?.platforms) ? data.platforms : [];
 const furtherReading = Array.isArray(data?.further_reading) ? data.further_reading : [];
-
-function stripMd(text: string): string {
-  return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
-}
-
-// Inline-format text: **bold** then `code`. Returns array of segments where
-// each segment is { kind: 'plain'|'bold'|'code', text: string, inner?: segments }.
-type Seg =
-  | { kind: 'plain'; text: string }
-  | { kind: 'code'; text: string }
-  | { kind: 'bold'; inner: Seg[] };
-
-function parseInline(text: string): Seg[] {
-  const out: Seg[] = [];
-  const boldParts = text.split(/(\*\*[^*]+\*\*)/g);
-  for (const part of boldParts) {
-    if (part.startsWith('**') && part.endsWith('**')) {
-      out.push({ kind: 'bold', inner: parseCode(part.slice(2, -2)) });
-    } else if (part.length > 0) {
-      out.push(...parseCode(part));
-    }
-  }
-  return out;
-}
-
-function parseCode(text: string): Seg[] {
-  const out: Seg[] = [];
-  const parts = text.split(/(`[^`]+`)/g);
-  for (const part of parts) {
-    if (part.startsWith('`') && part.endsWith('`')) {
-      out.push({ kind: 'code', text: part.slice(1, -1) });
-    } else if (part.length > 0) {
-      out.push({ kind: 'plain', text: part });
-    }
-  }
-  return out;
-}
 
 const faqSchema = {
   '@context': 'https://schema.org',
@@ -122,61 +86,31 @@ function fmtDate(iso: string, label?: string): string {
         </a>
       </h2>
       <p class="where-it-shows">{platform.where_it_shows}</p>
-      <p class="context">
-        {parseInline(platform.context).map((seg) => (
-          seg.kind === 'plain' ? seg.text :
-          seg.kind === 'code' ? <code>{seg.text}</code> :
-          <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
-        ))}
-      </p>
+      <p class="context"><InlineMd text={platform.context} /></p>
 
       {platform.sub_sections.map((sub) => (
         <div class="sub">
           <h3>{sub.title}</h3>
           {sub.preamble && (
-            <p class="preamble">
-              {parseInline(sub.preamble).map((seg) => (
-                seg.kind === 'plain' ? seg.text :
-                seg.kind === 'code' ? <code>{seg.text}</code> :
-                <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
-              ))}
-            </p>
+            <p class="preamble"><InlineMd text={sub.preamble} /></p>
           )}
           <ol class="steps">
             {sub.steps.map((step, i) => (
               <li>
                 <span class="step-num">{i + 1}.</span>
-                <span class="step-text">
-                  {parseInline(step).map((seg) => (
-                    seg.kind === 'plain' ? seg.text :
-                    seg.kind === 'code' ? <code>{seg.text}</code> :
-                    <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
-                  ))}
-                </span>
+                <span class="step-text"><InlineMd text={step} /></span>
               </li>
             ))}
           </ol>
           {sub.post_note && (
-            <p class="post-note">
-              {parseInline(sub.post_note).map((seg) => (
-                seg.kind === 'plain' ? seg.text :
-                seg.kind === 'code' ? <code>{seg.text}</code> :
-                <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
-              ))}
-            </p>
+            <p class="post-note"><InlineMd text={sub.post_note} /></p>
           )}
         </div>
       ))}
 
       <aside class="resources-callout">
         <span class="resources-callout-label">What doesn&rsquo;t work</span>
-        <p>
-          {parseInline(platform.what_doesnt_work).map((seg) => (
-            seg.kind === 'plain' ? seg.text :
-            seg.kind === 'code' ? <code>{seg.text}</code> :
-            <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
-          ))}
-        </p>
+        <p><InlineMd text={platform.what_doesnt_work} /></p>
       </aside>
 
       <p class="last-verified">Last verified: {fmtDate(platform.last_verified, platform.last_verified_label)}</p>

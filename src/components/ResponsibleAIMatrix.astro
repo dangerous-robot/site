@@ -1,5 +1,6 @@
 ---
 import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro';
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 
 type CellType =
   | 'yes'
@@ -10,6 +11,18 @@ type CellType =
   | 'text'
   | 'unknown'
   | 'na';
+
+const ICONS: Record<
+  Exclude<CellType, 'text' | 'na'>,
+  { Icon: AstroComponentFactory; srLabel: string }
+> = {
+  yes: { Icon: Check, srLabel: 'Yes' },
+  no: { Icon: X, srLabel: 'No' },
+  'no-good': { Icon: X, srLabel: 'No (negative)' },
+  partial: { Icon: Minus, srLabel: 'Partial' },
+  planned: { Icon: ArrowUp, srLabel: 'Planned' },
+  unknown: { Icon: HelpCircle, srLabel: 'Unknown' },
+};
 
 interface Cell {
   type: CellType;
@@ -90,52 +103,18 @@ const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
               <th scope="row" class="dim-label">{dim.label}</th>
               {products.map((p) => {
                 const cell = dim.cells?.[p.key] ?? { type: 'na' as CellType };
+                const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
                 return (
                   <td class={`cell cell--${cell.type}`}>
-                    {cell.type === 'yes' && (
+                    {icon && (
                       <span class="cell-inline">
-                        <Check size={16} aria-hidden="true" />
-                        <span class="sr-only">Yes</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
-                    )}
-                    {cell.type === 'no' && (
-                      <span class="cell-inline">
-                        <X size={16} aria-hidden="true" />
-                        <span class="sr-only">No</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
-                    )}
-                    {cell.type === 'no-good' && (
-                      <span class="cell-inline">
-                        <X size={16} aria-hidden="true" />
-                        <span class="sr-only">No (negative)</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
-                    )}
-                    {cell.type === 'partial' && (
-                      <span class="cell-inline">
-                        <Minus size={16} aria-hidden="true" />
-                        <span class="sr-only">Partial</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
-                    )}
-                    {cell.type === 'planned' && (
-                      <span class="cell-inline">
-                        <ArrowUp size={16} aria-hidden="true" />
-                        <span class="sr-only">Planned</span>
+                        <icon.Icon size={16} aria-hidden="true" />
+                        <span class="sr-only">{icon.srLabel}</span>
                         {cell.detail && <span class="detail">{cell.detail}</span>}
                       </span>
                     )}
                     {cell.type === 'text' && (
                       <span class="detail">{cell.detail}</span>
-                    )}
-                    {cell.type === 'unknown' && (
-                      <span class="cell-inline">
-                        <HelpCircle size={16} aria-hidden="true" />
-                        <span class="sr-only">Unknown</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
                     )}
                     {cell.type === 'na' && (
                       <span class="na" aria-label="Not applicable">&ndash;</span>

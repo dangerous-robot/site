@@ -21,7 +21,7 @@ interface Props {
 
 const { entry } = Astro.props;
 const { Content } = await render(entry);
-const { title, description, layout, wallpaper, data } = entry.data;
+const { title, description, layout, wallpaper, data, noindex } = entry.data;
 
 const articleSchema = {
   '@context': 'https://schema.org',
@@ -55,6 +55,7 @@ if (dateModified) {
   title={title}
   description={description}
   wallpaper={wallpaper}
+  noindex={noindex}
   crumb={title}
 >
   <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />

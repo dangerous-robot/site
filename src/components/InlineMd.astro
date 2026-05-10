@@ -1,0 +1,45 @@
+---
+type Seg =
+  | { kind: 'plain'; text: string }
+  | { kind: 'code'; text: string }
+  | { kind: 'bold'; inner: Seg[] };
+
+export function parseInline(text: string): Seg[] {
+  function parseCode(t: string): Seg[] {
+    const out: Seg[] = [];
+    for (const part of t.split(/(`[^`]+`)/g)) {
+      if (part.startsWith('`') && part.endsWith('`')) {
+        out.push({ kind: 'code', text: part.slice(1, -1) });
+      } else if (part.length > 0) {
+        out.push({ kind: 'plain', text: part });
+      }
+    }
+    return out;
+  }
+  const out: Seg[] = [];
+  for (const part of text.split(/(\*\*[^*]+\*\*)/g)) {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      out.push({ kind: 'bold', inner: parseCode(part.slice(2, -2)) });
+    } else if (part.length > 0) {
+      out.push(...parseCode(part));
+    }
+  }
+  return out;
+}
+
+export function stripMd(text: string): string {
+  return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+}
+
+interface Props {
+  text: string;
+}
+
+const { text } = Astro.props;
+const segs = parseInline(text);
+---
+{segs.map((seg) => (
+  seg.kind === 'plain' ? seg.text :
+  seg.kind === 'code' ? <code>{seg.text}</code> :
+  <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+))}

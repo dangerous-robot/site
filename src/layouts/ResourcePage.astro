@@ -1,11 +1,10 @@
 ---
 import Base from './Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
-import Wallpaper from '../components/Wallpaper.astro';
+import Wallpaper, { type WallpaperVariant } from '../components/Wallpaper.astro';
 import PaperGrain from '../components/PaperGrain.astro';
 import '../styles/resources.css';
 
-type Wallpaper = 'default' | 'ai-safety' | 'responsible-ai' | 'none';
 type Layout = 'reading' | 'wide' | 'bare';
 
 interface Props {
@@ -13,7 +12,7 @@ interface Props {
   description?: string;
   eyebrow?: string;
   lede?: string;
-  wallpaper?: Wallpaper;
+  wallpaper?: WallpaperVariant;
   layout?: Layout;
   noindex?: boolean;
   /** Breadcrumb tail; Home and Resources are prepended automatically. */

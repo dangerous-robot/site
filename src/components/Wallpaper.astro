@@ -1,23 +1,23 @@
 ---
-type Variant = 'default' | 'ai-safety' | 'responsible-ai' | 'none';
+export type WallpaperVariant = 'default' | 'ai-safety' | 'responsible-ai' | 'none';
 
 interface Props {
-  variant?: Variant;
+  variant?: WallpaperVariant;
 }
 
 const { variant = 'default' } = Astro.props;
 
-const ASSETS: Record<Exclude<Variant, 'none'>, string> = {
-  default: '/resources/wallpapers/default.svg',
-  'ai-safety': '/resources/wallpapers/ai-safety.svg',
-  'responsible-ai': '/resources/wallpapers/responsible-ai.png',
+type Asset = { src: string; format: 'svg' | 'raster' };
+const ASSETS: Record<Exclude<WallpaperVariant, 'none'>, Asset> = {
+  default: { src: '/resources/wallpapers/default.svg', format: 'svg' },
+  'ai-safety': { src: '/resources/wallpapers/ai-safety.svg', format: 'svg' },
+  'responsible-ai': { src: '/resources/wallpapers/responsible-ai.png', format: 'raster' },
 };
 
-const src = variant === 'none' ? null : ASSETS[variant];
-const isSvg = variant !== 'none' && variant !== 'responsible-ai';
+const asset = variant === 'none' ? null : ASSETS[variant];
 ---
-{src && (
-  <div class={`resources-wallpaper ${isSvg ? 'is-svg' : 'is-raster'}`} aria-hidden="true">
-    <img src={src} alt="" loading="lazy" decoding="async" />
+{asset && (
+  <div class={`resources-wallpaper is-${asset.format}`} aria-hidden="true">
+    <img src={asset.src} alt="" decoding="async" fetchpriority="low" />
   </div>
 )}
