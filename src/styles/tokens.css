@@ -21,6 +21,8 @@
   --font-size-sm: 0.9rem;
   --font-size-xs: 0.8rem;
   --font-size-2xs: 0.75rem;
+  --font-size-hero-lede: clamp(1.5rem, 3.5vw, 2.25rem);
+  --hero-lede-max-width: 38rem;
 
   /* Spacing */
   --space-xs: 0.25rem;

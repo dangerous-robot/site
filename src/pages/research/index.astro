@@ -87,13 +87,7 @@ const faqSchema = {
   <article class="research-explainer">
     <header class="hero">
       <p class="eyebrow">The research tool</p>
-      <h1>How this site works</h1>
-      <p class="lede">
-        Dangerous Robot tracks claims about AI companies and products: what they
-        say about energy use, environmental impact, safety practices, and
-        transparency, checked against public sources by an AI-assisted pipeline
-        with human review on every published verdict.
-      </p>
+      <h1>Open, accountable research on AI and the industries building it: built by people, powered by AI.</h1>
     </header>
 
     <nav class="research-index" aria-label="Research sections">
@@ -108,6 +102,16 @@ const faqSchema = {
         ))}
       </ol>
     </nav>
+
+    <section class="research-overview">
+      <h2>How this site works</h2>
+      <p>
+        Dangerous Robot tracks claims about AI companies and products: what they
+        say about energy use, environmental impact, safety practices, and
+        transparency, checked against public sources by an AI-assisted pipeline
+        with human review on every published verdict.
+      </p>
+    </section>
 
     <section class="explainer-grid">
       <div class="explainer-card">
@@ -389,17 +393,11 @@ const faqSchema = {
   .hero h1 {
     margin: 0 0 var(--space-md);
     font-family: var(--font-heading);
-    font-size: clamp(2.25rem, 5vw, 3.25rem);
-    line-height: 1.1;
+    font-size: var(--font-size-hero-lede);
+    line-height: 1.2;
+    font-weight: 400;
     color: var(--color-text-heading);
-  }
-
-  .lede {
-    margin: 0;
-    font-size: 1.15rem;
-    line-height: var(--line-height-body);
-    color: var(--color-text);
-    max-width: 42rem;
+    max-width: var(--hero-lede-max-width);
   }
 
   .research-index {
@@ -446,6 +444,24 @@ const faqSchema = {
       font-weight: 600;
       letter-spacing: 0.2em;
     }
+  }
+
+  .research-overview {
+    max-width: 40rem;
+    margin: var(--space-xl) 0;
+  }
+
+  .research-overview h2 {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: var(--color-text-heading);
+  }
+
+  .research-overview p {
+    margin: 0;
+    line-height: var(--line-height-body);
+    color: var(--color-text);
   }
 
   .explainer-grid {

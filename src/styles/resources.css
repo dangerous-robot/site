@@ -113,6 +113,13 @@
   max-width: 40rem;
 }
 
+.resources-hero--lede-hero .lede {
+  font-size: var(--font-size-hero-lede);
+  line-height: 1.2;
+  color: var(--color-text-heading);
+  max-width: var(--hero-lede-max-width);
+}
+
 /* ---------------------------------------------------------
    Pill nav — used by guide/matrix layouts for in-page sections
    --------------------------------------------------------- */

@@ -1,6 +1,5 @@
 ---
 import Base from './Base.astro';
-import Breadcrumb from '../components/Breadcrumb.astro';
 import Wallpaper, { type WallpaperVariant } from '../components/Wallpaper.astro';
 import PaperGrain from '../components/PaperGrain.astro';
 import '../styles/resources.css';
@@ -15,8 +14,8 @@ interface Props {
   wallpaper?: WallpaperVariant;
   layout?: Layout;
   noindex?: boolean;
-  /** Breadcrumb tail; Home and Resources are prepended automatically. */
-  crumb?: string;
+  /** Hide the visual h1 (kept in <title>) and let `lede` carry the hero. */
+  hideTitle?: boolean;
 }
 
 const {
@@ -27,23 +26,16 @@ const {
   wallpaper = 'default',
   layout = 'reading',
   noindex = false,
-  crumb,
+  hideTitle = false,
 } = Astro.props;
-
-const crumbs: { label: string; href?: string }[] = [
-  { label: 'Home', href: '/' },
-  { label: 'Resources', href: '/resources' },
-];
-if (crumb) crumbs.push({ label: crumb });
 ---
 <Base title={title} description={description} layout={layout} noindex={noindex}>
   <Wallpaper variant={wallpaper} />
   <PaperGrain />
   <div class="resources-page">
-    <Breadcrumb crumbs={crumbs} />
-    <header class="resources-hero" id="top">
+    <header class:list={['resources-hero', hideTitle && 'resources-hero--lede-hero']} id="top">
       {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-      <h1>{title}</h1>
+      {!hideTitle && <h1>{title}</h1>}
       {lede && <p class="lede">{lede}</p>}
     </header>
     <slot />
