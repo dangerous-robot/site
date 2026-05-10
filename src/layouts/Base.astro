@@ -32,6 +32,9 @@ const {
 const ogTitle = `${title} - Dangerous Robot`;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
+const isResearchSection =
+  Astro.url.pathname === '/research' || Astro.url.pathname.startsWith('/research/');
+
 const orgSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
@@ -121,16 +124,25 @@ const orgSchema = {
             <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
             Dangerous Robot
           </a>
-          <ul class="nav-links" id="nav-links">
-            <li><a href="/research">Research</a></li>
-            <li><a href="/research/subjects">Subjects</a></li>
-            <li><a href="/research/companies">Companies</a></li>
-            <li><a href="/research/products">Products</a></li>
-            <li><a href="/research/topics">Topics</a></li>
-            <li><a href="/research/claims">Claims</a></li>
-            <li><a href="/research/sources">Sources</a></li>
-            <li><a href="/research/criteria">Criteria</a></li>
-          </ul>
+          {isResearchSection ? (
+            <ul class="nav-links" id="nav-links">
+              <li><a href="/research">Research</a></li>
+              <li><a href="/research/subjects">Subjects</a></li>
+              <li><a href="/research/companies">Companies</a></li>
+              <li><a href="/research/products">Products</a></li>
+              <li><a href="/research/topics">Topics</a></li>
+              <li><a href="/research/claims">Claims</a></li>
+              <li><a href="/research/sources">Sources</a></li>
+              <li><a href="/research/criteria">Criteria</a></li>
+            </ul>
+          ) : (
+            <ul class="nav-links" id="nav-links">
+              <li><a href="/research">Research</a></li>
+              <li><a href="/resources">Resources</a></li>
+              <li><a href="/values">Values</a></li>
+              <li><a href="/credits">Credits</a></li>
+            </ul>
+          )}
           <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
             <span aria-hidden="true">&#9776;</span>
           </button>
