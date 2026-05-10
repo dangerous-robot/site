@@ -1,12 +1,10 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
-import { CATEGORIES } from '../lib/research';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
-const allSources = await getCollection('sources');
 const allCriteria = await getCollection('criteria');
 
 // Build criteria slug → flat list of vocabulary terms.
@@ -16,21 +14,6 @@ for (const c of allCriteria) {
     criteriaVocab.set(c.data.slug, Object.values(c.data.vocabulary).flat());
   }
 }
-
-const companies = entities.filter((e) => e.data.type === 'company');
-const products = entities.filter((e) => e.data.type === 'product');
-const subjectEntities = entities.filter((e) => e.data.type === 'subject');
-
-const sections = [
-  { n: '01', label: 'Subjects',  meta: `${subjectEntities.length} tracked`, href: '/research/subjects' },
-  { n: '02', label: 'Companies', meta: `${companies.length} tracked`,        href: '/research/companies' },
-  { n: '03', label: 'Products',  meta: `${products.length} tracked`,         href: '/research/products' },
-  { n: '04', label: 'Topics',    meta: `${CATEGORIES.length} areas`,         href: '/research/topics' },
-  { n: '05', label: 'Claims',    meta: `${allClaims.length} assessed`,       href: '/research/claims' },
-  { n: '06', label: 'Sources',   meta: `${allSources.length} indexed`,       href: '/research/sources' },
-  { n: '07', label: 'Criteria',  meta: '',                                   href: '/research/criteria' },
-  { n: '08', label: 'FAQ',       meta: '',                                   href: '/research' },
-];
 
 const navLinks = [
   { href: '/research',  label: 'Research' },
@@ -191,19 +174,6 @@ const cardPositions = [
       </div>
     </div>
 
-    <!-- Index strip at the bottom of the hero viewport -->
-    <nav class="site-index" aria-label="Browse the archive">
-      <ol class="site-index__list">
-        {sections.map((s) => (
-          <li>
-            <a class="site-index__link" href={s.href}>
-              <span class="site-index__num" aria-hidden="true">{s.n}</span>
-              <span class="site-index__label">{s.label}</span>
-            </a>
-          </li>
-        ))}
-      </ol>
-    </nav>
   </section>
 
   <div
@@ -613,46 +583,6 @@ const cardPositions = [
 
   .claim-card__body strong {
     font-weight: 700;
-  }
-
-  /* -------- site index: horizontal strip at bottom of hero -------- */
-  .site-index {
-    position: relative;
-    z-index: 3;
-    padding-top: var(--space-2xs);
-    border-top: 1px solid rgba(128, 128, 128, 0.4);
-  }
-  .site-index__list {
-    list-style: none;
-    margin: 0;
-    padding: 0 0 0 clamp(2.5rem, 6vw, 4rem); /* clear the fixed a11y icon (~62px from left) */
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem clamp(1.5rem, 3vw, 3rem);
-  }
-  .site-index__link {
-    display: inline-flex;
-    gap: 0.55rem;
-    align-items: baseline;
-    text-decoration: none;
-    color: var(--color-text);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-weight: 500;
-    transition: color 0.2s;
-  }
-  .site-index__link:hover { color: var(--color-accent); }
-  .site-index__num { color: var(--color-accent); opacity: 0.8; font-size: 0.7rem; }
-
-  @media (max-width: 680px) {
-    .site-index__list { gap: 0.4rem 0.75rem; }
-    .site-index__link {
-      font-size: var(--font-size-2xs);
-      font-weight: 600;
-      letter-spacing: 0.2em;
-    }
   }
 
   /* -------- nav overlay -------- */

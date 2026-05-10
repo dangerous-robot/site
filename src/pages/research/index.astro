@@ -1,6 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 
+const sections = [
+  { n: '01', label: 'Subjects',  href: '/research/subjects' },
+  { n: '02', label: 'Companies', href: '/research/companies' },
+  { n: '03', label: 'Products',  href: '/research/products' },
+  { n: '04', label: 'Topics',    href: '/research/topics' },
+  { n: '05', label: 'Claims',    href: '/research/claims' },
+  { n: '06', label: 'Sources',   href: '/research/sources' },
+  { n: '07', label: 'Criteria',  href: '/research/criteria' },
+  { n: '08', label: 'FAQ',       href: '#faq' },
+];
+
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -85,6 +96,19 @@ const faqSchema = {
       </p>
     </header>
 
+    <nav class="research-index" aria-label="Research sections">
+      <ol class="research-index__list">
+        {sections.map((s) => (
+          <li>
+            <a class="research-index__link" href={s.href}>
+              <span class="research-index__num" aria-hidden="true">{s.n}</span>
+              <span class="research-index__label">{s.label}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+
     <section class="explainer-grid">
       <div class="explainer-card">
         <h2>What the verdicts mean</h2>
@@ -106,33 +130,9 @@ const faqSchema = {
           what models were used, and when a human reviewed it.
         </p>
       </div>
-
-      <div class="explainer-card">
-        <h2>Where to start</h2>
-        <p>
-          Browse by <a href="/research/subjects">subject</a>,
-          <a href="/research/companies">company</a>,
-          <a href="/research/products">product</a>, or
-          <a href="/research/topics">topic</a>. The full
-          <a href="/research/claims">claims index</a> lists every published
-          assessment; <a href="/research/criteria">criteria</a> shows the
-          reusable templates that drive most of the work.
-        </p>
-      </div>
-
-      <div class="explainer-card">
-        <h2>What is in alpha</h2>
-        <p>
-          Detail pages under <code>/research/claims/</code>,
-          <code>/research/sources/</code>, and
-          <code>/research/entities/</code> are flagged
-          <code>noindex</code> while content stabilizes. URLs are stable across
-          the alpha-to-public flip; only the indexing changes.
-        </p>
-      </div>
     </section>
 
-    <section class="faq-section">
+    <section id="faq" class="faq-section">
       <h2 class="faq-heading">Frequently asked questions</h2>
 
       <details>
@@ -400,6 +400,52 @@ const faqSchema = {
     line-height: var(--line-height-body);
     color: var(--color-text);
     max-width: 42rem;
+  }
+
+  .research-index {
+    margin: var(--space-xl) 0;
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .research-index__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem clamp(1.5rem, 3vw, 3rem);
+  }
+
+  .research-index__link {
+    display: inline-flex;
+    gap: 0.55rem;
+    align-items: baseline;
+    text-decoration: none;
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .research-index__link:hover { color: var(--color-accent); }
+
+  .research-index__num {
+    color: var(--color-accent);
+    opacity: 0.8;
+    font-size: 0.7rem;
+  }
+
+  @media (max-width: 680px) {
+    .research-index__list { gap: 0.4rem 0.75rem; }
+    .research-index__link {
+      font-size: var(--font-size-2xs);
+      font-weight: 600;
+      letter-spacing: 0.2em;
+    }
   }
 
   .explainer-grid {
