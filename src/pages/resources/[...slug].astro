@@ -5,6 +5,7 @@ import ResourcePage from '../../layouts/ResourcePage.astro';
 import TurnOffGuide from '../../components/TurnOffGuide.astro';
 import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
 import Lightbox from '../../components/Lightbox.astro';
+import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -79,11 +80,10 @@ if (dateModified) {
   )}
 
   {layout === 'tool' && (
-    <article class="resource-article">
-      <Content />
-      <p class="layout-pending">
-        Interactive tool layout is not yet implemented. Check back soon.
-      </p>
+    <article class="resource-tool">
+      <ShouldIDecisionTree data={data}>
+        <Content />
+      </ShouldIDecisionTree>
     </article>
   )}
 </ResourcePage>
@@ -97,13 +97,8 @@ if (dateModified) {
     max-width: 64rem;
   }
 
-  .layout-pending {
-    margin-top: var(--space-xl);
-    padding: var(--space-md);
-    border: 1px dashed var(--color-border);
-    border-radius: var(--radius-sm);
-    color: var(--color-text-muted);
-    font-style: italic;
+  .resource-tool {
+    max-width: 44rem;
   }
 
   /* Article body styles for ai-safety scorecard figure and category list. */

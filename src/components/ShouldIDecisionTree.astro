@@ -1,0 +1,854 @@
+---
+interface Props {
+  data: unknown;
+}
+
+const { data } = Astro.props;
+const payload = JSON.stringify(data ?? {});
+---
+<div class="should-i" data-should-i>
+  <p class="should-i-frame" aria-hidden="true">
+    Should I Use AI for<span class="should-i-blank">&nbsp;</span>?
+  </p>
+
+  <div class="should-i-card">
+    <div class="should-i-accent" aria-hidden="true"></div>
+
+    <div class="should-i-toolbar" data-toolbar hidden>
+      <button type="button" class="should-i-back" data-action="back">
+        <span aria-hidden="true">&larr;</span> Back
+      </button>
+    </div>
+
+    <div
+      class="should-i-content"
+      data-content
+      tabindex="-1"
+      aria-live="polite"
+    ></div>
+  </div>
+
+  <div class="should-i-more">
+    <button
+      type="button"
+      class="should-i-more-toggle"
+      data-action="toggle-info"
+      aria-expanded="false"
+      aria-controls="should-i-info"
+    >
+      <span aria-hidden="true">&#9432;</span>
+      About this tool
+      <span class="should-i-chev" data-chev>&#9662;</span>
+    </button>
+    <div id="should-i-info" class="should-i-info" hidden>
+      <slot />
+    </div>
+  </div>
+
+  <script type="application/json" data-config set:html={payload}></script>
+</div>
+
+<style>
+  .should-i {
+    max-width: 44rem;
+    margin: 0 auto;
+  }
+
+  .should-i-frame {
+    font-family: var(--font-heading);
+    font-size: clamp(1.5rem, 3.5vw, 2rem);
+    font-weight: 400;
+    color: var(--color-text-heading);
+    text-align: center;
+    margin: 0 0 var(--space-lg);
+    line-height: 1.2;
+  }
+
+  .should-i-blank {
+    display: inline-block;
+    width: 9rem;
+    margin: 0 0.25rem;
+    border-bottom: 4px solid var(--color-accent);
+    vertical-align: 0.05em;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-motion="reduce"]) .should-i-blank {
+      animation: should-i-pulse 2.4s ease-in-out infinite;
+    }
+  }
+
+  @keyframes should-i-pulse {
+    0%, 100% { border-bottom-color: var(--color-accent); }
+    50%      { border-bottom-color: var(--color-text-faint); }
+  }
+
+  .should-i-card {
+    position: relative;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--color-surface) 85%, transparent);
+    overflow: hidden;
+  }
+
+  .should-i-accent {
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      var(--color-accent),
+      color-mix(in srgb, var(--color-accent) 50%, transparent),
+      transparent
+    );
+  }
+
+  .should-i-toolbar {
+    border-bottom: 1px solid var(--color-border);
+    padding: var(--space-xs) var(--space-md);
+    display: flex;
+    align-items: center;
+  }
+
+  .should-i-back {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: var(--space-xs);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .should-i-back:hover { color: var(--color-text); }
+
+  .should-i-content {
+    padding: var(--space-lg) var(--space-md);
+    outline: none;
+  }
+
+  @media (min-width: 640px) {
+    .should-i-content { padding: var(--space-xl) var(--space-2xl); }
+  }
+
+  .should-i-content :global(.q-text),
+  .should-i-content :global(.lens-text),
+  .should-i-content :global(.intro-prompt-headline),
+  .should-i-content :global(.result-text) {
+    font-family: var(--font-heading);
+    font-weight: 400;
+    color: var(--color-text-heading);
+    text-align: center;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .should-i-content :global(.q-text),
+  .should-i-content :global(.lens-text) {
+    font-size: clamp(1.3rem, 2.6vw, 1.6rem);
+    margin-bottom: var(--space-lg);
+  }
+
+  .should-i-content :global(.result-text) {
+    font-size: clamp(1.4rem, 3vw, 1.7rem);
+    margin-bottom: var(--space-lg);
+  }
+
+  .should-i-content :global(.intro-eyebrow) {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+    text-align: center;
+    margin: 0 0 var(--space-sm);
+  }
+
+  .should-i-content :global(.intro-headline) {
+    font-size: 1.15rem;
+    color: var(--color-text);
+    text-align: center;
+    margin: 0 0 var(--space-sm);
+    font-weight: 500;
+  }
+
+  .should-i-content :global(.intro-body) {
+    color: var(--color-text-muted);
+    text-align: center;
+    max-width: 28rem;
+    margin: 0 auto var(--space-xl);
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-content :global(.intro-prompt) {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-lg);
+    text-align: center;
+  }
+
+  .should-i-content :global(.intro-prompt-headline) {
+    font-size: 1.4rem;
+    margin-bottom: var(--space-sm);
+  }
+
+  .should-i-content :global(.intro-prompt-body) {
+    color: var(--color-text-muted);
+    max-width: 24rem;
+    margin: 0 auto var(--space-lg);
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-content :global(.q-context-toggle) {
+    display: block;
+    margin: 0 auto var(--space-md);
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    text-align: center;
+  }
+
+  .should-i-content :global(.q-context-toggle:hover) { color: var(--color-text); }
+
+  .should-i-content :global(.q-context) {
+    margin: 0 auto var(--space-lg);
+    max-width: 32rem;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    text-align: center;
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-content :global(.q-context[hidden]) { display: none; }
+
+  .should-i-content :global(.option-list) {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .should-i-content :global(.option-btn),
+  .should-i-content :global(.cta-btn) {
+    width: 100%;
+    text-align: left;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    font: inherit;
+    color: var(--color-text);
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+
+  .should-i-content :global(.option-btn:hover),
+  .should-i-content :global(.cta-btn:hover) {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 6%, var(--color-surface));
+  }
+
+  .should-i-content :global(.option-btn:focus-visible),
+  .should-i-content :global(.cta-btn:focus-visible) {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .should-i-content :global(.option-text) {
+    display: block;
+    font-size: 1.05rem;
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
+  .should-i-content :global(.option-subtext) {
+    display: block;
+    margin-top: var(--space-xs);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .should-i-content :global(.cta-btn) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    width: auto;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .should-i-content :global(.cta-btn:hover) {
+    background: color-mix(in srgb, var(--color-accent) 88%, transparent);
+  }
+
+  .should-i-content :global(.lens-skip) {
+    display: block;
+    margin: var(--space-lg) auto 0;
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+
+  .should-i-content :global(.lens-skip:hover) { color: var(--color-text); }
+
+  .should-i-content :global(.spectrum) {
+    margin: 0 0 var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .should-i-content :global(.spectrum-row) { margin: 0; }
+
+  .should-i-content :global(.spectrum-bar) {
+    position: relative;
+    height: 0.6rem;
+    background: color-mix(in srgb, var(--color-text) 12%, transparent);
+    border-radius: var(--radius-full);
+  }
+
+  .should-i-content :global(.spectrum-center) {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px;
+    height: 1.2rem;
+    background: color-mix(in srgb, var(--color-text) 30%, transparent);
+    border-radius: 1px;
+  }
+
+  .should-i-content :global(.spectrum-marker) {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 0.5rem;
+    height: 1.6rem;
+    border-radius: 2px;
+    background: var(--color-accent);
+    box-shadow: 0 1px 6px color-mix(in srgb, var(--color-text) 20%, transparent);
+  }
+
+  .should-i-content :global(.spectrum-marker.is-good) {
+    background: var(--color-verdict-true, var(--color-accent));
+  }
+
+  .should-i-content :global(.spectrum-marker.is-warn) {
+    background: var(--color-verdict-mixed, var(--color-accent));
+  }
+
+  .should-i-content :global(.spectrum-labels) {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-top: var(--space-xs);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .should-i-content :global(.spectrum-labels span) { max-width: 45%; }
+  .should-i-content :global(.spectrum-labels span:last-child) { text-align: right; }
+
+  .should-i-content :global(.result-section) {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .should-i-content :global(.result-label) {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+
+  .should-i-content :global(.result-summary) {
+    margin: 0;
+    font-size: 1.05rem;
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-content :global(.result-suggestions) {
+    list-style: none;
+    margin: var(--space-sm) 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .should-i-content :global(.result-suggestions li) {
+    display: flex;
+    gap: var(--space-sm);
+    color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-content :global(.result-suggestions li::before) {
+    content: "\2022";
+    color: var(--color-text-faint);
+    flex-shrink: 0;
+  }
+
+  .should-i-content :global(.result-actions) {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-lg);
+  }
+
+  .should-i-content :global(.restart-btn) {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-lg);
+    color: var(--color-text);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .should-i-content :global(.restart-btn:hover) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .should-i-more {
+    margin-top: var(--space-xl);
+    text-align: center;
+  }
+
+  .should-i-more-toggle {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    font: inherit;
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .should-i-more-toggle:hover { color: var(--color-text); }
+
+  .should-i-info {
+    margin: var(--space-md) auto 0;
+    max-width: 40rem;
+    text-align: left;
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .should-i-info :global(h2) {
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 400;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .should-i-info :global(p) {
+    margin: 0 0 var(--space-md);
+    color: var(--color-text-muted);
+  }
+</style>
+
+<script>
+  type Lens = 'cautious' | 'skeptical' | 'enthusiastic';
+  type Scores = { risk: number; growth: number; alternatives: number };
+
+  interface AnswerOption {
+    id: string;
+    text: string;
+    subtext?: string;
+    score?: Partial<Scores>;
+  }
+
+  interface Question {
+    id: string;
+    text: string;
+    context?: string;
+    answers: AnswerOption[];
+  }
+
+  interface LensOption {
+    id: Lens;
+    label: string;
+    description: string;
+  }
+
+  interface Dimension {
+    key: keyof Scores;
+    lowLabel: string;
+    highLabel: string;
+  }
+
+  interface Config {
+    intro: {
+      eyebrow: string;
+      headline: string;
+      body: string;
+      prompt_headline: string;
+      prompt_body: string;
+      cta: string;
+    };
+    lens_step: {
+      headline: string;
+      options: LensOption[];
+      skip_label: string;
+    };
+    questions: Question[];
+    dimensions: Dimension[];
+    closers: Record<Lens, string>;
+  }
+
+  type Step =
+    | { kind: 'intro' }
+    | { kind: 'lens' }
+    | { kind: 'question'; index: number }
+    | { kind: 'result' };
+
+  function init() {
+    document.querySelectorAll<HTMLElement>('[data-should-i]').forEach((root) => {
+      const cfgScript = root.querySelector<HTMLScriptElement>('script[data-config]');
+      if (!cfgScript || !cfgScript.textContent) return;
+      let cfg: Config;
+      try {
+        cfg = JSON.parse(cfgScript.textContent) as Config;
+      } catch {
+        return;
+      }
+      mount(root, cfg);
+    });
+  }
+
+  function mount(root: HTMLElement, cfg: Config) {
+    const content = root.querySelector<HTMLElement>('[data-content]');
+    const toolbar = root.querySelector<HTMLElement>('[data-toolbar]');
+    const backBtn = root.querySelector<HTMLButtonElement>('[data-action="back"]');
+    if (!content || !toolbar || !backBtn) return;
+
+    const history: Step[] = [];
+    let current: Step = { kind: 'intro' };
+    let lens: Lens = 'skeptical';
+    let scores: Scores = { risk: 0, growth: 0, alternatives: 0 };
+    let firstRender = true;
+
+    function escape(s: string): string {
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function clamp(value: number, min: number, max: number): number {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function render() {
+      const showToolbar =
+        current.kind === 'question' || current.kind === 'result';
+      toolbar!.hidden = !showToolbar;
+
+      if (current.kind === 'intro') renderIntro();
+      else if (current.kind === 'lens') renderLens();
+      else if (current.kind === 'question') renderQuestion(current.index);
+      else if (current.kind === 'result') renderResult();
+
+      if (!firstRender) {
+        const focusable = content!.querySelector<HTMLElement>('[data-focus]');
+        (focusable ?? content!).focus({ preventScroll: false });
+      }
+      firstRender = false;
+    }
+
+    function renderIntro() {
+      const { intro } = cfg;
+      content!.innerHTML = `
+        <p class="intro-eyebrow">${escape(intro.eyebrow)}</p>
+        <p class="intro-headline" data-focus tabindex="-1">${escape(intro.headline)}</p>
+        <p class="intro-body">${escape(intro.body)}</p>
+        <div class="intro-prompt">
+          <p class="intro-prompt-headline">${escape(intro.prompt_headline)}</p>
+          <p class="intro-prompt-body">${escape(intro.prompt_body)}</p>
+          <button type="button" class="cta-btn" data-action="begin">
+            ${escape(intro.cta)} <span aria-hidden="true">&rarr;</span>
+          </button>
+        </div>
+      `;
+    }
+
+    function renderLens() {
+      const { lens_step } = cfg;
+      const opts = lens_step.options
+        .map(
+          (o) => `
+          <li>
+            <button
+              type="button"
+              class="option-btn"
+              data-action="lens"
+              data-lens="${escape(o.id)}"
+            >
+              <span class="option-text">${escape(o.label)}</span>
+              <span class="option-subtext">${escape(o.description)}</span>
+            </button>
+          </li>`,
+        )
+        .join('');
+      content!.innerHTML = `
+        <h2 class="lens-text" data-focus tabindex="-1">${escape(lens_step.headline)}</h2>
+        <ul class="option-list">${opts}</ul>
+        <button type="button" class="lens-skip" data-action="lens-skip">
+          ${escape(lens_step.skip_label)}
+        </button>
+      `;
+    }
+
+    function renderQuestion(index: number) {
+      const q = cfg.questions[index];
+      if (!q) return;
+      const opts = q.answers
+        .map(
+          (a, i) => `
+          <li>
+            <button
+              type="button"
+              class="option-btn"
+              data-action="answer"
+              data-answer="${i}"
+            >
+              <span class="option-text">${escape(a.text)}</span>
+              ${a.subtext ? `<span class="option-subtext">${escape(a.subtext)}</span>` : ''}
+            </button>
+          </li>`,
+        )
+        .join('');
+      const ctxBlock = q.context
+        ? `
+          <button
+            type="button"
+            class="q-context-toggle"
+            data-action="toggle-context"
+            aria-expanded="false"
+            aria-controls="q-context-${escape(q.id)}"
+          >Why this matters <span aria-hidden="true">&#9662;</span></button>
+          <p id="q-context-${escape(q.id)}" class="q-context" hidden>${escape(q.context)}</p>
+        `
+        : '';
+      content!.innerHTML = `
+        <h2 class="q-text" data-focus tabindex="-1">${escape(q.text)}</h2>
+        ${ctxBlock}
+        <ul class="option-list">${opts}</ul>
+      `;
+    }
+
+    function renderResult() {
+      const summary = generateSummary(scores, lens);
+      const suggestions = generateSuggestions(scores);
+
+      const rows = cfg.dimensions
+        .map((dim) => {
+          const raw = scores[dim.key] || 0;
+          const norm = clamp(50 + raw, 0, 100);
+          let cls = '';
+          if (norm >= 65) cls = 'is-good';
+          else if (norm <= 35) cls = 'is-warn';
+          return `
+            <div class="spectrum-row">
+              <div class="spectrum-bar">
+                <div class="spectrum-center"></div>
+                <div
+                  class="spectrum-marker ${cls}"
+                  style="left: ${norm}%"
+                  role="meter"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="${Math.round(norm)}"
+                  aria-label="${escape(dim.lowLabel)} to ${escape(dim.highLabel)}"
+                ></div>
+              </div>
+              <div class="spectrum-labels">
+                <span>${escape(dim.lowLabel)}</span>
+                <span>${escape(dim.highLabel)}</span>
+              </div>
+            </div>`;
+        })
+        .join('');
+
+      const sugList = suggestions.length
+        ? `<ul class="result-suggestions">${suggestions
+            .map((s) => `<li><span>${escape(s)}</span></li>`)
+            .join('')}</ul>`
+        : '';
+
+      content!.innerHTML = `
+        <h2 class="result-text" data-focus tabindex="-1">Here's what your answers suggest.</h2>
+        <div class="spectrum">${rows}</div>
+        <div class="result-section">
+          <p class="result-label">What we notice</p>
+          <p class="result-summary">${escape(summary)}</p>
+          ${
+            suggestions.length
+              ? `<p class="result-label" style="margin-top: var(--space-md);">Things to consider</p>${sugList}`
+              : ''
+          }
+        </div>
+        <div class="result-actions">
+          <button type="button" class="restart-btn" data-action="restart">Start over</button>
+        </div>
+      `;
+    }
+
+    function generateSummary(s: Scores, l: Lens): string {
+      const risk = clamp(50 + (s.risk || 0), 0, 100);
+      const growth = clamp(50 + (s.growth || 0), 0, 100);
+      const alternatives = clamp(50 + (s.alternatives || 0), 0, 100);
+      const out: string[] = [];
+      if (risk <= 35)
+        out.push(
+          'The stakes here are real. Whatever AI produces would need careful verification.',
+        );
+      else if (risk >= 65)
+        out.push("The stakes are low enough that an imperfect result won't cause harm.");
+      if (growth <= 35)
+        out.push("There's something valuable you'd gain by working through this yourself.");
+      else if (growth >= 65)
+        out.push("This is routine enough that doing it manually wouldn't teach you much.");
+      if (alternatives <= 35)
+        out.push(
+          'Simpler tools could probably handle this without the trade-offs AI brings.',
+        );
+      else if (alternatives >= 65)
+        out.push("There aren't obvious simpler alternatives for this kind of task.");
+      if (out.length === 0)
+        out.push("This one's genuinely ambiguous. There's no obvious right call.");
+      out.push(cfg.closers[l]);
+      return out.join(' ');
+    }
+
+    function generateSuggestions(s: Scores): string[] {
+      const out: string[] = [];
+      const risk = clamp(50 + (s.risk || 0), 0, 100);
+      const growth = clamp(50 + (s.growth || 0), 0, 100);
+      const alternatives = clamp(50 + (s.alternatives || 0), 0, 100);
+      if (risk <= 45)
+        out.push('Double-check any facts, citations, or specific claims in AI output.');
+      if (growth <= 45)
+        out.push('Consider doing it yourself first and using AI to review your work.');
+      if (alternatives <= 45)
+        out.push(
+          'Try a simpler tool first. You can always escalate to AI if it falls short.',
+        );
+      if (risk >= 55 && growth >= 55)
+        out.push(
+          'If you do use AI, start with a clear, specific prompt. Vague asks get vague results.',
+        );
+      return out;
+    }
+
+    function advance(next: Step) {
+      history.push(current);
+      current = next;
+      render();
+    }
+
+    function goBack() {
+      const prev = history.pop();
+      if (!prev) return;
+      current = prev;
+      render();
+    }
+
+    function restart() {
+      history.length = 0;
+      scores = { risk: 0, growth: 0, alternatives: 0 };
+      lens = 'skeptical';
+      current = { kind: 'intro' };
+      render();
+    }
+
+    content.addEventListener('click', (ev) => {
+      const target = ev.target as HTMLElement | null;
+      if (!target) return;
+      const btn = target.closest<HTMLElement>('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+
+      if (action === 'begin') {
+        advance({ kind: 'lens' });
+      } else if (action === 'lens') {
+        const id = btn.dataset.lens as Lens | undefined;
+        if (id) lens = id;
+        advance({ kind: 'question', index: 0 });
+      } else if (action === 'lens-skip') {
+        lens = 'skeptical';
+        advance({ kind: 'question', index: 0 });
+      } else if (action === 'answer') {
+        if (current.kind !== 'question') return;
+        const q = cfg.questions[current.index];
+        const ai = Number(btn.dataset.answer);
+        const ans = q?.answers[ai];
+        if (!ans) return;
+        if (ans.score) {
+          for (const k of Object.keys(ans.score) as (keyof Scores)[]) {
+            scores[k] = (scores[k] || 0) + (ans.score[k] || 0);
+          }
+        }
+        const isLast = current.index >= cfg.questions.length - 1;
+        advance(isLast ? { kind: 'result' } : { kind: 'question', index: current.index + 1 });
+      } else if (action === 'restart') {
+        restart();
+      } else if (action === 'toggle-context') {
+        const id = btn.getAttribute('aria-controls');
+        if (!id) return;
+        const panel = document.getElementById(id);
+        if (!panel) return;
+        const open = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', String(!open));
+        panel.hidden = open;
+      }
+    });
+
+    backBtn.addEventListener('click', goBack);
+
+    // "About this tool" disclosure (lives outside the content area).
+    const moreToggle = root.querySelector<HTMLButtonElement>(
+      '[data-action="toggle-info"]',
+    );
+    const moreInfo = root.querySelector<HTMLElement>('#should-i-info');
+    const moreChev = root.querySelector<HTMLElement>('[data-chev]');
+    if (moreToggle && moreInfo && moreChev) {
+      moreToggle.addEventListener('click', () => {
+        const open = moreToggle.getAttribute('aria-expanded') === 'true';
+        moreToggle.setAttribute('aria-expanded', String(!open));
+        moreInfo.hidden = open;
+        moreChev.textContent = open ? '▾' : '▴';
+      });
+    }
+
+    render();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+</script>
