@@ -42,8 +42,6 @@ const FURTHER_READING = [
   hideTitle
   wallpaper="default"
 >
-  <hr />
-
   <div class="hub-grid">
     <section class="hub-col">
       <h2 class="hub-col-label">Our resources</h2>
@@ -80,16 +78,14 @@ const FURTHER_READING = [
 <style>
   .hub-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2xl);
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: var(--space-lg);
     margin: var(--space-xl) 0;
   }
 
-  @media (max-width: 640px) {
-    .hub-grid {
-      grid-template-columns: 1fr;
-      gap: var(--space-xl);
-    }
+  .hub-col {
+    border-top: 2px solid var(--color-accent);
+    padding-top: var(--space-md);
   }
 
   .hub-col-label {
