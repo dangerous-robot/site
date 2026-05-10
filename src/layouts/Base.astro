@@ -34,6 +34,10 @@ const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
 const isResearchSection =
   Astro.url.pathname === '/research' || Astro.url.pathname.startsWith('/research/');
+const isResourcesSection =
+  Astro.url.pathname === '/resources' || Astro.url.pathname.startsWith('/resources/');
+const sectionLabel = isResearchSection ? 'Research' : isResourcesSection ? 'Resources' : null;
+const sectionHref = isResearchSection ? '/research' : isResourcesSection ? '/resources' : null;
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -119,13 +123,18 @@ const orgSchema = {
     {chrome === 'standard' && (
       <nav class="site-nav">
         <div class="nav-inner">
-          <a href="/" class="site-name">
-            <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
-            Dangerous Robot
-          </a>
+          <div class="site-name-group">
+            <a href="/" class="site-name">
+              <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
+              Dangerous Robot
+            </a>
+            {sectionLabel && sectionHref && (
+              <a href={sectionHref} class="site-section-eyebrow">{sectionLabel}</a>
+            )}
+          </div>
           {isResearchSection ? (
             <ul class="nav-links" id="nav-links">
-              <li><a href="/research">Research</a></li>
+              <li><a href="/resources">Resources</a></li>
               <li><a href="/research/subjects">Subjects</a></li>
               <li><a href="/research/companies">Companies</a></li>
               <li><a href="/research/products">Products</a></li>
@@ -134,12 +143,18 @@ const orgSchema = {
               <li><a href="/research/sources">Sources</a></li>
               <li><a href="/research/criteria">Criteria</a></li>
             </ul>
+          ) : isResourcesSection ? (
+            <ul class="nav-links" id="nav-links">
+              <li><a href="/research">Research</a></li>
+              <li><a href="/resources/should-i">Should I Use AI?</a></li>
+              <li><a href="/resources/ai-safety">AI Safety Index</a></li>
+              <li><a href="/resources/turn-off-ai">Turn Off AI</a></li>
+              <li><a href="/resources/responsible-ai">Responsible AI</a></li>
+            </ul>
           ) : (
             <ul class="nav-links" id="nav-links">
               <li><a href="/research">Research</a></li>
               <li><a href="/resources">Resources</a></li>
-              <li><a href="/values">Values</a></li>
-              <li><a href="/credits">Credits</a></li>
             </ul>
           )}
           <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
@@ -241,6 +256,13 @@ const orgSchema = {
         gap: var(--space-md);
       }
 
+      .site-name-group {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-right: auto;
+      }
+
       .site-name {
         font-family: var(--font-wordmark);
         font-size: 1.15rem;
@@ -254,7 +276,26 @@ const orgSchema = {
         /* Flair: 2px accent bar on left edge of site name */
         border-left: 2px solid var(--color-accent);
         padding-left: 0.5rem;
-        margin-right: auto;
+      }
+
+      .site-section-eyebrow {
+        font-family: var(--font-mono);
+        font-size: var(--font-size-2xs);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--color-text-faint);
+        text-decoration: none;
+        white-space: nowrap;
+      }
+
+      .site-section-eyebrow::before {
+        content: '/';
+        opacity: 0.4;
+        margin-right: 0.6rem;
+      }
+
+      .site-section-eyebrow:hover {
+        color: var(--color-text);
       }
 
       .site-logo {
