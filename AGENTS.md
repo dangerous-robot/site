@@ -50,6 +50,35 @@ to `topics`) and cardinality (single value to array) were changed. See
 | `industry-analysis` | Corporate structure, business models, ownership |
 | `regulation-policy` | Government oversight, AI policy landscape |
 
+## Editorial content (`src/content/resources/`)
+
+The repo carries two distinct content surfaces. Keep them separate.
+
+| Surface | Location | Authorship | Schema lives in | Renders at |
+|---------|----------|------------|------------------|------------|
+| Research | `research/` | Pipeline-managed (claims, entities, sources, criteria written by the agent pipeline + operator review) | `src/content.config.ts` (`claims`, `sources`, `entities`, `criteria`) | `/research/*` |
+| Editorial | `src/content/resources/` | Hand-authored Markdown articles, comparison matrices, decision tools, how-to guides | `src/content.config.ts` (`resources`) | `/resources/*` |
+
+**Boundary rules:**
+
+- Pipeline agents (`dr` commands, the `pipeline/` Python packages) only write under `research/`. They do not touch `src/content/resources/`.
+- Editorial articles do not cite research claims by file path; if an article needs to reference a claim or source, it links to the rendered URL (`/research/claims/<slug>` etc.).
+- Editorial article frontmatter does not use the research `topics` taxonomy. It uses a separate, smaller resources-scoped enum (see below).
+- The boundary is also architectural: the research repo may eventually move to a separate Git repo. Editorial content stays with the site.
+
+### Resources `topics` enum
+
+The `resources` collection's `topics:` field is a 1-to-3-element array drawn from this enum, scoped to editorial content only:
+
+| Slug | Description |
+|------|-------------|
+| `ai-literacy` | Decision frameworks, when/how to use AI thoughtfully |
+| `ai-safety` | AI safety reporting, scorecards, expert assessments |
+| `consumer-guide` | How-to and opt-out guides for AI products |
+| `responsible-ai` | Comparisons across AI products and providers on responsibility dimensions |
+
+This is intentionally smaller than and separate from the research `topics` taxonomy above. The two share three slug spellings (`ai-safety`, `ai-literacy`, `consumer-guide`); treat them as different namespaces enforced by the schema, not as a shared vocabulary.
+
 ## Claim Tags
 
 Each claim may carry an optional `tags:` array of free-form strings. Tags are operator-set and are not produced by the pipeline. The following tags have behavioral meaning:

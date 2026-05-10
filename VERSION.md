@@ -1,4 +1,4 @@
-1.0.0-beta.1
+1.0.0-beta.2
 
 Pre-release stages (toward 1.0.0):
 - `alpha.N`: roadmap checklist still has open items; schema may still change.

@@ -16,22 +16,25 @@ There are no runtime dependencies beyond Astro itself. Dev dependencies are limi
 
 ## Content Collections
 
-Research content lives outside `src/` in the `research/` directory. Astro's content layer loads it via loaders defined in `src/content.config.ts`.
+The site mixes pipeline-managed research content (under `research/`, outside `src/`) with hand-authored editorial content (under `src/content/resources/`). Astro's content layer loads both via loaders defined in `src/content.config.ts`.
 
-Four collections are defined:
+Five collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
 | `claims`    | custom `claims-with-audit` loader      | title, entity, topics, verdict, confidence, as_of, sources, audit (sidecar) |
 | `sources`   | `glob()` from `research/sources`       | url, title, publisher, kind, summary, key_quotes         |
 | `entities`  | `glob()` from `research/entities`      | name, type (company/product/subject), website, description |
-| `criteria` | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
+| `criteria`  | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
+| `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
 The `claims` collection uses a custom loader (`claims-with-audit`) that reads each claim's `.md` file and, if a paired `.audit.yaml` sidecar exists, merges it into the claim's `audit` field. See [content-model.md](content-model.md) for the audit sidecar schema.
 
 The `criteria` collection uses a `file()` loader, loading all entries from a single YAML file rather than individual Markdown files.
+
+The `resources` collection holds editorial articles for the `/resources/` section (decision tools, comparison articles, reference guides). Its schema is independent of the research collections: it carries a layout discriminator (`article | matrix | guide | tool`), a wallpaper variant, a small resources-scoped `topics` enum (`ai-literacy`, `ai-safety`, `consumer-guide`, `responsible-ai`), and an optional `data` payload that is validated per layout at render time. See AGENTS.md "Editorial content" section for the boundary between `research/` and `src/content/resources/`.
 
 ### Content directory structure
 
@@ -52,6 +55,12 @@ research/
     2025/fli-safety-index.md
     ...
   templates.yaml
+
+src/content/resources/
+  ai-safety.md
+  responsible-ai.md
+  should-i.md
+  turn-off-ai.md
 ```
 
 Subdirectory structure within each `glob`-loaded collection is flexible -- the loader picks up all `**/*.md` files under the base path. The full relative path (minus extension) becomes the entry's `id`, which drives URL slugs.
@@ -60,26 +69,91 @@ Subdirectory structure within each `glob`-loaded collection is flexible -- the l
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-| Route pattern          | File                                    | Data source                                |
-|------------------------|-----------------------------------------|--------------------------------------------|
-| `/`                    | `src/pages/index.astro`                 | `claims` collection                        |
-| `/claims`              | `src/pages/claims/index.astro`          | `claims` collection                        |
-| `/claims/[...slug]`    | `src/pages/claims/[...slug].astro`      | `claims` collection                        |
-| `/sources/[...slug]`   | `src/pages/sources/[...slug].astro`     | `sources` collection                       |
-| `/entities/[...slug]`  | `src/pages/entities/[...slug].astro`    | `entities` collection                      |
-| `/companies`           | `src/pages/companies/index.astro`       | `entities` collection (company type)       |
-| `/products`            | `src/pages/products/index.astro`        | `entities` collection (product type)       |
-| `/subjects`            | `src/pages/subjects/index.astro`        | `entities` collection (subject type)       |
-| `/topics`              | `src/pages/topics/index.astro`          | `claims` collection (cross-cutting taxonomy)|
-| `/topics/[topic]`      | `src/pages/topics/[topic].astro`        | `claims` collection (filtered by topic)    |
-| `/criteria`            | `src/pages/criteria/index.astro`        | `criteria` collection                      |
-| `/criteria/[slug]`     | `src/pages/criteria/[slug].astro`       | `criteria` collection                      |
-| `/faq`                 | `src/pages/faq/index.astro`             | Static content                             |
-| `/credits`             | `src/pages/credits.astro`               | Static content                             |
+The site has three top-level URL spaces:
 
-The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/claims/anthropic/existential-safety-score`).
+- `/` -- the research-tool landing (claim scatter).
+- `/research/*` -- the research tool: claims, entities, sources, criteria, taxonomy indexes, plus a `/research/` hub that explains how the tool works (FAQ + explainer).
+- `/resources/*` -- the editorial section: hand-authored articles, comparison matrices, decision tools, and how-to guides.
 
-Entities of type `subject` are listed at `/subjects/` and have detail pages at `/entities/subjects/[slug]`.
+| Route pattern                  | File                                              | Data source                                 |
+|--------------------------------|---------------------------------------------------|---------------------------------------------|
+| `/`                            | `src/pages/index.astro`                           | `claims` collection                         |
+| `/research`                    | `src/pages/research/index.astro`                  | Static explainer + FAQ content              |
+| `/research/claims`             | `src/pages/research/claims/index.astro`           | `claims` collection                         |
+| `/research/claims/[...slug]`   | `src/pages/research/claims/[...slug].astro`       | `claims` collection                         |
+| `/research/sources`            | `src/pages/research/sources/index.astro`          | `sources` collection                        |
+| `/research/sources/[...slug]`  | `src/pages/research/sources/[...slug].astro`      | `sources` collection                        |
+| `/research/entities/[...slug]` | `src/pages/research/entities/[...slug].astro`     | `entities` collection                       |
+| `/research/companies`          | `src/pages/research/companies/index.astro`        | `entities` (company type)                   |
+| `/research/products`           | `src/pages/research/products/index.astro`         | `entities` (product type)                   |
+| `/research/subjects`           | `src/pages/research/subjects/index.astro`         | `entities` (subject type)                   |
+| `/research/topics`             | `src/pages/research/topics/index.astro`           | `claims` (cross-cutting taxonomy)           |
+| `/research/topics/[topic]`     | `src/pages/research/topics/[topic].astro`         | `claims` (filtered by topic)                |
+| `/research/criteria`           | `src/pages/research/criteria/index.astro`         | `criteria` collection                       |
+| `/research/criteria/[slug]`    | `src/pages/research/criteria/[slug].astro`        | `criteria` collection                       |
+| `/resources`                   | `src/pages/resources/index.astro`                 | `resources` collection (hub list)           |
+| `/resources/[...slug]`         | `src/pages/resources/[...slug].astro`             | `resources` collection (layout dispatch)    |
+| `/values`                      | `src/pages/values.astro`                          | Static content                              |
+| `/credits`                     | `src/pages/credits.astro`                         | Static content                              |
+
+The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/research/claims/anthropic/existential-safety-score`).
+
+Entities of type `subject` are listed at `/research/subjects/` and have detail pages at `/research/entities/subjects/[slug]`.
+
+### URL restructure (2026-05) and redirects
+
+The research subpages were originally at top-level URLs (`/claims`, `/entities`, `/companies`, `/products`, `/subjects`, `/topics`, `/sources`, `/criteria`) and `/faq`. They moved under a `/research/` prefix in May 2026 to make room for the `/resources/` editorial section and to express the "research tool" vs "resources" split in the URL.
+
+Redirects are configured in `astro.config.ts` via Astro's `redirects` map, including dynamic-segment passthroughs for the detail routes:
+
+```ts
+redirects: {
+  "/faq": "/research",
+  "/claims": "/research/claims",
+  "/claims/[...slug]": "/research/claims/[...slug]",
+  "/entities/[...slug]": "/research/entities/[...slug]",
+  "/companies": "/research/companies",
+  "/products": "/research/products",
+  "/subjects": "/research/subjects",
+  "/topics": "/research/topics",
+  "/topics/[topic]": "/research/topics/[topic]",
+  "/sources": "/research/sources",
+  "/sources/[...slug]": "/research/sources/[...slug]",
+  "/criteria": "/research/criteria",
+  "/criteria/[slug]": "/research/criteria/[slug]",
+}
+```
+
+**Implementation note: meta-refresh, not 301.** Astro emits these as static HTML pages with `<meta http-equiv="refresh" content="0;url=...">`, not as HTTP 301s, because GitHub Pages cannot serve real 301 redirects from a user-controlled config. For alpha and beta this is acceptable; full SEO link-equity consolidation would require fronting the site with a CDN that supports edge redirects (e.g., Cloudflare). All redirects are preserved permanently regardless.
+
+Sitemap `serialize()` rules and `src/lib/seo.ts` `ALPHA_DETAIL_PATTERNS` are anchored to the new `/research/*` prefixes; they were updated in lockstep with the page move so the sitemap priorities and alpha-noindex behavior stayed correct.
+
+### `/resources/` section: layout dispatch
+
+The detail route at `/resources/[...slug]` reads the entry's `layout` discriminator and dispatches to one of four renderings inside the shared `ResourcePage.astro` shell:
+
+| `layout`  | Renders                                                                          | Used by             |
+|-----------|----------------------------------------------------------------------------------|---------------------|
+| `article` | Plain Markdown body (with optional embedded components like `Lightbox`)          | `ai-safety.md`      |
+| `matrix`  | `<ResponsibleAIMatrix>` reading `data` (products, dimensions, cells, footnotes)  | `responsible-ai.md` |
+| `guide`   | `<TurnOffGuide>` reading `data.platforms` + sticky pill nav, FAQ JSON-LD         | `turn-off-ai.md`    |
+| `tool`    | `<ShouldIDecisionTree>` (vanilla JS, module-scoped script)                       | `should-i.md`       |
+
+Each layout still accepts a Markdown body slot for prose intro/outro. The layout-specific `data` payload lives in frontmatter as a typed-but-unvalidated `unknown`; per-layout components do their own runtime shape checks.
+
+### `ResourcePage.astro` and the wallpaper / grain layer pattern
+
+`src/layouts/ResourcePage.astro` wraps `Base.astro` and adds three decorative layers behind the content:
+
+1. **Wallpaper** (`<Wallpaper variant={frontmatter.wallpaper}>`) -- a fixed-position, low-opacity SVG or PNG anchored bottom-right, with a CSS `mask-image` linear-gradient mask so it fades into the page background. Variants: `default`, `ai-safety`, `responsible-ai`, `none`.
+2. **Paper grain** (`<PaperGrain>`) -- an inline SVG data-URI noise overlay using `mix-blend-mode` for subtle paper texture.
+3. **Hero block** -- large display heading + optional subhead, sized via `--font-heading` and existing site tokens.
+
+Both decorative layers honor `prefers-reduced-motion` and the site's `[data-motion="reduce"]` attribute (driven by `A11yControl.astro`). Styles are scoped under `.resources-page` in `src/styles/resources.css`, imported only by `ResourcePage.astro` and the hub.
+
+**Theme-aware SVG inversion.** The SVG wallpapers are authored on a light background. Under `[data-theme="dark"]` they have `filter: invert(1)` applied via CSS so the linework reads correctly. The PNG wallpaper (`responsible-ai`) ships as-is; if dark-theme contrast is poor, the pattern is to add a `responsible-ai-dark.png` companion and switch via the same theme attribute.
+
+Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CREDITS.md` in that directory).
 
 ### How dynamic routes work
 
@@ -165,14 +239,11 @@ A separate CI workflow (`.github/workflows/ci.yml`) runs checks on PRs.
 
 ## Configuration
 
-`astro.config.ts` is minimal:
+`astro.config.ts` declares:
 
-```ts
-import { defineConfig } from "astro/config";
+- `site: "https://dangerousrobot.org"` -- used by Astro for canonical URLs and sitemap generation.
+- `trailingSlash: "never"` -- canonical URL form.
+- `redirects: { ... }` -- the old-URL-to-`/research/*` map described under "URL restructure" above.
+- `integrations: [sitemap({ ... })]` -- per-section `serialize()` priorities and a `filter` that defers to `src/lib/seo.ts` for alpha-noindex paths.
 
-export default defineConfig({
-  site: "https://dangerousrobot.org",
-});
-```
-
-The `site` value is used by Astro for canonical URLs and sitemap generation. No adapter is configured -- output defaults to `static`.
+No adapter is configured -- output defaults to `static`.
