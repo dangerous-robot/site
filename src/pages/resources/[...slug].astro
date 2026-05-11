@@ -6,6 +6,7 @@ import TurnOffGuide from '../../components/TurnOffGuide.astro';
 import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
+import { buildResourceSchema } from '../../lib/resourceSchema';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -23,33 +24,7 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const { title, description, layout, wallpaper, data, noindex } = entry.data;
 
-const articleSchema = {
-  '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: title,
-  description,
-  datePublished: entry.data.pubDate.toISOString(),
-  author: { '@type': 'Organization', name: 'Dangerous Robot' },
-};
-
-// Pull a freshest-modified date for guides whose payload carries per-platform
-// last_verified ISO dates.
-function maxLastVerified(payload: unknown): string | undefined {
-  const platforms = (payload as { platforms?: { last_verified?: string }[] } | undefined)?.platforms;
-  if (!Array.isArray(platforms)) return undefined;
-  const dates = platforms
-    .map((p) => p?.last_verified)
-    .filter((s): s is string => typeof s === 'string')
-    .map((s) => new Date(s))
-    .filter((d) => !isNaN(d.getTime()));
-  if (dates.length === 0) return undefined;
-  return new Date(Math.max(...dates.map((d) => d.getTime()))).toISOString();
-}
-
-const dateModified = layout === 'guide' ? maxLastVerified(data) : undefined;
-if (dateModified) {
-  (articleSchema as Record<string, unknown>).dateModified = dateModified;
-}
+const resourceSchema = buildResourceSchema(entry);
 ---
 <ResourcePage
   title={title}
@@ -57,7 +32,7 @@ if (dateModified) {
   wallpaper={wallpaper}
   noindex={noindex}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(articleSchema)} />
+  <script type="application/ld+json" set:html={JSON.stringify(resourceSchema)} />
 
   {layout === 'guide' && (
     <TurnOffGuide data={data}>
