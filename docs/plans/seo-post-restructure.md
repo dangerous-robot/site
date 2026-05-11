@@ -62,20 +62,53 @@ export CF_API_TOKEN=...
 export CF_ACCOUNT_ID=...   # from dash.cloudflare.com URL or accounts_list MCP tool
 ```
 
-### 0.2 GSC service account
+### 0.2 GSC auth (user OAuth via ADC)
 
-1. In GCP console: create (or reuse) a project, enable
-   "Google Search Console API", create a service account, generate a JSON
-   key. Save to `~/.config/dr-seo/gsc-service-account.json` (gitignored).
-2. In GSC, open property `sc-domain:dangerousrobot.org` -> **Settings ->
-   Users and permissions -> Add user**. Paste the service account email
-   (`xxx@yyy.iam.gserviceaccount.com`); permission **Owner**.
-3. Verify by minting a token:
+**Important:** GSC's "Users and permissions" UI no longer accepts service
+account emails -- it rejects them with "email not found." The
+Site-Verification-API self-verify dance still works, but the simplest
+path for a single-user project is **user OAuth via Application Default
+Credentials**. The user (Brandon) is already a verified Owner of
+`sc-domain:dangerousrobot.org`, so no additional access grants are
+needed.
+
+1. Make sure you have a GCP project that the Search Console API is
+   enabled on (one-time). e.g. `dr-seo` (`dr-seo-496019`). Enable the
+   API at <https://console.cloud.google.com/apis/library/searchconsole.googleapis.com?project=dr-seo-496019>.
+2. Run the ADC login on a single line (no embedded newlines -- shell
+   prompts that wrap input will split the command):
 
    ```sh
-   gcloud auth activate-service-account --key-file=~/.config/dr-seo/gsc-service-account.json
-   export GSC_TOKEN=$(gcloud auth print-access-token)
+   gcloud auth application-default login --scopes='https://www.googleapis.com/auth/cloud-platform,https://www.googleapis.com/auth/webmasters,openid,https://www.googleapis.com/auth/userinfo.email' && gcloud auth application-default set-quota-project dr-seo-496019
    ```
+
+   Browser opens, pick the Google account that owns the GSC property,
+   click Allow. Credentials land in
+   `~/.config/gcloud/application_default_credentials.json` with the
+   `webmasters` scope.
+3. Verify -- note the **mandatory** `x-goog-user-project` header (the
+   legacy webmasters endpoint does not honor the ADC quota project
+   without it):
+
+   ```sh
+   TOKEN=$(gcloud auth application-default print-access-token)
+   curl -sS \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "x-goog-user-project: dr-seo-496019" \
+     "https://www.googleapis.com/webmasters/v3/sites" \
+     | jq '.siteEntry[] | {url: .siteUrl, perm: .permissionLevel}'
+   # Expect: sc-domain:dangerousrobot.org with perm "siteOwner"
+   ```
+
+Cache the GCP project ID for later snippets:
+
+```sh
+export GSC_QUOTA_PROJECT=dr-seo-496019
+```
+
+The access token is short-lived (~1h). All scripts should call
+`gcloud auth application-default print-access-token` fresh per run, not
+cache `$TOKEN` in a long-lived env var.
 
 ### 0.3 Persisted Chrome profile (only for section 5.3)
 
@@ -343,26 +376,37 @@ Commit as a single `fix(seo): retarget legacy internal links` change.
 
 Split by automation surface. All operations run after sections 1-4 ship.
 
+All API calls auth via ADC (set up in section 0.2) and **must** include
+`x-goog-user-project: $GSC_QUOTA_PROJECT` -- the legacy webmasters
+endpoint returns 403 without it.
+
 ### 5.1 Sitemap submission (API, agent)
 
 ```sh
-TOKEN=$(gcloud auth print-access-token)
+TOKEN=$(gcloud auth application-default print-access-token)
 SITE=$(python3 -c 'import urllib.parse;print(urllib.parse.quote("sc-domain:dangerousrobot.org",safe=""))')
 FEED=$(python3 -c 'import urllib.parse;print(urllib.parse.quote("https://dangerousrobot.org/sitemap-index.xml",safe=""))')
-curl -sS -X PUT -H "Authorization: Bearer $TOKEN" \
+curl -sS -X PUT \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "x-goog-user-project: $GSC_QUOTA_PROJECT" \
   "https://www.googleapis.com/webmasters/v3/sites/$SITE/sitemaps/$FEED"
 # 200 OK + empty body on success
 ```
 
 Acceptance: a follow-up `GET https://www.googleapis.com/webmasters/v3/sites/$SITE/sitemaps/$FEED`
-returns the sitemap with `isPending: false` and `lastSubmitted` updated.
+(same two headers) returns the sitemap with `isPending: false` and
+`lastSubmitted` updated.
 
 ### 5.2 URL inspection sweep (API, agent)
 
 For each URL in a target list (see below), call:
 
 ```sh
-curl -sS -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+TOKEN=$(gcloud auth application-default print-access-token)
+curl -sS -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "x-goog-user-project: $GSC_QUOTA_PROJECT" \
+  -H "Content-Type: application/json" \
   https://searchconsole.googleapis.com/v1/urlInspection/index:inspect \
   -d "{\"inspectionUrl\":\"$URL\",\"siteUrl\":\"sc-domain:dangerousrobot.org\",\"languageCode\":\"en-US\"}"
 ```
@@ -458,6 +502,17 @@ If old URLs are still in "Indexed" after 4 weeks, re-verify section 1
 - **Browser-driven steps require a persisted, logged-in Chrome profile.**
   If the session expires, section 5.3 and 5.4 fail until a human
   re-authenticates. Plan for monthly re-auth.
+- **ADC refresh token longevity.** The OAuth refresh token from section
+  0.2 lives indefinitely under normal use but can be invalidated by:
+  prolonged inactivity (>6 months), password change, or revocation in
+  the Google Account "Connected apps" view. If `print-access-token`
+  starts returning errors, re-run the section-0.2 login command.
+- **GSC UI rejects service account emails.** Documented here so the next
+  reader doesn't waste a cycle re-trying. "Users and permissions -> Add
+  user" returns "email not found" for any `*.iam.gserviceaccount.com`
+  address. The two working paths for headless GSC access are user-OAuth
+  (what we use) and the Site Verification API self-verify dance with a
+  DNS TXT record.
 
 ## Sequencing
 
