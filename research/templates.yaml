@@ -95,14 +95,14 @@ templates:
   # --- AI Model Producers (Subject) ---
 
   - slug: ai-producers-signed-safety-commitments
-    text: "All major ENTITY have signed AI safety commitments"
+    text: "Most major ENTITY have signed AI safety commitments"
     entity_type: subject
     subjects: [subjects/ai-model-producers]
     topics: [ai-safety]
     core: true
 
   - slug: ai-producers-existential-score
-    text: "All major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
+    text: "Most major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
     entity_type: subject
     subjects: [subjects/ai-model-producers]
     topics: [ai-safety, industry-analysis]

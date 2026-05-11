@@ -1,98 +1,132 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-05-09T13:57:46.746776+00:00'
-  model: infomaniak:swiss-ai/Apertus-70B-Instruct-2509
+  ran_at: '2026-05-11T06:05:57.387767+00:00'
+  model: infomaniak:openai/gpt-oss-120b
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
 models_used:
-  researcher: infomaniak:openai/gpt-oss-120b
-  ingestor: infomaniak:openai/gpt-oss-120b
-  analyst: infomaniak:openai/gpt-oss-120b
-  auditor: infomaniak:openai/gpt-oss-120b
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
 research:
   mode: decomposed
   tool_outcomes: []
   queries:
-  - '"AI Magazine" top 10 AI companies 2025'
-  - AI Magazine top ten AI firms profiles
-  - Future of Life Institute 2025 AI safety index existential threat
-  - FLI AI safety index 2025 company grades
-  - FLI AI safety index grading scale 2025
-  - Future of Life Institute safety index rating system
-  - FLI AI safety index 2025 rankings
-  planner_rationale: The four sub‑questions together cover (1) the definition of the
-    ‘major AI Model Producers’ referenced, (2) the actual safety‑index scores for
-    each, (3) how to interpret the D‑or‑worse grading, and (4) whether any listed
-    firm exceeds D. The seven concise Brave queries target official AI Magazine listings,
-    FLI’s index publication, and the grading methodology while avoiding prohibited
-    operators and irrelevant sites.
-  candidates_seen: 69
-  urls_kept: 21
-  urls_dropped: 14
-  scorer_rationale: The claim concerns the AI Magazine top‑10 model producers and
-    their grades in the Future of Life Institute (FLI) 2025 AI Safety Index. For sq1
-    we keep the AI Magazine list page and three secondary reposts that explicitly
-    show the top‑10 names. For sq2‑sq4 we keep the primary FLI PDFs (Winter and Summer
-    reports) and the official index landing pages, plus reputable secondary coverage
-    (LA Times, Axios, IEEE Spectrum, LinkedIn summaries, blog posts, and analysis
-    articles) that provide the grades and explain the grading system. All kept candidates
-    score >=3 on at least one sub‑question; everything else is unrelated or only tangential
-    and is therefore dropped.
-  urls_after_blocklist: 18
+  - FLI AI Safety Index 2025 methodology
+  - FLI 2025 existential threat index scoring criteria
+  - AI model producers evaluated FLI 2025
+  - Anthropic FLI AI Safety Index score 2025
+  - Google DeepMind existential risk FLI rating
+  - frontier AI companies transparency reports existential risk
+  - third-party review FLI 2025 AI Safety Index
+  planner_rationale: '''Most major AI Model Producers score D or worse'' requires
+    validating the index''s scope, criteria, scores of key players, self-reported
+    practices, and independent critiques to holistically assess the claim.'
+  candidates_seen: 41
+  urls_kept: 18
+  urls_dropped: 24
+  scorer_rationale: "Scoring was prioritized for relevance to the claim and sub-questions\
+    \ about FLI's 2025 AI Safety Index. **Dropped candidates** either deviated from\
+    \ the core focus on FLI's specific index, were about cybersecurity (explicitly\
+    \ excluded), or failed to answer any sub-question effectively. For example, candidates\
+    \ discussing California SB-53, general AI security regulations, or unrelated reports\
+    \ (e.g., Stanford's FMTI or Forbes analyses) were dropped. Higher-quality candidates,\
+    \ such as FLI's official reports, methodology documents, and summaries of expert\
+    \ reviews, were retained for their direct relevance to **sq1–sq5**. Specifically:\n\
+    \n- **kept**: FLI's direct reports, press releases, and summaries provided details\
+    \ on methodology (**sq1**), included companies (**sq2**), listed specific scores\
+    \ for companies like Anthropic, OpenAI, and Google DeepMind (**sq3**), and discussed\
+    \ transparency issues (**sq4** and **sq5**). Social media and supplementary posts\
+    \ (LinkedIn, Facebook) were retained only if they included direct scores or parenthetical\
+    \ summaries of FLI's work.\n\n- **high-score rationale**: The **FLI reports**,\
+    \ including the detailed report ([2025-07 FLI-AI-Safety-Index-Report](https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf))\
+    \ and the **two-pager** ([TwoPager_Digital.pdf](https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_011225_TwoPager_Digital.pdf)),\
+    \ address all sub-questions comprehensively. They cover methodology (**sq1**),\
+    \ company lists (**sq2**), specific scores by company (**sq3**), whistleblowing\
+    \ policies and transparency gaps (**sq4**), and independent expert critiques (**sq5**);\
+    \ these sources were prioritized for their depth and authority. Tier-2 documents\
+    \ (e.g., YouTube summaries or LinkedIn posts) were kept where they restated verified\
+    \ scores/claims and were cross-referenced.\n\n- **dropped rationale**: Forum links,\
+    \ tertiary analysis, or unrelated reports (e.g., cybersecurity-focused posts or\
+    \ liability discussions) scored **1–2** for **all sub-questions**. Examples:\n\
+    \  - [Scribd leaky two-pager](https://www.scribd.com/document/968413447/AI-Safety-Index-Summer-2025-2-Page-v4-Copia)\
+    \ lacked substance compared to official FLI versions.\n  - Axios, Forbes, or **candidate\
+    \ [biocomm.ai](https://blog.biocomm.ai/2025/07/17/ai-safety-index-by-fli-summer-2025/)**\
+    \ provided paraphrased critiques without primary data.\n\n### Key Insight\nThe\
+    \ **Summer 2025** and **Winter 2025** reports from FLI are seminal for verifying\
+    \ the claim. Key examples: Only 3/7 companies in Summer 2025 demonstrated meaningful\
+    \ testing for existential risks (**sq4**), and Anthropic/Google DeepMind scored\
+    \ **Fs for "
+  urls_after_blocklist: 16
 sub_questions:
 - id: sq1
-  question: Which AI companies are listed as the top‑10 AI model producers by AI Magazine?
-  rationale: Identifies the set of “major AI Model Producers” referenced in the claim.
+  question: What is the latest FLI AI Safety Index for Existential Threat (2025 or
+    newer) and its methodology?
+  rationale: Understanding the index's scoring criteria and methodology is essential
+    to interpreting the claim's context.
   queries:
-  - '"AI Magazine" top 10 AI companies 2025'
-  - AI Magazine top ten AI firms profiles
+  - FLI AI Safety Index 2025 methodology
+  - FLI 2025 existential threat index scoring criteria
   citations:
-  - 2025/top-10-ai-companies-2025
-  - 2026/top10
+  - 2025/ai-safety-index-summer-2025
+  - 2025/ai-safety-index-report-summer-2025
+  - 2025/ai-safety-index-summer-2025-edition
+  - 2025/watch
+  - 2025/1441254323968196
 - id: sq2
-  question: What grades did each of those AI companies receive on the Future of Life
-    Institute’s 2025 AI Safety Index for Existential Threat?
-  rationale: Collects the specific safety‑index scores needed to evaluate the claim.
+  question: Which major AI model producers are included in FLI's 2025 AI Safety Index
+    for Existential Threat?
+  rationale: Identifying the entities evaluated by FLI helps verify whether the claim
+    applies to all 'major' producers or a subset.
   queries:
-  - Future of Life Institute 2025 AI safety index existential threat
-  - FLI AI safety index 2025 company grades
+  - AI model producers evaluated FLI 2025
   citations:
   - 2025/ai-safety-index-summer-2025
-  - 2025/ai-safety-index-winter-2025
-  - 2025/ai-safety-index-fli-summer-2025
   - 2025/ai-safety-index-report-summer-2025
-  - 2025/ai-safety-future-of-life-institute-risk-mitigation
-  - 2025/ai-safety-index-summer-2025-2-page-v4pdf
+  - 2025/ai-safety-index-summer-2025-edition
+  - 2025/watch
+  - 2025/1441254323968196
 - id: sq3
-  question: How does the FLI 2025 AI Safety Index grade system work (e.g., meaning
-    of A‑F grades and what constitutes ‘D or worse’)?
-  rationale: Provides context for interpreting the grades.
+  question: What are the scores of major AI model producers like Anthropic, OpenAI,
+    Google DeepMind, Meta Platforms, and Mistral AI in FLI's 2025 AI Safety Index?
+  rationale: Direct score lookup for prominent producers is critical to assess the
+    claim's accuracy and scope.
   queries:
-  - FLI AI safety index grading scale 2025
-  - Future of Life Institute safety index rating system
+  - Anthropic FLI AI Safety Index score 2025
+  - Google DeepMind existential risk FLI rating
   citations:
   - 2025/ai-safety-index-summer-2025
-  - 2025/ai-safety-index-winter-2025
-  - 2025/ai-safety-index-fli-summer-2025
   - 2025/ai-safety-index-report-summer-2025
   - 2025/ai-safety-future-of-life-institute-risk-mitigation
-  - 2025/ai-safety-index-summer-2025-2-page-v4pdf
+  - 2025/ai-safety-index-summer-2025-edition
+  - 2026/1059673956309889
+  - 2025/fli-index-2025-winter-anthropicpdf
+  - 2025/watch
+  - 2025/1441254323968196
 - id: sq4
-  question: Are any of the AI Magazine top‑10 companies rated higher than D (e.g.,
-    C, B, or A) on the FLI 2025 Existential Threat index?
-  rationale: Checks whether the claim’s “all … D or worse” assertion holds.
+  question: Have major AI model producers published transparency reports or public
+    commitments addressing existential risk mitigation?
+  rationale: Evaluating self-reported practices provides insight into whether low
+    scores correlate with a lack of proactive measures.
   queries:
-  - FLI AI safety index 2025 rankings
+  - frontier AI companies transparency reports existential risk
   citations:
-  - 2025/ai-safety-index-summer-2025
-  - 2025/ai-safety-index-winter-2025
-  - 2025/ai-safety-index-fli-summer-2025
   - 2025/ai-safety-index-report-summer-2025
-  - 2025/ai-safety-future-of-life-institute-risk-mitigation
-  - 2025/ai-safety-index-summer-2025-2-page-v4pdf
+  - 2025/ai-safety-index-summer-2025-edition
+  - 2025/fli-index-2025-winter-anthropicpdf
+- id: sq5
+  question: Are there independent research analyses or third-party critiques of the
+    FLI AI Safety Index for 2025, including assessments of scoring rigor?
+  rationale: Third-party validation strengthens or weakens the credibility of the
+    claim about the index's findings.
+  queries:
+  - third-party review FLI 2025 AI Safety Index
+  citations:
+  - 2025/ai-safety-index-report-summer-2025
 sources_consulted:
 - id: 2025/ai-safety-index-summer-2025
   url: https://futureoflife.org/ai-safety-index-summer-2025/
@@ -101,23 +135,7 @@ sources_consulted:
   acquisition:
     stage: research
     origin: tavily
-    query: Future of Life Institute 2025 AI safety index existential threat
-- id: 2025/ai-safety-index-winter-2025
-  url: https://futureoflife.org/ai-safety-index-winter-2025/
-  title: AI Safety Index Winter 2025
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: Future of Life Institute 2025 AI safety index existential threat
-- id: 2025/ai-safety-index-fli-summer-2025
-  url: https://blog.biocomm.ai/2025/07/17/ai-safety-index-by-fli-summer-2025/
-  title: AI Safety Index by FLI. Summer 2025
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: Future of Life Institute 2025 AI safety index existential threat
+    query: FLI AI Safety Index 2025 methodology
 - id: 2025/ai-safety-index-report-summer-2025
   url: https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
   title: AI Safety Index Report Summer 2025
@@ -125,7 +143,7 @@ sources_consulted:
   acquisition:
     stage: research
     origin: tavily
-    query: FLI AI safety index grading scale 2025
+    query: FLI AI Safety Index 2025 methodology
 - id: 2025/ai-safety-future-of-life-institute-risk-mitigation
   url: https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
   title: 'AI Safety Report: Top 3 Companies Outpace Rivals In Risk'
@@ -133,47 +151,61 @@ sources_consulted:
   acquisition:
     stage: research
     origin: tavily
-    query: FLI AI safety index 2025 company grades
-- id: 2025/top-10-ai-companies-2025
-  url: https://aimagazine.com/top10/top-10-ai-companies-2025
-  title: 'Top 10: AI Companies'
+    query: FLI 2025 existential threat index scoring criteria
+- id: 2025/ai-safety-index-summer-2025-edition
+  url: https://www.aigl.blog/ai-safety-index-summer-2025-edition/
+  title: AI Safety Index – Summer 2025 Edition
   ingested: true
   acquisition:
     stage: ingest
     origin: tavily
-    query: '"AI Magazine" top 10 AI companies 2025'
+    query: FLI AI Safety Index 2025 methodology
     recovered_via: archive_org
     outcome: recovered
-- id: 2026/top10
-  url: https://aimagazine.com/top10
-  title: Top 10
+- id: 2026/1059673956309889
+  url: https://www.facebook.com/futureoflifeinstitute/posts/-our-summer-2025-ai-safety-index-is-out-now-%EF%B8%8F-following-up-on-our-december-2024-i/1059673956309889/
+  title: Future of Life Institute Releases Summer 2025 AI Safety Index
+  ingested: true
+  acquisition:
+    stage: ingest
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/fli-index-2025-winter-anthropicpdf
+  url: https://futureoflife.org/wp-content/uploads/2025/11/FLI-Index-2025-Winter-Anthropic.pdf
+  title: FLI Index 2025 Winter - Anthropic
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Anthropic FLI AI Safety Index score 2025
+- id: 2025/watch
+  url: https://www.youtube.com/watch?v=6AGOy8mA0ms
+  title: 'AI Safety Index: Winter 2025 Edition'
   ingested: true
   acquisition:
     stage: ingest
     origin: tavily
-    query: AI Magazine top ten AI firms profiles
+    query: AI model producers evaluated FLI 2025
     recovered_via: archive_org
     outcome: recovered
-- id: 2025/ai-safety-index-summer-2025-2-page-v4pdf
-  url: https://futureoflife.org/wp-content/uploads/2025/07/AI-Safety-Index-Summer-2025-2-page-v4.pdf
-  title: 'FLI AI Safety Index: Summer 2025'
+- id: 2025/1441254323968196
+  url: https://www.facebook.com/futureoflifeinstitute/videos/max-tegmark-on-flis-ai-safety-index-summer-2025-edition/1441254323968196/
+  title: Summer 2025 AI Safety Index and Company Evaluations
   ingested: true
   acquisition:
-    stage: ingest
+    stage: research
     origin: tavily
-    query: Future of Life Institute 2025 AI safety index existential threat
-    recovered_via: archive_org
-    outcome: recovered
+    query: FLI AI Safety Index 2025 methodology
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: unverified
-  analyst_confidence: medium
-  auditor_confidence: high
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: low
   verdict_agrees: true
   confidence_agrees: false
   needs_review: false
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-05-10'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
