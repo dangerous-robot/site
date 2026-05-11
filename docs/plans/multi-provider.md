@@ -192,7 +192,7 @@ Same tool-use / structured-output validation as Part 1, but against Mistral-Smal
 
 ### Objective
 
-Enable `greenpt:<model_id>` as a provider prefix in `resolve_model`, mirroring the `infomaniak:<model_id>` wiring shipped in Part 1. The prefix is generic: any model id GreenPT exposes via its OpenAI-compatible chat endpoint is callable through the existing `--model` / `DR_*_MODEL` flags. No allowlist; the working reference is `greenpt:openai/gpt-oss-120b` but the resolver does not pin to one id. Most plumbing (per-agent overrides, API-key union check, scrubber hook) already exists from Parts 1 and 2; Part 3 adds one new branch in `resolve_model` plus one `_PROVIDER_ENV` entry.
+Enable `greenpt:<model_id>` as a provider prefix in `resolve_model`, mirroring the `infomaniak:<model_id>` wiring shipped in Part 1. The prefix is generic: any model id GreenPT exposes via its OpenAI-compatible chat endpoint is callable through the existing `--model` / `DR_*_MODEL` flags. No allowlist; the working reference is `greenpt:gpt-oss-120b` but the resolver does not pin to one id. Note GreenPT's model ids carry no provider namespace, unlike Infomaniak's `openai/…` slugs — `greenpt:openai/gpt-oss-120b` returns 400 "Unsupported model". Most plumbing (per-agent overrides, API-key union check, scrubber hook) already exists from Parts 1 and 2; Part 3 adds one new branch in `resolve_model` plus one `_PROVIDER_ENV` entry.
 
 ### Code paths that change
 
@@ -228,7 +228,7 @@ Base URL and `Authorization: Bearer <key>` confirmed from the evaluation harness
 
 ### Validation runs
 
-Same three call shapes as Part 1's §Validation runs; substitute `DR_MODEL=greenpt:<model_id>` (the working example from the evaluation is `greenpt:openai/gpt-oss-120b`). Researcher/ingestor on GreenPT `gpt-oss-120b` should work per the evaluation report; revisit if observed otherwise.
+Same three call shapes as Part 1's §Validation runs; substitute `DR_MODEL=greenpt:<model_id>` (the working example from the evaluation is `greenpt:gpt-oss-120b`). Researcher/ingestor on GreenPT `gpt-oss-120b` should work per the evaluation report; revisit if observed otherwise.
 
 ### Global fallback (`a||b` spec syntax)
 
@@ -248,7 +248,7 @@ The `||` syntax stays within the existing `--model` / `DR_*_MODEL` flag (no new 
 
 Mirror the `||` split in `_required_env_for_model` so the union check picks up every leg: same ordering constraint as the resolver (handle `||` before the `'test' in model` short-circuit at `cli.py:54-71`, otherwise a chained spec with "test" in any leg silently returns `()`).
 
-Semantics: per-call retry. Every LLM hit through that agent slot tries the first spec; on failure, `FallbackModel` advances to the next. PydanticAI's `FallbackModel` defaults to `fallback_on=(ModelAPIError,)`, which covers provider-returned HTTP errors. Pure transport-level errors (e.g. `httpx.ConnectError` raised before the SDK receives a response) may bypass that default; if observed, widen `fallback_on` to include the relevant exception types. Each part of the chain is itself resolved through `resolve_model`, so `infomaniak:openai/gpt-oss-120b||greenpt:openai/gpt-oss-120b` (or the reverse) works without further wiring.
+Semantics: per-call retry. Every LLM hit through that agent slot tries the first spec; on failure, `FallbackModel` advances to the next. PydanticAI's `FallbackModel` defaults to `fallback_on=(ModelAPIError,)`, which covers provider-returned HTTP errors. Pure transport-level errors (e.g. `httpx.ConnectError` raised before the SDK receives a response) may bypass that default; if observed, widen `fallback_on` to include the relevant exception types. Each part of the chain is itself resolved through `resolve_model`, so `infomaniak:openai/gpt-oss-120b||greenpt:gpt-oss-120b` (or the reverse) works without further wiring.
 
 Order in `resolve_model` matters: the `||` check must run before the prefix-startswith branches so a chained spec is not mistakenly treated as a single bare model id.
 

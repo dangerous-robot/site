@@ -165,15 +165,15 @@ class TestResolveModel:
         resolve_model.cache_clear()
         from pydantic_ai.models.openai import OpenAIChatModel
 
-        model = resolve_model("greenpt:openai/gpt-oss-120b")
+        model = resolve_model("greenpt:gpt-oss-120b")
         assert isinstance(model, OpenAIChatModel)
-        assert model.model_name == "openai/gpt-oss-120b"
+        assert model.model_name == "gpt-oss-120b"
 
     def test_greenpt_missing_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("GREENPT_API_KEY", raising=False)
         resolve_model.cache_clear()
         with pytest.raises(RuntimeError, match="GREENPT"):
-            resolve_model("greenpt:openai/gpt-oss-120b")
+            resolve_model("greenpt:gpt-oss-120b")
 
     def test_fallback_spec_returns_fallback_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Mixes an Infomaniak leg (Model instance) with an Anthropic leg

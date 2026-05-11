@@ -54,12 +54,12 @@ class TestRequiredEnvForModel:
         )
 
     def test_greenpt_requires_api_key(self) -> None:
-        assert _required_env_for_model("greenpt:openai/gpt-oss-120b") == ("GREENPT_API_KEY",)
+        assert _required_env_for_model("greenpt:gpt-oss-120b") == ("GREENPT_API_KEY",)
 
     def test_chained_spec_returns_union(self) -> None:
         """``a||b`` returns the stable-ordered union of both legs' required env vars."""
         result = _required_env_for_model(
-            "anthropic:claude-haiku-4-5-20251001||greenpt:openai/gpt-oss-120b"
+            "anthropic:claude-haiku-4-5-20251001||greenpt:gpt-oss-120b"
         )
         assert result == ("ANTHROPIC_API_KEY", "GREENPT_API_KEY")
 
