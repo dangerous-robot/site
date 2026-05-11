@@ -37,3 +37,6 @@ uv.lock
 scripts/llm-tester/.env.poc
 scripts/llm-tester/archive/
 scripts/llm-tester/matrix-*.md
+
+# SEO inspection runtime artifacts (per-date GSC URL inspection JSONs)
+seo-runs/
