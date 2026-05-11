@@ -1,8 +1,8 @@
 /**
  * SEO indexing controls for alpha-stage detail pages.
  *
- * The site is in alpha. Detail pages under /claims/{entity}/{claim},
- * /sources/{yyyy}/{slug}, and /entities/{type}/{slug} are generated
+ * The site is in alpha. Detail pages under /research/claims/{entity}/{claim},
+ * /research/sources/{yyyy}/{slug}, and /research/entities/{type}/{slug} are generated
  * from AI agent research and may be incomplete or wrong. We do not
  * want them in the search index until the content stabilizes.
  *
