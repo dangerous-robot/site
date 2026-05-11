@@ -1,6 +1,6 @@
 # Plan: Multi-provider support (Infomaniak first, GreenPT considered)
 
-**Status**: Parts 1 and 2 done (Part 1 verified 2026-04-26; Part 2 commit 54702c8, 2026-04-27). Part 3 (global fallback + second provider) is post-v1.
+**Status**: Parts 1, 2, and 3 implemented (Part 1 verified 2026-04-26; Part 2 commit 54702c8, 2026-04-27; Part 3 implemented 2026-05-10, pending live-run gate against `greenpt:<model>`).
 
 Phased plan to run the `dr` pipeline against non-Anthropic providers. The pure POC framing has been retired -- the [API provider evaluation report](../reports/API-PROVIDER-FINAL-REPORT.md) (2026-04-26) supplied the empirical groundwork; this plan now lays out shippable parts.
 
@@ -12,19 +12,16 @@ Enable per-agent and per-provider model selection on the `dr` pipeline so that a
 
 ## Non-goals (revised post-evaluation)
 
-- **No new config layer in v1.** Plain env vars and the existing `--model` flag remain the only knobs through Part 2. A `pipeline/common/providers.py` registry only appears once Part 3 lands.
+- **No new config layer.** Plain env vars and the existing `--model` / per-agent `DR_*_MODEL` flags remain the only knobs through Part 3. A `pipeline/common/providers.py` registry is out of scope for every part in this plan.
 - **No energy or cost tracking.** Out of scope for every part in this plan.
 - **No Apertus-70B.** The evaluation found a server-side `TypeError` in Infomaniak's vLLM chat-template renderer; reconsider only after Infomaniak fixes it.
 - **No prompt re-tuning per provider in Part 1.** Test portability first; tune `pipeline/*/instructions.md` only if drift on the analyst/auditor outputs becomes load-bearing.
 
 (Removed from non-goals: "no adapter/serialization layer." See Part 2 -- a thin per-model serialization scrubber is now required, not deferred. Justification in the report's "Plan implications" section.)
 
-## GreenPT consideration (deferred to Part 3, not abandoned)
+## GreenPT consideration (Part 3 scope)
 
-The evaluation found GreenPT cleaner on tool-loop tests (3-of-5 models pass T5 vs 1-of-4 on Infomaniak), faster, and equipped with two relevant bonuses: per-call energy telemetry and a hosted Scraper API that could replace `web_fetch`. It is a strong candidate for Part 3's second provider. Two open questions before promoting it:
-
-1. The unexplained 2.2x energy delta between GreenPT's router and direct endpoints on identical prompts. Without a reason, energy telemetry is not yet trustworthy enough to surface.
-2. Whether GreenPT's Swiss/EU posture matches Infomaniak's heat-reuse story closely enough that operating two providers buys us anything beyond redundancy.
+Part 3 wires GreenPT in as a second configurable provider via a `greenpt:<model_id>` prefix, mirroring the Infomaniak shape from Part 1. The evaluation found GreenPT cleaner on tool-loop tests (3-of-5 models pass T5 vs 1-of-4 on Infomaniak) and faster on average. The two GreenPT bonuses surfaced in the evaluation (per-call energy telemetry, hosted Scraper API as a `web_fetch` alternate) are parked outside this plan; see the "Deferred" note in Part 3.
 
 ## Part 1 -- v1 release: switch to Infomaniak `gpt-oss-120b`
 
@@ -32,7 +29,7 @@ The evaluation found GreenPT cleaner on tool-loop tests (3-of-5 models pass T5 v
 
 Verified via `dr onboard anthropic` against `infomaniak:openai/gpt-oss-120b`. All four agents (`researcher`, `analyst`, `auditor`, `ingestor`) executed in sequence; the run terminated with claim files written under `research/claims/anthropic/` (some `status: published`, some `status: blocked` for threshold-insufficient sources). Acceptance bar (§Acceptance bar) met and exceeded — `dr onboard` runs the per-template loop, which is `verify_claim` × N rather than the single `dr verify` the bar required.
 
-Part 2 (Mistral-Small + per-agent preference + serialization scrubber) and Part 3 (fallback + multi-provider) remain post-v1; this plan stays in `docs/plans/` until they ship.
+Part 2 (Mistral-Small + per-agent preference + serialization scrubber) and Part 3 (GreenPT prefix + optional fallback chain) remain post-v1; this plan stays in `docs/plans/` until they ship.
 
 ### Observed quirks (2026-04-26)
 
@@ -189,24 +186,91 @@ Rationale: tool-using agents (researcher, ingestor multi-turn) get the more robu
 
 Same tool-use / structured-output validation as Part 1, but against Mistral-Small as well, plus a mixed-tier `dr verify` run confirming all four agents cooperate across the two models. The mixed-tier run was attempted with `gpt-oss-120b` for tool-using agents and surfaced the gateway findings recorded above; the practical mixed-tier mapping became Anthropic baseline (researcher + ingestor) plus Infomaniak structured-output agents (analyst + auditor). The implementation plumbing (per-agent fields, env vars, scrubber, API-key union check, tests) is complete and exercised by that run; the original "all four agents on Infomaniak" target is parked behind the tool-free researcher/ingestor work in [`drafts/tool-free-researcher-ingestor_stub.md`](drafts/tool-free-researcher-ingestor_stub.md).
 
-## Part 3 -- global fallback + multiple providers
+## Part 3 -- enable GreenPT as a configurable provider
+
+### Status: Implemented (2026-05-10), pending live-run gate
 
 ### Objective
 
-Add a second provider (likely GreenPT) and a fallback policy so a transient outage on one provider does not block a `dr verify` run. This is where the "no config layer" non-goal finally relaxes.
+Enable `greenpt:<model_id>` as a provider prefix in `resolve_model`, mirroring the `infomaniak:<model_id>` wiring shipped in Part 1. The prefix is generic: any model id GreenPT exposes via its OpenAI-compatible chat endpoint is callable through the existing `--model` / `DR_*_MODEL` flags. No allowlist; the working reference is `greenpt:openai/gpt-oss-120b` but the resolver does not pin to one id. Most plumbing (per-agent overrides, API-key union check, scrubber hook) already exists from Parts 1 and 2; Part 3 adds one new branch in `resolve_model` plus one `_PROVIDER_ENV` entry.
 
-### Likely shape (sketch only -- design when Part 2 is shipped)
+### Code paths that change
 
-- New `pipeline/common/providers.py` with a small registry: provider id -> base URL + env-var names + per-model scrubber map.
-- New model-spec syntax for fallback chains: `infomaniak:openai/gpt-oss-120b||greenpt:gpt-oss-120b`. The resolver tries the first; on connect/HTTP error it tries the next.
-- GreenPT base URL + auth wired into the registry.
-- Optional: surface GreenPT's Scraper API as an alternate `web_fetch` implementation, gated by an env var. Decide based on whether `httpx + markdownify` is hitting failure modes the Scraper would handle better.
-- Energy telemetry from GreenPT remains shelved until the router/direct 2.2x delta is explained.
+| File | Change |
+|---|---|
+| `pipeline/common/models.py` | Add a `greenpt:` branch to `resolve_model`. Build `OpenAIChatModel` against `OpenAIProvider(base_url="https://api.greenpt.ai/v1", api_key=os.environ["GREENPT_API_KEY"])`. No per-model profile flags known to be required for the reference model; revisit if a chosen GreenPT model surfaces a serialization quirk (the evaluation found none for `gpt-oss-120b` or `green-l-raw`). |
+| `pipeline/orchestrator/cli.py` | Add `"greenpt": ("GREENPT_API_KEY",)` to the `_PROVIDER_ENV` registry (cli.py:45). That's the only cli.py touchpoint -- `_check_provider_api_keys` and `_agent_models_from_ctx` already iterate over agent specs and union the required vars. |
+| `.env.example` / README snippet | Document `GREENPT_API_KEY`. |
 
-### Open questions for Part 3
+### Wiring sketch
 
-1. Fallback granularity: per-call (every single LLM hit retries through the chain) vs per-run (one provider per `dr verify`, decided at start). Per-call is more resilient; per-run is cheaper to reason about.
-2. Whether GreenPT's `green-l-raw` (cleanest single model in the evaluation) or `gpt-oss-120b` (cross-provider portability) leads on GreenPT.
+Delta on top of the existing `resolve_model` (described in Part 1, implemented in `pipeline/common/models.py`). The new branch sits beside the `infomaniak:` branch:
+
+```python
+if spec.startswith("greenpt:"):
+    from pydantic_ai.models.openai import OpenAIChatModel
+    from pydantic_ai.providers.openai import OpenAIProvider
+
+    model_id = spec.split(":", 1)[1]
+    try:
+        api_key = os.environ["GREENPT_API_KEY"]
+    except KeyError as e:
+        raise RuntimeError(f"GreenPT provider requires {e.args[0]}") from e
+    provider = OpenAIProvider(base_url="https://api.greenpt.ai/v1", api_key=api_key)
+    return OpenAIChatModel(model_id, provider=provider)
+```
+
+Base URL and `Authorization: Bearer <key>` confirmed from the evaluation harness (`scripts/llm-tester/harness/greenpt.py`); `OpenAIProvider` builds the bearer header from `api_key`. (`OpenAIChatModel` is the current PydanticAI 1.84+ class name, re-exported as `OpenAIModel` for back-compat; Part 1's older sketch uses the alias.)
+
+### API-key enforcement
+
+`GREENPT_API_KEY` joins the `_PROVIDER_ENV` map at `cli.py:45`. The existing `_check_provider_api_keys` union check (called from every command that takes a model) then validates GreenPT alongside Anthropic and Infomaniak for any run whose agent slots resolve to a `greenpt:` spec. No per-call-site changes.
+
+### Validation runs
+
+Same three call shapes as Part 1's §Validation runs; substitute `DR_MODEL=greenpt:<model_id>` (the working example from the evaluation is `greenpt:openai/gpt-oss-120b`). Researcher/ingestor on GreenPT `gpt-oss-120b` should work per the evaluation report; revisit if observed otherwise.
+
+### Global fallback (`a||b` spec syntax)
+
+Small extension to `resolve_model` and `_required_env_for_model` to support a fallback chain in the spec:
+
+```python
+# in resolve_model, before the prefix branches:
+if "||" in spec:
+    from pydantic_ai.models.fallback import FallbackModel
+    parts = [resolve_model(p.strip()) for p in spec.split("||")]
+    return FallbackModel(*parts)
+```
+
+A chained spec produces one cached `FallbackModel` instance (via `resolve_model`'s `@lru_cache`) reused across `.override` sites; `FallbackModel` carries internal lock state, but cache-sharing is consistent with how single-spec models are already cached today.
+
+The `||` syntax stays within the existing `--model` / `DR_*_MODEL` flag (no new config layer, so the non-goal at line 15 still holds in letter), but it is a small embedded parser: if the syntax grows beyond `||`, revisit the non-goal.
+
+Mirror the `||` split in `_required_env_for_model` so the union check picks up every leg: same ordering constraint as the resolver (handle `||` before the `'test' in model` short-circuit at `cli.py:54-71`, otherwise a chained spec with "test" in any leg silently returns `()`).
+
+Semantics: per-call retry. Every LLM hit through that agent slot tries the first spec; on failure, `FallbackModel` advances to the next. PydanticAI's `FallbackModel` defaults to `fallback_on=(ModelAPIError,)`, which covers provider-returned HTTP errors. Pure transport-level errors (e.g. `httpx.ConnectError` raised before the SDK receives a response) may bypass that default; if observed, widen `fallback_on` to include the relevant exception types. Each part of the chain is itself resolved through `resolve_model`, so `infomaniak:openai/gpt-oss-120b||greenpt:openai/gpt-oss-120b` (or the reverse) works without further wiring.
+
+Order in `resolve_model` matters: the `||` check must run before the prefix-startswith branches so a chained spec is not mistakenly treated as a single bare model id.
+
+### Part 3 gate
+
+The release ships when Brandon can run **one** live `dr verify` against `greenpt:<some_model>` where all four agents execute in sequence against GreenPT and the run terminates with a written `.audit.yaml` sidecar. Output-quality bar is identical to Part 1: tool use may be imperfect provided the failure is logged and the pipeline continues; `needs_review` verdicts are acceptable.
+
+A second pass with a fallback chain spec (`greenpt:...||infomaniak:...` or the reverse) reaching a written sidecar is sufficient evidence the chain wiring works; no synthetic-outage test is required.
+
+### Rollback
+
+GreenPT support is additive. Unset `DR_MODEL` (and any per-agent `DR_*_MODEL` set to `greenpt:...`) to fall back to `DEFAULT_MODEL` (Infomaniak `gpt-oss-120b`). The Infomaniak and Anthropic paths are untouched by Part 3; reverting is environment-only.
+
+### Deferred (out of Part 3 scope)
+
+The following were considered for Part 3 and explicitly parked:
+
+- `pipeline/common/providers.py` provider registry (env-var names live in cli.py's `_PROVIDER_ENV` map; no registry needed yet).
+- GreenPT Scraper API as an alternate `web_fetch` implementation.
+- GreenPT per-call energy telemetry surfacing.
+- Investigation of the 2.2x router/direct energy delta observed during evaluation.
+- Tool-free researcher/ingestor variants (tracked separately at `docs/plans/drafts/tool-free-researcher-ingestor_stub.md`).
 
 ## Risks (revised)
 
@@ -235,23 +299,15 @@ Add a second provider (likely GreenPT) and a fallback policy so a transient outa
 - **Part 1 model choice.** `gpt-oss-120b`, not `mistral24b` -- the only Infomaniak model that passes T5 raw. Mistral-Small is deferred to Part 2 once the scrubber lands. (2026-04-26)
 - **Provider order.** Infomaniak first because of waste-heat reuse alignment with TreadLightly's brand, despite GreenPT's marginally cleaner test results. (2026-04-26)
 
-## Open questions
-
-1. **Disagreement-rate baseline.** Capture the current Claude-Haiku disagreement rate from existing `.audit.yaml` sidecars so we have a comparison number for analyst/auditor drift when Infomaniak structured-output agents are mixed in. Overtaken by Part 2 shipping; folded into result-quality validation (roadmap §13) rather than tracked here.
-2. **GreenPT 2.2x router/direct energy delta.** Needs investigation before energy telemetry can be surfaced. Blocks any user-facing energy claim derived from GreenPT. (Part 3.)
-3. **Part 3 fallback granularity.** Per-call vs per-run; design when Part 3 starts.
-4. **Tool-free researcher/ingestor variants.** The findings under Part 2 invalidate the original "all four agents on Infomaniak" target until the gateway either fixes serialization or the tool-free variants land. Tracked under [`drafts/tool-free-researcher-ingestor_stub.md`](drafts/tool-free-researcher-ingestor_stub.md); not a Part 3 blocker.
-
 ## Critical files
 
-- `pipeline/common/models.py` -- add `resolve_model()` helper (Part 1); add per-model scrubber map (Part 2)
+- `pipeline/common/models.py` -- add `resolve_model()` helper (Part 1); add per-model scrubber map (Part 2); add `greenpt:` branch and optional `||` fallback parsing (Part 3)
 - `pipeline/orchestrator/pipeline.py` -- update four `.override(model=...)` sites; add per-agent fields to `VerifyConfig` (Part 2)
-- `pipeline/orchestrator/cli.py` -- update two `.override(model=...)` sites; soften API-key check; wire per-agent env vars (Part 2)
+- `pipeline/orchestrator/cli.py` -- update two `.override(model=...)` sites; soften API-key check; wire per-agent env vars (Part 2); add `greenpt` entry to `_PROVIDER_ENV` and `||` handling in `_required_env_for_model` (Part 3)
 - `pipeline/researcher/agent.py` -- no change in Part 1; smoke-test target for Part 2 scrubber
 - `pipeline/ingestor/agent.py` -- no change in Part 1; smoke-test target for Part 2 scrubber
 - `pipeline/analyst/agent.py` -- no change
 - `pipeline/auditor/agent.py` -- no change
-- `pipeline/common/providers.py` -- new file in Part 3
 
 ## References
 
@@ -271,3 +327,6 @@ Add a second provider (likely GreenPT) and a fallback policy so a transient outa
 | 2026-04-27 | agent (claude-opus-4-7) | implementation | Part 2 implementation: per-agent VerifyConfig fields + `model_for(agent)`; CLI options `--researcher-model`/`--analyst-model`/`--auditor-model`/`--ingestor-model` with `DR_*_MODEL` envvars; six `.override(model=...)` sites updated; `_check_provider_api_keys` accepts list and validates union across agent slots; Mistral scrubber via `OpenAIModelProfile(openai_chat_send_back_thinking_parts=False)` for any model_id containing "mistral"; tests added (model resolution, scrubber profile, per-agent fallback, API-key union check). Probe found gemma3n cannot do tool calling on Infomaniak gateway; new follow-up plan filed at `docs/plans/drafts/tool-free-researcher-ingestor_stub.md`. End-to-end mixed-tier `dr verify` not yet run. |
 | 2026-04-27 | agent (claude-opus-4-7) | post-run findings | After live `dr verify-claim` runs against Infomaniak: documented gpt-oss-120b tool-call serialization failure (model emits tool-call intent in `reasoning` field, omits `tool_calls`; researcher/ingestor unsuitable). Restricted gpt-oss-120b to analyst+auditor in the recommended mapping. Also corrected the Mistral model id from the long HF slug (no longer in Infomaniak's valid list) to the short alias `mistral24b`. Recommended mapping section updated; original "researcher on Infomaniak" guidance invalidated until tool-free researcher lands. |
 | 2026-04-28 | agent (claude-opus-4-7) | Part 2 gate close | Marked the Part 2 gate as met; the mixed-tier run that surfaced the gpt-oss-120b and gemma3n findings also exercised the per-agent plumbing end-to-end. Open-question 1 (disagreement-rate baseline) folded into roadmap §13 rather than tracked here; added open-question 4 pointing at the tool-free researcher/ingestor stub as the unblocker for the original mapping. Roadmap §12 promoted to cover Parts 1 and 2 jointly. |
+| 2026-05-10 | agent (claude-opus-4-7) | Part 3 rescope | Rewrote Part 3 around enabling a `greenpt:<model_id>` provider prefix that mirrors Part 1's Infomaniak wiring (open model id space, no allowlist). Pruned `pipeline/common/providers.py` registry, GreenPT Scraper API, energy telemetry, and the 2.2x router/direct delta out of scope (now listed under Part 3's "Deferred" section). Included a small `a||b` per-call fallback chain via PydanticAI's `FallbackModel`, honest about its `ModelAPIError`-default catch surface. Updated "GreenPT consideration", Non-goals, Critical files, and Open questions to match. |
+| 2026-05-10 | agent (claude-opus-4-7) | Part 3 review pass | Noted the `||` parser ordering constraint (must run before the `'test' in model` short-circuit) in both resolver and env-check; added a one-line `FallbackModel` + `lru_cache` cache-sharing note; acknowledged the non-goal tension that `||` introduces a small embedded parser; flagged `OpenAIChatModel` as the current PydanticAI class name with `OpenAIModel` as the back-compat alias used in Part 1's sketch; collapsed Part 3's Validation-runs table into a back-reference to Part 1; pruned Open Questions (Q1 was already overtaken, Q2 folded into the validation note). |
+| 2026-05-10 | agent (claude-opus-4-7) | Part 3 implementation | Added `greenpt:<model_id>` branch to `resolve_model` (OpenAIChatModel on `https://api.greenpt.ai/v1`, RuntimeError when `GREENPT_API_KEY` is missing). Added `||` split to both `resolve_model` (returns `FallbackModel(*resolved_legs)`) and `_required_env_for_model` (stable-ordered union via `dict.fromkeys`); both `||` branches run before their respective prefix / `'test' in model` short-circuits so a chained spec with "test" in any leg still enforces provider keys on sibling legs. Added `"greenpt": ("GREENPT_API_KEY",)` to `_PROVIDER_ENV`. Added `GREENPT_API_KEY=` block to `.env.example` and a one-liner about chained `a||b` specs near `DR_MODEL`. Extended `test_models.py` (greenpt builds OpenAIChatModel, missing key raises, `a||b` returns FallbackModel with legs resolved, whitespace trimmed) and `test_cli.py` (`greenpt:` returns `("GREENPT_API_KEY",)`, chained-spec union ordering, dedupe, and the `'test'`-in-leg ordering-bug guard). Full pipeline test suite (787 tests) passes. Live `dr verify` against `greenpt:<model>` still required to close the Part 3 gate. |
