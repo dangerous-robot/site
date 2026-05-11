@@ -1,0 +1,15 @@
+[
+  {"redirect":{"source_url":"dangerousrobot.org/faq","target_url":"https://dangerousrobot.org/research/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/claims","target_url":"https://dangerousrobot.org/research/claims/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/companies","target_url":"https://dangerousrobot.org/research/companies/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/products","target_url":"https://dangerousrobot.org/research/products/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/subjects","target_url":"https://dangerousrobot.org/research/subjects/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/topics","target_url":"https://dangerousrobot.org/research/topics/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/sources","target_url":"https://dangerousrobot.org/research/sources/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/criteria","target_url":"https://dangerousrobot.org/research/criteria/","status_code":301,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/claims/","target_url":"https://dangerousrobot.org/research/claims/","status_code":301,"subpath_matching":true,"preserve_path_suffix":true,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/entities/","target_url":"https://dangerousrobot.org/research/entities/","status_code":301,"subpath_matching":true,"preserve_path_suffix":true,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/topics/","target_url":"https://dangerousrobot.org/research/topics/","status_code":301,"subpath_matching":true,"preserve_path_suffix":true,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/sources/","target_url":"https://dangerousrobot.org/research/sources/","status_code":301,"subpath_matching":true,"preserve_path_suffix":true,"preserve_query_string":true}},
+  {"redirect":{"source_url":"dangerousrobot.org/criteria/","target_url":"https://dangerousrobot.org/research/criteria/","status_code":301,"subpath_matching":true,"preserve_path_suffix":true,"preserve_query_string":true}}
+]
