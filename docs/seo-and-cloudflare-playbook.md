@@ -26,11 +26,14 @@ Cloudflare dashboard. Companion to the audit done on 2026-04-30.
 For each of these URLs: **URL Inspection → Test live URL → Request Indexing**.
 
 - `/` (homepage)
-- `/companies`, `/products`, `/topics`, `/claims`, `/sources`, `/criteria`,
-  `/faq`
-- 2–3 representative claim pages, e.g. `/claims/openai/corporate-structure`
-- 2–3 entity pages, e.g. `/entities/companies/openai`,
-  `/entities/products/chatgpt`
+- `/research` (research hub)
+- `/resources` (resources hub), `/resources/should-i`, `/resources/ai-safety`,
+  `/resources/turn-off-ai`, `/resources/responsible-ai`
+- `/research/companies`, `/research/products`, `/research/topics`,
+  `/research/claims`, `/research/sources`, `/research/criteria`
+- 2–3 representative claim pages, e.g. `/research/claims/openai/corporate-structure`
+- 2–3 entity pages, e.g. `/research/entities/companies/openai`,
+  `/research/entities/products/chatgpt`
 
 Google rate-limits Request Indexing to ~10/day per property — pace accordingly.
 
@@ -86,6 +89,9 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
    this is just verifying how.
 5. **Speed → Optimization:** verify Brotli is on; Auto Minify (HTML) is fine
    for static Astro output.
+6. **Bulk Redirects:** the list `dr_redirects` and the entrypoint ruleset rule
+   `dr_redirects_rule` consolidate the eight legacy section paths under
+   `/research/...`. Maintained by `scripts/seo/apply-cloudflare-redirects.sh`.
 
 ### Ask before flipping
 
@@ -120,9 +126,9 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 
 ## Alpha noindex policy
 
-Detail pages under `/claims/{entity}/{claim}`, `/sources/{yyyy}/{slug}`, and
-`/entities/{type}/{slug}` are generated from AI agent research. While the site
-is in alpha they are:
+Detail pages under `/research/claims/{entity}/{claim}`,
+`/research/sources/{yyyy}/{slug}`, and `/research/entities/{type}/{slug}` are
+generated from AI agent research. While the site is in alpha they are:
 
 1. Served with `<meta name="robots" content="noindex,nofollow">`.
 2. Excluded from `sitemap-index.xml` / `sitemap-0.xml`.
@@ -131,8 +137,10 @@ URLs are stable — already-published pages remain accessible at the same paths.
 Internal navigation, deep links, and direct visits all still work; the pages
 are just hidden from search engines.
 
-List/index pages (`/`, `/claims`, `/companies`, `/products`, `/sources`,
-`/topics`, `/criteria`, `/faq`, `/values`, `/credits`) remain indexable.
+List/index pages (`/`, `/research`, `/research/claims`, `/research/companies`,
+`/research/products`, `/research/sources`, `/research/topics`,
+`/research/criteria`, `/resources` and its four guides, `/values`, `/credits`)
+remain indexable.
 
 ### When alpha ends
 
@@ -158,6 +166,6 @@ action needed.
 - `src/pages/404.astro`: branded 404 page with `noindex`, replacing the
   GitHub Pages default.
 - `src/lib/seo.ts`: alpha indexing flag and path classifier.
-- `src/pages/{claims,sources,entities}/[...slug].astro`: pass
+- `src/pages/research/{claims,sources,entities}/[...slug].astro`: pass
   `noindex={shouldNoindex(...)}` to `Base`.
 - `astro.config.ts`: sitemap `filter` excludes alpha detail paths.
