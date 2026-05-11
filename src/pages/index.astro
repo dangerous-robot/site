@@ -57,20 +57,21 @@ function boldInTitle(title: string, entityId: string, criteriaSlug?: string): st
   return result;
 }
 
+// Subject card(s) first so the wedge generator anchors them at the cluster center.
 const scatterItems = [
-  ...otherHighlights.slice(0, otherSlots).map((c) => ({
-    verdict: c.data.verdict as string,
-    title: c.data.title as string,
-    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
-    href: `/research/claims/${c.id}`,
-    isSubject: false,
-  })),
   ...subjectHighlights.map((c) => ({
     verdict: c.data.verdict as string,
     title: c.data.title as string,
     titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
     href: `/research/claims/${c.id}`,
     isSubject: true,
+  })),
+  ...otherHighlights.slice(0, otherSlots).map((c) => ({
+    verdict: c.data.verdict as string,
+    title: c.data.title as string,
+    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
+    href: `/research/claims/${c.id}`,
+    isSubject: false,
   })),
 ];
 
@@ -96,14 +97,109 @@ function rnd(min: number, max: number): number {
   return min + Math.random() * (max - min);
 }
 
-// Bottom-row cards: low bottom, spread right-to-left; top-row cards: high bottom
-const cardPositions = [
-  { bottom: rnd(20,  70),  right: rnd(-30, 5),   rotate: rnd(-14, -5), z: 2 },
-  { bottom: rnd(40,  100), right: rnd(215, 300),  rotate: rnd(8,   17), z: 3 },
-  { bottom: rnd(80,  155), right: rnd(460, 570),  rotate: rnd(-13, -3), z: 2 },
-  { bottom: rnd(385, 465), right: rnd(30,  115),  rotate: rnd(10,  20), z: 4 },
-  { bottom: rnd(340, 425), right: rnd(315, 415),  rotate: rnd(-17, -6), z: 3 },
-];
+/*
+ * Wedge-polar scatter: card 0 anchors near the cluster center; cards 1–4
+ * sit in four 90° wedges (upper-right, upper-left, lower-left, lower-right)
+ * with random radius and angle jitter. Two cards land in the mid band, two
+ * in the outer band. Y-component is squashed so the cluster reads wider
+ * than tall — keeps the "horizontal preference" the design calls for.
+ *
+ * Z-order is assigned after placement: visually-lower cards (larger y)
+ * render in front so any overlap covers the lower card's body, never its
+ * top-edge verdict label. Subject cards always sit on top.
+ *
+ * After placement, a collision pass nudges any card whose body would cover
+ * a different card's verdict region (top-left 90×43px).
+ */
+const CARD_W = 290;
+const CARD_H = 174;
+const VERDICT_W = 95;
+const VERDICT_H = 43;
+const Y_SQUASH = 0.55;
+
+type Pos = { x: number; y: number; rotate: number; z: number };
+
+function drawPosition(slot: number): { x: number; y: number; rotate: number } {
+  if (slot === 0) {
+    const r = rnd(0, 35);
+    const a = rnd(0, 2 * Math.PI);
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r * Y_SQUASH, rotate: rnd(-13, 13) };
+  }
+  // Wedges anchored at 45°, 135°, 225°, 315° with ±22.5° jitter.
+  const wedgeCenters = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
+  const radiusBands: Array<[number, number]> = [
+    [140, 210], // slot 1 — mid
+    [140, 210], // slot 2 — mid
+    [235, 315], // slot 3 — outer
+    [235, 315], // slot 4 — outer
+  ];
+  const a = wedgeCenters[slot - 1] + rnd(-Math.PI / 8, Math.PI / 8);
+  const [rMin, rMax] = radiusBands[slot - 1];
+  const r = rnd(rMin, rMax);
+  return { x: Math.cos(a) * r, y: Math.sin(a) * r * Y_SQUASH, rotate: rnd(-13, 13) };
+}
+
+function verdictOccluded(positions: Array<{ x: number; y: number }>, victim: number): boolean {
+  const v = positions[victim];
+  const vBox = {
+    left: v.x - CARD_W / 2,
+    right: v.x - CARD_W / 2 + VERDICT_W,
+    top: v.y - CARD_H / 2,
+    bottom: v.y - CARD_H / 2 + VERDICT_H,
+  };
+  for (let j = 0; j < positions.length; j++) {
+    if (j === victim) continue;
+    // Only a problem if j renders in front of victim. Visually-lower (larger y)
+    // ends up on top after z-assignment; victim 0 (subject) always wins.
+    if (victim === 0) continue;
+    if (positions[j].y <= v.y) continue;
+    const p = positions[j];
+    const pBox = { left: p.x - CARD_W / 2, right: p.x + CARD_W / 2, top: p.y - CARD_H / 2, bottom: p.y + CARD_H / 2 };
+    if (pBox.right < vBox.left || pBox.left > vBox.right) continue;
+    if (pBox.bottom < vBox.top || pBox.top > vBox.bottom) continue;
+    return true;
+  }
+  return false;
+}
+
+const SLOT_COUNT = 5;
+const rawPositions: Array<{ x: number; y: number; rotate: number }> = [];
+for (let i = 0; i < SLOT_COUNT; i++) rawPositions.push(drawPosition(i));
+
+for (let attempt = 0; attempt < 12; attempt++) {
+  let anyCollision = false;
+  for (let i = 0; i < SLOT_COUNT; i++) {
+    if (verdictOccluded(rawPositions, i)) {
+      anyCollision = true;
+      // Redraw the offending front-card: pick the lowest-positioned culprit and re-roll its slot.
+      let worst = -1;
+      for (let j = 0; j < SLOT_COUNT; j++) {
+        if (j === i) continue;
+        if (rawPositions[j].y > rawPositions[i].y) {
+          if (worst === -1 || rawPositions[j].y > rawPositions[worst].y) worst = j;
+        }
+      }
+      if (worst >= 0) rawPositions[worst] = drawPosition(worst);
+    }
+  }
+  if (!anyCollision) break;
+}
+
+// Z-order: visually lower (larger y) = closer to viewer.
+const sorted = rawPositions
+  .map((p, i) => ({ i, y: p.y }))
+  .sort((a, b) => a.y - b.y);
+const zRank = new Array<number>(SLOT_COUNT);
+sorted.forEach((entry, rank) => {
+  zRank[entry.i] = 2 + rank;
+});
+
+const cardPositions: Pos[] = rawPositions.map((p, i) => ({
+  x: Math.round(p.x),
+  y: Math.round(p.y),
+  rotate: +p.rotate.toFixed(1),
+  z: zRank[i],
+}));
 ---
 
 <Base title="AI Transparency Research" chrome="minimal" layout="bare">
@@ -162,7 +258,7 @@ const cardPositions = [
             <a
               class="claim-card"
               href={c.href}
-              style={`--pos-bottom:${Math.round(p.bottom)}px;--pos-right:${Math.round(p.right)}px;--pos-rotate:${p.rotate.toFixed(1)}deg;--pos-z:${c.isSubject ? 6 : p.z}`}
+              style={`--pos-x:${p.x}px;--pos-y:${p.y}px;--pos-rotate:${p.rotate}deg;--pos-z:${c.isSubject ? 12 : p.z}`}
             >
               <span class="claim-card__header">
                 <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
@@ -455,16 +551,22 @@ const cardPositions = [
     overflow: visible;
     align-self: stretch;
     min-height: clamp(380px, 55vh, 600px);
-    /* negate hero's right padding so cards can reach and clip at the viewport edge */
-    margin-right: calc(-1 * clamp(var(--space-lg), 4vw, var(--space-2xl)));
+    /* Scales the per-card (x, y) offsets independently so the cluster can tighten
+       horizontally and stretch vertically on narrow viewports. */
+    --scatter-scale-x: 1;
+    --scatter-scale-y: 1;
   }
 
   .claim-card {
     position: absolute;
-    bottom: var(--pos-bottom);
-    right: var(--pos-right);
+    top: 50%;
+    left: 50%;
     z-index: var(--pos-z);
-    transform: rotate(var(--pos-rotate, 0deg));
+    --base-transform:
+      translate(-50%, -50%)
+      translate(calc(var(--pos-x, 0px) * var(--scatter-scale-x)),
+                calc(var(--pos-y, 0px) * var(--scatter-scale-y)));
+    transform: var(--base-transform) rotate(var(--pos-rotate, 0deg));
     width: 290px;
     aspect-ratio: 5 / 3; /* index card landscape — ~174px tall */
     display: flex;
@@ -520,12 +622,13 @@ const cardPositions = [
   }
 
   .claim-card:hover {
-    transform: rotate(0deg) translateY(-7px) scale(1.03);
+    transform: var(--base-transform) translateY(-7px) scale(1.03);
     box-shadow:
       0 4px 12px rgba(0, 0, 0, 0.12),
       0 16px 40px rgba(0, 0, 0, 0.2),
       0 32px 80px rgba(0, 0, 0, 0.14);
-    z-index: 10;
+    /* Above the subject-card z-bump (12) so hover always wins. */
+    z-index: 20;
   }
   :global([data-theme="dark"]) .claim-card:hover {
     box-shadow:
@@ -536,7 +639,7 @@ const cardPositions = [
   .claim-card:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 3px;
-    z-index: 10;
+    z-index: 20;
   }
 
   .claim-card__header {
@@ -730,31 +833,34 @@ const cardPositions = [
     animation: none;
   }
 
-  /* Small screens: single column, 3 index-card-shaped cards */
-  /* Mid-viewport: cards 3 & 5 bleed into the wordmark column — hide them */
+  /* Mid-viewport: tighten the cluster so outer cards don't crash into the wordmark column. */
   @media (max-width: 960px) and (min-width: 681px) {
-    .claim-card:nth-child(3),
-    .claim-card:nth-child(5) { display: none; }
-    /* pull card 2 to ~half-scatter-width so it stays clear of the wordmark column */
-    .claim-card:nth-child(2) { right: 145px; }
+    .claim-scatter {
+      --scatter-scale-x: 0.7;
+      --scatter-scale-y: 0.7;
+    }
   }
 
+  /* Mobile: stack hero into a single column. We hide the second mid-band card and
+     the second outer-band card so the surviving trio splits between hemispheres:
+     center, one mid card below center (slot 1, 45°), and one outer card above
+     center (slot 3, 225°). The cluster is tightened horizontally and stretched
+     vertically so the cards fan down the column instead of piling up. */
   @media (max-width: 680px) {
     .hero-body {
       grid-template-columns: 1fr;
     }
     .claim-scatter {
-      min-height: 290px;
-      margin-right: 0;
+      min-height: 460px;
+      --scatter-scale-x: 0.6;
+      --scatter-scale-y: 1.5;
     }
-    .claim-card { width: clamp(190px, 55vw, 260px); }
-
-    /* Triangle cluster of 3: left, right, center-bottom; corners may clip viewport edges */
-    .claim-card:nth-child(1) { top: 10px;  left: -2vw;  right: auto; transform: rotate(-3.5deg); z-index: 2; }
-    .claim-card:nth-child(2) { top:  4px;  left: auto;  right: -3vw; transform: rotate(2.5deg);  z-index: 3; }
-    .claim-card:nth-child(3) { top: 155px; left: calc(50% - 27.5vw); right: auto; transform: rotate(-4deg); z-index: 4; }
-
-    .claim-card:nth-child(4),
+    .claim-card {
+      width: clamp(190px, 55vw, 260px);
+      aspect-ratio: 7 / 5;
+    }
+    /* Hide slot 2 (second mid card) and slot 4 (second outer card). */
+    .claim-card:nth-child(3),
     .claim-card:nth-child(5) { display: none; }
   }
 </style>
