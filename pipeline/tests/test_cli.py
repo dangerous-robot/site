@@ -71,11 +71,6 @@ class TestRequiredEnvForModel:
         assert result == ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
 
     def test_chained_spec_does_not_short_circuit_on_test_leg(self) -> None:
-        """Ordering guard: a chained spec with "test" in one leg must NOT
-        skip enforcement on the other legs. Without the ``||``-first split
-        the whole spec would short-circuit to ``()`` via the ``"test" in
-        model`` branch and provider keys would go unchecked.
-        """
         result = _required_env_for_model("anthropic:claude-haiku-4-5-20251001||test")
         assert result == ("ANTHROPIC_API_KEY",)
 

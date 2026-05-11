@@ -259,12 +259,9 @@ def resolve_model(spec: str) -> "Model | str":
     its underlying `httpx.AsyncClient`. Call `resolve_model.cache_clear()`
     if env vars change at runtime (e.g. between tests).
 
-    A spec containing ``||`` is split into legs (trimmed) and wrapped in
-    PydanticAI's ``FallbackModel``: ``a||b`` tries ``a`` first and falls
-    back to ``b`` on ``ModelAPIError`` (PydanticAI's default catch
-    surface). The ``||`` branch must run before the prefix-startswith
-    branches so a chained spec is not mistakenly treated as a bare model
-    id with the literal "||" in the name.
+    A spec containing ``||`` is wrapped in PydanticAI's ``FallbackModel``
+    (fires on ``ModelAPIError``). The ``||`` branch must precede the
+    prefix checks so chained specs are not parsed as bare model ids.
     """
     if "||" in spec:
         from pydantic_ai.models.fallback import FallbackModel

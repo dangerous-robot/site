@@ -176,13 +176,8 @@ class TestResolveModel:
             resolve_model("greenpt:openai/gpt-oss-120b")
 
     def test_fallback_spec_returns_fallback_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """``a||b`` builds a ``FallbackModel`` whose legs are each resolved.
-
-        Mixing an Infomaniak leg (which resolves to an ``OpenAIChatModel``)
-        with an Anthropic passthrough leg (which resolves to a bare string,
-        accepted by ``FallbackModel``'s ``Model | str`` signature) covers
-        both shapes the splitter can produce.
-        """
+        """Mixes an Infomaniak leg (Model instance) with an Anthropic leg
+        (passthrough string) to cover both shapes the splitter produces."""
         monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
         monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
         resolve_model.cache_clear()
