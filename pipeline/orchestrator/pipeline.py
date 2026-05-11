@@ -24,6 +24,7 @@ import asyncio
 import datetime
 import logging
 import os
+import traceback
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -53,7 +54,7 @@ from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
-from common.models import DEFAULT_MODEL, AgentName, resolve_model
+from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
 from ingestor.agent import IngestorDeps, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -69,6 +70,28 @@ _NULL_RESPONSE_MSG = "Invalid response from"
 _NULL_BODY_RETRIES = 2
 _NULL_BODY_RETRY_DELAY_S = 45.0
 _RATE_LIMIT_RETRY_DELAY_S = 90.0
+
+
+def _failure_from_exc(
+    exc: BaseException,
+    *,
+    step: FailureStep,
+    agent: str | None,
+    model: str | None,
+    timeout_s: float | None,
+) -> FailureInfo:
+    """Build a FailureInfo from an exception, capturing a short traceback head."""
+    tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    head_lines = tb.splitlines()[:12]
+    return FailureInfo(
+        step=step,
+        agent=agent,
+        model=model,
+        error_class=type(exc).__name__,
+        error_message=str(exc) or type(exc).__name__,
+        timeout_s=timeout_s,
+        traceback_head="\n".join(head_lines) if head_lines else None,
+    )
 
 
 class VerificationResult(BaseModel):
@@ -110,6 +133,10 @@ class VerificationResult(BaseModel):
     # Per-sub-question queries from the planner. Used to render the audit
     # sidecar's `sub_questions:` block; not part of the on-disk claim file.
     queries_by_sub_question: dict[str, list[str]] = Field(default_factory=dict, exclude=True)
+    # First fatal agent failure observed during the run, if any. Persisted to
+    # the audit sidecar (pipeline_run.failure) so blocked runs can be triaged
+    # without grepping logs.
+    failure: FailureInfo | None = Field(default=None, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -403,7 +430,7 @@ async def verify_claim(
             # Step 3: Analyst
             say("  › Analysing")
             logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
-            analyst_out = await _analyse_claim(
+            analyst_out, analyst_failure = await _analyse_claim(
                 entity_name, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
@@ -412,6 +439,8 @@ async def verify_claim(
 
             if not analyst_out:
                 result.errors.append("Analyst failed to produce an assessment")
+                if analyst_failure is not None and result.failure is None:
+                    result.failure = analyst_failure
                 if cfg.show_progress:
                     progress("  ! analyst failed to produce an assessment")
                 return result
@@ -804,15 +833,17 @@ async def _run_with_null_retry(
 ) -> tuple:
     """Run an agent, retrying on Infomaniak null-body responses.
 
-    Returns (output, messages). output is None on final failure.
-    The retry loop sits outside asyncio.wait_for so each call gets its own
-    timeout and the retry window is additive — no timeout budget conflict.
+    Returns (output, messages, last_exc). output is None on final failure;
+    last_exc is None on success and the final raised exception otherwise so
+    callers can build a structured FailureInfo. The retry loop sits outside
+    asyncio.wait_for so each call gets its own timeout and the retry window
+    is additive — no timeout budget conflict.
     """
     for attempt in range(retries + 1):
         with capture_run_messages() as messages:
             try:
                 res = await asyncio.wait_for(agent.run(prompt), timeout=timeout_s)
-                return res.output, messages
+                return res.output, messages, None
             except Exception as exc:
                 if (
                     isinstance(exc, UnexpectedModelBehavior)
@@ -840,7 +871,7 @@ async def _run_with_null_retry(
                 logger.exception("Agent failed: %s", exc)
                 for i, msg in enumerate(messages):
                     logger.error("Agent run message [%d]: %r", i, msg)
-                return None, messages
+                return None, messages, exc
 
 
 async def _analyse_claim(
@@ -850,7 +881,10 @@ async def _analyse_claim(
     cfg: VerifyConfig,
     resolved_entity: ResolvedEntity | None = None,
     sub_questions: list[SubQuestion] | None = None,
-) -> AnalystOutput | None:
+) -> tuple[AnalystOutput | None, FailureInfo | None]:
+    """Run the analyst agent. Returns (output, failure) — failure is set
+    only when output is None, so callers can persist structured failure
+    detail into the audit sidecar and progress line."""
     prompt = build_analyst_prompt(
         entity_name,
         claim_text,
@@ -858,24 +892,36 @@ async def _analyse_claim(
         resolved_entity=resolved_entity,
         sub_questions=sub_questions,
     )
+    model_spec = cfg.model_for("analyst")
+
+    def _analyst_failure(exc: BaseException | None) -> FailureInfo | None:
+        if exc is None:
+            return None
+        return _failure_from_exc(
+            exc, step="analyst", agent="analyst",
+            model=model_spec, timeout_s=cfg.analyst_timeout_s,
+        )
+
     if resolved_entity is not None:
-        with verdict_only_agent.override(model=resolve_model(cfg.model_for("analyst"))):
-            verdict_assessment, _ = await _run_with_null_retry(
+        with verdict_only_agent.override(model=resolve_model(model_spec)):
+            verdict_assessment, _, exc = await _run_with_null_retry(
                 verdict_only_agent, prompt, cfg.analyst_timeout_s
             )
         if verdict_assessment is None:
-            return None
+            return None, _analyst_failure(exc)
         entity_resolution = EntityResolution(
             entity_name=resolved_entity.entity_name,
             entity_type=resolved_entity.entity_type,
             entity_description=resolved_entity.entity_description,
             aliases=resolved_entity.aliases,
         )
-        return AnalystOutput(entity=entity_resolution, verdict=verdict_assessment)
-    else:
-        with analyst_agent.override(model=resolve_model(cfg.model_for("analyst"))):
-            output, _ = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
-        return output
+        return AnalystOutput(entity=entity_resolution, verdict=verdict_assessment), None
+
+    with analyst_agent.override(model=resolve_model(model_spec)):
+        output, _, exc = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
+    if output is None:
+        return None, _analyst_failure(exc)
+    return output, None
 
 
 async def _audit_claim(
@@ -897,7 +943,7 @@ async def _audit_claim(
     prompt = build_auditor_prompt(bundle)
 
     with auditor_agent.override(model=resolve_model(cfg.model_for("auditor"))):
-        assessment, _ = await _run_with_null_retry(auditor_agent, prompt, cfg.auditor_timeout_s)
+        assessment, _, _exc = await _run_with_null_retry(auditor_agent, prompt, cfg.auditor_timeout_s)
 
     if assessment is None:
         return None
@@ -1051,7 +1097,7 @@ async def research_claim(
             # Step 4: Analyse claim (analyst identifies entity)
             progress("  › Analysing", log=False)
             logger.info("Step 4/5: Analysing claim...")
-            analyst_out = await _analyse_claim(
+            analyst_out, analyst_failure = await _analyse_claim(
                 None, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
@@ -1060,6 +1106,8 @@ async def research_claim(
 
             if not analyst_out:
                 result.errors.append("Analyst failed to produce an assessment")
+                if analyst_failure is not None and result.failure is None:
+                    result.failure = analyst_failure
                 return result
 
             result.entity = analyst_out.entity.entity_name
@@ -1145,15 +1193,29 @@ def _blocked_reason_label(
     reason_value: str,
     vr_errors: list[str],
     extra: str | None = None,
+    failure: FailureInfo | None = None,
 ) -> str:
     """Format a BlockedReason value with the most informative upstream cause.
 
-    Prefers ``extra`` if provided, otherwise the first non-noise message
-    from ``vr_errors``, otherwise the first error, otherwise the bare
+    When a structured ``failure`` is available it dominates, producing a
+    triage-friendly label that names the error class, the model that ran,
+    and the timeout budget it was given:
+
+        analyst_error: TimeoutError on infomaniak:openai/gpt-oss-120b after 120.0s
+
+    Otherwise prefers ``extra`` if provided, then the first non-noise
+    message from ``vr_errors``, then the first error, then the bare
     reason. The "no relevant URLs" string is treated as noise because it
     is downstream of the real cause (planner timeout, search failure,
     etc.) and obscures it.
     """
+    if failure is not None:
+        parts = [failure.error_class]
+        if failure.model:
+            parts.append(f"on {failure.model}")
+        if failure.timeout_s is not None and failure.error_class == "TimeoutError":
+            parts.append(f"after {failure.timeout_s:g}s")
+        return f"{reason_value}: " + " ".join(parts)
     cause = extra
     if cause is None:
         non_noise = [e for e in vr_errors if not e.startswith(_NO_URLS_ERR)]
@@ -1903,7 +1965,7 @@ async def onboard_entity(
                             blocked_reason=vr.blocked_reason,
                             criteria_slug=slug,
                         )
-                        reason_label = _blocked_reason_label(vr.blocked_reason.value, vr.errors)
+                        reason_label = _blocked_reason_label(vr.blocked_reason.value, vr.errors, failure=vr.failure)
                         result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,
@@ -1921,6 +1983,7 @@ async def onboard_entity(
                                 vr.sub_question_coverage,
                                 vr.queries_by_sub_question,
                             ),
+                            failure=vr.failure,
                         )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",
@@ -1965,7 +2028,7 @@ async def onboard_entity(
                             blocked_reason=BlockedReason.ANALYST_ERROR,
                             criteria_slug=slug,
                         )
-                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors)
+                        reason_label = _blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, failure=vr.failure)
                         result.claims_blocked.append((str(blocked_path.relative_to(repo_root)), reason_label))
                         _write_audit_sidecar(
                             claim_path=blocked_path,
@@ -1981,6 +2044,7 @@ async def onboard_entity(
                                 vr.sub_question_coverage,
                                 vr.queries_by_sub_question,
                             ),
+                            failure=vr.failure,
                         )
                         progress(
                             "[%d/%d] Blocked: %s (%s)",

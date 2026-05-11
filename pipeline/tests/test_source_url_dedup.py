@@ -321,7 +321,7 @@ class TestVerifyClaimSurfacesCachedSources:
             raise AssertionError("_ingest_urls must not run when every URL is cached")
 
         async def _fake_analyse(*args, **kwargs):
-            return None  # short-circuits before auditor; we only care about cached_sources
+            return None, None  # short-circuits before auditor; we only care about cached_sources
 
         async def _fake_audit(*args, **kwargs):
             return None

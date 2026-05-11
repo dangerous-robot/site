@@ -6,6 +6,7 @@ PydanticAI Model instances when needed.
 
 import logging
 import os
+from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
@@ -183,7 +184,28 @@ class VerdictSeverity(str, Enum):
     OPPOSITE = "opposite"
 
 
-DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
+DEFAULT_MODEL = "infomaniak:openai/gpt-oss-120b"
+
+
+FailureStep = Literal["research", "ingest", "analyst", "auditor"]
+
+
+@dataclass
+class FailureInfo:
+    """Structured description of the first fatal error in a pipeline run.
+
+    Populated when an agent call returns None (timeout, null body past
+    retries, schema/validation error). Persisted under ``pipeline_run.failure``
+    in the audit sidecar so triage can happen without log access.
+    """
+
+    step: FailureStep
+    agent: str | None
+    model: str | None
+    error_class: str
+    error_message: str
+    timeout_s: float | None = None
+    traceback_head: str | None = None
 
 
 def _model_needs_reasoning_strip(model_id: str) -> bool:

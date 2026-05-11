@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import datetime
 import logging
 from pathlib import Path
@@ -20,6 +21,7 @@ from common.models import (
     Category,
     Confidence,
     EntityType,
+    FailureInfo,
     Verdict,
 )
 from common.source_classification import classify_source_type, independence_for_source_type
@@ -377,6 +379,7 @@ def _write_audit_sidecar(
     research_trace: dict | None = None,
     sub_questions_block: list[dict] | None = None,
     reset_review: bool = False,
+    failure: FailureInfo | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -460,13 +463,18 @@ def _write_audit_sidecar(
                 decorated_sources.append(entry)
         sources_consulted = decorated_sources
 
+    pipeline_run_block: dict = {
+        "ran_at": ran_at.isoformat(),
+        "model": model,
+        "agents": agents_run,
+    }
+    if failure is not None:
+        pipeline_run_block["failure"] = {
+            k: v for k, v in dataclasses.asdict(failure).items() if v is not None
+        }
     sidecar_data: dict = {
         "schema_version": 1,
-        "pipeline_run": {
-            "ran_at": ran_at.isoformat(),
-            "model": model,
-            "agents": agents_run,
-        },
+        "pipeline_run": pipeline_run_block,
         "models_used": models_used,
         "research": research_block,
     }
@@ -575,10 +583,15 @@ def _write_draft_entity_file(
 
 
 def _entity_body(history_markdown: str | None) -> str:
-    """Normalize the history markdown to a body string with a trailing newline."""
+    """Normalize the history markdown to a body string with a trailing newline.
+
+    Strips trailing whitespace per-line so markdownlint MD009 doesn't fire on
+    stray spaces the enricher LLM sometimes emits at paragraph ends.
+    """
     if not history_markdown:
         return ""
-    return history_markdown.rstrip() + "\n"
+    cleaned = "\n".join(line.rstrip() for line in history_markdown.splitlines())
+    return cleaned.rstrip() + "\n"
 
 
 def update_entity_enrichment(

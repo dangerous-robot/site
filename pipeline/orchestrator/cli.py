@@ -493,10 +493,18 @@ def step_analyze(
     async def _run():
         return await _analyse_claim(entity_name, claim_text, source_dicts, cfg)
 
-    analyst_out = asyncio.run(_run())
+    analyst_out, analyst_failure = asyncio.run(_run())
 
     if analyst_out is None:
-        click.echo("Error: analyst agent failed to produce output.", err=True)
+        if analyst_failure is not None:
+            click.echo(
+                f"Error: analyst agent failed: {analyst_failure.error_class}: "
+                f"{analyst_failure.error_message} "
+                f"(model={analyst_failure.model}, timeout_s={analyst_failure.timeout_s})",
+                err=True,
+            )
+        else:
+            click.echo("Error: analyst agent failed to produce output.", err=True)
         sys.exit(1)
 
     # Always print the result

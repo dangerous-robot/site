@@ -413,7 +413,7 @@ class TestThresholdEnforcement:
         async def _fake_analyse(*args, **kwargs):
             nonlocal analyst_called
             analyst_called = True
-            return None
+            return None, None
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
         monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
@@ -500,7 +500,7 @@ class TestThresholdEnforcement:
         async def _fake_analyse(*args, **kwargs):
             nonlocal analyst_called
             analyst_called = True
-            return None
+            return None, None
 
         async def _fake_audit(*args, **kwargs):
             return None
@@ -559,7 +559,7 @@ class TestVerifyClaimWithResolvedEntity:
 
         async def _fake_analyse(*args, **kwargs):
             received_kwargs.update(kwargs)
-            return None
+            return None, None
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
         monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
@@ -657,7 +657,7 @@ class TestResearchClaimWithResolvedEntity:
                     verification_level=VerificationLevel.PARTIALLY_VERIFIED,
                     seo_title="ChatGPT trains on data",
                 ),
-            )
+            ), None
 
         async def _fake_audit(*args, **kwargs):
             return None
@@ -733,7 +733,7 @@ class TestResearchClaimWithResolvedEntity:
                     verification_level=VerificationLevel.PARTIALLY_VERIFIED,
                     seo_title="ChatGPT trains on data",
                 ),
-            )
+            ), None
 
         async def _fake_audit(*args, **kwargs):
             return None
