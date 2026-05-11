@@ -97,6 +97,17 @@ Goal: Stop creating duplicate sources/claims when the pipeline encounters a URL 
 
 ---
 
+## arXiv ingest hardening (2026-05-10)
+
+Goal: Stop the two arXiv-specific failure modes surfaced while auditing recent dr runs. Both leaked bad metadata into a published verdict (`research/claims/gemini/discloses-energy-sourcing.md` cap_rationale describes Google's own preprint as an "independent expert assessment").
+
+| Work Item | Notes |
+|-----------|-------|
+| Canonicalize arXiv URLs at ingest | Treat `arxiv.org/abs/{id}`, `arxiv.org/html/{id}v{n}`, and `arxiv.org/pdf/{id}` as one source. Today both `arxiv:2508.15734` and `arxiv:2502.18505` exist as two separate source files (e.g., `2025/250815734.md` from `abs/` and `2025/250815734v1.md` from `html/v1`) with conflicting frontmatter. The `chatgpt/excludes-frontier-models` audit cites both variants of 2502.18505 as if they were independent evidence. Composes with the existing URL-dedup work in [pipeline-dedup-detection_stub.md](plans/drafts/pipeline-dedup-detection_stub.md) — arXiv canonicalization is one specific rule in the broader canonicalizer. |
+| Detect corporate authorship on arXiv abstracts | When an arXiv abstract names a corporate AI lab (Google/DeepMind, Anthropic, OpenAI, Meta, Microsoft Research, etc.) as an author affiliation, force `independence: first-party` and `source_type: primary` against that entity in the ingestor's frontmatter pass. Today the `abs/` ingestion of `2508.15734` (Google's own Gemini environmental-impact paper) was written as `publisher: arXiv / independence: independent / source_type: secondary`; the `html/v1` ingestion of the same paper was correctly written as `publisher: Google / independence: first-party / source_type: primary`. The wrongly-labeled variant is what flowed through to the published Gemini verdict. |
+
+---
+
 ## PDF attachment as alternate source content surface
 
 Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/451 origins) as a content surface for both the ingestion agent and the human reviewer. Pairs with the fail-fast plan — when the ingestor can't fetch, a pre-attached PDF is the fallback.
