@@ -44,6 +44,7 @@ _ENTITY_TYPE_PLACEHOLDERS: dict[str, str] = {
 
 _PROVIDER_ENV: dict[str, tuple[str, ...]] = {
     "infomaniak": ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID"),
+    "greenpt": ("GREENPT_API_KEY",),
     "anthropic": ("ANTHROPIC_API_KEY",),
     "openai": ("OPENAI_API_KEY",),
     "google-gla": ("GEMINI_API_KEY",),
@@ -58,7 +59,19 @@ def _required_env_for_model(model: str) -> tuple[str, ...]:
     Specs without a recognized provider prefix raise a click.UsageError so
     the failure surfaces upfront with a clear message rather than as a deep
     SDK error like "OPENAI_API_KEY not set" mid-run.
+
+    For chained specs (``a||b``), this recurses per leg and returns the
+    stable-ordered union of required env vars. The ``||`` split must run
+    before the ``"test" in model`` short-circuit -- otherwise a chained
+    spec like ``"anthropic:claude||test"`` would silently return ``()``
+    and let provider-keyed legs slip past the API-key check.
     """
+    if "||" in model:
+        seen: dict[str, None] = {}
+        for leg in model.split("||"):
+            for var in _required_env_for_model(leg.strip()):
+                seen.setdefault(var, None)
+        return tuple(seen)
     if "test" in model:
         return ()
     prefix, sep, _ = model.partition(":")

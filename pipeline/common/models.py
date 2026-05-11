@@ -258,7 +258,30 @@ def resolve_model(spec: str) -> "Model | str":
     enter the provider, so a fresh `OpenAIProvider` per call would leak
     its underlying `httpx.AsyncClient`. Call `resolve_model.cache_clear()`
     if env vars change at runtime (e.g. between tests).
+
+    A spec containing ``||`` is split into legs (trimmed) and wrapped in
+    PydanticAI's ``FallbackModel``: ``a||b`` tries ``a`` first and falls
+    back to ``b`` on ``ModelAPIError`` (PydanticAI's default catch
+    surface). The ``||`` branch must run before the prefix-startswith
+    branches so a chained spec is not mistakenly treated as a bare model
+    id with the literal "||" in the name.
     """
+    if "||" in spec:
+        from pydantic_ai.models.fallback import FallbackModel
+
+        legs = [resolve_model(leg.strip()) for leg in spec.split("||")]
+        return FallbackModel(*legs)
+    if spec.startswith("greenpt:"):
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        model_id = spec.split(":", 1)[1]
+        try:
+            api_key = os.environ["GREENPT_API_KEY"]
+        except KeyError as e:
+            raise RuntimeError(f"GreenPT provider requires {e.args[0]}") from e
+        provider = OpenAIProvider(base_url="https://api.greenpt.ai/v1", api_key=api_key)
+        return OpenAIChatModel(model_id, provider=provider)
     if spec.startswith("infomaniak:"):
         from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.profiles.openai import OpenAIModelProfile

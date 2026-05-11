@@ -160,6 +160,58 @@ class TestResolveModel:
         # Default is "auto"; the scrubber only fires for Mistral.
         assert profile.openai_chat_send_back_thinking_parts != False  # noqa: E712
 
+    def test_greenpt_builds_openai_chat_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GREENPT_API_KEY", "test-key")
+        resolve_model.cache_clear()
+        from pydantic_ai.models.openai import OpenAIChatModel
+
+        model = resolve_model("greenpt:openai/gpt-oss-120b")
+        assert isinstance(model, OpenAIChatModel)
+        assert model.model_name == "openai/gpt-oss-120b"
+
+    def test_greenpt_missing_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("GREENPT_API_KEY", raising=False)
+        resolve_model.cache_clear()
+        with pytest.raises(RuntimeError, match="GREENPT"):
+            resolve_model("greenpt:openai/gpt-oss-120b")
+
+    def test_fallback_spec_returns_fallback_model(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """``a||b`` builds a ``FallbackModel`` whose legs are each resolved.
+
+        Mixing an Infomaniak leg (which resolves to an ``OpenAIChatModel``)
+        with an Anthropic passthrough leg (which resolves to a bare string,
+        accepted by ``FallbackModel``'s ``Model | str`` signature) covers
+        both shapes the splitter can produce.
+        """
+        monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
+        monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
+        resolve_model.cache_clear()
+        from pydantic_ai.models.fallback import FallbackModel
+        from pydantic_ai.models.openai import OpenAIChatModel
+
+        model = resolve_model(
+            "infomaniak:openai/gpt-oss-120b||anthropic:claude-haiku-4-5-20251001"
+        )
+        assert isinstance(model, FallbackModel)
+        assert len(model.models) == 2
+        # First leg is the resolved Infomaniak model.
+        assert isinstance(model.models[0], OpenAIChatModel)
+        # Second leg goes through ``infer_model`` inside ``FallbackModel.__init__``
+        # which turns the bare string into a concrete Anthropic model.
+        assert "claude" in model.models[1].model_name.lower()
+
+    def test_fallback_spec_trims_whitespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
+        monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
+        resolve_model.cache_clear()
+        from pydantic_ai.models.fallback import FallbackModel
+
+        model = resolve_model(
+            "infomaniak:openai/gpt-oss-120b  ||  anthropic:claude-haiku-4-5-20251001"
+        )
+        assert isinstance(model, FallbackModel)
+        assert model.models[0].model_name == "openai/gpt-oss-120b"
+
 
 class TestModelNeedsReasoningStrip:
     @pytest.mark.parametrize(

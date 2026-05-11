@@ -53,6 +53,36 @@ class TestRequiredEnvForModel:
             "INFOMANIAK_PRODUCT_ID",
         )
 
+    def test_greenpt_requires_api_key(self) -> None:
+        assert _required_env_for_model("greenpt:openai/gpt-oss-120b") == ("GREENPT_API_KEY",)
+
+    def test_chained_spec_returns_union(self) -> None:
+        """``a||b`` returns the stable-ordered union of both legs' required env vars."""
+        result = _required_env_for_model(
+            "anthropic:claude-haiku-4-5-20251001||greenpt:openai/gpt-oss-120b"
+        )
+        assert result == ("ANTHROPIC_API_KEY", "GREENPT_API_KEY")
+
+    def test_chained_spec_dedupes_repeated_vars(self) -> None:
+        """Two Infomaniak legs union to a single pair of Infomaniak vars."""
+        result = _required_env_for_model(
+            "infomaniak:openai/gpt-oss-120b||infomaniak:mistral24b"
+        )
+        assert result == ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID")
+
+    def test_chained_spec_does_not_short_circuit_on_test_leg(self) -> None:
+        """Ordering guard: a chained spec with "test" in one leg must NOT
+        skip enforcement on the other legs. Without the ``||``-first split
+        the whole spec would short-circuit to ``()`` via the ``"test" in
+        model`` branch and provider keys would go unchecked.
+        """
+        result = _required_env_for_model("anthropic:claude-haiku-4-5-20251001||test")
+        assert result == ("ANTHROPIC_API_KEY",)
+
+    def test_single_test_spec_still_short_circuits(self) -> None:
+        """The ``"test" in model`` branch still applies to non-chained specs."""
+        assert _required_env_for_model("test") == ()
+
     def test_bare_string_rejected_with_usage_error(self) -> None:
         with pytest.raises(click.UsageError) as exc:
             _required_env_for_model("gpt-oss-120b")
