@@ -47,7 +47,7 @@ const auditSchema = z.object({
     ingested: z.boolean(),
     acquisition: z.object({
       stage: z.enum(['research', 'ingest']),
-      origin: z.enum(['brave', 'tavily', 'arxiv', 's2', 'openalex', 'edgar']),
+      origin: z.enum(['brave', 'tavily', 'arxiv', 's2', 'openalex', 'edgar']).optional(),
       recovered_via: z.enum(['archive_org']).optional(),
       outcome: z.enum(['matched', 'recovered']).optional(),
       query: z.string().optional(),
