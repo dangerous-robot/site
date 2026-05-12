@@ -27,22 +27,27 @@ const ICONS: Record<
 interface Cell {
   type: CellType;
   detail?: string;
+  footnote?: string;
 }
 
 interface Product {
   key: string;
   name: string;
   url: string;
+  status: 'active' | 'excluded';
+  excluded_reason?: string;
 }
 
-interface Dimension {
+interface Group {
+  key: string;
   label: string;
-  cells: Record<string, Cell>;
 }
 
-interface ExcludedProduct {
-  name: string;
-  reason: string;
+interface Feature {
+  key: string;
+  label: string;
+  group: string;
+  cells: Record<string, Cell>;
 }
 
 interface Footnote {
@@ -53,24 +58,31 @@ interface Footnote {
 interface MatrixData {
   lede?: string;
   caption?: string;
+  groups: Group[];
   products: Product[];
-  dimensions: Dimension[];
-  excluded_products?: ExcludedProduct[];
+  features: Feature[];
   footnotes?: Footnote[];
 }
 
 interface Props {
-  data: unknown;
+  data: MatrixData;
 }
 
-const { data } = Astro.props as { data: MatrixData };
-const products = Array.isArray(data?.products) ? data.products : [];
-const dimensions = Array.isArray(data?.dimensions) ? data.dimensions : [];
-const excluded = Array.isArray(data?.excluded_products) ? data.excluded_products : [];
-const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
+const { data } = Astro.props;
+const groups = data.groups ?? [];
+const activeProducts = (data.products ?? []).filter((p) => p.status === 'active');
+const features = data.features ?? [];
+const footnotes = data.footnotes ?? [];
+
+const featuresByGroup = new Map<string, Feature[]>();
+for (const group of groups) featuresByGroup.set(group.key, []);
+for (const feature of features) {
+  const bucket = featuresByGroup.get(feature.group);
+  if (bucket) bucket.push(feature);
+}
 ---
 <div class="responsible-matrix">
-  {data?.lede && <p class="lede">{data.lede}</p>}
+  {data.lede && <p class="lede">{data.lede}</p>}
 
   <section id="chatbots" class="matrix-section">
     <h2>
@@ -85,10 +97,10 @@ const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
         <thead>
           <tr>
             <th scope="col" class="dim-col">
-              <span class="sr-only">Dimension</span>
+              <span class="sr-only">Feature</span>
             </th>
-            {products.map((p) => (
-              <th scope="col" class="product-col">
+            {activeProducts.map((p) => (
+              <th scope="col" class="product-col" data-product-key={p.key}>
                 <a href={p.url} target="_blank" rel="noopener noreferrer">
                   {p.name}
                   <ExternalLink size={12} aria-hidden="true" />
@@ -97,51 +109,49 @@ const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
             ))}
           </tr>
         </thead>
-        <tbody>
-          {dimensions.map((dim) => (
-            <tr>
-              <th scope="row" class="dim-label">{dim.label}</th>
-              {products.map((p) => {
-                const cell = dim.cells?.[p.key] ?? { type: 'na' as CellType };
-                const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
-                return (
-                  <td class={`cell cell--${cell.type}`}>
-                    {icon && (
-                      <span class="cell-inline">
-                        <icon.Icon size={16} aria-hidden="true" />
-                        <span class="sr-only">{icon.srLabel}</span>
-                        {cell.detail && <span class="detail">{cell.detail}</span>}
-                      </span>
-                    )}
-                    {cell.type === 'text' && (
-                      <span class="detail">{cell.detail}</span>
-                    )}
-                    {cell.type === 'na' && (
-                      <span class="na" aria-label="Not applicable">&ndash;</span>
-                    )}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
+        {groups.map((group) => {
+          const rows = featuresByGroup.get(group.key) ?? [];
+          if (rows.length === 0) return null;
+          return (
+            <tbody data-group={group.key}>
+              <tr class="ra-group-header">
+                <th colspan={1 + activeProducts.length} scope="rowgroup">
+                  {group.label}
+                </th>
+              </tr>
+              {rows.map((feature) => (
+                <tr>
+                  <th scope="row" class="dim-label">{feature.label}</th>
+                  {activeProducts.map((p) => {
+                    const cell = feature.cells?.[p.key] ?? { type: 'na' as CellType };
+                    const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
+                    return (
+                      <td class={`cell cell--${cell.type}`} data-product-key={p.key}>
+                        {icon && (
+                          <span class="cell-inline">
+                            <icon.Icon size={16} aria-hidden="true" />
+                            <span class="sr-only">{icon.srLabel}</span>
+                            {cell.detail && <span class="detail">{cell.detail}</span>}
+                          </span>
+                        )}
+                        {cell.type === 'text' && (
+                          <span class="detail">{cell.detail}</span>
+                        )}
+                        {cell.type === 'na' && (
+                          <span class="na" aria-label="Not applicable">&ndash;</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          );
+        })}
       </table>
     </div>
 
-    {data?.caption && <p class="caption">{data.caption}</p>}
-
-    {excluded.length > 0 && (
-      <div class="excluded">
-        <h3>Not listed above</h3>
-        <ul>
-          {excluded.map((p) => (
-            <li>
-              <strong>{p.name}</strong> &mdash; {p.reason}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
+    {data.caption && <p class="caption">{data.caption}</p>}
 
     {footnotes.length > 0 && (
       <details class="resources-details">
@@ -246,6 +256,18 @@ const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
     color: var(--color-text-heading);
   }
 
+  .ra-group-header th {
+    font-family: var(--font-heading);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding-top: var(--space-md);
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
   .cell {
     color: var(--color-text);
   }
@@ -315,37 +337,6 @@ const footnotes = Array.isArray(data?.footnotes) ? data.footnotes : [];
     font-size: var(--font-size-xs);
     color: var(--color-text-faint);
     margin: var(--space-md) 0 var(--space-xl);
-  }
-
-  .excluded {
-    margin: var(--space-xl) 0;
-  }
-
-  .excluded h3 {
-    font-family: var(--font-body);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--color-text-heading);
-    margin: 0 0 var(--space-sm);
-  }
-
-  .excluded ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
-  .excluded li {
-    font-size: var(--font-size-sm);
-    color: var(--color-text);
-    line-height: var(--line-height-body);
-  }
-
-  .excluded strong {
-    color: var(--color-text-heading);
   }
 
   .resources-details {
