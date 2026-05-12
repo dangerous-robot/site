@@ -1,0 +1,156 @@
+---
+interface Product {
+  key: string;
+  name: string;
+  status: 'active' | 'excluded';
+}
+
+interface Group {
+  key: string;
+  label: string;
+}
+
+interface Props {
+  products: Product[];
+  groups: Group[];
+}
+
+const { products, groups } = Astro.props;
+const activeProducts = products.filter((p) => p.status === 'active');
+---
+<div class="ra-filters" role="group" aria-label="Matrix filters">
+  <div class="ra-filters__row">
+    <span class="ra-filters__label">Products</span>
+    <div class="ra-filters__chips">
+      {activeProducts.map((p) => (
+        <span class="ra-chip-wrap">
+          <button
+            type="button"
+            class="ra-chip"
+            aria-pressed="false"
+            data-filter-product={p.key}
+          >{p.name}</button>
+          <button
+            type="button"
+            class="ra-chip-only"
+            aria-label={`Show only ${p.name}`}
+            data-filter-only-product={p.key}
+          >only</button>
+        </span>
+      ))}
+    </div>
+  </div>
+  <div class="ra-filters__row">
+    <span class="ra-filters__label">Groups</span>
+    <div class="ra-filters__chips">
+      {groups.map((g) => (
+        <span class="ra-chip-wrap">
+          <button
+            type="button"
+            class="ra-chip"
+            aria-pressed="false"
+            data-filter-group={g.key}
+          >{g.label}</button>
+          <button
+            type="button"
+            class="ra-chip-only"
+            aria-label={`Show only ${g.label}`}
+            data-filter-only-group={g.key}
+          >only</button>
+        </span>
+      ))}
+    </div>
+  </div>
+  <div class="ra-filters__row ra-filters__row--reset">
+    <button
+      type="button"
+      class="ra-chip ra-chip--reset"
+      data-filter-reset
+      aria-label="Show all products and groups"
+    >Reset</button>
+  </div>
+</div>
+
+<style>
+  .ra-filters {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin: 0 0 var(--space-md);
+  }
+
+  .ra-filters__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .ra-filters__label {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    min-width: 4.5rem;
+  }
+
+  .ra-filters__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .ra-chip-wrap {
+    display: inline-flex;
+    align-items: stretch;
+  }
+
+  .ra-chip {
+    font: inherit;
+    font-size: var(--font-size-xs);
+    color: var(--color-text);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    cursor: pointer;
+    line-height: 1.3;
+  }
+
+  .ra-chip-wrap .ra-chip {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right-width: 0;
+  }
+
+  .ra-chip-only {
+    font: inherit;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding: 0.2rem 0.55rem;
+    cursor: pointer;
+    line-height: 1.3;
+  }
+
+  .ra-chip[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+  }
+
+  [data-contrast="high"] .ra-chip[aria-pressed="true"] {
+    outline: 1px solid var(--color-bg);
+    outline-offset: -3px;
+  }
+
+  .ra-chip--reset {
+    border-radius: 999px;
+    border-right-width: 1px;
+  }
+</style>

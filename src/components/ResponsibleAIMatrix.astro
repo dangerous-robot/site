@@ -1,6 +1,7 @@
 ---
 import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro';
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import ResponsibleAIFilters from './ResponsibleAIFilters.astro';
 
 type CellType =
   | 'yes'
@@ -84,7 +85,7 @@ for (const feature of features) {
 <div class="responsible-matrix">
   {data.lede && <p class="lede">{data.lede}</p>}
 
-  <section id="chatbots" class="matrix-section">
+  <section id="chatbots" class="ra-matrix matrix-section">
     <h2>
       Chatbots
       <a href="#top" class="return-top" aria-label="Return to top">
@@ -92,17 +93,30 @@ for (const feature of features) {
       </a>
     </h2>
 
-    <div class="table-scroll">
+    <ResponsibleAIFilters products={activeProducts} groups={groups} />
+
+    <div class="ra-matrix__scroll" role="region" aria-label="Feature comparison matrix" tabindex="0">
       <table class="matrix-table">
         <thead>
           <tr>
-            <th scope="col" class="dim-col">
+            <th scope="col" class="dim-col ra-feature-head">
               <span class="sr-only">Feature</span>
             </th>
             {activeProducts.map((p) => (
               <th scope="col" class="product-col" data-product-key={p.key}>
-                <a href={p.url} target="_blank" rel="noopener noreferrer">
-                  {p.name}
+                <button
+                  type="button"
+                  class="ra-col-toggle"
+                  aria-pressed="false"
+                  data-filter-product={p.key}
+                >{p.name}</button>
+                <a
+                  href={p.url}
+                  class="ra-product-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Visit ${p.name} site`}
+                >
                   <ExternalLink size={12} aria-hidden="true" />
                 </a>
               </th>
@@ -113,10 +127,16 @@ for (const feature of features) {
           const rows = featuresByGroup.get(group.key) ?? [];
           if (rows.length === 0) return null;
           return (
-            <tbody data-group={group.key}>
+            <tbody data-group={group.key} id={`ra-group-${group.key}`}>
               <tr class="ra-group-header">
                 <th colspan={1 + activeProducts.length} scope="rowgroup">
-                  {group.label}
+                  <button
+                    type="button"
+                    class="ra-group-toggle"
+                    aria-expanded="true"
+                    aria-controls={`ra-group-${group.key}`}
+                    data-filter-group-collapse={group.key}
+                  >{group.label}</button>
                 </th>
               </tr>
               {rows.map((feature) => (
@@ -168,6 +188,72 @@ for (const feature of features) {
   </section>
 </div>
 
+<script>
+  function initMatrix(root: HTMLElement) {
+    const readSet = (attr: string) => {
+      const v = root.getAttribute(attr);
+      return new Set(v ? v.split(/\s+/).filter(Boolean) : []);
+    };
+    const writeSet = (attr: string, set: Set<string>) => {
+      if (set.size === 0) root.removeAttribute(attr);
+      else root.setAttribute(attr, [...set].join(' '));
+    };
+    const syncProducts = () => {
+      const hidden = readSet('data-hidden-product');
+      root.querySelectorAll<HTMLButtonElement>('[data-filter-product]').forEach((el) => {
+        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterProduct!) ? 'true' : 'false');
+      });
+    };
+    const syncGroups = () => {
+      const hidden = readSet('data-hidden-group');
+      root.querySelectorAll<HTMLButtonElement>('[data-filter-group]').forEach((el) => {
+        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterGroup!) ? 'true' : 'false');
+      });
+    };
+    const allProductKeys = () =>
+      [...root.querySelectorAll<HTMLElement>('th[data-product-key]')].map((el) => el.dataset.productKey!);
+    const allGroupKeys = () =>
+      [...root.querySelectorAll<HTMLElement>('tbody[data-group]')].map((el) => el.dataset.group!);
+    root.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('button');
+      if (!btn || !root.contains(btn)) return;
+      const d = btn.dataset;
+      if (d.filterProduct) {
+        const s = readSet('data-hidden-product');
+        s.has(d.filterProduct) ? s.delete(d.filterProduct) : s.add(d.filterProduct);
+        writeSet('data-hidden-product', s);
+        syncProducts();
+      } else if (d.filterGroup) {
+        const s = readSet('data-hidden-group');
+        s.has(d.filterGroup) ? s.delete(d.filterGroup) : s.add(d.filterGroup);
+        writeSet('data-hidden-group', s);
+        syncGroups();
+      } else if (d.filterOnlyProduct) {
+        writeSet('data-hidden-product', new Set(allProductKeys().filter((k) => k !== d.filterOnlyProduct)));
+        syncProducts();
+      } else if (d.filterOnlyGroup) {
+        writeSet('data-hidden-group', new Set(allGroupKeys().filter((k) => k !== d.filterOnlyGroup)));
+        syncGroups();
+      } else if (d.filterGroupCollapse) {
+        const tbody = root.querySelector<HTMLElement>(`tbody[data-group="${d.filterGroupCollapse}"]`);
+        if (!tbody) return;
+        const collapsed = tbody.hasAttribute('data-collapsed');
+        collapsed ? tbody.removeAttribute('data-collapsed') : tbody.setAttribute('data-collapsed', '');
+        btn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
+      } else if (d.filterReset !== undefined) {
+        root.removeAttribute('data-hidden-product');
+        root.removeAttribute('data-hidden-group');
+        root.querySelectorAll('tbody[data-collapsed]').forEach((el) => el.removeAttribute('data-collapsed'));
+        root.querySelectorAll<HTMLButtonElement>('[data-filter-group-collapse]').forEach((el) =>
+          el.setAttribute('aria-expanded', 'true'));
+        syncProducts();
+        syncGroups();
+      }
+    });
+  }
+  document.querySelectorAll<HTMLElement>('.ra-matrix').forEach(initMatrix);
+</script>
+
 <style>
   .responsible-matrix {
     color: var(--color-text);
@@ -181,7 +267,8 @@ for (const feature of features) {
     max-width: 36rem;
   }
 
-  .matrix-section {
+  .ra-matrix {
+    --ra-feature-col-width: 14rem;
     scroll-margin-top: 5rem;
   }
 
@@ -205,7 +292,7 @@ for (const feature of features) {
 
   .return-top:hover { color: var(--color-accent); }
 
-  .table-scroll {
+  .ra-matrix__scroll {
     overflow-x: auto;
     margin: 0 calc(-1 * var(--space-md));
     padding: 0 var(--space-md);
@@ -214,7 +301,8 @@ for (const feature of features) {
   .matrix-table {
     width: 100%;
     min-width: 44rem;
-    border-collapse: collapse;
+    border-collapse: separate;
+    border-spacing: 0;
     font-size: var(--font-size-sm);
   }
 
@@ -226,12 +314,44 @@ for (const feature of features) {
     border-bottom: 1px solid var(--color-border);
   }
 
+  /* sticky thead */
   .matrix-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
   }
 
+  /* sticky-left feature column */
+  .matrix-table tbody th[scope="row"] {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--color-bg);
+    border-right: 1px solid var(--color-border);
+  }
+
+  [data-contrast="high"] .matrix-table tbody th[scope="row"] {
+    border-right-width: 2px;
+  }
+
+  /* top-left intersection */
+  .matrix-table thead .dim-col,
+  .matrix-table thead .ra-feature-head {
+    left: 0;
+    z-index: 3;
+    border-right: 1px solid var(--color-border);
+  }
+
   .dim-col {
-    width: 14rem;
+    width: var(--ra-feature-col-width);
+    min-width: var(--ra-feature-col-width);
+  }
+
+  .matrix-table tbody th[scope="row"] {
+    width: var(--ra-feature-col-width);
+    min-width: var(--ra-feature-col-width);
   }
 
   .product-col {
@@ -241,22 +361,38 @@ for (const feature of features) {
     white-space: nowrap;
   }
 
-  .product-col a {
+  .ra-col-toggle {
+    font: inherit;
     color: var(--color-text-heading);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3em;
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    cursor: pointer;
   }
 
-  .product-col a:hover { color: var(--color-accent); }
+  .ra-col-toggle[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+  }
+
+  .ra-product-link {
+    color: var(--color-text-faint);
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.3em;
+  }
+
+  .ra-product-link:hover { color: var(--color-accent); }
 
   .dim-label {
     font-weight: 400;
     color: var(--color-text-heading);
   }
 
+  /* group header row: not sticky */
   .ra-group-header th {
+    position: static;
     font-family: var(--font-heading);
     font-weight: 600;
     font-size: var(--font-size-sm);
@@ -266,15 +402,29 @@ for (const feature of features) {
     padding-top: var(--space-md);
     padding-bottom: 0.4rem;
     border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .ra-group-toggle {
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-transform: inherit;
+    letter-spacing: inherit;
   }
 
   .cell {
     color: var(--color-text);
+    max-width: 12rem;
+    word-break: break-word;
   }
 
   .cell-inline {
     display: inline-flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.4rem;
   }
 
@@ -283,38 +433,20 @@ for (const feature of features) {
     color: var(--color-text-muted);
   }
 
-  .cell--yes :global(svg) {
-    color: var(--color-verdict-true);
-    flex-shrink: 0;
-  }
-
-  .cell--no :global(svg) {
-    color: var(--color-text-muted);
-    flex-shrink: 0;
-  }
-
-  .cell--no-good :global(svg) {
-    color: var(--color-verdict-false);
-    flex-shrink: 0;
-  }
-
-  .cell--partial :global(svg) {
-    color: var(--color-verdict-mixed);
-    flex-shrink: 0;
-  }
-
-  .cell--planned :global(svg) {
-    color: var(--color-kind-report);
-    flex-shrink: 0;
-  }
-
-  .cell--unknown :global(svg) {
-    color: var(--color-text-faint);
-    flex-shrink: 0;
-  }
+  .cell--yes :global(svg) { color: var(--color-verdict-true); flex-shrink: 0; }
+  .cell--no :global(svg) { color: var(--color-text-muted); flex-shrink: 0; }
+  .cell--no-good :global(svg) { color: var(--color-verdict-false); flex-shrink: 0; }
+  .cell--partial :global(svg) { color: var(--color-verdict-mixed); flex-shrink: 0; }
+  .cell--planned :global(svg) { color: var(--color-kind-report); flex-shrink: 0; }
+  .cell--unknown :global(svg) { color: var(--color-text-faint); flex-shrink: 0; }
 
   .na {
     color: var(--color-text-faint);
+  }
+
+  /* collapse: hide all non-header rows when [data-collapsed] */
+  .matrix-table tbody[data-collapsed] > tr:not(.ra-group-header) {
+    display: none;
   }
 
   .product-col :global(svg) {
@@ -361,3 +493,12 @@ for (const feature of features) {
     color: var(--color-text-heading);
   }
 </style>
+
+<style is:global set:html={`
+${activeProducts.map((p) => `
+  .ra-matrix[data-hidden-product~="${p.key}"] [data-product-key="${p.key}"] { display: none; }
+`).join('')}
+${groups.map((g) => `
+  .ra-matrix[data-hidden-group~="${g.key}"] tbody[data-group="${g.key}"] { display: none; }
+`).join('')}
+`} />
