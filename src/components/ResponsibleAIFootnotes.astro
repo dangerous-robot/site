@@ -1,0 +1,67 @@
+---
+interface Footnote {
+  subject: string;
+  text: string;
+}
+
+interface FootnotesData {
+  footnotes?: Footnote[];
+}
+
+interface Props {
+  data: FootnotesData;
+}
+
+const { data } = Astro.props;
+const footnotes = data.footnotes ?? [];
+
+const slugify = (s: string) =>
+  s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+---
+{footnotes.length > 0 && (
+  <section class="ra-footnotes-section">
+    <h3>Footnotes</h3>
+    <ol class="ra-footnotes">
+      {footnotes.map((note) => (
+        <li id={`fn-${slugify(note.subject)}`}>
+          <strong>{note.subject}:</strong> {note.text}
+        </li>
+      ))}
+    </ol>
+  </section>
+)}
+
+<style>
+  .ra-footnotes-section {
+    margin: var(--space-xl) 0 0;
+  }
+
+  .ra-footnotes-section h3 {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 var(--space-sm);
+  }
+
+  .ra-footnotes {
+    margin: 0;
+    padding-left: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .ra-footnotes li {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    scroll-margin-top: 5rem;
+  }
+
+  .ra-footnotes strong {
+    color: var(--color-text-heading);
+  }
+</style>

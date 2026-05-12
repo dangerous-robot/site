@@ -57,18 +57,12 @@ interface Feature {
   cells: Record<string, Cell>;
 }
 
-interface Footnote {
-  subject: string;
-  text: string;
-}
-
 interface MatrixData {
   lede?: string;
   caption?: string;
   groups: Group[];
   products: Product[];
   features: Feature[];
-  footnotes?: Footnote[];
 }
 
 interface Props {
@@ -79,7 +73,6 @@ const { data } = Astro.props;
 const groups = data.groups ?? [];
 const activeProducts = (data.products ?? []).filter((p) => p.status === 'active');
 const features = data.features ?? [];
-const footnotes = data.footnotes ?? [];
 
 const featuresByGroup = new Map<string, Feature[]>();
 for (const group of groups) featuresByGroup.set(group.key, []);
@@ -208,19 +201,6 @@ for (const feature of features) {
     </div>
 
     {data.caption && <p class="caption">{data.caption}</p>}
-
-    {footnotes.length > 0 && (
-      <details class="resources-details">
-        <summary>[+] Sources and context</summary>
-        <ol class="footnotes">
-          {footnotes.map((note) => (
-            <li>
-              <strong>{note.subject}:</strong> {note.text}
-            </li>
-          ))}
-        </ol>
-      </details>
-    )}
   </section>
 </div>
 
@@ -564,27 +544,6 @@ for (const feature of features) {
     margin: var(--space-md) 0 var(--space-xl);
   }
 
-  .resources-details {
-    margin-top: var(--space-xl);
-  }
-
-  .footnotes {
-    margin: var(--space-md) 0 0;
-    padding-left: 1.4rem;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-  }
-
-  .footnotes li {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
-    line-height: 1.55;
-  }
-
-  .footnotes strong {
-    color: var(--color-text-heading);
-  }
 </style>
 
 <style is:global set:html={`

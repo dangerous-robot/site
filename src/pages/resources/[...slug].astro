@@ -5,6 +5,8 @@ import ResourcePage from '../../layouts/ResourcePage.astro';
 import TurnOffGuide from '../../components/TurnOffGuide.astro';
 import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
 import ResponsibleAISummary from '../../components/ResponsibleAISummary.astro';
+import ResponsibleAIExcluded from '../../components/ResponsibleAIExcluded.astro';
+import ResponsibleAIFootnotes from '../../components/ResponsibleAIFootnotes.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 import { buildResourceSchema } from '../../lib/resourceSchema';
@@ -60,6 +62,8 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
       <ResponsibleAISummary data={matrixData} />
       <Content />
       <ResponsibleAIMatrix data={matrixData} />
+      <ResponsibleAIExcluded data={matrixData} />
+      <ResponsibleAIFootnotes data={matrixData} />
     </article>
   )}
 

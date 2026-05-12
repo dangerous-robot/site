@@ -1,0 +1,71 @@
+---
+interface Product {
+  key: string;
+  name: string;
+  url: string;
+  status: 'active' | 'excluded';
+  excluded_reason?: string;
+}
+
+interface ExcludedData {
+  products: Product[];
+}
+
+interface Props {
+  data: ExcludedData;
+}
+
+const { data } = Astro.props;
+const excludedProducts = (data.products ?? []).filter((p) => p.status === 'excluded');
+---
+{excludedProducts.length > 0 && (
+  <section class="ra-excluded">
+    <h3>Why these aren't included</h3>
+    <ul>
+      {excludedProducts.map((p) => (
+        <li>
+          <a href={p.url} target="_blank" rel="noopener noreferrer">{p.name}</a>
+          {' '}&mdash; {p.excluded_reason}
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .ra-excluded {
+    margin: var(--space-xl) 0 0;
+  }
+
+  .ra-excluded h3 {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 0 0 var(--space-sm);
+  }
+
+  .ra-excluded ul {
+    margin: 0;
+    padding-left: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .ra-excluded li {
+    font-size: var(--font-size-sm);
+    color: var(--color-text);
+    line-height: var(--line-height-body);
+  }
+
+  .ra-excluded a {
+    color: var(--color-accent);
+  }
+
+  :global([data-contrast="high"]) .ra-excluded a {
+    text-decoration: underline;
+  }
+</style>
