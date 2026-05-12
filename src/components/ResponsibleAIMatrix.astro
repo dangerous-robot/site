@@ -44,10 +44,16 @@ interface Group {
   label: string;
 }
 
+interface Ideal {
+  value: CellType;
+  note?: string;
+}
+
 interface Feature {
   key: string;
   label: string;
   group: string;
+  ideal?: Ideal;
   cells: Record<string, Cell>;
 }
 
@@ -102,6 +108,9 @@ for (const feature of features) {
             <th scope="col" class="dim-col ra-feature-head">
               <span class="sr-only">Feature</span>
             </th>
+            <th scope="col" class="ra-ideal-col ra-ideal-head">
+              Ideal<sup><a href="#fn-editorial-pick" aria-label="Editorial pick footnote">*</a></sup>
+            </th>
             {activeProducts.map((p) => (
               <th scope="col" class="product-col" data-product-key={p.key}>
                 <button
@@ -129,7 +138,7 @@ for (const feature of features) {
           return (
             <tbody data-group={group.key} id={`ra-group-${group.key}`}>
               <tr class="ra-group-header">
-                <th colspan={1 + activeProducts.length} scope="rowgroup">
+                <th colspan={2 + activeProducts.length} scope="rowgroup">
                   <button
                     type="button"
                     class="ra-group-toggle"
@@ -139,9 +148,35 @@ for (const feature of features) {
                   >{group.label}</button>
                 </th>
               </tr>
-              {rows.map((feature) => (
+              {rows.map((feature) => {
+                const idealIcon = feature.ideal && feature.ideal.value in ICONS
+                  ? ICONS[feature.ideal.value as keyof typeof ICONS]
+                  : null;
+                return (
                 <tr>
                   <th scope="row" class="dim-label">{feature.label}</th>
+                  <td class={`cell ra-ideal-cell${feature.ideal ? ` cell--${feature.ideal.value}` : ''}`}>
+                    {feature.ideal && idealIcon ? (
+                      feature.ideal.note ? (
+                        <details class="ra-ideal-note">
+                          <summary>
+                            <span class="cell-inline">
+                              <idealIcon.Icon size={16} aria-hidden="true" />
+                              <span class="sr-only">{idealIcon.srLabel}</span>
+                            </span>
+                          </summary>
+                          <span class="detail">{feature.ideal.note}</span>
+                        </details>
+                      ) : (
+                        <span class="cell-inline">
+                          <idealIcon.Icon size={16} aria-hidden="true" />
+                          <span class="sr-only">{idealIcon.srLabel}</span>
+                        </span>
+                      )
+                    ) : (
+                      <span class="sr-only">no editorial pick</span>
+                    )}
+                  </td>
                   {activeProducts.map((p) => {
                     const cell = feature.cells?.[p.key] ?? { type: 'na' as CellType };
                     const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
@@ -164,7 +199,8 @@ for (const feature of features) {
                     );
                   })}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           );
         })}
@@ -269,6 +305,7 @@ for (const feature of features) {
 
   .ra-matrix {
     --ra-feature-col-width: 14rem;
+    --ra-ideal-col-width: 5rem;
     scroll-margin-top: 5rem;
   }
 
@@ -352,6 +389,62 @@ for (const feature of features) {
   .matrix-table tbody th[scope="row"] {
     width: var(--ra-feature-col-width);
     min-width: var(--ra-feature-col-width);
+  }
+
+  /* Ideal column: sticky-left, faint tint, sits between Feature and products */
+  .matrix-table .ra-ideal-col,
+  .matrix-table .ra-ideal-cell {
+    position: sticky;
+    left: var(--ra-feature-col-width);
+    z-index: 2;
+    width: var(--ra-ideal-col-width);
+    min-width: var(--ra-ideal-col-width);
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .matrix-table thead .ra-ideal-head {
+    top: 0;
+    z-index: 3;
+  }
+
+  .ra-ideal-head sup {
+    font-size: 0.7em;
+    line-height: 0;
+    margin-left: 0.1em;
+  }
+
+  .ra-ideal-head sup a {
+    color: var(--color-text-faint);
+    text-decoration: none;
+  }
+
+  .ra-ideal-head sup a:hover { color: var(--color-accent); }
+
+  .ra-ideal-note {
+    display: inline-block;
+  }
+
+  .ra-ideal-note > summary {
+    list-style: none;
+    display: inline-block;
+    cursor: pointer;
+  }
+
+  .ra-ideal-note > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .ra-ideal-note[open] > summary {
+    margin-bottom: 0.25rem;
+  }
+
+  /* High-contrast: drop the tint, delimit with borders instead */
+  [data-contrast="high"] .matrix-table .ra-ideal-col,
+  [data-contrast="high"] .matrix-table .ra-ideal-cell {
+    background: var(--color-bg);
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
   }
 
   .product-col {
