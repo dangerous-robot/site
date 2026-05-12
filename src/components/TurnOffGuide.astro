@@ -70,10 +70,16 @@ function fmtDate(iso: string, label?: string): string {
     <slot />
   </div>
 
-  <nav class="resources-pill-nav" aria-label="Jump to platform">
-    {platforms.map((p) => (
-      <a href={`#${p.id}`} data-pill-target={p.id}>{p.name}</a>
-    ))}
+  <nav class="pill-nav-wrap resources-pill-nav--bold" aria-label="Jump to section">
+    <p class="resources-pill-nav-label" aria-hidden="true">Jump to:</p>
+    <div class="resources-pill-nav pill-nav-row">
+      {platforms.map((p) => (
+        <a href={`#${p.id}`} data-pill-target={p.id}>{p.name}</a>
+      ))}
+      {furtherReading.length > 0 && (
+        <a href="#further-reading" data-pill-target="further-reading">Further reading</a>
+      )}
+    </div>
   </nav>
 
   {platforms.map((platform, idx) => (
@@ -82,7 +88,7 @@ function fmtDate(iso: string, label?: string): string {
       <h2 class="platform-name">
         {platform.name}
         <a href="#top" class="return-top" aria-label="Return to top">
-          <ArrowUp size={16} aria-hidden="true" />
+          <ArrowUp size={18} aria-hidden="true" />
         </a>
       </h2>
       <p class="where-it-shows">{platform.where_it_shows}</p>
@@ -118,9 +124,14 @@ function fmtDate(iso: string, label?: string): string {
   ))}
 
   {furtherReading.length > 0 && (
-    <section class="further-reading">
+    <section id="further-reading" class="further-reading" data-platform-id="further-reading">
       <hr class="platform-sep" />
-      <h2>Further reading</h2>
+      <h2 class="platform-name">
+        Further reading
+        <a href="#top" class="return-top" aria-label="Return to top">
+          <ArrowUp size={18} aria-hidden="true" />
+        </a>
+      </h2>
       <p class="further-intro">
         These guides cover more platforms and provide additional context on
         why opt-out mechanisms are so unreliable.
@@ -175,13 +186,25 @@ function fmtDate(iso: string, label?: string): string {
   }
 
   .return-top {
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    background: var(--color-surface);
+    transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
   }
 
-  .return-top:hover { color: var(--color-accent); }
+  .return-top:hover,
+  .return-top:focus-visible {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+  }
 
   .where-it-shows {
     margin: 0 0 var(--space-md);
@@ -268,21 +291,53 @@ function fmtDate(iso: string, label?: string): string {
   }
 
   /* Sticky pill nav variant */
-  .turn-off-guide .resources-pill-nav {
+  .pill-nav-wrap {
     position: sticky;
     top: var(--space-md);
-    background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+    background: color-mix(in srgb, var(--color-bg) 92%, transparent);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     padding: var(--space-sm) 0;
+    margin: 0 0 var(--space-xl);
     z-index: 5;
   }
 
-  .further-reading h2 {
-    font-family: var(--font-heading);
-    font-size: 1.4rem;
-    font-weight: 400;
-    margin: 0 0 var(--space-sm);
+  .pill-nav-wrap .resources-pill-nav-label {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+
+  /* Override base pill-nav wrap behavior for this nav */
+  .pill-nav-wrap .pill-nav-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    margin: 0;
+    padding-bottom: var(--space-xs);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .pill-nav-wrap .pill-nav-row a {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .pill-nav-wrap.resources-pill-nav--bold .pill-nav-row a {
+    padding: 0.45rem 1rem;
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+  }
+
+  .further-reading {
+    scroll-margin-top: 5rem;
+  }
+
+  .further-reading .platform-name {
+    margin-bottom: var(--space-sm);
   }
 
   .further-intro {
@@ -342,7 +397,7 @@ function fmtDate(iso: string, label?: string): string {
   (function () {
     const pillNav = document.querySelector<HTMLElement>('.turn-off-guide .resources-pill-nav');
     if (!pillNav) return;
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('.turn-off-guide .platform'));
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('.turn-off-guide [data-platform-id]'));
     if (sections.length === 0) return;
 
     const pillFor = (id: string) =>

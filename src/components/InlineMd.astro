@@ -2,6 +2,7 @@
 type Seg =
   | { kind: 'plain'; text: string }
   | { kind: 'code'; text: string }
+  | { kind: 'link'; text: string; url: string }
   | { kind: 'bold'; inner: Seg[] };
 
 export function parseInline(text: string): Seg[] {
@@ -16,19 +17,35 @@ export function parseInline(text: string): Seg[] {
     }
     return out;
   }
+  function parseLink(t: string): Seg[] {
+    const out: Seg[] = [];
+    const re = /\[([^\]]+)\]\(([^)\s]+)\)/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(t)) !== null) {
+      if (m.index > last) out.push(...parseCode(t.slice(last, m.index)));
+      out.push({ kind: 'link', text: m[1], url: m[2] });
+      last = re.lastIndex;
+    }
+    if (last < t.length) out.push(...parseCode(t.slice(last)));
+    return out;
+  }
   const out: Seg[] = [];
   for (const part of text.split(/(\*\*[^*]+\*\*)/g)) {
     if (part.startsWith('**') && part.endsWith('**')) {
-      out.push({ kind: 'bold', inner: parseCode(part.slice(2, -2)) });
+      out.push({ kind: 'bold', inner: parseLink(part.slice(2, -2)) });
     } else if (part.length > 0) {
-      out.push(...parseCode(part));
+      out.push(...parseLink(part));
     }
   }
   return out;
 }
 
 export function stripMd(text: string): string {
-  return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/`([^`]+)`/g, '$1');
+  return text
+    .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1');
 }
 
 interface Props {
@@ -41,5 +58,10 @@ const segs = parseInline(text);
 {segs.map((seg) => (
   seg.kind === 'plain' ? seg.text :
   seg.kind === 'code' ? <code>{seg.text}</code> :
-  <strong>{seg.inner.map((s) => s.kind === 'code' ? <code>{s.text}</code> : s.text)}</strong>
+  seg.kind === 'link' ? <a href={seg.url} target="_blank" rel="noopener noreferrer">{seg.text}</a> :
+  <strong>{seg.inner.map((s) =>
+    s.kind === 'code' ? <code>{s.text}</code> :
+    s.kind === 'link' ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.text}</a> :
+    s.text
+  )}</strong>
 ))}

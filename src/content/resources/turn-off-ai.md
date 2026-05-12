@@ -1,5 +1,5 @@
 ---
-title: How to Turn Off AI You Never Asked For
+title: Turn Off AI You Didn't Ask For
 description: Step-by-step guides to disable Meta AI, Google AI Overviews, and Microsoft Copilot. What works, what doesn't, and what to try next.
 pubDate: 2026-03-04
 layout: guide
@@ -45,9 +45,9 @@ data:
       sub_sections:
         - title: Workarounds
           steps:
-            - "**Add `&udm=14` to any Google search URL.** This forces \"Web\" mode and suppresses AI Overviews. Bookmark `https://www.google.com/search?udm=14&q=` as your default search to apply it automatically."
+            - "**Add `&udm=14` to any Google search URL.** This forces \"Web\" mode and suppresses AI Overviews. Bookmark `https://www.google.com/search?udm=14&q=` as your default search to apply it automatically. [Setup walkthrough on r/TechSEO](https://www.reddit.com/r/TechSEO/comments/1rit73c/udm14_how_to_get_old_school_google_back_by/)."
             - "**Use the \"Web\" tab.** After any Google search, click the **Web** filter below the search bar. This shows traditional results without AI summaries."
-            - "**Install the \"Bye Bye Google AI\" browser extension.** Available for Chrome, Edge, and Firefox (60,000+ installs). It automatically filters AI Overviews from results."
+            - "**Install the [\"Bye Bye Google AI\"](https://chromewebstore.google.com/detail/imllolhfajlbkpheaapjocclpppchggc?utm_source=item-share-cb) browser extension.** Available for Chrome, Edge, and Firefox (60,000+ installs). It automatically filters AI Overviews from results."
             - "**Switch your default search engine.** DuckDuckGo, Startpage, and Kagi (paid) do not inject AI summaries into results. All major browsers let you change the default in Settings > Search Engine."
       what_doesnt_work: |
         There is no setting in your Google Account to disable AI Overviews. Google has characterized AI as fundamental to the modern search experience and has given no indication it plans to add a user-facing toggle.
@@ -106,6 +106,5 @@ data:
       description: "According to a webXray audit of 7,000+ websites, Google ignored browser privacy opt-out signals (GPC) 87% of the time, Meta 69%, Microsoft 50%. Turning things off is one step. Verifying they stay off is another."
 ---
 
-You didn't opt in to most of this. AI features now ship inside your messaging
-apps, your search engine, and your operating system, often without asking.
-Here's how to take them back out, or at least quiet them down.
+AI now ships inside your messaging apps, your search engine, and your
+operating system, often without asking. Here's how to take it back out.

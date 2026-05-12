@@ -9,8 +9,6 @@ topics:
 data:
   intro:
     eyebrow: Quick tool to help decide when to use AI
-    headline: Every AI prompt carries trade-offs.
-    body: Environmental cost. Accuracy risk. Cognitive outsourcing. This tool helps you weigh them for a specific task.
     prompt_headline: Think of something specific.
     prompt_body: A prompt you're about to type. A project. A workflow. Six questions will help you think it through.
     cta: I have something in mind
@@ -106,14 +104,17 @@ data:
           score: { growth: -15 }
   dimensions:
     - key: risk
-      lowLabel: High stakes, verify everything
-      highLabel: Low stakes, safe to experiment
+      label: Stakes
+      lowLabel: Real harm if wrong
+      highLabel: Hallucinations are fine here
     - key: growth
-      lowLabel: Do it yourself, you'd learn more
-      highLabel: Routine task, AI saves time
+      label: Skill
+      lowLabel: Without practice, the skill fades
+      highLabel: Pure routine, free your time
     - key: alternatives
-      lowLabel: Simpler tools work fine
-      highLabel: AI is the right tool
+      label: Fit
+      lowLabel: A pencil would do
+      highLabel: Only AI does this well
   closers:
     cautious: Your caution is an asset. Use it to guide how, and whether, you engage.
     skeptical: The fact that you're thinking about this puts you ahead of most AI users.

@@ -312,6 +312,15 @@ const payload = JSON.stringify(data ?? {});
 
   .should-i-content :global(.spectrum-row) { margin: 0; }
 
+  .should-i-content :global(.spectrum-row-label) {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-faint);
+  }
+
   .should-i-content :global(.spectrum-bar) {
     position: relative;
     height: 0.6rem;
@@ -360,6 +369,75 @@ const payload = JSON.stringify(data ?? {});
 
   .should-i-content :global(.spectrum-labels span) { max-width: 45%; }
   .should-i-content :global(.spectrum-labels span:last-child) { text-align: right; }
+
+  .should-i-content :global(.spectrum-legend) {
+    list-style: none;
+    margin: 0 0 var(--space-md);
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-sm) var(--space-md);
+    justify-content: center;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .should-i-content :global(.spectrum-legend li) {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .should-i-content :global(.legend-swatch) {
+    display: inline-block;
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 2px;
+    background: var(--color-accent);
+  }
+
+  .should-i-content :global(.legend-swatch.is-good) {
+    background: var(--color-verdict-true, var(--color-accent));
+  }
+
+  .should-i-content :global(.legend-swatch.is-warn) {
+    background: var(--color-verdict-mixed, var(--color-accent));
+  }
+
+  .should-i-content :global(.legend-swatch.is-mid) {
+    background: var(--color-accent);
+  }
+
+  .should-i-content :global(.spectrum-formula) {
+    margin: 0 0 var(--space-md);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .should-i-content :global(.spectrum-formula summary) {
+    cursor: pointer;
+    color: var(--color-text-muted);
+    list-style: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+  }
+
+  .should-i-content :global(.spectrum-formula summary::-webkit-details-marker) { display: none; }
+  .should-i-content :global(.spectrum-formula summary::before) {
+    content: "\25B8";
+    font-size: 0.7em;
+    transition: transform 0.12s ease;
+  }
+  .should-i-content :global(.spectrum-formula[open] summary::before) {
+    transform: rotate(90deg);
+  }
+  .should-i-content :global(.spectrum-formula summary:hover) { color: var(--color-text); }
+
+  .should-i-content :global(.spectrum-formula p) {
+    margin: var(--space-sm) 0 0;
+    line-height: var(--line-height-body);
+  }
 
   .should-i-content :global(.result-section) {
     border-top: 1px solid var(--color-border);
@@ -494,6 +572,7 @@ const payload = JSON.stringify(data ?? {});
 
   interface Dimension {
     key: keyof Scores;
+    label?: string;
     lowLabel: string;
     highLabel: string;
   }
@@ -501,8 +580,6 @@ const payload = JSON.stringify(data ?? {});
   interface Config {
     intro: {
       eyebrow: string;
-      headline: string;
-      body: string;
       prompt_headline: string;
       prompt_body: string;
       cta: string;
@@ -582,10 +659,8 @@ const payload = JSON.stringify(data ?? {});
       const { intro } = cfg;
       content!.innerHTML = `
         <p class="intro-eyebrow">${escape(intro.eyebrow)}</p>
-        <p class="intro-headline" data-focus tabindex="-1">${escape(intro.headline)}</p>
-        <p class="intro-body">${escape(intro.body)}</p>
         <div class="intro-prompt">
-          <p class="intro-prompt-headline">${escape(intro.prompt_headline)}</p>
+          <p class="intro-prompt-headline" data-focus tabindex="-1">${escape(intro.prompt_headline)}</p>
           <p class="intro-prompt-body">${escape(intro.prompt_body)}</p>
           <button type="button" class="cta-btn" data-action="begin">
             ${escape(intro.cta)} <span aria-hidden="true">&rarr;</span>
@@ -670,8 +745,10 @@ const payload = JSON.stringify(data ?? {});
           let cls = '';
           if (norm >= 65) cls = 'is-good';
           else if (norm <= 35) cls = 'is-warn';
+          const label = dim.label ?? '';
           return `
             <div class="spectrum-row">
+              ${label ? `<p class="spectrum-row-label">${escape(label)}</p>` : ''}
               <div class="spectrum-bar">
                 <div class="spectrum-center"></div>
                 <div
@@ -681,7 +758,7 @@ const payload = JSON.stringify(data ?? {});
                   aria-valuemin="0"
                   aria-valuemax="100"
                   aria-valuenow="${Math.round(norm)}"
-                  aria-label="${escape(dim.lowLabel)} to ${escape(dim.highLabel)}"
+                  aria-label="${escape(label || dim.key)}: ${escape(dim.lowLabel)} to ${escape(dim.highLabel)}"
                 ></div>
               </div>
               <div class="spectrum-labels">
@@ -701,6 +778,22 @@ const payload = JSON.stringify(data ?? {});
       content!.innerHTML = `
         <h2 class="result-text" data-focus tabindex="-1">Here's what your answers suggest.</h2>
         <div class="spectrum">${rows}</div>
+        <ul class="spectrum-legend" aria-label="Marker color key">
+          <li><span class="legend-swatch is-warn" aria-hidden="true"></span>Considerations weigh against AI here</li>
+          <li><span class="legend-swatch is-mid" aria-hidden="true"></span>Mixed, judgement call</li>
+          <li><span class="legend-swatch is-good" aria-hidden="true"></span>AI use looks reasonable</li>
+        </ul>
+        <details class="spectrum-formula">
+          <summary>How this is calculated</summary>
+          <p>
+            Each answer adds or subtracts points on one or two of the three axes
+            above. Your totals are centered at the middle of each bar and
+            clamped to the ends. Markers turn amber on the third of the bar
+            that argues against AI use, green on the third that argues for it,
+            and stay neutral in between. None of this is a verdict — it's a
+            picture of where your task sits.
+          </p>
+        </details>
         <div class="result-section">
           <p class="result-label">What we notice</p>
           <p class="result-summary">${escape(summary)}</p>
