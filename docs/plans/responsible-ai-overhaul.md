@@ -2,14 +2,19 @@
 
 | # | Milestone | Status |
 |---|-----------|--------|
-| 1 | Schema + content migration (existing rows port over) | `[ ] planned` |
-| 2 | Matrix component on new schema (no filters, no Ideal) | `[ ] planned` |
-| 3 | Content authoring (summary cells, ideal values, new footnote) | `[ ] planned` |
-| 4 | Summary table component | `[ ] planned` |
-| 5 | Matrix filters (chips, header toggles, reset) | `[ ] planned` |
-| 6 | Editorial "Ideal" column | `[ ] planned` |
-| 7 | Excluded products + footnotes sections | `[ ] planned` |
-| 8 | Frontend design pass | `[ ] planned` |
+| 1 | Schema + content migration (existing rows port over) | `[x] done` (e659bf4) |
+| 2 | Matrix component on new schema (no filters, no Ideal) | `[x] done` (1453ce6) |
+| 3 | Content authoring (summary cells, ideal values, new footnote) | `[x] done` (49b2ec0) |
+| 4 | Summary table component | `[x] done` (8e83857) |
+| 5 | Matrix filters (chips, header toggles, reset) | `[x] done` (d9206b7) |
+| 6 | Editorial "Ideal" column | `[x] done` (eca2692) |
+| 7 | Excluded products + footnotes sections | `[x] done` (ea7fb0c) |
+| 8 | Frontend design pass | `[x] done` (bdccedf) |
+
+### Carry-forward items (out of M8 scope, surfaced during implementation)
+
+- **Ideal column tint in light/normal**: `--color-surface` is too close to `--color-bg` in light theme; the tint nearly disappears. A new `--color-surface-subtle` (or similar) token with slightly more contrast in light theme would fix this. Deferred from M8 by the no-new-tokens constraint.
+- **Filter chip `aria-pressed` semantics are inverted**: a filled accent chip currently means "this product is hidden", not "this product is selected". Visually counterintuitive. A refactor that flips the model to "visible by default, clicking removes" (or renames the toggle to express subtraction explicitly) would touch the M5 JS and CSS together.
 
 Theme/contrast styling and a11y are gates folded into each milestone's acceptance criteria, not standalone steps.
 
