@@ -4,6 +4,7 @@ import type { CollectionEntry } from 'astro:content';
 import ResourcePage from '../../layouts/ResourcePage.astro';
 import TurnOffGuide from '../../components/TurnOffGuide.astro';
 import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
+import ResponsibleAISummary from '../../components/ResponsibleAISummary.astro';
 import Lightbox from '../../components/Lightbox.astro';
 import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 import { buildResourceSchema } from '../../lib/resourceSchema';
@@ -54,8 +55,9 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
     </article>
   )}
 
-  {layout === 'matrix' && (
+  {layout === 'matrix' && matrixData && (
     <article class="resource-matrix">
+      <ResponsibleAISummary data={matrixData} />
       <Content />
       <ResponsibleAIMatrix data={matrixData} />
     </article>
