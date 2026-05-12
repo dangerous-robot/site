@@ -83,18 +83,26 @@ const columns: { key: keyof Summary; label: string }[] = [
 
   .summary-table th,
   .summary-table td {
-    padding: 0.6rem 0.75rem;
+    padding: 0.75rem 1rem;
     vertical-align: top;
     text-align: left;
     border-bottom: 1px solid var(--color-border);
     line-height: var(--line-height-body);
   }
 
+  /* Column headers smaller + uppercase to push them back as labels; the
+     row band (product name) is what the eye should land on. The 2px bottom
+     border gives a stronger header/body separation. */
   .summary-table thead th {
     font-family: var(--font-heading);
     font-weight: 600;
-    color: var(--color-text-heading);
-    border-bottom: 1px solid var(--color-border);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+    border-bottom: 2px solid var(--color-border);
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
   }
 
   .summary-table tbody th {
@@ -103,7 +111,11 @@ const columns: { key: keyof Summary; label: string }[] = [
     white-space: nowrap;
   }
 
+  /* Product cell reads as an anchor: serif heading face, slightly larger,
+     with the external-link glyph as a quiet hint. */
   .product-cell a {
+    font-family: var(--font-heading);
+    font-size: 1rem;
     color: var(--color-text-heading);
     text-decoration: none;
     display: inline-flex;
@@ -186,18 +198,20 @@ const columns: { key: keyof Summary; label: string }[] = [
     .summary-table th,
     .summary-table td {
       border-bottom: none;
-      padding: var(--space-xs) 0;
+      padding: var(--space-sm) 0;
       white-space: normal;
     }
 
     .summary-table tbody th.product-cell {
-      font-size: 1.05rem;
+      font-size: 1.1rem;
       font-family: var(--font-heading);
       padding-bottom: var(--space-sm);
       border-bottom: 1px solid var(--color-border);
       margin-bottom: var(--space-xs);
     }
 
+    /* data-label acts as the column label per cell on mobile. Slightly
+       roomier above the value so each label/value pair reads as a unit. */
     .summary-table td::before {
       content: attr(data-label);
       display: block;
@@ -205,7 +219,7 @@ const columns: { key: keyof Summary; label: string }[] = [
       color: var(--color-text-muted);
       text-transform: uppercase;
       letter-spacing: 0.04em;
-      margin-bottom: 0.15rem;
+      margin-bottom: 0.25rem;
     }
   }
 </style>

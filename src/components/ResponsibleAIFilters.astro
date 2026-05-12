@@ -59,15 +59,13 @@ const activeProducts = products.filter((p) => p.status === 'active');
           >only</button>
         </span>
       ))}
+      <button
+        type="button"
+        class="ra-filters__reset"
+        data-filter-reset
+        aria-label="Show all products and groups"
+      >Reset</button>
     </div>
-  </div>
-  <div class="ra-filters__row ra-filters__row--reset">
-    <button
-      type="button"
-      class="ra-chip ra-chip--reset"
-      data-filter-reset
-      aria-label="Show all products and groups"
-    >Reset</button>
   </div>
 </div>
 
@@ -75,8 +73,8 @@ const activeProducts = products.filter((p) => p.status === 'active');
   .ra-filters {
     display: flex;
     flex-direction: column;
-    gap: var(--space-sm);
-    margin: 0 0 var(--space-md);
+    gap: var(--space-md);
+    margin: 0 0 var(--space-lg);
   }
 
   .ra-filters__row {
@@ -84,6 +82,11 @@ const activeProducts = products.filter((p) => p.status === 'active');
     align-items: baseline;
     gap: var(--space-sm);
     flex-wrap: wrap;
+  }
+
+  .ra-filters__row + .ra-filters__row {
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
   }
 
   .ra-filters__label {
@@ -99,6 +102,8 @@ const activeProducts = products.filter((p) => p.status === 'active');
     display: flex;
     flex-wrap: wrap;
     gap: 0.4rem;
+    align-items: center;
+    flex: 1;
   }
 
   .ra-chip-wrap {
@@ -113,7 +118,7 @@ const activeProducts = products.filter((p) => p.status === 'active');
     background: transparent;
     border: 1px solid var(--color-border);
     border-radius: 999px;
-    padding: 0.2rem 0.65rem;
+    padding: 0.2rem 0.7rem;
     cursor: pointer;
     line-height: 1.3;
   }
@@ -124,18 +129,29 @@ const activeProducts = products.filter((p) => p.status === 'active');
     border-right-width: 0;
   }
 
+  /* "(only)" is a secondary sub-action attached to its chip: smaller, fainter,
+     and only fully visible on hover/focus of the wrap. The visible 1px left
+     divider does the affordance work; the rest of the border softens. */
   .ra-chip-only {
     font: inherit;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-muted);
+    font-size: var(--font-size-2xs);
+    color: var(--color-text-faint);
     background: transparent;
     border: 1px solid var(--color-border);
+    border-left: 1px solid var(--color-border);
     border-radius: 999px;
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    padding: 0.2rem 0.55rem;
+    padding: 0.2rem 0.5rem;
     cursor: pointer;
     line-height: 1.3;
+    opacity: 0.65;
+  }
+
+  .ra-chip-wrap:hover .ra-chip-only,
+  .ra-chip-only:focus-visible {
+    opacity: 1;
+    color: var(--color-text-muted);
   }
 
   .ra-chip[aria-pressed="true"] {
@@ -144,13 +160,37 @@ const activeProducts = products.filter((p) => p.status === 'active');
     border-color: var(--color-accent);
   }
 
+  /* When a chip is pressed (product/group hidden), keep the "(only)" affordance
+     readable against the rest of the row by aligning its border with the
+     pressed neighbor. */
+  .ra-chip[aria-pressed="true"] + .ra-chip-only {
+    border-left-color: var(--color-accent);
+  }
+
   [data-contrast="high"] .ra-chip[aria-pressed="true"] {
     outline: 1px solid var(--color-bg);
     outline-offset: -3px;
   }
 
-  .ra-chip--reset {
-    border-radius: 999px;
-    border-right-width: 1px;
+  /* Reset is a different action class from the filter chips: borderless,
+     muted, lives at the end of the Groups row so it sits with the controls
+     it resets, not on a third orphan row. */
+  .ra-filters__reset {
+    font: inherit;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    background: transparent;
+    border: 0;
+    padding: 0.2rem 0.4rem;
+    margin-left: auto;
+    cursor: pointer;
+    line-height: 1.3;
+    text-decoration: none;
+  }
+
+  .ra-filters__reset:hover,
+  .ra-filters__reset:focus-visible {
+    color: var(--color-text);
+    text-decoration: underline;
   }
 </style>

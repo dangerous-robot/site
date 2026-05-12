@@ -33,17 +33,23 @@ const excludedProducts = (data.products ?? []).filter((p) => p.status === 'exclu
 )}
 
 <style>
+  /* Annex from the matrix above with a top rule + breathing room so the
+     section reads as supplementary context, not a fifth-tier feature. */
   .ra-excluded {
-    margin: var(--space-xl) 0 0;
+    margin: var(--space-2xl) 0 0;
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    max-width: 42rem;
   }
 
   .ra-excluded h3 {
     font-family: var(--font-heading);
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     font-weight: 600;
-    color: var(--color-text-heading);
+    color: var(--color-text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     margin: 0 0 var(--space-sm);
   }
 
@@ -57,7 +63,7 @@ const excludedProducts = (data.products ?? []).filter((p) => p.status === 'exclu
 
   .ra-excluded li {
     font-size: var(--font-size-sm);
-    color: var(--color-text);
+    color: var(--color-text-muted);
     line-height: var(--line-height-body);
   }
 

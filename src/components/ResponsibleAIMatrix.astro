@@ -371,7 +371,10 @@ for (const feature of features) {
     min-width: var(--ra-feature-col-width);
   }
 
-  /* Ideal column: sticky-left, faint tint, sits between Feature and products */
+  /* Ideal column: sticky-left, faint tint, sits between Feature and products.
+     The column is an editorial annotation, not a competing data column —
+     header type is italicized + lighter weight, cell padding is tighter so it
+     reads as a narrower meta-column. */
   .matrix-table .ra-ideal-col,
   .matrix-table .ra-ideal-cell {
     position: sticky;
@@ -383,9 +386,19 @@ for (const feature of features) {
     border-right: 1px solid var(--color-border);
   }
 
+  .matrix-table .ra-ideal-cell {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+
   .matrix-table thead .ra-ideal-head {
     top: 0;
     z-index: 3;
+    font-style: italic;
+    font-weight: 400;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+    letter-spacing: 0.02em;
   }
 
   .ra-ideal-head sup {
