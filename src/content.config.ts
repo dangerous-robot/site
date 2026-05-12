@@ -373,6 +373,27 @@ export const matrixDataSchema = z.object({
         });
       }
     }
+    if (product.status === 'active') {
+      const summary = product.summary;
+      const summaryFields = ['ai_ethics', 'financial_transparency', 'environmental', 'notes'] as const;
+      if (!summary) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['products', pIdx, 'summary'],
+          message: 'summary: required when status === "active"',
+        });
+      } else {
+        for (const field of summaryFields) {
+          if (!summary[field] || summary[field].trim() === '') {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              path: ['products', pIdx, 'summary', field],
+              message: `summary.${field}: required and non-empty when status === "active"`,
+            });
+          }
+        }
+      }
+    }
   });
 });
 
