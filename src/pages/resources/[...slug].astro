@@ -25,6 +25,33 @@ const { Content } = await render(entry);
 const { title, description, layout, wallpaper, data, noindex } = entry.data;
 
 const resourceSchema = buildResourceSchema(entry);
+
+// M1 shim: derive the legacy `dimensions[]`-shaped payload from the new
+// `features[]`/`products[].status` schema so the unchanged matrix component
+// keeps rendering. Removed in M2 when the component is ported to the new shape.
+function buildLegacyMatrixData(input: unknown): unknown {
+  if (!input || typeof input !== 'object') return input;
+  const d = input as Record<string, unknown>;
+  const products = Array.isArray(d.products) ? (d.products as Array<Record<string, unknown>>) : [];
+  const features = Array.isArray(d.features) ? (d.features as Array<Record<string, unknown>>) : [];
+  const activeProducts = products
+    .filter((p) => p.status !== 'excluded')
+    .map(({ key, name, url }) => ({ key, name, url }));
+  const excludedProducts = products
+    .filter((p) => p.status === 'excluded')
+    .map((p) => ({ name: p.name, reason: p.excluded_reason ?? '' }));
+  const dimensions = features.map((f) => ({ label: f.label, cells: f.cells }));
+  return {
+    lede: d.lede,
+    caption: d.caption,
+    products: activeProducts,
+    dimensions,
+    excluded_products: excludedProducts,
+    footnotes: d.footnotes,
+  };
+}
+
+const matrixData = layout === 'matrix' ? buildLegacyMatrixData(data) : data;
 ---
 <ResourcePage
   title={title}
@@ -51,7 +78,7 @@ const resourceSchema = buildResourceSchema(entry);
   {layout === 'matrix' && (
     <article class="resource-matrix">
       <Content />
-      <ResponsibleAIMatrix data={data} />
+      <ResponsibleAIMatrix data={matrixData} />
     </article>
   )}
 

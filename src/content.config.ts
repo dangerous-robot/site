@@ -287,6 +287,95 @@ const criteria = defineCollection({
   }),
 });
 
+const matrixGroupKey = z.enum([
+  'environmental',
+  'models-safety',
+  'privacy-data',
+  'business',
+  'product-access',
+]);
+
+const matrixCellType = z.enum([
+  'yes',
+  'no',
+  'no-good',
+  'partial',
+  'planned',
+  'text',
+  'unknown',
+  'na',
+]);
+
+const matrixCell = z.object({
+  type: matrixCellType,
+  detail: z.string().optional(),
+  footnote: z.string().optional(),
+});
+
+const matrixSummary = z.object({
+  ai_ethics: z.string().default(''),
+  financial_transparency: z.string().default(''),
+  environmental: z.string().default(''),
+  notes: z.string().default(''),
+});
+
+const matrixProduct = z.object({
+  key: z.string(),
+  name: z.string(),
+  url: z.string().url(),
+  status: z.enum(['active', 'excluded']),
+  excluded_reason: z.string().optional(),
+  summary: matrixSummary.optional(),
+});
+
+const matrixFeature = z.object({
+  key: z.string(),
+  label: z.string(),
+  group: matrixGroupKey,
+  ideal: z.object({
+    value: z.string(),
+    note: z.string().optional(),
+  }).optional(),
+  cells: z.record(z.string(), matrixCell),
+});
+
+export const matrixDataSchema = z.object({
+  lede: z.string().optional(),
+  caption: z.string().optional(),
+  groups: z.array(z.object({
+    key: matrixGroupKey,
+    label: z.string(),
+  })),
+  products: z.array(matrixProduct),
+  features: z.array(matrixFeature),
+  footnotes: z.array(z.object({
+    subject: z.string(),
+    text: z.string(),
+  })).optional(),
+}).superRefine((data, ctx) => {
+  const groupKeys = new Set(data.groups.map((g) => g.key));
+  data.features.forEach((feature, fIdx) => {
+    if (!groupKeys.has(feature.group)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['features', fIdx, 'group'],
+        message: `features[${fIdx}].group "${feature.group}" must reference an existing groups[].key`,
+      });
+    }
+  });
+  data.products.forEach((product, pIdx) => {
+    if (product.status === 'excluded') {
+      if (!product.excluded_reason || product.excluded_reason.trim() === '') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['products', pIdx, 'excluded_reason'],
+          message: 'excluded_reason: required and non-empty when status === "excluded"',
+        });
+      }
+    }
+  });
+});
+
 const resources = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'src/content/resources' }),
   schema: z.object({
