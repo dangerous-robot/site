@@ -425,3 +425,17 @@ Goal: Maintain a hand-curated allowlist (or "trusted set") of sources and sites 
 | Wire into researcher prompts | Pass the curated list (or topic-filtered subset) into the researcher as a "prefer these when relevant" hint, not a hard filter. |
 | Wire into auditor / source-trust signal | Use membership as one input to source independence/trust scoring. Avoid making it the sole signal — curated lists go stale. |
 | Surface to readers (later) | A `/sources/exceptional` or `/about/sources` page renders the list with the `why_exceptional` rationale, making the editorial choice visible. Lower priority than backend wiring.
+
+---
+
+## SEO post-restructure follow-ups (2026-05-11)
+
+Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-restructure.md) when the main implementation pass shipped. All require Google to recrawl since 2026-05-11.
+
+| Work Item | Notes |
+|-----------|-------|
+| Re-run `scripts/seo/inspect-urls.sh` ~2026-05-18 | One week after the Cloudflare 301s went live and the sitemap was submitted. Compare against the 2026-05-11 baseline in `seo-runs/`: `googleCanonical` for `/claims` and `/companies` should flip from the trailing-slash old URL to `/research/...`, and `/research/*` should leave the "URL is unknown to Google" state. If old URLs are still in "Indexed" after 4 weeks, re-verify the redirect rule (`dr_redirects_rule`) and the list contents. |
+| §5.3 Request Indexing pass | Drive Chrome through `scripts/seo/request-indexing-queue.txt` (10 URLs, priority-ordered). Pseudocode is in `plans/completed/seo-post-restructure.md` §5.3. Needs a Chrome profile already logged into `search.google.com/search-console`. Throttled by Google to ~10/day. |
+| §5.4 Weekly coverage screenshots | For ~4 weeks after the 301s shipped: navigate to the GSC Pages report and capture the four count buckets (Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed) to `seo-runs/coverage-YYYY-MM-DD.json`. Expectations and re-investigation triggers are in §5.4 of the completed plan. |
+| Single-hop redirect for deep claim URLs | Today `/claims/{x}/{y}` → `/research/claims/{x}/{y}` → `/research/claims/{x}/{y}/` (CF 301 + GH-Pages canonical-slash 301). Only fixable by changing Astro's `trailingSlash` mode and rebuilding URL handling site-wide. Low priority — Google handles 2-hop chains, but worth revisiting if other Astro work touches routing. |
+| OG image at 1200×630 | Carried over from the completed plan's §6 backlog. `dr-logo.png` is square; Twitter/FB want 1200×630. All new `/research/` and `/resources/*` URLs inherit the same default, so share-card quality is uniformly low. One properly-sized image passed via `ogImage` from `Base.astro` (or per-section) fixes it. |

@@ -1,8 +1,9 @@
 # Plan: SEO follow-up for the /research + /resources restructure
 
-**Status**: Ready to start
+**Status**: Done
 **Created**: 2026-05-11
-**Updated**: 2026-05-11 -- restructured for agent execution
+**Updated**: 2026-05-11 -- all five workstreams implemented and shipped
+**Completed**: 2026-05-11 (commits `e06f2dd`, `44bf383`, `52adba2`, `c36d472`, `d723043`)
 
 ## Summary
 
@@ -695,3 +696,9 @@ All previously-listed questions are now resolved:
   `/subjects -> /research/subjects` row. No wildcard is needed because
   there's no `/pages/subjects/[...slug]` route (`/research/subjects` is
   index-only). The plan's redirect table matches reality.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-05-11 | agent (claude-opus-4-7) | implementation | Implemented all five workstreams. Cloudflare 301s applied to prod (single-hop on static rows; deep claim URLs still hop through GH-Pages trailing-slash 301). §5.1 sitemap submitted; §5.2 baseline captured locally to `seo-runs/urlinspect-2026-05-11/`. §5.3 and §5.4 deferred (browser-MCP, no concrete trigger). Plan recipe has two stale bits caught during execution: §1.2 pre-flight URL `/accounts/{id}/tokens/verify` is not a real Cloudflare route (`scripts/seo/apply-cloudflare-redirects.sh` uses `/user/tokens/verify` + `rules/lists` GET instead); §4 acceptance grep had `rg -E` (invalid) and false-positive matches against `src/content.config.ts` filesystem paths + `src/lib/citations.ts` TS imports. §1.1 table targets shipped with trailing slashes to collapse the GH-Pages hop. Five commits, all pushed to main. |
