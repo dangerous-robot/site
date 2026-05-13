@@ -176,7 +176,9 @@
   padding: var(--space-2xs) var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
-  margin-bottom: var(--space-md);
+  /* No gap below — the matrix thead pins flush against the bottom of the
+     stuck nav (top: var(--page-nav-stuck-height)). */
+  margin-bottom: 0;
 }
 
 .pill-nav-wrap.is-stuck .resources-pill-nav-label {

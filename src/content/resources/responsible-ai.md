@@ -125,7 +125,7 @@ data:
         chatgptree: { type: "unknown" }
         earthly-insight: { type: "unknown" }
     - key: financial-transparency
-      label: "Financial transparency"
+      label: "Published financials"
       group: business
       ideal: { value: "yes" }
       cells:
@@ -183,7 +183,7 @@ data:
         chatgptree: { type: "unknown" }
         earthly-insight: { type: "unknown" }
     - key: corporate-structure
-      label: "Corporate structure"
+      label: "Ownership structure"
       group: business
       cells:
         greenpt: { type: "text", detail: "Employee-owned" }
