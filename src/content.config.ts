@@ -325,6 +325,7 @@ const matrixProduct = z.object({
   url: z.string().url(),
   status: z.enum(['active', 'excluded']),
   excluded_reason: z.string().optional(),
+  initially_hidden: z.boolean().optional(),
   summary: matrixSummary.optional(),
 });
 

@@ -1,4 +1,6 @@
 ---
+import { ArrowUp } from 'lucide-astro';
+
 interface Footnote {
   subject: string;
   text: string;
@@ -20,7 +22,12 @@ const slugify = (s: string) =>
 ---
 {footnotes.length > 0 && (
   <section class="ra-footnotes-section" id="footnotes">
-    <h3>Footnotes</h3>
+    <h3>
+      Footnotes
+      <a href="#top" class="return-top" aria-label="Return to top">
+        <ArrowUp size={18} aria-hidden="true" />
+      </a>
+    </h3>
     <ol class="ra-footnotes">
       {footnotes.map((note) => (
         <li id={`fn-${slugify(note.subject)}`}>
@@ -44,6 +51,9 @@ const slugify = (s: string) =>
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin: 0 0 var(--space-sm);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
   }
 
   .ra-footnotes {

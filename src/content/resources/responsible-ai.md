@@ -8,7 +8,6 @@ topics:
   - responsible-ai
   - consumer-guide
 data:
-  lede: "If you use AI, choose wisely."
   caption: "Data gathered from public sources as of April 2026. If something is wrong, let us know."
   groups:
     - key: environmental
@@ -62,6 +61,7 @@ data:
       name: Viro AI
       url: https://ai.viro.app/
       status: active
+      initially_hidden: true
       summary:
         ai_ethics: "Thin wrapper over OpenAI, Anthropic, Google, and Meta APIs; no own inference."
         financial_transparency: "Solo-founder LLC; no public disclosure."
@@ -71,6 +71,7 @@ data:
       name: ChatGPTree
       url: https://www.chatgptree.ai/
       status: active
+      initially_hidden: true
       summary:
         ai_ethics: "OpenAI API wrapper (GPT-4 series); marketing not endorsed by OpenAI."
         financial_transparency: "Founded by John Vincent Lee (Loople); no public financials."
@@ -80,6 +81,7 @@ data:
       name: Earthly Insight
       url: https://www.earthlyinsight.com/
       status: active
+      initially_hidden: true
       summary:
         ai_ethics: "Wraps OpenAI, Anthropic, and Google APIs (GPT-4.1, Gemini 2.5, Claude 3.5 Sonnet)."
         financial_transparency: "Bootstrapped LLC, no investors; donation flow not independently audited."

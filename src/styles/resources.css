@@ -154,6 +154,89 @@
   text-decoration: none;
 }
 
+/* Pill-nav wrapper used by sticky-jump-to nav above sectioned pages.
+   The matrix layout uses the same classes — keep this the single source. */
+.pill-nav-wrap {
+  position: sticky;
+  top: var(--space-md);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: var(--space-sm) 0;
+  margin: 0 0 var(--space-xl);
+  z-index: 5;
+}
+
+.pill-nav-wrap .resources-pill-nav-label {
+  margin: 0 0 var(--space-xs);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-2xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.pill-nav-wrap .pill-nav-row {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-bottom: var(--space-xs);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.pill-nav-wrap .pill-nav-row a {
+  display: inline-block;
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.35rem 0.9rem;
+  font-size: var(--font-size-xs);
+  font-family: var(--font-body);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: border-color 0.12s ease, color 0.12s ease;
+}
+
+.pill-nav-wrap .pill-nav-row a:hover,
+.pill-nav-wrap .pill-nav-row a:focus-visible {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.pill-nav-wrap.resources-pill-nav--bold .pill-nav-row a {
+  padding: 0.45rem 1rem;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+/* Back-to-top affordance — circular outline button placed next to a section
+   heading. Shared across the turn-off guide, matrix, and footnotes. */
+.return-top {
+  color: var(--color-text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  transition: color 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.return-top:hover,
+.return-top:focus-visible {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+}
+
 /* ---------------------------------------------------------
    Callout — left-accent boxes (e.g. "What doesn't work")
    --------------------------------------------------------- */

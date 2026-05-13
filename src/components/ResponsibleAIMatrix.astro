@@ -37,6 +37,7 @@ interface Product {
   url: string;
   status: 'active' | 'excluded';
   excluded_reason?: string;
+  initially_hidden?: boolean;
 }
 
 interface Group {
@@ -80,19 +81,32 @@ for (const feature of features) {
   const bucket = featuresByGroup.get(feature.group);
   if (bucket) bucket.push(feature);
 }
+
+const initialHiddenProducts = activeProducts
+  .filter((p) => (p as Product & { initially_hidden?: boolean }).initially_hidden)
+  .map((p) => p.key);
+const initialHiddenAttr = initialHiddenProducts.join(' ');
 ---
 <div class="responsible-matrix">
   {data.lede && <p class="lede">{data.lede}</p>}
 
-  <section id="chatbots" class="ra-matrix matrix-section">
+  <section
+    id="comparison-table"
+    class="ra-matrix matrix-section"
+    data-hidden-product={initialHiddenAttr || undefined}
+  >
     <h2>
-      Chatbots
+      Comparison table
       <a href="#top" class="return-top" aria-label="Return to top">
-        <ArrowUp size={14} aria-hidden="true" />
+        <ArrowUp size={18} aria-hidden="true" />
       </a>
     </h2>
 
-    <ResponsibleAIFilters products={activeProducts} groups={groups} />
+    <ResponsibleAIFilters
+      products={activeProducts}
+      groups={groups}
+      initiallyHiddenProducts={initialHiddenProducts}
+    />
 
     <div class="ra-matrix__scroll" role="region" aria-label="Feature comparison matrix" tabindex="0">
       <table class="matrix-table">
@@ -132,13 +146,15 @@ for (const feature of features) {
             <tbody data-group={group.key} id={`ra-group-${group.key}`}>
               <tr class="ra-group-header">
                 <th colspan={2 + activeProducts.length} scope="rowgroup">
-                  <button
-                    type="button"
-                    class="ra-group-toggle"
-                    aria-expanded="true"
-                    aria-controls={`ra-group-${group.key}`}
-                    data-filter-group-collapse={group.key}
-                  >{group.label}</button>
+                  <div class="ra-group-sticky">
+                    <button
+                      type="button"
+                      class="ra-group-toggle"
+                      aria-expanded="true"
+                      aria-controls={`ra-group-${group.key}`}
+                      data-filter-group-collapse={group.key}
+                    >{group.label}</button>
+                  </div>
                 </th>
               </tr>
               {rows.map((feature) => {
@@ -214,18 +230,25 @@ for (const feature of features) {
       if (set.size === 0) root.removeAttribute(attr);
       else root.setAttribute(attr, [...set].join(' '));
     };
+    // aria-pressed semantics: pressed === SELECTED/VISIBLE (filled chip);
+    // not-pressed === hidden (outline chip). The data model still tracks
+    // hidden keys, so pressed = !(key in hidden).
     const syncProducts = () => {
       const hidden = readSet('data-hidden-product');
       root.querySelectorAll<HTMLButtonElement>('[data-filter-product]').forEach((el) => {
-        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterProduct!) ? 'true' : 'false');
+        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterProduct!) ? 'false' : 'true');
       });
     };
     const syncGroups = () => {
       const hidden = readSet('data-hidden-group');
       root.querySelectorAll<HTMLButtonElement>('[data-filter-group]').forEach((el) => {
-        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterGroup!) ? 'true' : 'false');
+        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterGroup!) ? 'false' : 'true');
       });
     };
+    // Run sync once on init so chips reflect the SSR'd data-hidden-* state
+    // (the 3 newcomers start hidden, everything else starts visible).
+    syncProducts();
+    syncGroups();
     const allProductKeys = () =>
       [...root.querySelectorAll<HTMLElement>('th[data-product-key]')].map((el) => el.dataset.productKey!);
     const allGroupKeys = () =>
@@ -300,23 +323,12 @@ for (const feature of features) {
     gap: var(--space-sm);
   }
 
-  .return-top {
-    color: var(--color-text-faint);
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .return-top:hover { color: var(--color-accent); }
-
+  /* No internal scroll wrapper: the table extends past the page container if
+     necessary and the page itself handles horizontal overflow. This lets the
+     sticky thead actually stick (a contained scroll context broke it) and
+     means pinch-zoom-out on mobile reveals more of the table. */
   .ra-matrix__scroll {
-    /* overflow-y: clip so sticky thead is positioned against page scroll,
-       not a vertical scroll context created by overflow-x. Requires Safari
-       16+ / Chrome 90+ / FF 81+ (all met in 2026). */
-    overflow-x: auto;
-    overflow-y: clip;
-    margin: 0 calc(-1 * var(--space-md));
-    padding: 0 var(--space-md);
+    /* intentionally no overflow — see comment above */
   }
 
   .matrix-table {
@@ -480,21 +492,29 @@ for (const feature of features) {
     color: var(--color-text-heading);
   }
 
-  /* group header row: sticky-left so the section label (e.g. "Privacy & data")
-     stays anchored as the user scrolls horizontally through the comparison. */
+  /* Group header: the cell itself scrolls with the row, but its inner div is
+     position:sticky;left:0 so the label stays anchored. Wrapping the sticky
+     onto a div is the cross-browser-reliable pattern; sticky on <th colspan>
+     directly is patchy in Chrome/Android. */
   .ra-group-header th {
+    padding: 0;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+
+  .ra-group-sticky {
     position: sticky;
     left: 0;
     z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-md) 0.75rem 0.4rem;
     font-family: var(--font-heading);
     font-weight: 600;
     font-size: var(--font-size-sm);
     color: var(--color-text-heading);
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    padding-top: var(--space-md);
-    padding-bottom: 0.4rem;
-    border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
   }
 
@@ -564,20 +584,13 @@ for (const feature of features) {
     margin: var(--space-md) 0 var(--space-xl);
   }
 
-  /* Mobile: shrink Feature col to fit the longest word (~7rem covers
-     "Accessibility"/"Transparency"); let the scroll region break out of the
-     page's max-width to span the viewport with 4px breathing room.
-     Ideal column hides entirely on mobile — editorial annotation that doesn't
-     earn its width on small screens; the editorial-pick footnote remains. */
+  /* Mobile: shrink Feature col to fit the longest label word; allow the
+     table to extend past the page container so the page horizontal-scrolls
+     naturally. Ideal column hides — editorial annotation that doesn't earn
+     its width on small viewports; the editorial-pick footnote remains. */
   @media (max-width: 640px) {
     .ra-matrix {
       --ra-feature-col-width: 7rem;
-    }
-
-    .ra-matrix__scroll {
-      margin-left: calc(50% - 50vw);
-      margin-right: calc(50% - 50vw);
-      padding: 0 4px;
     }
 
     .matrix-table {
@@ -605,6 +618,10 @@ for (const feature of features) {
     .matrix-table .ra-ideal-col,
     .matrix-table .ra-ideal-cell {
       display: none;
+    }
+
+    .ra-group-sticky {
+      padding: var(--space-sm) 0.5rem 0.3rem;
     }
   }
 
