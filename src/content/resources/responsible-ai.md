@@ -1,6 +1,6 @@
 ---
-title: "Responsible AI Chatbots Compared"
-description: "Side-by-side comparison of responsible AI chatbots: GreenPT, Ecosia AI, Euria, and TreadLightly AI on privacy, sustainability, and transparency."
+title: "Responsible AI Chatbots"
+description: "Side-by-side comparison of responsible AI chatbots: GreenPT, Ecosia AI, Euria, and TreadLightlyAI on privacy, sustainability, and transparency."
 pubDate: 2026-03-06
 layout: matrix
 wallpaper: responsible-ai
@@ -23,19 +23,19 @@ data:
   products:
     - key: greenpt
       name: GreenPT
-      url: https://greenpt.ai/
+      url: https://chat.greenpt.ai/
       status: active
       summary:
-        ai_ethics: "Open-weight Mistral models only; full inference stack under provider control."
-        financial_transparency: "Employee-owned Swiss company; no published financials."
-        environmental: "Hosted on Infomaniak (Swiss hydroelectric); ISO 14001 and 50001 audited."
-        notes: "Paid only at CHF 15/mo; green claims cover inference, not model training."
+        ai_ethics: "Open-weight models only."
+        financial_transparency: "GreenPT BV, Netherlands; no published financials."
+        environmental: "Hosted at Scaleway data center in France (PUE 1.37), powered by 100% renewable energy."
+        notes: "Smaller, more efficient models."
     - key: ecosia
       name: Ecosia AI
       url: https://blog.ecosia.org/ecosia-ai/
       status: active
       summary:
-        ai_ethics: "Wraps OpenAI's GPT-4 mini; proprietary model with no inference control."
+        ai_ethics: "Wraps OpenAI's GPT-4 mini; proprietary model."
         financial_transparency: "Non-profit under German [steward-ownership](https://blog.ecosia.org/ecosia-ai/); monthly financial reports published."
         environmental: "Conventional cloud hosting; tree counter is an engagement metric, not energy data."
         notes: "Free, ad-supported; revenue funds tree planting rather than greener inference."
@@ -44,19 +44,19 @@ data:
       url: https://euria.ai/
       status: active
       summary:
-        ai_ethics: "Open-weight models (DeepSeek, Qwen, Mistral, Llama); Chinese-origin models carry CCP-aligned training biases."
-        financial_transparency: "B Corp, employee-controlled; no published financials."
-        environmental: "Hosted on Infomaniak Geneva (PUE 1.06, waste heat to district heating)."
-        notes: "Free, subsidized by Infomaniak as a showcase for its AI infrastructure."
+        ai_ethics: "Open-weight models (DeepSeek, Qwen, Mistral, Llama); Chinese-origin models carry specific training biases."
+        financial_transparency: "Infomaniak is a B Corp; no published financials."
+        environmental: "Hosted on Infomaniak's Geneva data center (PUE 1.06, waste heat to district heating). Powered by 100% renewable energy."
+        notes: "Bold [environmental committments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org for 10 years."
     - key: treadlightly
-      name: TreadLightly AI
+      name: TreadLightlyAI
       url: https://treadlightly.ai/
       status: active
       summary:
         ai_ethics: "Mix of open-weight (Mistral, GPT-oss) and proprietary (Claude) models; publishes AI limitations."
-        financial_transparency: "Private; pre-launch."
-        environmental: "Mixed: Infomaniak for open-weight inference, Anthropic/AWS for Claude; energy estimates modeled, not metered."
-        notes: "Pre-launch product from Dangerous Robot's parent; opt-in web search; $3/mo planned."
+        financial_transparency: "Sole proprietorship; no published financials."
+        environmental: "Primary host is Infomaniak's Geneva data center (PUE 1.06, waste heat to district heating) which is powered by 100% renewable energy. Anthropic/AWS hosting for Claude. Energy estimates modeled, not metered."
+        notes: "Beta product from same founder as Dangerous Robot."
     - key: viro
       name: Viro AI
       url: https://ai.viro.app/
@@ -65,7 +65,7 @@ data:
       summary:
         ai_ethics: "Thin wrapper over OpenAI, Anthropic, Google, and Meta APIs; no own inference."
         financial_transparency: "Solo-founder LLC; no public disclosure."
-        environmental: "Runs on third-party cloud; offsets via [Terrapass](https://en.wikipedia.org/wiki/TerraPass) Green-e wind RECs after the fact, not on renewable infrastructure."
+        environmental: "Conventional cloud hosting; offsets via [Terrapass](https://en.wikipedia.org/wiki/TerraPass) Green-e wind RECs after the fact."
         notes: "Launched October 2025; iOS and Android; partner Terrapass entered a [California DFPI consent order](https://dfpi.ca.gov/press_release/dfpi-secures-over-68500-in-consumer-refunds-from-carbon-credit-dealer/) in July 2025."
     - key: chatgptree
       name: ChatGPTree
@@ -74,8 +74,8 @@ data:
       initially_hidden: true
       summary:
         ai_ethics: "OpenAI API wrapper (GPT-4 series); marketing not endorsed by OpenAI."
-        financial_transparency: "Founded by John Vincent Lee (Loople); no public financials."
-        environmental: "Conventional cloud inference; funds tree planting via Evertreen and Veritree, not greener infrastructure."
+        financial_transparency: "No published financials."
+        environmental: "Conventional cloud hosting; funds tree planting via Evertreen and Veritree."
         notes: "Launched June 2025; $11/mo plants one tree per month; Evertreen partner [flagged for non-transparent practices](https://redmonitor.substack.com/p/evertreen-non-transparent-tree-planting), Veritree is transparency-focused."
     - key: earthly-insight
       name: Earthly Insight
@@ -85,7 +85,7 @@ data:
       summary:
         ai_ethics: "Wraps OpenAI, Anthropic, and Google APIs (GPT-4.1, Gemini 2.5, Claude 3.5 Sonnet)."
         financial_transparency: "Bootstrapped LLC, no investors; donation flow not independently audited."
-        environmental: "Conventional third-party cloud; no renewable energy claims."
+        environmental: "Conventional cloud hosting."
         notes: "Launched October 2025; donates [33% of premium revenue](https://globalrewilding.earth/earthly-insight-joins-our-global-rewilding-champions/) to Global Rewilding Alliance and partners; $20/mo premium tier."
   features:
     - key: renewable-hosting
@@ -140,10 +140,10 @@ data:
       label: "Models"
       group: models-safety
       cells:
-        greenpt: { type: "text", detail: "Mistral Small, Mistral Large" }
+        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS" }
         ecosia: { type: "text", detail: "GPT-4 mini" }
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3.3" }
-        treadlightly: { type: "text", detail: "Mistral Ministral, Mistral Small, GPT-oss, Claude Haiku, Claude Sonnet" }
+        treadlightly: { type: "text", detail: "Mistral Ministral, Mistral Small, GPT-OSS, Claude Haiku, Claude Sonnet" }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
         chatgptree: { type: "text", detail: "GPT-4 series" }
         earthly-insight: { type: "text", detail: "GPT-4.1, Gemini 2.5, Claude 3.5 Sonnet" }
@@ -290,8 +290,8 @@ data:
     - subject: "Euria pricing"
       text: "Free, subsidized by Infomaniak as a showcase for their AI infrastructure."
     - subject: "Open-source models"
-      text: "GreenPT and Euria use exclusively open-weight models, meaning the weights are publicly available and the providers control the full inference stack. TreadLightly and Ecosia use some proprietary models where inference runs on the provider's infrastructure."
-    - subject: "TreadLightly AI"
+      text: "GreenPT and Euria use exclusively open-weight models, meaning the weights are publicly available and the providers control the full inference stack. TreadLightlyAI and Ecosia use some proprietary models where inference runs on the provider's infrastructure."
+    - subject: "TreadLightlyAI"
       text: "Pre-launch product. Uses a mix of green-hosted (Infomaniak) and conventional (Anthropic/AWS) infrastructure. Energy estimates are modeled, not metered."
     - subject: "GreenPT green claims"
       text: "Cover inference-time energy only. Mistral models were trained on conventional infrastructure. This tension between green hosting and non-green training applies across the industry."
