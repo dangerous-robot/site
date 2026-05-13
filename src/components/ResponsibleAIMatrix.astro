@@ -117,19 +117,13 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
             </th>
             {activeProducts.map((p) => (
               <th scope="col" class="product-col" data-product-key={p.key}>
-                <button
-                  type="button"
-                  class="ra-col-toggle"
-                  aria-pressed="false"
-                  data-filter-product={p.key}
-                >{p.name}</button>
                 <a
                   href={p.url}
                   class="ra-product-link"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label={`Visit ${p.name} site`}
                 >
+                  {p.name}
                   <ExternalLink size={12} aria-hidden="true" />
                 </a>
               </th>
@@ -366,29 +360,22 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     white-space: nowrap;
   }
 
-  .ra-col-toggle {
-    font: inherit;
-    color: var(--color-text-heading);
-    background: transparent;
-    border: 1px solid transparent;
-    padding: 0.15rem 0.4rem;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .ra-col-toggle[aria-pressed="true"] {
-    background: var(--color-accent);
-    color: var(--color-bg);
-  }
-
   .ra-product-link {
-    color: var(--color-text-faint);
+    color: var(--color-text-heading);
+    text-decoration: none;
     display: inline-flex;
     align-items: center;
-    margin-left: 0.3em;
+    gap: 0.3em;
   }
 
-  .ra-product-link:hover { color: var(--color-accent); }
+  .ra-product-link :global(svg) {
+    color: var(--color-text-faint);
+  }
+
+  .ra-product-link:hover,
+  .ra-product-link:focus-visible {
+    color: var(--color-accent);
+  }
 
   .dim-label {
     font-weight: 400;
