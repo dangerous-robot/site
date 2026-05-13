@@ -155,13 +155,13 @@
 }
 
 /* Pill-nav wrapper used by sticky-jump-to nav above sectioned pages.
-   The matrix layout uses the same classes — keep this the single source.
+   The matrix layout uses the same classes, keep this the single source.
    "is-stuck" is added by an IntersectionObserver (see [...slug].astro) when
-   the nav has pinned to the viewport top. The label sits inline with the
-   chip row in BOTH states so the wrap's box height is identical between
-   stuck/un-stuck. A height delta here would let scroll-anchoring increase
-   scrollY when the user scrolls up across the un-stick threshold, which
-   bounces the IO observer and traps the page just below the nav. */
+   the nav has pinned to the viewport top. Wrap height MUST be identical
+   between stuck and un-stuck: any height delta lets scroll-anchoring shift
+   scrollY across the threshold, which re-fires the IO and bounces the page.
+   That means keeping label inline and NOT resizing the chips between states.
+   Stuck/un-stuck is signaled by the full-viewport breakout backdrop alone. */
 .pill-nav-wrap {
   position: sticky;
   top: 0;
@@ -194,13 +194,6 @@
 .pill-nav-wrap.is-stuck .pill-nav-row {
   width: fit-content;
   overflow-x: visible;
-}
-
-.pill-nav-wrap.is-stuck .pill-nav-row a,
-.pill-nav-wrap.resources-pill-nav--bold.is-stuck .pill-nav-row a {
-  padding: 0.2rem 0.65rem;
-  font-size: var(--font-size-xs);
-  font-weight: 500;
 }
 
 /* Zero-height sentinel placed immediately above each .pill-nav-wrap so an
