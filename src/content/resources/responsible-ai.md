@@ -53,7 +53,7 @@ data:
       url: https://treadlightly.ai/
       status: active
       summary:
-        ai_ethics: "Mix of open-weight (Mistral, GPT-oss) and proprietary (Claude) models; publishes AI limitations."
+        ai_ethics: "Mix of open-weight (Mistral, GPT-OSS-120B) and proprietary (Claude) models; publishes AI limitations."
         financial_transparency: "Sole proprietorship; no published financials."
         environmental: "Primary host is Infomaniak's Geneva data center (PUE 1.06, waste heat to district heating) which is powered by 100% renewable energy. Anthropic/AWS hosting for Claude. Energy estimates modeled, not metered."
         notes: "Beta product from same founder as Dangerous Robot."
@@ -140,10 +140,10 @@ data:
       label: "Models"
       group: models-safety
       cells:
-        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS" }
+        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS-120B" }
         ecosia: { type: "text", detail: "GPT-4 mini" }
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3.3" }
-        treadlightly: { type: "text", detail: "Mistral Ministral, Mistral Small, GPT-OSS, Claude Haiku, Claude Sonnet" }
+        treadlightly: { type: "text", detail: "Mistral Ministral, Mistral Small, GPT-OSS-120B, Claude Haiku, Claude Sonnet" }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
         chatgptree: { type: "text", detail: "GPT-4 series" }
         earthly-insight: { type: "text", detail: "GPT-4.1, Gemini 2.5, Claude 3.5 Sonnet" }
