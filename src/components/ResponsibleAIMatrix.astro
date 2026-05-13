@@ -310,7 +310,11 @@ for (const feature of features) {
   .return-top:hover { color: var(--color-accent); }
 
   .ra-matrix__scroll {
+    /* overflow-y: clip so sticky thead is positioned against page scroll,
+       not a vertical scroll context created by overflow-x. Requires Safari
+       16+ / Chrome 90+ / FF 81+ (all met in 2026). */
     overflow-x: auto;
+    overflow-y: clip;
     margin: 0 calc(-1 * var(--space-md));
     padding: 0 var(--space-md);
   }
@@ -562,11 +566,12 @@ for (const feature of features) {
 
   /* Mobile: shrink Feature col to fit the longest word (~7rem covers
      "Accessibility"/"Transparency"); let the scroll region break out of the
-     page's max-width to span the viewport with 4px breathing room. */
+     page's max-width to span the viewport with 4px breathing room.
+     Ideal column hides entirely on mobile — editorial annotation that doesn't
+     earn its width on small screens; the editorial-pick footnote remains. */
   @media (max-width: 640px) {
     .ra-matrix {
       --ra-feature-col-width: 7rem;
-      --ra-ideal-col-width: 3.5rem;
     }
 
     .ra-matrix__scroll {
@@ -593,7 +598,13 @@ for (const feature of features) {
 
     .product-col {
       font-size: var(--font-size-sm);
-      white-space: normal;
+      /* Keep product names on one line (e.g. "Viro AI" must not wrap). */
+      white-space: nowrap;
+    }
+
+    .matrix-table .ra-ideal-col,
+    .matrix-table .ra-ideal-cell {
+      display: none;
     }
   }
 

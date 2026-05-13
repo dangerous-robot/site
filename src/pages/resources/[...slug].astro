@@ -41,6 +41,7 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
   wallpaper={wallpaper}
   noindex={noindex}
   hideTitle={layout === 'tool'}
+  layout={layout === 'matrix' ? 'wide' : undefined}
 >
   <script type="application/ld+json" set:html={JSON.stringify(resourceSchema)} />
 
@@ -60,8 +61,8 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
   {layout === 'matrix' && matrixData && (
     <article class="resource-matrix">
       <nav class="ra-page-nav" aria-label="Page sections">
-        <a href="#summary" class="ra-page-nav__chip">Summary</a>
-        <a href="#chatbots" class="ra-page-nav__chip">Comparison</a>
+        <span class="ra-page-nav__label">Jump to:</span>
+        <a href="#chatbots" class="ra-page-nav__chip">Comparison table</a>
         <a href="#footnotes" class="ra-page-nav__chip">Footnotes</a>
       </nav>
       <ResponsibleAISummary data={matrixData} />
@@ -87,14 +88,24 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
   }
 
   .resource-matrix {
-    max-width: 64rem;
+    /* width inherited from .content--wide on the matrix layout */
   }
 
   .ra-page-nav {
     display: flex;
     flex-wrap: wrap;
+    align-items: baseline;
     gap: 0.4rem;
     margin: 0 0 var(--space-lg);
+  }
+
+  .ra-page-nav__label {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    margin-right: var(--space-xs);
   }
 
   .ra-page-nav__chip {
