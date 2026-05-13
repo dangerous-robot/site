@@ -60,6 +60,9 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
 
   {layout === 'matrix' && matrixData && (
     <article class="resource-matrix">
+      <div class="resource-matrix__intro">
+        <Content />
+      </div>
       <nav class="pill-nav-wrap resources-pill-nav--bold" aria-label="Page sections">
         <p class="resources-pill-nav-label" aria-hidden="true">Jump to:</p>
         <div class="resources-pill-nav pill-nav-row">
@@ -69,7 +72,6 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
         </div>
       </nav>
       <ResponsibleAISummary data={matrixData} />
-      <Content />
       <ResponsibleAIMatrix data={matrixData} />
       <ResponsibleAIExcluded data={matrixData} />
       <ResponsibleAIFootnotes data={matrixData} />
@@ -123,6 +125,26 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
 
   .resource-matrix {
     /* width inherited from .content--wide on the matrix layout */
+  }
+
+  .resource-matrix__intro {
+    max-width: 44rem;
+    margin-bottom: var(--space-xl);
+    font-size: 1.15rem;
+    line-height: var(--line-height-body);
+    color: var(--color-text);
+  }
+
+  .resource-matrix__intro :global(p) {
+    margin: 0 0 var(--space-md);
+  }
+
+  .resource-matrix__intro :global(.resource-matrix__disclosure) {
+    margin-top: var(--space-lg);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
   }
 
   .resource-tool {

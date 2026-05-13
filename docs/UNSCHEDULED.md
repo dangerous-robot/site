@@ -439,3 +439,17 @@ Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-
 | §5.4 Weekly coverage screenshots | For ~4 weeks after the 301s shipped: navigate to the GSC Pages report and capture the four count buckets (Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed) to `seo-runs/coverage-YYYY-MM-DD.json`. Expectations and re-investigation triggers are in §5.4 of the completed plan. |
 | Single-hop redirect for deep claim URLs | Today `/claims/{x}/{y}` → `/research/claims/{x}/{y}` → `/research/claims/{x}/{y}/` (CF 301 + GH-Pages canonical-slash 301). Only fixable by changing Astro's `trailingSlash` mode and rebuilding URL handling site-wide. Low priority — Google handles 2-hop chains, but worth revisiting if other Astro work touches routing. |
 | OG image at 1200×630 | Carried over from the completed plan's §6 backlog. `dr-logo.png` is square; Twitter/FB want 1200×630. All new `/research/` and `/resources/*` URLs inherit the same default, so share-card quality is uniformly low. One properly-sized image passed via `ogImage` from `Base.astro` (or per-section) fixes it. |
+
+---
+
+## Glossary of terms
+
+Goal: Maintain a glossary covering AI, AI safety, data-center environmental technology, energy use, and energy-market terminology. The matrix and claim pages already lean on terms like RECs, PUE, additionality, and PPAs without defining them — a reader-facing glossary lets the rest of the site link to plain-language explanations instead of inlining them.
+
+Initial tracking doc: [`glossary.md`](glossary.md) (working draft; not yet wired into the site).
+
+| Work Item | Notes |
+|-----------|-------|
+| Grow the term list | Seed entries as they come up in research and matrix work. Group loosely by domain (AI / AI-safety / data-center / energy / energy-markets) once there are enough to justify it. Keep each definition short and source-backed where possible. |
+| Decide reader-facing surface | Options: (a) standalone `/glossary` page, (b) per-term anchors that other pages link to, (c) tooltip/popover on first use. Pick once there are ~15+ terms. |
+| Wire into matrix and claim pages | Replace inline parentheticals ("RECs", "PUE 1.06") with links to the glossary entry once the surface exists. |

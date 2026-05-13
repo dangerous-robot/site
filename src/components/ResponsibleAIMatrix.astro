@@ -31,6 +31,19 @@ interface Cell {
   footnote?: string;
 }
 
+function renderDetail(s: string): string {
+  const esc = s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+  return esc.replace(
+    /\[([^\]]+)\]\(([^)\s]+)\)/g,
+    (_m, text, url) =>
+      `<a href="${url}" target="_blank" rel="noopener noreferrer">${text}</a>`,
+  );
+}
+
 interface Product {
   key: string;
   name: string;
@@ -152,11 +165,11 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                           <span class="cell-inline">
                             <icon.Icon size={16} aria-hidden="true" />
                             <span class="sr-only">{icon.srLabel}</span>
-                            {cell.detail && <span class="detail">{cell.detail}</span>}
+                            {cell.detail && <span class="detail" set:html={renderDetail(cell.detail)} />}
                           </span>
                         )}
                         {cell.type === 'text' && (
-                          <span class="detail">{cell.detail}</span>
+                          <span class="detail" set:html={renderDetail(cell.detail ?? '')} />
                         )}
                         {cell.type === 'na' && (
                           <span class="na" aria-label="Not applicable">&ndash;</span>
