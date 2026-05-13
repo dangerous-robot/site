@@ -168,7 +168,6 @@
   padding: var(--space-sm) 0;
   margin: 0 0 var(--space-xl);
   z-index: 5;
-  transition: padding 0.15s ease, width 0.15s ease;
 }
 
 .pill-nav-wrap.is-stuck {

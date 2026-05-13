@@ -85,12 +85,12 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
 </ResourcePage>
 
 <script>
-  // Stuck-state detector for .pill-nav-wrap. Inserts a zero-height sentinel
-  // immediately above each nav; IO toggles `.is-stuck` on the nav when the
-  // sentinel scrolls out of view. Also publishes the stuck nav's height as
-  // --page-nav-stuck-height on <html> so the matrix thead can pin below it.
-  type StuckNav = HTMLElement & { dataset: DOMStringMap };
-  const navs = document.querySelectorAll<StuckNav>('.pill-nav-wrap');
+  // Stuck-state detector for .pill-nav-wrap. A sentinel above each nav lets
+  // an IntersectionObserver toggle `.is-stuck`. A ResizeObserver tracks the
+  // nav's actual rendered height (including any post-class-toggle reflow)
+  // and publishes it as --page-nav-stuck-height on <html>, so the matrix
+  // thead can pin flush against the bottom of the stuck nav.
+  const navs = document.querySelectorAll<HTMLElement>('.pill-nav-wrap');
   const updateStuckHeight = () => {
     const stuck = document.querySelector<HTMLElement>('.pill-nav-wrap.is-stuck');
     const h = stuck ? stuck.getBoundingClientRect().height : 0;
@@ -103,13 +103,16 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
     sentinel.className = 'pill-nav-sentinel';
     sentinel.setAttribute('aria-hidden', 'true');
     nav.parentNode?.insertBefore(sentinel, nav);
-    const obs = new IntersectionObserver(([entry]) => {
+    const io = new IntersectionObserver(([entry]) => {
       nav.classList.toggle('is-stuck', !entry.isIntersecting);
       updateStuckHeight();
     });
-    obs.observe(sentinel);
+    io.observe(sentinel);
+    const ro = new ResizeObserver(updateStuckHeight);
+    ro.observe(nav);
   });
   window.addEventListener('resize', updateStuckHeight);
+  updateStuckHeight();
 </script>
 
 <style>
