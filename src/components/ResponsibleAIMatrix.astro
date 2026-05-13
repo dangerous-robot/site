@@ -476,9 +476,12 @@ for (const feature of features) {
     color: var(--color-text-heading);
   }
 
-  /* group header row: not sticky */
+  /* group header row: sticky-left so the section label (e.g. "Privacy & data")
+     stays anchored as the user scrolls horizontally through the comparison. */
   .ra-group-header th {
-    position: static;
+    position: sticky;
+    left: 0;
+    z-index: 1;
     font-family: var(--font-heading);
     font-weight: 600;
     font-size: var(--font-size-sm);
@@ -555,6 +558,43 @@ for (const feature of features) {
     font-size: var(--font-size-xs);
     color: var(--color-text-faint);
     margin: var(--space-md) 0 var(--space-xl);
+  }
+
+  /* Mobile: shrink Feature col to fit the longest word (~7rem covers
+     "Accessibility"/"Transparency"); let the scroll region break out of the
+     page's max-width to span the viewport with 4px breathing room. */
+  @media (max-width: 640px) {
+    .ra-matrix {
+      --ra-feature-col-width: 7rem;
+      --ra-ideal-col-width: 3.5rem;
+    }
+
+    .ra-matrix__scroll {
+      margin-left: calc(50% - 50vw);
+      margin-right: calc(50% - 50vw);
+      padding: 0 4px;
+    }
+
+    .matrix-table {
+      min-width: 0;
+      font-size: var(--font-size-xs);
+    }
+
+    .matrix-table th,
+    .matrix-table td {
+      padding: 0.5rem 0.5rem;
+    }
+
+    .matrix-table tbody th[scope="row"] {
+      font-size: var(--font-size-xs);
+      word-break: break-word;
+      hyphens: auto;
+    }
+
+    .product-col {
+      font-size: var(--font-size-sm);
+      white-space: normal;
+    }
   }
 
 </style>

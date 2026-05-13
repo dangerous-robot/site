@@ -19,7 +19,7 @@ const slugify = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 ---
 {footnotes.length > 0 && (
-  <section class="ra-footnotes-section">
+  <section class="ra-footnotes-section" id="footnotes">
     <h3>Footnotes</h3>
     <ol class="ra-footnotes">
       {footnotes.map((note) => (

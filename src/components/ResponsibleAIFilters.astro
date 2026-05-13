@@ -18,63 +18,122 @@ interface Props {
 const { products, groups } = Astro.props;
 const activeProducts = products.filter((p) => p.status === 'active');
 ---
-<div class="ra-filters" role="group" aria-label="Matrix filters">
-  <div class="ra-filters__row">
-    <span class="ra-filters__label">Products</span>
-    <div class="ra-filters__chips">
-      {activeProducts.map((p) => (
-        <span class="ra-chip-wrap">
-          <button
-            type="button"
-            class="ra-chip"
-            aria-pressed="false"
-            data-filter-product={p.key}
-          >{p.name}</button>
-          <button
-            type="button"
-            class="ra-chip-only"
-            aria-label={`Show only ${p.name}`}
-            data-filter-only-product={p.key}
-          >only</button>
-        </span>
-      ))}
+<details class="ra-filters-details">
+  <summary class="ra-filters-summary">
+    <span class="ra-filters-summary__label">Filters</span>
+    <span class="ra-filters-summary__hint">show / hide products and groups</span>
+  </summary>
+  <div class="ra-filters" role="group" aria-label="Matrix filters">
+    <div class="ra-filters__row">
+      <span class="ra-filters__label">Products</span>
+      <div class="ra-filters__chips">
+        {activeProducts.map((p) => (
+          <span class="ra-chip-wrap">
+            <button
+              type="button"
+              class="ra-chip"
+              aria-pressed="false"
+              data-filter-product={p.key}
+            >{p.name}</button>
+            <button
+              type="button"
+              class="ra-chip-only"
+              aria-label={`Show only ${p.name}`}
+              data-filter-only-product={p.key}
+            >only</button>
+          </span>
+        ))}
+      </div>
+    </div>
+    <div class="ra-filters__row">
+      <span class="ra-filters__label">Groups</span>
+      <div class="ra-filters__chips">
+        {groups.map((g) => (
+          <span class="ra-chip-wrap">
+            <button
+              type="button"
+              class="ra-chip"
+              aria-pressed="false"
+              data-filter-group={g.key}
+            >{g.label}</button>
+            <button
+              type="button"
+              class="ra-chip-only"
+              aria-label={`Show only ${g.label}`}
+              data-filter-only-group={g.key}
+            >only</button>
+          </span>
+        ))}
+        <button
+          type="button"
+          class="ra-filters__reset"
+          data-filter-reset
+          aria-label="Show all products and groups"
+        >Reset</button>
+      </div>
     </div>
   </div>
-  <div class="ra-filters__row">
-    <span class="ra-filters__label">Groups</span>
-    <div class="ra-filters__chips">
-      {groups.map((g) => (
-        <span class="ra-chip-wrap">
-          <button
-            type="button"
-            class="ra-chip"
-            aria-pressed="false"
-            data-filter-group={g.key}
-          >{g.label}</button>
-          <button
-            type="button"
-            class="ra-chip-only"
-            aria-label={`Show only ${g.label}`}
-            data-filter-only-group={g.key}
-          >only</button>
-        </span>
-      ))}
-      <button
-        type="button"
-        class="ra-filters__reset"
-        data-filter-reset
-        aria-label="Show all products and groups"
-      >Reset</button>
-    </div>
-  </div>
-</div>
+</details>
+
+<script>
+  // Open the filter disclosure by default on viewports wide enough to absorb
+  // the height; keep it collapsed on mobile so the matrix isn't pushed down.
+  const filtersDetails = document.querySelectorAll<HTMLDetailsElement>('.ra-filters-details');
+  if (window.matchMedia('(min-width: 640px)').matches) {
+    filtersDetails.forEach((d) => { d.open = true; });
+  }
+</script>
 
 <style>
+  .ra-filters-details {
+    margin: 0 0 var(--space-lg);
+  }
+
+  .ra-filters-summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    padding: var(--space-xs) 0;
+    color: var(--color-text-muted);
+  }
+
+  .ra-filters-summary::-webkit-details-marker { display: none; }
+
+  .ra-filters-summary::before {
+    content: "▸";
+    display: inline-block;
+    font-size: 0.7em;
+    color: var(--color-text-faint);
+  }
+
+  .ra-filters-details[open] > .ra-filters-summary::before {
+    content: "▾";
+  }
+
+  .ra-filters-summary__label {
+    font-family: var(--font-heading);
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text);
+  }
+
+  .ra-filters-summary__hint {
+    font-size: var(--font-size-2xs);
+    color: var(--color-text-faint);
+  }
+
+  .ra-filters-details[open] .ra-filters {
+    margin-top: var(--space-sm);
+  }
+
   .ra-filters {
     display: flex;
     flex-direction: column;
     gap: var(--space-md);
-    margin: 0 0 var(--space-lg);
+    margin: 0;
   }
 
   .ra-filters__row {
