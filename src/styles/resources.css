@@ -157,8 +157,11 @@
 /* Pill-nav wrapper used by sticky-jump-to nav above sectioned pages.
    The matrix layout uses the same classes — keep this the single source.
    "is-stuck" is added by an IntersectionObserver (see [...slug].astro) when
-   the nav has pinned to the viewport top. Stuck state compacts: hides the
-   label, shrinks to fit-content, and removes the padding gap above. */
+   the nav has pinned to the viewport top. The label sits inline with the
+   chip row in BOTH states so the wrap's box height is identical between
+   stuck/un-stuck. A height delta here would let scroll-anchoring increase
+   scrollY when the user scrolls up across the un-stick threshold, which
+   bounces the IO observer and traps the page just below the nav. */
 .pill-nav-wrap {
   position: sticky;
   top: 0;
@@ -168,12 +171,17 @@
   padding: var(--space-sm) 0;
   margin: 0 0 var(--space-xl);
   z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 /* Stuck state: the wrap breaks out to span the full viewport width so the
    semi-opaque blurred backdrop covers everything behind it. The visible
    compact pill lives on the inner .pill-nav-row. Negative top shifts up 1px
-   to absorb any browser-edge gap between sticky `top: 0` and the viewport. */
+   to absorb any browser-edge gap between sticky `top: 0` and the viewport.
+   Padding-top/bottom and margin-bottom are deliberately NOT overridden — see
+   the wrapper comment above. */
 .pill-nav-wrap.is-stuck {
   top: -1px;
   width: 100vw;
@@ -181,24 +189,11 @@
   margin-right: calc(50% - 50vw);
   padding-left: calc(50vw - 50% + var(--space-md));
   padding-right: calc(50vw - 50% + var(--space-md));
-  padding-top: calc(var(--space-2xs) + 1px);
-  padding-bottom: var(--space-2xs);
-  margin-bottom: 0;
-}
-
-.pill-nav-wrap.is-stuck .resources-pill-nav-label {
-  display: none;
 }
 
 .pill-nav-wrap.is-stuck .pill-nav-row {
   width: fit-content;
-  padding: 0;
-  margin: 0;
   overflow-x: visible;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  padding-left: var(--space-sm);
-  padding-right: var(--space-sm);
 }
 
 .pill-nav-wrap.is-stuck .pill-nav-row a,
@@ -220,7 +215,8 @@
 }
 
 .pill-nav-wrap .resources-pill-nav-label {
-  margin: 0 0 var(--space-xs);
+  margin: 0;
+  flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: var(--font-size-2xs);
   letter-spacing: 0.18em;
@@ -234,7 +230,8 @@
   overflow-x: auto;
   gap: var(--space-sm);
   margin: 0;
-  padding-bottom: var(--space-xs);
+  padding: 0;
+  min-width: 0;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
 }
