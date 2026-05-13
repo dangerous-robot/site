@@ -295,6 +295,4 @@ data:
       text: "Pre-launch product. Uses a mix of green-hosted (Infomaniak) and conventional (Anthropic/AWS) infrastructure. Energy estimates are modeled, not metered."
     - subject: "GreenPT green claims"
       text: "Cover inference-time energy only. Mistral models were trained on conventional infrastructure. This tension between green hosting and non-green training applies across the industry."
-    - subject: "Editorial pick"
-      text: "\"Ideal\" is Dangerous Robot's editorial judgment, not a vendor claim. It marks the value that, in our view, is best for this row. Some rows (e.g. lists of models, jurisdictions, or prices) have no single best answer and are left without a pick."
 ---
