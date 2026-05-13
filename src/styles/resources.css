@@ -178,6 +178,24 @@
   /* No gap below — the matrix thead pins flush against the bottom of the
      stuck nav (top: var(--page-nav-stuck-height)). */
   margin-bottom: 0;
+  /* The visible pill is narrow; the ::before extends the backdrop across the
+     full viewport so scrolling rows don't leak through to the right. */
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.pill-nav-wrap.is-stuck::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 50vw);
+  right: calc(50% - 50vw);
+  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: -1;
 }
 
 .pill-nav-wrap.is-stuck .resources-pill-nav-label {
