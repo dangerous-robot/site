@@ -5,18 +5,12 @@ interface Product {
   status: 'active' | 'excluded';
 }
 
-interface Group {
-  key: string;
-  label: string;
-}
-
 interface Props {
   products: Product[];
-  groups: Group[];
   initiallyHiddenProducts?: string[];
 }
 
-const { products, groups, initiallyHiddenProducts = [] } = Astro.props;
+const { products, initiallyHiddenProducts = [] } = Astro.props;
 const activeProducts = products.filter((p) => p.status === 'active');
 const hiddenSet = new Set(initiallyHiddenProducts);
 const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true');
@@ -24,68 +18,30 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
 <details class="ra-filters-details">
   <summary class="ra-filters-summary">
     <span class="ra-filters-summary__label">Filters</span>
-    <span class="ra-filters-summary__hint">show / hide products and groups</span>
+    <span class="ra-filters-summary__hint">show / hide products</span>
   </summary>
   <div class="ra-filters" role="group" aria-label="Matrix filters">
     <div class="ra-filters__row">
       <span class="ra-filters__label">Products</span>
       <div class="ra-filters__chips">
         {activeProducts.map((p) => (
-          <span class="ra-chip-wrap">
-            <button
-              type="button"
-              class="ra-chip"
-              aria-pressed={isProductPressed(p.key)}
-              data-filter-product={p.key}
-            >{p.name}</button>
-            <button
-              type="button"
-              class="ra-chip-only"
-              aria-label={`Show only ${p.name}`}
-              data-filter-only-product={p.key}
-            >only</button>
-          </span>
-        ))}
-      </div>
-    </div>
-    <div class="ra-filters__row">
-      <span class="ra-filters__label">Groups</span>
-      <div class="ra-filters__chips">
-        {groups.map((g) => (
-          <span class="ra-chip-wrap">
-            <button
-              type="button"
-              class="ra-chip"
-              aria-pressed="true"
-              data-filter-group={g.key}
-            >{g.label}</button>
-            <button
-              type="button"
-              class="ra-chip-only"
-              aria-label={`Show only ${g.label}`}
-              data-filter-only-group={g.key}
-            >only</button>
-          </span>
+          <button
+            type="button"
+            class="ra-chip"
+            aria-pressed={isProductPressed(p.key)}
+            data-filter-product={p.key}
+          >{p.name}</button>
         ))}
         <button
           type="button"
           class="ra-filters__reset"
           data-filter-reset
-          aria-label="Show all products and groups"
+          aria-label="Show all products"
         >Reset</button>
       </div>
     </div>
   </div>
 </details>
-
-<script>
-  // Open the filter disclosure by default on viewports wide enough to absorb
-  // the height; keep it collapsed on mobile so the matrix isn't pushed down.
-  const filtersDetails = document.querySelectorAll<HTMLDetailsElement>('.ra-filters-details');
-  if (window.matchMedia('(min-width: 640px)').matches) {
-    filtersDetails.forEach((d) => { d.open = true; });
-  }
-</script>
 
 <style>
   .ra-filters-details {
@@ -107,8 +63,8 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
   .ra-filters-summary::before {
     content: "▸";
     display: inline-block;
-    font-size: 0.7em;
-    color: var(--color-text-faint);
+    font-size: 0.95em;
+    color: var(--color-text);
   }
 
   .ra-filters-details[open] > .ra-filters-summary::before {
@@ -137,6 +93,10 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     flex-direction: column;
     gap: var(--space-md);
     margin: 0;
+    /* Indent the inner rows under the disclosure marker so the Products
+       row visually sits within the Filters group rather than aligning to
+       the page edge. */
+    padding-left: var(--space-md);
   }
 
   .ra-filters__row {
@@ -144,11 +104,6 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     align-items: baseline;
     gap: var(--space-sm);
     flex-wrap: wrap;
-  }
-
-  .ra-filters__row + .ra-filters__row {
-    padding-top: var(--space-md);
-    border-top: 1px solid var(--color-border);
   }
 
   .ra-filters__label {
@@ -168,11 +123,6 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     flex: 1;
   }
 
-  .ra-chip-wrap {
-    display: inline-flex;
-    align-items: stretch;
-  }
-
   .ra-chip {
     font: inherit;
     font-size: var(--font-size-xs);
@@ -185,50 +135,12 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     line-height: 1.3;
   }
 
-  .ra-chip-wrap .ra-chip {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-    border-right-width: 0;
-  }
-
-  /* "(only)" is a secondary sub-action attached to its chip: smaller, fainter,
-     and only fully visible on hover/focus of the wrap. The visible 1px left
-     divider does the affordance work; the rest of the border softens. */
-  .ra-chip-only {
-    font: inherit;
-    font-size: var(--font-size-2xs);
-    color: var(--color-text-faint);
-    background: transparent;
-    border: 1px solid var(--color-border);
-    border-left: 1px solid var(--color-border);
-    border-radius: 999px;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    padding: 0.2rem 0.5rem;
-    cursor: pointer;
-    line-height: 1.3;
-    opacity: 0.65;
-  }
-
-  .ra-chip-wrap:hover .ra-chip-only,
-  .ra-chip-only:focus-visible {
-    opacity: 1;
-    color: var(--color-text-muted);
-  }
-
   /* Selected = visible. Faint accent tint plus an accent border — strong
      enough to read as the selected affordance without dominating the row. */
   .ra-chip[aria-pressed="true"] {
     background: color-mix(in srgb, var(--color-accent) 12%, transparent);
     color: var(--color-text);
     border-color: var(--color-accent);
-  }
-
-  /* When a chip is pressed (product/group hidden), keep the "(only)" affordance
-     readable against the rest of the row by aligning its border with the
-     pressed neighbor. */
-  .ra-chip[aria-pressed="true"] + .ra-chip-only {
-    border-left-color: var(--color-accent);
   }
 
   [data-contrast="high"] .ra-chip[aria-pressed="true"] {
@@ -238,8 +150,8 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
   }
 
   /* Reset is a different action class from the filter chips: borderless,
-     muted, lives at the end of the Groups row so it sits with the controls
-     it resets, not on a third orphan row. */
+     muted, sits at the end of the row so it lives with the controls it
+     resets. */
   .ra-filters__reset {
     font: inherit;
     font-size: var(--font-size-xs);

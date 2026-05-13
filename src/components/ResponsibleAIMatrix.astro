@@ -104,7 +104,6 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
 
     <ResponsibleAIFilters
       products={activeProducts}
-      groups={groups}
       initiallyHiddenProducts={initialHiddenProducts}
     />
 
@@ -137,15 +136,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
             <tbody data-group={group.key} id={`ra-group-${group.key}`}>
               <tr class="ra-group-header">
                 <th colspan={1 + activeProducts.length} scope="rowgroup">
-                  <div class="ra-group-sticky">
-                    <button
-                      type="button"
-                      class="ra-group-toggle"
-                      aria-expanded="true"
-                      aria-controls={`ra-group-${group.key}`}
-                      data-filter-group-collapse={group.key}
-                    >{group.label}</button>
-                  </div>
+                  <div class="ra-group-sticky">{group.label}</div>
                 </th>
               </tr>
               {rows.map((feature) => {
@@ -205,20 +196,9 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
         el.setAttribute('aria-pressed', hidden.has(el.dataset.filterProduct!) ? 'false' : 'true');
       });
     };
-    const syncGroups = () => {
-      const hidden = readSet('data-hidden-group');
-      root.querySelectorAll<HTMLButtonElement>('[data-filter-group]').forEach((el) => {
-        el.setAttribute('aria-pressed', hidden.has(el.dataset.filterGroup!) ? 'false' : 'true');
-      });
-    };
-    // Run sync once on init so chips reflect the SSR'd data-hidden-* state
-    // (the 3 newcomers start hidden, everything else starts visible).
+    // Run sync once on init so chips reflect the SSR'd data-hidden-product
+    // state (the 3 newcomers start hidden, everything else starts visible).
     syncProducts();
-    syncGroups();
-    const allProductKeys = () =>
-      [...root.querySelectorAll<HTMLElement>('th[data-product-key]')].map((el) => el.dataset.productKey!);
-    const allGroupKeys = () =>
-      [...root.querySelectorAll<HTMLElement>('tbody[data-group]')].map((el) => el.dataset.group!);
     root.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest('button');
       if (!btn || !root.contains(btn)) return;
@@ -228,31 +208,9 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
         s.has(d.filterProduct) ? s.delete(d.filterProduct) : s.add(d.filterProduct);
         writeSet('data-hidden-product', s);
         syncProducts();
-      } else if (d.filterGroup) {
-        const s = readSet('data-hidden-group');
-        s.has(d.filterGroup) ? s.delete(d.filterGroup) : s.add(d.filterGroup);
-        writeSet('data-hidden-group', s);
-        syncGroups();
-      } else if (d.filterOnlyProduct) {
-        writeSet('data-hidden-product', new Set(allProductKeys().filter((k) => k !== d.filterOnlyProduct)));
-        syncProducts();
-      } else if (d.filterOnlyGroup) {
-        writeSet('data-hidden-group', new Set(allGroupKeys().filter((k) => k !== d.filterOnlyGroup)));
-        syncGroups();
-      } else if (d.filterGroupCollapse) {
-        const tbody = root.querySelector<HTMLElement>(`tbody[data-group="${d.filterGroupCollapse}"]`);
-        if (!tbody) return;
-        const collapsed = tbody.hasAttribute('data-collapsed');
-        collapsed ? tbody.removeAttribute('data-collapsed') : tbody.setAttribute('data-collapsed', '');
-        btn.setAttribute('aria-expanded', collapsed ? 'true' : 'false');
       } else if (d.filterReset !== undefined) {
         root.removeAttribute('data-hidden-product');
-        root.removeAttribute('data-hidden-group');
-        root.querySelectorAll('tbody[data-collapsed]').forEach((el) => el.removeAttribute('data-collapsed'));
-        root.querySelectorAll<HTMLButtonElement>('[data-filter-group-collapse]').forEach((el) =>
-          el.setAttribute('aria-expanded', 'true'));
         syncProducts();
-        syncGroups();
       }
     });
   }
@@ -297,9 +255,12 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   }
 
   .matrix-table {
+    --matrix-rule: color-mix(in srgb, var(--color-border), var(--color-text) 35%);
     width: 100%;
-    min-width: 44rem;
-    table-layout: fixed;
+    /* auto layout so product columns grow to fit their natural (nowrap) name;
+       the dim column is held to --ra-feature-col-width via max-width + wrap so
+       it doesn't widen on the wide-viewport "all products selected" case. */
+    table-layout: auto;
     border-collapse: separate;
     border-spacing: 0;
     font-size: var(--font-size-sm);
@@ -310,7 +271,13 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     padding: 0.6rem 0.75rem;
     vertical-align: top;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--matrix-rule);
+    border-right: 1px solid var(--color-border);
+  }
+
+  .matrix-table th:last-child,
+  .matrix-table td:last-child {
+    border-right: 0;
   }
 
   /* sticky thead — pins below the page nav (--page-nav-stuck-height is set
@@ -321,7 +288,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     top: calc(var(--page-nav-stuck-height, 0px) - 1px);
     z-index: 2;
     background: var(--color-bg);
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--matrix-rule);
   }
 
   /* sticky-left feature column */
@@ -330,7 +297,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     left: 0;
     z-index: 2;
     background: var(--color-bg);
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid var(--matrix-rule);
   }
 
   [data-contrast="high"] .matrix-table tbody th[scope="row"] {
@@ -342,28 +309,32 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .matrix-table thead .ra-feature-head {
     left: 0;
     z-index: 3;
-    border-right: 1px solid var(--color-border);
+    border-right: 1px solid var(--matrix-rule);
   }
 
   .dim-col {
     width: var(--ra-feature-col-width);
-    min-width: var(--ra-feature-col-width);
+    max-width: var(--ra-feature-col-width);
   }
 
   .matrix-table tbody th[scope="row"] {
     width: var(--ra-feature-col-width);
-    min-width: var(--ra-feature-col-width);
+    max-width: var(--ra-feature-col-width);
+    overflow-wrap: break-word;
   }
 
   .product-col {
-    /* All product columns share GreenPT's natural header width (heading
-     "GreenPT" + external-link icon ≈ 7rem). Uniform widths via
-     table-layout: fixed; wider cell content wraps via word-break. */
-    width: 7rem;
+    /* Each product column sizes to its (nowrap) name. 7rem floor keeps the
+       narrowest products (e.g. "Euria") from collapsing under their cell
+       content; longer names ("Earthly Insight", "TreadLightlyAI") expand
+       the column without wrapping. */
+    min-width: 7rem;
     font-family: var(--font-heading);
     font-size: 1.05rem;
     font-weight: 600;
     white-space: nowrap;
+    text-transform: none;
+    letter-spacing: 0;
   }
 
   .ra-product-link {
@@ -394,7 +365,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
      directly is patchy in Chrome/Android. */
   .ra-group-header th {
     padding: 0;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--matrix-rule);
     background: var(--color-bg);
   }
 
@@ -412,17 +383,6 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     text-transform: uppercase;
     letter-spacing: 0.04em;
     background: var(--color-bg);
-  }
-
-  .ra-group-toggle {
-    font: inherit;
-    color: inherit;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    text-transform: inherit;
-    letter-spacing: inherit;
   }
 
   .cell {
@@ -453,11 +413,6 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
 
   .na {
     color: var(--color-text-faint);
-  }
-
-  /* collapse: hide all non-header rows when [data-collapsed] */
-  .matrix-table tbody[data-collapsed] > tr:not(.ra-group-header) {
-    display: none;
   }
 
   .product-col :global(svg) {
@@ -523,8 +478,5 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
 <style is:global set:html={`
 ${activeProducts.map((p) => `
   .ra-matrix[data-hidden-product~="${p.key}"] [data-product-key="${p.key}"] { display: none; }
-`).join('')}
-${groups.map((g) => `
-  .ra-matrix[data-hidden-group~="${g.key}"] tbody[data-group="${g.key}"] { display: none; }
 `).join('')}
 `} />
