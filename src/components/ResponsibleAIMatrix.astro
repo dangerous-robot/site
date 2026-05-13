@@ -299,6 +299,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .matrix-table {
     width: 100%;
     min-width: 44rem;
+    table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
     font-size: var(--font-size-sm);
@@ -313,10 +314,11 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   }
 
   /* sticky thead — pins below the page nav (--page-nav-stuck-height is set
-     by the IntersectionObserver in [...slug].astro when the pill-nav stuck). */
+     by the IntersectionObserver in [...slug].astro when the pill-nav stuck).
+     `- 1px` matches the stuck nav's `top: -1px` shift so the two are flush. */
   .matrix-table thead th {
     position: sticky;
-    top: var(--page-nav-stuck-height, 0px);
+    top: calc(var(--page-nav-stuck-height, 0px) - 1px);
     z-index: 2;
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
@@ -354,6 +356,10 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   }
 
   .product-col {
+    /* All product columns share GreenPT's natural header width (heading
+     "GreenPT" + external-link icon ≈ 7rem). Uniform widths via
+     table-layout: fixed; wider cell content wraps via word-break. */
+    width: 7rem;
     font-family: var(--font-heading);
     font-size: 1.05rem;
     font-weight: 600;

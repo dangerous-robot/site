@@ -170,32 +170,20 @@
   z-index: 5;
 }
 
+/* Stuck state: the wrap breaks out to span the full viewport width so the
+   semi-opaque blurred backdrop covers everything behind it. The visible
+   compact pill lives on the inner .pill-nav-row. Negative top shifts up 1px
+   to absorb any browser-edge gap between sticky `top: 0` and the viewport. */
 .pill-nav-wrap.is-stuck {
-  width: fit-content;
-  padding: var(--space-2xs) var(--space-sm);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  /* No gap below — the matrix thead pins flush against the bottom of the
-     stuck nav (top: var(--page-nav-stuck-height)). */
+  top: -1px;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding-left: calc(50vw - 50% + var(--space-md));
+  padding-right: calc(50vw - 50% + var(--space-md));
+  padding-top: calc(var(--space-2xs) + 1px);
+  padding-bottom: var(--space-2xs);
   margin-bottom: 0;
-  /* The visible pill is narrow; the ::before extends the backdrop across the
-     full viewport so scrolling rows don't leak through to the right. */
-  background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-}
-
-.pill-nav-wrap.is-stuck::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: calc(50% - 50vw);
-  right: calc(50% - 50vw);
-  background: color-mix(in srgb, var(--color-bg) 92%, transparent);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  z-index: -1;
 }
 
 .pill-nav-wrap.is-stuck .resources-pill-nav-label {
@@ -203,7 +191,14 @@
 }
 
 .pill-nav-wrap.is-stuck .pill-nav-row {
-  padding-bottom: 0;
+  width: fit-content;
+  padding: 0;
+  margin: 0;
+  overflow-x: visible;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
 }
 
 .pill-nav-wrap.is-stuck .pill-nav-row a,
