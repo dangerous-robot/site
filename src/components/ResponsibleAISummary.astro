@@ -1,5 +1,5 @@
 ---
-import { ExternalLink } from 'lucide-astro';
+import { ExternalLink, ArrowUp } from 'lucide-astro';
 import InlineMd from './InlineMd.astro';
 
 interface Summary {
@@ -35,7 +35,13 @@ const columns: { key: keyof Summary; label: string }[] = [
   { key: 'notes', label: 'Notes' },
 ];
 ---
-<div class="responsible-summary" id="summary">
+<section class="responsible-summary" id="summary">
+  <h2>
+    Summary
+    <a href="#top" class="return-top" aria-label="Return to top">
+      <ArrowUp size={18} aria-hidden="true" />
+    </a>
+  </h2>
   <table class="summary-table">
     <caption class="sr-only">
       Quick-glance summary of each product's stance on AI ethics, financial
@@ -67,15 +73,28 @@ const columns: { key: keyof Summary; label: string }[] = [
       ))}
     </tbody>
   </table>
-</div>
+</section>
 
 <style>
   .responsible-summary {
     color: var(--color-text);
     margin: 0 0 var(--space-2xl);
+    scroll-margin-top: 5rem;
+  }
+
+  .responsible-summary h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-md);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
   }
 
   .summary-table {
+    --summary-rule: color-mix(in srgb, var(--color-border), var(--color-text) 35%);
     width: 100%;
     border-collapse: collapse;
     font-size: var(--font-size-sm);
@@ -86,8 +105,14 @@ const columns: { key: keyof Summary; label: string }[] = [
     padding: 0.75rem 1rem;
     vertical-align: top;
     text-align: left;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--summary-rule);
     line-height: var(--line-height-body);
+  }
+
+  /* Body cells match the matrix's muted detail text so the two tables share
+     the same visual weight in their data rows. */
+  .summary-table tbody td {
+    color: var(--color-text-muted);
   }
 
   /* Column headers smaller + uppercase to push them back as labels; the
@@ -100,7 +125,7 @@ const columns: { key: keyof Summary; label: string }[] = [
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--color-text-muted);
-    border-bottom: 2px solid var(--color-border);
+    border-bottom: 2px solid var(--summary-rule);
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
@@ -109,6 +134,10 @@ const columns: { key: keyof Summary; label: string }[] = [
     font-weight: 600;
     color: var(--color-text-heading);
     white-space: nowrap;
+    /* Override the global `th { text-transform: uppercase }` so product
+       names render in their natural case (e.g. "GreenPT", not "GREENPT"). */
+    text-transform: none;
+    letter-spacing: 0;
   }
 
   /* Product cell reads as an anchor: serif heading face, slightly larger,
@@ -129,7 +158,8 @@ const columns: { key: keyof Summary; label: string }[] = [
   }
 
   .product-cell :global(svg) {
-    color: var(--color-text-faint);
+    color: var(--color-text-muted);
+    flex-shrink: 0;
   }
 
   .summary-table td :global(a) {

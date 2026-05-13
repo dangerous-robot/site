@@ -31,7 +31,8 @@ const slugify = (s: string) =>
     <ol class="ra-footnotes">
       {footnotes.map((note) => (
         <li id={`fn-${slugify(note.subject)}`}>
-          <strong>{note.subject}:</strong> {note.text}
+          <strong>{note.subject}</strong>
+          <span class="ra-footnote-body">{note.text}</span>
         </li>
       ))}
     </ol>
@@ -72,6 +73,12 @@ const slugify = (s: string) =>
   }
 
   .ra-footnotes strong {
+    display: block;
     color: var(--color-text-heading);
+    margin-bottom: var(--space-2xs);
+  }
+
+  .ra-footnote-body {
+    display: block;
   }
 </style>
