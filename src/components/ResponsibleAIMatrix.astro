@@ -133,7 +133,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
           const rows = featuresByGroup.get(group.key) ?? [];
           if (rows.length === 0) return null;
           return (
-            <tbody data-group={group.key} id={`ra-group-${group.key}`}>
+            <tbody>
               <tr class="ra-group-header">
                 <th colspan={1 + activeProducts.length} scope="rowgroup">
                   <div class="ra-group-sticky">{group.label}</div>
@@ -197,7 +197,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
       });
     };
     // Run sync once on init so chips reflect the SSR'd data-hidden-product
-    // state (the 3 newcomers start hidden, everything else starts visible).
+    // state (products with initially_hidden start hidden).
     syncProducts();
     root.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest('button');
