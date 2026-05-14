@@ -120,7 +120,7 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
 
 <style>
   .resource-article {
-    max-width: 40rem;
+    max-width: 56rem;
   }
 
   .resource-matrix {
@@ -179,39 +179,43 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
   .resource-article :global(dl.categories) {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-xl) var(--space-2xl);
+    gap: var(--space-md) var(--space-lg);
     margin: var(--space-lg) 0;
   }
 
   @media (max-width: 640px) {
     .resource-article :global(dl.categories) {
       grid-template-columns: 1fr;
-      gap: var(--space-lg);
+      gap: var(--space-md);
     }
   }
 
-  .resource-article :global(dl.categories > dt) {
+  .resource-article :global(dl.categories > div) {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md) var(--space-lg);
+  }
+
+  .resource-article :global(dl.categories > div > dt) {
     font-family: var(--font-heading);
     font-size: 1.05rem;
     color: var(--color-text-heading);
-    margin: 0 0 var(--space-xs);
+    margin: 0 0 var(--space-sm);
     border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--space-xs);
+    padding-bottom: var(--space-sm);
   }
 
-  .resource-article :global(dl.categories > dd) {
-    margin: 0 0 var(--space-sm);
+  .resource-article :global(dl.categories > div > dd) {
+    margin: var(--space-xs) 0 0;
     color: var(--color-text);
     font-size: var(--font-size-sm);
     line-height: var(--line-height-body);
   }
 
-  .resource-article :global(dl.categories > dd.definition) {
-    font-family: var(--font-mono);
+  .resource-article :global(dl.categories > div > dd.definition) {
+    font-style: italic;
     font-size: var(--font-size-xs);
-    background: var(--color-code-bg);
-    padding: 0.4rem 0.6rem;
-    border-radius: var(--radius-sm);
-    color: var(--color-text-heading);
+    color: var(--color-text-muted);
   }
 </style>

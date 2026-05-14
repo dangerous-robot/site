@@ -1,6 +1,6 @@
 ---
-title: "AI Safety Index, Winter 2025"
-description: "An overview of the FLI AI Safety Index. See how Anthropic, OpenAI, Google DeepMind, and others grade on safety, governance, and transparency."
+title: "The Bad News: FLI's latest AI Safety Index"
+description: "An overview of the FLI AI Safety Index, Winter 2025. See how Anthropic, OpenAI, Google DeepMind, and others grade on safety, governance, and transparency."
 pubDate: 2026-03-04
 layout: article
 wallpaper: ai-safety
@@ -32,27 +32,39 @@ No company scored above **D** on existential safety. Every company scored below 
 ## What this means for you
 
 <dl class="categories">
-  <dt>Risk Assessment</dt>
-  <dd class="definition">Identifying and evaluating risks before deploying models.</dd>
-  <dd>Before using an AI tool, look for information about known risks for your application.</dd>
+  <div>
+    <dt>Risk Assessment</dt>
+    <dd class="definition">Identifying and evaluating risks before deploying models.</dd>
+    <dd>Before using an AI tool, look for information about known risks for your application.</dd>
+  </div>
 
-  <dt>Current Harms</dt>
-  <dd class="definition">Addressing bias, misuse, and misinformation in current products.</dd>
-  <dd>These harms are happening now, not hypothetically. <a href="https://incidentdatabase.ai/" target="_blank" rel="noopener noreferrer">See real incidents</a>.</dd>
+  <div>
+    <dt>Current Harms</dt>
+    <dd class="definition">Addressing bias, misuse, and misinformation in current products.</dd>
+    <dd>These harms are happening now, not hypothetically. <a href="https://incidentdatabase.ai/" target="_blank" rel="noopener noreferrer">See real incidents</a>.</dd>
+  </div>
 
-  <dt>Safety Frameworks</dt>
-  <dd class="definition">Structured safety processes, red-teaming, and testing protocols.</dd>
-  <dd>Look for third-party audits, not self-assessments. A company's safety page is marketing until someone else verifies it.</dd>
+  <div>
+    <dt>Safety Frameworks</dt>
+    <dd class="definition">Structured safety processes, red-teaming, and testing protocols.</dd>
+    <dd>Look for third-party audits, not self-assessments. A company's safety page is marketing until someone else verifies it.</dd>
+  </div>
 
-  <dt>Existential Safety</dt>
-  <dd class="definition">Plans for catastrophic or irreversible AI risks.</dd>
-  <dd>No company scored above a D here. The hardest problems are getting the least attention. If this concerns you, talk about it. Awareness is the first step toward accountability.</dd>
+  <div>
+    <dt>Existential Safety</dt>
+    <dd class="definition">Plans for catastrophic or irreversible AI risks.</dd>
+    <dd>No company scored above a D here. The hardest problems are getting the least attention. If this concerns you, talk about it. Awareness is the first step toward accountability.</dd>
+  </div>
 
-  <dt>Governance and Accountability</dt>
-  <dd class="definition">Independent oversight, not just internal review.</dd>
-  <dd>Check whether your AI provider has an independent safety board.</dd>
+  <div>
+    <dt>Governance and Accountability</dt>
+    <dd class="definition">Independent oversight, not just internal review.</dd>
+    <dd>Check whether your AI provider has an independent safety board.</dd>
+  </div>
 
-  <dt>Information Sharing</dt>
-  <dd class="definition">Publishing safety research and incident reports.</dd>
-  <dd>Compare what companies publish about their safety testing. The ones sharing the least usually have the most to hide.</dd>
+  <div>
+    <dt>Information Sharing</dt>
+    <dd class="definition">Publishing safety research and incident reports.</dd>
+    <dd>Compare what companies publish about their safety testing. The ones sharing the least usually have the most to hide.</dd>
+  </div>
 </dl>

@@ -99,11 +99,10 @@
 .resources-hero h1 {
   margin: 0 0 var(--space-md);
   font-family: var(--font-heading);
-  font-size: var(--font-size-hero-lede);
+  font-size: clamp(1.2rem, 2.5vw, 1.75rem);
   line-height: 1.2;
   font-weight: 400;
   color: var(--color-text-heading);
-  max-width: var(--hero-lede-max-width);
 }
 
 .resources-hero .lede {
