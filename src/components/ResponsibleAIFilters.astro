@@ -1,4 +1,6 @@
 ---
+import DisclosureIndicator from './DisclosureIndicator.astro';
+
 interface Product {
   key: string;
   name: string;
@@ -17,8 +19,8 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
 ---
 <details class="ra-filters-details">
   <summary class="ra-filters-summary">
-    <span class="ra-filters-summary__label">Filters</span>
-    <span class="ra-filters-summary__hint">show / hide products</span>
+    <DisclosureIndicator size={18} />
+    <span class="ra-filters-summary__label">Filter</span>
   </summary>
   <div class="ra-filters" role="group" aria-label="Matrix filters">
     <div class="ra-filters__row">
@@ -52,36 +54,31 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     list-style: none;
     cursor: pointer;
     display: inline-flex;
-    align-items: baseline;
-    gap: var(--space-sm);
+    align-items: center;
+    gap: var(--space-xs);
     padding: var(--space-xs) 0;
     color: var(--color-text-muted);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
   }
 
   .ra-filters-summary::-webkit-details-marker { display: none; }
 
-  .ra-filters-summary::before {
-    content: "▸";
-    display: inline-block;
-    font-size: 0.95em;
-    color: var(--color-text);
+  .ra-filters-summary :global(.disclosure-indicator) {
+    color: var(--color-text-faint);
+    flex-shrink: 0;
   }
 
-  .ra-filters-details[open] > .ra-filters-summary::before {
-    content: "▾";
+  .ra-filters-summary:hover :global(.disclosure-indicator) {
+    color: var(--color-text);
   }
 
   .ra-filters-summary__label {
-    font-family: var(--font-heading);
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text);
+    color: var(--color-text-muted);
   }
 
-  .ra-filters-summary__hint {
-    font-size: var(--font-size-2xs);
-    color: var(--color-text-faint);
+  .ra-filters-summary:hover .ra-filters-summary__label {
+    color: var(--color-text);
   }
 
   .ra-filters-details[open] .ra-filters {
