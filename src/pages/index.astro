@@ -978,10 +978,11 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     const words = Array.from(document.querySelectorAll('.hero-title__word'));
     const wordLetters = words.map((word) => {
       const text = word.dataset.text || word.textContent;
-      word.setAttribute('aria-label', text);
-      word.innerHTML = Array.from(text).map(
-        (ch) => '<span class="hero-title__letter" aria-hidden="true">' + ch + '</span>'
-      ).join('');
+      word.innerHTML =
+        '<span class="sr-only">' + text + '</span>' +
+        Array.from(text).map(
+          (ch) => '<span class="hero-title__letter" aria-hidden="true">' + ch + '</span>'
+        ).join('');
       return Array.from(word.querySelectorAll('.hero-title__letter'));
     });
 
