@@ -163,7 +163,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                       <td class={`cell cell--${cell.type}`} data-product-key={p.key}>
                         {icon && (
                           <span class="cell-inline">
-                            <icon.Icon size={16} aria-hidden="true" />
+                            <icon.Icon size={18} aria-hidden="true" />
                             <span class="sr-only">{icon.srLabel}</span>
                             {cell.detail && <span class="detail" set:html={renderDetail(cell.detail)} />}
                           </span>
@@ -406,7 +406,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
 
   .cell-inline {
     display: inline-flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.4rem;
   }
 
@@ -416,7 +416,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   }
 
   .cell--yes :global(svg) { color: var(--color-verdict-true); flex-shrink: 0; }
-  .cell--no :global(svg) { color: var(--color-text-muted); flex-shrink: 0; }
+  .cell--no :global(svg) { color: var(--color-verdict-false); flex-shrink: 0; }
   /* no-good = "the answer is no, and that's the good outcome" (e.g. no data
      used for training). Renders as a GREEN X — semantically positive. */
   .cell--no-good :global(svg) { color: var(--color-verdict-true); flex-shrink: 0; }
