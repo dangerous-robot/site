@@ -273,24 +273,10 @@ data:
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
   footnotes:
-    - subject: "GreenPT renewable energy"
-      text: "Operated by Infomaniak (Swiss). ISO 14001 and ISO 50001 certified, audited annually by SGS. Swiss hydroelectric power."
-    - subject: "Euria renewable energy"
-      text: "Owned and operated by Infomaniak at their Geneva data center. 100% waste heat recovery feeds Geneva district heating. PUE of 1.06 (European average ~1.8). No water cooling."
-    - subject: "Ecosia financial transparency"
-      text: "Publishes monthly financial reports. Structured as steward-ownership (German Verantwortungseigentum), legally cannot be sold or taken over, profits permanently committed to mission."
     - subject: "Ecosia energy display"
       text: "Shows a tree counter (how many trees your searches have funded) rather than per-query energy data. This is an engagement metric, not energy transparency."
     - subject: "Euria Chinese-origin models"
       text: "DeepSeek R1 and Qwen 3 have documented censorship of topics politically sensitive to the CCP. Running open-weight versions on Swiss infrastructure avoids sending data to China, but training biases are baked into the model weights."
-    - subject: "GreenPT pricing"
-      text: "CHF 15/month. No free tier. Price reflects Swiss hosting costs and employee-owned structure."
-    - subject: "Euria pricing"
-      text: "Free, subsidized by Infomaniak as a showcase for their AI infrastructure."
-    - subject: "Open-source models"
-      text: "GreenPT and Euria use exclusively open-weight models, meaning the weights are publicly available and the providers control the full inference stack. TreadLightlyAI and Ecosia use some proprietary models where inference runs on the provider's infrastructure."
-    - subject: "TreadLightlyAI"
-      text: "Pre-launch product. Uses a mix of green-hosted (Infomaniak) and conventional (Anthropic/AWS) infrastructure. Energy estimates are modeled, not metered."
     - subject: "GreenPT green claims"
       text: "Cover inference-time energy only. Mistral models were trained on conventional infrastructure. This tension between green hosting and non-green training applies across the industry."
 ---
