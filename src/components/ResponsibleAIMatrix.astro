@@ -201,23 +201,26 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
           )}
         </p>
       )}
-      <ul class="legend" aria-label="Symbol legend">
-        <li class="legend-item legend-item--yes">
-          <Check size={14} aria-hidden="true" /><span>Yes</span>
-        </li>
-        <li class="legend-item legend-item--no">
-          <X size={14} aria-hidden="true" /><span>No</span>
-        </li>
-        <li class="legend-item legend-item--no-good">
-          <X size={14} aria-hidden="true" /><span>No <span class="legend-note">(preferred outcome)</span></span>
-        </li>
-        <li class="legend-item legend-item--partial">
-          <Minus size={14} aria-hidden="true" /><span>Partial</span>
-        </li>
-        <li class="legend-item legend-item--unknown">
-          <HelpCircle size={14} aria-hidden="true" /><span>Unknown</span>
-        </li>
-      </ul>
+      <div class="legend-row">
+        <span class="legend-label">Legend:</span>
+        <ul class="legend" aria-label="Symbol legend">
+          <li class="legend-item legend-item--yes">
+            <Check size={14} aria-hidden="true" /><span>Yes</span>
+          </li>
+          <li class="legend-item legend-item--no">
+            <X size={14} aria-hidden="true" /><span>No</span>
+          </li>
+          <li class="legend-item legend-item--no-good">
+            <X size={14} aria-hidden="true" /><span>No <span class="legend-note">(preferred)</span></span>
+          </li>
+          <li class="legend-item legend-item--partial">
+            <Minus size={14} aria-hidden="true" /><span>Partial</span>
+          </li>
+          <li class="legend-item legend-item--unknown">
+            <HelpCircle size={14} aria-hidden="true" /><span>Unknown</span>
+          </li>
+        </ul>
+      </div>
     </div>
   </section>
 </div>
@@ -488,6 +491,20 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     font-size: var(--font-size-xs);
     color: var(--color-text-faint);
     margin: 0 0 var(--space-sm);
+  }
+
+  .legend-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .legend-label {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .legend {

@@ -8,7 +8,7 @@ topics:
   - responsible-ai
   - consumer-guide
 data:
-  caption: "Data gathered from public sources. If something is wrong, let us know."
+  caption: "Data gathered from public sources and direct research. If something is wrong, let us know."
   groups:
     - key: environmental
       label: "Environmental"
