@@ -187,6 +187,13 @@ const orgSchema = {
                 </ul>
               )}
               <div class="nav-dropdown-sections">
+                <a
+                  class="dropdown-section-label"
+                  href="/"
+                  aria-current={pathname === '/' ? 'page' : undefined}
+                >
+                  Home
+                </a>
                 {SECTIONS.map((s) => (
                   <div class="dropdown-section">
                     <a
