@@ -2,14 +2,14 @@
 import Base from '../../layouts/Base.astro';
 
 const sections = [
-  { n: '01', label: 'Subjects',  href: '/research/subjects' },
-  { n: '02', label: 'Companies', href: '/research/companies' },
-  { n: '03', label: 'Products',  href: '/research/products' },
-  { n: '04', label: 'Topics',    href: '/research/topics' },
-  { n: '05', label: 'Claims',    href: '/research/claims' },
-  { n: '06', label: 'Sources',   href: '/research/sources' },
-  { n: '07', label: 'Criteria',  href: '/research/criteria' },
-  { n: '08', label: 'FAQ',       href: '#faq' },
+  { n: '01', label: 'Topics',    href: '/research/topics',    isRef: false },
+  { n: '02', label: 'Claims',    href: '/research/claims',    isRef: false },
+  { n: '03', label: 'Companies', href: '/research/companies', isRef: false },
+  { n: '04', label: 'Products',  href: '/research/products',  isRef: false },
+  { n: '05', label: 'Subjects',  href: '/research/subjects',  isRef: true  },
+  { n: '06', label: 'Sources',   href: '/research/sources',   isRef: true  },
+  { n: '07', label: 'Criteria',  href: '/research/criteria',  isRef: true  },
+  { n: '08', label: 'FAQ',       href: '#faq',                isRef: false },
 ];
 
 const faqSchema = {
@@ -94,7 +94,7 @@ const faqSchema = {
       <ol class="research-index__list">
         {sections.map((s) => (
           <li>
-            <a class="research-index__link" href={s.href}>
+            <a class={`research-index__link${s.isRef ? ' research-index__link--ref' : ''}`} href={s.href}>
               <span class="research-index__num" aria-hidden="true">{s.n}</span>
               <span class="research-index__label">{s.label}</span>
             </a>
@@ -435,6 +435,12 @@ const faqSchema = {
     color: var(--color-accent);
     opacity: 0.8;
     font-size: 0.7rem;
+  }
+
+  .research-index__link--ref,
+  .research-index__link--ref .research-index__num {
+    color: var(--color-text-faint);
+    opacity: 1;
   }
 
   @media (max-width: 680px) {

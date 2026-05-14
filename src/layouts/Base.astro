@@ -33,30 +33,28 @@ const ogTitle = `${title} - Dangerous Robot`;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
 type NavLink = { href: string; label: string };
-type Section = { href: string; label: string; links: NavLink[]; refLinks?: NavLink[] };
+type Section = { href: string; label: string; links: NavLink[] };
+
+const TOP_LINKS: NavLink[] = [
+  { href: '/research',  label: 'Research' },
+  { href: '/resources', label: 'Resources' },
+];
 
 const SECTIONS: Section[] = [
   {
     href: '/research',
     label: 'Research',
     links: [
-      { href: '/resources',            label: 'Resources' },
       { href: '/research/topics',      label: 'Topics' },
       { href: '/research/claims',      label: 'Claims' },
       { href: '/research/companies',   label: 'Companies' },
       { href: '/research/products',    label: 'Products' },
-    ],
-    refLinks: [
-      { href: '/research/subjects',    label: 'Subjects' },
-      { href: '/research/sources',     label: 'Sources' },
-      { href: '/research/criteria',    label: 'Criteria' },
     ],
   },
   {
     href: '/resources',
     label: 'Resources',
     links: [
-      { href: '/research',                 label: 'Research' },
       { href: '/resources/should-i',       label: 'Should I Use AI?' },
       { href: '/resources/ai-safety',      label: 'AI Safety Index' },
       { href: '/resources/turn-off-ai',    label: 'Turn Off AI' },
@@ -65,17 +63,11 @@ const SECTIONS: Section[] = [
   },
 ];
 
-const NEUTRAL_LINKS: NavLink[] = [
-  { href: '/research',  label: 'Research' },
-  { href: '/resources', label: 'Resources' },
-];
-
 const pathname = Astro.url.pathname;
 const currentSection = SECTIONS.find(
   (s) => pathname === s.href || pathname.startsWith(s.href + '/'),
 ) ?? null;
-const navLinks: NavLink[] = currentSection?.links ?? NEUTRAL_LINKS;
-const navRefLinks: NavLink[] = currentSection?.refLinks ?? [];
+const navLinks: NavLink[] = currentSection?.links ?? [];
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -168,23 +160,23 @@ const orgSchema = {
                 <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
                 Dangerous Robot
               </a>
-              {currentSection && (
-                <a href={currentSection.href} class="site-section-eyebrow">{currentSection.label}</a>
-              )}
             </div>
             <ul class="nav-links" id="nav-links" role="list">
-              {navLinks.map((l) => (
+              {TOP_LINKS.map((l) => (
                 <li>
-                  <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+                  <a href={l.href} aria-current={
+                    pathname === l.href ? 'page' :
+                    currentSection?.href === l.href ? 'true' : undefined
+                  }>
                     {l.label}
                   </a>
                 </li>
               ))}
-              {navRefLinks.length > 0 && (
+              {navLinks.length > 0 && (
                 <Fragment>
                   <li class="nav-sep" aria-hidden="true" role="presentation"></li>
-                  {navRefLinks.map((l) => (
-                    <li class="nav-ref">
+                  {navLinks.map((l) => (
+                    <li>
                       <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
                         {l.label}
                       </a>
@@ -404,26 +396,6 @@ const orgSchema = {
         padding-left: 0.5rem;
       }
 
-      .site-section-eyebrow {
-        font-family: var(--font-mono);
-        font-size: var(--font-size-xs);
-        letter-spacing: 0.18em;
-        text-transform: uppercase;
-        color: var(--color-text-muted);
-        text-decoration: none;
-        white-space: nowrap;
-      }
-
-      .site-section-eyebrow::before {
-        content: '/';
-        opacity: 0.4;
-        margin-right: 0.6rem;
-      }
-
-      .site-section-eyebrow:hover {
-        color: var(--color-text);
-      }
-
       .site-logo {
         height: 34px;
         width: 34px;
@@ -477,7 +449,11 @@ const orgSchema = {
         text-underline-offset: 3px;
       }
 
-      /* Vertical separator between primary and reference nav groups */
+      .nav-links a[aria-current="true"] {
+        color: var(--color-nav-link-hover);
+      }
+
+      /* Vertical separator between top-level and section nav groups */
       .nav-sep {
         width: 1px;
         background: var(--color-border);
@@ -485,15 +461,6 @@ const orgSchema = {
         margin: 0.2em 0;
         flex-shrink: 0;
         list-style: none;
-      }
-
-      /* Reference-tier links: same font, reduced prominence */
-      .nav-ref a {
-        color: var(--color-text-faint);
-      }
-
-      .nav-ref a:hover {
-        color: var(--color-nav-link-hover);
       }
 
       /* Skip-to-main link: visually hidden until focused */
@@ -604,8 +571,9 @@ const orgSchema = {
         gap: 0;
         position: absolute;
         top: 100%;
-        left: 0;
+        left: auto;
         right: 0;
+        min-width: max-content;
         background: var(--color-surface);
         border-bottom: 1px solid var(--color-border);
         padding: var(--space-sm) var(--space-lg) var(--space-md);
@@ -632,11 +600,6 @@ const orgSchema = {
         display: block;
         padding: var(--space-sm) 0;
         font-size: var(--font-size-base);
-      }
-
-      /* Restore full color for ref links in dropdown (they're prominent enough by position) */
-      .site-nav.nav--collapsed .nav-ref a {
-        color: var(--color-nav-link);
       }
 
       /* Reduce padding on narrow viewports regardless of collapse state */
