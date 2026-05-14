@@ -163,7 +163,7 @@ const orgSchema = {
             </div>
             <ul class="nav-links" id="nav-links" role="list">
               {TOP_LINKS.map((l) => (
-                <li>
+                <li class="nav-section-item">
                   <a href={l.href} aria-current={
                     pathname === l.href ? 'page' :
                     currentSection?.href === l.href ? 'true' : undefined
@@ -254,7 +254,7 @@ const orgSchema = {
               var nameWidth = nameGroup.offsetWidth;
               var padding = navInner ? parseFloat(getComputedStyle(navInner).paddingLeft) * 2 : 48;
               var gap = navInner ? (parseFloat(getComputedStyle(navInner).gap) || 16) : 16;
-              var needed = nameWidth + gap + linksNaturalWidth + padding;
+              var needed = nameWidth + gap + linksNaturalWidth + padding + 56;
 
               if (needed > navWidth) {
                 nav.classList.add('nav--collapsed');
@@ -432,6 +432,13 @@ const orgSchema = {
         text-decoration: none;
       }
 
+      /* Section labels (Research, Resources) — bigger and stronger than sub-links */
+      .nav-section-item a {
+        color: var(--color-nav-link-hover);
+        font-size: var(--font-size-base);
+        font-weight: 600;
+      }
+
       .nav-links a:hover {
         color: var(--color-nav-link-hover);
         text-decoration: none;
@@ -443,14 +450,17 @@ const orgSchema = {
         border-radius: 2px;
       }
 
+      /* Active page: underline marks exact location */
       .nav-links a[aria-current="page"] {
         color: var(--color-nav-link-hover);
         text-decoration: underline;
         text-underline-offset: 3px;
       }
 
+      /* Active section: accent color — visually distinct from page underline */
       .nav-links a[aria-current="true"] {
-        color: var(--color-nav-link-hover);
+        color: var(--color-accent);
+        text-decoration: none;
       }
 
       /* Vertical separator between top-level and section nav groups */
@@ -573,10 +583,12 @@ const orgSchema = {
         top: 100%;
         left: auto;
         right: 0;
-        min-width: max-content;
+        min-width: 14rem;
         background: var(--color-surface);
-        border-bottom: 1px solid var(--color-border);
-        padding: var(--space-sm) var(--space-lg) var(--space-md);
+        border: 1px solid var(--color-border);
+        border-top: none;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+        padding: var(--space-sm) var(--space-xl) var(--space-lg);
         z-index: 100;
       }
 
@@ -598,8 +610,13 @@ const orgSchema = {
 
       .site-nav.nav--collapsed .nav-links a {
         display: block;
-        padding: var(--space-sm) 0;
-        font-size: var(--font-size-base);
+        padding: var(--space-md) 0;
+        font-size: 1.05rem;
+      }
+
+      .site-nav.nav--collapsed .nav-section-item a {
+        font-size: 1.15rem;
+        font-weight: 700;
       }
 
       /* Reduce padding on narrow viewports regardless of collapse state */
