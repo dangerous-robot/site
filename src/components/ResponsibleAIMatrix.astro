@@ -126,6 +126,8 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
       initiallyHiddenProducts={initialHiddenProducts}
     />
 
+    <p class="landscape-nudge" aria-hidden="true">Rotate to landscape for the full table.</p>
+
     <div class="ra-matrix__scroll" role="region" aria-label="Feature comparison matrix" tabindex="0">
       <table class="matrix-table">
         <thead>
@@ -558,16 +560,31 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
       font-size: var(--font-size-xs);
       word-break: break-word;
       hyphens: auto;
+      min-width: 5rem;
     }
 
     .product-col {
       font-size: var(--font-size-sm);
       /* Keep product names on one line (e.g. "Viro AI" must not wrap). */
       white-space: nowrap;
+      min-width: 5rem;
     }
 
     .ra-group-sticky {
       padding: var(--space-sm) 0.5rem 0.3rem;
+    }
+  }
+
+  .landscape-nudge {
+    display: none;
+  }
+
+  @media (max-width: 640px) and (orientation: portrait) {
+    .landscape-nudge {
+      display: block;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-faint);
+      margin: 0 0 var(--space-sm);
     }
   }
 
