@@ -45,6 +45,7 @@ const madeBy = resolveMadeBy(entityEntry, entityMap);
 
 const claimCrumbs = [
   { label: "Home", href: "/" },
+  { label: "Research", href: "/research" },
   ...(typeParent ? [typeParent] : []),
   { label: entityLabel, href: `/research/entities/${claim.data.entity}` },
 ];

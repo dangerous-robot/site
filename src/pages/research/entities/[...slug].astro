@@ -98,6 +98,7 @@ const critCategoriesSorted = [...critByCategory.keys()].sort();
 const typeParent = getEntityParent(entity.data.type);
 const entityCrumbs = [
   { label: "Home", href: "/" },
+  { label: "Research", href: "/research" },
   ...(typeParent ? [typeParent] : []),
 ];
 

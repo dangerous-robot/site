@@ -8,6 +8,7 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   subject:   "Subject",
   company:   "Company",
   product:   "Product",
+  topic:     "Topic",
   claim:     "Claim",
   source:    "Source",
   criterion: "Criterion",
