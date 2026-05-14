@@ -434,7 +434,7 @@ const orgSchema = {
 
       /* Section labels (Research, Resources) — bigger and stronger than sub-links */
       .nav-section-item a {
-        color: var(--color-nav-link-hover);
+        color: var(--color-nav-link);
         font-size: var(--font-size-base);
         font-weight: 600;
       }
@@ -457,9 +457,13 @@ const orgSchema = {
         text-underline-offset: 3px;
       }
 
-      /* Active section: accent color — visually distinct from page underline */
-      .nav-links a[aria-current="true"] {
+      /* Active section chip: persistent eyebrow, same look on section root and subpages */
+      .nav-links .nav-section-item a[aria-current] {
         color: var(--color-accent);
+        background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+        padding: 0.1em 0.45em;
+        border-radius: var(--radius-sm);
+        border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
         text-decoration: none;
       }
 
@@ -617,6 +621,15 @@ const orgSchema = {
       .site-nav.nav--collapsed .nav-section-item a {
         font-size: 1.15rem;
         font-weight: 700;
+      }
+
+      /* Chip doesn't work as a block element — reset in dropdown */
+      .site-nav.nav--collapsed .nav-section-item a[aria-current] {
+        background: none;
+        border: none;
+        padding-left: 0;
+        padding-right: 0;
+        border-radius: 0;
       }
 
       /* Reduce padding on narrow viewports regardless of collapse state */
