@@ -52,7 +52,7 @@ const topicCrumbs = [
 ];
 ---
 <Base title={topicPageTitle} layout="wide" description={topicDescription}>
-  <PageHeader crumbs={topicCrumbs} type="topic" title={label}>
+  <PageHeader variant="index" crumbs={topicCrumbs} type="topic" title={label}>
     <p class="total-count">{uniqueClaimCount} claim{uniqueClaimCount !== 1 ? 's' : ''} across {entityGroups.length} entit{entityGroups.length !== 1 ? 'ies' : 'y'}</p>
     <div class="overall-distribution">
       <span class="dist-label">Overall</span>
