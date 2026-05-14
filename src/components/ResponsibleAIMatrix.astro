@@ -81,9 +81,15 @@ interface MatrixData {
 
 interface Props {
   data: MatrixData;
+  lastModified?: Date;
 }
 
-const { data } = Astro.props;
+const { data, lastModified } = Astro.props;
+
+const lastModifiedLabel = lastModified
+  ? lastModified.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  : undefined;
+const lastModifiedISO = lastModified?.toISOString();
 const groups = data.groups ?? [];
 const activeProducts = (data.products ?? []).filter((p) => p.status === 'active');
 const features = data.features ?? [];
@@ -186,7 +192,33 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
       </table>
     </div>
 
-    {data.caption && <p class="caption">{data.caption}</p>}
+    <div class="caption-area">
+      {data.caption && (
+        <p class="caption">
+          {data.caption}
+          {lastModifiedLabel && (
+            <> Last updated: <time datetime={lastModifiedISO}>{lastModifiedLabel}</time>.</>
+          )}
+        </p>
+      )}
+      <ul class="legend" aria-label="Symbol legend">
+        <li class="legend-item legend-item--yes">
+          <Check size={14} aria-hidden="true" /><span>Yes</span>
+        </li>
+        <li class="legend-item legend-item--no">
+          <X size={14} aria-hidden="true" /><span>No</span>
+        </li>
+        <li class="legend-item legend-item--no-good">
+          <X size={14} aria-hidden="true" /><span>No <span class="legend-note">(preferred outcome)</span></span>
+        </li>
+        <li class="legend-item legend-item--partial">
+          <Minus size={14} aria-hidden="true" /><span>Partial</span>
+        </li>
+        <li class="legend-item legend-item--unknown">
+          <HelpCircle size={14} aria-hidden="true" /><span>Unknown</span>
+        </li>
+      </ul>
+    </div>
   </section>
 </div>
 
@@ -448,11 +480,43 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     border: 0;
   }
 
+  .caption-area {
+    margin: var(--space-md) 0 var(--space-xl);
+  }
+
   .caption {
     font-size: var(--font-size-xs);
     color: var(--color-text-faint);
-    margin: var(--space-md) 0 var(--space-xl);
+    margin: 0 0 var(--space-sm);
   }
+
+  .legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem var(--space-md);
+  }
+
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .legend-note {
+    color: var(--color-text-faint);
+    opacity: 0.75;
+  }
+
+  .legend-item--yes :global(svg) { color: var(--color-verdict-true); }
+  .legend-item--no :global(svg) { color: var(--color-verdict-false); }
+  .legend-item--no-good :global(svg) { color: var(--color-verdict-true); }
+  .legend-item--partial :global(svg) { color: var(--color-verdict-mixed); }
+  .legend-item--unknown :global(svg) { color: var(--color-text-faint); }
 
   /* Mobile: shrink Feature col to fit the longest label word; allow the
      table to extend past the page container so the page horizontal-scrolls

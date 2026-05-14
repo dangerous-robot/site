@@ -1,6 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
 import type { CollectionEntry } from 'astro:content';
+import { execSync } from 'node:child_process';
 import ResourcePage from '../../layouts/ResourcePage.astro';
 import TurnOffGuide from '../../components/TurnOffGuide.astro';
 import ResponsibleAIMatrix from '../../components/ResponsibleAIMatrix.astro';
@@ -34,6 +35,19 @@ const resourceSchema = buildResourceSchema(entry);
 // layout can validate its own shape here. Fail loudly: a schema error in a
 // matrix entry should break the build, not render a degraded page.
 const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefined;
+
+// Git last-commit date for the content file, used as "last updated" in matrix captions.
+let matrixLastModified: Date | undefined;
+if (layout === 'matrix') {
+  try {
+    const filePath = `src/content/resources/${entry.id}.md`;
+    const iso = execSync(`git log -1 --format=%aI -- ${filePath}`, { encoding: 'utf-8' }).trim();
+    if (iso) matrixLastModified = new Date(iso);
+  } catch {
+    // git unavailable at build time — fall back to pubDate
+    matrixLastModified = entry.data.pubDate;
+  }
+}
 ---
 <ResourcePage
   title={title}
@@ -72,7 +86,7 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
         </div>
       </nav>
       <ResponsibleAISummary data={matrixData} />
-      <ResponsibleAIMatrix data={matrixData} />
+      <ResponsibleAIMatrix data={matrixData} lastModified={matrixLastModified} />
       <ResponsibleAIExcluded data={matrixData} />
       <ResponsibleAIFootnotes data={matrixData} />
     </article>
