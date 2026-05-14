@@ -161,20 +161,21 @@ const orgSchema = {
                 Dangerous Robot
               </a>
             </div>
-            <ul class="nav-links" id="nav-links" role="list">
-              {TOP_LINKS.map((l) => (
-                <li class="nav-section-item">
-                  <a href={l.href} aria-current={
-                    pathname === l.href ? 'page' :
-                    currentSection?.href === l.href ? 'true' : undefined
-                  }>
-                    {l.label}
-                  </a>
-                </li>
-              ))}
+            <div class="nav-links" id="nav-links">
+              <ul class="nav-top-links" role="list">
+                {TOP_LINKS.map((l) => (
+                  <li class="nav-section-item">
+                    <a href={l.href} aria-current={
+                      pathname === l.href ? 'page' :
+                      currentSection?.href === l.href ? 'true' : undefined
+                    }>
+                      {l.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
               {navLinks.length > 0 && (
-                <Fragment>
-                  <li class="nav-sep" aria-hidden="true" role="presentation"></li>
+                <ul class="nav-sub-links" role="list">
                   {navLinks.map((l) => (
                     <li>
                       <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
@@ -182,9 +183,9 @@ const orgSchema = {
                       </a>
                     </li>
                   ))}
-                </Fragment>
+                </ul>
               )}
-            </ul>
+            </div>
             <button
               class="nav-toggle"
               id="nav-toggle"
@@ -228,7 +229,7 @@ const orgSchema = {
             var linksNaturalWidth = 0;
 
             function measureLinks() {
-              var gap = parseFloat(getComputedStyle(links).gap) || 24;
+              var gap = parseFloat(getComputedStyle(links).gap) || 8;
               var clone = links.cloneNode(true);
               Object.assign(clone.style, {
                 position: 'fixed',
@@ -241,8 +242,11 @@ const orgSchema = {
                 gap: gap + 'px',
                 margin: '0',
                 padding: '0',
-                listStyle: 'none',
               });
+              var childLists = clone.querySelectorAll('ul');
+              for (var i = 0; i < childLists.length; i++) {
+                childLists[i].style.flex = 'none';
+              }
               document.body.appendChild(clone);
               linksNaturalWidth = clone.offsetWidth;
               document.body.removeChild(clone);
@@ -378,7 +382,7 @@ const orgSchema = {
         display: flex;
         align-items: center;
         gap: 0.75rem;
-        margin-right: auto;
+        flex-shrink: 0;
       }
 
       .site-name {
@@ -417,13 +421,35 @@ const orgSchema = {
         color: var(--color-text);
       }
 
+      /* Wrapper: fills remaining nav space, contains top-links (centered) + sub-links (right) */
       .nav-links {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: var(--space-sm);
+      }
+
+      /* Section labels centered within their available space */
+      .nav-top-links {
+        flex: 1;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        gap: var(--space-lg);
+      }
+
+      /* Sub-links right-aligned with a border separator */
+      .nav-sub-links {
+        flex-shrink: 0;
         list-style: none;
         margin: 0;
         padding: 0;
         display: flex;
         gap: var(--space-lg);
-        margin-left: auto;
+        border-left: 1px solid var(--color-border);
+        padding-left: var(--space-md);
       }
 
       .nav-links a {
@@ -435,7 +461,7 @@ const orgSchema = {
       /* Section labels (Research, Resources) — bigger and stronger than sub-links */
       .nav-section-item a {
         color: var(--color-nav-link);
-        font-size: var(--font-size-base);
+        font-size: 1.05rem;
         font-weight: 600;
       }
 
@@ -458,23 +484,13 @@ const orgSchema = {
       }
 
       /* Active section chip: persistent eyebrow, same look on section root and subpages */
-      .nav-links .nav-section-item a[aria-current] {
+      .nav-section-item a[aria-current] {
         color: var(--color-accent);
         background: color-mix(in srgb, var(--color-accent) 10%, transparent);
         padding: 0.1em 0.45em;
         border-radius: var(--radius-sm);
         border: 1px solid color-mix(in srgb, var(--color-accent) 25%, transparent);
         text-decoration: none;
-      }
-
-      /* Vertical separator between top-level and section nav groups */
-      .nav-sep {
-        width: 1px;
-        background: var(--color-border);
-        align-self: stretch;
-        margin: 0.2em 0;
-        flex-shrink: 0;
-        list-style: none;
       }
 
       /* Skip-to-main link: visually hidden until focused */
@@ -554,6 +570,7 @@ const orgSchema = {
         cursor: pointer;
         flex-shrink: 0;
         line-height: 1;
+        margin-left: auto;
       }
 
       .nav-toggle:hover {
@@ -600,15 +617,19 @@ const orgSchema = {
         display: flex;
       }
 
-      /* Separator becomes a horizontal rule in the dropdown */
-      .site-nav.nav--collapsed .nav-sep {
-        width: auto;
-        height: 1px;
-        margin: 0;
-        align-self: auto;
+      /* Stack the two lists vertically in the dropdown */
+      .site-nav.nav--collapsed .nav-top-links,
+      .site-nav.nav--collapsed .nav-sub-links {
+        flex-direction: column;
+        justify-content: flex-start;
+        border-left: none;
+        padding-left: 0;
+        gap: 0;
       }
 
-      .site-nav.nav--collapsed .nav-links li:not(.nav-sep) {
+      /* Each item separated by border; sub-links ul continues the same pattern */
+      .site-nav.nav--collapsed .nav-top-links li,
+      .site-nav.nav--collapsed .nav-sub-links li {
         border-top: 1px solid var(--color-border);
       }
 
