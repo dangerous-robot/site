@@ -272,31 +272,20 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
 
   </section>
 
-  <div
+  <nav
     class="hero-nav"
     id="hero-nav"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="hero-nav-label"
+    aria-label="Site navigation"
     hidden
   >
-    <div class="hero-nav__inner">
-      <p class="hero-nav__eyebrow" id="hero-nav-label">Index</p>
-      <nav aria-label="Site sections">
-        <ol>
-          {navLinks.map((l, i) => (
-            <li>
-              <a href={l.href}>
-                <span class="hero-nav__num">{String(i + 1).padStart(2, '0')}</span>
-                <span class="hero-nav__label">{l.label}</span>
-                <span class="hero-nav__arrow" aria-hidden="true">&rarr;</span>
-              </a>
-            </li>
-          ))}
-        </ol>
-      </nav>
-    </div>
-  </div>
+    <ul class="hero-nav__list" role="list">
+      {navLinks.map((l) => (
+        <li>
+          <a href={l.href}>{l.label}</a>
+        </li>
+      ))}
+    </ul>
+  </nav>
   <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
 </Base>
 
@@ -688,76 +677,54 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     font-weight: 700;
   }
 
-  /* -------- nav overlay -------- */
+  /* -------- nav dropdown (right-aligned, matches standard collapsed nav) -------- */
   .hero-nav {
     position: fixed;
-    inset: 0;
-    z-index: 350;
-    background: var(--color-bg);
-    display: grid;
-    place-items: center;
-    padding: clamp(var(--space-xl), 8vh, 6rem) clamp(var(--space-lg), 5vw, 5rem);
-    animation: overlayIn 0.3s cubic-bezier(.2,.8,.2,1) both;
+    top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 52px + 6px);
+    right: clamp(var(--space-md), 2.2vw, var(--space-lg));
+    z-index: 400;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    min-width: 14rem;
+    animation: dropdownIn 0.2s cubic-bezier(.2,.8,.2,1) both;
+  }
+  :global([data-theme="light"]) .hero-nav {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
   }
   .hero-nav[hidden] { display: none; }
-  @keyframes overlayIn {
-    from { opacity: 0; transform: translateY(-10px); }
+  @keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(-6px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-  .hero-nav__inner { width: 100%; max-width: 46rem; }
-  .hero-nav__eyebrow {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--color-text-faint);
-    margin: 0 0 var(--space-xl) 0;
-    padding-bottom: var(--space-sm);
-    border-bottom: 1px solid var(--color-border);
+  .hero-nav__list {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-sm) var(--space-xl) var(--space-lg);
   }
-  .hero-nav ol { list-style: none; margin: 0; padding: 0; }
-  .hero-nav li { border-bottom: 1px solid var(--color-border); }
-  .hero-nav li a {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: baseline;
-    gap: clamp(var(--space-md), 2vw, var(--space-xl));
-    padding: clamp(var(--space-sm), 1.8vh, var(--space-md)) 0;
+  .hero-nav__list li {
+    border-top: 1px solid var(--color-border);
+  }
+  .hero-nav__list li:first-child {
+    border-top: none;
+  }
+  .hero-nav__list a {
+    display: block;
+    padding: var(--space-md) 0;
     text-decoration: none;
-    color: var(--color-text-heading);
-    font-family: var(--font-heading);
-    font-size: clamp(1.7rem, 4.2vw, 2.5rem);
-    line-height: 1;
-    transition: color 0.22s, transform 0.4s cubic-bezier(.2,.8,.2,1);
+    color: var(--color-nav-link-hover);
+    font-size: 1.15rem;
+    font-weight: 700;
+    transition: color 0.18s;
   }
-  .hero-nav__num {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    color: var(--color-text-faint);
-    letter-spacing: 0.14em;
-    min-width: 2.2em;
-  }
-  .hero-nav__label { grid-column: 2; }
-  .hero-nav__arrow {
-    grid-column: 3;
-    font-family: var(--font-mono);
-    font-size: 1.3rem;
-    color: var(--color-text-faint);
-    opacity: 0;
-    transform: translateX(-10px);
-    transition: opacity 0.25s, transform 0.4s cubic-bezier(.2,.8,.2,1), color 0.25s;
-  }
-  .hero-nav li a:hover,
-  .hero-nav li a:focus-visible {
+  .hero-nav__list a:hover,
+  .hero-nav__list a:focus-visible {
     color: var(--color-accent);
-    transform: translateX(8px);
     outline: none;
   }
-  .hero-nav li a:hover .hero-nav__arrow,
-  .hero-nav li a:focus-visible .hero-nav__arrow {
-    opacity: 1;
-    transform: translateX(0);
-    color: var(--color-accent);
+  .hero-nav__list a:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   /* -------- logo glitch: subtle single-ghost flash -------- */
@@ -815,7 +782,7 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     .hero-nav { animation: none; }
     .hero-burger, .hero-burger__icon,
     .claim-card,
-    .hero-nav li a, .hero-nav__arrow, .hero-title__word {
+    .hero-nav__list a, .hero-title__word {
       transition: none !important;
     }
   }
@@ -826,8 +793,7 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
   :root[data-motion="reduce"] .hero-burger,
   :root[data-motion="reduce"] .hero-burger__icon,
   :root[data-motion="reduce"] .claim-card,
-  :root[data-motion="reduce"] .hero-nav li a,
-  :root[data-motion="reduce"] .hero-nav__arrow,
+  :root[data-motion="reduce"] .hero-nav__list a,
   :root[data-motion="reduce"] .hero-nav {
     transition: none !important;
     animation: none;
@@ -922,51 +888,35 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
       || document.documentElement.dataset.motion === 'reduce';
 
     const burger = document.getElementById('hero-burger');
-    const overlay = document.getElementById('hero-nav');
-    let lastFocus = null;
-
-    const getFocusable = () =>
-      overlay ? Array.from(overlay.querySelectorAll('a[href], button:not([disabled])')) : [];
+    const dropdown = document.getElementById('hero-nav');
 
     const openNav = () => {
-      if (!overlay || !burger) return;
-      lastFocus = document.activeElement;
-      overlay.hidden = false;
+      if (!dropdown || !burger) return;
+      dropdown.hidden = false;
       burger.setAttribute('aria-expanded', 'true');
       burger.setAttribute('aria-label', 'Close navigation');
-      document.documentElement.style.overflow = 'hidden';
-      const first = getFocusable()[0];
+      const first = dropdown.querySelector('a');
       if (first) first.focus();
     };
 
     const closeNav = () => {
-      if (!overlay || !burger) return;
-      overlay.hidden = true;
+      if (!dropdown || !burger) return;
+      dropdown.hidden = true;
       burger.setAttribute('aria-expanded', 'false');
       burger.setAttribute('aria-label', 'Open navigation');
-      document.documentElement.style.overflow = '';
-      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
-      else burger.focus();
     };
 
-    if (burger && overlay) {
+    if (burger && dropdown) {
       burger.addEventListener('click', () => {
         burger.getAttribute('aria-expanded') === 'true' ? closeNav() : openNav();
       });
-      overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) closeNav();
-      });
       document.addEventListener('keydown', (e) => {
-        if (overlay.hidden) return;
-        if (e.key === 'Escape') { e.preventDefault(); closeNav(); return; }
-        if (e.key === 'Tab') {
-          const items = getFocusable();
-          if (!items.length) return;
-          const first = items[0];
-          const last = items[items.length - 1];
-          const active = document.activeElement;
-          if (e.shiftKey && active === first) { e.preventDefault(); last.focus(); }
-          else if (!e.shiftKey && active === last) { e.preventDefault(); first.focus(); }
+        if (dropdown.hidden) return;
+        if (e.key === 'Escape') { e.preventDefault(); closeNav(); burger.focus(); }
+      });
+      document.addEventListener('pointerdown', (e) => {
+        if (!dropdown.hidden && !burger.contains(e.target) && !dropdown.contains(e.target)) {
+          closeNav();
         }
       });
     }
