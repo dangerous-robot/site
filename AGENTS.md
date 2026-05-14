@@ -20,6 +20,13 @@ For the generalized vision, see `docs/architecture/glossary.md` § How the syste
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
 
+## UI & Design Standards
+
+- Before implementing any ad hoc UX change, check whether it would deviate from established site patterns (typography, spacing, color, component conventions, layout structure).
+- Before accepting any UI plan, evaluate it for contradictions with the site's overall theme, existing styles, or established component patterns.
+- If drift or contradiction is detected, name it specifically: what standard would be violated and how. Propose a standards-consistent alternative if one exists.
+- Push back even when the request comes from Brandon -- the point is to catch drift before it lands.
+
 ## Research Content Structure
 
 Three entity types under `research/`:
