@@ -1,15 +1,17 @@
 ---
 import Base from '../../layouts/Base.astro';
 
-const sections = [
-  { n: '01', label: 'Topics',    href: '/research/topics',    isRef: false },
-  { n: '02', label: 'Claims',    href: '/research/claims',    isRef: false },
-  { n: '03', label: 'Companies', href: '/research/companies', isRef: false },
-  { n: '04', label: 'Products',  href: '/research/products',  isRef: false },
-  { n: '05', label: 'Subjects',  href: '/research/subjects',  isRef: true  },
-  { n: '06', label: 'Sources',   href: '/research/sources',   isRef: true  },
-  { n: '07', label: 'Criteria',  href: '/research/criteria',  isRef: true  },
-  { n: '08', label: 'FAQ',       href: '#faq',                isRef: false },
+const primarySections = [
+  { n: '01', label: 'Topics',    href: '/research/topics'    },
+  { n: '02', label: 'Claims',    href: '/research/claims'    },
+  { n: '03', label: 'Companies', href: '/research/companies' },
+  { n: '04', label: 'Products',  href: '/research/products'  },
+];
+
+const refSections = [
+  { n: '05', label: 'Subjects',  href: '/research/subjects'  },
+  { n: '06', label: 'Sources',   href: '/research/sources'   },
+  { n: '07', label: 'Criteria',  href: '/research/criteria'  },
 ];
 
 const faqSchema = {
@@ -91,10 +93,20 @@ const faqSchema = {
     </header>
 
     <nav class="research-index" aria-label="Research sections">
-      <ol class="research-index__list">
-        {sections.map((s) => (
+      <ol class="research-index__primary">
+        {primarySections.map((s) => (
           <li>
-            <a class={`research-index__link${s.isRef ? ' research-index__link--ref' : ''}`} href={s.href}>
+            <a class="research-index__link research-index__link--primary" href={s.href}>
+              <span class="research-index__num" aria-hidden="true">{s.n}</span>
+              <span class="research-index__label">{s.label}</span>
+            </a>
+          </li>
+        ))}
+      </ol>
+      <ol class="research-index__refs">
+        {refSections.map((s) => (
+          <li>
+            <a class="research-index__link research-index__link--ref" href={s.href}>
               <span class="research-index__num" aria-hidden="true">{s.n}</span>
               <span class="research-index__label">{s.label}</span>
             </a>
@@ -406,13 +418,26 @@ const faqSchema = {
     border-top: 1px solid var(--color-border);
   }
 
-  .research-index__list {
+  .research-index__primary,
+  .research-index__refs {
     list-style: none;
     margin: 0;
     padding: 0;
+  }
+
+  .research-index__primary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .research-index__refs {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem clamp(1.5rem, 3vw, 3rem);
+    gap: 0.35rem clamp(1rem, 2vw, 2rem);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border);
   }
 
   .research-index__link {
@@ -420,33 +445,55 @@ const faqSchema = {
     gap: 0.55rem;
     align-items: baseline;
     text-decoration: none;
-    color: var(--color-text);
-    font-family: var(--font-mono);
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.18em;
-    font-weight: 500;
     transition: color 0.2s;
   }
 
-  .research-index__link:hover { color: var(--color-accent); }
-
-  .research-index__num {
-    color: var(--color-accent);
-    font-size: 0.7rem;
+  .research-index__link--primary {
+    color: var(--color-text-heading);
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 500;
+    line-height: 1.3;
   }
 
-  .research-index__link--ref,
+  .research-index__link--primary:hover { color: var(--color-accent); }
+
+  .research-index__link--primary .research-index__num {
+    color: var(--color-accent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    align-self: center;
+  }
+
+  .research-index__link--ref {
+    color: var(--color-text-faint);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 500;
+  }
+
+  .research-index__link--ref:hover { color: var(--color-text-muted); }
+
   .research-index__link--ref .research-index__num {
     color: var(--color-text-faint);
+    font-size: 0.65rem;
   }
 
   @media (max-width: 680px) {
-    .research-index__list { gap: 0.4rem 0.75rem; }
-    .research-index__link {
-      font-size: var(--font-size-2xs);
-      font-weight: 600;
-      letter-spacing: 0.2em;
+    .research-index__link--primary {
+      font-size: 1.25rem;
+    }
+
+    .research-index__refs {
+      gap: 0.3rem 0.75rem;
+    }
+
+    .research-index__link--ref {
+      font-size: 0.65rem;
     }
   }
 
