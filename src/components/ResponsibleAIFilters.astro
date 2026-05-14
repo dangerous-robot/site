@@ -48,12 +48,14 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
 <style>
   .ra-filters-details {
     margin: 0 0 var(--space-lg);
+    border-left: 2px solid var(--color-border);
+    padding-left: var(--space-sm);
   }
 
   .ra-filters-summary {
     list-style: none;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: var(--space-xs);
     padding: var(--space-xs) 0;
@@ -62,7 +64,9 @@ const isProductPressed = (key: string) => (hiddenSet.has(key) ? 'false' : 'true'
     font-family: inherit;
   }
 
+  /* Suppress native <summary> triangle in all browsers */
   .ra-filters-summary::-webkit-details-marker { display: none; }
+  .ra-filters-summary::marker { content: ''; }
 
   .ra-filters-summary :global(.disclosure-indicator) {
     color: var(--color-text-faint);
