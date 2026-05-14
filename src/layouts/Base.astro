@@ -33,21 +33,23 @@ const ogTitle = `${title} - Dangerous Robot`;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
 type NavLink = { href: string; label: string };
-type Section = { href: string; label: string; links: NavLink[] };
+type Section = { href: string; label: string; links: NavLink[]; refLinks?: NavLink[] };
 
 const SECTIONS: Section[] = [
   {
     href: '/research',
     label: 'Research',
     links: [
-      { href: '/resources',          label: 'Resources' },
-      { href: '/research/subjects',  label: 'Subjects' },
-      { href: '/research/companies', label: 'Companies' },
-      { href: '/research/products',  label: 'Products' },
-      { href: '/research/topics',    label: 'Topics' },
-      { href: '/research/claims',    label: 'Claims' },
-      { href: '/research/sources',   label: 'Sources' },
-      { href: '/research/criteria',  label: 'Criteria' },
+      { href: '/resources',            label: 'Resources' },
+      { href: '/research/topics',      label: 'Topics' },
+      { href: '/research/claims',      label: 'Claims' },
+      { href: '/research/companies',   label: 'Companies' },
+      { href: '/research/products',    label: 'Products' },
+    ],
+    refLinks: [
+      { href: '/research/subjects',    label: 'Subjects' },
+      { href: '/research/sources',     label: 'Sources' },
+      { href: '/research/criteria',    label: 'Criteria' },
     ],
   },
   {
@@ -73,6 +75,7 @@ const currentSection = SECTIONS.find(
   (s) => pathname === s.href || pathname.startsWith(s.href + '/'),
 ) ?? null;
 const navLinks: NavLink[] = currentSection?.links ?? NEUTRAL_LINKS;
+const navRefLinks: NavLink[] = currentSection?.refLinks ?? [];
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -156,42 +159,150 @@ const orgSchema = {
       <span class="alpha-tag">BETA RELEASE</span>
     </div>
     {chrome === 'standard' && (
-      <nav class="site-nav">
-        <div class="nav-inner">
-          <div class="site-name-group">
-            <a href="/" class="site-name">
-              <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
-              Dangerous Robot
-            </a>
-            {currentSection && (
-              <a href={currentSection.href} class="site-section-eyebrow">{currentSection.label}</a>
-            )}
+      <Fragment>
+        <a href="#main-content" class="skip-nav">Skip to main content</a>
+        <nav class="site-nav" aria-label="Site navigation">
+          <div class="nav-inner">
+            <div class="site-name-group">
+              <a href="/" class="site-name">
+                <img src="/dr-logo.png" alt="" class="site-logo" aria-hidden="true" />
+                Dangerous Robot
+              </a>
+              {currentSection && (
+                <a href={currentSection.href} class="site-section-eyebrow">{currentSection.label}</a>
+              )}
+            </div>
+            <ul class="nav-links" id="nav-links" role="list">
+              {navLinks.map((l) => (
+                <li>
+                  <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+              {navRefLinks.length > 0 && (
+                <Fragment>
+                  <li class="nav-sep" aria-hidden="true" role="presentation"></li>
+                  {navRefLinks.map((l) => (
+                    <li class="nav-ref">
+                      <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+                        {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </Fragment>
+              )}
+            </ul>
+            <button
+              class="nav-toggle"
+              id="nav-toggle"
+              aria-label="Open navigation menu"
+              aria-expanded="false"
+              aria-controls="nav-links"
+            >
+              <svg aria-hidden="true" focusable="false" width="20" height="14" viewBox="0 0 20 14" fill="none">
+                <rect y="0" width="20" height="2" rx="1" fill="currentColor"/>
+                <rect y="6" width="20" height="2" rx="1" fill="currentColor"/>
+                <rect y="12" width="20" height="2" rx="1" fill="currentColor"/>
+              </svg>
+            </button>
           </div>
-          <ul class="nav-links" id="nav-links">
-            {navLinks.map((l) => (
-              <li><a href={l.href}>{l.label}</a></li>
-            ))}
-          </ul>
-          <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav-links">
-            <span aria-hidden="true">&#9776;</span>
-          </button>
-        </div>
-      </nav>
-      <script is:inline>
-        (function () {
-          var toggle = document.getElementById('nav-toggle');
-          var links = document.getElementById('nav-links');
-          if (toggle && links) {
+        </nav>
+        <script is:inline>
+          (function () {
+            var nav = document.querySelector('.site-nav');
+            var toggle = document.getElementById('nav-toggle');
+            var links = document.getElementById('nav-links');
+            var nameGroup = nav ? nav.querySelector('.site-name-group') : null;
+
+            if (!nav || !toggle || !links || !nameGroup) return;
+
+            var navInner = nav.querySelector('.nav-inner');
+
+            function closeMenu() {
+              links.classList.remove('nav-open');
+              toggle.setAttribute('aria-expanded', 'false');
+              toggle.setAttribute('aria-label', 'Open navigation menu');
+            }
+
+            function openMenu() {
+              links.classList.add('nav-open');
+              toggle.setAttribute('aria-expanded', 'true');
+              toggle.setAttribute('aria-label', 'Close navigation menu');
+              var firstLink = links.querySelector('a');
+              if (firstLink) firstLink.focus();
+            }
+
+            var linksNaturalWidth = 0;
+
+            function measureLinks() {
+              var gap = parseFloat(getComputedStyle(links).gap) || 24;
+              var clone = links.cloneNode(true);
+              Object.assign(clone.style, {
+                position: 'fixed',
+                left: '-9999px',
+                top: '0',
+                display: 'flex',
+                flexDirection: 'row',
+                visibility: 'hidden',
+                width: 'max-content',
+                gap: gap + 'px',
+                margin: '0',
+                padding: '0',
+                listStyle: 'none',
+              });
+              document.body.appendChild(clone);
+              linksNaturalWidth = clone.offsetWidth;
+              document.body.removeChild(clone);
+            }
+
+            function updateCollapsed() {
+              if (!linksNaturalWidth) measureLinks();
+              var navWidth = nav.offsetWidth;
+              var nameWidth = nameGroup.offsetWidth;
+              var padding = navInner ? parseFloat(getComputedStyle(navInner).paddingLeft) * 2 : 48;
+              var gap = navInner ? (parseFloat(getComputedStyle(navInner).gap) || 16) : 16;
+              var needed = nameWidth + gap + linksNaturalWidth + padding;
+
+              if (needed > navWidth) {
+                nav.classList.add('nav--collapsed');
+              } else {
+                nav.classList.remove('nav--collapsed');
+                closeMenu();
+              }
+            }
+
+            if (window.ResizeObserver) {
+              new ResizeObserver(updateCollapsed).observe(nav);
+            }
+            requestAnimationFrame(updateCollapsed);
+
             toggle.addEventListener('click', function () {
-              var open = links.classList.toggle('nav-open');
-              toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+              if (links.classList.contains('nav-open')) {
+                closeMenu();
+              } else {
+                openMenu();
+              }
             });
-          }
-        })();
-      </script>
+
+            document.addEventListener('keydown', function (e) {
+              if (e.key === 'Escape' && links.classList.contains('nav-open')) {
+                closeMenu();
+                toggle.focus();
+              }
+            });
+
+            document.addEventListener('pointerdown', function (e) {
+              if (!nav.contains(e.target) && links.classList.contains('nav-open')) {
+                closeMenu();
+              }
+            });
+          })();
+        </script>
+      </Fragment>
     )}
 
-    <main class={`content content--${layout}`}>
+    <main class={`content content--${layout}`} id="main-content" tabindex="-1">
       <slot />
     </main>
 
@@ -354,6 +465,56 @@ const orgSchema = {
         text-decoration: none;
       }
 
+      .nav-links a:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 3px;
+        border-radius: 2px;
+      }
+
+      .nav-links a[aria-current="page"] {
+        color: var(--color-nav-link-hover);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      /* Vertical separator between primary and reference nav groups */
+      .nav-sep {
+        width: 1px;
+        background: var(--color-border);
+        align-self: stretch;
+        margin: 0.2em 0;
+        flex-shrink: 0;
+        list-style: none;
+      }
+
+      /* Reference-tier links: same font, reduced prominence */
+      .nav-ref a {
+        color: var(--color-text-faint);
+      }
+
+      .nav-ref a:hover {
+        color: var(--color-nav-link-hover);
+      }
+
+      /* Skip-to-main link: visually hidden until focused */
+      .skip-nav {
+        position: absolute;
+        left: -9999px;
+        z-index: 200;
+        padding: var(--space-sm) var(--space-lg);
+        background: var(--color-accent);
+        color: var(--color-surface);
+        font-size: var(--font-size-sm);
+        font-family: var(--font-mono);
+        text-decoration: none;
+        border-radius: 0 0 var(--radius-sm) 0;
+      }
+
+      .skip-nav:focus {
+        left: 0;
+        top: 0;
+      }
+
       .content {
         max-width: var(--content-max-width);
         margin: 0 auto;
@@ -398,63 +559,86 @@ const orgSchema = {
         color: var(--color-footer-link-hover);
       }
 
+      /* Toggle button: hidden by default, shown when JS detects overflow */
       .nav-toggle {
         display: none;
+        align-items: center;
         background: none;
-        border: none;
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-sm);
         color: var(--color-nav-link);
-        font-size: 1.4rem;
-        line-height: 1;
         padding: var(--space-xs) var(--space-sm);
         cursor: pointer;
+        flex-shrink: 0;
+        line-height: 1;
       }
 
       .nav-toggle:hover {
         color: var(--color-nav-link-hover);
+        border-color: var(--color-nav-link-hover);
       }
 
-      @media (max-width: 768px) {
-        .site-nav {
-          position: relative;
-        }
+      .nav-toggle:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+      }
 
-        .nav-toggle {
-          display: flex;
-          align-items: center;
-        }
+      /* Collapsed state: JS adds nav--collapsed when links would overflow wordmark */
+      .site-nav.nav--collapsed {
+        position: relative;
+      }
 
-        .site-logo {
-          margin: 0 var(--space-sm);
-        }
+      .site-nav.nav--collapsed .nav-toggle {
+        display: flex;
+      }
 
-        .nav-links {
-          display: none;
-          flex-direction: column;
-          gap: 0;
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: var(--color-surface);
-          border-bottom: 1px solid var(--color-border);
-          padding: var(--space-sm) var(--space-lg) var(--space-md);
-          z-index: 100;
-        }
+      .site-nav.nav--collapsed .site-logo {
+        margin: 0 var(--space-sm);
+      }
 
-        .nav-links.nav-open {
-          display: flex;
-        }
+      .site-nav.nav--collapsed .nav-links {
+        display: none;
+        flex-direction: column;
+        gap: 0;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: var(--color-surface);
+        border-bottom: 1px solid var(--color-border);
+        padding: var(--space-sm) var(--space-lg) var(--space-md);
+        z-index: 100;
+      }
 
-        .nav-links li {
-          border-top: 1px solid var(--color-border);
-        }
+      .site-nav.nav--collapsed .nav-links.nav-open {
+        display: flex;
+      }
 
-        .nav-links a {
-          display: block;
-          padding: var(--space-sm) 0;
-          font-size: var(--font-size-base);
-        }
+      /* Separator becomes a horizontal rule in the dropdown */
+      .site-nav.nav--collapsed .nav-sep {
+        width: auto;
+        height: 1px;
+        margin: 0;
+        align-self: auto;
+      }
 
+      .site-nav.nav--collapsed .nav-links li:not(.nav-sep) {
+        border-top: 1px solid var(--color-border);
+      }
+
+      .site-nav.nav--collapsed .nav-links a {
+        display: block;
+        padding: var(--space-sm) 0;
+        font-size: var(--font-size-base);
+      }
+
+      /* Restore full color for ref links in dropdown (they're prominent enough by position) */
+      .site-nav.nav--collapsed .nav-ref a {
+        color: var(--color-nav-link);
+      }
+
+      /* Reduce padding on narrow viewports regardless of collapse state */
+      @media (max-width: 540px) {
         .nav-inner,
         .content {
           padding-left: var(--space-md);
