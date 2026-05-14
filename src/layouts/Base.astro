@@ -49,6 +49,7 @@ const SECTIONS: Section[] = [
       { href: '/research/claims',      label: 'Claims' },
       { href: '/research/companies',   label: 'Companies' },
       { href: '/research/products',    label: 'Products' },
+      { href: '/values',               label: 'Values' },
     ],
   },
   {
@@ -65,7 +66,7 @@ const SECTIONS: Section[] = [
 
 const pathname = Astro.url.pathname;
 const currentSection = SECTIONS.find(
-  (s) => pathname === s.href || pathname.startsWith(s.href + '/'),
+  (s) => pathname === s.href || pathname.startsWith(s.href + '/') || s.links.some(l => pathname === l.href),
 ) ?? null;
 const navLinks: NavLink[] = currentSection?.links ?? [];
 
@@ -185,6 +186,31 @@ const orgSchema = {
                   ))}
                 </ul>
               )}
+              <div class="nav-dropdown-sections">
+                {SECTIONS.map((s) => (
+                  <div class="dropdown-section">
+                    <a
+                      class="dropdown-section-label"
+                      href={s.href}
+                      aria-current={
+                        pathname === s.href ? 'page' :
+                        currentSection?.href === s.href ? 'true' : undefined
+                      }
+                    >
+                      {s.label}
+                    </a>
+                    <ul class="dropdown-section-links" role="list">
+                      {s.links.map((l) => (
+                        <li>
+                          <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+                            {l.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
             </div>
             <button
               class="nav-toggle"
@@ -222,7 +248,8 @@ const orgSchema = {
               links.classList.add('nav-open');
               toggle.setAttribute('aria-expanded', 'true');
               toggle.setAttribute('aria-label', 'Close navigation menu');
-              var firstLink = links.querySelector('a');
+              var dropdownSections = links.querySelector('.nav-dropdown-sections');
+              var firstLink = (dropdownSections || links).querySelector('a');
               if (firstLink) firstLink.focus();
             }
 
@@ -452,6 +479,11 @@ const orgSchema = {
         padding-left: var(--space-md);
       }
 
+      /* Option C full-menu dropdown: hidden in horizontal mode */
+      .nav-dropdown-sections {
+        display: none;
+      }
+
       .nav-links a {
         color: var(--color-nav-link);
         font-size: var(--font-size-sm);
@@ -651,6 +683,56 @@ const orgSchema = {
         padding-left: 0;
         padding-right: 0;
         border-radius: 0;
+      }
+
+      /* Option C full menu: swap in when collapsed/open, hide horizontal elements */
+      .site-nav.nav--collapsed .nav-links.nav-open .nav-top-links,
+      .site-nav.nav--collapsed .nav-links.nav-open .nav-sub-links {
+        display: none;
+      }
+
+      .site-nav.nav--collapsed .nav-links.nav-open .nav-dropdown-sections {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-label {
+        display: block;
+        padding: var(--space-md) 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--color-nav-link-hover);
+        text-decoration: none;
+        border-top: 1px solid var(--color-border);
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-label[aria-current] {
+        color: var(--color-accent);
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-links {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-links li {
+        border-top: 1px solid var(--color-border);
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-links a {
+        display: block;
+        padding: var(--space-sm) 0 var(--space-sm) var(--space-lg);
+        font-size: var(--font-size-sm);
+        color: var(--color-nav-link);
+        text-decoration: none;
+      }
+
+      .site-nav.nav--collapsed .nav-dropdown-sections .dropdown-section-links a[aria-current="page"] {
+        color: var(--color-nav-link-hover);
+        text-decoration: underline;
+        text-underline-offset: 3px;
       }
 
       /* Reduce padding on narrow viewports regardless of collapse state */
