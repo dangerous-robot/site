@@ -118,9 +118,19 @@ test_ns.add_task(_test_acceptance, name="acceptance")
 
 
 @task(positional=[])
-def _audit(ctx, json=False, min_severity="info"):
-    """Run content integrity checks — orphaned sources, entities, and other issues."""
+def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
+    """Run content integrity checks (summary by default).
+
+    --detail          show full per-file output on screen
+    --output FILE     write full detail to FILE
+    --json            emit JSON detail
+    --min-severity    error | warning | info  (default: info)
+    """
     parts = ["uv run python -m linter"]
+    if detail:
+        parts.append("--detail")
+    if output:
+        parts.extend(["--output", output])
     if json:
         parts.append("--json")
     if min_severity != "info":

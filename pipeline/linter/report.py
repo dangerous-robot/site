@@ -52,6 +52,42 @@ def format_text_report(
     return "\n".join(lines)
 
 
+def format_summary_report(
+    issues: list[LintIssue],
+    files_checked: int,
+    min_severity: str = "info",
+) -> str:
+    filtered = _filter_by_severity(issues, min_severity)
+    errors = [i for i in filtered if i.severity == "error"]
+    warnings = [i for i in filtered if i.severity == "warning"]
+    infos = [i for i in filtered if i.severity == "info"]
+
+    lines = [
+        "dr lint — dangerousrobot.org content linter",
+        "=" * 60,
+        f"  {files_checked} files checked  |  "
+        f"{len(errors)} errors  |  {len(warnings)} warnings  |  {len(infos)} info",
+    ]
+
+    if filtered:
+        by_check: dict[str, tuple[str, int]] = {}
+        for issue in filtered:
+            sev, count = by_check.get(issue.check_id, (issue.severity, 0))
+            by_check[issue.check_id] = (sev, count + 1)
+
+        sorted_checks = sorted(
+            by_check.items(),
+            key=lambda x: (SEVERITY_ORDER.get(x[1][0], 2), -x[1][1]),
+        )
+        max_id = max(len(cid) for cid in by_check)
+        lines.append("")
+        for check_id, (severity, count) in sorted_checks:
+            lines.append(f"  {check_id:<{max_id}}  {count:>5}  {severity}")
+
+    lines.append("=" * 60)
+    return "\n".join(lines)
+
+
 def format_json_report(issues: list[LintIssue], min_severity: str = "info") -> str:
     filtered = _filter_by_severity(issues, min_severity)
     return json.dumps([asdict(i) for i in filtered], indent=2)

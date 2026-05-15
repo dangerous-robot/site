@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from linter.models import LintIssue
+from linter.report import format_summary_report
 from linter.checks import (
     check_broken_criteria_slug,
     check_broken_source_refs,
@@ -395,3 +397,33 @@ class TestUnreferencedEntities:
         ent = _p("research/entities/companies/foo.md")
         issues = check_unreferenced_entities([], {}, {"companies/foo": ent})
         assert len(issues) == 1
+
+
+class TestFormatSummaryReport:
+    def _issue(self, check_id, severity):
+        return LintIssue(path="some/path.md", check_id=check_id, severity=severity, message="msg")
+
+    def test_empty_issues_shows_zero_counts(self):
+        report = format_summary_report([], files_checked=10)
+        assert "10 files checked" in report
+        assert "0 errors" in report
+        assert "0 warnings" in report
+
+    def test_check_ids_appear_with_counts(self):
+        issues = [self._issue("unreferenced-source", "warning")] * 3
+        report = format_summary_report(issues, files_checked=5)
+        assert "unreferenced-source" in report
+        assert "3" in report
+        assert "warning" in report
+
+    def test_sorted_by_severity_then_count(self):
+        issues = (
+            [self._issue("minor-info", "info")] * 2
+            + [self._issue("big-error", "error")]
+            + [self._issue("small-warning", "warning")]
+        )
+        report = format_summary_report(issues, files_checked=10)
+        error_pos = report.index("big-error")
+        warning_pos = report.index("small-warning")
+        info_pos = report.index("minor-info")
+        assert error_pos < warning_pos < info_pos
