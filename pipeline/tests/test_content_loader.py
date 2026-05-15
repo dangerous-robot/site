@@ -28,8 +28,21 @@ class TestResolveRepoRoot:
 
 
 class TestLoadSource:
-    def test_load_existing_source(self, repo_root: Path) -> None:
-        data, body = load_source("test/load-source-fixture", repo_root)
+    def test_load_existing_source(self, tmp_path: Path) -> None:
+        source_dir = tmp_path / "research" / "sources" / "test"
+        source_dir.mkdir(parents=True)
+        (source_dir / "fixture.md").write_text(
+            "---\n"
+            "url: https://example.com/test-source\n"
+            "title: Test Source Fixture\n"
+            "publisher: Test Publisher\n"
+            "accessed_date: 2026-01-01\n"
+            "kind: article\n"
+            "summary: Minimal fixture.\n"
+            "---\n\n"
+            "Body content.\n"
+        )
+        data, body = load_source("test/fixture", tmp_path)
         assert data["title"] == "Test Source Fixture"
         assert data["publisher"] == "Test Publisher"
         assert data["kind"] == "article"
