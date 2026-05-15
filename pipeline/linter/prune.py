@@ -1,7 +1,7 @@
 """Prune source files not cited by any claim.
 
 Usage (from repo root or pipeline/):
-  uv run python -m linter.prune           # dry-run — list orphans
+  uv run python -m linter.prune           # dry-run — summary by year
   uv run python -m linter.prune --apply   # delete orphans + empty year dirs
 """
 from __future__ import annotations
@@ -31,12 +31,13 @@ def main() -> None:
         print("No orphaned sources found.")
         return
 
-    mode = "DRY RUN — Would delete" if not args.apply else "Deleting"
-    print(f"{mode} {len(orphans)} orphaned source(s):")
-    for p in orphans:
-        print(f"  {p}")
-
     if not args.apply:
+        by_year: dict[str, int] = {}
+        for p in orphans:
+            by_year[p.parent.name] = by_year.get(p.parent.name, 0) + 1
+        print(f"DRY RUN — {len(orphans)} orphaned source(s) by year:")
+        for year in sorted(by_year):
+            print(f"  {year}  {by_year[year]:>4}")
         print("\nPass --apply to delete.")
         return
 
@@ -50,7 +51,7 @@ def main() -> None:
             d.rmdir()
             print(f"  removed empty dir: {d}")
 
-    print(f"\nDeleted {len(orphans)} file(s).")
+    print(f"Deleted {len(orphans)} file(s).")
 
 
 if __name__ == "__main__":

@@ -146,7 +146,9 @@ def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
 
 @task(positional=[])
 def _audit_prune(ctx, apply=False):
-    """List source files not cited by any claim (dry-run by default).
+    """Show orphaned source count by year (dry-run). Pass --apply to delete.
+
+    Dry-run prints a year-bucket summary of source files not cited by any claim.
 
     Options:
       --apply    delete the files and remove any empty year directories
