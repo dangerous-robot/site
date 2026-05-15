@@ -119,12 +119,17 @@ test_ns.add_task(_test_acceptance, name="acceptance")
 
 @task(positional=[])
 def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
-    """Run content integrity checks (summary by default).
+    """Run content integrity checks and print a summary.
 
-    --detail          show full per-file output on screen
-    --output FILE     write full detail to FILE
-    --json            emit JSON detail
-    --min-severity    error | warning | info  (default: info)
+    Options:
+      --detail              show full per-file output on stdout
+      --output FILE         write full per-file detail to FILE
+      --json                emit JSON (full detail, implies --detail)
+      --min-severity LEVEL  error | warning | info  (default: info)
+
+    Subtasks:
+      inv audit.prune            list orphaned source files (dry-run)
+      inv audit.prune --apply    delete orphaned sources + empty year dirs
     """
     parts = ["uv run python -m linter"]
     if detail:
@@ -141,7 +146,15 @@ def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
 
 @task(positional=[])
 def _audit_prune(ctx, apply=False):
-    """List orphaned source files (dry-run). Pass --apply to delete them."""
+    """List source files not cited by any claim (dry-run by default).
+
+    Options:
+      --apply    delete the files and remove any empty year directories
+
+    Related:
+      inv audit                  show full integrity summary
+      inv audit --detail         see per-file unreferenced-source warnings
+    """
     flags = " --apply" if apply else ""
     with ctx.cd("pipeline"):
         ctx.run(f"uv run python -m linter.prune{flags}", pty=True, in_stream=False, warn=True)
