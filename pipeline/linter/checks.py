@@ -527,3 +527,53 @@ def check_entity_type_dir_mismatch(
                 hint=f'move file to research/entities/{declared_type}s/ or correct the type field',
             ))
     return issues
+
+
+def check_unreferenced_sources(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    source_id_to_path: dict[str, Path],
+) -> list[LintIssue]:
+    referenced: set[str] = set()
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        sources = fm.get("sources") or []
+        if isinstance(sources, list):
+            for src_id in sources:
+                if isinstance(src_id, str):
+                    referenced.add(src_id)
+    issues = []
+    for src_id, src_path in sorted(source_id_to_path.items()):
+        if src_id not in referenced:
+            issues.append(LintIssue(
+                path=str(src_path),
+                check_id="unreferenced-source",
+                severity="warning",
+                message=f'source "{src_id}" is not cited by any claim',
+                hint="remove the file or add it to a claim's sources: list",
+            ))
+    return issues
+
+
+def check_unreferenced_entities(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    entity_id_to_path: dict[str, Path],
+) -> list[LintIssue]:
+    referenced: set[str] = set()
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        entity_ref = fm.get("entity")
+        if isinstance(entity_ref, str) and entity_ref:
+            referenced.add(entity_ref)
+    issues = []
+    for eid, ent_path in sorted(entity_id_to_path.items()):
+        if eid not in referenced:
+            issues.append(LintIssue(
+                path=str(ent_path),
+                check_id="unreferenced-entity",
+                severity="info",
+                message=f'entity "{eid}" is not referenced by any claim',
+                hint="add a claim for this entity or remove the entity file",
+            ))
+    return issues

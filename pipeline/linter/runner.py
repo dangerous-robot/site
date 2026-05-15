@@ -29,6 +29,8 @@ from .checks import (
     check_published_review_signoff,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
+    check_unreferenced_entities,
+    check_unreferenced_sources,
 )
 from .models import LintIssue
 
@@ -96,16 +98,21 @@ def run_all_checks(
 
     # Build entity index: "companies/ecosia" style refs
     entity_index: set[str] = set()
+    entity_id_to_path: dict[str, Path] = {}
     for p in entity_files:
-        # Derive the entity ref from path relative to entities root
         rel = p.relative_to(repo_root / "research" / "entities")
-        entity_index.add(str(rel.with_suffix("")).replace("\\", "/"))
+        eid = str(rel.with_suffix("")).replace("\\", "/")
+        entity_index.add(eid)
+        entity_id_to_path[eid] = p
 
     # Build source ID set: "2025/fli-safety-index" style
     source_ids: set[str] = set()
+    source_id_to_path: dict[str, Path] = {}
     for p in source_files:
         rel = p.relative_to(repo_root / "research" / "sources")
-        source_ids.add(str(rel.with_suffix("")).replace("\\", "/"))
+        sid = str(rel.with_suffix("")).replace("\\", "/")
+        source_ids.add(sid)
+        source_id_to_path[sid] = p
 
     issues: list[LintIssue] = []
     issues += check_orphaned_claims(claim_files, claim_fms, entity_index)
@@ -127,5 +134,7 @@ def run_all_checks(
     issues += check_missing_independence(source_files, source_fms)
     issues += check_confidence_cap_violation(claim_files, claim_fms)
     issues += check_missing_cap_rationale(claim_files, claim_fms)
+    issues += check_unreferenced_sources(claim_files, claim_fms, source_id_to_path)
+    issues += check_unreferenced_entities(claim_files, claim_fms, entity_id_to_path)
 
     return issues, files_checked

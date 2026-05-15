@@ -114,6 +114,34 @@ test_ns.add_task(_test_all, name="all")
 test_ns.add_task(_test_acceptance, name="acceptance")
 
 
+# --- Audit namespace: inv audit, inv audit.prune ---
+
+
+@task(positional=[])
+def _audit(ctx, json=False, min_severity="info"):
+    """Run content integrity checks — orphaned sources, entities, and other issues."""
+    parts = ["uv run python -m linter"]
+    if json:
+        parts.append("--json")
+    if min_severity != "info":
+        parts.extend(["--min-severity", min_severity])
+    with ctx.cd("pipeline"):
+        ctx.run(" ".join(parts), pty=True, in_stream=False, warn=True)
+
+
+@task(positional=[])
+def _audit_prune(ctx, apply=False):
+    """List orphaned source files (dry-run). Pass --apply to delete them."""
+    flags = " --apply" if apply else ""
+    with ctx.cd("pipeline"):
+        ctx.run(f"uv run python -m linter.prune{flags}", pty=True, in_stream=False, warn=True)
+
+
+audit_ns = Collection("audit")
+audit_ns.add_task(_audit, name="run", default=True)
+audit_ns.add_task(_audit_prune, name="prune")
+
+
 # --- Namespace assembly ---
 
 ns = Collection()
@@ -124,3 +152,4 @@ ns.add_task(lint)
 ns.add_task(check)
 ns.add_task(clean)
 ns.add_collection(test_ns)
+ns.add_collection(audit_ns)

@@ -23,6 +23,8 @@ from linter.checks import (
     check_published_review_signoff,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
+    check_unreferenced_entities,
+    check_unreferenced_sources,
 )
 
 
@@ -333,3 +335,63 @@ class TestUnknownFrontmatterKeys:
         fms = {str(claim): {"title": "T", "extra_field": "value"}}
         issues = check_unknown_frontmatter_keys([claim], fms, [], {})
         assert any(i.check_id == "unknown-frontmatter-key" and "extra_field" in i.message for i in issues)
+
+
+class TestUnreferencedSources:
+    def test_all_sources_referenced_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"sources": ["2025/foo"]}}
+        src = _p("research/sources/2025/foo.md")
+        assert check_unreferenced_sources([claim], fms, {"2025/foo": src}) == []
+
+    def test_unreferenced_source_warns(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"sources": ["2025/foo"]}}
+        src_used = _p("research/sources/2025/foo.md")
+        src_orphan = _p("research/sources/2025/orphan.md")
+        issues = check_unreferenced_sources(
+            [claim], fms, {"2025/foo": src_used, "2025/orphan": src_orphan}
+        )
+        assert len(issues) == 1
+        assert issues[0].check_id == "unreferenced-source"
+        assert issues[0].severity == "warning"
+        assert "2025/orphan" in issues[0].message
+
+    def test_no_claims_all_sources_flagged(self):
+        src = _p("research/sources/2025/foo.md")
+        issues = check_unreferenced_sources([], {}, {"2025/foo": src})
+        assert len(issues) == 1
+        assert issues[0].check_id == "unreferenced-source"
+
+    def test_sources_list_not_present_treats_as_empty(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {}}  # no sources key
+        src = _p("research/sources/2025/foo.md")
+        issues = check_unreferenced_sources([claim], fms, {"2025/foo": src})
+        assert len(issues) == 1
+
+
+class TestUnreferencedEntities:
+    def test_all_entities_referenced_no_issue(self):
+        claim = _p("research/claims/ecosia/some-claim.md")
+        fms = {str(claim): {"entity": "companies/ecosia"}}
+        ent = _p("research/entities/companies/ecosia.md")
+        assert check_unreferenced_entities([claim], fms, {"companies/ecosia": ent}) == []
+
+    def test_unreferenced_entity_info(self):
+        claim = _p("research/claims/ecosia/some-claim.md")
+        fms = {str(claim): {"entity": "companies/ecosia"}}
+        ent_used = _p("research/entities/companies/ecosia.md")
+        ent_orphan = _p("research/entities/companies/ghost-corp.md")
+        issues = check_unreferenced_entities(
+            [claim], fms, {"companies/ecosia": ent_used, "companies/ghost-corp": ent_orphan}
+        )
+        assert len(issues) == 1
+        assert issues[0].check_id == "unreferenced-entity"
+        assert issues[0].severity == "info"
+        assert "ghost-corp" in issues[0].message
+
+    def test_no_claims_all_entities_flagged(self):
+        ent = _p("research/entities/companies/foo.md")
+        issues = check_unreferenced_entities([], {}, {"companies/foo": ent})
+        assert len(issues) == 1
