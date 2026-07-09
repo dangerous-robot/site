@@ -4,27 +4,15 @@ Work known but not yet assigned to a release. Items here are candidates for the 
 
 ---
 
-## Per-entity detail pages
-
-Goal: Render company / product / subject detail pages so entity body content (e.g. the COI blockquote on `research/entities/products/treadlightlyai.md`) is actually visible to readers. Today only `index.astro` exists for `companies/` and `products/`, and the entity body is dropped at build. The treadlightlyai COI block was added 2026-04-27 in anticipation of these pages; until they ship, the canonical disclosure is the FAQ accordion.
-
-Also unlocks: rendering `parent_company` cross-links from product pages back to the company page (and vice versa via a query of the entity collection).
-
----
-
 ## Pipeline performance & hardening
 
 Goal: Reduce onboarding wall time and wasted API calls.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Reuse verify_claim sources in onboard | [onboard-reuse-verify-sources.md](plans/onboard-reuse-verify-sources.md) | Eliminates duplicate research+ingest per template (~2x per-template speedup) |
-| Ingestor fail-fast on 401/403/451 | [ingestor-fail-fast-403.md](plans/ingestor-fail-fast-403.md) | Terminal exception short-circuits PydanticAI agent run; no wayback escalation |
-| Researcher host blocklist | [researcher-host-blocklist.md](plans/researcher-host-blocklist.md) | `research/blocklist.yaml` filters LinkedIn/WSJ/FT/etc before ingest |
-| Tighten ingestor timeouts | [ingestor-tighten-timeouts.md](plans/ingestor-tighten-timeouts.md) | `httpx.Timeout(connect=5, read=15, …)`; agent wrapper 90s → 60s |
-| Parallelize onboard templates | [onboard-parallelize-templates.md](plans/onboard-parallelize-templates.md) | `asyncio.Semaphore(3)`-guarded gather; interactive mode clamps to 1 |
+| Parallelize onboard templates | [onboard-parallelize-templates.md](plans/onboard-parallelize-templates.md) | `asyncio.Semaphore(3)`-guarded gather; interactive mode clamps to 1. Plan predates the researcher decomposition: re-verify line refs and reconcile its `concurrency` knob with the shipped `llm_concurrency` before implementing |
 
-Recommended implementation order: reuse sources → fail-fast → blocklist → timeouts → parallelize.
+The other four items in this group shipped and moved to `plans/completed/`: onboard-reuse-verify-sources, ingestor-fail-fast-403, researcher-host-blocklist, ingestor-tighten-timeouts.
 
 ---
 
@@ -49,47 +37,9 @@ Goal: Split the Analyst's frontier-model call into smaller sub-decisions so chea
 
 ---
 
-## Existing duplicate source files (25 URL collisions)
-
-Goal: Remove the 25 pairs of source files that share the same URL (different slugs, same content). These predate the URL-derived slug feature shipped 2026-05-03 that prevents new duplicates.
-
-For each pair: keep the better-named file, delete the other, update any claim `sources:` frontmatter that references the deleted source ID.
-
-Full list of collisions (as of 2026-05-03):
-
-| URL | File A | File B |
-|-----|--------|--------|
-| ailabwatch.org/resources/commitments | 2026/commitments.md | 2026/ai-lab-commitments.md |
-| arxiv.org/abs/2512.01166 | 2025/evaluating-ai-frontier-safety-frameworks.md | 2025/evaluating-ai-providers-frontier-safety-frameworks.md |
-| blogs.cfainstitute.org/…hidden-environmental-costs… | 2024/hidden-environmental-costs-ai-investments.md | 2024/hidden-environmental-costs-tech-ai-investments.md |
-| disinfocode.eu/reports/microsoft/5… | 2025/microsoft-transparency-center-report-2025.md | 2025/microsoft-eu-code-disinformation-report-2025.md |
-| epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use | 2025/chatgpt-energy-usage.md | 2025/how-much-energy-does-chatgpt-use.md |
-| esgnews.com/microsoft-…-sustainability-report/ | 2024/microsoft-2024-sustainability-report-suppliers.md | 2024/microsoft-2024-sustainability-report.md |
-| greenpt.com/government/ | 2025/greenpt-government.md | 2025/greenpt-government-ai.md |
-| kie.ai/4o-image-api | 2026/gpt-image-1-api.md | 2026/gpt-image-1-api-kie.md |
-| owasp.org/www-project-top-10-for-large-language-model-applications/ | 2026/owasp-top-10-llm-applications.md | 2026/owasp-top-10-llm.md |
-| panmore.com/microsoft-corporation-organizational-structure… | 2024/microsoft-organizational-structure-analysis.md | 2016/microsoft-organizational-structure-analysis.md |
-| spectrum.ieee.org/ai-energy-use | 2025/ai-energy-use.md | 2025/ai-energy-use-queries.md |
-| teamai.com/blog/…understanding-different-chatgpt-models/ | 2024/chatgpt-coding-models-2026.md | 2024/best-chatgpt-coding-models-2026.md |
-| brookings.edu/…bletchley-park-process… | 2024/bletchley-park-ai-safety-cooperation.md | 2024/bletchley-park-process-ai-safety.md |
-| eesel.ai/blog/brave-leo | 2025/brave-leo-browser-ai-assistant.md | 2025/brave-leo-deep-dive.md |
-| gov.uk/…ai-safety-summit-2023-the-bletchley-declaration | 2023/ai-safety-summit-bletchley-declaration.md | 2023/ai-safety-summit-2023-bletchley-declaration.md |
-| microsoft.com/…/corporate-responsibility/ai | 2026/ai-impact.md | 2026/microsoft-ai-impact.md |
-| microsoft.com/…/corporate-responsibility/reports-hub | 2026/reports-hub.md | 2026/microsoft-reports-hub.md |
-| microsoft.com/…/corporate-responsibility/sustainability | 2026/sustainability.md | 2026/microsoft-sustainability.md |
-| microsoft.com/…/investor/corporate-governance/framework | 2026/corporate-governance-framework.md | 2026/microsoft-corporate-governance-framework.md |
-| microsoft.com/…/investor/corporate-governance/policies | 2026/microsoft-corporate-governance-policies.md | 2026/corporate-governance-policies.md |
-| nature.org/…/microsoft/ | 2026/microsoft-nature-conservancy-partnership.md | 2026/microsoft-nature-conservancy.md |
-| oneplacesolutions.com/…sharepoint… | 2022/legal-matter-management-sharepoint-m365.md | 2022/legal-matter-management-sharepoint-microsoft-365.md |
-| pymnts.com/…openais-new-corporate-structure… | 2025/openai-corporate-structure-legal-future.md | 2025/openais-new-corporate-structure.md |
-| vox.com/…/openai-nonprofit-foundation-philanthropy | 2026/openai-nonprofit-foundation-philanthropy.md | 2026/openai-nonprofit-mission-lawsuit.md |
-| washington.edu/…how-much-energy-does-chatgpt-use/ | 2023/uw-chatgpt-energy-use.md | 2023/uw-chatgpt-energy-consumption.md |
-
----
-
 ## Dedup detection on URL ingest and claim creation
 
-Goal: Stop creating duplicate sources/claims when the pipeline encounters a URL or claim that already exists. Today the pipeline writes a new file or fails on a path collision rather than reusing the existing object.
+Goal: Stop creating duplicate claims when the pipeline encounters a claim that already exists. URL-level source dedup shipped 2026-05-03 ([source-url-dedup_completed.md](plans/completed/source-url-dedup_completed.md), including a `--force` bypass); the remaining gap is claim-level match-and-return plus richer URL canonicalization.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
@@ -99,7 +49,7 @@ Goal: Stop creating duplicate sources/claims when the pipeline encounters a URL 
 
 ## arXiv ingest hardening (2026-05-10)
 
-Goal: Stop the two arXiv-specific failure modes surfaced while auditing recent dr runs. Both leaked bad metadata into a published verdict (`research/claims/gemini/discloses-energy-sourcing.md` cap_rationale describes Google's own preprint as an "independent expert assessment").
+Goal: Stop the two arXiv-specific failure modes surfaced while auditing recent dr runs. Both leaked bad metadata into a then-published verdict; the motivating claim file (`research/claims/gemini/discloses-energy-sourcing.md`, whose cap_rationale described Google's own preprint as an "independent expert assessment") was removed in the 2026-05-11 launch-set prune, but the pipeline gaps remain.
 
 | Work Item | Notes |
 |-----------|-------|
@@ -131,28 +81,17 @@ Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline afte
 | Extended audit fields + staleness check + orphan CI gate (Stage 2) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Requires: no stale sidecars, orphan check CI, backfill script |
 | Append-only history (Stage 3) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Full recheck history per claim |
 
-Scheduling note: Stage 1 (pipeline write + Astro loader) depends on pipeline work (persistence.py). Decision needed: before or after pipeline hardening?
 
 ---
 
 ## Ops Runbook
 
-Goal: A single reference doc (`docs/RUNBOOK.md`) covering the dev loop, pipeline operations, deploy process, and content schema changes.
+Goal: One reference doc covering the dev loop, pipeline operations, deploy process, and content schema changes. `docs/runbook.md` exists (2026-05-04) and covers the dev loop; the rest is unwritten (its own TODO lists the same sections).
 
 | Work Item | Notes |
 |-----------|-------|
-| Write RUNBOOK.md | Dev loop (HMR, restart triggers), `dr` CLI reference, deploy steps, schema change checklist |
+| Expand runbook.md | `dr` CLI reference, deploy steps, schema change checklist; also document the newer `inv audit`, `inv audit.prune`, `inv check` tasks |
 | Expand source `kind` enum | Add `statement` (social posts, press releases, direct submissions) and `filing` (company invoices, certificates, contracts). Schema change touches `content.config.ts`, pipeline `SourceFrontmatter`, and `_classify_source_type`. |
-
----
-
-## Developer tooling
-
-Goal: Convert ad-hoc POC scripts into durable, agent-friendly tools that future model evaluations can reuse.
-
-| Work Item | Plan | Notes |
-|-----------|------|-------|
-| `llm-tester` refactor of `scripts/poc-multi-provider/` | [llm-tester-refactor.md](plans/llm-tester-refactor.md) | Rename to `scripts/llm-tester/`, single `tester.py` dispatcher (`probe`/`trace`/`list`), archive POC artifacts. Stays gitignored. Minimal-change refactor of existing harnesses. |
 
 ---
 
@@ -164,7 +103,7 @@ Goal: Recurring audits, queue-based intake. Trigger: enough content exists that 
 |-----------|------|-------|
 | Scheduled citation audits | [source-quality-followups.md § Scheduled citation audits](plans/source-quality-followups.md#scheduled-citation-audits-drafted) | Scheduled workflows, QUEUE.md intake |
 
-Downstream sync to parallax-ai: [future/downstream-sync.md](plans/future/downstream-sync.md) -- good idea, not needed now.
+Downstream sync to parallax-ai: [downstream-sync.md](plans/drafts/downstream-sync.md) (local draft) -- good idea, not needed now.
 
 ---
 
@@ -187,6 +126,27 @@ Scheduling note: challenge/request/propose forms (last three items) require the 
 
 ---
 
+## Router (full implementation, post-v1)
+
+Goal: Implement the Router role as a real dispatcher (small classifications; matching incoming sources to criteria/claims). The v1 surface shipped via [triage-agent.md](plans/completed/triage-agent.md); the full Router was explicitly deferred post-v1. AGENTS.md § Agent Roles points here for tracking.
+
+| Work Item | Notes |
+|-----------|-------|
+| Full Router per the deferred scope in [triage-agent.md](plans/completed/triage-agent.md) | Needs a fresh plan (or a drafts/ stub) before scheduling; `pipeline/router/` does not exist yet |
+
+---
+
+## Responsible-ai matrix polish
+
+Carry-forward items from [responsible-ai-overhaul.md](plans/completed/responsible-ai-overhaul.md) (all milestones shipped 2026-05; these were out of M8 scope).
+
+| Work Item | Notes |
+|-----------|-------|
+| Ideal column tint in light theme | `--color-surface` is too close to `--color-bg` in light theme; needs a `--color-surface-subtle` (or similar) token. Deferred by the no-new-tokens constraint |
+| Filter chip `aria-pressed` semantics | Filled accent chip currently means "this product is hidden", not "selected"; flip the model to "visible by default, clicking removes" or rename the toggle |
+
+---
+
 ## Style guide page (`/styles`)
 
 Goal: A living style reference page at `/styles` (converted from `public/font-preview.html`) that renders inside the site layout with the full a11y controller, showing all typography, colors, verdict badges, spacing tokens, and component states. Lets designers and contributors verify visual changes in context.
@@ -203,7 +163,7 @@ From architectural review (2026-04-18) and TODO.md:
 
 ### Blocked
 
-- **Configure custom domain in GitHub Pages UI** -- `dangerousrobot.org` is verified at the account level, DNS records are set (A records + CNAME), repo is public, Pages is enabled, but Settings > Pages still returns "You cannot set a custom domain at this time." Troubleshoot: check if the account is a free org (may need GitHub Pro/Team for custom domains on org repos), try the API (`gh api repos/dangerous-robot/site/pages -X PUT`), or contact GitHub Support.
+- **Configure custom domain in GitHub Pages UI** -- appears resolved: the site serves at `dangerousrobot.org` (Cloudflare redirects live and GSC baseline captured 2026-05-11). Confirm the Pages setting once, then delete this item.
 
 ### Deferred content (unsourced)
 
@@ -212,23 +172,20 @@ From architectural review (2026-04-18) and TODO.md:
 
 ### Site gaps
 
-- **List/index pages** -- No pages exist at `/claims/`, `/sources/`, or `/entities/`. Add index pages listing all entries. Add `/about` page.
+- **`/about` page** -- still missing. (The list/index pages this bullet originally asked for shipped under `/research/*`.)
 - ~~**`parent_company` not rendered**~~ -- Rendered as of [`plans/completed/entity-metadata-surface_completed.md`](plans/completed/entity-metadata-surface_completed.md) (2026-05-09). All five product entity pages and any claim whose subject is a product render "Made by [Parent]" linking back to the company entity page. Inference automation for `parent_company` itself remains in `plans/parent-company-inference.md` (post-v1).
 - **Entity reference validation** -- Claims reference entities by path string with no build-time validation. Use Astro's `reference('entities')` helper or add entity-ref checking to `scripts/check-citations.ts`.
 - **Source reference upgrade** -- Replace `z.array(z.string())` with `z.array(z.string().min(1)).min(1)` for claims `sources` field. Current schema permits empty arrays.
-- **Deploy workflow quality checks** -- `deploy.yml` only runs `npm run build`, skipping lint and citation checks. Add checks to deploy.yml or require CI status checks via branch protection.
-- **`verdictColors` deduplication** -- Same color map copy-pasted in `index.astro`, `claims/[...slug].astro`, `entities/[...slug].astro`. Extract to a shared module.
-- **Homepage entity name resolution** -- Homepage displays raw entity slugs instead of human-readable names.
 - **`recheck_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
 - **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`). Pin by full SHA for supply chain security.
 - **SEO basics** -- ~~No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.~~ Done (2026-04-29): robots.txt, sitemap, canonical, OG tags, per-page descriptions, Organization/ClaimReview/FAQPage/BreadcrumbList/WebSite JSON-LD. Remaining: (1) `og:image` asset -- code accepts an `ogImage` prop but `/dr-logo.png` is a narrow logo; a proper 1200×630 `og-default.png` is needed for social sharing previews. (2) `SearchAction` wiring -- the WebSite JSON-LD declares a `SearchAction` at `/claims?q={search_term_string}` but `FilterBar.astro` doesn't read `?q=` from the URL on load; a small JS change is needed to make the schema functional.
-- **Accessibility** -- No skip-to-content link, no `aria-label` on nav, no `<header>` wrapper.
 
 ### Opportunities
 
 - **Validation gaps** -- CI validates schema structure and citation integrity but not reasoning quality. Potential additions: confidence-to-verdict alignment, staleness detection, source URL liveness checks, archived URL population nudges, a check framework (Vitest) for scripted validators.
 - **Confidence rubric** -- Define what `high`/`medium`/`low` confidence concretely means. Use an LLM to check each claim against the rubric.
 - **Claim Updater instruction quality** -- Consider adversarial review, inter-rater consistency validation, and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs).
+- **Source freshness** -- confirm the ingestor reliably populates the optional `published_date` source field (`src/content.config.ts`); wire it if not. (Folded in from a scratch note, 2026-07-03.)
 
 ---
 
@@ -250,7 +207,7 @@ Goal: Treat the combined Analyst + Auditor output as the single trustworthy verd
 
 | Work Item | Notes |
 |-----------|-------|
-| Decide carrier | Either elevate `.audit.yaml` to "verdict record" (rename + reshape) or merge audit fields into claim frontmatter. Operator decision pending; previously deferred in `docs/plans/drafts/v0.1.0-vocab-workflow-landing.md` Out-of-scope. |
+| Decide carrier | Either elevate `.audit.yaml` to "verdict record" (rename + reshape) or merge audit fields into claim frontmatter. Operator decision pending; previously deferred in `docs/plans/completed/v0.1.0-vocab-workflow-landing.md` Out-of-scope. |
 | Update canonical paragraphs once carrier decision lands | Generalized + v1 paragraphs in `AGENTS.md` and `docs/architecture/glossary.md` need to reflect the new artifact name and ownership. |
 | Schema migration | Whichever carrier wins, `src/content.config.ts` enum/shape needs updating; backfill all existing claims and `.audit.yaml` files. |
 
@@ -258,68 +215,14 @@ Scheduling note: blocked on operator decision; not v0.1.0. Touches audit-trail S
 
 ---
 
-## Follow-up items (2026-04-22)
+## Source type classification — edge cases to revisit
 
-From `docs/follow-up-2026-04-22.md`:
-
-### Browser testing -- implemented features
-
-Four features were implemented and the build passes. Each needs a browser walkthrough before the work is considered done.
-
-**Feature 1: `/methodology`**
-- [ ] Read through the page -- does the voice match the site? Does it cover the actual pipeline steps accurately?
-- [ ] Check the link to `/scope` resolves
-- [ ] Check readable at narrow viewport
-
-**Feature 5: Confidence inline explainer (claim detail pages)**
-- [ ] Open a claim page (e.g., `/claims/anthropic/publishes-sustainability-report`)
-- [ ] Expand the confidence `<details>` -- does the copy make sense for this specific claim?
-- [ ] Verify the collapsed state looks the same as the old confidence span (flex row not broken)
-- [ ] Check on mobile
-
-**Feature 6: Source type badges**
-- [ ] Open several source detail pages and spot-check `source_type` classification
-- [ ] Check badge appears before the `kind` badge in the header
-- [ ] Check tooltip appears on hover
-- [ ] Review a handful of the 146 backfilled files for classification accuracy
-
-**Feature 9: `/scope`**
-- [ ] Read through -- does it accurately reflect what the site actually covers?
-- [ ] Add or remove scope items if anything is wrong
-- [ ] Check the link to `/methodology` resolves
-
-### Content review -- draft copy on new pages
-
-- [ ] `/methodology` -- are the three confidence level descriptions accurate to how the pipeline actually works?
-- [ ] `/scope` -- are the out-of-scope items the ones you actually intend?
-- [ ] Both pages -- does the brand voice feel right?
-
-### Nav/discoverability
-
-- [ ] Add `/methodology` and `/scope` to the footer alongside the TreadLightly and license links
-- [ ] Confirm the cross-links between the two pages are in place
-
-### Claim re-label candidates under sharpened verdict definitions
-
-Plan 2 (`claim-promotion-audit-rename-verdicts`) sharpened the `mostly-true` vs `mixed` split to hinge on "main thrust vs. material element." The following claim surfaced during a spot-check as a potential re-label (currently `mostly-true`, borderline `mixed` under the new framing):
-
-- `research/claims/gemini/discloses-models-used.md` -- FMTI low-score finding and the TechCrunch "very sparse" criticism of the Gemini 2.5 Pro technical report read as material elements about transparency depth, not caveats. A reader taking `mostly-true` as endorsement of Gemini's disclosure would be misled about those elements.
-
-### Source type classification -- edge cases to revisit
+Carried from the retired 2026-04-22 follow-up doc. Everything else in that doc shipped, was folded into the research-page accordion, or referenced content removed in the 2026-05-11 launch-set prune.
 
 - **SEC EDGAR filings** -- classified as `primary`; verify this is correct.
 - **B Lab / B Corp profiles** -- classified as `secondary`; confirm.
 - **UNESCO, NTIA, UNFCCC** -- classified as `secondary`; confirm.
 - **IBM, Deloitte reports** -- classified as `secondary`; some may lean tertiary. Spot-check.
-
-### Scheduling decisions
-
-| Item | Decision |
-|------|----------|
-| Pipeline performance & hardening | v0.1.0 blocker (resolved 2026-04-22) |
-| Audit trail (sidecar + pipeline write + Astro loader + UI) | v0.1.0 blocker (resolved 2026-04-22; prerequisite for audit trail CI gates) |
-| Public feedback (Worker + D1 + admin CLI) | Post-v0.1.0 (resolved 2026-04-22) |
-| Participation forms (challenge/request/propose) | Open -- depends on public feedback timing; bundle or after decision still needed |
 
 ---
 
@@ -342,14 +245,13 @@ Cleanup items surfaced during the v0.1.0 vocab + multi-topic + claim-lifecycle l
 | Work Item | Notes |
 |-----------|-------|
 | Vocabulary sweep through `pipeline/orchestrator/pipeline.py` | Lingering "Auditor" references in `verify_claim`'s function docstring (line ~145), inline comments (lines ~221, ~551), and a log message (line ~420). The vocab landing PR was scoped to module-level docstrings only; this is the in-function follow-up. |
-| Detail-page filter for `status: blocked` | `src/pages/claims/[...slug].astro` still calls `getStaticPaths` over all claims regardless of status. Public list pages already exclude blocked, but direct URLs to blocked claims still resolve. Add a status filter to `getStaticPaths` if operator-only visibility should extend to detail URLs. |
+| Detail-page filter for `status: blocked` | `src/pages/research/claims/[...slug].astro` calls `getStaticPaths` over all claims regardless of status (path updated post-restructure; re-verify the behavior). Public list pages already exclude blocked, but direct URLs to blocked claims still resolve. Add a status filter to `getStaticPaths` if operator-only visibility should extend to detail URLs. |
 | Multi-topic faceted filtering | `src/components/ClaimRow.astro` and `src/pages/criteria/index.astro` set `data-topic={topics[0]}` because `FilterBar` matches one attribute value per facet. Multi-topic claims/criteria filter only on their first topic. Fix needs richer `FilterBar` matching (split-by-space) or a different markup shape. |
 | Delete `research/claims/.gitkeep` after first regen | The bridge file was added in commit `1394bc6` so Astro's `walkMdFiles` doesn't ENOENT before regeneration. Once regenerated claims exist, delete the bridge. |
-| Consider `pipeline/auditor/` → `pipeline/evaluator/` directory rename | Doc rename Auditor → Evaluator landed in `7943577`; the Python package keeps its old name for v1. Tracked in `docs/plans/v0.1.0-vocab-workflow-landing.md` as deferred. |
+| Consider `pipeline/auditor/` → `pipeline/evaluator/` directory rename | Doc rename Auditor → Evaluator landed in `7943577`; the Python package keeps its old name for v1. Tracked in `docs/plans/completed/v0.1.0-vocab-workflow-landing.md` as deferred. |
 | Sweep stringly-typed `"blocked"` literals to `ClaimStatus.BLOCKED.value` | `pipeline/orchestrator/persistence.py` and `pipeline/orchestrator/cli.py` write/compare raw "blocked" strings. Consistent with existing style; cosmetic enum-everywhere upgrade. |
 | Onboarding fallback for empty entity description | `pipeline/orchestrator/pipeline.py` lines 640 + 657 leave `entity_description = ""` when the seed source's `summary` is empty (fail-fast 401/403, unsummarizable body, etc.). The created entity then ships with `description: ''` until an operator hand-edits it. Add a fallback (e.g., synthesize from entity name + type + website, or block onboarding with a clear error). Surfaced 2026-04-26 during v1.0.0 content & disclosure pass; deleted `products/chatgpt.md` was the original symptom. |
 | `ClaimFrontmatter` Pydantic model as Python-side source of truth | `pipeline/linter/checks.py::CANONICAL_CLAIM_KEYS` and `pipeline/orchestrator/persistence.py::_write_claim_file`'s frontmatter dict are two parallel definitions of the claim schema. Drift between them caused the 2026-04-27 `unknown-frontmatter-key blocked_reason` lint warning when the writer added `blocked_reason` but the linter set wasn't updated. Define a `ClaimFrontmatter` Pydantic model in `pipeline/common/models.py` (mirroring the existing `SourceFrontmatter`), derive `CANONICAL_CLAIM_KEYS = set(ClaimFrontmatter.model_fields.keys())`, optionally validate `_write_claim_file` output against it. Note: `src/content.config.ts` remains the *real* source of truth (Astro consumes it at build); this only collapses the Python-internal duplication. ~1-2 hours. |
-| Backfill `criteria_slug` on 7 published claims (lint blocker) | The new `published-without-criterion` lint check (2026-04-27) errors on these 7 published claims that lack `criteria_slug`: `research/claims/claude/{no-training-on-user-data,realtime-energy-display,renewable-energy-hosting}.md`, `research/claims/gemini/{excludes-image-generation,no-training-on-user-data,realtime-energy-display,renewable-energy-training}.md`. CI is red until each gets a slug from `research/templates.yaml` (or is reverted to `status: draft`). |
 | Wire `show_progress` into `research_claim()` | `pipeline/orchestrator/pipeline.py::research_claim` (lines ~712-905) has the same 4-step structure as `verify_claim` but is not wired to the `show_progress` flag added in `0477ef6` (2026-05-06). No CLI command currently invokes `research_claim` directly; if one is added, mirror the `progress()` plumbing or it will look hung from the first moment. |
 
 ---
@@ -418,6 +320,8 @@ Goal: Decide whether the researcher should search the local source corpus *befor
 
 Goal: Maintain a hand-curated allowlist (or "trusted set") of sources and sites known to be high-signal, primary, or otherwise exceptional — usable by researcher prompts as preferred starting points, by the auditor as a quality signal, and by readers as a transparency artifact.
 
+Related: [`source-quality-followups.md`](plans/source-quality-followups.md) tracks the same idea from the source-quality side ("Curated allowlist of independent AI research orgs"); reconcile when picked up.
+
 | Work Item | Notes |
 |-----------|-------|
 | Define schema and storage | A YAML file (e.g., `research/exceptional-sources.yaml`) listing entries with `url`, `domain`, `name`, `kind` (primary/scholarly/regulator/etc), `why_exceptional`, optional `topics`. Decide whether entries are *sites* (domain-level), *sources* (URL-level), or both. |
@@ -439,6 +343,7 @@ Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-
 | §5.4 Weekly coverage screenshots | For ~4 weeks after the 301s shipped: navigate to the GSC Pages report and capture the four count buckets (Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed) to `seo-runs/coverage-YYYY-MM-DD.json`. Expectations and re-investigation triggers are in §5.4 of the completed plan. |
 | Single-hop redirect for deep claim URLs | Today `/claims/{x}/{y}` → `/research/claims/{x}/{y}` → `/research/claims/{x}/{y}/` (CF 301 + GH-Pages canonical-slash 301). Only fixable by changing Astro's `trailingSlash` mode and rebuilding URL handling site-wide. Low priority — Google handles 2-hop chains, but worth revisiting if other Astro work touches routing. |
 | OG image at 1200×630 | Carried over from the completed plan's §6 backlog. `dr-logo.png` is square; Twitter/FB want 1200×630. All new `/research/` and `/resources/*` URLs inherit the same default, so share-card quality is uniformly low. One properly-sized image passed via `ogImage` from `Base.astro` (or per-section) fixes it. |
+| Decide when to end the pre-release noindex policy | `INDEX_ALPHA_DETAIL_PAGES = false` in `src/lib/seo.ts` still noindexes detail pages; the policy language says "alpha" but the site is at 1.0.0-beta.2. Decide the flip trigger (beta, rc, or GA) and update `docs/seo-and-cloudflare-playbook.md` + `seo.ts` comments |
 
 ---
 
