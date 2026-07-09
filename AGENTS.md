@@ -44,7 +44,7 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 Each claim and each criterion carries a `topics:` array of 1 to 3 slugs from
 this set. The slugs themselves did not change; only the field name (`category`
 to `topics`) and cardinality (single value to array) were changed. See
-`docs/plans/multi-topic.md` for context.
+`docs/plans/completed/multi-topic.md` for context.
 
 | Slug | Description |
 |------|-------------|
@@ -110,8 +110,8 @@ Roles are listed below; several are automated via PydanticAI agents in `pipeline
 | Role | What it does | Status | Package |
 |------|-------------|--------|---------|
 | **Research Lead** | Orchestrates work from `QUEUE.md`; creates sub-tasks and plans; never edits claims directly | Manual | (none) |
-| **Orchestrator** | Owns claim lifecycle: phase transitions, blocked routing, queue management | Implicit in `pipeline/orchestrator/` today; named role documented; full implementation tracked via `docs/plans/triage-agent.md` and `docs/plans/claim-lifecycle-states.md` | `pipeline/orchestrator/` |
-| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 2` sources | Documented; implementation deferred via `docs/plans/triage-agent.md` | (`pipeline/router/` planned) |
+| **Orchestrator** | Owns claim lifecycle: phase transitions, blocked routing, queue management | Implicit in `pipeline/orchestrator/` today; named role documented; full implementation tracked in `docs/UNSCHEDULED.md` § Router (v1 surface shipped via `docs/plans/completed/triage-agent.md` and `docs/plans/completed/claim-lifecycle-states.md`) | `pipeline/orchestrator/` |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router | (`pipeline/router/` planned) |
 | **Researcher** | Takes claim text, returns relevant URLs for ingestion (`web_search` tool) | Automated | `researcher/` |
 | **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
 | **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
@@ -141,6 +141,8 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 - `review_sources` -- fires after ingest; allows halting before analysis when sources are poor
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
+- `review_entity_disambiguation` -- fires during `dr onboard` when the entity resolver finds ambiguous candidates
+- `review_entity_enrichment` -- fires during `dr onboard` after the enricher proposes entity metadata
 
 Pass `--interactive` to `dr claim-probe`, `dr claim-draft`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
 
@@ -159,8 +161,8 @@ Two CLIs exist with different scopes:
 uv run dr claim-probe "Entity" "claim text"
 uv run dr claim-draft products/chatgpt "ChatGPT excludes frontier models from user data training"
 uv run dr claim-draft - "Some AI company makes a sustainability claim"
-uv run dr reassess --entity ecosia
-uv run dr ingest https://example.com/article
+uv run dr step-audit --entity ecosia
+uv run dr step-ingest https://example.com/article
 uv run dr onboard "Ecosia AI" --type product
 uv run dr lint --entity ecosia
 uv run dr review --claim ecosia/renewable-energy-hosting
@@ -172,8 +174,7 @@ Commands:
 - `dr claim-draft` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
 - `dr claim-refresh` -- Re-run the full pipeline on an existing template-backed claim file (must have `criteria_slug`; use `dr claim-promote` first for ad-hoc drafts)
 - `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
-- `dr reassess` -- Run evaluator checks on research claims
-- `dr ingest` -- Ingest a URL and produce a source file
+- `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr reassess` and `dr ingest` remain as hidden deprecated aliases for the last two)
 - `dr onboard` -- Onboard an entity using claim templates
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar
@@ -199,13 +200,13 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 
 | Variable | Required | Used by | Notes |
 |----------|----------|---------|-------|
-| `BRAVE_WEB_SEARCH_API_KEY` | Yes (today) | Researcher (`search_brave`) | The default search backend. Mandatory for `dr claim-probe`, `dr claim-draft`, `dr onboard`, etc. |
-| `RESEARCH_SEARCH_BACKEND` | No (default `brave`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
-| `TAVILY_API_KEY` | No | Researcher (`search_tavily`) | Required only when `RESEARCH_SEARCH_BACKEND=tavily`. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
+| `BRAVE_WEB_SEARCH_API_KEY` | Recommended | Researcher (`search_brave`) | The fallback backend: used when `RESEARCH_SEARCH_BACKEND=brave` or when Tavily is selected but unavailable. |
+| `RESEARCH_SEARCH_BACKEND` | No (default `tavily`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
+| `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
 
 **arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; off by default. Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
 
-**Tavily data-handling note.** When `RESEARCH_SEARCH_BACKEND=tavily` is set, claim text and entity names are sent to Tavily on each query. The published research is already public, but verify Tavily's retention/reuse posture before flipping the default. The plan at `docs/plans/source-pool-expansion-tier1-search-backend.md` tracks the evaluation that gates a default flip.
+**Tavily data-handling note.** With Tavily as the default backend (flipped 2026-05-08), claim text and entity names are sent to Tavily on each query. The published research is already public; the evaluation that gated the default flip is recorded in `docs/plans/completed/source-pool-expansion-tier1-search-backend.md`.
 
 ## File Naming
 
@@ -294,12 +295,12 @@ Three mutually exclusive work states:
 | `_stub` | Scaffolded from a description; not yet fully implementable |
 | `_survey` | Research report on what types of plans could be written; not an implementation plan; must be rewritten before implementation |
 | `_completed` | Fully implemented; use in `completed/` to distinguish from abandoned/superseded |
+| `_superseded` | Replaced by a newer plan; stays in `completed/` with a banner naming its successor |
 
 No suffix = plan is complete and reviewable. Keep the set small.
 
 **Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
 
-**Note on `future/` directory:** `docs/plans/future/` is undocumented. Dissolve it: move contents to `docs/plans/drafts/` and delete the directory.
 
 ## Architecture Docs
 
