@@ -1,6 +1,6 @@
 # Plan: `dr` CLI command redesign (claim-* namespace)
 
-**Status**: Draft — design complete, implementation ready
+**Status**: Done — implemented in `pipeline/orchestrator/cli.py` (claim-probe, claim-draft, claim-refresh, claim-promote; old verify commands removed). Moved to completed/ 2026-07-03.
 
 ---
 

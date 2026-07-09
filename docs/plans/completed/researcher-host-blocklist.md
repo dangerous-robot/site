@@ -1,5 +1,7 @@
 # Plan: Researcher host blocklist
 
+**Status**: Done — shipped: `pipeline/common/blocklist.py`, `research/blocklist.yaml`, `_apply_blocklist_cap` in the orchestrator. Moved to completed/ 2026-07-03.
+
 ## Goal
 
 Drop URLs from known-403/paywall hosts immediately after the researcher returns, before the ingestor spends ~30s fetching + an LLM call per URL. Keep the mechanism tiny, data-driven, transparent (every filtered URL is logged and surfaced), and easy for operators to edit.

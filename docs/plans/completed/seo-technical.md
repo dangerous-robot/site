@@ -1,9 +1,11 @@
 # Plan: SEO — technical and code improvements
 
+**Status**: Done — moved to completed/ 2026-07-03.
+
 | Milestone | Status |
 |-----------|--------|
 | Crawlability | `[x] done` |
-| Meta tags | `[ ] in progress` |
+| Meta tags | `[x] done` (per-page titles and descriptions shipped; Twitter cards remain a non-goal) |
 | Structured data | `[x] done` |
 | Performance | `[x] done` |
 
@@ -675,3 +677,9 @@ Note that Astro compiles `.astro` files and `onload` on a `<link>` in the `<head
 | SearchAction URL | `/claims?q={search_term_string}` | Claims is the primary search target; `?q=` parameter support is a follow-up task |
 | JSON-LD escaping | no hardening applied | The data values (titles, descriptions, summaries) are controlled content with a very low chance of containing `</script>`. If arbitrary user content is ever embedded in JSON-LD, add `.replace(/</g, '\\u003c')` after `JSON.stringify`. |
 | `@astrojs/sitemap` version | pin to latest `^3.x` at install time | Verify Astro 6 compatibility in `package.json` peer deps before installing; the integration major version should match the Astro 6 integration generation. |
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | implementation | Verified implemented against code during docs audit; status updated and moved to completed/. |

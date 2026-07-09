@@ -1,5 +1,7 @@
 # A11y Do-Now: WCAG 2.1 AA Blockers
 
+**Status**: Done — all five fixes shipped 2026-05-13 (commits 0679b4b, 82cba39). Moved from docs/ to completed/ 2026-07-03.
+
 Audit date: 2026-05-13  
 Pages audited: `/` (87), `/resources` (92), `/research` (92)  
 Tool: Lighthouse 13.3.0 accessibility category + manual source review
@@ -146,7 +148,7 @@ Source: `src/layouts/Base.astro:392–395`.
 ## Post-implementation checklist
 
 - [x] **Issue 1** — VoiceOver confirmed: h1 announces as "Dangerous Robot" cleanly. No double-read.
-- [ ] **Issue 5** — Hover state on `.site-footer a` inherits `text-decoration: underline` from the default rule. Explicit `text-decoration` on `:hover` was added for safety, since nav rules above use `text-decoration: none` on hover.
+- [x] **Issue 5** — Hover state on `.site-footer a` inherits `text-decoration: underline` from the default rule. Explicit `text-decoration` on `:hover` was added for safety, since nav rules above use `text-decoration: none` on hover.
 - [x] **Light-mode audit** — Calculated via WCAG luminance formula across all token pairs on the three audited pages. All fixed tokens pass:
   - Alpha-banner text: 4.89:1 ✓
   - Nav links: 5.13:1 ✓

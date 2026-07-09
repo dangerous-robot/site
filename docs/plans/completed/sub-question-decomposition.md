@@ -1,6 +1,7 @@
 # Sub-question decomposition
 
 **Type**: Implementation plan
+**Status**: Done — shipped (commits c8acd1e, f8fdcd5, 17ac9d7, 12c4cba, 5c861cf). Moved to completed/ 2026-07-03.
 **Created**: 2026-05-07
 **Trigger**: Verdict quality on the existing corpus is substandard pre-launch. The researcher's planner+scorer collapses the source pool onto a single semantic axis (entity match), so the analyst receives evidence dense on one axis and empty on others. Empirical case: `research/claims/brave-leo/discloses-energy-sourcing.audit.yaml`. Planner emitted 5 queries all on the "Brave Leo + energy" axis, scorer kept 20 product/feature articles and dropped the only sustainability candidate as off-topic, analyst returned `unverified` with `high` confidence on a pool that contained no source structurally capable of containing the answer.
 

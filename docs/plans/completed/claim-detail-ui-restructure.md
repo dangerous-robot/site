@@ -1,6 +1,6 @@
 # Plan: Claim detail page review status and site-wide breadcrumbs
 
-**Status**: ready
+**Status**: Done — shipped: `Breadcrumb.astro` via `PageHeader.astro`, review-state chip on claim detail. File paths in the plan body predate the `/research/` URL restructure. Moved to completed/ 2026-07-03.
 **Created**: 2026-04-24
 
 ## Context
@@ -235,3 +235,9 @@ Two commits, in order, each independently reviewable and revertible:
 - [ ] Keyboard tab order through breadcrumb links matches DOM order; focus ring visible.
 - [ ] Mobile viewport (<380px): meta row wraps cleanly, outlined chip does not overflow.
 - [ ] VoiceOver pass on the claim page: breadcrumb `/` separators are not announced as "slash"; the unreviewed chip is read as its label only.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | implementation | Verified implemented against code during docs audit; status updated and moved to completed/. |

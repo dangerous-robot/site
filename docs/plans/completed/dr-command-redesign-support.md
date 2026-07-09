@@ -1,6 +1,6 @@
 # Plan: `dr` CLI redesign — docs, tests, and scripts
 
-**Status**: Draft — implementation plan at `docs/plans/drafts/dr-command-redesign.md`; this file covers only the support work (docs, tests, tooling). No architecture or CLI implementation details here.
+**Status**: Done — support work landed (CLI tests, docs, scripts). Implementation plan: [`dr-command-redesign.md`](dr-command-redesign.md), same directory. This file covers only the support work (docs, tests, tooling); moved to completed/ 2026-07-03.
 
 ---
 

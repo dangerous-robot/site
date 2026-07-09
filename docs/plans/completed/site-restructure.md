@@ -1,6 +1,6 @@
 # Plan: Restructure dangerousrobot.org and add /resources/ section
 
-**Status**: Ready to start
+**Status**: Done — shipped: `/research/*` and `/resources/*` sections, redirects map in `astro.config.ts`. Moved to completed/ 2026-07-03.
 **Created**: 2026-05-09
 
 ## Summary
@@ -466,3 +466,9 @@ If Stage D balloons past one work session, drop it for now: add an entry to `doc
 None blocking. The plan can proceed.
 
 If anything drifts during execution, capture it in `docs/UNSCHEDULED.md` rather than amending this plan.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | implementation | Verified implemented against code during docs audit; status updated and moved to completed/. |
