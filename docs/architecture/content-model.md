@@ -45,8 +45,14 @@ research/
 | `name` | string | yes | Display name |
 | `type` | enum | yes | `company`, `product`, or `subject` |
 | `website` | URL string | no | Official website |
+| `legal_name` | string | no | Registered legal name; must be non-empty when present |
+| `verification_status` | enum | no | `verified`, `unverified-startup`, or `unverified-other` |
 | `aliases` | string[] | no | Alternate names (e.g. product names associated with a company) |
 | `description` | string | yes | Short description of the entity |
+| `founded` | number | no | Founding year; integer between 1800 and the current year (checked at build time) |
+| `parent_company` | string | no | Slug ref of the form `companies/{slug}` pointing at another entity |
+| `search_hints` | object | no | Optional `include` and `exclude` string arrays; hints for the pipeline's source searches |
+| `sec_cik` | string | no | SEC CIK identifier; must be a 10-digit string |
 
 The Markdown body provides extended context about the entity.
 
@@ -60,6 +66,9 @@ The Markdown body provides extended context about the entity.
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
 | `confidence` | enum | yes | `high`, `medium`, `low` |
+| `verification_level` | enum | no | Source-pool diversity signal, set by the analyst from `independence` and `kind` on the claim's sources: `claimed`, `self-reported`, `partially-verified`, `independently-verified`, `multiply-verified`. See [source-quality.md](source-quality.md) |
+| `cap_rationale` | string | no | One-sentence explanation when the confidence cap fires (a `verification_level` of `claimed` or `self-reported` caps `confidence` at `low`); max 400 chars. See [source-quality.md](source-quality.md) |
+| `source_overrides` | object[] | no | Per-claim overrides of source-level fields, used when a source classified `independent` is actually restating a primary disclosure for this claim. Each entry: `source`, `reason`, optional `independence`. See [source-quality.md § Source overrides on claims](source-quality.md#source-overrides-on-claims) |
 | `takeaway` | string | no | Optional reader-facing one-liner; max 200 chars; rendered under the verdict badge |
 | `criteria_slug` | string | no | Optional back-reference to the criterion template this claim was generated from |
 | `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived`, `blocked` |
@@ -69,6 +78,7 @@ The Markdown body provides extended context about the entity.
 | `sources` | string[] | yes | List of source IDs (e.g. `2025/fli-safety-index`) |
 | `recheck_cadence_days` | number | no | Days between reviews; defaults to 60 |
 | `next_recheck_due` | date | no | When this claim should next be reviewed |
+| `tags` | string[] | no | Free-form operator-set tags; defaults to `[]`. Behavioral tags are defined in [AGENTS.md § Claim Tags](../../AGENTS.md#claim-tags) |
 | `audit` | object | no | Pipeline audit sidecar data, loaded from a paired `.audit.yaml` file (see below) |
 
 The Markdown body contains the claim narrative -- the human-readable explanation of the verdict and evidence.
@@ -83,8 +93,9 @@ The Markdown body contains the claim narrative -- the human-readable explanation
 | `publisher` | string | yes | Publishing organization |
 | `published_date` | date | no | Original publication date |
 | `accessed_date` | date | yes | When the source was retrieved |
-| `kind` | enum | yes | `report`, `article`, `documentation`, `dataset`, `blog`, `video`, `index` |
+| `kind` | enum | yes | `report`, `article`, `documentation`, `dataset`, `blog`, `video`, `index`, `paper` |
 | `source_type` | enum | no | Classification of source authority: `primary`, `secondary`, `tertiary` |
+| `independence` | enum | no | Whether the source is authored by the covered entity or independently of it: `first-party`, `independent`, `unknown`. Feeds claim-level `verification_level`. See [source-quality.md](source-quality.md) |
 | `summary` | string | yes | Max 200 characters; must not paraphrase beyond 30 words |
 | `key_quotes` | string[] | no | Notable direct quotes from the source |
 
@@ -102,7 +113,17 @@ The `audit` object has the shape:
 | `pipeline_run.ran_at` | date | When the pipeline run occurred |
 | `pipeline_run.model` | string | Model used |
 | `pipeline_run.agents` | string[] | Agents that participated |
-| `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`) |
+| `models_used` | map | Per-agent model lineage (agent name to model string). Optional during the v1 transition: sidecars written before the field landed validate without it; new sidecars always carry it |
+| `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`, optional `acquisition`) |
+| `sources_consulted[].acquisition` | object | Optional record of how the source was acquired |
+| `sources_consulted[].acquisition.stage` | enum | Pipeline stage that acquired the source: `research` or `ingest` |
+| `sources_consulted[].acquisition.origin` | enum | Optional provider the source came from: `brave`, `tavily`, `arxiv`, `s2`, `openalex`, `edgar` |
+| `sources_consulted[].acquisition.recovered_via` | enum | Optional: `archive_org`, set when the source was recovered via archive.org |
+| `sources_consulted[].acquisition.outcome` | enum | Optional: `matched` or `recovered` |
+| `sources_consulted[].acquisition.query` | string | Optional search query used |
+| `sources_consulted[].acquisition.paper_id` | string | Optional paper identifier |
+| `sources_consulted[].acquisition.filing_accession` | string | Optional filing accession identifier |
+| `audit` | object or null | Analyst/Evaluator verdict comparison block; may be `null` |
 | `audit.analyst_verdict` | string | Verdict from the Analyst agent |
 | `audit.auditor_verdict` | string | Verdict from the Auditor agent |
 | `audit.analyst_confidence` | string | Confidence from the Analyst agent |

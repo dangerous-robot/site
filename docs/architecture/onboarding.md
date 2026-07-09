@@ -5,11 +5,13 @@ How a new entity enters the research archive: the `dr onboard` flow, what each a
 ## Command
 
 ```
-dr onboard "Entity Name" [seed-url] --type {company|product|subject} [--force]
+dr onboard "Entity Name" [seed-url] --type {company|product|subject} [--force] [--only <template-slugs>] [--interactive]
 ```
 
 - A second positional argument supplies a seed URL and skips the homepage search step (useful when the homepage is non-obvious or rate-limited).
 - `--force` allows re-running over an existing entity directory; without it, the command refuses to overwrite. `--force` additionally re-runs the enricher and splices the new `founded`, `description`, and `history` body into the existing file.
+- `--only` restricts the run to the named template slugs (the operator escape hatch for partial onboards and re-runs).
+- `--interactive` enables the CLI checkpoint prompts (see Checkpoints below).
 
 ## Flow
 
@@ -130,7 +132,7 @@ Companies and products onboard independently. The entity schema does not enforce
 
 ## Topic origin
 
-Each template carries a `topics` array (1-3 slugs from the taxonomy in [content-model.md § Claim Topic Taxonomy](content-model.md#claim-topic-taxonomy)). Those topics are what initially populate a generated claim's frontmatter. Whether the analyst can later override them during verdict assessment is an open behavior question (see `docs/follow-up-2026-04-24.md`).
+Each template carries a `topics` array (1-3 slugs from the taxonomy in [content-model.md § Claim Topic Taxonomy](content-model.md#claim-topic-taxonomy)). Those topics are what initially populate a generated claim's frontmatter. For template-backed claims the pipeline locks topics to the template in both onboard and claim-refresh; analyst-proposed topics apply only to ad-hoc claims, and as a fallback when template topics are invalid (see `docs/plans/completed/multi-topic.md`). Operators may hand-edit topics after the pipeline runs.
 
 ## File references
 

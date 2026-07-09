@@ -12,7 +12,7 @@ Static Astro site that renders structured research content (claims, sources, ent
 | Hosting       | GitHub Pages                  |
 | Custom domain | `dangerousrobot.org`          |
 
-There are no runtime dependencies beyond Astro itself. Dev dependencies are limited to `markdownlint-cli2`, `gray-matter`, and `tsx` (used by lint and validation scripts).
+Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `js-yaml` (YAML parsing in the `content.config.ts` loaders), and `lucide-astro` (icons). Dev dependencies are `markdownlint-cli2`, `gray-matter`, `tsx` (used by lint and validation scripts), and `@types/js-yaml`.
 
 ## Content Collections
 
@@ -95,6 +95,7 @@ The site has three top-level URL spaces:
 | `/resources/[...slug]`         | `src/pages/resources/[...slug].astro`             | `resources` collection (layout dispatch)    |
 | `/values`                      | `src/pages/values.astro`                          | Static content                              |
 | `/credits`                     | `src/pages/credits.astro`                         | Static content                              |
+| `/404`                         | `src/pages/404.astro`                             | Static content (noindex, GitHub Pages error page) |
 
 The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/research/claims/anthropic/existential-safety-score`).
 
@@ -167,9 +168,9 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 ### Cross-linking
 
-- The homepage groups claims by `entity` and links to `/claims/{id}` and `/entities/{entity}`.
-- Claim detail pages link back to their entity (`/entities/{entity}`) and to each source (`/sources/{sourceRef}`).
-- Entity detail pages query all claims and display those whose `entity` field matches.
+- The homepage scatter links each highlighted claim card to `/research/claims/{id}`.
+- Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`).
+- Entity detail pages query published claims and display those whose `entity` field matches.
 
 ## Layout
 
@@ -195,9 +196,9 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 
 ### Styling approach
 
-- Global styles are defined in `<style is:global>` within `Base.astro` (resets, body, headings, links).
+- Global styles live in `src/styles/tokens.css` (design tokens, theme variants) and `src/styles/global.css` (resets, base typography, body styles), imported at the top of `Base.astro`.
 - Component-scoped styles live in `<style>` blocks in each `.astro` file -- Astro scopes them automatically.
-- No CSS framework or preprocessor. Design is dark-theme with serif headings (`Georgia`) and system-ui body text.
+- No CSS framework or preprocessor. Design is dark-theme by default (light theme and contrast variants via `A11yControl`) with serif headings (`Georgia`) and system-ui body text.
 - Content is constrained to `max-width: 48rem` with horizontal padding.
 
 ## Build Output
@@ -206,7 +207,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 npm run build     # runs `astro build`
 ```
 
-Produces a `dist/` directory containing static HTML, CSS, and any assets. No JavaScript is shipped to the client (no client-side components or islands exist).
+Produces a `dist/` directory containing static HTML, CSS, JS, and assets. There are no framework islands (no `client:` directives). Client-side behavior comes from vanilla `<script>` blocks in a dozen or so components and pages (`FilterBar`, `FacetBar`, `ShouldIDecisionTree`, `TurnOffGuide`, `A11yControl`, the homepage scatter, and others), which Astro bundles as module-scoped scripts.
 
 The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which GitHub Pages needs for custom domain routing.
 
@@ -218,20 +219,19 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 | `npm run preview`   | `astro preview`                                           | Preview the built site                   |
 | `npm run lint:md`   | `markdownlint-cli2 'research/**/*.md'`                   | Lint research Markdown files             |
 | `npm run check:citations` | `tsx scripts/check-citations.ts`                   | Validate source references in claims     |
-| `npm run check`     | `build + lint:md + check:citations`                       | Full CI check                            |
+| `npm run check`     | `build + lint:md + check:citations`                       | Quality gate (CI `check` job)            |
 
 ## Deployment
 
 The deploy pipeline is in `.github/workflows/deploy.yml`. It runs on every push to `main` (and on manual dispatch).
 
-Steps:
+Jobs:
 
-1. Checkout, setup Node 22, `npm ci`.
-2. `npm run build` -- produces `dist/`.
-3. Upload `dist/` as a Pages artifact.
-4. Deploy to the `github-pages` environment via `actions/deploy-pages@v4`.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the CI checks gate every deploy.
+2. **build** -- Checkout, setup Node 22, `npm ci`, `npm run build`, upload `dist/` as a Pages artifact.
+3. **deploy** -- Deploys to the `github-pages` environment via `actions/deploy-pages@v5`.
 
-A separate CI workflow (`.github/workflows/ci.yml`) runs checks on PRs.
+The same CI workflow (`.github/workflows/ci.yml`) also runs on PRs. See [ci-deploy.md](ci-deploy.md) for details.
 
 ### Custom domain
 

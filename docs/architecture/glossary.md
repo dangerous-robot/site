@@ -23,12 +23,12 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 |---|---|---|
 | **Verdict** | Claim | Assessment: true, mostly-true, mixed, mostly-false, false, unverified, not-applicable |
 | **Confidence** | Claim | Certainty level: high, medium, low |
-| **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total). Field name is `topics` (renamed from singular `category` per `docs/plans/multi-topic.md`). |
+| **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total). Field name is `topics` (renamed from singular `category` per `docs/plans/completed/multi-topic.md`). |
 | **Takeaway** | Claim | Optional reader-facing one-liner (≤200 chars) rendered under the verdict badge. Operators add this by hand during review in v1. |
 | **seo_title** | Claim | Short title for the rendered page's `<title>` tag (≤42 chars, leaving room for ` - Dangerous Robot`). The Analyst writes one on every generated claim; the schema marks it optional so hand-written legacy claims still validate. Falls back to `title` when absent. |
 | **Phase** | Claim | Optional pipeline-progress field, set by the Orchestrator while a claim is in flight; absent on terminal states. Enum: `researching`, `ingesting`, `analyzing`, `evaluating`. |
 | **blocked_reason** | Claim | Optional reason field paired with `status: blocked`. Enum: `insufficient_sources`, `terminal_fetch_error`, `analyst_error`. |
-| **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index |
+| **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index, paper |
 | **source_type** | Source | Optional authority classification: `primary`, `secondary`, `tertiary`. Set by `pipeline/common/source_classification.py` during ingest. |
 | **as_of** | Claim | Date when verdict was last evaluated |
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
@@ -57,13 +57,13 @@ The same work is described by three vocabularies: **role** (what should happen, 
 |---|---|---|
 | **Research Lead** | (human; no agent) | — |
 | **Orchestrator** | `pipeline/orchestrator/` | the `dr` CLI itself; entry point for every pipeline command |
-| **Router** | planned (`pipeline/router/`); deferred via [`triage-agent.md`](../plans/triage-agent.md) | — |
-| **Researcher** | `pipeline/researcher/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard` |
-| **Ingestor** | `pipeline/ingestor/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr ingest` |
-| **Analyst** | `pipeline/analyst/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard` |
-| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`, `dr reassess` |
+| **Router** | planned (`pipeline/router/`); v1 surface shipped via [`triage-agent.md`](../plans/completed/triage-agent.md), full implementation tracked in `docs/UNSCHEDULED.md` § Router | — |
+| **Researcher** | `pipeline/researcher/` (also hosts the entity verifier/enricher agents) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-research`; enricher via `dr entity-enrich` |
+| **Ingestor** | `pipeline/ingestor/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-analyze` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
-| (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording) |
+| (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates) |
 
 ## Model-tier discipline
 
@@ -77,7 +77,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 |---|---|
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
-| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (implementation deferred via `docs/plans/triage-agent.md`) |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router) |
 | **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. During `dr onboard` / `dr entity-enrich`, the package also hosts two agent-internal helpers — `entity_verifier` (gates against name collisions) and `entity_enricher` (drafts `founded`, tightened `description`, and `history_markdown`) — both tool-free, both consuming the same `LightResearchBundle`. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
@@ -108,8 +108,8 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **`publisher_quality`** | Pre-ingest domain quality label on `SearchCandidate`: `primary`, `secondary`, `tertiary`, or `forum`. Classified from the URL hostname by `pipeline/common/publisher_quality.py` during `execute_searches`; injected into the scorer prompt as a tiebreaker signal. Not persisted. Contrast with `source_type` (post-ingest, written to source frontmatter). |
 | **`research_origins`** | List of dispatch types the Researcher attempts for a claim. Default: `["tavily", "arxiv"]`. Web origins (`tavily`) always fire; academic origins (`arxiv`, and later `s2`/`openalex`) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (see row below). Mirrors the schema enum on `audit.sources_consulted[].acquisition.origin`. Distinct from `search_backend`, which selects the API powering the web origin. |
 | **`search_backend`** | Which API powers the web (non-academic) leg of `research_origins`. Today `tavily` (default) or `brave`. Read once at `VerifyConfig` construction from `RESEARCH_SEARCH_BACKEND`; unknown values fall back to `brave` with a warning. Distinct from `research_origins`, which lists dispatch types. |
-| **`ACADEMIC_TOPICS`** | Frozen set of topic slugs that activate academic-API dispatch (currently `ai-safety`, `environmental-impact`, `industry-analysis`). Defined in `pipeline/common/models.py` as the single source of truth shared by `_select_research_origins` and the `dr stats academic-coverage` aggregate. |
-| **Archive recovery chain** | Ingestor lookup waterfall when a URL's live fetch fails or no `archived_url` is yet known: archive.org TimeGate (CDX-indexed snapshots) → Memento Time Travel aggregator (non-archive.org archives, via `timetravel.mementoweb.org`) → archive.org Save Page Now (capture on miss). Per-URL outcomes are recorded as `acquisition.recovered_via ∈ {archive_org, memento}` on the audit sidecar's `sources_consulted[]`. Implemented in `pipeline/ingestor/tools/wayback.py`. |
+| **`ACADEMIC_TOPICS`** | Frozen set of topic slugs that activate academic-API dispatch (currently `ai-safety`, `environmental-impact`, `industry-analysis`). Defined in `pipeline/common/models.py` as the single source of truth shared by `_select_research_origins` and the `academic_topic_coverage` aggregate in `dr stats` output. |
+| **Archive recovery chain** | Ingestor lookup waterfall when a URL's live fetch fails or no `archived_url` is yet known: archive.org TimeGate (CDX-indexed snapshots) → archive.org Save Page Now (capture on miss). (An intermediate Memento Time Travel leg was built and removed 2026-05-08; see `docs/v1.0.0-roadmap.md` § 2026-05-08 reconciliation.) Per-URL outcomes are recorded as `acquisition.recovered_via ∈ {archive_org}` on the audit sidecar's `sources_consulted[]`. Implemented in `pipeline/ingestor/tools/wayback.py`. |
 
 ## Agent tasks
 
@@ -153,13 +153,13 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | Term | Meaning |
 |---|---|
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
-| **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr ingest`. |
+| **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr step-ingest` (`dr ingest` is a hidden deprecated alias). |
 | **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then loops `verify_claim` per applicable template. See [onboarding.md](onboarding.md) |
 | **Claim-probe** | Dry-run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim; no disk writes. CLI: `dr claim-probe`. |
 | **Claim-draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. CLI: `dr claim-draft`. |
 | **Claim-refresh** | Re-run the full pipeline on an existing template-backed claim file (requires `criteria_slug`). CLI: `dr claim-refresh`. |
 | **Claim-promote** | Promote an ad-hoc claim draft to a reusable template entry in `research/templates.yaml`. Edits only the templates file; does not invoke any pipeline agent. CLI: `dr claim-promote`. |
-| **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr reassess`. |
+| **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias). |
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
 | **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). |
 | **Publish** | Bulk draft → published flip without recording an individual reviewer. CLI: `dr publish`. Sidecar gets `[auto-publish]` notes; resulting claims render as "Unreviewed" until a later `dr review` writes a reviewer in. |

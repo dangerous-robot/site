@@ -33,7 +33,7 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `blocked` is written by the orchestrator when the post-ingest threshold gate fails. The frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`).
+- `blocked` is written by the orchestrator when the post-ingest threshold gate fails. The frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
 - Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
@@ -48,7 +48,7 @@ How items enter and exit the queue:
 flowchart LR
     A([Human or agent]) -->|adds URL or topic| B[research/QUEUE.md]
     B -->|operator picks item| C{Item type}
-    C -->|URL| D[dr ingest URL]
+    C -->|URL| D[dr step-ingest URL]
     C -->|claim text| E[dr claim-draft claim-text]
     C -->|new entity| F[dr onboard entity type]
     D --> G[Source file written to research/sources/]
@@ -233,7 +233,7 @@ Notes:
 
 ## 6. Researcher internals (decomposed path)
 
-When `researcher_mode=decomposed`, the Researcher participant in diagram 3 internally runs the sequence below. The dispatch step fans out across `research_origins` (default `["tavily", "arxiv"]`); the web origin is powered by `search_backend` (`tavily` default, `brave` fallback) and arXiv fires only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`). All LLM calls are guarded by the `llm_concurrency` semaphore.
+The Researcher is implemented as a decomposed pipeline (planner → search executor → scorer; there is no monolithic mode). The Researcher participant in diagram 3 internally runs the sequence below. The dispatch step fans out across `research_origins` (default `["tavily", "arxiv"]`); the web origin is powered by `search_backend` (`tavily` default, `brave` fallback) and arXiv fires only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`). All LLM calls are guarded by the `llm_concurrency` semaphore.
 
 ```mermaid
 sequenceDiagram

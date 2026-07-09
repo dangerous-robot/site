@@ -1,5 +1,7 @@
 # Architectural Vision: The Project as a State Machine
 
+> **Vision doc.** This describes direction, not current state — the exception in a directory that otherwise documents how the system works today. "Current shape" below is accurate as of writing; everything else is aspiration.
+
 ## Framing
 
 This project already behaves like a state machine, but only implicitly. Claims move through lifecycle states (draft, blocked, published, archived) and transient pipeline phases (researching, ingesting, analyzing, evaluating). Entities and sources have their own lifecycles (proposed, active, flagged, retired). Operators intervene at well-defined checkpoints. The vision is to make this implicit structure explicit, and to treat it as the central organizing model for the whole system.
@@ -54,7 +56,7 @@ This is not BPMN, not a workflow engine, not event sourcing in the database sens
 
 - **Audit Trail Phase 2 and Phase 3** (`docs/plans/audit-trail-extensions.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
 - **Build-time staleness gate**, the first CI invariant in the state-machine spirit.
-- **Verification-level taxonomy** (`multiply-verified | independently-verified | partially-verified | self-reported | claimed`) names a state currently inferred from source independence.
+- **Verification-level taxonomy** (`multiply-verified | independently-verified | partially-verified | self-reported | claimed`) — shipped since this doc was written: `verification_level` is live in the schema, scorer, and lint checks (see `source-quality.md`).
 - **Schema migration log**, required for transitions of the schema itself.
 - **Decision-chain visibility**, surfacing sub-agent model choices so transitions are not opaque.
 

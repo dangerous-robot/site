@@ -4,24 +4,34 @@ How continuous integration, deployment, and quality checks work for the Dangerou
 
 ## CI Workflow (`.github/workflows/ci.yml`)
 
-**Trigger:** Pull requests targeting `main`.
+**Trigger:** Pull requests targeting `main`. The workflow also declares `workflow_call`, so the deploy pipeline can reuse it as a verification gate.
 
-Runs a single `check` job on `ubuntu-latest` with Node 22. Steps run sequentially so a failure in an earlier step short-circuits the rest:
+Two jobs run in parallel on `ubuntu-latest`:
+
+**`check`** (Node 22). Steps run sequentially so a failure in an earlier step short-circuits the rest:
 
 1. `npm run build` -- Astro site build (catches template/config errors)
 2. `npm run lint:md` -- Markdown linting on research content
 3. `npm run check:citations` -- Citation integrity check
 
-If any step fails, the PR check fails.
+**`lint-content`** (Python 3.12). Runs the pipeline's research content linter:
+
+1. Installs `uv` and runs `uv sync` in `pipeline/`.
+2. Runs `uv run dr lint --format json --severity error`, writing `lint-report.json` and capturing the exit code without failing yet.
+3. Annotates each reported error on the PR (file path plus check id) via `actions/github-script`.
+4. Fails the job if `dr lint` exited nonzero.
+
+If any job fails, the PR check fails.
 
 ## Deploy Workflow (`.github/workflows/deploy.yml`)
 
 **Trigger:** Push to `main`, or manual dispatch (`workflow_dispatch`).
 
-Two-job pipeline:
+Three-job pipeline:
 
-1. **build** -- Checks out the repo, installs deps, runs `astro build`, and uploads `dist/` as a Pages artifact.
-2. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v4`.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check` and `lint-content` jobs gate every deploy.
+2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `astro build`, and uploads `dist/` as a Pages artifact.
+3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
 Key settings:
 
@@ -37,7 +47,7 @@ The `check` script chains three stages in order:
 npm run build && npm run lint:md && npm run check:citations
 ```
 
-This is the same sequence CI runs. You can run it locally before pushing.
+This is the same sequence the CI `check` job runs. You can run it locally before pushing. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
 
 ### Stage 1: Build
 
@@ -102,4 +112,4 @@ All other `markdownlint` defaults are enforced.
 | `astro`            | `astro`                                              | Run Astro CLI directly                           |
 | `lint:md`          | `markdownlint-cli2 'research/**/*.md'`                       | Lint research Markdown files             |
 | `check:citations`  | `tsx scripts/check-citations.ts`                     | Validate claim-to-source references              |
-| `check`            | `npm run build && npm run lint:md && npm run check:citations` | Run full quality gate (same as CI)      |
+| `check`            | `npm run build && npm run lint:md && npm run check:citations` | Run full quality gate (same as CI `check` job) |

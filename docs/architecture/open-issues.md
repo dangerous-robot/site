@@ -3,10 +3,10 @@
 **Created**: 2026-04-23
 **Source**: Agent architecture review of `docs/architecture/` and `pipeline/`
 
-Issues surfaced by the architecture review that still need design decisions before implementation. They are not covered by the improvement plan in [`docs/plans/arch-docs-pipeline-improvements.md`](../plans/arch-docs-pipeline-improvements.md).
+Issues surfaced by the architecture review that still need design decisions before implementation. They are not covered by existing implementation plans.
 
 Resolved and moved to plans:
-- Claim promotion / `dr review` -> [`docs/plans/claim-promotion-audit-rename-verdicts.md`](../plans/claim-promotion-audit-rename-verdicts.md) §1
+- Claim promotion / `dr review` -> [`docs/plans/completed/claim-promotion-audit-rename-verdicts.md`](../plans/completed/claim-promotion-audit-rename-verdicts.md) §1
 - `dr audit` rename (to `dr reassess`) -> same plan §2
 - Verdict definitions -> same plan §3
 
@@ -14,7 +14,7 @@ Resolved and moved to plans:
 
 ## 1. Template screening: what makes a template "applicable"?
 
-**Where**: `pipeline/orchestrator/pipeline.py` `_screen_templates()` (lines ~513-520)
+**Where**: `pipeline/orchestrator/pipeline.py` `_screen_templates()` (locate by function name; line numbers drift)
 
 `_screen_templates()` is a pass-through stub that marks every core template as applicable for any entity. The architecture doc describes this as a real filtering step: "load templates for entity type -- filter to applicable slugs."
 
@@ -43,7 +43,7 @@ Every claim has a `recheck_cadence_days` field. The docs acknowledge that stalen
 - At what cadence the check should happen (weekly? on every PR?)
 - Whether stale claims should block merges, generate issues, or just appear in a report
 
-The recheck loop is described architecturally but has no operational owner. Without one, claims will go stale without anyone noticing. The `dr lint` CI integration item in v0.1.0 would catch this at merge time, but only for claims that already have a `next_recheck_due` date set. Claims without that field are invisible to the staleness check.
+The recheck loop is described architecturally but has no operational owner. Without one, claims will go stale without anyone noticing. The `dr lint` CI integration item in v1.0.0 (shipped as the `lint-content` job) would catch this at merge time, but only for claims that already have a `next_recheck_due` date set. Claims without that field are invisible to the staleness check.
 
 **The question**: Is the intended model (a) cron-based scheduled automation, (b) CI gate that fails on overdue claims, (c) a periodic manual review practice, or (d) something else? This should be documented in `research-workflow.md` even before it is automated.
 
@@ -57,6 +57,6 @@ The recheck loop is described architecturally but has no operational owner. With
 
 A shared pipeline core with a `persist: bool` flag (or persistence callback) would reduce duplication. The risk is that `dr claim-probe` (no writes, safe for dry-run use) and `dr claim-draft` (file-writing) would share a code path where a single conditional separates the two behaviors. A bug in the conditional could cause `dr claim-probe` to write files unexpectedly.
 
-This is not a blocker for any current work. The existing structure is redundant but safe. Refactoring here should happen only after the v0.1.0 milestone is stable, when the behavior of all three paths is well-tested and the refactor risk is lower.
+This is not a blocker for any current work. The existing structure is redundant but safe. Refactoring here should happen only after the v1.0.0 milestone is stable, when the behavior of all three paths is well-tested and the refactor risk is lower.
 
-**The question**: Is there appetite to refactor this before or after v0.1.0? If before, a clear test harness verifying `dr claim-probe` produces zero file writes is a prerequisite.
+**The question**: Is there appetite to refactor this before or after v1.0.0? If before, a clear test harness verifying `dr claim-probe` produces zero file writes is a prerequisite.

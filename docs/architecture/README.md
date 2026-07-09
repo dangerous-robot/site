@@ -13,3 +13,4 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 | [research-flow.md](research-flow.md) | Mermaid flow diagrams: initiation paths, pipeline, sign-off, rejection, publish, recheck |
 | [source-quality.md](source-quality.md) | Verification scale, independence proxy + restatement failure mode, confidence cap, source overrides |
 | [open-issues.md](open-issues.md) | Design questions from architecture review that require decisions before implementation |
+| [vision-state-machine.md](vision-state-machine.md) | Architectural vision (direction, not current state): claims as state machines, audit trail as event log |

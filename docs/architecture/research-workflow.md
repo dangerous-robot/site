@@ -31,7 +31,7 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 |------|----------------|
 | **Research Lead** | Manual |
 | **Orchestrator** | `pipeline/orchestrator/` (`pipeline.py`, `cli.py`, `persistence.py`, `checkpoints.py`) |
-| **Router** | Documented; implementation deferred via `docs/plans/triage-agent.md` |
+| **Router** | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`, full implementation tracked in `docs/UNSCHEDULED.md` § Router |
 | **Researcher** | Automated -- `pipeline/researcher/` |
 | **Ingestor** | Automated -- `pipeline/ingestor/` |
 | **Analyst** | Automated -- `pipeline/analyst/` |
@@ -47,7 +47,7 @@ The Citation Auditor responsibility is covered by three separate tools:
 |------|-------|
 | `scripts/check-citations.ts` | Broken source refs (claim `sources` slugs that do not resolve to a file). Runs in CI. |
 | `dr lint` | Missing required fields, orphaned claims, stale `next_recheck_due` dates. No LLM, no network. |
-| `dr reassess` | Verdict re-evaluation: re-runs the Evaluator agent against current sources to flag claims whose published verdict may no longer hold. |
+| `dr step-audit` (formerly `dr reassess`, now a hidden deprecated alias) | Verdict re-evaluation: re-runs the Evaluator agent against current sources to flag claims whose published verdict may no longer hold. |
 
 ## Content Rules
 
