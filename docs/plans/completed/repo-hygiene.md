@@ -1,7 +1,7 @@
 # Work Item: Repo Hygiene
 
 **Phase**: 1 (Foundation)
-**Status**: not started (but partially done in git -- see below)
+**Status**: Done — shipped April 2026 (LICENSE-CONTENT, CONTRIBUTING.md, lint config). Checklist below was never retro-ticked.
 **Depends on**: nothing
 **Blocks**: Phase 2
 

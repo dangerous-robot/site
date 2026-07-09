@@ -50,7 +50,7 @@ Operator-facing intake files (one per work type), aligned with the six-input tax
 ## Cross-references
 
 - Pairs with [`data-lifecycle-policy_stub.md`](data-lifecycle-policy_stub.md) (lifecycle policy controls reprocessing inside this batch flow).
-- Six-input taxonomy is also surfaced briefly on FAQ in v1 (see [`pre-launch-quick-fixes.md`](pre-launch-quick-fixes.md) S7).
+- Six-input taxonomy is also surfaced briefly on FAQ in v1 (see [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) S7).
 
 ## Review history
 

@@ -1,6 +1,6 @@
 # Entity pre-resolution for `dr verify-claim`
 
-**Status:** Promoted
+**Status:** Done — shipped (`dr claim-draft` ENTITY_REF pre-resolution; see AGENTS.md § Tooling). The plan title uses the retired command name `dr verify-claim`; the surface is now `dr claim-draft`.
 **Scope:** v1.0.0
 **Created:** 2026-05-01
 

@@ -70,7 +70,7 @@ This is distinct from `verdict: unverified`. `unverified` means sources were fou
 
 ## Out of scope for this stub
 
-- Renaming/migrating an existing slug across many claims (covered by [`criteria-rename_stub.md`](criteria-rename_stub.md) if/when that lands).
+- Renaming/migrating an existing slug across many claims (the display-level criteria rename shipped 2026-04-27 and its stub was deleted; a slug-migration plan would be new work).
 - Cross-entity comparison views in the site UI that consume `criteria_slug` (separate frontend plan).
 - A `dr criterion create <slug> --question "..."` CLI command. Possible, but Phase B's "drop into editor" approach gets us there with zero new commands.
 
@@ -78,4 +78,4 @@ This is distinct from `verdict: unverified`. `unverified` means sources were fou
 
 - Built on top of: gate landed in this conversation (lint check `published-without-criterion`, `approve_claim` preflight, `dr publish` skip).
 - Phase 2 of [`dr-review-queue.md`](dr-review-queue.md) lists the `c` action; this stub is the design.
-- Adjacent: [`criteria-rename_stub.md`](criteria-rename_stub.md) handles the case after slugs exist and need to evolve.
+- Adjacent: slug evolution/migration after criteria exist is unplanned work (the old criteria-rename stub was deleted when the display rename shipped).

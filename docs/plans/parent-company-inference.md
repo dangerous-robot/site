@@ -122,10 +122,16 @@ When the operator picks `[n]onew company`, the pipeline runs `dr onboard <name> 
 
 ## Model selection
 
-For Phase 1, target the same cascade tier the Router uses (per [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) and the model-tier discipline subsection in `glossary.md`). On Anthropic this is Haiku 4.5; on Infomaniak the smallest available `gpt-oss-120b` works. The exact model name is configured via `--model` and recorded in `models_used` on the audit sidecar (per [`pre-launch-quick-fixes.md`](pre-launch-quick-fixes.md) S6).
+For Phase 1, target the same cascade tier the Router uses (per [`v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md) and the model-tier discipline subsection in `glossary.md`). On Anthropic this is Haiku 4.5; on Infomaniak the smallest available `gpt-oss-120b` works. The exact model name is configured via `--model` and recorded in `models_used` on the audit sidecar (per [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) S6).
 
 ## Open questions
 
 1. **Confidence threshold for auto-accept in Phase 2.** Proposal: `high` always auto-accepts; `medium` and `low` prompt. Could be tightened to "always prompt" if false positives bite.
 2. **Subsidiary disambiguation policy.** When the model guesses Alphabet but the existing entity is `google`, should the inference normalize to the existing slug? Probably yes — match against the known slug list first, only suggest a new company if no match.
 3. **`treadlightlyai` and similar self-published products.** Should `parent_company: null` be the output, or should the system prompt the operator to onboard a company entity (TreadLightly AI LLC)? Defer; the field is optional.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; two stale plan links repointed to completed/. Plan remains post-v1, unimplemented. |

@@ -1,6 +1,6 @@
 # Plan: cleaner `dr` CLI output — phase 1 (now) and phase 2 (future)
 
-**Status**: Draft — phase 1 ready to implement. Phase 2 is deferred until phase 1 has been used in real onboard runs.
+**Status**: Done — phase 1 shipped (`pipeline/common/logging_setup.py`); phase 2 shipped separately (see `dr-cli-output-cleanup_phase2_completed.md`, commit 2839537).
 
 **Scope decision**: phase 1 covers `dr onboard` only. Other commands (`claim-refresh`, `claim-probe`, `ingest`) inherit the third-party-logger silencing and the per-query Brave line for free, but their existing one-line summaries are unchanged.
 

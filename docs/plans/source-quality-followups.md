@@ -82,7 +82,7 @@ The researcher generates candidate URLs from web search. If a URL already exists
 Some publishers are structurally weak for research: content farms, vendor-sponsored analysis, PR wire services, and community discussion forums. Today these pass the scorer unless the title/snippet is obviously irrelevant.
 
 **Ideas**:
-- Extend the researcher host blocklist (see [`researcher-host-blocklist.md`](researcher-host-blocklist.md)) to cover not just paywalled sites but low-trust source categories.
+- Extend the researcher host blocklist (see [`researcher-host-blocklist.md`](completed/researcher-host-blocklist.md)) to cover not just paywalled sites but low-trust source categories.
 - The scorer prompt could note known-problematic source patterns (press release wires, vendor white papers presented as independent research, community forum posts).
 - Community forums (Reddit, Quora, HN) are a specific failure case: a topically on-point thread title scores ≥4 for relevance even when the post is from a deleted user with 21 upvotes. The social-quality signals (author standing, vote count, thread age) are invisible to the scorer.
 - `pipeline/common/source_classification.py` already classifies sources as primary/secondary/tertiary from domain/publisher patterns, but this runs post-hoc (after ingestion). Its domain patterns could be used earlier: either as a pre-scorer filter (drop `tertiary` candidates before scoring) or as a signal injected into the scorer prompt so it can discount low-credibility domains before spending an ingest slot on them.
@@ -132,7 +132,7 @@ Several sectors (financial analysis, technology press, energy reporting) have do
 
 #### Entity onboarding research (verification gate + enrichment)
 
-Promoted to drafted-plan stub: [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md) (2026-05-09). Single onboarding-research agent across `company` / `product` / `subject` entities — same workflow, per-type prompt section. Verifier halts on typo / collision / sparse-evidence cases (`goooogle`, `greenpt`, `treadlightlyai` examples). Enricher populates structured + narrative fields on verified entities. Schema seat (`verification_status`) lands separately in [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md). See stub for the full design space.
+Promoted to drafted-plan stub: [`completed/entity-onboarding-research_completed.md`](completed/entity-onboarding-research_completed.md) (2026-05-09). Single onboarding-research agent across `company` / `product` / `subject` entities — same workflow, per-type prompt section. Verifier halts on typo / collision / sparse-evidence cases (`goooogle`, `greenpt`, `treadlightlyai` examples). Enricher populates structured + narrative fields on verified entities. Schema seat (`verification_status`) lands separately in [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md). See stub for the full design space.
 
 #### Subject entity type support
 
@@ -152,7 +152,7 @@ Outlined plans that are post-Tier-1 by design. Each subsection has enough scope 
 
 ### Source pool — Tier 2 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
+**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
 
 Tier 2 builds on the foundations laid by Tier 1: once new acquisition paths exist, these items improve their hit rate, surface area, or fallback options. None are blockers for v1.
 
@@ -221,7 +221,7 @@ Not in scope (yet): building a new MCP server (only evaluating existing ones); n
 
 ### Source pool — Tier 3 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md), Tier 2 above.
+**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md), Tier 2 above.
 
 Tier 3 covers ideas that are real but lower priority. They either have narrower applicability, depend on relationships that take time to build, or address gaps Tier 1 and Tier 2 already mostly cover.
 
@@ -395,9 +395,9 @@ Historical and superseded source-quality documents, retained for context.
 These are not source-quality plans per se, but they affect source pool quality enough to cross-reference:
 
 - [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, arXiv (academic API), SEC EDGAR, Wayback gap-filling. Semantic Scholar / OpenAlex / affiliation override deferred to § Source pool — Tier 2 above.
-- [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
+- [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
 - [`source-pdf-attachment.md`](source-pdf-attachment.md) — PDF attachment as an alternate ingestion surface for paywalled / 403-locked documents.
-- [`researcher-host-blocklist.md`](researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
+- [`researcher-host-blocklist.md`](completed/researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
 - [`wayback-archive-job.md`](wayback-archive-job.md) — background-job framework, with wayback archival as the first concrete job.
 
 ---
@@ -483,4 +483,4 @@ These are open questions for the *collector*, not items inside specific entries.
 | 2026-05-08 | agent (opus-4-7) | iterated | Initial creation. Subsumes `research-quality-ideas.md` (Section 1), `drafts/source-pool-expansion-tier{2,3}.md` (Section 2), `drafts/source-pdf-publish.md` (Section 2), `drafts/scheduled-citation-audits.md` (Section 2). Phases 6–8 of `source-trust-metadata.md` digested into Section 3 (full text retained in `completed/source-trust-metadata_superseded.md`). `source-quality_survey.md`, `source-quality-agent-review.md`, `source-quality-roadmap.md`, and `source-trust-metadata.md` moved to `completed/` with `_completed` / `_superseded` suffixes per AGENTS.md naming table. Tightened only obvious internal redundancy in the absorbed material; substance preserved. |
 | 2026-05-09 | agent (opus-4-7) | added | Section 5 — Cost/benefit triage. Triaged backlog after a `completed/` re-review: dropped three already-shipped ideas (source reuse, parent_company-in-scorer / Phase 8, first-party analyst weighting); restored Path 2 leftover (S2 + OpenAlex + affiliation override) and source-freshness wiring as partials. Sorted-by-ratio table + 3-bucket sequencing recommendation (Scoring quality → Entity metadata → Source provenance) for the six lowest-ratio items. |
 | 2026-05-09 | agent (opus-4-7) | promoted | Promoted Bucket 2 (Entity metadata surface) to [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md). Triage table rows for the company-entity-fields and parent_company-render items collapsed into the single new plan stub. `subsidiaries` field explicitly dropped from the bucket; remains in § Section 1 as a candidate field for future COI work. `official_website` decision resolved: not adding it — existing `website` field already plays that role. Bucket 1 (Scoring quality) and Bucket 3 (Source provenance) untouched. |
-| 2026-05-09 | operator | added | Two new ideas surfaced during entity-metadata-surface planning ("Pipeline-driven company entity enrichment" + "Onboarding verification gate / entity verification status"). Operator chose a single shared onboarding-research agent across all three entity types (same workflow, per-type prompt section). Both ideas collapsed into a Section 1 pointer at [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md), which holds the full design space. The lightweight `verification_status` schema seat + render badge folded into [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) so the agent has a place to plug in. |
+| 2026-05-09 | operator | added | Two new ideas surfaced during entity-metadata-surface planning ("Pipeline-driven company entity enrichment" + "Onboarding verification gate / entity verification status"). Operator chose a single shared onboarding-research agent across all three entity types (same workflow, per-type prompt section). Both ideas collapsed into a Section 1 pointer at [`completed/entity-onboarding-research_completed.md`](completed/entity-onboarding-research_completed.md), which holds the full design space. The lightweight `verification_status` schema seat + render badge folded into [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) so the agent has a place to plug in. |

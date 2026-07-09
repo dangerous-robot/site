@@ -2,8 +2,8 @@
 
 | Phase | Status |
 |-------|--------|
-| Phase 1: static lint command | `[ ] ready to implement` |
-| Phase 2: CI integration | `[ ] planned` |
+| Phase 1: static lint command | `[x] done` (shipped as `pipeline/linter/` + `dr lint`) |
+| Phase 2: CI integration | `[x] done` (shipped as the `lint-content` job in `.github/workflows/ci.yml`) |
 | Phase 3: QUEUE.md re-onboard loop | `[ ] future` |
 | Phase 4: scheduled agent triage | `[ ] future / long-term` |
 
@@ -25,7 +25,7 @@ These are the concrete issues that prompted this plan. Phase 1 is designed to de
 
 ## Phase 1: static `dr lint` command
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done` — shipped as `pipeline/linter/` (checks.py, runner.py, report.py) + `dr lint`
 
 ### What it does
 
@@ -169,7 +169,7 @@ Follows the same `ctx.pass_context` + `resolve_repo_root()` pattern as existing 
 
 ## Phase 2: CI integration
 
-**Status:** `[ ] planned`
+**Status:** `[x] done` — shipped as the `lint-content` job in `.github/workflows/ci.yml` (Option A design)
 
 ### What changes
 

@@ -1,7 +1,7 @@
 # Work Item: Content Seeding
 
 **Phase**: 2 (Schemas, Content & Site -- MVP)
-**Status**: not started
+**Status**: Done — shipped April 2026 (`research/` corpus seeded; later reshaped by the 2026-05-11 launch-set prune). Checklist below was never retro-ticked.
 **Depends on**: Zod schemas defined (research-schemas.md), Astro pages exist (astro-site.md)
 **Co-authored with**: research-schemas.md and astro-site.md (tightly coupled)
 

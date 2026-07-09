@@ -282,6 +282,8 @@ Style using existing CSS variables and the `.confidence-details` pattern already
 
 ### Acceptance criteria
 
+> Verified shipped in the 2026-07-03 docs audit (`_write_audit_sidecar`, `dr review --approve/--archive`, `claims-with-audit` loader, claim-page audit UI). Boxes were never retro-ticked. Some criteria reference the retired command name `dr research`.
+
 - [ ] `pipeline/orchestrator/persistence.py` has `_write_audit_sidecar()` and `_build_sources_consulted()`.
 - [ ] `dr research` writes a `.audit.yaml` sidecar alongside the claim file after the auditor step runs.
 - [ ] `dr onboard` writes a `.audit.yaml` sidecar for each claim created after the auditor step.

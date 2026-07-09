@@ -1,6 +1,6 @@
 # Pre-launch open questions
 
-Status: open as of 2026-04-24, derived from the pre-launch triage. Captures questions for operator decision and broader discussion. Each question carries enough context to act on independently. Closed questions are recorded at the bottom for context.
+Status: open as of 2026-04-24, derived from the pre-launch triage; last reconciled 2026-07-03 (Q3 and Q12 closed; Q2 and Q4 remain the only open items). Captures questions for operator decision and broader discussion. Each question carries enough context to act on independently. Closed questions are recorded at the bottom for context.
 
 ---
 
@@ -13,40 +13,17 @@ Should claim titles be rewritten so TRUE = "better" reads consistently? Operator
 - **For**: a reader scanning the homepage gets a quick "more green checks = better" signal.
 - **Against**: forced polarity produces awkward titles or loses nuance ("no training" loses the caveat that some training is permitted).
 
-Cleaner alternative being implemented in v1: keep claim text natural; expose a separate "what this means for the reader" line under the badge ([`pre-launch-quick-fixes.md`](plans/pre-launch-quick-fixes.md) S8). Decide after that ships whether full polarity normalization is still wanted.
-
-### Q3. Trust metadata: who scores the four axes?
-
-Site trust, marketing-vs-research, authority, COI. Each axis has a different best-scorer:
-
-- Site trust → agent-classifiable from publisher signal.
-- Marketing vs research → agent-classifiable from document signal.
-- Authority → operator + agent hybrid; subject-matter authority is hardest.
-- COI → operator judgment.
-
-Decision feeds Stage 1 of [`source-trust-metadata_stub.md`](plans/source-trust-metadata_stub.md).
+Cleaner alternative shipped in v1: claim text stays natural; a separate "what this means for the reader" line renders under the badge ([`pre-launch-quick-fixes.md`](plans/completed/pre-launch-quick-fixes.md) S8, shipped 2026-04-26). The gate this question was waiting on has passed; a decision is now due. Note: analyst instructions now require titles to restate claim text verbatim, which leans against title-level polarity rewriting.
 
 ### Q4. Model-tier rubric: how is "small-by-default" enforced?
 
-Stated as a principle (P3 in [`pre-launch-quick-fixes.md`](plans/pre-launch-quick-fixes.md) adds it to glossary), but not yet enforced. Options:
+Stated as a principle (P3 in [`pre-launch-quick-fixes.md`](plans/completed/pre-launch-quick-fixes.md) adds it to glossary), but not yet enforced. Options:
 
 - (a) Instructions only — Claude is told to prefer small.
 - (b) Per-agent model caps in config — `pipeline/orchestrator/cli.py` or `VerifyConfig` enforces tier ceilings.
 - (c) Cost-per-claim ceilings with escalation gates.
 
-Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Part 2 of [`multi-provider.md`](plans/multi-provider.md).
-
-### Q12. v1 feedback channel: what ships?
-
-Operator answer: v1 unclear; full solution is v2 ([`public-feedback.md`](plans/public-feedback.md)).
-
-v1 minimums under consideration:
-
-- GitHub issue templates only (already on roadmap).
-- GitHub issue templates + mailto fallback for non-GitHub users.
-- Skip v1 entirely; rely on the alpha banner to suggest "talk to me directly."
-
-Decision needed before launch since it determines whether S9 footer links include a "Feedback" item.
+Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Part 2 of [`multi-provider.md`](plans/multi-provider.md). 2026-07-03 note: `VerifyConfig` now carries per-agent model fields plus `model_for()`, most of option (b)'s machinery; tier ceilings are the missing piece.
 
 ---
 
@@ -64,10 +41,17 @@ Currently treated as in flight.
 
 ---
 
+## Closed (2026-07-03 docs audit reconciliation)
+
+- **Q3 — Trust metadata: who scores the four axes?** Answered per-axis in [`plans/completed/source-trust-metadata_superseded.md`](plans/completed/source-trust-metadata_superseded.md) ("Scoring ownership (per Q3)"). The v1 subset (per-source `independence`, per-claim `verification_level` + confidence cap) shipped via [`plans/completed/source-quality-robust-roadmap_completed.md`](plans/completed/source-quality-robust-roadmap_completed.md); the full four-axis trust block is v1.x scope tracked in [`plans/source-quality-followups.md`](plans/source-quality-followups.md).
+- **Q12 — v1 feedback channel.** Shipped as GitHub issue template only (`.github/ISSUE_TEMPLATE/submit-source.md`); the footer feedback/contact link was punted to [`v1.1.0-roadmap.md` §1](v1.1.0-roadmap.md). Full public-feedback backend remains v2 ([`plans/public-feedback.md`](plans/public-feedback.md)).
+
+---
+
 ## Closed (operator answers, 2026-04-25)
 
 - **Q1 — Reader test scope**: source list + audit sidecar + reader-takeaway is sufficient for v1; ST1 trust metadata defers to v2. (Uses "audit sidecar" — the current carrier name; the canonical-verdict-artifact rename is deferred per UNSCHEDULED.)
-- **Workflow + vocab decisions** (per [`plans/v0.1.0-vocab-workflow-landing.md`](plans/v0.1.0-vocab-workflow-landing.md)):
+- **Workflow + vocab decisions** (per [`plans/completed/v0.1.0-vocab-workflow-landing.md`](plans/completed/v0.1.0-vocab-workflow-landing.md)):
   - Object types locked at four: criterion, entity, source, claim.
   - Intake set locked to criterion / entity / source (claim is output-only).
   - Item 3 resolved to option (a) split: Orchestrator (lifecycle) and Router (dispatch) are named as two distinct roles.
@@ -90,10 +74,10 @@ Currently treated as in flight.
 
 These don't need decisions but are recorded for awareness:
 
-- "Audit" overloaded three ways (audit sidecar / Citation Auditor / Auditor agent). Two of three are addressed in [`pre-launch-quick-fixes.md`](plans/pre-launch-quick-fixes.md) (P1 + P2). The third (Auditor agent vs audit sidecar) may still be confusing; revisit during the [vocab rename pass](plans/vocab-rename-pass_stub.md).
+- "Audit" overloaded three ways (audit sidecar / Citation Auditor / Auditor agent). Two of three are addressed in [`pre-launch-quick-fixes.md`](plans/completed/pre-launch-quick-fixes.md) (P1 + P2). The third (Auditor agent vs audit sidecar) may still be confusing; the vocab pass landed via [`plans/completed/v0.1.0-vocab-workflow-landing.md`](plans/completed/v0.1.0-vocab-workflow-landing.md).
 - Plan sprawl: 20+ plans pre-launch is heavy for a solo operator. Cleanup pass scheduled in P5.
 - Roadmap mixes hard blockers and nice-to-haves; P5 separates them.
-- Vocabulary fragmentation across roles, agent names, CLI commands; addressed systematically in [`vocab-rename-pass_stub.md`](plans/vocab-rename-pass_stub.md).
+- Vocabulary fragmentation across roles, agent names, CLI commands; addressed systematically in [`plans/completed/v0.1.0-vocab-workflow-landing.md`](plans/completed/v0.1.0-vocab-workflow-landing.md) (absorbed the deleted `vocab-rename-pass_stub.md`).
 
 ---
 

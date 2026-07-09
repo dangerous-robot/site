@@ -20,7 +20,7 @@ CI pipeline: build + markdownlint + citation integrity check. See [ci-pipeline.m
 
 ### Phase 3.5: Repo Governance & Documentation (done)
 
-Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan migration, public feedback plan review. See [initial-setup-workflow.md](plans/completed/initial-setup-workflow.md).
+Plan lifecycle rules, architecture docs (`docs/architecture/`), completed plan migration, public feedback plan review. See [initial-setup-workflow_superseded.md](plans/completed/initial-setup-workflow_superseded.md).
 
 ### Cross-cutting: Naming Conventions (done)
 
@@ -36,7 +36,7 @@ Full pipeline refactor: agents promoted to top-level packages (`researcher/`, `i
 
 ### Phase 4.7: Site IA, detail views, and tokenized CSS (done)
 
-Browsable research hub: companies, products, claims, standards, topics list/detail pages with filter bars, standards matrix, cross-links, and tokenized CSS + a11y control (light/dark/high-contrast, font scale, FAB). See [entity-views.md](plans/entity-views.md) and [a11y-tokens.md](plans/a11y-tokens.md).
+Browsable research hub: companies, products, claims, standards, topics list/detail pages with filter bars, standards matrix, cross-links, and tokenized CSS + a11y control (light/dark/high-contrast, font scale, FAB). See [entity-views.md](plans/completed/entity-views.md) and [a11y-tokens.md](plans/completed/a11y-tokens.md).
 
 ### MVP milestone (done)
 
@@ -62,4 +62,4 @@ All MVP phases (1-4) implemented and extended. The `pipeline/` package has 171 p
 
 ## Resolved blockers
 
-- **GitHub Actions SHA pinning** -- Actions used mutable tags (`@v4`). Bumped to node22-compatible versions (commit `1e1335f`).
+- **GitHub Actions version compatibility** -- bumped actions to node22-compatible versions (commit `1e1335f`). SHA pinning itself remains open, tracked in UNSCHEDULED.md.

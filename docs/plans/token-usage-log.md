@@ -1,6 +1,6 @@
 # Plan: Token usage log
 
-**Status**: Draft (2026-04-26)
+**Status**: Ready to implement (design reviewed twice, see Review history; not yet started as of 2026-07-03)
 
 Log every PydanticAI agent run's token usage to a single append-only JSONL file, tagged with the object the run was spent on (claim, source, entity, criterion, or routing). Add an `inv tokens.summary` task that aggregates the log by object or by time window.
 

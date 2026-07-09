@@ -3,7 +3,7 @@
 **Status**: ready
 **Date**: 2026-04-23
 **Scope**: ingestion + content model only. The site-publish half is drafted under `source-quality-followups.md` § PDF publish surface.
-**Related plans**: `ingestor-fail-fast-403.md`, `audit-trail.md`, `researcher-host-blocklist.md`, `dr-lint.md`
+**Related plans**: `completed/ingestor-fail-fast-403.md`, `completed/audit-trail.md`, `completed/researcher-host-blocklist.md`, `dr-lint.md`
 
 ## Problem
 
@@ -547,3 +547,9 @@ Manual round-trip:
 - `pipeline/tests/fixtures/pdfs/` — synthetic fixtures + `sha256sums.txt`.
 - `AGENTS.md` — attach workflow + sibling descriptor namespace + lowercase `.pdf` rule.
 - `README.md` — takedown policy.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; related-plans references repointed to completed/. Plan unimplemented. |

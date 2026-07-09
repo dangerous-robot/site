@@ -22,7 +22,7 @@ Two new optional fields land on the entity Zod schema and the `ResolvedEntity` /
 
 The pipeline-quality half: the analyst instructions reference `legal_name` for COI/disambiguation framing, `parent_company` continues to flow through the scorer (already shipped per `scorer-quality-signals.md` Item C), and the analyst sees `verification_status` when not `verified` so it can weight sparse-evidence claims accordingly. The existing `website` field continues to play the canonical-website / primary-source-disambiguation role; this plan documents that explicitly in the architecture doc rather than adding a parallel `official_website` field.
 
-`verification_status` is operator-set in this plan. The agent that automatically populates it (and the broader enrichment work) lives in [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md). This plan creates the schema seat and the render surface so that follow-up plan plugs in cleanly.
+`verification_status` is operator-set in this plan. The agent that automatically populates it (and the broader enrichment work) lives in [`drafts/entity-onboarding-research_stub.md`](entity-onboarding-research_completed.md). This plan creates the schema seat and the render surface so that follow-up plan plugs in cleanly.
 
 ## Why this scope, this size
 
@@ -157,7 +157,7 @@ Drop `None`-valued keys is already the round-trip behavior of `serialize_frontma
 
 **Writer signature change.** `_entity_frontmatter` gains two kwargs: `legal_name: str | None = None` and `verification_status: str = "verified"`. The two callers `_write_entity_file` and `_write_draft_entity_file` (`pipeline/orchestrator/persistence.py:160`, `:528`) gain matching kwargs and pass `resolved_entity.legal_name` / `resolved_entity.verification_status` through. Existing call sites that don't pass the new kwargs round-trip unchanged thanks to the drop-`None` behavior cited above.
 
-This positions the writer for the future onboarding-research agent tracked in [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md) — without writer support, any future agent that researched `legal_name` or set `verification_status` would have nowhere to write it.
+This positions the writer for the future onboarding-research agent tracked in [`drafts/entity-onboarding-research_stub.md`](entity-onboarding-research_completed.md) — without writer support, any future agent that researched `legal_name` or set `verification_status` would have nowhere to write it.
 
 `CANONICAL_ENTITY_KEYS` in `pipeline/linter/checks.py:14`:
 
@@ -452,14 +452,14 @@ Run `inv dev` and confirm:
 10. **Verification badge:** `/entities/products/treadlightlyai` renders the `unverified-startup` badge. All other entity pages render no badge (status defaults to `verified`).
 11. All five product entity files (`claude`, `chatgpt`, `gemini`, `greenpt`, `treadlightlyai`) carry `parent_company` pointing at their corresponding company entity. `research/entities/products/treadlightlyai.md` additionally carries `verification_status: unverified-startup`.
 12. `docs/architecture/source-quality.md` has the entity-metadata amendment describing `website`'s dual role, `legal_name`'s COI/disambiguation use, and `verification_status`'s analyst-weighting use.
-13. `docs/plans/source-quality-followups.md` § Section 5 Bucket 2 stub points to this plan; the bucket sequencing block is replaced; a Review history row is added. The two new ideas (enrichment + verification gate) point to [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md).
+13. `docs/plans/source-quality-followups.md` § Section 5 Bucket 2 stub points to this plan; the bucket sequencing block is replaced; a Review history row is added. The two new ideas (enrichment + verification gate) point to [`drafts/entity-onboarding-research_stub.md`](entity-onboarding-research_completed.md).
 14. `docs/UNSCHEDULED.md` "parent_company not rendered" line is removed (or amended to "rendered as of `entity-metadata-surface.md`").
 
 **MVP cut (half-day commit):** items 1, 2, 3, 7, 8, 9, 10, 11, 13, 14. Items 4, 5, 6, 12 land as a follow-up commit on this plan.
 
 ## Out of scope
 
-- **The agent that auto-fills `verification_status`.** Tracked in [`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md). This plan only establishes the schema slot, render surface, and analyst awareness. Operators set the value by hand in v1.
+- **The agent that auto-fills `verification_status`.** Tracked in [`drafts/entity-onboarding-research_stub.md`](entity-onboarding-research_completed.md). This plan only establishes the schema slot, render surface, and analyst awareness. Operators set the value by hand in v1.
 - **Interactive `dr onboard` clarification / disambiguation gates.** Same stub.
 - **Enrichment fields** (`founded`, `employee_count_band`, `headquarters`, `products`, narrative `history`). Same stub. Without the agent there's nothing useful to add — operators won't hand-research employee counts.
 - **Verification badge on claim pages** (when the claim's subject is unverified). Render decision deferred to the follow-up plan; entity-page render is in scope here.
@@ -489,7 +489,7 @@ None remaining for v1 of this plan. Resolved 2026-05-09:
 
 ### Adjacent followup
 
-[`drafts/entity-onboarding-research_stub.md`](drafts/entity-onboarding-research_stub.md) holds the post-v1 work: a single onboarding-research agent (one workflow, type-conditioned prompts for company / product / subject) that fills `verification_status`, halts on clarification / disambiguation cases, and populates enrichment fields. This plan's writer-side `legal_name` and `verification_status` emission is the prerequisite plumbing.
+[`drafts/entity-onboarding-research_stub.md`](entity-onboarding-research_completed.md) holds the post-v1 work: a single onboarding-research agent (one workflow, type-conditioned prompts for company / product / subject) that fills `verification_status`, halts on clarification / disambiguation cases, and populates enrichment fields. This plan's writer-side `legal_name` and `verification_status` emission is the prerequisite plumbing.
 
 ## Critical files for implementation
 

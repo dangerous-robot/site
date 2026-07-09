@@ -22,7 +22,7 @@ Phase 6 builds the submission infrastructure. This plan extends it with these th
 | 4 | Category list source of truth | `research/templates.yaml` category enum | A `topics` content collection is not populated. The existing `templates.yaml` defines 5 categories: `environmental-impact`, `data-privacy`, `ai-literacy`, `ai-safety`, `industry-analysis`. Dropdowns for both claim requests and standard proposals use this list. The task-stated "8 categories" figure does not match the current taxonomy; if the taxonomy grows, dropdown options follow. |
 | 5 | Claim foreign key | Store `claim_slug` as a string in D1, not a numeric FK | Content is static. Validate slug format (`^[a-z0-9-/]+$`) server-side. Do not attempt to verify slug existence against the static site. |
 | 6 | Rate-limit buckets | Per-(IP, type) | Prevents cross-blocking between form types. A burst of claim requests shouldn't consume a user's challenge budget. |
-| 7 | Backlog placement | Extend Phase 6 as items 6.4–6.6 | No BACKLOG.md edit needed; tracked in this plan. |
+| 7 | Backlog placement | Extend Phase 6 as items 6.4–6.6 | No backlog edit needed; tracked in this plan (the old BACKLOG.md became UNSCHEDULED.md). |
 
 ## Non-goals
 
@@ -356,7 +356,7 @@ Submit one of each type in a staging environment. Verify D1 rows, KV rate-limit 
 
 ## Backlog placement
 
-These features extend Phase 6 as items 6.4, 6.5, and 6.6. No new phase number is needed. The Phase 6 BACKLOG.md entry should be updated when work begins to add these three items.
+These features extend Phase 6 as items 6.4, 6.5, and 6.6. No new phase number is needed. The public-feedback entry in `docs/UNSCHEDULED.md` should be updated when work begins to add these three items.
 
 | # | Work Item | Plan | Status |
 |---|-----------|------|--------|

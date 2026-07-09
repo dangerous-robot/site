@@ -188,7 +188,7 @@ The audit trail is the substrate for the Phase 2/3 outputs to be FAIR-aligned pe
 
 ## Open questions (carry-forward from Phase 1)
 
-1. **Loader path configurability for research repo split**: `docs/BACKLOG.md:29` notes a possible future research repo split. When that happens, the loader's `research/claims` base path must become configurable rather than hardcoded. Defer until the split is actively planned, but note the coupling point.
+1. **Loader path configurability for research repo split**: a possible future research repo split is a standing constraint (see the repo-separation note in AGENTS.md § Editorial content). When that happens, the loader's `research/claims` base path must become configurable rather than hardcoded. Defer until the split is actively planned, but note the coupling point.
 
 2. **`reviewed_at` non-null CI enforcement**: Decision (2026-04-22): use a CI check, not branch protection. A CI step (or `scripts/check-audit-pairs.ts` extension) must verify that every `status: published` claim with a sidecar has `human_review.reviewed_at` set. Branch protection alone is not sufficient; it depends on operator discipline. **This gate was a v0.1.0 blocker per the original Phase 1 plan; verify whether it actually shipped with Phase 1, and if not, treat it as a Phase 2 prerequisite.**
 
@@ -199,7 +199,7 @@ The audit trail is the substrate for the Phase 2/3 outputs to be FAIR-aligned pe
 - Phase 1 (shipped): [`completed/audit-trail.md`](completed/audit-trail.md)
 - State-machine vision (substrate): [`docs/architecture/vision-state-machine.md`](../architecture/vision-state-machine.md)
 - Reader-facing surface: [`docs/plans/research-outputs-improvement-plan.md`](research-outputs-improvement-plan.md). The ClaimReview JSON-LD export (move 3) is the canonical machine-readable verdict artifact; it reads frontmatter primary and the Phase 2 sidecar secondary. This supersedes the earlier "canonical verdict artifact" note in `docs/UNSCHEDULED.md`.
-- Vocabulary alignment: [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md)
+- Vocabulary alignment: [`v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md)
 
 ---
 

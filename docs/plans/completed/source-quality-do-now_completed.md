@@ -4,7 +4,7 @@
 
 **Type**: Draft implementation plan (retired into other plans)
 **Created**: 2026-05-02
-**Derived from**: [`source-quality_survey.md`](../source-quality_survey.md) — "No architectural change required" tier
+**Derived from**: [`source-quality_survey.md`](source-quality_survey_completed.md) — "No architectural change required" tier
 **Scope**: All items implementable in the current linear pipeline; no state machine needed
 
 This plan takes the "no architectural change required" items from the source quality survey and orders them by impact. Each item is a candidate for a focused implementation plan. Items that share a code surface or dependency are grouped.
@@ -15,7 +15,7 @@ Items requiring the state machine or a larger refactor are out of scope here. Se
 
 ## Group 1: Scorer fixes (highest leverage)
 
-> **Promoted**: Items 1a, 1b, and 3a have been extracted into [`plans/scorer-quality-signals.md`](../scorer-quality-signals.md) and added to the v1.0.0 roadmap. They remain here for context but implementation tracking moves to that plan.
+> **Promoted**: Items 1a, 1b, and 3a have been extracted into [`plans/scorer-quality-signals.md`](scorer-quality-signals.md) and added to the v1.0.0 roadmap. They remain here for context but implementation tracking moves to that plan.
 
 These two items directly address the biggest quality bypass in the current pipeline. The scorer is the main pre-ingest quality filter; both items tighten it.
 
@@ -72,7 +72,7 @@ A plan for this would define the operational behavior: drop all tertiary-classif
 
 These items improve what the planner sends to search. They affect every research run.
 
-### 3a. Pass `parent_company` into the planner and scorer prompts *(promoted to [`scorer-quality-signals.md`](../scorer-quality-signals.md))*
+### 3a. Pass `parent_company` into the planner and scorer prompts *(promoted to [`scorer-quality-signals.md`](scorer-quality-signals.md))*
 
 **Survey ref**: §1, §6
 

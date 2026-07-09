@@ -46,7 +46,7 @@ Google rate-limits Request Indexing to ~10/day per property — pace accordingly
   - "Soft 404": should drop to zero once the new `404.astro` is deployed.
   - "Server error (5xx)" or "Redirect error": investigate immediately.
 - **Sitemaps:** confirm `sitemap-index.xml` is **Success**, with the discovered
-  URL count matching your repo (today: 74).
+  URL count matching your repo's current page count.
 - **Experience → Core Web Vitals:** check both Mobile and Desktop. Aim for all
   URLs in **Good**. The site is animation-heavy on the homepage; LCP and CLS
   are the ones to watch.
@@ -63,7 +63,7 @@ You don't have one. Skip.
 
 ### Verifying the new 404 page after deploy
 
-After the next deploy, in **URL Inspection** test a URL you know doesn't
+(Done 2026-05; keep for reference after future 404 changes.) After the next deploy, in **URL Inspection** test a URL you know doesn't
 exist (e.g. `/__not-a-real-page`). Live test should return HTTP 404 and the
 page preview should show the branded 404, not the GitHub Pages default.
 
@@ -87,7 +87,7 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 4. **DNS:** confirm a CNAME record `www → dangerousrobot.org` exists and
    is proxied (orange cloud). The 301 from `www` to apex is already working;
    this is just verifying how.
-5. **Speed → Optimization:** verify Brotli is on; Auto Minify (HTML) is fine
+5. **Speed → Optimization:** verify Brotli is on. (Cloudflare retired Auto Minify in 2024; if the dashboard no longer shows it, skip that part.)
    for static Astro output.
 6. **Bulk Redirects:** the list `dr_redirects` and the entrypoint ruleset rule
    `dr_redirects_rule` consolidate the eight legacy section paths under
@@ -124,11 +124,11 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 
 ---
 
-## Alpha noindex policy
+## Pre-release noindex policy
 
 Detail pages under `/research/claims/{entity}/{claim}`,
 `/research/sources/{yyyy}/{slug}`, and `/research/entities/{type}/{slug}` are
-generated from AI agent research. While the site is in alpha they are:
+generated from AI agent research. While the site is pre-release (alpha/beta; currently 1.0.0-beta.2) they are:
 
 1. Served with `<meta name="robots" content="noindex,nofollow">`.
 2. Excluded from `sitemap-index.xml` / `sitemap-0.xml`.
@@ -142,7 +142,9 @@ List/index pages (`/`, `/research`, `/research/claims`, `/research/companies`,
 `/research/criteria`, `/resources` and its four guides, `/values`, `/credits`)
 remain indexable.
 
-### When alpha ends
+### When the pre-release noindex period ends
+
+The flip trigger (beta, rc, or GA) is an open decision, tracked in `docs/UNSCHEDULED.md` § SEO post-restructure follow-ups. The flag name keeps its historical `ALPHA` spelling until then.
 
 To re-enable indexing of detail pages:
 
@@ -154,7 +156,7 @@ To re-enable indexing of detail pages:
 5. Spot-check a few previously-noindexed URLs in GSC URL Inspection to confirm
    they no longer carry the noindex directive.
 
-Already-indexed pages that fall under the alpha rules (homepage and entity
+Already-indexed pages that fall under the pre-release rules (homepage and entity
 detail pages crawled before this change) will be removed from Google's index
 within roughly 1–2 weeks as Googlebot recrawls and sees the noindex tag. No
 action needed.
@@ -165,7 +167,7 @@ action needed.
   `og:locale`, `og:image:alt`, full Twitter Card tags, and a `noindex` prop.
 - `src/pages/404.astro`: branded 404 page with `noindex`, replacing the
   GitHub Pages default.
-- `src/lib/seo.ts`: alpha indexing flag and path classifier.
+- `src/lib/seo.ts`: pre-release indexing flag (`INDEX_ALPHA_DETAIL_PAGES`) and path classifier.
 - `src/pages/research/{claims,sources,entities}/[...slug].astro`: pass
   `noindex={shouldNoindex(...)}` to `Base`.
-- `astro.config.ts`: sitemap `filter` excludes alpha detail paths.
+- `astro.config.ts`: sitemap `filter` excludes pre-release detail paths.

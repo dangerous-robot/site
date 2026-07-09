@@ -14,12 +14,12 @@ These plans already claim pieces of the source quality space. Any new plans shou
 
 | Plan | Scope | What it does not own |
 |------|-------|----------------------|
-| [`researcher-host-blocklist.md`](../researcher-host-blocklist.md) | Post-search, pre-ingest domain filter; drops known paywall/403 hosts before the ingestor runs | Low-trust (non-paywall) domains; query quality; scoring |
-| [`source-trust-metadata.md`](../source-trust-metadata.md) | Schema for per-source trust signals: site trust, document type, authority, COI/independence; phased backfill and agent classifier | Pre-ingest filtering; query generation; publisher group routing |
-| [`research-quality-ideas.md`](../research-quality-ideas.md) | Ranked backlog: entity-context scoring, COI in analyst reasoning, freshness signal, source reuse, negative site signals, schema enrichment | Architecture; failed query detection; quality gates |
+| [`researcher-host-blocklist.md`](researcher-host-blocklist.md) | Post-search, pre-ingest domain filter; drops known paywall/403 hosts before the ingestor runs | Low-trust (non-paywall) domains; query quality; scoring |
+| [`source-trust-metadata.md`](source-trust-metadata_superseded.md) | Schema for per-source trust signals: site trust, document type, authority, COI/independence; phased backfill and agent classifier | Pre-ingest filtering; query generation; publisher group routing |
+| [`research-quality-ideas.md`](../source-quality-followups.md) | Ranked backlog: entity-context scoring, COI in analyst reasoning, freshness signal, source reuse, negative site signals, schema enrichment | Architecture; failed query detection; quality gates |
 | [`wayback-archive-job.md`](../wayback-archive-job.md) | Background-job framework; `dr archive` as the first job; scheduled backfill of `archived_url` on existing sources | In-pipeline use of wayback data as a quality signal |
-| [`pipeline-dedup-detection_stub.md`](pipeline-dedup-detection_stub.md) | URL canonicalization; match-and-reuse existing sources before ingest; claim identity dedup | Query-level deduplication (queries that surface overlapping URLs); query quality |
-| [`pipeline-state-machine_stub.md`](pipeline-state-machine_stub.md) | Persisted claim workspace; resumable pipeline; feedback loops between agents | Specific quality signals or scoring logic |
+| [`pipeline-dedup-detection_stub.md`](../drafts/pipeline-dedup-detection_stub.md) | URL canonicalization; match-and-reuse existing sources before ingest; claim identity dedup | Query-level deduplication (queries that surface overlapping URLs); query quality |
+| [`pipeline-state-machine_stub.md`](../drafts/pipeline-state-machine_stub.md) | Persisted claim workspace; resumable pipeline; feedback loops between agents | Specific quality signals or scoring logic |
 | [`parent-company-inference.md`](../parent-company-inference.md) | Inferring `parent_company` slug during product onboarding | Using parent company in scorer or analyst reasoning (cross-referenced in `research-quality-ideas.md`) |
 | [`multi-provider.md`](../multi-provider.md) | Per-agent model selection; Infomaniak/GreenPT integration; tool-free researcher variants | Source quality signals; scoring; quality gates |
 

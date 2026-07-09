@@ -2,9 +2,9 @@
 
 **Status**: Completed (2026-05-05)
 **Created**: 2026-05-05
-**Supersedes**: [`../source-quality-roadmap.md`](../source-quality-roadmap.md)
-**Driven by**: [`../source-quality-agent-review.md`](../source-quality-agent-review.md) — strategic critique from three specialized agents
-**Survey**: [`../source-quality_survey.md`](../source-quality_survey.md) — full signal inventory
+**Supersedes**: [`../source-quality-roadmap.md`](source-quality-roadmap_superseded.md)
+**Driven by**: [`../source-quality-agent-review.md`](source-quality-agent-review_completed.md) — strategic critique from three specialized agents
+**Survey**: [`../source-quality_survey.md`](source-quality_survey_completed.md) — full signal inventory
 **Architecture doc**: [`../../architecture/source-quality.md`](../../architecture/source-quality.md) — single reference for the v1 design
 
 All 8 v1 implementation items shipped. The 23 v1 launch claims that were eligible for re-run (status `published` with `criteria_slug`) were processed; smaller-surface re-review preserved sign-off on the 6 claims whose verdict + confidence were unchanged. 15 claims changed verdict and/or confidence and reverted to `status: draft` for operator triage; 1 claim (`chatgpt/excludes-image-generation`) regressed to `blocked` (`terminal_fetch_error`). Per-claim deltas captured in [`source-quality-rerun-log.jsonl`](../source-quality-rerun-log.jsonl).

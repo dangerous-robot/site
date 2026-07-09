@@ -37,7 +37,7 @@ No `og:image` tag exists anywhere.
 
 ## Milestone: Title strategy
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done` — per-page-type title templates + `seo_title` schema field shipped (2026-04-29 SEO pass; see v1.0.0 roadmap reconciliation)
 
 The layout appends ` - Dangerous Robot` to whatever title is passed. Decisions below define what each page type should pass.
 
@@ -194,7 +194,7 @@ This is a code fix, noted here for completeness.
 
 ## Milestone: Meta description templates
 
-**Status:** `[ ] ready to implement`
+**Status:** `[x] done` — per-page-type dynamic descriptions shipped (2026-04-29 SEO pass)
 
 All descriptions should be 120–155 characters. Below 120 chars, Google may supplement with on-page text; above 155, SERP truncation is likely.
 

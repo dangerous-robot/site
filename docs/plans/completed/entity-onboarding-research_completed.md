@@ -3,7 +3,7 @@
 **Status**: completed 2026-05-09. Commit 1 (Steps 1–7) landed in `8cfeb19`, `aac8191`, `a66b5e4`, `55d6ba6`, `5551f6f`, `64e3f79`, `20f7a9f`, `067529f`, `7f15182`. Commit 2 (Steps 8–11) landed in `7b3f32e`, `d4dd75b`, `2c9fc22`, `3fece98`. Follow-up correctness fix in `8dfe555`; /simplify pass in `f1d798f`. Subject pilot acceptance grading is the only remaining operator follow-up (see §Test plan → "Subject pilot").
 **Created**: 2026-05-09 (promoted from `drafts/entity-onboarding-research_stub.md`)
 **Architecture docs touched**: `docs/architecture/onboarding.md`, `docs/architecture/glossary.md`, `docs/architecture/source-quality.md` (entity-metadata section)
-**Hard prerequisite**: [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) — schema slot for `verification_status` and writer-side emission already shipped (`cf93b87`, `67b1dc4`).
+**Hard prerequisite**: [`completed/entity-metadata-surface_completed.md`](entity-metadata-surface_completed.md) — schema slot for `verification_status` and writer-side emission already shipped (`cf93b87`, `67b1dc4`).
 
 ## Goal
 
@@ -387,7 +387,7 @@ Subject pilot is the riskiest slice. If prompt acceptance is low, allocate buffe
 
 ## Dependencies
 
-- [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) — schema slot for `verification_status`, writer-side emission, render badge. Hard prerequisite (already shipped).
+- [`completed/entity-metadata-surface_completed.md`](entity-metadata-surface_completed.md) — schema slot for `verification_status`, writer-side emission, render badge. Hard prerequisite (already shipped).
 - A search backend for the verifier/enricher's input bundle (Tavily or Brave; both currently used by the Researcher). No new env var; reuse `RESEARCH_SEARCH_BACKEND`.
 - LLM agent infrastructure already shipped via `pipeline/researcher/scorer.py` / `planner.py`.
 

@@ -40,14 +40,14 @@ Detailed implementation specs live in draft sub-plans. These are authoritative f
 - Steps: fetch page, extract metadata, check Wayback Machine, generate summary via LLM
 - Output: `research/sources/{yyyy}/{slug}.md` with valid frontmatter
 - This is the first runner that justifies PydanticAI -- it needs LLM reasoning to summarize and extract metadata
-- See [detailed plan](drafts/agent-pipeline-ingestor.md)
+- See [detailed plan](agent-pipeline-ingestor.md)
 
 ### 4.2: Narrative-Verdict Consistency Check
 - Input: claim files + their referenced sources and entities
 - Steps: strip verdict/confidence from claim, bundle with sources, get LLM's independent assessment, compare against actual values
 - Output: classified report (text or JSON) flagging disagreements
 - Read-only -- does not modify any files
-- See [detailed plan](drafts/narrative-verdict-consistency.md)
+- See [detailed plan](narrative-verdict-consistency.md)
 
 ### Deferred: Claim Updater
 - Input: claim file + relevant source files

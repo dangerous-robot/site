@@ -175,3 +175,9 @@ These are non-blocking — Phase 1 can ship with the recommendations as written.
 
 1. **Reject semantics in Phase 2.** Proposal above is "write notes, leave draft." Alternative is a new `status: needs_revision` value, which expands the state machine. I lean toward the notes-only approach, but flagging now so the design isn't accidentally locked in by Phase 1 choices.
 2. **VERSION pre-release exception.** The roadmap says published-without-review nulls are allowed during alpha/beta/rc. Phase 1 of `review-queue` doesn't depend on this — it surfaces unreviewed drafts regardless of release stage. The lint-check exception is a separate piece of work and out of scope for this plan.
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; status verified accurate against code (Phase 1 shipped in review_queue.py, Phases 2-3 open). |

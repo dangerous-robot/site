@@ -1,7 +1,7 @@
 # Work Item: Astro Site Development
 
 **Phase**: 2 (Schemas, Content & Site -- MVP)
-**Status**: not started
+**Status**: Done — shipped April 2026 (site live; see `src/`). Checklist below was never retro-ticked.
 **Depends on**: Phase 1 (repo hygiene)
 **Co-authored with**: research-schemas.md (Zod schemas and Content Collections are the same design decision)
 

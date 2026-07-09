@@ -4,7 +4,7 @@
 
 ## Context
 
-`scripts/poc-multi-provider/` was the working directory for the multi-provider evaluation that produced [`docs/plans/multi-provider.md`](multi-provider.md) and [`docs/reports/API-PROVIDER-FINAL-REPORT.md`](../reports/API-PROVIDER-FINAL-REPORT.md). The directory is gitignored (`.gitignore:37`) and contains a mix of: two reusable harnesses (`run_tests.py` for Infomaniak, `run_greenpt.py` for GreenPT), a wire tracer (`trace_infomaniak.py`), seven one-off `probe_*.py` spikes, three rollup `SUMMARY-*.md` docs, eight `results-*.md` per-model reports, four `trace-*.json` dumps, an Infomaniak support ticket, and a shared `.env.poc`.
+`scripts/poc-multi-provider/` was the working directory for the multi-provider evaluation that produced [`docs/plans/multi-provider.md`](../multi-provider.md) and [`docs/reports/api-provider-final-report.md`](../../reports/api-provider-final-report.md). The directory is gitignored (`.gitignore:37`) and contains a mix of: two reusable harnesses (`run_tests.py` for Infomaniak, `run_greenpt.py` for GreenPT), a wire tracer (`trace_infomaniak.py`), seven one-off `probe_*.py` spikes, three rollup `SUMMARY-*.md` docs, eight `results-*.md` per-model reports, four `trace-*.json` dumps, an Infomaniak support ticket, and a shared `.env.poc`.
 
 The harnesses still have ongoing utility — every time a new provider/model is considered (Part 3 of the multi-provider plan, future GreenPT promotion, any new Infomaniak model rollout), an agent or operator needs to fire T1-T5 at it and read the result. The probes and reports do not — they captured one-time findings that are now reflected in the final report and the multi-provider plan's "Observed quirks" section.
 
@@ -138,7 +138,7 @@ The dispatcher does not unify these flag sets; each harness owns its own argpars
 
 The README is the agent's single entry point. It should contain, in order:
 
-1. **What this is** — one paragraph: an ad-hoc, gitignored, throwaway tester for probing LLM providers and models against the T1-T5 capability matrix used by the `dr` pipeline. Points at `docs/plans/multi-provider.md` and `docs/reports/API-PROVIDER-FINAL-REPORT.md` for context.
+1. **What this is** — one paragraph: an ad-hoc, gitignored, throwaway tester for probing LLM providers and models against the T1-T5 capability matrix used by the `dr` pipeline. Points at `docs/plans/multi-provider.md` and `docs/reports/api-provider-final-report.md` for context.
 2. **Quickstart** — three commands: `tester.py list`, `tester.py probe infomaniak openai/gpt-oss-120b`, `tester.py probe greenpt mistral-small-3.2-24b-instruct-2506`.
 3. **What T1-T5 mean** — one-line each: T1 plain completion, T2 structured JSON, T3 tool def acceptance, T4 single-turn tool call, T5 multi-turn tool result handling.
 4. **Known-tested models** — small table (provider, wire id, T1-T5 pass/fail, last-tested date). Sourced from `archive/SUMMARY-cross-provider.md`. ~10 rows.

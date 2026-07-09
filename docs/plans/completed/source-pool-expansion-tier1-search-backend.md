@@ -17,7 +17,7 @@ The shared infrastructure this work originally forced (throttle layer, URL canon
 
 ## Problem
 
-Brave's general-web ranking mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist ([`researcher-host-blocklist.md`](../researcher-host-blocklist.md)) drops the worst offenders but doesn't change ranking quality or add surface area.
+Brave's general-web ranking mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist ([`researcher-host-blocklist.md`](researcher-host-blocklist.md)) drops the worst offenders but doesn't change ranking quality or add surface area.
 
 Tavily delivers cached/extracted content alongside URLs, which sidesteps some paywalls and reduces fetch failures on returned URLs. Hypothesis: an agent-optimized search returns a better candidate pool with fewer wasted fetches.
 
@@ -71,7 +71,7 @@ New helper at `pipeline/tests/replay/__init__.py`.
 
 ### `dr stats` is a follow-up
 
-The plan originally called for a `dr stats` Click subcommand on `pipeline/orchestrator/cli.py`, deferred during the [`dr-cli-output-cleanup_phase2_completed.md`](completed/dr-cli-output-cleanup_phase2_completed.md) work to avoid merge friction. That cleanup is now complete, so the merge-friction concern is moot — but `dr stats` is still scoped as a separate follow-up plan, because the search-backend evaluation only needs the replay harness's JSONL output (parsed ad-hoc) to apply the rubric. Promote `dr stats` whenever observability becomes the bottleneck.
+The plan originally called for a `dr stats` Click subcommand on `pipeline/orchestrator/cli.py`, deferred during the [`dr-cli-output-cleanup_phase2_completed.md`](dr-cli-output-cleanup_phase2_completed.md) work to avoid merge friction. That cleanup is now complete, so the merge-friction concern is moot — but `dr stats` is still scoped as a separate follow-up plan, because the search-backend evaluation only needs the replay harness's JSONL output (parsed ad-hoc) to apply the rubric. Promote `dr stats` whenever observability becomes the bottleneck.
 
 ## Rollout
 
@@ -124,7 +124,7 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 - Fetch-backend distinction: [`multi-provider.md`](../multi-provider.md) § Part 3
 - Researcher internals: [`research-flow.md`](../../architecture/research-flow.md) § 6
 - Pipeline configuration: [`research-workflow.md`](../../architecture/research-workflow.md) § Pipeline configuration knobs
-- Host blocklist interaction: [`researcher-host-blocklist.md`](../researcher-host-blocklist.md)
+- Host blocklist interaction: [`researcher-host-blocklist.md`](researcher-host-blocklist.md)
 
 ## Review history
 

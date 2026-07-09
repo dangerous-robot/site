@@ -2,7 +2,7 @@
 
 | Milestone | Status |
 |-----------|--------|
-| Search console setup | `[ ] ready — pending launch` |
+| Search console setup | `[~] partially done — GSC verified, sitemap submitted, inspection baseline captured 2026-05-11 (seo-post-restructure); monitoring cadence remains |
 | Google Fact Check program | `[ ] gated — prereqs not met` |
 | Validation and testing | `[ ] gated — code plan must land first` |
 | Link building and citation outreach | `[ ] ongoing — start at launch` |
@@ -20,7 +20,7 @@ Domain: `dangerousrobot.org` (bare domain, no www). Confirmed via `public/CNAME`
 
 ## Milestone: Search console setup
 
-**Status:** `[ ] ready — pending launch`
+**Status:** `[~] partially done` — GSC verification + sitemap submission + baseline landed via `completed/seo-post-restructure.md` (2026-05-11); remaining rows are monitoring cadence
 
 **Gating condition:** Site must be publicly accessible at `dangerousrobot.org`. Alpha is fine; the site does not need to be post-launch.
 
@@ -263,5 +263,11 @@ After the Google Fact Check program application is approved (see that milestone)
 ## Cross-references
 
 - Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading) — see the technical SEO plan (not yet filed)
-- Alpha banner removal — tracked in [`pre-launch-quick-fixes.md`](pre-launch-quick-fixes.md) (S1, currently live; removal is post-launch)
+- Alpha banner removal — tracked in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1, currently live; removal is post-launch)
 - ClaimReview schema — required by the Google Fact Check milestone; tracked in technical SEO plan
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|------|----------|-------|---------|
+| 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; search-console milestone updated to reflect the 2026-05-11 GSC/baseline work; one link repointed to completed/. |

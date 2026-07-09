@@ -1,8 +1,8 @@
 # Scorer quality signals
 
 **Status**: `done`
-**Derived from**: [`plans/drafts/source-quality-do-now.md`](drafts/source-quality-do-now.md) Groups 1 and 3a
-**Survey**: [`plans/source-quality_survey.md`](source-quality_survey.md) §1, §4, §6
+**Derived from**: [`plans/drafts/source-quality-do-now.md`](source-quality-do-now_completed.md) Groups 1 and 3a
+**Survey**: [`plans/source-quality_survey.md`](source-quality_survey_completed.md) §1, §4, §6
 
 Three changes to the scorer and query planner that can be implemented without architectural changes. Together they address the most direct quality bypasses in the current pre-ingest pipeline.
 

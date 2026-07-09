@@ -1,4 +1,6 @@
-# Plan: Entity list & detail views (draft)
+# Plan: Entity list & detail views
+
+**Status**: Done — shipped: `src/pages/research/{entities,companies,products,topics,criteria}/`.
 
 ## Goal
 

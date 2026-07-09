@@ -10,7 +10,7 @@
 The Researcher → Ingestor pathway currently uses a single search backend (Brave) and a single fetch path (`httpx` + Wayback fallback). Two pressures push the source pool toward `first-party` material:
 
 1. **Paywalls and 403s on tech-news and trade outlets** make independent reporting hard to ingest. The in-pipeline Wayback fallback (`pipeline/ingestor/tools/wayback.py`, default `skip_wayback=False` per `VerifyConfig`) recovers some but not all.
-2. **Brave's general-web ranking** mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist (`researcher-host-blocklist.md`) drops the worst offenders but doesn't add new surface area.
+2. **Brave's general-web ranking** mixes vendor-sponsored content, content farms, and stale aggregator pages into the candidate list. The host blocklist (`completed/researcher-host-blocklist.md`) drops the worst offenders but doesn't add new surface area.
 
 `verification_level` is derived from the `independence` distribution of the source pool (see `docs/architecture/source-quality.md`). When the pool skews `first-party`, the cap-and-rationale machinery routes verdicts toward `claimed` / `self-reported` even when independent reporting exists somewhere — it just isn't reachable via the current pathway.
 
@@ -433,7 +433,7 @@ Deferred (Tier 2):
 - Wayback steady-state design: [`docs/plans/wayback-archive-job.md`](wayback-archive-job.md)
 - Search vs fetch backend distinction: [`docs/plans/multi-provider.md`](multi-provider.md) § Part 3
 - Company metadata enrichment (Tier 1 lands `sec_cik` first): [`docs/plans/source-quality-followups.md`](source-quality-followups.md) § Company metadata enrichment
-- Host blocklist interaction: [`docs/plans/researcher-host-blocklist.md`](researcher-host-blocklist.md)
+- Host blocklist interaction: [`docs/plans/completed/researcher-host-blocklist.md`](completed/researcher-host-blocklist.md)
 - Recently-completed CLI cleanup that unblocked the in-Tier-1 `dr stats` subcommand: [`docs/plans/completed/dr-cli-output-cleanup_phase2_completed.md`](completed/dr-cli-output-cleanup_phase2_completed.md)
 - Tier 2 / Tier 3 follow-up scope: [`docs/plans/source-quality-followups.md`](source-quality-followups.md) § Source pool — Tier 2 and § Source pool — Tier 3
 

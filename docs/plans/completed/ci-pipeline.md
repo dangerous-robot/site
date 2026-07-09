@@ -1,7 +1,7 @@
 # Work Item: CI Pipeline
 
 **Phase**: 3 (CI & Quality -- post-MVP)
-**Status**: not started
+**Status**: Done — shipped April 2026 (`.github/workflows/ci.yml`). Checklist below was never retro-ticked.
 **Depends on**: Phase 2 (content exists to validate)
 **Blocks**: nothing (quality improvement, not functionality)
 

@@ -1,7 +1,7 @@
 # Work Item: Research Schemas & Content Structure
 
 **Phase**: 2 (Schemas, Content & Site -- MVP)
-**Status**: not started
+**Status**: Done — shipped April 2026 (`src/content.config.ts`). Checklist below was never retro-ticked.
 **Depends on**: Phase 1 (repo hygiene)
 **Co-authored with**: astro-site.md (Zod schemas and Content Collections are the same design decision)
 

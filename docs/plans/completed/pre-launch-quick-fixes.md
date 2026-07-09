@@ -20,7 +20,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 | ID | Item | Files |
 |---|---|---|
 | S1 | ALPHA banner sitewide | **Done (2026-04-26).** Top-of-body banner in `src/layouts/Base.astro` renders on every chrome variant; links to `/faq#methodology`. Uses `--color-accent` on `--color-surface` for theme/contrast compatibility. |
-| S2 | Curate launch claim set; homepage and list pages already filter to `status: published`. **Replaced by deliberate tracking in [`research/v1-launch-set.md`](../../research/v1-launch-set.md)** (2026-04-27); not random. | content; verify filtering on `src/pages/index.astro`, `src/pages/claims/index.astro` |
+| S2 | Curate launch claim set; homepage and list pages already filter to `status: published`. **Replaced by deliberate tracking in [`research/v1-launch-set.md`](../../../research/v1-launch-set.md)** (2026-04-27); not random. | content; verify filtering on `src/pages/index.astro`, `src/pages/claims/index.astro` |
 | S3 | **Done (2026-04-27).** COI disclosure on the `treadlightlyai` product entity (`research/entities/products/treadlightlyai.md`) — entity was deleted then re-instated as a product. Inline blockquote points readers at `/faq#conflicts-of-interest`. Original "companies/treadlightlyai" target is obsolete; FAQ accordion already carries the canonical disclosure (covered by §7 in v1.0.0-roadmap). |
 | S4 | **Done (commit `619dfe5`).** `/values` editorial page lives at `src/pages/values.astro` and includes the public design-principle paragraph. Footer link in `Base.astro:114`. |
 | S5 | **Stretch — not a v1 blocker.** Surface a consolidated pipeline diagram inside FAQ accordion. Source: `docs/architecture/research-flow.md` (5 Mermaid diagrams already exist; pick one). FAQ already describes the pipeline in prose, which is enough for v1; the diagram is a polish item to land post-tag. |
@@ -35,7 +35,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 |---|---|---|
 | P1 | **Done** (landed via [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) bundle). Zero hits in `AGENTS.md`, `docs/architecture/glossary.md`, `scripts/check-citations.ts`. |
 | P2 | **Done (2026-04-27).** `dr research` → `dr verify-claim` renamed in `pipeline/orchestrator/cli.py:217-225`, `pipeline/tests/test_cli_smoke.py:10`, `AGENTS.md:99,107,114,125`, `docs/architecture/glossary.md:59-62,150`, `docs/architecture/research-flow.md:17,21,28,52`, `docs/architecture/open-issues.md:58`. The internal `research_claim()` Python function name is unchanged (not externally visible). Smoke tests pass. |
-| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | **Done (2026-04-26).** Canonical statement at [`AGENTS.md` § How the system works](../../AGENTS.md) (line 17, "Small decisions, small models"). New "Model-tier discipline" subsection in `docs/architecture/glossary.md` cross-links to it and to the `models_used` audit field. Concrete tiers/enforcement deferred to Q4 in [`pre-launch-questions.md`](../pre-launch-questions.md). |
+| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | **Done (2026-04-26).** Canonical statement at [`AGENTS.md` § How the system works](../../../AGENTS.md) (line 17, "Small decisions, small models"). New "Model-tier discipline" subsection in `docs/architecture/glossary.md` cross-links to it and to the `models_used` audit field. Concrete tiers/enforcement deferred to Q4 in [`pre-launch-questions.md`](../../pre-launch-questions.md). |
 | P5 | Roadmap cleanup: visibly separate hard launch blockers from nice-to-haves | `docs/v1.0.0-roadmap.md` |
 | P6 | Glossary: add "Vocabulary layers" reader-facing summary mapping role ↔ pipeline agent ↔ CLI command | **Done (2026-04-26).** New "Role / agent / CLI cross-walk" subsection in `docs/architecture/glossary.md`, placed above Roles, gives a single 7-row table covering all three vocabularies. (Heading renamed from "Vocabulary layers" to avoid collision with the existing meta-table further down.) |
 | ST4 | **Done** (landed via [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) bundle). Zero hits in `AGENTS.md` and `docs/architecture/glossary.md`. |
@@ -55,13 +55,13 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 
 The following triage items are NOT in this plan; they have their own plans or destinations:
 
-- Vocabulary cohesion deeper pass beyond P1+P2 → [`vocab-rename-pass_stub.md`](vocab-rename-pass_stub.md)
-- Acceptance test fixture (Anthropic/Claude per Q8) → [`acceptance-test-fixture_stub.md`](acceptance-test-fixture_stub.md)
-- Source trust metadata (4 axes) → [`source-trust-metadata_stub.md`](source-trust-metadata_stub.md)
-- Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](multi-provider.md)
-- Polarity normalization (Q2) → [`docs/pre-launch-questions.md`](../pre-launch-questions.md)
-- Operator queue + batch workflow → [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md) (v2)
-- Data lifecycle policy → [`data-lifecycle-policy_stub.md`](data-lifecycle-policy_stub.md) (v2)
+- Vocabulary cohesion deeper pass beyond P1+P2 → [`vocab-rename-pass_stub.md`](v0.1.0-vocab-workflow-landing.md)
+- Acceptance test fixture (Anthropic/Claude per Q8) → [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md)
+- Source trust metadata (4 axes) → [`source-trust-metadata_stub.md`](source-trust-metadata_superseded.md)
+- Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](../multi-provider.md)
+- Polarity normalization (Q2) → [`docs/pre-launch-questions.md`](../../pre-launch-questions.md)
+- Operator queue + batch workflow → [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2)
+- Data lifecycle policy → [`data-lifecycle-policy_stub.md`](../data-lifecycle-policy_stub.md) (v2)
 
 ## Verification checklist
 
@@ -83,14 +83,14 @@ After all items in scope land:
 | Triage ID | Where it landed |
 |---|---|
 | S1–S9, P1, P2, P3, P5, P6, ST4, ST5 | This plan |
-| ST1 source trust metadata | [`source-trust-metadata_stub.md`](source-trust-metadata_stub.md) |
-| P4 acceptance test fixture | [`acceptance-test-fixture_stub.md`](acceptance-test-fixture_stub.md) |
-| PT4 vocab cohesion deeper pass | [`vocab-rename-pass_stub.md`](vocab-rename-pass_stub.md) |
-| Multi-provider plan | [`multi-provider.md`](multi-provider.md) |
-| ST2 polarity normalization | [Q2](../pre-launch-questions.md) |
-| ST3 in-page feedback | [`public-feedback.md`](public-feedback.md) (v2) |
-| PT1 operator queue + batch | [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md) (v2) |
-| PT2 data lifecycle policy | [`data-lifecycle-policy_stub.md`](data-lifecycle-policy_stub.md) (v2) |
+| ST1 source trust metadata | [`source-trust-metadata_stub.md`](source-trust-metadata_superseded.md) |
+| P4 acceptance test fixture | [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md) |
+| PT4 vocab cohesion deeper pass | [`vocab-rename-pass_stub.md`](v0.1.0-vocab-workflow-landing.md) |
+| Multi-provider plan | [`multi-provider.md`](../multi-provider.md) |
+| ST2 polarity normalization | [Q2](../../pre-launch-questions.md) |
+| ST3 in-page feedback | [`public-feedback.md`](../public-feedback.md) (v2) |
+| PT1 operator queue + batch | [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2) |
+| PT2 data lifecycle policy | [`data-lifecycle-policy_stub.md`](../data-lifecycle-policy_stub.md) (v2) |
 | PT3 source-triggered reassessment | UNSCHEDULED.md (v2) |
 | Q11 show-your-work panel | in flight per operator |
 

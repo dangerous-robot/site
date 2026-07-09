@@ -24,7 +24,7 @@ Define how research data is overwritten, partially fixed, and skipped during rep
 ## Open design questions
 
 - **Default policy**: skip-existing or overwrite? Skip is safer; overwrite matches current implicit behavior.
-- **Audit sidecar interaction**: does a re-run produce a new sidecar with full history (audit-trail.md Stage 3) or replace the existing one?
+- **Audit sidecar interaction**: does a re-run produce a new sidecar with full history (`completed/audit-trail.md` Stage 3) or replace the existing one?
 - **Lockfile / in-progress markers**: prevent two concurrent runs on the same claim?
 - **Dry-run mode**: `--dry-run` that shows what would be overwritten without writing?
 
@@ -35,7 +35,7 @@ Define how research data is overwritten, partially fixed, and skipped during rep
 
 ## Cross-references
 
-- [`audit-trail.md`](audit-trail.md) Stage 3 (append-only history) overlaps; coordinate semantics.
+- [`audit-trail.md`](completed/audit-trail.md) Stage 3 (append-only history) overlaps; coordinate semantics.
 - [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md) — batch flow needs lifecycle decisions to be coherent.
 
 ## Review history
