@@ -1,19 +1,10 @@
 # Pre-launch open questions
 
-Status: open as of 2026-04-24, derived from the pre-launch triage; last reconciled 2026-07-03 (Q3 and Q12 closed; Q2 and Q4 remain the only open items). Captures questions for operator decision and broader discussion. Each question carries enough context to act on independently. Closed questions are recorded at the bottom for context.
+Status: open as of 2026-04-24, derived from the pre-launch triage; last reconciled 2026-07-09 (Q2 closed; Q4 is the only remaining open item). Captures questions for operator decision and broader discussion. Each question carries enough context to act on independently. Closed questions are recorded at the bottom for context.
 
 ---
 
 ## Currently open
-
-### Q2. Polarity normalization
-
-Should claim titles be rewritten so TRUE = "better" reads consistently? Operator preference is yes ("X excludes wasteful features" rather than "X has wasteful features"). Tradeoffs:
-
-- **For**: a reader scanning the homepage gets a quick "more green checks = better" signal.
-- **Against**: forced polarity produces awkward titles or loses nuance ("no training" loses the caveat that some training is permitted).
-
-Cleaner alternative shipped in v1: claim text stays natural; a separate "what this means for the reader" line renders under the badge ([`pre-launch-quick-fixes.md`](plans/completed/pre-launch-quick-fixes.md) S8, shipped 2026-04-26). The gate this question was waiting on has passed; a decision is now due. Note: analyst instructions now require titles to restate claim text verbatim, which leans against title-level polarity rewriting.
 
 ### Q4. Model-tier rubric: how is "small-by-default" enforced?
 
@@ -40,6 +31,10 @@ Per operator: partially implemented; another agent improving. Out of scope for r
 Currently treated as in flight.
 
 ---
+
+## Closed (operator answer, 2026-07-09)
+
+- **Q2 — Polarity normalization.** Settled: **no forced title polarity.** Claim titles stay natural, with the analyst restating claim text verbatim; the "what this means for the reader" line under the badge ([`pre-launch-quick-fixes.md`](plans/completed/pre-launch-quick-fixes.md) S8, shipped 2026-04-26) carries the "greener = better" scanning signal instead. This matches what shipped in v1 and the analyst's verbatim-title requirement.
 
 ## Closed (2026-07-03 docs audit reconciliation)
 
