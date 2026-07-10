@@ -351,7 +351,7 @@ Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-
 
 Goal: Maintain a glossary covering AI, AI safety, data-center environmental technology, energy use, and energy-market terminology. The matrix and claim pages already lean on terms like RECs, PUE, additionality, and PPAs without defining them — a reader-facing glossary lets the rest of the site link to plain-language explanations instead of inlining them.
 
-Initial tracking doc: [`glossary.md`](glossary.md) (working draft; not yet wired into the site).
+Initial tracking doc: [`reader-glossary.md`](reader-glossary.md) (working draft; not yet wired into the site).
 
 | Work Item | Notes |
 |-----------|-------|
