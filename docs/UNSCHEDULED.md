@@ -37,6 +37,16 @@ Goal: Split the Analyst's frontier-model call into smaller sub-decisions so chea
 
 ---
 
+## Model-tier enforcement (was Q4)
+
+Goal: Enforce "small-by-default" model selection instead of relying on the default value alone. Today nothing caps escalation — any agent can be pointed at a large model. Chosen approach is option (b): per-agent tier caps in config.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Per-agent tier ceiling in `VerifyConfig` | [model-tier-enforcement_stub.md](plans/model-tier-enforcement_stub.md) | Stub carried over from the retired `pre-launch-questions.md` Q4. Add a `MODEL_TIER` map + `max_tier` ceiling checked in `resolve_model`; most machinery (per-agent fields, `model_for`) already exists from multi-provider Part 2. Cost-ceiling successor (option c) waits on `token-usage-log.md`. |
+
+---
+
 ## Dedup detection on URL ingest and claim creation
 
 Goal: Stop creating duplicate claims when the pipeline encounters a claim that already exists. URL-level source dedup shipped 2026-05-03 ([source-url-dedup_completed.md](plans/completed/source-url-dedup_completed.md), including a `--force` bypass); the remaining gap is claim-level match-and-return plus richer URL canonicalization.
@@ -235,6 +245,7 @@ From UI redesign plan (2026-04-24). Current implementation shows reviewer count 
 | Multi-reviewer tracking | Change `human_review` from single object to array of `{ reviewed_at, reviewer, notes, pr_url }`. Meta row count (`✓ N reviewers`) derives from array length. Requires schema version bump and backfill script. |
 | Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity detail claim lists as a trust signal. |
 | Verdict change history | Append-only `history` array in `.audit.yaml` recording each pipeline run's verdict+confidence output. Site renders a timeline on the claim detail page. Requires pipeline write changes. |
+| Show-your-work reasoning panel (was Q11) | Reasoning-transparency scope carried over from the retired `pre-launch-questions.md`; partially implemented, treated as in flight. Open sub-decisions: inline analyst narrative on every claim vs. expand-on-click; auditor disagreement excerpts always visible vs. only when the verdict was contested; whether to expose the actual instruction text the analyst saw. |
 
 ---
 

@@ -67,7 +67,7 @@ The same work is described by three vocabularies: **role** (what should happen, 
 
 ## Model-tier discipline
 
-Agents default to the smallest model class that can defensibly handle the task; larger models are reserved for tasks that genuinely require them. Canonical statement: [`AGENTS.md` § How the system works](../../AGENTS.md). Each `.audit.yaml` sidecar records the per-agent model used in `models_used`, so the lineage of a published verdict is auditable. The concrete enforcement mechanism (instructions-only vs. config-level caps) is open — see Q4 in [`pre-launch-questions.md`](../pre-launch-questions.md).
+Agents default to the smallest model class that can defensibly handle the task; larger models are reserved for tasks that genuinely require them. Canonical statement: [`AGENTS.md` § How the system works](../../AGENTS.md). Each `.audit.yaml` sidecar records the per-agent model used in `models_used`, so the lineage of a published verdict is auditable. The concrete enforcement mechanism is open: option (b), per-agent tier caps in config, is the chosen direction — stubbed at [`plans/model-tier-enforcement_stub.md`](../plans/model-tier-enforcement_stub.md).
 
 ## Roles
 

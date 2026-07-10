@@ -35,7 +35,7 @@ Land the cluster of small pre-launch polish items before tagging v0.1.0. Items a
 |---|---|---|
 | P1 | **Done** (landed via [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) bundle). Zero hits in `AGENTS.md`, `docs/architecture/glossary.md`, `scripts/check-citations.ts`. |
 | P2 | **Done (2026-04-27).** `dr research` → `dr verify-claim` renamed in `pipeline/orchestrator/cli.py:217-225`, `pipeline/tests/test_cli_smoke.py:10`, `AGENTS.md:99,107,114,125`, `docs/architecture/glossary.md:59-62,150`, `docs/architecture/research-flow.md:17,21,28,52`, `docs/architecture/open-issues.md:58`. The internal `research_claim()` Python function name is unchanged (not externally visible). Smoke tests pass. |
-| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | **Done (2026-04-26).** Canonical statement at [`AGENTS.md` § How the system works](../../../AGENTS.md) (line 17, "Small decisions, small models"). New "Model-tier discipline" subsection in `docs/architecture/glossary.md` cross-links to it and to the `models_used` audit field. Concrete tiers/enforcement deferred to Q4 in [`pre-launch-questions.md`](../../pre-launch-questions.md). |
+| P3 | Document model-tier discipline (small-by-default; medium for judgement; large rarely) in glossary + AGENTS.md | **Done (2026-04-26).** Canonical statement at [`AGENTS.md` § How the system works](../../../AGENTS.md) (line 17, "Small decisions, small models"). New "Model-tier discipline" subsection in `docs/architecture/glossary.md` cross-links to it and to the `models_used` audit field. Concrete tiers/enforcement stubbed at [`model-tier-enforcement_stub.md`](../model-tier-enforcement_stub.md) (was Q4 in the retired pre-launch-questions.md). |
 | P5 | Roadmap cleanup: visibly separate hard launch blockers from nice-to-haves | `docs/v1.0.0-roadmap.md` |
 | P6 | Glossary: add "Vocabulary layers" reader-facing summary mapping role ↔ pipeline agent ↔ CLI command | **Done (2026-04-26).** New "Role / agent / CLI cross-walk" subsection in `docs/architecture/glossary.md`, placed above Roles, gives a single 7-row table covering all three vocabularies. (Heading renamed from "Vocabulary layers" to avoid collision with the existing meta-table further down.) |
 | ST4 | **Done** (landed via [`v0.1.0-vocab-workflow-landing.md`](v0.1.0-vocab-workflow-landing.md) bundle). Zero hits in `AGENTS.md` and `docs/architecture/glossary.md`. |
@@ -59,7 +59,7 @@ The following triage items are NOT in this plan; they have their own plans or de
 - Acceptance test fixture (Anthropic/Claude per Q8) → [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md)
 - Source trust metadata (4 axes) → [`source-trust-metadata_stub.md`](source-trust-metadata_superseded.md)
 - Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](multi-provider.md)
-- Polarity normalization (Q2) → [`docs/pre-launch-questions.md`](../../pre-launch-questions.md)
+- Polarity normalization (Q2) → resolved 2026-07-09: no forced title polarity (pre-launch-questions.md retired; see git history)
 - Operator queue + batch workflow → [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2)
 - Data lifecycle policy → [`data-lifecycle-policy_stub.md`](../data-lifecycle-policy_stub.md) (v2)
 
@@ -87,7 +87,7 @@ After all items in scope land:
 | P4 acceptance test fixture | [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md) |
 | PT4 vocab cohesion deeper pass | [`vocab-rename-pass_stub.md`](v0.1.0-vocab-workflow-landing.md) |
 | Multi-provider plan | [`multi-provider.md`](multi-provider.md) |
-| ST2 polarity normalization | [Q2](../../pre-launch-questions.md) |
+| ST2 polarity normalization | Q2 — resolved 2026-07-09 (no forced polarity); tracker retired, see git history |
 | ST3 in-page feedback | [`public-feedback.md`](../public-feedback.md) (v2) |
 | PT1 operator queue + batch | [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2) |
 | PT2 data lifecycle policy | [`data-lifecycle-policy_stub.md`](../data-lifecycle-policy_stub.md) (v2) |
