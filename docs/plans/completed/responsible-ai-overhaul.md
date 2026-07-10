@@ -171,7 +171,7 @@ Pure editorial work, gates milestones 4 and 6. Can run in parallel with mileston
 Inputs to author (anew, not derived):
 - **7 active products** × 4 summary fields (`ai_ethics`, `financial_transparency`, `environmental`, `notes`) = 28 short markdown strings. The 4 existing products (GreenPT, Ecosia AI, Euria, TreadLightly AI) plus the 3 newly-included products (Viro AI, ChatGPTree, Earthly Insight). Tone matches existing claim-page copy; keep each cell ≤ ~25 words.
   - For the 3 newly-included products: each product's `summary.notes` carries forward the existing `excluded_products[].reason` prose as a starting point, edited for the active-row context.
-- **16 feature cells × 3 new products = 48 new matrix cells** for Viro AI, ChatGPTree, and Earthly Insight. Primary source: `docs/reports/sustainable-ai-chatbot-claims-viro-chatgptree-earthly-insight.pdf`; cross-reference with vendor sites where the PDF is silent. Where information isn't readily available, use cell type `unknown` (blanks are fine; don't fabricate).
+- **16 feature cells × 3 new products = 48 new matrix cells** for Viro AI, ChatGPTree, and Earthly Insight. Primary source: `docs/reports/sustainable-ai-chatbot-claims-viro-chatgptree-earthly-insight.md`; cross-reference with vendor sites where the PDF is silent. Where information isn't readily available, use cell type `unknown` (blanks are fine; don't fabricate).
 - `ideal` values for the rows marked "yes" in Appendix A (approximately 8 rows). Each is a `{ value, note? }` pair. `ideal` carries no source citation; citations stay on product cells (Ideal is editorial).
 - One new footnote: the editorial-pick explainer ("Ideal is Dangerous Robot's editorial judgment, not a vendor claim...").
 

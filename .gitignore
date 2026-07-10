@@ -40,3 +40,7 @@ scripts/llm-tester/matrix-*.md
 
 # SEO inspection runtime artifacts (per-date GSC URL inspection JSONs)
 seo-runs/
+
+# Source-report PDFs are kept locally only; transcribe to a committed .md sibling
+# (image-based, large, not diff-able). See docs/reports/*.md.
+docs/reports/*.pdf
