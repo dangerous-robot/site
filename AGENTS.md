@@ -227,7 +227,9 @@ Release roadmaps are a separate object: they live at the top level of `docs/` (`
 
 ### File naming
 
-`_stub.md` suffix marks a placeholder plan. Stubs always live in `docs/plans/drafts/` and contain only an outline or sketch -- enough context for someone to start writing the full plan later. They may optionally include design notes or decisions, but they are not implementation-ready. Do not promote a stub directly to `docs/plans/`; flesh it out first.
+`_stub.md` suffix marks a placeholder plan: an outline or sketch with enough context for someone to start writing the full plan later. It may optionally include design notes or decisions, but it is not implementation-ready. Do not promote a stub to a full plan without fleshing it out first (drop the `_stub` suffix when you do).
+
+Stubs normally live in `docs/plans/drafts/` (gitignored, local WIP). A stub may instead be **committed** at the `docs/plans/` top level when other committed docs link to it -- otherwise those links dangle on a fresh clone. A committed stub keeps its `_stub` suffix so its placeholder status stays visible.
 
 Rules:
 
@@ -235,7 +237,7 @@ Rules:
 2. **Final plans are committed** to `docs/plans/` (or, for release roadmaps, to `docs/v{semver}.md`) when approved.
 3. **Completed plans move.** When all work items in a plan are done, `git mv` the plan to `docs/plans/completed/`. Release roadmaps move from `docs/v{semver}.md` to `docs/plans/completed/v{semver}.md` once the release ships.
 4. **Update the plan as work lands.** When you complete a work item from a plan, update the plan in the same change: tick the checkbox, set the relevant Status field, and add a commit reference (`commit XXXXXXX`) where the doc already cites commits. Do not batch plan updates across sessions; an out-of-date plan misleads the next agent. This applies to release roadmaps and sub-plans alike.
-5. **At commit time, ask whether touched plans are complete.** When Claude is asked to commit on the user's behalf and the change touched any file under `docs/plans/` or any release roadmap (`docs/v*.*.*.md`): for each touched plan, ask the operator whether the plan is now fully implemented. If yes, `git mv` it to `docs/plans/completed/` (preserving the filename, plus the `_completed` suffix per the naming convention below if it helps disambiguate from abandoned/superseded plans) in the same commit. Phrase the question concretely (name the plan files); do not ask in the abstract.
+5. **At commit time, ask whether touched plans are complete.** When Claude is asked to commit on the user's behalf and the change touched any file under `docs/plans/` or any release roadmap (`docs/v*.*.*.md`): for each touched plan, ask the operator whether the plan is now fully implemented. If yes, `git mv` it to `docs/plans/completed/` (preserving the filename; do not add a `_completed` suffix -- the directory conveys the state, per the naming convention below) in the same commit. Phrase the question concretely (name the plan files); do not ask in the abstract.
 6. **Keep the backlog current.** Update `docs/UNSCHEDULED.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
 7. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in UNSCHEDULED.md but do not duplicate issue content.
 
@@ -294,7 +296,7 @@ Three mutually exclusive work states:
 |---|---|
 | `_stub` | Scaffolded from a description; not yet fully implementable |
 | `_survey` | Research report on what types of plans could be written; not an implementation plan; must be rewritten before implementation |
-| `_completed` | Fully implemented; use in `completed/` to distinguish from abandoned/superseded |
+| `_completed` | **Deprecated for new moves.** The `completed/` directory already conveys "fully implemented," so do not add this suffix going forward. Existing `_completed` names are kept as-is (no mass rename). |
 | `_superseded` | Replaced by a newer plan; stays in `completed/` with a banner naming its successor |
 
 No suffix = plan is complete and reviewable. Keep the set small.
