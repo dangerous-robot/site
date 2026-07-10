@@ -2,7 +2,7 @@
 
 Pre-release stages (toward 1.0.0):
 - `alpha.N`: roadmap checklist still has open items; schema may still change.
-- `beta.N`: checklist complete, schema frozen, bug fixes and content only.
+- `beta.N`: checklist complete, schema frozen; content, bug fixes, and small non-breaking refinements. No schema changes or new breaking features.
 - `rc.N`: would-ship candidate; promote to `1.0.0` if no blockers surface.
 
 Use dotted numeric identifiers (`alpha.1`, `alpha.2`) so they sort numerically.
