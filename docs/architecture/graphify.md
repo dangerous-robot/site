@@ -63,6 +63,26 @@ Once built, query without rebuilding:
 
 The graphify skill (`/graphify "<question>"`) uses `graphify-out/graph.json` directly when it exists.
 
+## Publishing the interactive graph
+
+The interactive `graph.html` is served via GitHub Pages at
+`dangerousrobot.org/graphify/graph.html`, unlisted (not linked from the site)
+and non-indexed. Because `graphify-out/` is git-ignored, publishing means
+copying the built HTML into `public/` (which Astro copies verbatim into
+`dist/`) and re-applying the noindex guard:
+
+```
+mkdir -p public/graphify
+cp graphify-out/graph.html public/graphify/graph.html
+# re-inject the noindex meta (regenerated graph.html does not carry it)
+.venv/bin/python -c "from pathlib import Path; p=Path('public/graphify/graph.html'); h=p.read_text('utf-8'); \
+p.write_text(h.replace('<head>', '<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">', 1)) if 'name=\"robots\"' not in h else None"
+```
+
+`public/robots.txt` also disallows `/graphify/`, so crawling is blocked even if
+the meta is ever dropped. The file is 2.6MB and re-commits as a large diff each
+time it is republished, so republish deliberately, not on every rebuild.
+
 ## Keeping it current
 
 - **After code or doc changes:** re-run both steps (extract, then label). Extraction is cache-accelerated, so only new or changed files hit GreenPT; a warm-cache rebuild of the full corpus is a couple of minutes and ~$0.05. Always pair them so graph.json and the report stay on one clustering (see the guard note above).

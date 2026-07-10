@@ -1,4 +1,5 @@
 User-agent: *
 Allow: /
+Disallow: /graphify/
 
 Sitemap: https://dangerousrobot.org/sitemap-index.xml
