@@ -431,7 +431,7 @@ Deferred (Tier 2):
 - Researcher internals (parallel tool dispatch): [`docs/architecture/research-flow.md`](../architecture/research-flow.md) § 6
 - `VerifyConfig` knobs: [`docs/architecture/research-workflow.md`](../architecture/research-workflow.md) § Pipeline configuration knobs
 - Wayback steady-state design: [`docs/plans/wayback-archive-job.md`](wayback-archive-job.md)
-- Search vs fetch backend distinction: [`docs/plans/multi-provider.md`](multi-provider.md) § Part 3
+- Search vs fetch backend distinction: [`docs/plans/multi-provider.md`](completed/multi-provider.md) § Part 3
 - Company metadata enrichment (Tier 1 lands `sec_cik` first): [`docs/plans/source-quality-followups.md`](source-quality-followups.md) § Company metadata enrichment
 - Host blocklist interaction: [`docs/plans/completed/researcher-host-blocklist.md`](completed/researcher-host-blocklist.md)
 - Recently-completed CLI cleanup that unblocked the in-Tier-1 `dr stats` subcommand: [`docs/plans/completed/dr-cli-output-cleanup_phase2_completed.md`](completed/dr-cli-output-cleanup_phase2_completed.md)

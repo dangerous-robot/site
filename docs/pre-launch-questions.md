@@ -23,7 +23,7 @@ Stated as a principle (P3 in [`pre-launch-quick-fixes.md`](plans/completed/pre-l
 - (b) Per-agent model caps in config — `pipeline/orchestrator/cli.py` or `VerifyConfig` enforces tier ceilings.
 - (c) Cost-per-claim ceilings with escalation gates.
 
-Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Part 2 of [`multi-provider.md`](plans/multi-provider.md). 2026-07-03 note: `VerifyConfig` now carries per-agent model fields plus `model_for()`, most of option (b)'s machinery; tier ceilings are the missing piece.
+Option (b) is the cheapest enforceable form. Decision feeds the audit sidecar `models_used` display (S6) and Part 2 of [`multi-provider.md`](plans/completed/multi-provider.md). 2026-07-03 note: `VerifyConfig` now carries per-agent model fields plus `model_for()`, most of option (b)'s machinery; tier ceilings are the missing piece.
 
 ---
 

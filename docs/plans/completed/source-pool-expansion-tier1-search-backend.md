@@ -109,7 +109,7 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 - **Exa integration.** Deferred. Revisit if Tavily fails the rubric.
 - **`dr stats` subcommand.** Tracked as a follow-up plan; not required for the search-backend evaluation.
 - **Replacing Brave entirely.** Brave stays as fallback regardless of the decision.
-- **Fetch backend swap.** Owned by [`multi-provider.md`](../multi-provider.md) § Part 3 (GreenPT Scraper API).
+- **Fetch backend swap.** Owned by [`multi-provider.md`](multi-provider.md) § Part 3 (GreenPT Scraper API).
 
 ## Open questions
 
@@ -121,7 +121,7 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 - Main Tier 1 plan (Paths 1–3 + shared infrastructure prerequisites): [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md)
 - Follow-on prefetch passthrough: [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md)
 - Recently-completed CLI cleanup (cleared the way for a future `dr stats`): [`dr-cli-output-cleanup_phase2_completed.md`](dr-cli-output-cleanup_phase2_completed.md)
-- Fetch-backend distinction: [`multi-provider.md`](../multi-provider.md) § Part 3
+- Fetch-backend distinction: [`multi-provider.md`](multi-provider.md) § Part 3
 - Researcher internals: [`research-flow.md`](../../architecture/research-flow.md) § 6
 - Pipeline configuration: [`research-workflow.md`](../../architecture/research-workflow.md) § Pipeline configuration knobs
 - Host blocklist interaction: [`researcher-host-blocklist.md`](researcher-host-blocklist.md)

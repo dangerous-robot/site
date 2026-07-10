@@ -10,7 +10,7 @@ A real-LLM, real-entity end-to-end test that verifies the `dr` pipeline produces
 
 - The pipeline is approaching maturity but has no known-good regression case.
 - The vocab rename pass ([`completed/v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md), which absorbed the old vocab-rename-pass stub) shipped without this safety net; future sweeping renames still want it.
-- Multi-provider plan ([`multi-provider.md`](multi-provider.md)) needs a baseline to compare drift against.
+- Multi-provider plan ([`multi-provider.md`](completed/multi-provider.md)) needs a baseline to compare drift against.
 
 ## Goal
 

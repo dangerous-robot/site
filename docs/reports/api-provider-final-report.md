@@ -1,7 +1,7 @@
 # API provider evaluation — final report
 
 Date: 2026-04-26
-Scope: provider evaluation spike. No project changes; no reusable code shipped. Goal was to determine which non-Anthropic providers and models can handle the LLM call shapes used by the `dr` pipeline (researcher / analyst / auditor / ingestor). Findings feed [`docs/plans/multi-provider.md`](../plans/multi-provider.md).
+Scope: provider evaluation spike. No project changes; no reusable code shipped. Goal was to determine which non-Anthropic providers and models can handle the LLM call shapes used by the `dr` pipeline (researcher / analyst / auditor / ingestor). Findings feed [`docs/plans/multi-provider.md`](../plans/completed/multi-provider.md).
 
 ## Bottom line
 

@@ -58,7 +58,7 @@ The following triage items are NOT in this plan; they have their own plans or de
 - Vocabulary cohesion deeper pass beyond P1+P2 → [`vocab-rename-pass_stub.md`](v0.1.0-vocab-workflow-landing.md)
 - Acceptance test fixture (Anthropic/Claude per Q8) → [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md)
 - Source trust metadata (4 axes) → [`source-trust-metadata_stub.md`](source-trust-metadata_superseded.md)
-- Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](../multi-provider.md)
+- Multi-provider plan (Infomaniak first; GreenPT considered) → existing [`multi-provider.md`](multi-provider.md)
 - Polarity normalization (Q2) → [`docs/pre-launch-questions.md`](../../pre-launch-questions.md)
 - Operator queue + batch workflow → [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2)
 - Data lifecycle policy → [`data-lifecycle-policy_stub.md`](../data-lifecycle-policy_stub.md) (v2)
@@ -86,7 +86,7 @@ After all items in scope land:
 | ST1 source trust metadata | [`source-trust-metadata_stub.md`](source-trust-metadata_superseded.md) |
 | P4 acceptance test fixture | [`acceptance-test-fixture_stub.md`](../acceptance-test-fixture_stub.md) |
 | PT4 vocab cohesion deeper pass | [`vocab-rename-pass_stub.md`](v0.1.0-vocab-workflow-landing.md) |
-| Multi-provider plan | [`multi-provider.md`](../multi-provider.md) |
+| Multi-provider plan | [`multi-provider.md`](multi-provider.md) |
 | ST2 polarity normalization | [Q2](../../pre-launch-questions.md) |
 | ST3 in-page feedback | [`public-feedback.md`](../public-feedback.md) (v2) |
 | PT1 operator queue + batch | [`operator-queue-batch-workflow_stub.md`](../operator-queue-batch-workflow_stub.md) (v2) |

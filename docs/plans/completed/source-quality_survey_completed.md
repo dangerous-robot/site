@@ -21,7 +21,7 @@ These plans already claim pieces of the source quality space. Any new plans shou
 | [`pipeline-dedup-detection_stub.md`](../drafts/pipeline-dedup-detection_stub.md) | URL canonicalization; match-and-reuse existing sources before ingest; claim identity dedup | Query-level deduplication (queries that surface overlapping URLs); query quality |
 | [`pipeline-state-machine_stub.md`](../drafts/pipeline-state-machine_stub.md) | Persisted claim workspace; resumable pipeline; feedback loops between agents | Specific quality signals or scoring logic |
 | [`parent-company-inference.md`](../parent-company-inference.md) | Inferring `parent_company` slug during product onboarding | Using parent company in scorer or analyst reasoning (cross-referenced in `research-quality-ideas.md`) |
-| [`multi-provider.md`](../multi-provider.md) | Per-agent model selection; Infomaniak/GreenPT integration; tool-free researcher variants | Source quality signals; scoring; quality gates |
+| [`multi-provider.md`](multi-provider.md) | Per-agent model selection; Infomaniak/GreenPT integration; tool-free researcher variants | Source quality signals; scoring; quality gates |
 
 ---
 

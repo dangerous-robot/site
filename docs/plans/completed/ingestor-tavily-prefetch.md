@@ -98,7 +98,7 @@ Caveat: estimate assumes Tavily's `raw_content` is Markdown-or-plain-text. If ve
 ## Cross-references
 
 - Companion search-backend plan: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md)
-- Fetch-backend swap (the broader 403 fix): [`multi-provider.md`](../multi-provider.md) § Part 3
+- Fetch-backend swap (the broader 403 fix): [`multi-provider.md`](multi-provider.md) § Part 3
 - Ingestor terminal-fetch handling: `pipeline/ingestor/tools/web_fetch.py` (`TerminalFetchError`, `TERMINAL_STATUS_CODES`)
 - Audit-trail acquisition plumbing: [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md) § Audit-trail acquisition plumbing
 

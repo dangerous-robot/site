@@ -4,7 +4,7 @@
 
 ## Context
 
-`scripts/poc-multi-provider/` was the working directory for the multi-provider evaluation that produced [`docs/plans/multi-provider.md`](../multi-provider.md) and [`docs/reports/api-provider-final-report.md`](../../reports/api-provider-final-report.md). The directory is gitignored (`.gitignore:37`) and contains a mix of: two reusable harnesses (`run_tests.py` for Infomaniak, `run_greenpt.py` for GreenPT), a wire tracer (`trace_infomaniak.py`), seven one-off `probe_*.py` spikes, three rollup `SUMMARY-*.md` docs, eight `results-*.md` per-model reports, four `trace-*.json` dumps, an Infomaniak support ticket, and a shared `.env.poc`.
+`scripts/poc-multi-provider/` was the working directory for the multi-provider evaluation that produced [`docs/plans/multi-provider.md`](multi-provider.md) and [`docs/reports/api-provider-final-report.md`](../../reports/api-provider-final-report.md). The directory is gitignored (`.gitignore:37`) and contains a mix of: two reusable harnesses (`run_tests.py` for Infomaniak, `run_greenpt.py` for GreenPT), a wire tracer (`trace_infomaniak.py`), seven one-off `probe_*.py` spikes, three rollup `SUMMARY-*.md` docs, eight `results-*.md` per-model reports, four `trace-*.json` dumps, an Infomaniak support ticket, and a shared `.env.poc`.
 
 The harnesses still have ongoing utility — every time a new provider/model is considered (Part 3 of the multi-provider plan, future GreenPT promotion, any new Infomaniak model rollout), an agent or operator needs to fire T1-T5 at it and read the result. The probes and reports do not — they captured one-time findings that are now reflected in the final report and the multi-provider plan's "Observed quirks" section.
 
