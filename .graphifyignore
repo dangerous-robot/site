@@ -1,0 +1,30 @@
+# graphify corpus scope (gitignore syntax).
+# Because this file exists, graphify no longer falls back to the root
+# .gitignore, so the still-relevant .gitignore patterns are duplicated below.
+
+# --- Out of graphify scope (code + docs only) ---
+research/          # large, regenerated research corpus; likely moving to its own repo
+public/            # static assets / images, no architectural value
+
+# --- Mirrored from .gitignore (not covered by graphify built-ins) ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+.astro/
+.env
+.env.local
+.env.*.local
+*.log
+/logs/
+docs/plans/drafts/
+.claude/
+*.pyc
+scripts/llm-tester/.env.poc
+scripts/llm-tester/archive/
+scripts/llm-tester/matrix-*.md
+seo-runs/
+docs/reports/*.pdf
+
+# Note: node_modules/, dist/, .venv/, __pycache__/, graphify-out/, .git/,
+# uv.lock, and package-lock.json are skipped by graphify's built-in rules.
