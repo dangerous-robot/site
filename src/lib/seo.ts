@@ -1,13 +1,15 @@
 /**
- * SEO indexing controls for alpha-stage detail pages.
+ * SEO indexing controls for pre-release detail pages.
  *
- * The site is in alpha. Detail pages under /research/claims/{entity}/{claim},
+ * Detail pages under /research/claims/{entity}/{claim},
  * /research/sources/{yyyy}/{slug}, and /research/entities/{type}/{slug} are generated
  * from AI agent research and may be incomplete or wrong. We do not
  * want them in the search index until the content stabilizes.
  *
- * Flip the flag below to true (and rebuild + redeploy) when alpha ends
- * to make these pages indexable and re-include them in the sitemap.
+ * Flip trigger: GA (the 1.0.0 release). Pages stay noindexed through the
+ * remaining beta/rc stages. At 1.0.0, flip the flag below to true (and
+ * rebuild + redeploy) to make these pages indexable and re-include them in
+ * the sitemap. The flag name keeps its historical `ALPHA` spelling.
  *
  * URLs are stable across the flip. Already-published pages remain
  * accessible at the same paths; the only thing that changes is the

@@ -144,7 +144,7 @@ remain indexable.
 
 ### When the pre-release noindex period ends
 
-The flip trigger (beta, rc, or GA) is an open decision, tracked in `docs/UNSCHEDULED.md` § SEO post-restructure follow-ups. The flag name keeps its historical `ALPHA` spelling until then.
+The flip trigger is **GA (the 1.0.0 release)**. Detail pages stay noindexed through all remaining beta and rc stages; flip at 1.0.0. Tracked in `docs/UNSCHEDULED.md` § SEO post-restructure follow-ups. The flag name keeps its historical `ALPHA` spelling until then.
 
 To re-enable indexing of detail pages:
 
