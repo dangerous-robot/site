@@ -4,8 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>Internal reports — dangerousrobot.org</title>
-<link rel="stylesheet" href="artifacts/src/shared.css" />
+<title>Internal dashboard — dangerousrobot.org</title>
+<link rel="stylesheet" href="reports/codebase-analysis-2026-07/artifacts/src/shared.css" />
 <style>
   body { padding: 0 0 60px; }
   .wrap { max-width: 880px; }
@@ -47,7 +47,7 @@
 <div class="topbar">
   <div class="brand">
     <div class="eyebrow">dangerousrobot.org · internal · not published to GitHub Pages</div>
-    <div class="title">Reports index</div>
+    <div class="title">Internal dashboard</div>
   </div>
 </div>
 <div class="wrap">
@@ -55,35 +55,35 @@
   <div class="notice">
     <span>⚠</span>
     <span>This page and everything it links to lives under <code>docs/</code>, which the Astro build never
-    reads — nothing here reaches <code>dist/</code> or GitHub Pages. Open <code>index.html</code> directly
-    from a checkout, or serve <code>docs/reports/codebase-analysis-2026-07/</code> locally.</span>
+    reads — nothing here reaches <code>dist/</code> or GitHub Pages. Open <code>internal-dashboard.html</code>
+    directly from a checkout, or serve <code>docs/</code> locally.</span>
   </div>
 
   <section>
     <h2>Codebase analysis — 2026-07</h2>
     <p class="lede">Adversarial architecture and taxonomy review of the site and pipeline. Start with
-      <a href="ANALYSIS.md">ANALYSIS.md</a>; methodology and limitations are in
-      <a href="README.md">README.md</a>.</p>
+      <a href="reports/codebase-analysis-2026-07/ANALYSIS.md">ANALYSIS.md</a>; methodology and limitations are in
+      <a href="reports/codebase-analysis-2026-07/README.md">README.md</a>.</p>
     <div class="cards">
-      <a class="card" href="artifacts/architecture-explorer.html">
+      <a class="card" href="reports/codebase-analysis-2026-07/artifacts/architecture-explorer.html">
         <div class="name">🗺️ Architecture explorer</div>
         <div class="desc">Zoomable L1→L3 map with metrics, findings, and a current-vs-proposed toggle.</div>
-        <span class="path">artifacts/architecture-explorer.html</span>
+        <span class="path">reports/codebase-analysis-2026-07/artifacts/architecture-explorer.html</span>
       </a>
-      <a class="card" href="artifacts/taxonomy-explorer.html">
+      <a class="card" href="reports/codebase-analysis-2026-07/artifacts/taxonomy-explorer.html">
         <div class="name">📖 Taxonomy &amp; glossary explorer</div>
         <div class="desc">Contested terminology across code, docs, and reader-facing copy, plus word clouds.</div>
-        <span class="path">artifacts/taxonomy-explorer.html</span>
+        <span class="path">reports/codebase-analysis-2026-07/artifacts/taxonomy-explorer.html</span>
       </a>
-      <a class="card" href="artifacts/findings-dashboard.html">
+      <a class="card" href="reports/codebase-analysis-2026-07/artifacts/findings-dashboard.html">
         <div class="name">🔍 Findings dashboard</div>
         <div class="desc">All 188 findings, filterable, with the congestion quadrant and clean-slate verdicts.</div>
-        <span class="path">artifacts/findings-dashboard.html</span>
+        <span class="path">reports/codebase-analysis-2026-07/artifacts/findings-dashboard.html</span>
       </a>
-      <a class="card" href="artifacts/graphify-graph.html">
+      <a class="card" href="reports/codebase-analysis-2026-07/artifacts/graphify-graph.html">
         <div class="name">🕸️ Graphify knowledge graph</div>
         <div class="desc">Force-directed structural graph of the repo — communities, god nodes, edges.</div>
-        <span class="path">artifacts/graphify-graph.html</span>
+        <span class="path">reports/codebase-analysis-2026-07/artifacts/graphify-graph.html</span>
       </a>
     </div>
   </section>
@@ -92,8 +92,8 @@
     <h2>Diagrams</h2>
     <p class="lede">Mermaid sources — render natively on GitHub, or paste into any Mermaid viewer.</p>
     <div class="filelist">
-      <a href="diagrams/architecture.md">diagrams/architecture.md <span class="n">— L1/L2/L3 context, container, and focal component views</span></a>
-      <a href="diagrams/flows.md">diagrams/flows.md <span class="n">— verify_claim sequence, claim state machine (current vs. documented)</span></a>
+      <a href="reports/codebase-analysis-2026-07/diagrams/architecture.md">reports/codebase-analysis-2026-07/diagrams/architecture.md <span class="n">— L1/L2/L3 context, container, and focal component views</span></a>
+      <a href="reports/codebase-analysis-2026-07/diagrams/flows.md">reports/codebase-analysis-2026-07/diagrams/flows.md <span class="n">— verify_claim sequence, claim state machine (current vs. documented)</span></a>
     </div>
   </section>
 
@@ -101,16 +101,16 @@
     <h2>Data</h2>
     <p class="lede">Everything the report and artifacts cite traces back to one of these files.</p>
     <div class="filelist">
-      <a href="data/architecture.json">data/architecture.json <span class="n">— component model + proposed-change deltas</span></a>
-      <a href="data/findings.json">data/findings.json <span class="n">— 188 findings, evidence, verifier verdicts, clean slates</span></a>
-      <a href="data/terminology.json">data/terminology.json <span class="n">— concepts, variants, collisions, canonical recommendations</span></a>
-      <a href="data/metrics.json">data/metrics.json <span class="n">— LOC, churn, complexity, centrality, hotspot ranking</span></a>
-      <a href="data/enum-drift.json">data/enum-drift.json <span class="n">— Python enum vs. Zod schema diff</span></a>
-      <a href="data/data-conformance.json">data/data-conformance.json <span class="n">— research/ content shape sweep</span></a>
-      <a href="data/word-frequency/docs.json">data/word-frequency/docs.json</a>
-      <a href="data/word-frequency/pipeline-identifiers.json">data/word-frequency/pipeline-identifiers.json</a>
-      <a href="data/word-frequency/site-identifiers.json">data/word-frequency/site-identifiers.json</a>
-      <a href="data/word-frequency/ui-copy.json">data/word-frequency/ui-copy.json</a>
+      <a href="reports/codebase-analysis-2026-07/data/architecture.json">data/architecture.json <span class="n">— component model + proposed-change deltas</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/findings.json">data/findings.json <span class="n">— 188 findings, evidence, verifier verdicts, clean slates</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/terminology.json">data/terminology.json <span class="n">— concepts, variants, collisions, canonical recommendations</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/metrics.json">data/metrics.json <span class="n">— LOC, churn, complexity, centrality, hotspot ranking</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/enum-drift.json">data/enum-drift.json <span class="n">— Python enum vs. Zod schema diff</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/data-conformance.json">data/data-conformance.json <span class="n">— research/ content shape sweep</span></a>
+      <a href="reports/codebase-analysis-2026-07/data/word-frequency/docs.json">data/word-frequency/docs.json</a>
+      <a href="reports/codebase-analysis-2026-07/data/word-frequency/pipeline-identifiers.json">data/word-frequency/pipeline-identifiers.json</a>
+      <a href="reports/codebase-analysis-2026-07/data/word-frequency/site-identifiers.json">data/word-frequency/site-identifiers.json</a>
+      <a href="reports/codebase-analysis-2026-07/data/word-frequency/ui-copy.json">data/word-frequency/ui-copy.json</a>
     </div>
   </section>
 

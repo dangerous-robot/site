@@ -74,7 +74,7 @@ cp graphify-out/graph.html docs/reports/codebase-analysis-2026-07/artifacts/grap
 ```
 
 `docs/` is never read by the Astro build, so nothing under it reaches `dist/`
-or the live site. Open `docs/reports/codebase-analysis-2026-07/index.html`
+or the live site. Open `docs/internal-dashboard.html`
 locally to browse it alongside the other internal reports. The file is
 2.6MB and re-commits as a large diff each time it's refreshed, so update it
 deliberately, not on every rebuild.
