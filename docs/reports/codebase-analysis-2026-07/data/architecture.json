@@ -1,0 +1,6321 @@
+{
+ "provenance": {
+  "commit": "43a1575d73a38932173dab461d4d66c15ce9efdb",
+  "generated_by": "analysis synthesis (see README.md); metrics/import edges deterministic, L3 decomposition + dataflow edges analyst judgment"
+ },
+ "nodes": [
+  {
+   "id": "reader",
+   "level": "l1",
+   "kind": "actor",
+   "name": "Reader",
+   "role": "Visits dangerousrobot.org to read claim verdicts and sources."
+  },
+  {
+   "id": "operator",
+   "level": "l1",
+   "kind": "actor",
+   "name": "Operator",
+   "role": "Runs the dr CLI, reviews checkpoints, approves and publishes claims."
+  },
+  {
+   "id": "system",
+   "level": "l1",
+   "kind": "system",
+   "name": "dangerousrobot.org research system",
+   "role": "Researches AI-related claims with LLM agents, records auditable verdicts, publishes them as a static site."
+  },
+  {
+   "id": "ext-llm",
+   "level": "l1",
+   "kind": "external",
+   "name": "LLM providers",
+   "role": "Infomaniak (default), GreenPT, Anthropic, OpenAI, Google - resolved per agent."
+  },
+  {
+   "id": "ext-search",
+   "level": "l1",
+   "kind": "external",
+   "name": "Search backends",
+   "role": "Tavily, Brave, arXiv - candidate-source discovery."
+  },
+  {
+   "id": "ext-wayback",
+   "level": "l1",
+   "kind": "external",
+   "name": "Wayback Machine",
+   "role": "Archival snapshots for cited sources."
+  },
+  {
+   "id": "ext-github",
+   "level": "l1",
+   "kind": "external",
+   "name": "GitHub (Actions + Pages)",
+   "role": "CI quality gate, static hosting, custom domain."
+  },
+  {
+   "id": "pipeline",
+   "level": "l2",
+   "parent": "system",
+   "name": "Research pipeline (Python)",
+   "role": "PydanticAI agents (researcher, ingestor, analyst, auditor) orchestrated by the dr CLI; writes research content.",
+   "paths": [
+    "pipeline/"
+   ],
+   "proposed_changes": [
+    {
+     "op": "split",
+     "target": "orchestrator/pipeline.py -> a thin verify_claim/onboard_entity coordinator + extracted persistence, checkpoint, and step-runner modules",
+     "rationale": "The engine fuses four flows (research orchestration, persistence, checkpoints, step re-entry) in one 2.2k-LOC file; the repo's own vision doc rejects a monolithic orchestrator.",
+     "finding_id": "PAT-03"
+    },
+    {
+     "op": "add",
+     "target": "CI: pytest gate on pipeline/tests/",
+     "rationale": "The 13.8k-line suite never runs in CI; regressions can reach production untested.",
+     "finding_id": "TESTS-01"
+    }
+   ]
+  },
+  {
+   "id": "content-store",
+   "level": "l2",
+   "parent": "system",
+   "name": "Content store (research/)",
+   "role": "Markdown+YAML files: claims with .audit.yaml sidecars, sources, entities, templates.yaml. The shared medium between pipeline and site.",
+   "paths": [
+    "research/"
+   ]
+  },
+  {
+   "id": "site",
+   "level": "l2",
+   "parent": "system",
+   "name": "Astro site (src/)",
+   "role": "Astro 6 static site; Zod content collections read research/ at build time and render it.",
+   "paths": [
+    "src/",
+    "astro.config.ts"
+   ]
+  },
+  {
+   "id": "tooling",
+   "level": "l2",
+   "parent": "system",
+   "name": "Tooling & CI",
+   "role": "Build/quality entry points (npm, invoke, GitHub workflows), citation checks, SEO scripts.",
+   "paths": [
+    "scripts/",
+    ".github/",
+    "tasks.py",
+    "package.json"
+   ]
+  },
+  {
+   "id": "docs",
+   "level": "l2",
+   "parent": "system",
+   "name": "Docs",
+   "role": "Architecture reference, plans lifecycle, reports, AGENTS.md operating manual.",
+   "paths": [
+    "docs/",
+    "AGENTS.md"
+   ]
+  },
+  {
+   "id": "agents-trio.ingestor-agent",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Ingestor agent definition",
+   "role": "PydanticAI agent that turns one URL into a structured SourceFile (frontmatter + body + slug + year). Owns the runtime deps bag (http client, prefetched bodies, wayback side-channels) and registers the two fetch tools.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/ingestor/agent.py",
+    "pipeline/ingestor/models.py",
+    "pipeline/ingestor/instructions.md",
+    "pipeline/ingestor/__init__.py"
+   ],
+   "community_check": "disagree: graphify splits the output schema (community 30, Source File Schema) from the agent definition (community 94), but the schema is the agent's output contract and changes with it; they are one unit.",
+   "metrics": {
+    "loc": 217,
+    "churn_commits": 13,
+    "ccn_total": 21,
+    "best_hotspot_rank": 33
+   },
+   "metric_files": [
+    "pipeline/ingestor/__init__.py",
+    "pipeline/ingestor/agent.py",
+    "pipeline/ingestor/models.py"
+   ],
+   "finding_ids": [
+    "AT-04",
+    "AT-05",
+    "AT-08",
+    "AT-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "agents-trio.ingestor-tools",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Fetch and archive tools",
+   "role": "Page fetch + BeautifulSoup metadata extraction, terminal-status vocabulary (TerminalFetchError), and the archive.org TimeGate/Save-Page-Now fallback waterfall.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/ingestor/tools/web_fetch.py",
+    "pipeline/ingestor/tools/wayback.py",
+    "pipeline/ingestor/tools/__init__.py"
+   ],
+   "community_check": "agree: communities 48 (Page Content Extractor) and 27 (Archive.org Timegate) map one-to-one onto the two tool files; my grouping is just one level coarser.",
+   "metrics": {
+    "loc": 223,
+    "churn_commits": 9,
+    "ccn_total": 28,
+    "best_hotspot_rank": 57
+   },
+   "metric_files": [
+    "pipeline/ingestor/tools/__init__.py",
+    "pipeline/ingestor/tools/wayback.py",
+    "pipeline/ingestor/tools/web_fetch.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "agents-trio.ingestor-validation",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Ingestor output validation",
+   "role": "Post-generation semantic checks on a SourceFile: URL match, slug format, year plausibility, archive domain, key-quote presence. Currently reachable only from the step-ingest CLI command.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/ingestor/validation.py"
+   ],
+   "community_check": "agree: community 72 (Ingestor Output Validation) matches this module exactly.",
+   "metrics": {
+    "loc": 91,
+    "churn_commits": 1,
+    "ccn_total": 17,
+    "best_hotspot_rank": 85
+   },
+   "metric_files": [
+    "pipeline/ingestor/validation.py"
+   ],
+   "finding_ids": [
+    "AT-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "agents-trio.analyst-agent",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Analyst agent",
+   "role": "Renders verdict, confidence, narrative, topics, verification level, and SEO metadata from claim text plus the ingested source pool. One file holds the output models, two truncation/markdown field validators, two Agent instances, and the prompt builder.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/analyst/agent.py",
+    "pipeline/analyst/instructions.md",
+    "pipeline/analyst/__init__.py"
+   ],
+   "community_check": "disagree: graphify puts AnalystOutput into a cross-package community (0, Claim Verification Models) together with the auditor's ComparisonResult and the ingestor's TerminalFetchError; the smear reflects how many unrelated concerns this file mixes rather than a real unit.",
+   "metrics": {
+    "loc": 314,
+    "churn_commits": 18,
+    "ccn_total": 48,
+    "best_hotspot_rank": 16
+   },
+   "metric_files": [
+    "pipeline/analyst/__init__.py",
+    "pipeline/analyst/agent.py"
+   ],
+   "finding_ids": [
+    "AT-03",
+    "AT-04",
+    "AT-06",
+    "AT-07",
+    "AT-08",
+    "TAXD-03",
+    "TAXD-04",
+    "TAXD-13"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "agents-trio.auditor-agent",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Auditor (Evaluator) agent",
+   "role": "Blind re-assessment of a drafted claim: builds a verdict-free ClaimBundle (information asymmetry) and asks an independent LLM for its own verdict, confidence, and evidence gaps.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/auditor/agent.py",
+    "pipeline/auditor/models.py",
+    "pipeline/auditor/bundle.py",
+    "pipeline/auditor/instructions.md",
+    "pipeline/auditor/__init__.py"
+   ],
+   "community_check": "agree: communities 26 (Auditor Agent Bundle) and 44 (Auditor Prompt Builder) cover exactly these files.",
+   "metrics": {
+    "loc": 188,
+    "churn_commits": 10,
+    "ccn_total": 9,
+    "best_hotspot_rank": 72
+   },
+   "metric_files": [
+    "pipeline/auditor/__init__.py",
+    "pipeline/auditor/agent.py",
+    "pipeline/auditor/bundle.py",
+    "pipeline/auditor/models.py"
+   ],
+   "finding_ids": [
+    "AT-01",
+    "AT-06",
+    "AT-08",
+    "AT-09",
+    "TAXD-15"
+   ],
+   "proposed_changes": [
+    {
+     "op": "fix",
+     "target": "pass independence/kind source data into the auditor's context alongside the confidence-cap instruction",
+     "rationale": "The auditor is instructed to apply the confidence cap but never receives the independence/kind data the cap depends on.",
+     "finding_id": "AT-01"
+    }
+   ]
+  },
+  {
+   "id": "agents-trio.auditor-comparison",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Verdict comparison and reporting",
+   "role": "Deterministic scoring of analyst-vs-auditor disagreement (verdict distance, confidence distance, needs_review) and text/JSON report formatting.",
+   "subsystem": "agents-trio",
+   "paths": [
+    "pipeline/auditor/compare.py",
+    "pipeline/auditor/report.py"
+   ],
+   "community_check": "agree: communities 55, 17, and 104 split along the same compare/report seam, just finer-grained.",
+   "metrics": {
+    "loc": 156,
+    "churn_commits": 2,
+    "ccn_total": 31,
+    "best_hotspot_rank": 86
+   },
+   "metric_files": [
+    "pipeline/auditor/compare.py",
+    "pipeline/auditor/report.py"
+   ],
+   "finding_ids": [
+    "AT-10",
+    "TAXD-06",
+    "TAXD-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.enum-mirror",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Shared enum mirror",
+   "role": "Eleven str-Enums plus constants (AGENT_NAMES, ACADEMIC_TOPICS/ORIGINS, DEFAULT_MODEL) that hand-mirror the Zod enums in src/content.config.ts. The vocabulary every pipeline module imports.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/models.py"
+   ],
+   "community_check": "agree: graphify community 42 'Shared Enum Models' matches this unit exactly, and notably separates it from the model-resolution code in the same file",
+   "metrics": {
+    "loc": 311,
+    "churn_commits": 23,
+    "ccn_total": 18,
+    "best_hotspot_rank": 8
+   },
+   "metric_files": [
+    "pipeline/common/models.py"
+   ],
+   "finding_ids": [
+    "AT-11",
+    "CMN-01",
+    "CMN-02",
+    "CMN-03",
+    "CMN-11",
+    "PAT-01",
+    "PAT-02",
+    "TAXC-01",
+    "TAXC-05",
+    "TAXC-09",
+    "TAXD-10",
+    "TAXD-13"
+   ],
+   "proposed_changes": [
+    {
+     "op": "merge",
+     "target": "single Pydantic vocabulary module, Zod schema generated from it (or both generated from a shared JSON schema)",
+     "rationale": "The claim/source vocabulary is hand-copied across 3-4 layers (Python enums, Zod, linter, display copy) guarded only by comments; drift has already reached VerdictSeverity and several field names.",
+     "finding_id": "CMN-01"
+    },
+    {
+     "op": "rename",
+     "target": "one canonical name per concept (Category class -> topics, auditor -> evaluator throughout)",
+     "rationale": "Category/topics, auditor/evaluator, and criterion/template each wear 2-4 names across the Python/TS boundary, burning schema-validation retries and confusing contributors.",
+     "finding_id": "TAXC-01"
+    }
+   ]
+  },
+  {
+   "id": "common.provider-gateway",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Model resolution / provider gateway",
+   "role": "resolve_model maps 'infomaniak:'/'greenpt:'/'||' spec strings to PydanticAI models, carrying per-model quirk flags (reasoning strip, native structured output) and an Infomaniak response-logging httpx hook.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/models.py"
+   ],
+   "community_check": "agree: community 46 'Model Resolution Layer' is a distinct community even though it shares a file with the enums \u2014 the graph itself argues for splitting models.py",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.content-io",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Research content I/O",
+   "role": "Frontmatter parse/serialize with a custom YAML dumper, slug-based loaders for sources/claims/entities, git-based repo-root resolution, and read helpers for the .audit.yaml sidecar.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/frontmatter.py",
+    "pipeline/common/content_loader.py",
+    "pipeline/common/sidecar.py"
+   ],
+   "community_check": "disagree: graphify splits this into three communities (5 Frontmatter Utilities, 19 Content File Loader, 112 Audit Sidecar Read Write) along file lines; functionally it is one read/write layer over research/ and should be reviewed as such",
+   "metrics": {
+    "loc": 214,
+    "churn_commits": 7,
+    "ccn_total": 40,
+    "best_hotspot_rank": 43
+   },
+   "metric_files": [
+    "pipeline/common/content_loader.py",
+    "pipeline/common/frontmatter.py",
+    "pipeline/common/sidecar.py"
+   ],
+   "finding_ids": [
+    "CMN-05",
+    "CMN-07",
+    "CMN-08",
+    "PAT-05",
+    "TAXD-07"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.source-quality",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Source-quality heuristics",
+   "role": "Pre- and post-ingest URL/source judgement: publisher-tier classification, host blocklist filtering, canonical URL dedup, and slug derivation.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/source_classification.py",
+    "pipeline/common/publisher_quality.py",
+    "pipeline/common/blocklist.py",
+    "pipeline/common/canonical_url.py",
+    "pipeline/common/utils.py"
+   ],
+   "community_check": "disagree: the graph splits this across communities 10 (blocklist + publisher quality), 22 (classification + slugify), and 6 (canonical URL); the cross-file private import from publisher_quality into source_classification shows the boundary is already blurred in code, so one unit is more honest",
+   "metrics": {
+    "loc": 428,
+    "churn_commits": 11,
+    "ccn_total": 78,
+    "best_hotspot_rank": 32
+   },
+   "metric_files": [
+    "pipeline/common/blocklist.py",
+    "pipeline/common/canonical_url.py",
+    "pipeline/common/publisher_quality.py",
+    "pipeline/common/source_classification.py",
+    "pipeline/common/utils.py"
+   ],
+   "finding_ids": [
+    "CMN-04",
+    "CMN-10",
+    "TAXC-11"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.templates",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Claim template engine",
+   "role": "Loads research/templates.yaml, renders claim text by entity substitution and vocabulary-slot expansion, and validates that analyst titles are reachable from the template grammar.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/templates.py"
+   ],
+   "community_check": "agree: community 1 'Claim Template Engine' matches the file",
+   "metrics": {
+    "loc": 230,
+    "churn_commits": 9,
+    "ccn_total": 43,
+    "best_hotspot_rank": 20
+   },
+   "metric_files": [
+    "pipeline/common/templates.py"
+   ],
+   "finding_ids": [
+    "CMN-03",
+    "CMN-09",
+    "TAXC-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.rate-and-time",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Throttling and timeouts",
+   "role": "Process-local named token buckets (one per upstream API) plus centralized HTTP timeout constants and the derived ingest wall-clock budget.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/throttle.py",
+    "pipeline/common/timeouts.py"
+   ],
+   "community_check": "disagree on granularity: the graph fragments throttle.py into three communities (90, 99, 43) and timeouts into 100; the file-level units are the real components and the fragmentation is an artifact of the singleton-wrapper pattern",
+   "metrics": {
+    "loc": 258,
+    "churn_commits": 3,
+    "ccn_total": 25,
+    "best_hotspot_rank": 37
+   },
+   "metric_files": [
+    "pipeline/common/throttle.py",
+    "pipeline/common/timeouts.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.logging-console",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Logging and console output",
+   "role": "Root-logger configuration (JSON debug log, human info log, run_id contextvar stamping) fused with operator-facing console presentation (progress glyphs, hr rule via click).",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/logging_setup.py"
+   ],
+   "community_check": "agree: community 4 'Logging Setup' matches the file, but the community label hides that two concerns (log plumbing vs CLI presentation) live inside it",
+   "metrics": {
+    "loc": 267,
+    "churn_commits": 4,
+    "ccn_total": 32,
+    "best_hotspot_rank": 34
+   },
+   "metric_files": [
+    "pipeline/common/logging_setup.py"
+   ],
+   "finding_ids": [
+    "CMN-06"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "common.instructions",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Agent instructions loader",
+   "role": "Loads per-agent instructions.md files and appends shared prompt fragments; the shared verdict-scale.md fragment lives inside the Python package directory.",
+   "subsystem": "common",
+   "paths": [
+    "pipeline/common/instructions.py",
+    "pipeline/common/verdict-scale.md"
+   ],
+   "community_check": "agree: community 45 'Agent Instructions Loader' matches",
+   "metrics": {
+    "loc": 38,
+    "churn_commits": 2,
+    "ccn_total": 6,
+    "best_hotspot_rank": 93
+   },
+   "metric_files": [
+    "pipeline/common/instructions.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "docs-accuracy.operating-contract",
+   "level": "l3",
+   "parent": "docs",
+   "name": "AGENTS.md operating contract",
+   "role": "The single contract for humans and coding agents: how the system works, roles, content rules, CLI reference, env vars, plan lifecycle and release-planning rules. Everything else claims to defer to it.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "AGENTS.md"
+   ],
+   "community_check": "disagree: the briefing lists zero graphify communities overlapping this scope, so the graph offers no grouping for the docs subsystem at all; a 320-line contract this load-bearing should surface as its own community.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "AT-11",
+    "DOCS-01",
+    "DOCS-02",
+    "DOCS-03",
+    "DOCS-04",
+    "DOCS-05",
+    "DOCS-07",
+    "DOCS-09",
+    "DOCS-11",
+    "PAT-06",
+    "TAXC-01-dup2",
+    "TAXC-05",
+    "TAXC-07",
+    "TAXC-08",
+    "TAXD-03",
+    "TAXD-03-dup2",
+    "TAXD-06-dup2",
+    "TAXD-12-dup2",
+    "TAXD-13",
+    "TAXD-13-dup2",
+    "TAXD-16"
+   ],
+   "proposed_changes": [
+    {
+     "op": "fix",
+     "target": "AGENTS.md corrected to match code (arXiv default, CLI command table) and re-verified on a cadence",
+     "rationale": "AGENTS.md contradicts the code it governs on at least two operational claims a new contributor would trust at face value.",
+     "finding_id": "DOCS-01"
+    },
+    {
+     "op": "merge",
+     "target": "one generated role/status source of truth instead of six hand-maintained tables",
+     "rationale": "Role and status tables duplicated across six docs have already produced contradictions (e.g. a 'Citation Auditor' role that does not exist in code).",
+     "finding_id": "DOCS-04"
+    }
+   ]
+  },
+  {
+   "id": "docs-accuracy.architecture-reference",
+   "level": "l3",
+   "parent": "docs",
+   "name": "Architecture reference docs",
+   "role": "Current-state descriptions of the site, content model, CI, research workflow, onboarding, source quality, and vocabulary. Ten docs, heavily cross-linked, with several overlapping restatements of roles and gates.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "docs/architecture/README.md",
+    "docs/architecture/site.md",
+    "docs/architecture/content-model.md",
+    "docs/architecture/ci-deploy.md",
+    "docs/architecture/research-workflow.md",
+    "docs/architecture/research-flow.md",
+    "docs/architecture/onboarding.md",
+    "docs/architecture/glossary.md",
+    "docs/architecture/source-quality.md",
+    "docs/architecture/graphify.md"
+   ],
+   "community_check": "disagree: no graphify community covers these files; the report groups by code symbols and leaves the doc corpus unclustered, which hides the workflow/flow/glossary overlap this review found.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "DOCS-01",
+    "DOCS-02",
+    "DOCS-04",
+    "DOCS-06",
+    "DOCS-08",
+    "DOCS-11",
+    "DOCS-12",
+    "PAT-01",
+    "PAT-06",
+    "SCI-06",
+    "TAXC-01-dup2",
+    "TAXC-02",
+    "TAXC-07",
+    "TAXC-08-dup2",
+    "TAXC-09-dup2",
+    "TAXC-11-dup2",
+    "TAXD-03-dup2",
+    "TAXD-04-dup2",
+    "TAXD-05",
+    "TAXD-06-dup2",
+    "TAXD-12-dup2",
+    "TAXD-13-dup2",
+    "TAXR-01",
+    "TAXR-03",
+    "TAXR-07",
+    "TAXR-09",
+    "TAXR-14"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "docs-accuracy.vision-and-open-questions",
+   "level": "l3",
+   "parent": "docs",
+   "name": "Vision and open design questions",
+   "role": "The two non-current-state residents of docs/architecture/: a self-declared vision doc (state-machine framing) and a 2026-04 list of unresolved design questions.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "docs/architecture/vision-state-machine.md",
+    "docs/architecture/open-issues.md"
+   ],
+   "community_check": "disagree: no graphify community in scope; these two files are categorically different from the reference docs beside them and a doc-aware clustering should separate them.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "DOCS-09",
+    "PAT-03",
+    "TAXD-04-dup2",
+    "TAXD-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "docs-accuracy.unscheduled-backlog",
+   "level": "l3",
+   "parent": "docs",
+   "name": "UNSCHEDULED backlog",
+   "role": "The single holding area for known-but-unassigned work; 371 lines of grouped work items with links into plans, drafts, and completed plans.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "docs/UNSCHEDULED.md"
+   ],
+   "community_check": "disagree: no graphify community in scope; the backlog is the highest-churn doc surface and deserves its own node/community.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "DOCS-05",
+    "DOCS-09",
+    "DOCS-10",
+    "TAXD-12-dup2"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "docs-accuracy.active-plans",
+   "level": "l3",
+   "parent": "docs",
+   "name": "Active plans and committed stubs",
+   "role": "Committed, reviewed plans plus committed _stub placeholders; the middle state of the plan lifecycle. Also currently hosts a tracked JSONL run log and six plans whose implementable scope already shipped.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "docs/plans"
+   ],
+   "community_check": "disagree: no graphify community in scope for plan files.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "DOCS-02",
+    "DOCS-07",
+    "TAXC-07",
+    "TAXC-10",
+    "TAXD-05"
+   ],
+   "proposed_changes": [
+    {
+     "op": "merge",
+     "target": "move shipped plans to docs/plans/completed/ on a lint-enforced cadence",
+     "rationale": "Six shipped-head plans squat in active docs/plans/ because the lifecycle has no rule for indefinite tails.",
+     "finding_id": "DOCS-07"
+    }
+   ]
+  },
+  {
+   "id": "docs-accuracy.completed-archive",
+   "level": "l3",
+   "parent": "docs",
+   "name": "Completed-plan archive",
+   "role": "58-file historical archive of shipped and superseded plans. Valuable as provenance (commit refs, review records), but indexed alongside live docs and containing statements that are now false.",
+   "subsystem": "docs-accuracy",
+   "paths": [
+    "docs/plans/completed"
+   ],
+   "community_check": "disagree: no graphify community in scope; the archive dominates the doc corpus by volume and un-clustered it dilutes every doc query.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "DOCS-03",
+    "DOCS-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "linter.check-library",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Check library",
+   "role": "21 pure check functions plus the hand-maintained canonical key sets and policy constants (required fields, cap rules, placeholder domains). No disk I/O; operates on pre-built indexes.",
+   "subsystem": "linter",
+   "paths": [
+    "pipeline/linter/checks.py"
+   ],
+   "community_check": "disagree: graphify splits this single module into at least five thematic clusters (52 confidence-cap, 40 field checks, 74 core, 38 claim integrity, 95 date staleness, 113 slug duplicates). The graph is seeing real sub-domains that the flat function list obscures; the module should be grouped by check scope, not left as one list.",
+   "metrics": {
+    "loc": 579,
+    "churn_commits": 16,
+    "ccn_total": 111,
+    "best_hotspot_rank": 5
+   },
+   "metric_files": [
+    "pipeline/linter/checks.py"
+   ],
+   "finding_ids": [
+    "LINT-01",
+    "LINT-02",
+    "LINT-04",
+    "LINT-06",
+    "LINT-07",
+    "LINT-08",
+    "LINT-10",
+    "PAT-01",
+    "PAT-05"
+   ],
+   "proposed_changes": [
+    {
+     "op": "rename",
+     "target": "schema-first: one Pydantic model layer (extra='forbid') driving both parse validation and the check registry",
+     "rationale": "The linter hand-duplicates half the Zod schema in prose/regex and skips value validation entirely, so invalid enum values pass lint but fail the site build.",
+     "finding_id": "LINT-01"
+    },
+    {
+     "op": "fix",
+     "target": "scope corpus-level checks (unreferenced source/entity) to the full corpus even when --entity filters the report",
+     "rationale": "--entity filtering poisons corpus-level checks: everything outside the filter is flagged as unreferenced.",
+     "finding_id": "LINT-02"
+    }
+   ]
+  },
+  {
+   "id": "linter.orchestration",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Runner / index builder",
+   "role": "Collects research/ paths, parses frontmatter and sidecars into dicts, builds entity/source ID indexes, then calls every check in a hand-written sequence.",
+   "subsystem": "linter",
+   "paths": [
+    "pipeline/linter/runner.py"
+   ],
+   "community_check": "disagree: the graph absorbed the runner into community 52 ('Confidence Cap Linter') alongside cap checks instead of treating orchestration as its own unit; the runner's identity is index-building + dispatch, not cap policy.",
+   "metrics": {
+    "loc": 140,
+    "churn_commits": 6,
+    "ccn_total": 21,
+    "best_hotspot_rank": 39
+   },
+   "metric_files": [
+    "pipeline/linter/runner.py"
+   ],
+   "finding_ids": [
+    "LINT-02",
+    "LINT-03",
+    "LINT-04"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "linter.reporting",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Issue model and report formatters",
+   "role": "LintIssue dataclass plus three formatters (full text, summary table, JSON) and the severity ordering/filter used by both CLIs.",
+   "subsystem": "linter",
+   "paths": [
+    "pipeline/linter/report.py",
+    "pipeline/linter/models.py"
+   ],
+   "community_check": "agree: community 68 ('Linter CLI Reporter') groups report.py, models.py surface, and the formatters together, matching this component.",
+   "metrics": {
+    "loc": 103,
+    "churn_commits": 4,
+    "ccn_total": 29,
+    "best_hotspot_rank": 54
+   },
+   "metric_files": [
+    "pipeline/linter/models.py",
+    "pipeline/linter/report.py"
+   ],
+   "finding_ids": [
+    "LINT-09"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "linter.cli-entry",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Standalone module CLI",
+   "role": "python -m linter entry point with its own flag vocabulary (--detail/--json/--min-severity/--output) and its own repo-root guess; wrapped by inv audit. Duplicates the dr lint command in orchestrator/cli.py.",
+   "subsystem": "linter",
+   "paths": [
+    "pipeline/linter/__main__.py"
+   ],
+   "community_check": "agree: community 68 merges __main__.py with the reporters, which matches how entangled the CLI and formatting choices are (each output mode maps to one formatter).",
+   "metrics": {
+    "loc": 50,
+    "churn_commits": 2,
+    "ccn_total": 6,
+    "best_hotspot_rank": 126
+   },
+   "metric_files": [
+    "pipeline/linter/__main__.py"
+   ],
+   "finding_ids": [
+    "LINT-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "linter.prune-tool",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Orphan-source prune tool",
+   "role": "Destructive maintenance CLI: runs the full lint pass, extracts unreferenced-source issues, and deletes those files (plus empty year dirs) under --apply.",
+   "subsystem": "linter",
+   "paths": [
+    "pipeline/linter/prune.py"
+   ],
+   "community_check": "disagree: the graph filed prune's docstring under community 52 ('Confidence Cap Linter'); it has nothing to do with cap policy \u2014 it is a side tool that piggybacks on one check's output and deserves its own node.",
+   "metrics": {
+    "loc": 58,
+    "churn_commits": 2,
+    "ccn_total": 12,
+    "best_hotspot_rank": 104
+   },
+   "metric_files": [
+    "pipeline/linter/prune.py"
+   ],
+   "finding_ids": [
+    "LINT-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-cli.command-router",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Command router and shared plumbing",
+   "role": "The `dr` click group: help categorization by write semantics, provider API-key preflight, per-agent model resolution, logging setup, and the shared claim-path resolver.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/cli.py"
+   ],
+   "community_check": "agree: graphify community 9 'CLI Command Router' captures the group/help/option plumbing, though it also absorbs many command bodies that belong to other components",
+   "metrics": {
+    "loc": 2340,
+    "churn_commits": 56,
+    "ccn_total": 354,
+    "best_hotspot_rank": 2
+   },
+   "metric_files": [
+    "pipeline/orchestrator/cli.py"
+   ],
+   "finding_ids": [
+    "AT-02",
+    "AT-11",
+    "OCLI-01",
+    "OCLI-02",
+    "OCLI-03",
+    "OCLI-04",
+    "OCLI-05",
+    "OCLI-07",
+    "OCLI-08",
+    "OCLI-09",
+    "OCLI-10",
+    "OCLI-11",
+    "PAT-04",
+    "TAXC-01",
+    "TAXC-08",
+    "TAXD-10",
+    "TAXD-16"
+   ],
+   "proposed_changes": [
+    {
+     "op": "split",
+     "target": "route dr step-* commands through the same verify_engine entry points used by claim-refresh, not directly at the agents",
+     "rationale": "CLI step commands fork the invocation path around the engine: divergent prompts, timeouts, and validation between the production path and the step-* path.",
+     "finding_id": "AT-02"
+    }
+   ]
+  },
+  {
+   "id": "orchestrator-cli.pipeline-commands",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "LLM pipeline commands",
+   "role": "Commands that run agents: onboard, claim-probe, claim-draft, claim-refresh, entity-enrich, step-research/ingest/analyze/audit, plus the deprecated hidden aliases (reassess, ingest). claim-refresh embeds a full copy of the pipeline's persistence branching.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/cli.py"
+   ],
+   "community_check": "disagree: the graph splinters these commands into micro-communities (84 'Repo Root Resolution' for step_analyze/step_ingest, 150 'Deprecated Reassess Command', 58 'Provider API Key Validation') instead of one commands unit; the fragmentation itself signals how little these functions share structurally",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-cli.curation-commands",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Curation and reporting commands",
+   "role": "No-LLM commands that flip or report claim state: review, publish, review-queue entrypoint, lint, stats. publish re-implements review's status gating inline.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/cli.py"
+   ],
+   "community_check": "disagree: graphify puts publish alone in community 41 'Claim Status Management' and the queue finder in 59; the curation surface is fragmented rather than grouped with the approve_claim helper it shares semantics with",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-cli.review-approval",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Review approval core",
+   "role": "The shared approve_claim helper: validates status transitions (draft->published, published|blocked->archived), writes the human_review sidecar block, then flips claim status.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/review.py"
+   ],
+   "community_check": "disagree: graphify lumps review.py into community 5 'Frontmatter Utilities'; its real cohesion is with the review/publish/review-queue commands that call it, not with frontmatter parsing",
+   "metrics": {
+    "loc": 135,
+    "churn_commits": 1,
+    "ccn_total": 22,
+    "best_hotspot_rank": 77
+   },
+   "metric_files": [
+    "pipeline/orchestrator/review.py"
+   ],
+   "finding_ids": [
+    "OCLI-09",
+    "TAXD-15"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-cli.review-queue",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Interactive review queue",
+   "role": "Discovers draft claims awaiting sign-off and drives the interactive a/d/e/s/p/o/q loop, including the $EDITOR-based five-field edit flow with mtime conflict detection.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/review_queue.py"
+   ],
+   "community_check": "agree: graphify community 18 'Review Queue Interface' maps cleanly onto this file",
+   "metrics": {
+    "loc": 500,
+    "churn_commits": 5,
+    "ccn_total": 112,
+    "best_hotspot_rank": 15
+   },
+   "metric_files": [
+    "pipeline/orchestrator/review_queue.py"
+   ],
+   "finding_ids": [
+    "OCLI-06",
+    "OCLI-10"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-cli.stats-reporter",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Stats aggregator",
+   "role": "Read-only single-pass scan of claims and sidecars producing four aggregates (wayback recovery, acquisition origins, academic coverage, verification levels) with text/JSON formatters.",
+   "subsystem": "orchestrator-cli",
+   "paths": [
+    "pipeline/orchestrator/stats.py"
+   ],
+   "community_check": "agree: graphify community 7 'Claim Statistics Reporter' matches this file one-to-one",
+   "metrics": {
+    "loc": 267,
+    "churn_commits": 4,
+    "ccn_total": 46,
+    "best_hotspot_rank": 31
+   },
+   "metric_files": [
+    "pipeline/orchestrator/stats.py"
+   ],
+   "finding_ids": [
+    "OCLI-06",
+    "OCLI-10"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-pipeline.verify-engine",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Claim verification engine",
+   "role": "The per-claim flow: research, URL dedup, ingest waterfall, source threshold gate, analyst, auditor. Two entry points share it: verify_claim (in-memory) and research_claim (persisting variant).",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/pipeline.py"
+   ],
+   "community_check": "agree: community 20 (Claim Verification Pipeline) matches this unit, though the graph further shards its internal helpers into micro-communities (24 threshold gate, 23 config/blocklist, 11 URL dedup) that are not independently reusable pieces.",
+   "metrics": {
+    "loc": 2178,
+    "churn_commits": 77,
+    "ccn_total": 288,
+    "best_hotspot_rank": 1
+   },
+   "metric_files": [
+    "pipeline/orchestrator/pipeline.py"
+   ],
+   "finding_ids": [
+    "AT-02",
+    "ORCH-01",
+    "ORCH-02",
+    "ORCH-03",
+    "ORCH-04",
+    "ORCH-05",
+    "ORCH-06",
+    "ORCH-07",
+    "ORCH-08",
+    "ORCH-10",
+    "ORCH-11",
+    "PAT-02",
+    "PAT-03",
+    "TAXC-09",
+    "TAXD-06"
+   ],
+   "proposed_changes": [
+    {
+     "op": "split",
+     "target": "extract a single persist_verify_outcome() used by both claim_refresh and onboard_entity",
+     "rationale": "Blocked/success persistence is duplicated across cli.py and pipeline.py and has already diverged (blocked refreshes drop failure diagnostics).",
+     "finding_id": "ORCH-02"
+    },
+    {
+     "op": "fix",
+     "target": "onboard_entity retains dedup-cached source ids when writing claim files",
+     "rationale": "Confirmed data-loss bug: cached source ids are dropped from written claim files during onboarding.",
+     "finding_id": "ORCH-03"
+    }
+   ]
+  },
+  {
+   "id": "orchestrator-pipeline.onboard-enrich-flow",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Entity onboarding and enrichment flow",
+   "role": "onboard_entity (light research, verifier, enricher, template screening, per-template verify_claim fan-out, blocked-claim persistence) plus enrich_entity and the collision probe / search-hint merging helpers.",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/pipeline.py"
+   ],
+   "community_check": "agree: community 75 (Entity Onboarding Orchestrator) captures the core; the graph also carves 2-3 member slivers (108 search-hint merging, 149 onboard template review) that are really internal helpers of this one flow.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-pipeline.run-models",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Run configuration and result models",
+   "role": "VerifyConfig (models, timeouts, concurrency, run_id), VerificationResult / OnboardResult / EnrichmentResult, and the FailureInfo builder used for blocked-run triage.",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/pipeline.py"
+   ],
+   "community_check": "agree: community 0 (Claim Verification Models) groups these with common.models types, which matches their role as the shared state vocabulary.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-pipeline.persistence-writers",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Research artifact writers",
+   "role": "All Markdown+YAML file I/O: source files, entity files (live and draft), claim files, audit sidecars, status flips, enrichment splicing, and the URL-to-source-id dedup index.",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/persistence.py"
+   ],
+   "community_check": "agree: community 22 (Source Classification Persistence) maps to this file, including its coupling to source classification.",
+   "metrics": {
+    "loc": 625,
+    "churn_commits": 36,
+    "ccn_total": 95,
+    "best_hotspot_rank": 3
+   },
+   "metric_files": [
+    "pipeline/orchestrator/persistence.py"
+   ],
+   "finding_ids": [
+    "ORCH-06",
+    "ORCH-09",
+    "ORCH-12",
+    "TAXD-06"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-pipeline.checkpoint-gates",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Human-in-the-loop checkpoints",
+   "role": "CheckpointHandler protocol with CLI (interactive) and auto-approve implementations, plus StepError, the pipeline-wide typed error whose docstring is the error-type vocabulary registry.",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/checkpoints.py"
+   ],
+   "community_check": "disagree: the graph splits this one unit across communities 14, 107, 147, 148, 149 - one per review method pair. That fragmentation reflects the protocol/impl mirroring, not real modularity; it is a single protocol with two implementations.",
+   "metrics": {
+    "loc": 324,
+    "churn_commits": 8,
+    "ccn_total": 37,
+    "best_hotspot_rank": 21
+   },
+   "metric_files": [
+    "pipeline/orchestrator/checkpoints.py"
+   ],
+   "finding_ids": [
+    "ORCH-07",
+    "ORCH-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "orchestrator-pipeline.entity-resolution",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Entity pre-resolution",
+   "role": "Parses a 'type_dir/slug' ref into a ResolvedEntity from the on-disk entity file before any LLM runs, and builds the plain-text entity context block for researcher prompts.",
+   "subsystem": "orchestrator-pipeline",
+   "paths": [
+    "pipeline/orchestrator/entity_resolution.py"
+   ],
+   "community_check": "disagree: the graph puts parse_entity_ref in community 12 but build_entity_context / resolve_parent_name in community 54 (Analyst Agent Core). They live in one file; the split shows these prompt-builders are consumed by agents, but they are one resolution unit.",
+   "metrics": {
+    "loc": 138,
+    "churn_commits": 10,
+    "ccn_total": 30,
+    "best_hotspot_rank": 25
+   },
+   "metric_files": [
+    "pipeline/orchestrator/entity_resolution.py"
+   ],
+   "finding_ids": [
+    "ORCH-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "researcher.pipeline-runner",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Decomposed research runner",
+   "role": "Runs the 3-step claim research flow (planner -> search fan-out -> URL scorer), assembles the audit trace, applies entity-exclude filtering, and returns a ResearchOutput to the orchestrator.",
+   "subsystem": "researcher",
+   "paths": [
+    "pipeline/researcher/decomposed.py"
+   ],
+   "community_check": "disagree: graphify splits decomposed.py across communities 2 (planner-adjacent models), 13 (search execution), and 10 (blocklist filter) - the graph sees three jobs inside one file, which supports splitting the runner rather than treating it as one unit.",
+   "metrics": {
+    "loc": 523,
+    "churn_commits": 20,
+    "ccn_total": 81,
+    "best_hotspot_rank": 6
+   },
+   "metric_files": [
+    "pipeline/researcher/decomposed.py"
+   ],
+   "finding_ids": [
+    "RSR-01",
+    "RSR-02",
+    "RSR-03",
+    "RSR-07",
+    "RSR-09",
+    "RSR-10",
+    "RSR-11"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "researcher.planner",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Research planner agent",
+   "role": "Tool-free LLM agent that decomposes a claim into 2-5 sub-questions and Brave-formatted search queries tagged by sub-question.",
+   "subsystem": "researcher",
+   "paths": [
+    "pipeline/researcher/planner.py"
+   ],
+   "community_check": "agree: community 2 ('Decomposed Research Planner') groups ResearchPlan/PlannedQuery with the runner code that consumes the plan.",
+   "metrics": {
+    "loc": 48,
+    "churn_commits": 5,
+    "ccn_total": 0,
+    "best_hotspot_rank": 94
+   },
+   "metric_files": [
+    "pipeline/researcher/planner.py"
+   ],
+   "finding_ids": [
+    "RSR-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "researcher.scorer",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "URL scorer agent",
+   "role": "Tool-free LLM agent that scores search candidates per sub-question and returns kept/dropped lists; also owns the SearchCandidate model the dispatcher produces.",
+   "subsystem": "researcher",
+   "paths": [
+    "pipeline/researcher/scorer.py"
+   ],
+   "community_check": "agree: community 25 ('URL Scorer Agent') matches this component one-to-one.",
+   "metrics": {
+    "loc": 107,
+    "churn_commits": 13,
+    "ccn_total": 8,
+    "best_hotspot_rank": 35
+   },
+   "metric_files": [
+    "pipeline/researcher/scorer.py"
+   ],
+   "finding_ids": [
+    "RSR-06"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "researcher.search-backends",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Search backend HTTP clients",
+   "role": "Plain-HTTP search wrappers (Brave, Tavily, arXiv) returning list-of-dict results; Tavily and arXiv carry token-bucket throttles, Brave carries only reactive 429 retry.",
+   "subsystem": "researcher",
+   "paths": [
+    "pipeline/researcher/agent.py",
+    "pipeline/researcher/tools/tavily.py",
+    "pipeline/researcher/tools/arxiv.py",
+    "pipeline/researcher/tools/__init__.py"
+   ],
+   "community_check": "agree: graphify gives each backend its own community (32 Brave, 15 Tavily, 33 arXiv, 154 tools init), confirming they are parallel siblings - and the per-community split makes the odd file placement visible: Brave (community 32) lives in agent.py outside tools/.",
+   "metrics": {
+    "loc": 358,
+    "churn_commits": 13,
+    "ccn_total": 41,
+    "best_hotspot_rank": 44
+   },
+   "metric_files": [
+    "pipeline/researcher/agent.py",
+    "pipeline/researcher/tools/__init__.py",
+    "pipeline/researcher/tools/arxiv.py",
+    "pipeline/researcher/tools/tavily.py"
+   ],
+   "finding_ids": [
+    "PAT-06",
+    "RSR-01",
+    "RSR-04",
+    "RSR-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "researcher.entity-agents",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Entity verifier and enricher agents",
+   "role": "Tool-free LLM agents for the entity light-research pass: the verifier classifies an entity as verified/ambiguous/unverified; the enricher drafts description, founded year, and history body for operator review.",
+   "subsystem": "researcher",
+   "paths": [
+    "pipeline/researcher/entity_verifier.py",
+    "pipeline/researcher/entity_enricher.py"
+   ],
+   "community_check": "disagree: graphify keeps verifier (50) and enricher (63) apart and pulls EnrichmentDraft into the Human Review Checkpoints community (14). I group them as one unit because they are structural twins consuming the same LightResearchBundle with near-identical prompt builders.",
+   "metrics": {
+    "loc": 251,
+    "churn_commits": 3,
+    "ccn_total": 10,
+    "best_hotspot_rank": 122
+   },
+   "metric_files": [
+    "pipeline/researcher/entity_enricher.py",
+    "pipeline/researcher/entity_verifier.py"
+   ],
+   "finding_ids": [
+    "RSR-05",
+    "RSR-08",
+    "TAXC-09"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.content-collections",
+   "level": "l3",
+   "parent": "site",
+   "name": "Astro content collection definitions",
+   "role": "Defines the five Astro collections (sources, claims, entities, criteria, resources) and their Zod schemas. This is the site-side half of the Python-to-site contract: everything the pipeline writes is validated here at build time.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/content.config.ts"
+   ],
+   "community_check": "agree: graphify community 64 'Astro Content Schema' groups collections, auditSchema and the matrix schemas into one unit matching this file; I additionally split the loader and matrix schema out as distinct responsibilities the graph lumps together.",
+   "metrics": {
+    "loc": 425,
+    "churn_commits": 29,
+    "ccn_total": 32,
+    "best_hotspot_rank": 14
+   },
+   "metric_files": [
+    "src/content.config.ts"
+   ],
+   "finding_ids": [
+    "PAT-05",
+    "SCH-01",
+    "SCH-03",
+    "SCH-04",
+    "SCH-05",
+    "SCH-06",
+    "SCH-07",
+    "SCH-09",
+    "SCH-11",
+    "TAXC-01",
+    "TAXC-08",
+    "TAXC-09",
+    "TAXC-11",
+    "TAXD-02",
+    "TAXD-03",
+    "TAXD-07",
+    "TAXD-10",
+    "TAXD-15"
+   ],
+   "proposed_changes": [
+    {
+     "op": "merge",
+     "target": "writer-owned Pydantic contract with the Zod schema generated from it (or both generated from one source)",
+     "rationale": "The audit sidecar contract is one-sided and silently lossy: the pipeline writes research/sub_questions/failure fields that Zod strips with no Pydantic model on the writer side to catch the mismatch.",
+     "finding_id": "SCH-01"
+    }
+   ]
+  },
+  {
+   "id": "schemas-integration.claims-audit-loader",
+   "level": "l3",
+   "parent": "site",
+   "name": "claims-with-audit custom loader",
+   "role": "Custom Astro loader that walks research/claims, hand-parses frontmatter with a regex, reads the paired .audit.yaml sidecar, and merges it into the claim entry's audit field.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/content.config.ts"
+   ],
+   "community_check": "disagree: graphify folds the loader into community 64 with the schemas; it is a separate concern (filesystem mechanics vs contract definition) and the split matters for the refactor proposed in SCH-04.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.matrix-schema",
+   "level": "l3",
+   "parent": "site",
+   "name": "Responsible-AI matrix render schema",
+   "role": "matrixDataSchema: a ~110-line Zod schema with superRefine cross-field checks for the responsible-AI comparison matrix. Lives in content.config.ts but is only parsed at render time by one page.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/content.config.ts"
+   ],
+   "community_check": "disagree: graphify puts matrixCell/matrixFeature/matrixGroupKey inside community 64 (content schema); this schema belongs with its single consumer (the resources page / ResponsibleAI* components), not with the collection contract.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.vocab-mirrors",
+   "level": "l3",
+   "parent": "site",
+   "name": "Vocabulary mirrors and display copy",
+   "role": "Hand-written TS union types plus label/gloss/tooltip maps for verdicts, verification levels, entity types and topics. Each duplicates a Zod inline enum and a Python enum, synced by comments.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/lib/verdict.ts",
+    "src/lib/sourceQuality.ts",
+    "src/lib/entityTypes.ts",
+    "src/lib/research.ts"
+   ],
+   "community_check": "disagree: graphify splits these across four communities (78 Verdict Sorting, 86 Source Quality Metrics, 49 Astro Entity Components, 56 Claim Matrix Components), grouping each file with its consumers. They are one pattern (enum mirror + display copy) and should be treated as one unit for the codegen fix.",
+   "metrics": {
+    "loc": 229,
+    "churn_commits": 12,
+    "ccn_total": 29,
+    "best_hotspot_rank": 70
+   },
+   "metric_files": [
+    "src/lib/entityTypes.ts",
+    "src/lib/research.ts",
+    "src/lib/sourceQuality.ts",
+    "src/lib/verdict.ts"
+   ],
+   "finding_ids": [
+    "SCH-02",
+    "SCH-05",
+    "SCH-08",
+    "SCH-09",
+    "SCH-10",
+    "TAXC-01",
+    "TAXC-09",
+    "TAXD-12",
+    "TAXD-13",
+    "TAXD-14",
+    "TAXR-01",
+    "TAXR-02",
+    "TAXR-07",
+    "TAXR-10",
+    "TAXR-12",
+    "TAXR-14"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.cross-ref-indexes",
+   "level": "l3",
+   "parent": "site",
+   "name": "Cross-reference index builders",
+   "role": "Build-time join indexes over the claims collection: criteria-slug -> entity -> claims, and source-id -> claims. Implements the filename-stem fallback for claims without an explicit criteria_slug.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/lib/criteria.ts",
+    "src/lib/citations.ts"
+   ],
+   "community_check": "agree: graphify community 92 'Citation Index Builder' groups citations.ts and criteria.ts together, matching this component.",
+   "metrics": {
+    "loc": 83,
+    "churn_commits": 4,
+    "ccn_total": 18,
+    "best_hotspot_rank": 114
+   },
+   "metric_files": [
+    "src/lib/citations.ts",
+    "src/lib/criteria.ts"
+   ],
+   "finding_ids": [
+    "SCH-12",
+    "SCH-13"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.seo-gates",
+   "level": "l3",
+   "parent": "site",
+   "name": "Pre-release SEO gates",
+   "role": "Single flag (INDEX_ALPHA_DETAIL_PAGES) plus path patterns that keep agent-generated detail pages out of the index and sitemap until 1.0.0.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/lib/seo.ts"
+   ],
+   "community_check": "agree: graphify community 98 'SEO Sitemap Config' matches this file exactly.",
+   "metrics": {
+    "loc": 48,
+    "churn_commits": 4,
+    "ccn_total": 6,
+    "best_hotspot_rank": 89
+   },
+   "metric_files": [
+    "src/lib/seo.ts"
+   ],
+   "finding_ids": [
+    "SCH-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "schemas-integration.jsonld-builders",
+   "level": "l3",
+   "parent": "site",
+   "name": "schema.org JSON-LD builders",
+   "role": "Builds per-layout schema.org structured data (WebApplication / HowTo / Article) for resources pages, walking the untyped data payload defensively.",
+   "subsystem": "schemas-integration",
+   "paths": [
+    "src/lib/resourceSchema.ts"
+   ],
+   "community_check": "agree: graphify community 91 'Resource Schema Builder' matches this file exactly.",
+   "metrics": {
+    "loc": 170,
+    "churn_commits": 1,
+    "ccn_total": 37,
+    "best_hotspot_rank": 56
+   },
+   "metric_files": [
+    "src/lib/resourceSchema.ts"
+   ],
+   "finding_ids": [
+    "SCH-06"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.ci-workflows",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "GitHub Actions workflows",
+   "role": "PR/deploy gate and GitHub Pages publish. ci.yml runs the Node build+lint+citations job and a Python dr-lint job; deploy.yml reuses ci.yml as a verify gate, rebuilds, and deploys dist/ to Pages.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/deploy.yml"
+   ],
+   "community_check": "disagree: the workflows do not appear in any graphify community in scope; the graph misses the CI layer entirely, even though it is the enforcement point for everything else here.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [
+    "SCI-01",
+    "SCI-02",
+    "SCI-10",
+    "SCI-11",
+    "TESTS-01"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.task-runner",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "Invoke tasks + npm scripts",
+   "role": "Local developer entry points: inv setup/dev/build/lint/check/clean plus test.* and audit.* namespaces; package.json holds the underlying npm scripts and a parallel 'check' chain.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "tasks.py",
+    "package.json"
+   ],
+   "community_check": "agree: community 35 'Invoke Build Tasks' groups tasks.py's tasks together, though it does not capture that package.json 'check' is a second, competing definition of the same gate.",
+   "metrics": {
+    "loc": 180,
+    "churn_commits": 11,
+    "ccn_total": 18,
+    "best_hotspot_rank": 36
+   },
+   "metric_files": [
+    "tasks.py"
+   ],
+   "finding_ids": [
+    "SCI-01",
+    "SCI-02",
+    "SCI-03",
+    "SCI-09",
+    "SCI-11",
+    "TESTS-01"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.content-checks",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "Citation integrity script",
+   "role": "TypeScript script that verifies every claim's sources: slug resolves to a file under research/sources/. Run via npm run check:citations locally and in CI.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "scripts/check-citations.ts"
+   ],
+   "community_check": "disagree: graphify put check-citations.ts in community 73 'Astro Base Layout', lumping a content-integrity check with layout code; it belongs with the lint/CI cluster.",
+   "metrics": {
+    "loc": 63,
+    "churn_commits": 2,
+    "ccn_total": 5,
+    "best_hotspot_rank": 129
+   },
+   "metric_files": [
+    "scripts/check-citations.ts"
+   ],
+   "finding_ids": [
+    "PAT-05",
+    "SCI-03"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.seo-ops",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "SEO operations scripts",
+   "role": "Manually-run curl/jq scripts against Cloudflare (edge 301 redirects) and Google Search Console (sitemap submit, URL inspection), plus the redirect data file.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "scripts/seo/apply-cloudflare-redirects.sh",
+    "scripts/seo/inspect-urls.sh",
+    "scripts/seo/submit-sitemap.sh",
+    "scripts/seo/redirects.json",
+    "scripts/seo/request-indexing-queue.txt"
+   ],
+   "community_check": "disagree: graphify split these into three one-script communities (131 URL Inspection, 132 Sitemap Submit, 160 Cloudflare Redirects); they are one operational unit sharing auth patterns and the same SEO purpose.",
+   "metrics": {
+    "loc": 176,
+    "churn_commits": 3,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [
+    "scripts/seo/apply-cloudflare-redirects.sh",
+    "scripts/seo/inspect-urls.sh",
+    "scripts/seo/submit-sitemap.sh"
+   ],
+   "finding_ids": [
+    "SCI-04",
+    "SCI-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.entity-dev-loop",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "Entity onboard/clear dev scripts",
+   "role": "Iterate-and-clear development wrappers: onboard OpenAI/ChatGPT via dr onboard, then wipe their generated research artifacts to re-run.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "scripts/onboard-openai.sh",
+    "scripts/onboard-chatgpt.sh",
+    "scripts/clear-openai.sh"
+   ],
+   "community_check": "disagree: graphify made three single-script communities (137, 158, 159); they are one dev-loop unit and should be one parameterized script.",
+   "metrics": {
+    "loc": 69,
+    "churn_commits": 4,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [
+    "scripts/clear-openai.sh",
+    "scripts/onboard-chatgpt.sh",
+    "scripts/onboard-openai.sh"
+   ],
+   "finding_ids": [
+    "SCI-07"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.claims-backfill",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "V1 claims rerun script",
+   "role": "One-shot backfill (completed 2026-05-05) that re-ran published v1 claims through dr claim-refresh while preserving human sign-off when verdict/confidence were unchanged.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "scripts/rerun_v1_claims.py"
+   ],
+   "community_check": "agree: community 110 'V1 Claims Rerun Script' isolates it correctly, which itself signals it is disconnected from everything else (a finished migration).",
+   "metrics": {
+    "loc": 233,
+    "churn_commits": 1,
+    "ccn_total": 43,
+    "best_hotspot_rank": 48
+   },
+   "metric_files": [
+    "scripts/rerun_v1_claims.py"
+   ],
+   "finding_ids": [
+    "SCI-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.astro-build-config",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "Astro build config",
+   "role": "Site build configuration: canonical URL, trailing-slash policy, on-site redirect map, and sitemap integration with per-section priority/changefreq rules.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "astro.config.ts"
+   ],
+   "community_check": "agree: community 98 'SEO Sitemap Config' pairs astro.config.ts with its serialize() function, which matches its real role.",
+   "metrics": {
+    "loc": 61,
+    "churn_commits": 5,
+    "ccn_total": 0,
+    "best_hotspot_rank": 100
+   },
+   "metric_files": [
+    "astro.config.ts"
+   ],
+   "finding_ids": [
+    "SCI-04"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "scripts-ci.graphify-publish",
+   "level": "l3",
+   "parent": "tooling",
+   "name": "Graphify graph publish path",
+   "role": "Manual procedure (documented, not scripted) that copies the generated graphify graph.html into public/ and re-injects a noindex meta so it ships with the site, unlisted.",
+   "subsystem": "scripts-ci",
+   "paths": [
+    "public/graphify/graph.html",
+    "docs/architecture/graphify.md"
+   ],
+   "community_check": "disagree: this path exists only as prose in graphify.md plus a committed 2.7MB HTML blob; graphify has no community for it because there is no code to cluster - which is the problem.",
+   "metrics": {
+    "loc": 0,
+    "churn_commits": 0,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.design-tokens",
+   "level": "l3",
+   "parent": "site",
+   "name": "Design tokens + global base styles",
+   "role": "CSS custom properties for the four theme states (dark/light x normal/high-contrast), verdict and source-kind semantic colors, and the site-wide reset/typography/chip base.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/styles/tokens.css",
+    "src/styles/global.css"
+   ],
+   "community_check": "agree: graphify community 73 (Astro Base Layout) groups global.css + tokens.css together, matching this unit.",
+   "metrics": {
+    "loc": 487,
+    "churn_commits": 22,
+    "ccn_total": 0,
+    "best_hotspot_rank": null
+   },
+   "metric_files": [
+    "src/styles/global.css",
+    "src/styles/tokens.css"
+   ],
+   "finding_ids": [
+    "SC-06"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.a11y-chrome",
+   "level": "l3",
+   "parent": "site",
+   "name": "Accessibility control (FAB + popover)",
+   "role": "Floating accessibility settings panel: theme, contrast, motion, and text size radios persisted to localStorage and reflected as data-* attributes on <html>.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/A11yControl.astro",
+    "src/components/AccessibilityIcon.astro"
+   ],
+   "community_check": "agree: graphify community 66 (Accessibility Controls) contains exactly these two files plus their functions.",
+   "metrics": {
+    "loc": 547,
+    "churn_commits": 5,
+    "ccn_total": 0,
+    "best_hotspot_rank": 118
+   },
+   "metric_files": [
+    "src/components/A11yControl.astro",
+    "src/components/AccessibilityIcon.astro"
+   ],
+   "finding_ids": [
+    "SC-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.page-identity",
+   "level": "l3",
+   "parent": "site",
+   "name": "Page identity header",
+   "role": "Header block for research pages: breadcrumb (with BreadcrumbList JSON-LD), entity-type icon, and title in detail/index variants.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/PageHeader.astro",
+    "src/components/Breadcrumb.astro",
+    "src/components/ObjectTypeIcon.astro"
+   ],
+   "community_check": "agree: graphify community 49 (Astro Entity Components) is exactly Breadcrumb + ObjectTypeIcon + PageHeader.",
+   "metrics": {
+    "loc": 360,
+    "churn_commits": 17,
+    "ccn_total": 2,
+    "best_hotspot_rank": 49
+   },
+   "metric_files": [
+    "src/components/Breadcrumb.astro",
+    "src/components/ObjectTypeIcon.astro",
+    "src/components/PageHeader.astro"
+   ],
+   "finding_ids": [
+    "TAXD-13",
+    "TAXR-14"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.browse-controls",
+   "level": "l3",
+   "parent": "site",
+   "name": "List browse controls",
+   "role": "Client-side search + faceted filtering for research index pages; toggles visibility of [data-filterable] rows and shows an empty state.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/FilterBar.astro",
+    "src/components/FacetBar.astro",
+    "src/components/SearchInput.astro",
+    "src/components/DisclosureIndicator.astro",
+    "src/components/EmptyState.astro"
+   ],
+   "community_check": "disagree: graphify community 102 merges these with ResponsibleAIMatrix/Filters because they share DisclosureIndicator and SearchInput imports; behaviorally the browse controls serve research index pages while the RA suite is a resources feature.",
+   "metrics": {
+    "loc": 307,
+    "churn_commits": 18,
+    "ccn_total": 0,
+    "best_hotspot_rank": 66
+   },
+   "metric_files": [
+    "src/components/DisclosureIndicator.astro",
+    "src/components/EmptyState.astro",
+    "src/components/FacetBar.astro",
+    "src/components/FilterBar.astro",
+    "src/components/SearchInput.astro"
+   ],
+   "finding_ids": [
+    "SC-06",
+    "SC-08",
+    "SC-09"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.research-display",
+   "level": "l3",
+   "parent": "site",
+   "name": "Research display rows and badges",
+   "role": "Presentational units for claims, sources, entities, and criteria: list rows, cards, verdict chips and distributions. SourceRow is currently unused.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/ClaimRow.astro",
+    "src/components/SourceRow.astro",
+    "src/components/EntityCard.astro",
+    "src/components/CriteriaMatrix.astro",
+    "src/components/VerdictBadge.astro",
+    "src/components/VerdictDistribution.astro",
+    "src/components/NotAssessedCell.astro"
+   ],
+   "community_check": "agree: graphify community 56 (Claim Matrix Components) matches this grouping almost exactly.",
+   "metrics": {
+    "loc": 324,
+    "churn_commits": 21,
+    "ccn_total": 6,
+    "best_hotspot_rank": 98
+   },
+   "metric_files": [
+    "src/components/ClaimRow.astro",
+    "src/components/CriteriaMatrix.astro",
+    "src/components/EntityCard.astro",
+    "src/components/NotAssessedCell.astro",
+    "src/components/SourceRow.astro",
+    "src/components/VerdictBadge.astro",
+    "src/components/VerdictDistribution.astro"
+   ],
+   "finding_ids": [
+    "SC-02",
+    "SC-09",
+    "TAXC-01",
+    "TAXR-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.responsible-ai-suite",
+   "level": "l3",
+   "parent": "site",
+   "name": "Responsible AI matrix suite",
+   "role": "The responsible-AI comparison page's five sections: summary table, filterable feature matrix, excluded-products annex, and footnotes, all fed by one matrixDataSchema payload.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/ResponsibleAIMatrix.astro",
+    "src/components/ResponsibleAIFilters.astro",
+    "src/components/ResponsibleAISummary.astro",
+    "src/components/ResponsibleAIExcluded.astro",
+    "src/components/ResponsibleAIFootnotes.astro"
+   ],
+   "community_check": "disagree: graphify splits this feature across communities 102, 60, and 57 by shared-helper usage (InlineMd users vs DisclosureIndicator users); the real seam is the single matrix data payload all five render.",
+   "metrics": {
+    "loc": 1183,
+    "churn_commits": 43,
+    "ccn_total": 17,
+    "best_hotspot_rank": 18
+   },
+   "metric_files": [
+    "src/components/ResponsibleAIExcluded.astro",
+    "src/components/ResponsibleAIFilters.astro",
+    "src/components/ResponsibleAIFootnotes.astro",
+    "src/components/ResponsibleAIMatrix.astro",
+    "src/components/ResponsibleAISummary.astro"
+   ],
+   "finding_ids": [
+    "SC-03",
+    "SC-04",
+    "SC-06",
+    "SC-07",
+    "SC-10",
+    "TAXR-11",
+    "TAXR-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.resource-guides",
+   "level": "l3",
+   "parent": "site",
+   "name": "Resource guides and tools",
+   "role": "The interactive resources content: the turn-off-AI guide (with FAQ JSON-LD and scroll-spy), the 'Should I use AI' decision-tree SPA, the shared inline-markdown renderer, and the image lightbox.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/TurnOffGuide.astro",
+    "src/components/ShouldIDecisionTree.astro",
+    "src/components/InlineMd.astro",
+    "src/components/Lightbox.astro"
+   ],
+   "community_check": "disagree: graphify puts TurnOffGuide in community 60 (Inline Markdown users) and ShouldIDecisionTree + Lightbox in the grab-bag community 57 (Astro UI Components); the shared trait is that all four serve resources/ tool pages.",
+   "metrics": {
+    "loc": 1488,
+    "churn_commits": 11,
+    "ccn_total": 6,
+    "best_hotspot_rank": 73
+   },
+   "metric_files": [
+    "src/components/InlineMd.astro",
+    "src/components/Lightbox.astro",
+    "src/components/ShouldIDecisionTree.astro",
+    "src/components/TurnOffGuide.astro"
+   ],
+   "finding_ids": [
+    "SC-01",
+    "SC-03",
+    "SC-04",
+    "SC-07",
+    "SC-11"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-components.resource-chrome",
+   "level": "l3",
+   "parent": "site",
+   "name": "Resources page chrome",
+   "role": "Decorative wallpaper + paper-grain layers and the resources.css stylesheet holding the hero, pill-nav, callout, and return-top styles for resources pages.",
+   "subsystem": "site-components",
+   "paths": [
+    "src/components/Wallpaper.astro",
+    "src/components/PaperGrain.astro",
+    "src/styles/resources.css"
+   ],
+   "community_check": "agree: graphify community 106 (Resources Page Components) is exactly these three files; but the graph misses that resources.css also styles markup emitted by TurnOffGuide and the RA suite (see SC-07).",
+   "metrics": {
+    "loc": 353,
+    "churn_commits": 17,
+    "ccn_total": 0,
+    "best_hotspot_rank": 143
+   },
+   "metric_files": [
+    "src/components/PaperGrain.astro",
+    "src/components/Wallpaper.astro",
+    "src/styles/resources.css"
+   ],
+   "finding_ids": [
+    "SC-07"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-pages.base-layout",
+   "level": "l3",
+   "parent": "site",
+   "name": "Base layout shell",
+   "role": "The HTML shell every page uses: head/SEO/meta tags, theme boot script, hardcoded site navigation with JS-measured collapse, footer, and ~390 lines of inline styles.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/layouts/Base.astro"
+   ],
+   "community_check": "disagree: graphify community 73 ('Astro Base Layout') lumps Base.astro together with 404.astro and credits.astro; those are just its thinnest consumers, while the layout itself is a distinct shared shell with fan_in 18.",
+   "metrics": {
+    "loc": 755,
+    "churn_commits": 40,
+    "ccn_total": 4,
+    "best_hotspot_rank": 9
+   },
+   "metric_files": [
+    "src/layouts/Base.astro"
+   ],
+   "finding_ids": [
+    "SP-02",
+    "SP-03",
+    "SP-07",
+    "TAXR-06",
+    "TAXR-07",
+    "TAXR-13"
+   ],
+   "proposed_changes": [
+    {
+     "op": "split",
+     "target": "one shared nav component instead of two independent hamburger-nav implementations",
+     "rationale": "Base.astro bundles head+nav+footer+styles in one hotspot file, and the site ships two independently-maintained mobile nav implementations.",
+     "finding_id": "SP-02"
+    }
+   ]
+  },
+  {
+   "id": "site-pages.home-hero",
+   "level": "l3",
+   "parent": "site",
+   "name": "Homepage hero",
+   "role": "The landing page: wordmark, glitch animations, and a scatter of highlighted claim cards whose positions are computed by build-time random geometry. Carries its own burger nav separate from Base's.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/index.astro"
+   ],
+   "community_check": "disagree: graphify community 78 ('Verdict Sorting Utilities') is built from generic for()/if() nodes and does not isolate the homepage as a unit; the page is really three units (scatter geometry, glitch script, page markup) fused into one file.",
+   "metrics": {
+    "loc": 1042,
+    "churn_commits": 30,
+    "ccn_total": 35,
+    "best_hotspot_rank": 13
+   },
+   "metric_files": [
+    "src/pages/index.astro"
+   ],
+   "finding_ids": [
+    "PAT-07",
+    "SP-01",
+    "SP-02",
+    "SP-03",
+    "SP-08",
+    "SP-10",
+    "TAXR-13"
+   ],
+   "proposed_changes": [
+    {
+     "op": "split",
+     "target": "server-rendered content + a small islands-based interactive layer instead of one file mixing geometry, glitch effects, and markup",
+     "rationale": "The homepage fuses random scatter geometry, a glitch engine, and page markup in one 1k-line file with non-reproducible builds.",
+     "finding_id": "SP-01"
+    }
+   ]
+  },
+  {
+   "id": "site-pages.research-hub",
+   "level": "l3",
+   "parent": "site",
+   "name": "Research hub and FAQ",
+   "role": "The /research landing page: section index, methodology explainer, and FAQ rendered twice (visible details elements plus a hand-maintained FAQPage JSON-LD copy).",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/research/index.astro"
+   ],
+   "community_check": "disagree: no listed community isolates this page; graphify attaches it to the Base layout cluster, hiding that its FAQ content is a dual-maintained data set, not layout.",
+   "metrics": {
+    "loc": 651,
+    "churn_commits": 10,
+    "ccn_total": 0,
+    "best_hotspot_rank": 50
+   },
+   "metric_files": [
+    "src/pages/research/index.astro"
+   ],
+   "finding_ids": [
+    "SP-03",
+    "SP-06",
+    "SP-07",
+    "TAXR-01",
+    "TAXR-03",
+    "TAXR-04",
+    "TAXR-06",
+    "TAXR-07",
+    "TAXR-08",
+    "TAXR-10",
+    "TAXR-13"
+   ],
+   "proposed_changes": [
+    {
+     "op": "fix",
+     "target": "single FAQ source rendered in both the visible section and the JSON-LD block",
+     "rationale": "The FAQ exists twice on /research and the JSON-LD copy has already drifted into overstating human review.",
+     "finding_id": "SP-06"
+    }
+   ]
+  },
+  {
+   "id": "site-pages.research-indexes",
+   "level": "l3",
+   "parent": "site",
+   "name": "Research collection indexes",
+   "role": "List pages for each research collection. Companies/products/subjects are near-identical copies; claims/sources/criteria share the FilterBar client-side filtering pattern.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/research/claims/index.astro",
+    "src/pages/research/companies/index.astro",
+    "src/pages/research/products/index.astro",
+    "src/pages/research/subjects/index.astro",
+    "src/pages/research/sources/index.astro",
+    "src/pages/research/criteria/index.astro",
+    "src/pages/research/topics/index.astro"
+   ],
+   "community_check": "disagree: none of the listed communities group these seven siblings; graphify splits them by shared symbol names (getStaticPaths, entries) rather than by the route family they obviously form.",
+   "metrics": {
+    "loc": 511,
+    "churn_commits": 0,
+    "ccn_total": 47,
+    "best_hotspot_rank": 133
+   },
+   "metric_files": [
+    "src/pages/research/claims/index.astro",
+    "src/pages/research/companies/index.astro",
+    "src/pages/research/criteria/index.astro",
+    "src/pages/research/products/index.astro",
+    "src/pages/research/sources/index.astro",
+    "src/pages/research/subjects/index.astro",
+    "src/pages/research/topics/index.astro"
+   ],
+   "finding_ids": [
+    "SP-04",
+    "SP-05",
+    "TAXR-04",
+    "TAXR-05"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-pages.research-detail",
+   "level": "l3",
+   "parent": "site",
+   "name": "Research detail routes",
+   "role": "getStaticPaths-driven detail pages: claim verdict pages with audit trail and ClaimReview JSON-LD, entity profiles with criteria matrices, source pages with reverse citations, criteria coverage matrices, per-topic rollups.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/research/claims/[...slug].astro",
+    "src/pages/research/entities/[...slug].astro",
+    "src/pages/research/sources/[...slug].astro",
+    "src/pages/research/criteria/[slug].astro",
+    "src/pages/research/topics/[topic].astro"
+   ],
+   "community_check": "agree: community 57 ('Astro UI Components') groups the getStaticPaths detail routes together, matching this unit, though it also pulls in resources/[...slug] from a different route family.",
+   "metrics": {
+    "loc": 1371,
+    "churn_commits": 8,
+    "ccn_total": 45,
+    "best_hotspot_rank": 78
+   },
+   "metric_files": [
+    "src/pages/research/claims/[...slug].astro",
+    "src/pages/research/criteria/[slug].astro",
+    "src/pages/research/entities/[...slug].astro",
+    "src/pages/research/sources/[...slug].astro",
+    "src/pages/research/topics/[topic].astro"
+   ],
+   "finding_ids": [
+    "SP-05",
+    "SP-11",
+    "SP-12",
+    "TAXD-06",
+    "TAXD-07",
+    "TAXR-02",
+    "TAXR-03",
+    "TAXR-04",
+    "TAXR-05",
+    "TAXR-08",
+    "TAXR-10"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-pages.resources",
+   "level": "l3",
+   "parent": "site",
+   "name": "Resources hub and layouts",
+   "role": "The consumer-facing resources section: a hub page plus a single dynamic route that switches between four layout modes (guide, article, matrix, tool) validated per-layout with Zod.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/resources/index.astro",
+    "src/pages/resources/[...slug].astro",
+    "src/layouts/ResourcePage.astro"
+   ],
+   "community_check": "agree: community 106 ('Resources Page Components') matches this unit almost exactly (ResourcePage.astro, FURTHER_READING, entries, index.astro).",
+   "metrics": {
+    "loc": 414,
+    "churn_commits": 31,
+    "ccn_total": 4,
+    "best_hotspot_rank": 22
+   },
+   "metric_files": [
+    "src/layouts/ResourcePage.astro",
+    "src/pages/resources/[...slug].astro",
+    "src/pages/resources/index.astro"
+   ],
+   "finding_ids": [
+    "SP-09"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "site-pages.static-pages",
+   "level": "l3",
+   "parent": "site",
+   "name": "Static one-off pages",
+   "role": "Hand-written standalone pages: the 404 fallback, the uncited values manifesto, and asset credits. Thin Base consumers with local styles.",
+   "subsystem": "site-pages",
+   "paths": [
+    "src/pages/404.astro",
+    "src/pages/values.astro",
+    "src/pages/credits.astro"
+   ],
+   "community_check": "agree: community 73 groups 404.astro and credits.astro with Base.astro, which is accurate for these thin consumers even though it mislabels the cluster as layout.",
+   "metrics": {
+    "loc": 166,
+    "churn_commits": 8,
+    "ccn_total": 0,
+    "best_hotspot_rank": 116
+   },
+   "metric_files": [
+    "src/pages/404.astro",
+    "src/pages/credits.astro",
+    "src/pages/values.astro"
+   ],
+   "finding_ids": [
+    "TAXR-09"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.shared-fixtures",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Shared fixtures and conftest",
+   "role": "Session-wide pytest fixtures: run-id reset, CLI log isolation, repo-root resolution, plus a handful of HTML/markdown sample files. Only 57 lines; almost all reusable helpers live copy-pasted in individual test files instead.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/conftest.py",
+    "pipeline/tests/fixtures/"
+   ],
+   "community_check": "disagree: no graphify community corresponds to a shared-fixture layer; the graph groups tests by production topic, which reflects the reality that this layer is too thin to register",
+   "metrics": {
+    "loc": 57,
+    "churn_commits": 3,
+    "ccn_total": 5,
+    "best_hotspot_rank": 110
+   },
+   "metric_files": [
+    "pipeline/tests/conftest.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.orchestrator-persistence-suites",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Orchestrator and persistence suites",
+   "role": "Tests verify_claim/onboard_entity/research_claim orchestration, threshold gating, blocked-reason classification, and the audit-sidecar writer. Heaviest churn and LOC in the suite; relies on monkeypatching pipeline internals (_research, _ingest_urls, _analyse_claim) and globally neutralizing Agent.override.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_orchestrator.py",
+    "pipeline/tests/test_onboard.py",
+    "pipeline/tests/test_research_integration.py",
+    "pipeline/tests/test_audit_trail.py",
+    "pipeline/tests/test_checkpoints.py"
+   ],
+   "community_check": "disagree: graphify splits this into fine per-feature communities (e.g. 23 'Verify Config Blocklist', parts of 12/17) and does not see the audit-trail + onboard + orchestrator files as one unit, but they share the same fake-research/fake-ingest scaffolding and break together",
+   "metrics": {
+    "loc": 3358,
+    "churn_commits": 69,
+    "ccn_total": 252,
+    "best_hotspot_rank": 7
+   },
+   "metric_files": [
+    "pipeline/tests/test_audit_trail.py",
+    "pipeline/tests/test_checkpoints.py",
+    "pipeline/tests/test_onboard.py",
+    "pipeline/tests/test_orchestrator.py",
+    "pipeline/tests/test_research_integration.py"
+   ],
+   "finding_ids": [
+    "TESTS-02",
+    "TESTS-03",
+    "TESTS-04",
+    "TESTS-05",
+    "TESTS-06",
+    "TESTS-07",
+    "TESTS-11"
+   ],
+   "proposed_changes": [
+    {
+     "op": "fix",
+     "target": "assertions that fail loudly on error instead of being skipped by if-guards",
+     "rationale": "Several tests only assert inside an if-guard; a regression that changes the guarded condition silently stops being tested.",
+     "finding_id": "TESTS-02"
+    }
+   ]
+  },
+  {
+   "id": "tests.cli-command-suites",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "CLI command suites",
+   "role": "CliRunner-driven behavior tests for dr claim-draft/claim-refresh/claim-promote/publish/review-queue/stats plus a subprocess help smoke test. Good file-state assertions (bytes-before/after), but coverage is uneven: several registered commands are never invoked.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_cli.py",
+    "pipeline/tests/test_cli_smoke.py",
+    "pipeline/tests/test_cli_stats.py",
+    "pipeline/tests/test_publish.py",
+    "pipeline/tests/test_review_queue.py"
+   ],
+   "community_check": "agree: graphify communities 16 'Bulk Claim Publisher', 29 'Review Queue Tests', 7 'Claim Statistics Reporter' map one-to-one onto the per-command suites inside this component",
+   "metrics": {
+    "loc": 2675,
+    "churn_commits": 30,
+    "ccn_total": 209,
+    "best_hotspot_rank": 4
+   },
+   "metric_files": [
+    "pipeline/tests/test_cli.py",
+    "pipeline/tests/test_cli_smoke.py",
+    "pipeline/tests/test_cli_stats.py",
+    "pipeline/tests/test_publish.py",
+    "pipeline/tests/test_review_queue.py"
+   ],
+   "finding_ids": [
+    "TESTS-02",
+    "TESTS-05",
+    "TESTS-07",
+    "TESTS-09",
+    "TESTS-11",
+    "TESTS-12"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.researcher-search-suites",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Researcher and search-backend suites",
+   "role": "Tests the decomposed planner/scorer flow, backend dispatch (brave/tavily/arxiv), URL dedup/canonicalization, blocklist, throttling, and ingestor tools. The respx-mocked HTTP tests are the strongest in the repo; the planner 'corpus' tests are the weakest.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_researcher_decomposed.py",
+    "pipeline/tests/test_research_planner.py",
+    "pipeline/tests/test_scorer.py",
+    "pipeline/tests/test_brave_search.py",
+    "pipeline/tests/test_tavily_search.py",
+    "pipeline/tests/test_arxiv_search.py",
+    "pipeline/tests/test_canonical_url.py",
+    "pipeline/tests/test_source_url_dedup.py",
+    "pipeline/tests/test_blocklist.py",
+    "pipeline/tests/test_prefetch.py",
+    "pipeline/tests/test_ingest_urls.py",
+    "pipeline/tests/test_terminal_fetch.py",
+    "pipeline/tests/test_throttle.py",
+    "pipeline/tests/test_tools.py"
+   ],
+   "community_check": "agree: graphify communities 2 'Decomposed Research Planner', 6 'Canonical URL Dedup', 11 'Source URL Deduplication', 15 'Tavily Search Backend' are exactly the internal seams of this component",
+   "metrics": {
+    "loc": 3947,
+    "churn_commits": 48,
+    "ccn_total": 332,
+    "best_hotspot_rank": 12
+   },
+   "metric_files": [
+    "pipeline/tests/test_arxiv_search.py",
+    "pipeline/tests/test_blocklist.py",
+    "pipeline/tests/test_brave_search.py",
+    "pipeline/tests/test_canonical_url.py",
+    "pipeline/tests/test_ingest_urls.py",
+    "pipeline/tests/test_prefetch.py",
+    "pipeline/tests/test_research_planner.py",
+    "pipeline/tests/test_researcher_decomposed.py",
+    "pipeline/tests/test_scorer.py",
+    "pipeline/tests/test_source_url_dedup.py",
+    "pipeline/tests/test_tavily_search.py",
+    "pipeline/tests/test_terminal_fetch.py",
+    "pipeline/tests/test_throttle.py",
+    "pipeline/tests/test_tools.py"
+   ],
+   "finding_ids": [
+    "TESTS-03"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.agent-contract-suites",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Agent, model, and prompt contract suites",
+   "role": "Pydantic model validation (seo_title/takeaway truncation guards, narrative normalization), prompt-builder string contracts, verdict comparison, template loading/rendering. Mostly fast, deterministic, well-targeted unit tests.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_agent.py",
+    "pipeline/tests/test_analyst.py",
+    "pipeline/tests/test_auditor_agent.py",
+    "pipeline/tests/test_auditor_models.py",
+    "pipeline/tests/test_models.py",
+    "pipeline/tests/test_ingestor_models.py",
+    "pipeline/tests/test_entity_resolution.py",
+    "pipeline/tests/test_entity_enricher.py",
+    "pipeline/tests/test_entity_verifier.py",
+    "pipeline/tests/test_compare.py",
+    "pipeline/tests/test_classify_source_type.py",
+    "pipeline/tests/test_templates.py",
+    "pipeline/tests/test_instructions.py"
+   ],
+   "community_check": "agree: graphify communities 1 'Claim Template Engine', 3 'Analyst Prompt Builder', 12 'Entity Resolution Parser', 17 'Verdict Comparison Logic', 21 'Source Type Classification' partition this component along its natural seams",
+   "metrics": {
+    "loc": 2311,
+    "churn_commits": 59,
+    "ccn_total": 265,
+    "best_hotspot_rank": 19
+   },
+   "metric_files": [
+    "pipeline/tests/test_agent.py",
+    "pipeline/tests/test_analyst.py",
+    "pipeline/tests/test_auditor_agent.py",
+    "pipeline/tests/test_auditor_models.py",
+    "pipeline/tests/test_classify_source_type.py",
+    "pipeline/tests/test_compare.py",
+    "pipeline/tests/test_entity_enricher.py",
+    "pipeline/tests/test_entity_resolution.py",
+    "pipeline/tests/test_entity_verifier.py",
+    "pipeline/tests/test_ingestor_models.py",
+    "pipeline/tests/test_instructions.py",
+    "pipeline/tests/test_models.py",
+    "pipeline/tests/test_templates.py"
+   ],
+   "finding_ids": [
+    "TESTS-06",
+    "TESTS-08"
+   ],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.infra-and-drift-guards",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Infra suites and drift guards",
+   "role": "Logging handler wiring, frontmatter round-trips, linter check functions, and a source-scanning meta-test that greps production code for undocumented StepError.error_type literals. The vocab scanner is a genuinely useful drift guard, at the cost of four bespoke regexes.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_logging_setup.py",
+    "pipeline/tests/test_frontmatter.py",
+    "pipeline/tests/test_content_loader.py",
+    "pipeline/tests/test_linter.py",
+    "pipeline/tests/test_step_error_vocab.py"
+   ],
+   "community_check": "agree: graphify community 4 'Logging Setup' matches test_logging_setup; the drift-guard scanner is invisible to the import graph (it reads files, it does not import them), so the graph under-reports its coupling to all of pipeline/",
+   "metrics": {
+    "loc": 1186,
+    "churn_commits": 22,
+    "ccn_total": 164,
+    "best_hotspot_rank": 17
+   },
+   "metric_files": [
+    "pipeline/tests/test_content_loader.py",
+    "pipeline/tests/test_frontmatter.py",
+    "pipeline/tests/test_linter.py",
+    "pipeline/tests/test_logging_setup.py",
+    "pipeline/tests/test_step_error_vocab.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.acceptance-live",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "Live acceptance tests",
+   "role": "Marker-gated (-m acceptance) live-LLM tests: scorer split, planner structure, analyst false-verdict, one full-pipeline smoke. Correctly skipped by default, key-gated per provider, model selection mirrors CLI env vars. The gating design is sound.",
+   "subsystem": "tests",
+   "paths": [
+    "pipeline/tests/test_acceptance.py"
+   ],
+   "community_check": "disagree: no graphify community surfaces the acceptance layer as distinct; its members were folded into the planner/scorer communities even though its execution model (live APIs, opt-in marker) is categorically different",
+   "metrics": {
+    "loc": 237,
+    "churn_commits": 10,
+    "ccn_total": 13,
+    "best_hotspot_rank": 38
+   },
+   "metric_files": [
+    "pipeline/tests/test_acceptance.py"
+   ],
+   "finding_ids": [],
+   "proposed_changes": []
+  },
+  {
+   "id": "tests.llm-tester",
+   "level": "l3",
+   "parent": "pipeline",
+   "name": "llm-tester provider harness",
+   "role": "Standalone T1-T5 capability prober for Infomaniak/GreenPT OpenAI-compatible endpoints, built during the multi-provider evaluation (now complete). Zero imports from or into the pipeline; results matrix is hand-maintained in two places.",
+   "subsystem": "tests",
+   "paths": [
+    "scripts/llm-tester/"
+   ],
+   "community_check": "agree: graphify community 8 'GreenPT LLM Harness' captures this as an isolated island, matching its fan_in=0/fan_out=0 metrics",
+   "metrics": {
+    "loc": 1167,
+    "churn_commits": 13,
+    "ccn_total": 212,
+    "best_hotspot_rank": 27
+   },
+   "metric_files": [
+    "scripts/llm-tester/harness/__init__.py",
+    "scripts/llm-tester/harness/_env.py",
+    "scripts/llm-tester/harness/_fmt.py",
+    "scripts/llm-tester/harness/greenpt.py",
+    "scripts/llm-tester/harness/infomaniak.py",
+    "scripts/llm-tester/scan.py",
+    "scripts/llm-tester/tester.py",
+    "scripts/llm-tester/trace/infomaniak.py"
+   ],
+   "finding_ids": [
+    "TESTS-10"
+   ],
+   "proposed_changes": []
+  }
+ ],
+ "edges": [
+  {
+   "source": "operator",
+   "target": "pipeline",
+   "type": "dataflow",
+   "label": "dr CLI commands + checkpoint reviews",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "pipeline",
+   "target": "ext-llm",
+   "type": "dataflow",
+   "label": "agent inference",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "pipeline",
+   "target": "ext-search",
+   "type": "dataflow",
+   "label": "source discovery",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "pipeline",
+   "target": "ext-wayback",
+   "type": "dataflow",
+   "label": "archive lookups",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "pipeline",
+   "target": "content-store",
+   "type": "writes",
+   "label": "claims, sidecars, sources, entities",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "site",
+   "target": "content-store",
+   "type": "reads",
+   "label": "content collections at build",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tooling",
+   "target": "site",
+   "type": "build",
+   "label": "astro build -> dist/",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tooling",
+   "target": "pipeline",
+   "type": "build",
+   "label": "dr lint gate in CI",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tooling",
+   "target": "ext-github",
+   "type": "dataflow",
+   "label": "deploy to Pages",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "reader",
+   "target": "ext-github",
+   "type": "dataflow",
+   "label": "reads site from Pages",
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "agents-trio.ingestor-tools",
+   "resolved": true,
+   "type": "import",
+   "label": "registers web_fetch/wayback tools",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "loads instructions.md at import time",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "SourceFile consumed by _ingest_one",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "step-ingest duplicate invocation path",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-tools",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "WAYBACK_CHECK_S / WAYBACK_SAVE_S",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-tools",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "tool results returned to LLM loop",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-validation",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "validates SourceFile",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.ingestor-validation",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "only caller (step-ingest)",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "Verdict/Confidence/Category/VerificationLevel enums",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "instructions + verdict-scale.md fragment",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "AnalystOutput consumed by _analyse_claim",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "ResolvedEntity for pre-resolved prompt block",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "instructions + verdict-scale.md fragment",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "agents-trio.auditor-comparison",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "IndependentAssessment feeds compare()",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "_audit_claim builds bundle + runs agent",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "step-audit builds ClaimBundle inline",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-comparison",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "Verdict/Confidence/VerdictSeverity",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.auditor-comparison",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "ComparisonResult persisted to .audit.yaml sidecars",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.enum-mirror",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "hand-mirrored enum values",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.enum-mirror",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "enums for persistence/CLI",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.enum-mirror",
+   "target": "analyst",
+   "resolved": false,
+   "type": "import",
+   "label": "output-schema field types",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.enum-mirror",
+   "target": "linter",
+   "resolved": false,
+   "type": "import",
+   "label": "verdict/confidence checks",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.provider-gateway",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "Agent.override(model=resolve_model(...))",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.provider-gateway",
+   "target": "researcher",
+   "resolved": false,
+   "type": "import",
+   "label": "planner/scorer model overrides",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.provider-gateway",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "none today; both configure HTTP",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.content-io",
+   "target": "research/",
+   "resolved": false,
+   "type": "reads",
+   "label": "claims/sources/entities markdown",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.content-io",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "persistence + CLI read paths",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.content-io",
+   "target": "linter",
+   "resolved": false,
+   "type": "import",
+   "label": "frontmatter checks",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.source-quality",
+   "target": "research/blocklist.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "operator-editable host blocklist",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.source-quality",
+   "target": "researcher",
+   "resolved": false,
+   "type": "import",
+   "label": "URL scoring hints",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.source-quality",
+   "target": "ingestor",
+   "resolved": false,
+   "type": "import",
+   "label": "pre-fetch filtering + source typing",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.source-quality",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "source file writing",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.templates",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "template definitions",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.templates",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "onboarding fan-out + title validation",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.rate-and-time",
+   "target": "researcher",
+   "resolved": false,
+   "type": "import",
+   "label": "arxiv/tavily bucket register+acquire",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.rate-and-time",
+   "target": "ingestor",
+   "resolved": false,
+   "type": "import",
+   "label": "httpx timeouts for web_fetch",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.rate-and-time",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "ingest budget derivation",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.logging-console",
+   "target": "logs/info.log",
+   "resolved": false,
+   "type": "writes",
+   "label": "human-readable stream",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.logging-console",
+   "target": "logs/debug.log",
+   "resolved": false,
+   "type": "writes",
+   "label": "JSON stream",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.logging-console",
+   "target": "orchestrator",
+   "resolved": false,
+   "type": "import",
+   "label": "configure_logging, progress, hr, run ids",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.instructions",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "reads",
+   "label": "agent system prompt",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.instructions",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "reads",
+   "label": "agent system prompt",
+   "provenance": "agent"
+  },
+  {
+   "source": "common.instructions",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "reads",
+   "label": "shared prompt fragment",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.operating-contract",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "reads",
+   "label": "documents dr commands (drifted)",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.operating-contract",
+   "target": "docs-accuracy.active-plans",
+   "resolved": true,
+   "type": "reads",
+   "label": "defines plan lifecycle rules",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.operating-contract",
+   "target": "docs-accuracy.architecture-reference",
+   "resolved": true,
+   "type": "reads",
+   "label": "glossary/workflow docs cite it as canonical",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.architecture-reference",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "reads",
+   "label": "content-model.md mirrors Zod schema",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.architecture-reference",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "reads",
+   "label": "workflow/flow docs describe VerifyConfig and gates",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.architecture-reference",
+   "target": "docs-accuracy.operating-contract",
+   "resolved": true,
+   "type": "reads",
+   "label": "role tables restate AGENTS.md",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.vision-and-open-questions",
+   "target": "docs-accuracy.active-plans",
+   "resolved": true,
+   "type": "reads",
+   "label": "vision names it as near-term substrate",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.vision-and-open-questions",
+   "target": "docs-accuracy.unscheduled-backlog",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "open issues duplicate backlog rows",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.unscheduled-backlog",
+   "target": "docs-accuracy.active-plans",
+   "resolved": true,
+   "type": "reads",
+   "label": "links plan files per row",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.unscheduled-backlog",
+   "target": "docs-accuracy.active-plans",
+   "resolved": true,
+   "type": "reads",
+   "label": "links gitignored drafts (dangles on clone)",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.active-plans",
+   "target": "docs-accuracy.completed-archive",
+   "resolved": true,
+   "type": "writes",
+   "label": "git mv on completion",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.active-plans",
+   "target": "docs-accuracy.operating-contract",
+   "resolved": true,
+   "type": "reads",
+   "label": "lifecycle + review-history rules",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.completed-archive",
+   "target": "docs-accuracy.architecture-reference",
+   "resolved": true,
+   "type": "build",
+   "label": "inside graphify's indexed corpus",
+   "provenance": "agent"
+  },
+  {
+   "source": "docs-accuracy.completed-archive",
+   "target": "docs-accuracy.architecture-reference",
+   "resolved": true,
+   "type": "reads",
+   "label": "reference docs cite completed plans for context",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "Confidence, VerificationLevel enums",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "has_criterion (imported inside a check)",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "receives pre-built indexes",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "linter.check-library",
+   "resolved": true,
+   "type": "import",
+   "label": "imports all 21 checks by name",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "parse_frontmatter",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "read_sidecar for published claims",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "research/",
+   "resolved": false,
+   "type": "reads",
+   "label": "claims, entities, sources, templates.yaml",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "validates the same files Zod validates at build; coverage diverges",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.reporting",
+   "target": "linter.cli-entry",
+   "resolved": true,
+   "type": "import",
+   "label": "consumed by module CLI",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.reporting",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "consumed by dr lint",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "import",
+   "label": "run_all_checks",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "all three formatters",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "scripts-ci.task-runner",
+   "resolved": true,
+   "type": "build",
+   "label": "invoked by inv audit via subprocess",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "build",
+   "label": "parallel entry: dr lint reimplements this CLI with different flags",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.prune-tool",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "import",
+   "label": "run_all_checks (runs all 21 checks to use 1)",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.prune-tool",
+   "target": "research/sources/",
+   "resolved": false,
+   "type": "writes",
+   "label": "deletes orphaned source files under --apply",
+   "provenance": "agent"
+  },
+  {
+   "source": "linter.prune-tool",
+   "target": "scripts-ci.task-runner",
+   "resolved": true,
+   "type": "build",
+   "label": "invoked by inv audit.prune via subprocess",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "AGENT_NAMES, DEFAULT_MODEL, resolve_model",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "configure_logging, run ids",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-cli.pipeline-commands",
+   "resolved": true,
+   "type": "build",
+   "label": "registers commands",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-cli.curation-commands",
+   "resolved": true,
+   "type": "build",
+   "label": "registers commands",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.pipeline-commands",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "verify_claim, onboard_entity, research_claim, enrich_entity",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.pipeline-commands",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "_write_claim_file, _write_audit_sidecar (claim-refresh)",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.pipeline-commands",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "writes",
+   "label": "claim .md + .audit.yaml",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.pipeline-commands",
+   "target": "research/sources/",
+   "resolved": false,
+   "type": "writes",
+   "label": "source files",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.pipeline-commands",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "writes",
+   "label": "claim-promote append",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.curation-commands",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "approve_claim",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.curation-commands",
+   "target": "orchestrator-cli.review-queue",
+   "resolved": true,
+   "type": "import",
+   "label": "find_publication_queue, run_interactive",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.curation-commands",
+   "target": "orchestrator-cli.stats-reporter",
+   "resolved": true,
+   "type": "import",
+   "label": "compute_stats + formatters",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.curation-commands",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "set_claim_status (publish)",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.curation-commands",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "writes",
+   "label": "status flips + sidecar human_review",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "parse_frontmatter, has_criterion",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "sidecar_path_for",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "set_claim_status",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "writes",
+   "label": ".audit.yaml human_review + status flip",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "approve_claim on [a]",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "list_claims",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "read_sidecar",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "writes",
+   "label": "field edits, deletes",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.stats-reporter",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "list_claims",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.stats-reporter",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "read_sidecar",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-cli.stats-reporter",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "reads",
+   "label": "frontmatter + sidecars",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "human review gates between steps",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "writes",
+   "label": "research_claim persists sources/entity/claim/sidecar",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "decomposed_research returns URLs + sub-questions",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "ingestor agent per URL",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "analyst / verdict-only agents",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "auditor agent + compare",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.onboard-enrich-flow",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "verify_claim per applicable template",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.onboard-enrich-flow",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "writes",
+   "label": "entity file, blocked/success claim files, audit sidecars",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.onboard-enrich-flow",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "name-collision verifier agent",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.onboard-enrich-flow",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "enricher agent",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.onboard-enrich-flow",
+   "target": "common.templates",
+   "resolved": true,
+   "type": "import",
+   "label": "template load/render/title validation",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.run-models",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "BlockedReason, FailureInfo, model resolution",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.run-models",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "run_id binding",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "research/",
+   "resolved": false,
+   "type": "writes",
+   "label": "sources, entities, claims, .audit.yaml sidecars",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "parse/serialize frontmatter",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "source_type + independence defaults",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.checkpoint-gates",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "CLI constructs CLICheckpointHandler or AutoApprove",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.checkpoint-gates",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "ComparisonResult for disagreement review",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.entity-resolution",
+   "target": "research/entities",
+   "resolved": false,
+   "type": "reads",
+   "label": "entity frontmatter",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.entity-resolution",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "load_entity",
+   "provenance": "agent"
+  },
+  {
+   "source": "orchestrator-pipeline.entity-resolution",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "ResolvedEntity threaded into research/analyst prompts",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.planner",
+   "resolved": true,
+   "type": "import",
+   "label": "runs research_planner_agent",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.scorer",
+   "resolved": true,
+   "type": "import",
+   "label": "runs url_scorer_agent, builds prompt",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.search-backends",
+   "resolved": true,
+   "type": "import",
+   "label": "dispatches search_brave/search_tavily/search_arxiv",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "returns ResearchOutput (urls, trace, prefetched_bodies)",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "ResolvedEntity, build_entity_context",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "StepError vocabulary",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "entity-exclude URL filtering",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "dedup key",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.planner",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "SubQuestion",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.planner",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "ResearchPlan output",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.scorer",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "SubQuestion",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.scorer",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "ScoredURLs output; SearchCandidate schema shared",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.search-backends",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "token buckets (tavily, arxiv only)",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.search-backends",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "HTTP_READ_S (arxiv only)",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.search-backends",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "search result dicts",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.search-backends",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "collision probe calls search_brave directly",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.entity-agents",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "VerificationOutcome / EnrichmentDraft consumed by entity flow; LightResearchBundle input (TYPE_CHECKING import)",
+   "provenance": "agent"
+  },
+  {
+   "source": "researcher.entity-agents",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "EntityType keys for per-type prompt sections",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "research/claims",
+   "resolved": false,
+   "type": "reads",
+   "label": "claim frontmatter",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "research/sources",
+   "resolved": false,
+   "type": "reads",
+   "label": "glob loader",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "research/entities",
+   "resolved": false,
+   "type": "reads",
+   "label": "glob loader",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "file loader (criteria)",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "src/content/resources",
+   "resolved": false,
+   "type": "reads",
+   "label": "editorial glob loader",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.content-collections",
+   "target": "pipeline.common-models",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "hand-mirrored enums",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.claims-audit-loader",
+   "target": "research/claims",
+   "resolved": false,
+   "type": "reads",
+   "label": "*.md + *.audit.yaml",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.claims-audit-loader",
+   "target": "pipeline.orchestrator-persistence",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "consumes _write_audit_sidecar output",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.claims-audit-loader",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "audit trail rendering",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.matrix-schema",
+   "target": "site-pages.resources",
+   "resolved": true,
+   "type": "import",
+   "label": "matrixDataSchema.parse at render",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.vocab-mirrors",
+   "target": "pipeline.common-models",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "manual mirror of Python enums",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.vocab-mirrors",
+   "target": "site-components.research-display",
+   "resolved": true,
+   "type": "import",
+   "label": "labels/tooltips",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.vocab-mirrors",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "import",
+   "label": "verification gloss, ratings",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.cross-ref-indexes",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "iterates claims collection",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.cross-ref-indexes",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "import",
+   "label": "criteria matrix rows",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.cross-ref-indexes",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "import",
+   "label": "cited-by list",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.seo-gates",
+   "target": "scripts-ci.astro-build-config",
+   "resolved": true,
+   "type": "import",
+   "label": "sitemap filter",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.seo-gates",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "import",
+   "label": "noindex meta",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.jsonld-builders",
+   "target": "site-pages.resources",
+   "resolved": true,
+   "type": "import",
+   "label": "ld+json script tag",
+   "provenance": "agent"
+  },
+  {
+   "source": "schemas-integration.jsonld-builders",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "reads resources entry.data.data (z.unknown)",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.ci-workflows",
+   "target": "scripts-ci.task-runner",
+   "resolved": true,
+   "type": "build",
+   "label": "runs npm run build/lint:md/check:citations",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.ci-workflows",
+   "target": "pipeline.linter",
+   "resolved": false,
+   "type": "build",
+   "label": "runs uv run dr lint in pipeline/",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.ci-workflows",
+   "target": "scripts-ci.content-checks",
+   "resolved": true,
+   "type": "build",
+   "label": "invokes check-citations.ts via npm script",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.ci-workflows",
+   "target": "dist/",
+   "resolved": false,
+   "type": "writes",
+   "label": "uploads dist/ as Pages artifact",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.task-runner",
+   "target": "scripts-ci.task-runner",
+   "resolved": true,
+   "type": "build",
+   "label": "inv tasks shell out to npm run *",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.task-runner",
+   "target": "pipeline.tests",
+   "resolved": false,
+   "type": "build",
+   "label": "inv test.* runs pytest in pipeline/",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.task-runner",
+   "target": "pipeline.linter",
+   "resolved": false,
+   "type": "build",
+   "label": "inv audit runs python -m linter",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.content-checks",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "reads",
+   "label": "parses claim frontmatter",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.content-checks",
+   "target": "research/sources/",
+   "resolved": false,
+   "type": "reads",
+   "label": "checks source files exist",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.seo-ops",
+   "target": "scripts-ci.seo-ops",
+   "resolved": true,
+   "type": "reads",
+   "label": "PUTs list items to Cloudflare",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.seo-ops",
+   "target": "scripts-ci.astro-build-config",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "duplicates the redirect map in astro.config.ts",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.seo-ops",
+   "target": "seo-runs/",
+   "resolved": false,
+   "type": "writes",
+   "label": "inspection JSON output",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.entity-dev-loop",
+   "target": "pipeline.orchestrator",
+   "resolved": false,
+   "type": "build",
+   "label": "uv run dr onboard",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.entity-dev-loop",
+   "target": "research/",
+   "resolved": false,
+   "type": "writes",
+   "label": "clear-openai.sh deletes entity/claim/source files",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.claims-backfill",
+   "target": "pipeline.orchestrator",
+   "resolved": false,
+   "type": "build",
+   "label": "subprocess: uv run dr claim-refresh",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.claims-backfill",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "writes",
+   "label": "regex-rewrites status + sidecar YAML",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.claims-backfill",
+   "target": "docs-accuracy.active-plans",
+   "resolved": true,
+   "type": "writes",
+   "label": "per-claim JSONL log",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.astro-build-config",
+   "target": "schemas-integration.seo-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "isAlphaDetailPath + INDEX_ALPHA_DETAIL_PAGES",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.astro-build-config",
+   "target": "dist/",
+   "resolved": false,
+   "type": "writes",
+   "label": "sitemap + redirect pages at build",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.graphify-publish",
+   "target": "graphify-out/graph.html",
+   "resolved": false,
+   "type": "reads",
+   "label": "manual cp of generated HTML",
+   "provenance": "agent"
+  },
+  {
+   "source": "scripts-ci.graphify-publish",
+   "target": "scripts-ci.graphify-publish",
+   "resolved": true,
+   "type": "writes",
+   "label": "committed blob served by Pages",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.design-tokens",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "build",
+   "label": "imported once, applies site-wide",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.a11y-chrome",
+   "target": "site-components.design-tokens",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "toggles data-theme/contrast/motion that tokens.css keys on",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.a11y-chrome",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "mirrors pre-paint script's storage keys and font-size map",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.page-identity",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "ENTITY_TYPE_LABELS for icon + label",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.browse-controls",
+   "target": "site-components.research-display",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "hides/shows [data-filterable] row components",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.research-display",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "VERDICT_LABELS/ORDER/counts",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.research-display",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "CATEGORY_LABELS in ClaimRow",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.responsible-ai-suite",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "dataflow",
+   "label": "renders matrixDataSchema-validated data",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.responsible-ai-suite",
+   "target": "site-components.resource-chrome",
+   "resolved": true,
+   "type": "reads",
+   "label": "depends on .return-top/.pill-nav styles in resources.css",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.responsible-ai-suite",
+   "target": "site-pages.resources",
+   "resolved": true,
+   "type": "reads",
+   "label": "consumes --page-nav-stuck-height set by page IntersectionObserver",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.resource-guides",
+   "target": "site-components.resource-chrome",
+   "resolved": true,
+   "type": "reads",
+   "label": "TurnOffGuide renders .pill-nav-wrap/.resources-callout classes styled in resources.css",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.resource-guides",
+   "target": "site-pages.resources",
+   "resolved": true,
+   "type": "build",
+   "label": "instantiated per layout kind (guide/tool)",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-components.resource-chrome",
+   "target": "site-pages.resources",
+   "resolved": true,
+   "type": "build",
+   "label": "layout mounts wallpaper/grain and loads resources.css",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "site-components.a11y-chrome",
+   "resolved": true,
+   "type": "import",
+   "label": "a11y widget",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "site-components.design-tokens",
+   "resolved": true,
+   "type": "import",
+   "label": "design tokens",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "VERSION.md",
+   "resolved": false,
+   "type": "reads",
+   "label": "footer version via readFileSync",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "site-pages.research-detail",
+   "resolved": true,
+   "type": "build",
+   "label": "wraps all pages",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.home-hero",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "chrome=minimal layout=bare",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.home-hero",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "highlight-tagged claims via getCollection",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.home-hero",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "verdict labels",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-hub",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "layout",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-hub",
+   "target": "site-pages.research-indexes",
+   "resolved": true,
+   "type": "build",
+   "label": "links to all section indexes",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-components.browse-controls",
+   "resolved": true,
+   "type": "import",
+   "label": "client-side filtering",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-components.research-display",
+   "resolved": true,
+   "type": "import",
+   "label": "entity grids",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "research/",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "content collections at build",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "entity maps, breadcrumb parents",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "verification levels",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.seo-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "noindex gating",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "research/claims/",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "renders pipeline output",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "via ResourcePage",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-components.responsible-ai-suite",
+   "resolved": true,
+   "type": "import",
+   "label": "matrix layout",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "import",
+   "label": "matrixDataSchema re-validation",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": ".git",
+   "resolved": false,
+   "type": "reads",
+   "label": "execSync git log for last-updated",
+   "provenance": "agent"
+  },
+  {
+   "source": "site-pages.static-pages",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "layout",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.shared-fixtures",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "resolve_repo_root",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.shared-fixtures",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "run_id_var reset",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.shared-fixtures",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "patches _safe_repo_root",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "verify_claim, onboard_entity, private helpers",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "_write_audit_sidecar, _write_claim_file",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "StepError, handlers",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "copies live templates into tmp repos",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "invokes main via CliRunner",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "approve_claim gate",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.review-queue",
+   "resolved": true,
+   "type": "import",
+   "label": "queue membership + editor stubs",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "test_cli.py copies live file",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "decomposed_research, execute_searches",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "pipeline/researcher/tools/",
+   "resolved": false,
+   "type": "import",
+   "label": "brave/tavily/arxiv clients via respx",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "pipeline/ingestor/tools/",
+   "resolved": false,
+   "type": "import",
+   "label": "web_fetch, wayback",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "VerifyConfig, _ingest_urls",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "build_analyst_prompt, VerdictAssessment",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.templates",
+   "resolved": true,
+   "type": "import",
+   "label": "load/render/validate templates",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "enums and shared models",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "research/templates.yaml",
+   "resolved": false,
+   "type": "reads",
+   "label": "count and slug assertions against live file",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "handler/formatter assertions",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "linter.check-library",
+   "resolved": true,
+   "type": "import",
+   "label": "pure check functions",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "pipeline/",
+   "resolved": false,
+   "type": "reads",
+   "label": "vocab scanner rglobs all production .py",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "verify_claim live smoke",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "researcher.planner",
+   "resolved": true,
+   "type": "import",
+   "label": "live planner run",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "live analyst run",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.llm-tester",
+   "target": "tests.llm-tester",
+   "resolved": true,
+   "type": "import",
+   "label": "scoring/table rendering",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.llm-tester",
+   "target": "tests.llm-tester",
+   "resolved": true,
+   "type": "writes",
+   "label": "probe result markdown (gitignored)",
+   "provenance": "agent"
+  },
+  {
+   "source": "tests.llm-tester",
+   "target": "docs/reports/API-PROVIDER-FINAL-REPORT.md",
+   "resolved": false,
+   "type": "dataflow",
+   "label": "findings fed the provider report",
+   "provenance": "agent"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.analyst-agent",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.auditor-agent",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.auditor-comparison",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.auditor-comparison",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "agents-trio.ingestor-tools",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-agent",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-tools",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "agents-trio.ingestor-validation",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.check-library",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.cli-entry",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "linter.check-library",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.orchestration",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "linter.prune-tool",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "agents-trio.auditor-comparison",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "agents-trio.ingestor-validation",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "25 file import(s)",
+   "weight": 25,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "common.templates",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "linter.orchestration",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-cli.review-queue",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-cli.stats-reporter",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.command-router",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.review-approval",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.review-queue",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.stats-reporter",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-cli.stats-reporter",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.checkpoint-gates",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.checkpoint-gates",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.entity-resolution",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.entity-resolution",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.persistence-writers",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.auditor-comparison",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "agents-trio.ingestor-tools",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "common.templates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "orchestrator-pipeline.verify-engine",
+   "target": "researcher.search-backends",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.entity-agents",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.entity-agents",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.planner",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.scorer",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.pipeline-runner",
+   "target": "researcher.search-backends",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.planner",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.scorer",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "researcher.search-backends",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "6 file import(s)",
+   "weight": 6,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "scripts-ci.astro-build-config",
+   "target": "schemas-integration.seo-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-components.page-identity",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-components.research-display",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-components.responsible-ai-suite",
+   "target": "site-components.browse-controls",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-components.responsible-ai-suite",
+   "target": "site-components.resource-guides",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "site-components.a11y-chrome",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.base-layout",
+   "target": "site-components.design-tokens",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.home-hero",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.home-hero",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.cross-ref-indexes",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.seo-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "6 file import(s)",
+   "weight": 6,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "site-components.browse-controls",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "site-components.page-identity",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "site-components.research-display",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-detail",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-hub",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "schemas-integration.cross-ref-indexes",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "schemas-integration.vocab-mirrors",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-components.browse-controls",
+   "resolved": true,
+   "type": "import",
+   "label": "11 file import(s)",
+   "weight": 11,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-components.page-identity",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-components.research-display",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.research-indexes",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "schemas-integration.content-collections",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "schemas-integration.jsonld-builders",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-components.resource-chrome",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-components.resource-guides",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-components.responsible-ai-suite",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.resources",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.static-pages",
+   "target": "site-components.page-identity",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "site-pages.static-pages",
+   "target": "site-pages.base-layout",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "grep-approx"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "researcher.planner",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.acceptance-live",
+   "target": "researcher.scorer",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "agents-trio.auditor-comparison",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "12 file import(s)",
+   "weight": 12,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.instructions",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "common.templates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "linter.check-library",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.agent-contract-suites",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "20 file import(s)",
+   "weight": 20,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.review-queue",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-cli.stats-reporter",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "9 file import(s)",
+   "weight": 9,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "6 file import(s)",
+   "weight": 6,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.cli-command-suites",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "linter.check-library",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "linter.reporting",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.infra-and-drift-guards",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "agents-trio.analyst-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "agents-trio.auditor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "10 file import(s)",
+   "weight": 10,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-cli.command-router",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-cli.review-approval",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "researcher.entity-agents",
+   "resolved": true,
+   "type": "import",
+   "label": "11 file import(s)",
+   "weight": 11,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.orchestrator-persistence-suites",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "agents-trio.ingestor-agent",
+   "resolved": true,
+   "type": "import",
+   "label": "8 file import(s)",
+   "weight": 8,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "agents-trio.ingestor-tools",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "common.enum-mirror",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "common.rate-and-time",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "common.source-quality",
+   "resolved": true,
+   "type": "import",
+   "label": "5 file import(s)",
+   "weight": 5,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "orchestrator-pipeline.checkpoint-gates",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "orchestrator-pipeline.entity-resolution",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "orchestrator-pipeline.persistence-writers",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "orchestrator-pipeline.verify-engine",
+   "resolved": true,
+   "type": "import",
+   "label": "20 file import(s)",
+   "weight": 20,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "researcher.pipeline-runner",
+   "resolved": true,
+   "type": "import",
+   "label": "3 file import(s)",
+   "weight": 3,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "researcher.planner",
+   "resolved": true,
+   "type": "import",
+   "label": "2 file import(s)",
+   "weight": 2,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "researcher.scorer",
+   "resolved": true,
+   "type": "import",
+   "label": "7 file import(s)",
+   "weight": 7,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.researcher-search-suites",
+   "target": "researcher.search-backends",
+   "resolved": true,
+   "type": "import",
+   "label": "4 file import(s)",
+   "weight": 4,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.shared-fixtures",
+   "target": "common.content-io",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  },
+  {
+   "source": "tests.shared-fixtures",
+   "target": "common.logging-console",
+   "resolved": true,
+   "type": "import",
+   "label": "1 file import(s)",
+   "weight": 1,
+   "provenance": "deterministic"
+  }
+ ]
+}

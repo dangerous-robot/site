@@ -1,0 +1,94 @@
+{
+ "provenance": {
+  "commit": "43a1575d73a38932173dab461d4d66c15ce9efdb",
+  "generated_by": "data_conformance.py",
+  "enum_vocab_source": "src/content.config.ts z.enum sites",
+  "note": "descriptive sweep; field coverage counts, not required-field validation"
+ },
+ "counts": {
+  "claims": 5,
+  "audit_sidecars": 5,
+  "sources": 36,
+  "entities": 14
+ },
+ "sidecar_pairing": {
+  "claims_without_sidecar": [],
+  "orphan_sidecars": []
+ },
+ "field_coverage": {
+  "claims": {
+   "title": 5,
+   "entity": 5,
+   "topics": 5,
+   "verdict": 5,
+   "confidence": 5,
+   "verification_level": 5,
+   "takeaway": 5,
+   "seo_title": 5,
+   "status": 5,
+   "as_of": 5,
+   "sources": 5,
+   "tags": 5,
+   "criteria_slug": 3,
+   "cap_rationale": 1
+  },
+  "sources": {
+   "url": 36,
+   "title": 36,
+   "publisher": 36,
+   "accessed_date": 36,
+   "kind": 36,
+   "summary": 36,
+   "source_type": 36,
+   "independence": 33,
+   "key_quotes": 33,
+   "archived_url": 28,
+   "published_date": 22
+  },
+  "entities": {
+   "name": 14,
+   "type": 14,
+   "description": 14,
+   "website": 10,
+   "search_hints": 10,
+   "parent_company": 4,
+   "founded": 2,
+   "verification_status": 2,
+   "aliases": 2
+  }
+ },
+ "frontmatter_problems": {
+  "parse_errors": [],
+  "missing_frontmatter": []
+ },
+ "enum_violations": {},
+ "distributions": {
+  "verdict": {
+   "false": 1,
+   "true": 2,
+   "unverified": 2
+  },
+  "confidence": {
+   "medium": 3,
+   "high": 2
+  },
+  "status": {
+   "published": 3,
+   "draft": 2
+  },
+  "source_kind": {
+   "article": 14,
+   "report": 14,
+   "paper": 1,
+   "blog": 2,
+   "video": 1,
+   "index": 2,
+   "documentation": 2
+  },
+  "entity_type": {
+   "company": 6,
+   "product": 5,
+   "subject": 3
+  }
+ }
+}

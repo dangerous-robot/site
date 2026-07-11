@@ -1,0 +1,7611 @@
+{
+ "provenance": {
+  "commit": "43a1575d73a38932173dab461d4d66c15ce9efdb",
+  "generated_by": "compute_metrics.py",
+  "tools": {
+   "lizard": "1.23.0",
+   "networkx": "3.6.1",
+   "python": "3.14.3"
+  },
+  "graphify_graph": {
+   "built_at_commit": "f35f71ef2e82047458a72b0c21e3e7d77e4ad08f",
+   "edges_total": 5956,
+   "edges_extracted_used": 4915,
+   "betweenness_sample_k": 400,
+   "betweenness_seed": 42
+  },
+  "hotspot_formula": "0.4*norm(churn_commits) + 0.4*norm(ccn_total) + 0.2*norm(betweenness_sum)",
+  "notes": [
+   "churn covers full git history, no rename following",
+   ".astro complexity covers frontmatter TS only (template logic excluded)",
+   "ts import edges are regex-derived (grep-approx): re-exports/dynamic aliases missed",
+   "centrality from graphify graph EXTRACTED edges only; betweenness sampled k=400 seed=42"
+  ]
+ },
+ "files": {
+  "astro.config.ts": {
+   "loc": 61,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 65,
+   "churn_deleted": 4,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 56,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00185,
+    "betweenness_sum": 1e-06,
+    "betweenness_max": 1e-06,
+    "nodes": 2
+   },
+   "hotspot_rank": 100,
+   "hotspot_score": 0.026
+  },
+  "pipeline/analyst/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 156,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/analyst/agent.py": {
+   "loc": 313,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 17,
+   "churn_added": 374,
+   "churn_deleted": 61,
+   "fan_in": 11,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 241,
+    "functions": 6,
+    "ccn_max": 20,
+    "ccn_total": 48,
+    "longest_fn_nloc": 67,
+    "worst_fn": "build_analyst_prompt"
+   },
+   "centrality": {
+    "degree_sum": 0.028117,
+    "betweenness_sum": 0.045552,
+    "betweenness_max": 0.030662,
+    "nodes": 20
+   },
+   "hotspot_rank": 16,
+   "hotspot_score": 0.1637
+  },
+  "pipeline/auditor/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 157,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/auditor/agent.py": {
+   "loc": 68,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 79,
+   "churn_deleted": 11,
+   "fan_in": 6,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 47,
+    "functions": 1,
+    "ccn_max": 7,
+    "ccn_total": 7,
+    "longest_fn_nloc": 35,
+    "worst_fn": "build_auditor_prompt"
+   },
+   "centrality": {
+    "degree_sum": 0.009989,
+    "betweenness_sum": 0.016997,
+    "betweenness_max": 0.008534,
+    "nodes": 5
+   },
+   "hotspot_rank": 72,
+   "hotspot_score": 0.0366
+  },
+  "pipeline/auditor/bundle.py": {
+   "loc": 47,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 50,
+   "churn_deleted": 3,
+   "fan_in": 1,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 35,
+    "functions": 1,
+    "ccn_max": 2,
+    "ccn_total": 2,
+    "longest_fn_nloc": 31,
+    "worst_fn": "build_bundle"
+   },
+   "centrality": {
+    "degree_sum": 0.008139,
+    "betweenness_sum": 0.006481,
+    "betweenness_max": 0.00329,
+    "nodes": 6
+   },
+   "hotspot_rank": 119,
+   "hotspot_score": 0.0209
+  },
+  "pipeline/auditor/compare.py": {
+   "loc": 81,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 81,
+   "churn_deleted": 0,
+   "fan_in": 4,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 60,
+    "functions": 3,
+    "ccn_max": 6,
+    "ccn_total": 11,
+    "longest_fn_nloc": 30,
+    "worst_fn": "_verdict_severity"
+   },
+   "centrality": {
+    "degree_sum": 0.020718,
+    "betweenness_sum": 0.020093,
+    "betweenness_max": 0.009819,
+    "nodes": 13
+   },
+   "hotspot_rank": 95,
+   "hotspot_score": 0.027
+  },
+  "pipeline/auditor/models.py": {
+   "loc": 72,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 73,
+   "churn_deleted": 1,
+   "fan_in": 12,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 47,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.026637,
+    "betweenness_sum": 0.030255,
+    "betweenness_max": 0.017729,
+    "nodes": 12
+   },
+   "hotspot_rank": 103,
+   "hotspot_score": 0.0244
+  },
+  "pipeline/auditor/report.py": {
+   "loc": 75,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 75,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 57,
+    "functions": 2,
+    "ccn_max": 14,
+    "ccn_total": 20,
+    "longest_fn_nloc": 41,
+    "worst_fn": "format_text_report"
+   },
+   "centrality": {
+    "degree_sum": 0.005919,
+    "betweenness_sum": 0.002773,
+    "betweenness_max": 0.001849,
+    "nodes": 7
+   },
+   "hotspot_rank": 86,
+   "hotspot_score": 0.0291
+  },
+  "pipeline/common/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 3,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 158,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/common/blocklist.py": {
+   "loc": 100,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 102,
+   "churn_deleted": 2,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 60,
+    "functions": 5,
+    "ccn_max": 6,
+    "ccn_total": 19,
+    "longest_fn_nloc": 19,
+    "worst_fn": "_load_blocklist_cached"
+   },
+   "centrality": {
+    "degree_sum": 0.024417,
+    "betweenness_sum": 0.025462,
+    "betweenness_max": 0.012894,
+    "nodes": 14
+   },
+   "hotspot_rank": 64,
+   "hotspot_score": 0.0437
+  },
+  "pipeline/common/canonical_url.py": {
+   "loc": 154,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 179,
+   "churn_deleted": 25,
+   "fan_in": 2,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 89,
+    "functions": 3,
+    "ccn_max": 15,
+    "ccn_total": 34,
+    "longest_fn_nloc": 40,
+    "worst_fn": "_normalize_path"
+   },
+   "centrality": {
+    "degree_sum": 0.019238,
+    "betweenness_sum": 0.084227,
+    "betweenness_max": 0.04297,
+    "nodes": 8
+   },
+   "hotspot_rank": 32,
+   "hotspot_score": 0.0879
+  },
+  "pipeline/common/content_loader.py": {
+   "loc": 80,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 85,
+   "churn_deleted": 5,
+   "fan_in": 22,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 48,
+    "functions": 6,
+    "ccn_max": 10,
+    "ccn_total": 16,
+    "longest_fn_nloc": 20,
+    "worst_fn": "list_claims"
+   },
+   "centrality": {
+    "degree_sum": 0.028857,
+    "betweenness_sum": 0.05553,
+    "betweenness_max": 0.03295,
+    "nodes": 15
+   },
+   "hotspot_rank": 45,
+   "hotspot_score": 0.0595
+  },
+  "pipeline/common/frontmatter.py": {
+   "loc": 113,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 115,
+   "churn_deleted": 2,
+   "fan_in": 20,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 60,
+    "functions": 9,
+    "ccn_max": 6,
+    "ccn_total": 19,
+    "longest_fn_nloc": 10,
+    "worst_fn": "_clean_for_serialize"
+   },
+   "centrality": {
+    "degree_sum": 0.051424,
+    "betweenness_sum": 0.05563,
+    "betweenness_max": 0.030332,
+    "nodes": 26
+   },
+   "hotspot_rank": 43,
+   "hotspot_score": 0.0629
+  },
+  "pipeline/common/instructions.py": {
+   "loc": 38,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 42,
+   "churn_deleted": 4,
+   "fan_in": 6,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 17,
+    "functions": 2,
+    "ccn_max": 5,
+    "ccn_total": 6,
+    "longest_fn_nloc": 12,
+    "worst_fn": "load_instructions"
+   },
+   "centrality": {
+    "degree_sum": 0.011469,
+    "betweenness_sum": 0.021623,
+    "betweenness_max": 0.014145,
+    "nodes": 7
+   },
+   "hotspot_rank": 93,
+   "hotspot_score": 0.0272
+  },
+  "pipeline/common/logging_setup.py": {
+   "loc": 267,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 295,
+   "churn_deleted": 28,
+   "fan_in": 5,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 141,
+    "functions": 11,
+    "ccn_max": 6,
+    "ccn_total": 32,
+    "longest_fn_nloc": 41,
+    "worst_fn": "configure_logging"
+   },
+   "centrality": {
+    "degree_sum": 0.042915,
+    "betweenness_sum": 0.05042,
+    "betweenness_max": 0.029667,
+    "nodes": 29
+   },
+   "hotspot_rank": 34,
+   "hotspot_score": 0.0804
+  },
+  "pipeline/common/models.py": {
+   "loc": 311,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 23,
+   "churn_added": 360,
+   "churn_deleted": 49,
+   "fan_in": 48,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 175,
+    "functions": 4,
+    "ccn_max": 10,
+    "ccn_total": 18,
+    "longest_fn_nloc": 41,
+    "worst_fn": "resolve_model"
+   },
+   "centrality": {
+    "degree_sum": 0.056234,
+    "betweenness_sum": 0.18515,
+    "betweenness_max": 0.163012,
+    "nodes": 30
+   },
+   "hotspot_rank": 8,
+   "hotspot_score": 0.2258
+  },
+  "pipeline/common/publisher_quality.py": {
+   "loc": 39,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 51,
+   "churn_deleted": 12,
+   "fan_in": 3,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 27,
+    "functions": 1,
+    "ccn_max": 10,
+    "ccn_total": 10,
+    "longest_fn_nloc": 13,
+    "worst_fn": "classify_url_publisher_quality"
+   },
+   "centrality": {
+    "degree_sum": 0.00407,
+    "betweenness_sum": 0.002073,
+    "betweenness_max": 0.001761,
+    "nodes": 4
+   },
+   "hotspot_rank": 88,
+   "hotspot_score": 0.0278
+  },
+  "pipeline/common/sidecar.py": {
+   "loc": 21,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 21,
+   "churn_deleted": 0,
+   "fan_in": 9,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 14,
+    "functions": 2,
+    "ccn_max": 4,
+    "ccn_total": 5,
+    "longest_fn_nloc": 8,
+    "worst_fn": "read_sidecar"
+   },
+   "centrality": {
+    "degree_sum": 0.008509,
+    "betweenness_sum": 0.007008,
+    "betweenness_max": 0.005434,
+    "nodes": 6
+   },
+   "hotspot_rank": 132,
+   "hotspot_score": 0.0141
+  },
+  "pipeline/common/source_classification.py": {
+   "loc": 108,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 108,
+   "churn_deleted": 0,
+   "fan_in": 5,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 66,
+    "functions": 2,
+    "ccn_max": 10,
+    "ccn_total": 11,
+    "longest_fn_nloc": 14,
+    "worst_fn": "classify_source_type"
+   },
+   "centrality": {
+    "degree_sum": 0.007399,
+    "betweenness_sum": 0.027777,
+    "betweenness_max": 0.022845,
+    "nodes": 6
+   },
+   "hotspot_rank": 74,
+   "hotspot_score": 0.0357
+  },
+  "pipeline/common/templates.py": {
+   "loc": 230,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 9,
+   "churn_added": 264,
+   "churn_deleted": 34,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 143,
+    "functions": 11,
+    "ccn_max": 8,
+    "ccn_total": 43,
+    "longest_fn_nloc": 20,
+    "worst_fn": "templates_for_entity_type"
+   },
+   "centrality": {
+    "degree_sum": 0.048095,
+    "betweenness_sum": 0.057582,
+    "betweenness_max": 0.023036,
+    "nodes": 24
+   },
+   "hotspot_rank": 20,
+   "hotspot_score": 0.1221
+  },
+  "pipeline/common/throttle.py": {
+   "loc": 206,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 250,
+   "churn_deleted": 44,
+   "fan_in": 6,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 106,
+    "functions": 10,
+    "ccn_max": 7,
+    "ccn_total": 23,
+    "longest_fn_nloc": 32,
+    "worst_fn": "register"
+   },
+   "centrality": {
+    "degree_sum": 0.027007,
+    "betweenness_sum": 0.08635,
+    "betweenness_max": 0.049579,
+    "nodes": 24
+   },
+   "hotspot_rank": 37,
+   "hotspot_score": 0.0765
+  },
+  "pipeline/common/timeouts.py": {
+   "loc": 52,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 52,
+   "churn_deleted": 0,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 24,
+    "functions": 2,
+    "ccn_max": 1,
+    "ccn_total": 2,
+    "longest_fn_nloc": 7,
+    "worst_fn": "default_httpx_timeout"
+   },
+   "centrality": {
+    "degree_sum": 0.006659,
+    "betweenness_sum": 0.063213,
+    "betweenness_max": 0.061858,
+    "nodes": 7
+   },
+   "hotspot_rank": 71,
+   "hotspot_score": 0.0368
+  },
+  "pipeline/common/utils.py": {
+   "loc": 27,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 27,
+   "churn_deleted": 0,
+   "fan_in": 6,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 14,
+    "functions": 2,
+    "ccn_max": 3,
+    "ccn_total": 4,
+    "longest_fn_nloc": 6,
+    "worst_fn": "slug_from_url"
+   },
+   "centrality": {
+    "degree_sum": 0.010359,
+    "betweenness_sum": 0.005983,
+    "betweenness_max": 0.003166,
+    "nodes": 6
+   },
+   "hotspot_rank": 127,
+   "hotspot_score": 0.0177
+  },
+  "pipeline/ingestor/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 159,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/ingestor/agent.py": {
+   "loc": 168,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 269,
+   "churn_deleted": 101,
+   "fan_in": 9,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 107,
+    "functions": 3,
+    "ccn_max": 8,
+    "ccn_total": 16,
+    "longest_fn_nloc": 38,
+    "worst_fn": "web_fetch"
+   },
+   "centrality": {
+    "degree_sum": 0.021828,
+    "betweenness_sum": 0.037656,
+    "betweenness_max": 0.025988,
+    "nodes": 12
+   },
+   "hotspot_rank": 33,
+   "hotspot_score": 0.0875
+  },
+  "pipeline/ingestor/models.py": {
+   "loc": 48,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 49,
+   "churn_deleted": 1,
+   "fan_in": 14,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 33,
+    "functions": 2,
+    "ccn_max": 3,
+    "ccn_total": 5,
+    "longest_fn_nloc": 5,
+    "worst_fn": "validate_url"
+   },
+   "centrality": {
+    "degree_sum": 0.019608,
+    "betweenness_sum": 0.021966,
+    "betweenness_max": 0.014283,
+    "nodes": 8
+   },
+   "hotspot_rank": 99,
+   "hotspot_score": 0.0262
+  },
+  "pipeline/ingestor/tools/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 160,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/ingestor/tools/wayback.py": {
+   "loc": 126,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 274,
+   "churn_deleted": 148,
+   "fan_in": 2,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 74,
+    "functions": 3,
+    "ccn_max": 6,
+    "ccn_total": 13,
+    "longest_fn_nloc": 34,
+    "worst_fn": "save_to_wayback"
+   },
+   "centrality": {
+    "degree_sum": 0.008879,
+    "betweenness_sum": 0.012883,
+    "betweenness_max": 0.009596,
+    "nodes": 9
+   },
+   "hotspot_rank": 57,
+   "hotspot_score": 0.0466
+  },
+  "pipeline/ingestor/tools/web_fetch.py": {
+   "loc": 96,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 97,
+   "churn_deleted": 1,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 53,
+    "functions": 4,
+    "ccn_max": 5,
+    "ccn_total": 15,
+    "longest_fn_nloc": 22,
+    "worst_fn": "_extract_title"
+   },
+   "centrality": {
+    "degree_sum": 0.012209,
+    "betweenness_sum": 1.3e-05,
+    "betweenness_max": 8e-06,
+    "nodes": 13
+   },
+   "hotspot_rank": 80,
+   "hotspot_score": 0.0325
+  },
+  "pipeline/ingestor/validation.py": {
+   "loc": 91,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 91,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 59,
+    "functions": 7,
+    "ccn_max": 5,
+    "ccn_total": 17,
+    "longest_fn_nloc": 14,
+    "worst_fn": "_check_key_quotes"
+   },
+   "centrality": {
+    "degree_sum": 0.021458,
+    "betweenness_sum": 0.011069,
+    "betweenness_max": 0.007777,
+    "nodes": 13
+   },
+   "hotspot_rank": 85,
+   "hotspot_score": 0.0295
+  },
+  "pipeline/linter/__init__.py": {
+   "loc": 0,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.0,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 161,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/linter/__main__.py": {
+   "loc": 50,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 56,
+   "churn_deleted": 6,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 39,
+    "functions": 1,
+    "ccn_max": 6,
+    "ccn_total": 6,
+    "longest_fn_nloc": 31,
+    "worst_fn": "main"
+   },
+   "centrality": {
+    "degree_sum": 0.005179,
+    "betweenness_sum": 0.001311,
+    "betweenness_max": 0.001257,
+    "nodes": 3
+   },
+   "hotspot_rank": 126,
+   "hotspot_score": 0.0178
+  },
+  "pipeline/linter/checks.py": {
+   "loc": 579,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 16,
+   "churn_added": 602,
+   "churn_deleted": 23,
+   "fan_in": 3,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 496,
+    "functions": 21,
+    "ccn_max": 9,
+    "ccn_total": 111,
+    "longest_fn_nloc": 31,
+    "worst_fn": "check_empty_required_strings"
+   },
+   "centrality": {
+    "degree_sum": 0.112838,
+    "betweenness_sum": 0.071175,
+    "betweenness_max": 0.039128,
+    "nodes": 33
+   },
+   "hotspot_rank": 5,
+   "hotspot_score": 0.2416
+  },
+  "pipeline/linter/models.py": {
+   "loc": 10,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 10,
+   "churn_deleted": 0,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 8,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.011099,
+    "betweenness_sum": 0.001435,
+    "betweenness_max": 0.000818,
+    "nodes": 2
+   },
+   "hotspot_rank": 153,
+   "hotspot_score": 0.0059
+  },
+  "pipeline/linter/prune.py": {
+   "loc": 58,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 65,
+   "churn_deleted": 7,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 39,
+    "functions": 1,
+    "ccn_max": 12,
+    "ccn_total": 12,
+    "longest_fn_nloc": 32,
+    "worst_fn": "main"
+   },
+   "centrality": {
+    "degree_sum": 0.00296,
+    "betweenness_sum": 0.000944,
+    "betweenness_max": 0.000944,
+    "nodes": 3
+   },
+   "hotspot_rank": 104,
+   "hotspot_score": 0.0244
+  },
+  "pipeline/linter/report.py": {
+   "loc": 93,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 96,
+   "churn_deleted": 3,
+   "fan_in": 3,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 74,
+    "functions": 4,
+    "ccn_max": 13,
+    "ccn_total": 29,
+    "longest_fn_nloc": 32,
+    "worst_fn": "format_text_report"
+   },
+   "centrality": {
+    "degree_sum": 0.013688,
+    "betweenness_sum": 0.003676,
+    "betweenness_max": 0.00326,
+    "nodes": 7
+   },
+   "hotspot_rank": 54,
+   "hotspot_score": 0.0501
+  },
+  "pipeline/linter/runner.py": {
+   "loc": 140,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 156,
+   "churn_deleted": 16,
+   "fan_in": 3,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 117,
+    "functions": 4,
+    "ccn_max": 9,
+    "ccn_total": 21,
+    "longest_fn_nloc": 55,
+    "worst_fn": "run_all_checks"
+   },
+   "centrality": {
+    "degree_sum": 0.032186,
+    "betweenness_sum": 0.035572,
+    "betweenness_max": 0.025117,
+    "nodes": 10
+   },
+   "hotspot_rank": 39,
+   "hotspot_score": 0.0714
+  },
+  "pipeline/orchestrator/__init__.py": {
+   "loc": 19,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 20,
+   "churn_deleted": 1,
+   "fan_in": 5,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 140,
+   "hotspot_score": 0.0104
+  },
+  "pipeline/orchestrator/checkpoints.py": {
+   "loc": 324,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 8,
+   "churn_added": 330,
+   "churn_deleted": 6,
+   "fan_in": 15,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 196,
+    "functions": 18,
+    "ccn_max": 8,
+    "ccn_total": 37,
+    "longest_fn_nloc": 25,
+    "worst_fn": "review_onboard"
+   },
+   "centrality": {
+    "degree_sum": 0.037366,
+    "betweenness_sum": 0.06573,
+    "betweenness_max": 0.036745,
+    "nodes": 34
+   },
+   "hotspot_rank": 21,
+   "hotspot_score": 0.1139
+  },
+  "pipeline/orchestrator/cli.py": {
+   "loc": 2340,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 56,
+   "churn_added": 3063,
+   "churn_deleted": 723,
+   "fan_in": 22,
+   "fan_out": 66,
+   "complexity": {
+    "nloc": 1722,
+    "functions": 34,
+    "ccn_max": 43,
+    "ccn_total": 354,
+    "longest_fn_nloc": 293,
+    "worst_fn": "claim_refresh"
+   },
+   "centrality": {
+    "degree_sum": 0.107288,
+    "betweenness_sum": 0.138045,
+    "betweenness_max": 0.100038,
+    "nodes": 62
+   },
+   "hotspot_rank": 2,
+   "hotspot_score": 0.7551
+  },
+  "pipeline/orchestrator/entity_resolution.py": {
+   "loc": 138,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 145,
+   "churn_deleted": 7,
+   "fan_in": 20,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 102,
+    "functions": 4,
+    "ccn_max": 14,
+    "ccn_total": 30,
+    "longest_fn_nloc": 42,
+    "worst_fn": "parse_entity_ref"
+   },
+   "centrality": {
+    "degree_sum": 0.024417,
+    "betweenness_sum": 0.034522,
+    "betweenness_max": 0.023584,
+    "nodes": 12
+   },
+   "hotspot_rank": 25,
+   "hotspot_score": 0.1019
+  },
+  "pipeline/orchestrator/persistence.py": {
+   "loc": 625,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 36,
+   "churn_added": 952,
+   "churn_deleted": 327,
+   "fan_in": 15,
+   "fan_out": 8,
+   "complexity": {
+    "nloc": 447,
+    "functions": 15,
+    "ccn_max": 25,
+    "ccn_total": 95,
+    "longest_fn_nloc": 96,
+    "worst_fn": "_write_audit_sidecar"
+   },
+   "centrality": {
+    "degree_sum": 0.09064,
+    "betweenness_sum": 0.257347,
+    "betweenness_max": 0.129734,
+    "nodes": 40
+   },
+   "hotspot_rank": 3,
+   "hotspot_score": 0.4139
+  },
+  "pipeline/orchestrator/pipeline.py": {
+   "loc": 2178,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 77,
+   "churn_added": 3283,
+   "churn_deleted": 1105,
+   "fan_in": 48,
+   "fan_out": 35,
+   "complexity": {
+    "nloc": 1595,
+    "functions": 33,
+    "ccn_max": 73,
+    "ccn_total": 288,
+    "longest_fn_nloc": 522,
+    "worst_fn": "onboard_entity"
+   },
+   "centrality": {
+    "degree_sum": 0.220496,
+    "betweenness_sum": 0.430436,
+    "betweenness_max": 0.241877,
+    "nodes": 90
+   },
+   "hotspot_rank": 1,
+   "hotspot_score": 0.9254
+  },
+  "pipeline/orchestrator/review.py": {
+   "loc": 135,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 135,
+   "churn_deleted": 0,
+   "fan_in": 10,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 100,
+    "functions": 3,
+    "ccn_max": 12,
+    "ccn_total": 22,
+    "longest_fn_nloc": 43,
+    "worst_fn": "_preflight_status"
+   },
+   "centrality": {
+    "degree_sum": 0.011839,
+    "betweenness_sum": 0.007113,
+    "betweenness_max": 0.005632,
+    "nodes": 9
+   },
+   "hotspot_rank": 77,
+   "hotspot_score": 0.0334
+  },
+  "pipeline/orchestrator/review_queue.py": {
+   "loc": 500,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 524,
+   "churn_deleted": 24,
+   "fan_in": 3,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 397,
+    "functions": 20,
+    "ccn_max": 22,
+    "ccn_total": 112,
+    "longest_fn_nloc": 77,
+    "worst_fn": "_build_item"
+   },
+   "centrality": {
+    "degree_sum": 0.061043,
+    "betweenness_sum": 0.034378,
+    "betweenness_max": 0.023352,
+    "nodes": 35
+   },
+   "hotspot_rank": 15,
+   "hotspot_score": 0.1685
+  },
+  "pipeline/orchestrator/stats.py": {
+   "loc": 267,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 330,
+   "churn_deleted": 63,
+   "fan_in": 2,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 150,
+    "functions": 7,
+    "ccn_max": 17,
+    "ccn_total": 46,
+    "longest_fn_nloc": 46,
+    "worst_fn": "_scan_claims"
+   },
+   "centrality": {
+    "degree_sum": 0.026637,
+    "betweenness_sum": 0.033085,
+    "betweenness_max": 0.018997,
+    "nodes": 18
+   },
+   "hotspot_rank": 31,
+   "hotspot_score": 0.0881
+  },
+  "pipeline/researcher/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 2,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 162,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/researcher/agent.py": {
+   "loc": 85,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 8,
+   "churn_added": 163,
+   "churn_deleted": 78,
+   "fan_in": 3,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 61,
+    "functions": 4,
+    "ccn_max": 7,
+    "ccn_total": 14,
+    "longest_fn_nloc": 22,
+    "worst_fn": "search_brave"
+   },
+   "centrality": {
+    "degree_sum": 0.006659,
+    "betweenness_sum": 0.009346,
+    "betweenness_max": 0.004935,
+    "nodes": 5
+   },
+   "hotspot_rank": 44,
+   "hotspot_score": 0.0617
+  },
+  "pipeline/researcher/decomposed.py": {
+   "loc": 523,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 20,
+   "churn_added": 674,
+   "churn_deleted": 151,
+   "fan_in": 12,
+   "fan_out": 12,
+   "complexity": {
+    "nloc": 355,
+    "functions": 11,
+    "ccn_max": 22,
+    "ccn_total": 81,
+    "longest_fn_nloc": 118,
+    "worst_fn": "decomposed_research"
+   },
+   "centrality": {
+    "degree_sum": 0.049205,
+    "betweenness_sum": 0.098318,
+    "betweenness_max": 0.071573,
+    "nodes": 23
+   },
+   "hotspot_rank": 6,
+   "hotspot_score": 0.2411
+  },
+  "pipeline/researcher/entity_enricher.py": {
+   "loc": 124,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 127,
+   "churn_deleted": 3,
+   "fan_in": 13,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 70,
+    "functions": 1,
+    "ccn_max": 5,
+    "ccn_total": 5,
+    "longest_fn_nloc": 19,
+    "worst_fn": "build_entity_enricher_prompt"
+   },
+   "centrality": {
+    "degree_sum": 0.008139,
+    "betweenness_sum": 0.009545,
+    "betweenness_max": 0.006036,
+    "nodes": 6
+   },
+   "hotspot_rank": 122,
+   "hotspot_score": 0.0205
+  },
+  "pipeline/researcher/entity_verifier.py": {
+   "loc": 127,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 127,
+   "churn_deleted": 0,
+   "fan_in": 10,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 75,
+    "functions": 1,
+    "ccn_max": 5,
+    "ccn_total": 5,
+    "longest_fn_nloc": 19,
+    "worst_fn": "build_entity_verifier_prompt"
+   },
+   "centrality": {
+    "degree_sum": 0.006289,
+    "betweenness_sum": 0.004063,
+    "betweenness_max": 0.002428,
+    "nodes": 6
+   },
+   "hotspot_rank": 135,
+   "hotspot_score": 0.0127
+  },
+  "pipeline/researcher/planner.py": {
+   "loc": 48,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 66,
+   "churn_deleted": 18,
+   "fan_in": 4,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 38,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.005179,
+    "betweenness_sum": 0.002683,
+    "betweenness_max": 0.002611,
+    "nodes": 4
+   },
+   "hotspot_rank": 94,
+   "hotspot_score": 0.0272
+  },
+  "pipeline/researcher/scorer.py": {
+   "loc": 107,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 13,
+   "churn_added": 135,
+   "churn_deleted": 28,
+   "fan_in": 9,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 90,
+    "functions": 1,
+    "ccn_max": 8,
+    "ccn_total": 8,
+    "longest_fn_nloc": 36,
+    "worst_fn": "build_scorer_prompt"
+   },
+   "centrality": {
+    "degree_sum": 0.017758,
+    "betweenness_sum": 0.003876,
+    "betweenness_max": 0.001631,
+    "nodes": 8
+   },
+   "hotspot_rank": 35,
+   "hotspot_score": 0.0784
+  },
+  "pipeline/researcher/tools/__init__.py": {
+   "loc": 1,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   },
+   "hotspot_rank": 163,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/researcher/tools/arxiv.py": {
+   "loc": 117,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 117,
+   "churn_deleted": 0,
+   "fan_in": 2,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 65,
+    "functions": 3,
+    "ccn_max": 9,
+    "ccn_total": 11,
+    "longest_fn_nloc": 25,
+    "worst_fn": "_parse_atom_entries"
+   },
+   "centrality": {
+    "degree_sum": 0.007399,
+    "betweenness_sum": 0.058433,
+    "betweenness_max": 0.05545,
+    "nodes": 8
+   },
+   "hotspot_rank": 62,
+   "hotspot_score": 0.0448
+  },
+  "pipeline/researcher/tools/tavily.py": {
+   "loc": 155,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 175,
+   "churn_deleted": 20,
+   "fan_in": 3,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 80,
+    "functions": 3,
+    "ccn_max": 13,
+    "ccn_total": 16,
+    "longest_fn_nloc": 51,
+    "worst_fn": "search_tavily"
+   },
+   "centrality": {
+    "degree_sum": 0.008879,
+    "betweenness_sum": 0.010462,
+    "betweenness_max": 0.006863,
+    "nodes": 10
+   },
+   "hotspot_rank": 68,
+   "hotspot_score": 0.0385
+  },
+  "pipeline/tests/__init__.py": {
+   "loc": 0,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.0,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 164,
+   "hotspot_score": 0.0052
+  },
+  "pipeline/tests/conftest.py": {
+   "loc": 57,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 57,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 30,
+    "functions": 4,
+    "ccn_max": 2,
+    "ccn_total": 5,
+    "longest_fn_nloc": 9,
+    "worst_fn": "_isolate_cli_logging"
+   },
+   "centrality": {
+    "degree_sum": 0.008509,
+    "betweenness_sum": 0.004385,
+    "betweenness_max": 0.002807,
+    "nodes": 11
+   },
+   "hotspot_rank": 110,
+   "hotspot_score": 0.0233
+  },
+  "pipeline/tests/test_acceptance.py": {
+   "loc": 237,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 531,
+   "churn_deleted": 294,
+   "fan_in": 0,
+   "fan_out": 6,
+   "complexity": {
+    "nloc": 154,
+    "functions": 6,
+    "ccn_max": 5,
+    "ccn_total": 13,
+    "longest_fn_nloc": 47,
+    "worst_fn": "test_scorer_obvious_split"
+   },
+   "centrality": {
+    "degree_sum": 0.017758,
+    "betweenness_sum": 0.011477,
+    "betweenness_max": 0.006749,
+    "nodes": 15
+   },
+   "hotspot_rank": 38,
+   "hotspot_score": 0.072
+  },
+  "pipeline/tests/test_agent.py": {
+   "loc": 137,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 192,
+   "churn_deleted": 55,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 107,
+    "functions": 13,
+    "ccn_max": 1,
+    "ccn_total": 13,
+    "longest_fn_nloc": 16,
+    "worst_fn": "test_deps"
+   },
+   "centrality": {
+    "degree_sum": 0.027007,
+    "betweenness_sum": 0.022466,
+    "betweenness_max": 0.012295,
+    "nodes": 24
+   },
+   "hotspot_rank": 59,
+   "hotspot_score": 0.0459
+  },
+  "pipeline/tests/test_analyst.py": {
+   "loc": 303,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 326,
+   "churn_deleted": 23,
+   "fan_in": 0,
+   "fan_out": 6,
+   "complexity": {
+    "nloc": 245,
+    "functions": 28,
+    "ccn_max": 1,
+    "ccn_total": 28,
+    "longest_fn_nloc": 29,
+    "worst_fn": "test_output_type"
+   },
+   "centrality": {
+    "degree_sum": 0.046985,
+    "betweenness_sum": 0.054009,
+    "betweenness_max": 0.028235,
+    "nodes": 41
+   },
+   "hotspot_rank": 23,
+   "hotspot_score": 0.1087
+  },
+  "pipeline/tests/test_arxiv_search.py": {
+   "loc": 153,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 153,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 102,
+    "functions": 6,
+    "ccn_max": 1,
+    "ccn_total": 6,
+    "longest_fn_nloc": 21,
+    "worst_fn": "_reset_throttle"
+   },
+   "centrality": {
+    "degree_sum": 0.011099,
+    "betweenness_sum": 6.8e-05,
+    "betweenness_max": 2e-05,
+    "nodes": 16
+   },
+   "hotspot_rank": 137,
+   "hotspot_score": 0.012
+  },
+  "pipeline/tests/test_audit_trail.py": {
+   "loc": 1368,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 12,
+   "churn_added": 1414,
+   "churn_deleted": 46,
+   "fan_in": 0,
+   "fan_out": 17,
+   "complexity": {
+    "nloc": 1031,
+    "functions": 64,
+    "ccn_max": 9,
+    "ccn_total": 84,
+    "longest_fn_nloc": 58,
+    "worst_fn": "test_re_audit_preserves_prior_acquisition"
+   },
+   "centrality": {
+    "degree_sum": 0.117277,
+    "betweenness_sum": 0.102487,
+    "betweenness_max": 0.046575,
+    "nodes": 98
+   },
+   "hotspot_rank": 10,
+   "hotspot_score": 0.2049
+  },
+  "pipeline/tests/test_auditor_agent.py": {
+   "loc": 125,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 132,
+   "churn_deleted": 7,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 103,
+    "functions": 12,
+    "ccn_max": 1,
+    "ccn_total": 12,
+    "longest_fn_nloc": 21,
+    "worst_fn": "_sample_bundle"
+   },
+   "centrality": {
+    "degree_sum": 0.026267,
+    "betweenness_sum": 0.012025,
+    "betweenness_max": 0.006218,
+    "nodes": 18
+   },
+   "hotspot_rank": 76,
+   "hotspot_score": 0.0347
+  },
+  "pipeline/tests/test_auditor_models.py": {
+   "loc": 107,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 110,
+   "churn_deleted": 3,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 94,
+    "functions": 7,
+    "ccn_max": 2,
+    "ccn_total": 8,
+    "longest_fn_nloc": 25,
+    "worst_fn": "test_all_verdicts_accepted"
+   },
+   "centrality": {
+    "degree_sum": 0.012209,
+    "betweenness_sum": 0.010689,
+    "betweenness_max": 0.007699,
+    "nodes": 12
+   },
+   "hotspot_rank": 105,
+   "hotspot_score": 0.0244
+  },
+  "pipeline/tests/test_blocklist.py": {
+   "loc": 137,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 137,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 113,
+    "functions": 14,
+    "ccn_max": 1,
+    "ccn_total": 14,
+    "longest_fn_nloc": 19,
+    "worst_fn": "linkedin_entries"
+   },
+   "centrality": {
+    "degree_sum": 0.027377,
+    "betweenness_sum": 0.006076,
+    "betweenness_max": 0.003275,
+    "nodes": 20
+   },
+   "hotspot_rank": 108,
+   "hotspot_score": 0.0238
+  },
+  "pipeline/tests/test_brave_search.py": {
+   "loc": 131,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 131,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 105,
+    "functions": 8,
+    "ccn_max": 1,
+    "ccn_total": 8,
+    "longest_fn_nloc": 15,
+    "worst_fn": "_brave_key"
+   },
+   "centrality": {
+    "degree_sum": 0.016278,
+    "betweenness_sum": 0.003389,
+    "betweenness_max": 0.001229,
+    "nodes": 19
+   },
+   "hotspot_rank": 117,
+   "hotspot_score": 0.021
+  },
+  "pipeline/tests/test_canonical_url.py": {
+   "loc": 205,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 205,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 136,
+    "functions": 32,
+    "ccn_max": 2,
+    "ccn_total": 33,
+    "longest_fn_nloc": 16,
+    "worst_fn": "test_equivalent_inputs_collapse"
+   },
+   "centrality": {
+    "degree_sum": 0.043285,
+    "betweenness_sum": 0.005407,
+    "betweenness_max": 0.002372,
+    "nodes": 43
+   },
+   "hotspot_rank": 60,
+   "hotspot_score": 0.045
+  },
+  "pipeline/tests/test_checkpoints.py": {
+   "loc": 66,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 66,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 50,
+    "functions": 6,
+    "ccn_max": 1,
+    "ccn_total": 6,
+    "longest_fn_nloc": 7,
+    "worst_fn": "_draft"
+   },
+   "centrality": {
+    "degree_sum": 0.012209,
+    "betweenness_sum": 0.004239,
+    "betweenness_max": 0.002946,
+    "nodes": 12
+   },
+   "hotspot_rank": 123,
+   "hotspot_score": 0.0191
+  },
+  "pipeline/tests/test_classify_source_type.py": {
+   "loc": 98,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 100,
+   "churn_deleted": 2,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 61,
+    "functions": 27,
+    "ccn_max": 1,
+    "ccn_total": 27,
+    "longest_fn_nloc": 3,
+    "worst_fn": "test_anthropic_article"
+   },
+   "centrality": {
+    "degree_sum": 0.023307,
+    "betweenness_sum": 0.038219,
+    "betweenness_max": 0.019654,
+    "nodes": 32
+   },
+   "hotspot_rank": 46,
+   "hotspot_score": 0.0587
+  },
+  "pipeline/tests/test_cli.py": {
+   "loc": 969,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 17,
+   "churn_added": 1035,
+   "churn_deleted": 66,
+   "fan_in": 0,
+   "fan_out": 37,
+   "complexity": {
+    "nloc": 752,
+    "functions": 65,
+    "ccn_max": 5,
+    "ccn_total": 102,
+    "longest_fn_nloc": 56,
+    "worst_fn": "test_slug_collision_rejected"
+   },
+   "centrality": {
+    "degree_sum": 0.09545,
+    "betweenness_sum": 0.090185,
+    "betweenness_max": 0.039292,
+    "nodes": 92
+   },
+   "hotspot_rank": 4,
+   "hotspot_score": 0.2455
+  },
+  "pipeline/tests/test_cli_smoke.py": {
+   "loc": 23,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 27,
+   "churn_deleted": 4,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 17,
+    "functions": 1,
+    "ccn_max": 2,
+    "ccn_total": 2,
+    "longest_fn_nloc": 13,
+    "worst_fn": "test_dr_cli_help"
+   },
+   "centrality": {
+    "degree_sum": 0.00148,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 3
+   },
+   "hotspot_rank": 87,
+   "hotspot_score": 0.0282
+  },
+  "pipeline/tests/test_cli_stats.py": {
+   "loc": 419,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 434,
+   "churn_deleted": 15,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 311,
+    "functions": 17,
+    "ccn_max": 4,
+    "ccn_total": 23,
+    "longest_fn_nloc": 42,
+    "worst_fn": "_write_claim"
+   },
+   "centrality": {
+    "degree_sum": 0.053274,
+    "betweenness_sum": 0.016644,
+    "betweenness_max": 0.007721,
+    "nodes": 33
+   },
+   "hotspot_rank": 55,
+   "hotspot_score": 0.0493
+  },
+  "pipeline/tests/test_compare.py": {
+   "loc": 185,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 192,
+   "churn_deleted": 7,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 157,
+    "functions": 17,
+    "ccn_max": 2,
+    "ccn_total": 18,
+    "longest_fn_nloc": 12,
+    "worst_fn": "_make_assessment"
+   },
+   "centrality": {
+    "degree_sum": 0.039586,
+    "betweenness_sum": 0.016467,
+    "betweenness_max": 0.010328,
+    "nodes": 29
+   },
+   "hotspot_rank": 69,
+   "hotspot_score": 0.0384
+  },
+  "pipeline/tests/test_content_loader.py": {
+   "loc": 117,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 146,
+   "churn_deleted": 29,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 93,
+    "functions": 14,
+    "ccn_max": 2,
+    "ccn_total": 16,
+    "longest_fn_nloc": 20,
+    "worst_fn": "test_list_all_claims"
+   },
+   "centrality": {
+    "degree_sum": 0.029227,
+    "betweenness_sum": 0.002282,
+    "betweenness_max": 0.001731,
+    "nodes": 22
+   },
+   "hotspot_rank": 52,
+   "hotspot_score": 0.0503
+  },
+  "pipeline/tests/test_entity_enricher.py": {
+   "loc": 144,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 145,
+   "churn_deleted": 1,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 105,
+    "functions": 8,
+    "ccn_max": 1,
+    "ccn_total": 8,
+    "longest_fn_nloc": 23,
+    "worst_fn": "_bundle"
+   },
+   "centrality": {
+    "degree_sum": 0.018868,
+    "betweenness_sum": 0.006397,
+    "betweenness_max": 0.003815,
+    "nodes": 16
+   },
+   "hotspot_rank": 113,
+   "hotspot_score": 0.0224
+  },
+  "pipeline/tests/test_entity_resolution.py": {
+   "loc": 226,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 241,
+   "churn_deleted": 15,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 169,
+    "functions": 24,
+    "ccn_max": 2,
+    "ccn_total": 26,
+    "longest_fn_nloc": 11,
+    "worst_fn": "test_canonical_entity_keys_lockstep"
+   },
+   "centrality": {
+    "degree_sum": 0.060303,
+    "betweenness_sum": 0.01723,
+    "betweenness_max": 0.007528,
+    "nodes": 35
+   },
+   "hotspot_rank": 42,
+   "hotspot_score": 0.0686
+  },
+  "pipeline/tests/test_entity_verifier.py": {
+   "loc": 123,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 124,
+   "churn_deleted": 1,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 97,
+    "functions": 7,
+    "ccn_max": 3,
+    "ccn_total": 13,
+    "longest_fn_nloc": 15,
+    "worst_fn": "test_company_section_lists_company_signals"
+   },
+   "centrality": {
+    "degree_sum": 0.013319,
+    "betweenness_sum": 0.016462,
+    "betweenness_max": 0.008828,
+    "nodes": 13
+   },
+   "hotspot_rank": 79,
+   "hotspot_score": 0.0327
+  },
+  "pipeline/tests/test_frontmatter.py": {
+   "loc": 124,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 124,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 99,
+    "functions": 15,
+    "ccn_max": 2,
+    "ccn_total": 16,
+    "longest_fn_nloc": 13,
+    "worst_fn": "test_enum_serialized_as_value"
+   },
+   "centrality": {
+    "degree_sum": 0.021458,
+    "betweenness_sum": 0.007115,
+    "betweenness_max": 0.004358,
+    "nodes": 20
+   },
+   "hotspot_rank": 96,
+   "hotspot_score": 0.0266
+  },
+  "pipeline/tests/test_ingest_urls.py": {
+   "loc": 128,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 136,
+   "churn_deleted": 8,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 93,
+    "functions": 10,
+    "ccn_max": 2,
+    "ccn_total": 15,
+    "longest_fn_nloc": 14,
+    "worst_fn": "test_ingest_urls_stops_at_target"
+   },
+   "centrality": {
+    "degree_sum": 0.015908,
+    "betweenness_sum": 0.005907,
+    "betweenness_max": 0.003992,
+    "nodes": 14
+   },
+   "hotspot_rank": 75,
+   "hotspot_score": 0.0353
+  },
+  "pipeline/tests/test_ingestor_models.py": {
+   "loc": 132,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 132,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 106,
+    "functions": 16,
+    "ccn_max": 2,
+    "ccn_total": 17,
+    "longest_fn_nloc": 11,
+    "worst_fn": "test_all_valid_kinds"
+   },
+   "centrality": {
+    "degree_sum": 0.034406,
+    "betweenness_sum": 0.006465,
+    "betweenness_max": 0.005007,
+    "nodes": 21
+   },
+   "hotspot_rank": 90,
+   "hotspot_score": 0.0274
+  },
+  "pipeline/tests/test_instructions.py": {
+   "loc": 59,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 67,
+   "churn_deleted": 8,
+   "fan_in": 0,
+   "fan_out": 6,
+   "complexity": {
+    "nloc": 42,
+    "functions": 8,
+    "ccn_max": 1,
+    "ccn_total": 8,
+    "longest_fn_nloc": 6,
+    "worst_fn": "test_missing_file_raises"
+   },
+   "centrality": {
+    "degree_sum": 0.014058,
+    "betweenness_sum": 0.0036,
+    "betweenness_max": 0.003271,
+    "nodes": 13
+   },
+   "hotspot_rank": 97,
+   "hotspot_score": 0.0263
+  },
+  "pipeline/tests/test_linter.py": {
+   "loc": 429,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 9,
+   "churn_added": 444,
+   "churn_deleted": 15,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 350,
+    "functions": 55,
+    "ccn_max": 3,
+    "ccn_total": 63,
+    "longest_fn_nloc": 12,
+    "worst_fn": "test_missing_verdict_raises_error"
+   },
+   "centrality": {
+    "degree_sum": 0.115797,
+    "betweenness_sum": 0.040103,
+    "betweenness_max": 0.029462,
+    "nodes": 77
+   },
+   "hotspot_rank": 17,
+   "hotspot_score": 0.1366
+  },
+  "pipeline/tests/test_logging_setup.py": {
+   "loc": 284,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 289,
+   "churn_deleted": 5,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 196,
+    "functions": 20,
+    "ccn_max": 7,
+    "ccn_total": 41,
+    "longest_fn_nloc": 20,
+    "worst_fn": "_reset_root_logger"
+   },
+   "centrality": {
+    "degree_sum": 0.043655,
+    "betweenness_sum": 0.019219,
+    "betweenness_max": 0.014329,
+    "nodes": 27
+   },
+   "hotspot_rank": 41,
+   "hotspot_score": 0.0708
+  },
+  "pipeline/tests/test_models.py": {
+   "loc": 232,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 11,
+   "churn_added": 256,
+   "churn_deleted": 24,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 172,
+    "functions": 28,
+    "ccn_max": 2,
+    "ccn_total": 33,
+    "longest_fn_nloc": 13,
+    "worst_fn": "test_values"
+   },
+   "centrality": {
+    "degree_sum": 0.042915,
+    "betweenness_sum": 0.008386,
+    "betweenness_max": 0.004771,
+    "nodes": 41
+   },
+   "hotspot_rank": 28,
+   "hotspot_score": 0.0983
+  },
+  "pipeline/tests/test_onboard.py": {
+   "loc": 974,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 20,
+   "churn_added": 1170,
+   "churn_deleted": 196,
+   "fan_in": 0,
+   "fan_out": 24,
+   "complexity": {
+    "nloc": 764,
+    "functions": 48,
+    "ccn_max": 6,
+    "ccn_total": 67,
+    "longest_fn_nloc": 45,
+    "worst_fn": "_ro"
+   },
+   "centrality": {
+    "degree_sum": 0.151683,
+    "betweenness_sum": 0.045606,
+    "betweenness_max": 0.024297,
+    "nodes": 75
+   },
+   "hotspot_rank": 11,
+   "hotspot_score": 0.2008
+  },
+  "pipeline/tests/test_orchestrator.py": {
+   "loc": 771,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 24,
+   "churn_added": 920,
+   "churn_deleted": 149,
+   "fan_in": 0,
+   "fan_out": 16,
+   "complexity": {
+    "nloc": 609,
+    "functions": 73,
+    "ccn_max": 4,
+    "ccn_total": 86,
+    "longest_fn_nloc": 32,
+    "worst_fn": "_ro"
+   },
+   "centrality": {
+    "degree_sum": 0.079171,
+    "betweenness_sum": 0.029256,
+    "betweenness_max": 0.01337,
+    "nodes": 71
+   },
+   "hotspot_rank": 7,
+   "hotspot_score": 0.2354
+  },
+  "pipeline/tests/test_prefetch.py": {
+   "loc": 145,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 147,
+   "churn_deleted": 2,
+   "fan_in": 0,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 106,
+    "functions": 8,
+    "ccn_max": 2,
+    "ccn_total": 10,
+    "longest_fn_nloc": 19,
+    "worst_fn": "test_empty_body_falls_through_to_live_fetch.counting_get"
+   },
+   "centrality": {
+    "degree_sum": 0.018498,
+    "betweenness_sum": 0.010106,
+    "betweenness_max": 0.005992,
+    "nodes": 16
+   },
+   "hotspot_rank": 81,
+   "hotspot_score": 0.0316
+  },
+  "pipeline/tests/test_publish.py": {
+   "loc": 530,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 538,
+   "churn_deleted": 8,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 369,
+    "functions": 21,
+    "ccn_max": 4,
+    "ccn_total": 24,
+    "longest_fn_nloc": 34,
+    "worst_fn": "_setup_claim"
+   },
+   "centrality": {
+    "degree_sum": 0.038476,
+    "betweenness_sum": 0.029871,
+    "betweenness_max": 0.016546,
+    "nodes": 34
+   },
+   "hotspot_rank": 51,
+   "hotspot_score": 0.0514
+  },
+  "pipeline/tests/test_research_integration.py": {
+   "loc": 179,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 11,
+   "churn_added": 222,
+   "churn_deleted": 43,
+   "fan_in": 0,
+   "fan_out": 7,
+   "complexity": {
+    "nloc": 139,
+    "functions": 6,
+    "ccn_max": 4,
+    "ccn_total": 9,
+    "longest_fn_nloc": 62,
+    "worst_fn": "test_research_claim_writes_artifacts"
+   },
+   "centrality": {
+    "degree_sum": 0.014428,
+    "betweenness_sum": 0.00775,
+    "betweenness_max": 0.005529,
+    "nodes": 10
+   },
+   "hotspot_rank": 40,
+   "hotspot_score": 0.0709
+  },
+  "pipeline/tests/test_research_planner.py": {
+   "loc": 165,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 165,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 141,
+    "functions": 2,
+    "ccn_max": 9,
+    "ccn_total": 10,
+    "longest_fn_nloc": 24,
+    "worst_fn": "test_planner_output_shape"
+   },
+   "centrality": {
+    "degree_sum": 0.00296,
+    "betweenness_sum": 0.002981,
+    "betweenness_max": 0.002981,
+    "nodes": 4
+   },
+   "hotspot_rank": 125,
+   "hotspot_score": 0.0179
+  },
+  "pipeline/tests/test_researcher_decomposed.py": {
+   "loc": 1082,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 14,
+   "churn_added": 1198,
+   "churn_deleted": 116,
+   "fan_in": 0,
+   "fan_out": 29,
+   "complexity": {
+    "nloc": 782,
+    "functions": 58,
+    "ccn_max": 4,
+    "ccn_total": 82,
+    "longest_fn_nloc": 43,
+    "worst_fn": "test_tavily_rate_limit_emits_step_error_and_falls_back"
+   },
+   "centrality": {
+    "degree_sum": 0.117647,
+    "betweenness_sum": 0.074652,
+    "betweenness_max": 0.038053,
+    "nodes": 95
+   },
+   "hotspot_rank": 12,
+   "hotspot_score": 0.2001
+  },
+  "pipeline/tests/test_review_queue.py": {
+   "loc": 734,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 737,
+   "churn_deleted": 3,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 543,
+    "functions": 47,
+    "ccn_max": 6,
+    "ccn_total": 58,
+    "longest_fn_nloc": 38,
+    "worst_fn": "_write_claim"
+   },
+   "centrality": {
+    "degree_sum": 0.09286,
+    "betweenness_sum": 0.041958,
+    "betweenness_max": 0.023613,
+    "nodes": 52
+   },
+   "hotspot_rank": 26,
+   "hotspot_score": 0.1006
+  },
+  "pipeline/tests/test_scorer.py": {
+   "loc": 109,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 109,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 81,
+    "functions": 6,
+    "ccn_max": 5,
+    "ccn_total": 11,
+    "longest_fn_nloc": 29,
+    "worst_fn": "test_scorer_keeps_per_sub_question_addresses"
+   },
+   "centrality": {
+    "degree_sum": 0.017018,
+    "betweenness_sum": 0.006718,
+    "betweenness_max": 0.005144,
+    "nodes": 13
+   },
+   "hotspot_rank": 101,
+   "hotspot_score": 0.0259
+  },
+  "pipeline/tests/test_source_url_dedup.py": {
+   "loc": 372,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 7,
+   "churn_added": 381,
+   "churn_deleted": 9,
+   "fan_in": 0,
+   "fan_out": 7,
+   "complexity": {
+    "nloc": 262,
+    "functions": 27,
+    "ccn_max": 6,
+    "ccn_total": 39,
+    "longest_fn_nloc": 40,
+    "worst_fn": "test_all_cached_urls_populate_cached_sources"
+   },
+   "centrality": {
+    "degree_sum": 0.061413,
+    "betweenness_sum": 0.017511,
+    "betweenness_max": 0.006466,
+    "nodes": 46
+   },
+   "hotspot_rank": 30,
+   "hotspot_score": 0.0886
+  },
+  "pipeline/tests/test_step_error_vocab.py": {
+   "loc": 232,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 249,
+   "churn_deleted": 17,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 116,
+    "functions": 8,
+    "ccn_max": 8,
+    "ccn_total": 28,
+    "longest_fn_nloc": 20,
+    "worst_fn": "_scan_for_error_type_literals"
+   },
+   "centrality": {
+    "degree_sum": 0.017388,
+    "betweenness_sum": 0.00647,
+    "betweenness_max": 0.004622,
+    "nodes": 16
+   },
+   "hotspot_rank": 53,
+   "hotspot_score": 0.0502
+  },
+  "pipeline/tests/test_tavily_search.py": {
+   "loc": 221,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 228,
+   "churn_deleted": 7,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 169,
+    "functions": 12,
+    "ccn_max": 2,
+    "ccn_total": 13,
+    "longest_fn_nloc": 34,
+    "worst_fn": "test_raw_content_carried_through_per_result"
+   },
+   "centrality": {
+    "degree_sum": 0.019238,
+    "betweenness_sum": 0.000169,
+    "betweenness_max": 5.6e-05,
+    "nodes": 27
+   },
+   "hotspot_rank": 84,
+   "hotspot_score": 0.0304
+  },
+  "pipeline/tests/test_templates.py": {
+   "loc": 440,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 11,
+   "churn_added": 474,
+   "churn_deleted": 34,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 365,
+    "functions": 45,
+    "ccn_max": 3,
+    "ccn_total": 54,
+    "longest_fn_nloc": 17,
+    "worst_fn": "test_only_returns_core_templates"
+   },
+   "centrality": {
+    "degree_sum": 0.09323,
+    "betweenness_sum": 0.022056,
+    "betweenness_max": 0.008913,
+    "nodes": 62
+   },
+   "hotspot_rank": 19,
+   "hotspot_score": 0.1284
+  },
+  "pipeline/tests/test_terminal_fetch.py": {
+   "loc": 270,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 289,
+   "churn_deleted": 19,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 210,
+    "functions": 19,
+    "ccn_max": 1,
+    "ccn_total": 19,
+    "longest_fn_nloc": 24,
+    "worst_fn": "_noop_ctx"
+   },
+   "centrality": {
+    "degree_sum": 0.048465,
+    "betweenness_sum": 0.020737,
+    "betweenness_max": 0.00989,
+    "nodes": 35
+   },
+   "hotspot_rank": 47,
+   "hotspot_score": 0.0571
+  },
+  "pipeline/tests/test_throttle.py": {
+   "loc": 300,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 300,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 188,
+    "functions": 24,
+    "ccn_max": 3,
+    "ccn_total": 31,
+    "longest_fn_nloc": 15,
+    "worst_fn": "test_concurrent_acquires_serialize"
+   },
+   "centrality": {
+    "degree_sum": 0.030707,
+    "betweenness_sum": 0.008133,
+    "betweenness_max": 0.007388,
+    "nodes": 32
+   },
+   "hotspot_rank": 63,
+   "hotspot_score": 0.044
+  },
+  "pipeline/tests/test_tools.py": {
+   "loc": 529,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 782,
+   "churn_deleted": 253,
+   "fan_in": 0,
+   "fan_out": 11,
+   "complexity": {
+    "nloc": 409,
+    "functions": 34,
+    "ccn_max": 4,
+    "ccn_total": 41,
+    "longest_fn_nloc": 34,
+    "worst_fn": "test_failures_become_step_errors_only_on_terminal_failure"
+   },
+   "centrality": {
+    "degree_sum": 0.068442,
+    "betweenness_sum": 0.075839,
+    "betweenness_max": 0.036832,
+    "nodes": 61
+   },
+   "hotspot_rank": 24,
+   "hotspot_score": 0.1023
+  },
+  "scripts/check-citations.ts": {
+   "loc": 63,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 64,
+   "churn_deleted": 1,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 44,
+    "functions": 1,
+    "ccn_max": 5,
+    "ccn_total": 5,
+    "longest_fn_nloc": 14,
+    "worst_fn": "collectMarkdownFiles"
+   },
+   "centrality": {
+    "degree_sum": 0.00259,
+    "betweenness_sum": 0.000217,
+    "betweenness_max": 0.000217,
+    "nodes": 4
+   },
+   "hotspot_rank": 129,
+   "hotspot_score": 0.0161
+  },
+  "scripts/clear-openai.sh": {
+   "loc": 54,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 54,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 3
+   }
+  },
+  "scripts/llm-tester/harness/__init__.py": {
+   "loc": 0,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.0,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 165,
+   "hotspot_score": 0.0052
+  },
+  "scripts/llm-tester/harness/_env.py": {
+   "loc": 12,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 12,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 10,
+    "functions": 1,
+    "ccn_max": 5,
+    "ccn_total": 5,
+    "longest_fn_nloc": 9,
+    "worst_fn": "load_env"
+   },
+   "centrality": {
+    "degree_sum": 0.005179,
+    "betweenness_sum": 0.02852,
+    "betweenness_max": 0.025343,
+    "nodes": 3
+   },
+   "hotspot_rank": 107,
+   "hotspot_score": 0.0241
+  },
+  "scripts/llm-tester/harness/_fmt.py": {
+   "loc": 30,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 33,
+   "churn_deleted": 3,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 22,
+    "functions": 2,
+    "ccn_max": 8,
+    "ccn_total": 10,
+    "longest_fn_nloc": 15,
+    "worst_fn": "score_results"
+   },
+   "centrality": {
+    "degree_sum": 0.00444,
+    "betweenness_sum": 0.001805,
+    "betweenness_max": 0.001488,
+    "nodes": 4
+   },
+   "hotspot_rank": 112,
+   "hotspot_score": 0.0225
+  },
+  "scripts/llm-tester/harness/greenpt.py": {
+   "loc": 315,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 315,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 265,
+    "functions": 14,
+    "ccn_max": 13,
+    "ccn_total": 70,
+    "longest_fn_nloc": 43,
+    "worst_fn": "t4"
+   },
+   "centrality": {
+    "degree_sum": 0.033666,
+    "betweenness_sum": 0.009589,
+    "betweenness_max": 0.008928,
+    "nodes": 19
+   },
+   "hotspot_rank": 29,
+   "hotspot_score": 0.0887
+  },
+  "scripts/llm-tester/harness/infomaniak.py": {
+   "loc": 407,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 407,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 357,
+    "functions": 12,
+    "ccn_max": 14,
+    "ccn_total": 73,
+    "longest_fn_nloc": 56,
+    "worst_fn": "t4_tool_call"
+   },
+   "centrality": {
+    "degree_sum": 0.032926,
+    "betweenness_sum": 0.01305,
+    "betweenness_max": 0.012369,
+    "nodes": 17
+   },
+   "hotspot_rank": 27,
+   "hotspot_score": 0.0989
+  },
+  "scripts/llm-tester/scan.py": {
+   "loc": 87,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 87,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 64,
+    "functions": 2,
+    "ccn_max": 12,
+    "ccn_total": 15,
+    "longest_fn_nloc": 36,
+    "worst_fn": "main"
+   },
+   "centrality": {
+    "degree_sum": 0.0037,
+    "betweenness_sum": 0.005347,
+    "betweenness_max": 0.004603,
+    "nodes": 4
+   },
+   "hotspot_rank": 102,
+   "hotspot_score": 0.0246
+  },
+  "scripts/llm-tester/tester.py": {
+   "loc": 121,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 133,
+   "churn_deleted": 12,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 97,
+    "functions": 5,
+    "ccn_max": 6,
+    "ccn_total": 17,
+    "longest_fn_nloc": 34,
+    "worst_fn": "cmd_probe"
+   },
+   "centrality": {
+    "degree_sum": 0.009989,
+    "betweenness_sum": 0.006892,
+    "betweenness_max": 0.005827,
+    "nodes": 9
+   },
+   "hotspot_rank": 65,
+   "hotspot_score": 0.0432
+  },
+  "scripts/llm-tester/trace/infomaniak.py": {
+   "loc": 195,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 195,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 138,
+    "functions": 7,
+    "ccn_max": 5,
+    "ccn_total": 22,
+    "longest_fn_nloc": 41,
+    "worst_fn": "trace_attempt"
+   },
+   "centrality": {
+    "degree_sum": 0.011839,
+    "betweenness_sum": 0.0352,
+    "betweenness_max": 0.032277,
+    "nodes": 12
+   },
+   "hotspot_rank": 58,
+   "hotspot_score": 0.0464
+  },
+  "scripts/onboard-chatgpt.sh": {
+   "loc": 7,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 7,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   }
+  },
+  "scripts/onboard-openai.sh": {
+   "loc": 8,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 10,
+   "churn_deleted": 2,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   }
+  },
+  "scripts/rerun_v1_claims.py": {
+   "loc": 233,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 233,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 174,
+    "functions": 4,
+    "ccn_max": 35,
+    "ccn_total": 43,
+    "longest_fn_nloc": 139,
+    "worst_fn": "main"
+   },
+   "centrality": {
+    "degree_sum": 0.008509,
+    "betweenness_sum": 0.006262,
+    "betweenness_max": 0.005954,
+    "nodes": 7
+   },
+   "hotspot_rank": 48,
+   "hotspot_score": 0.0567
+  },
+  "scripts/seo/apply-cloudflare-redirects.sh": {
+   "loc": 77,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 77,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 2
+   }
+  },
+  "scripts/seo/inspect-urls.sh": {
+   "loc": 66,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 66,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00296,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 4
+   }
+  },
+  "scripts/seo/submit-sitemap.sh": {
+   "loc": 33,
+   "lang": "sh",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 33,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00296,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 4
+   }
+  },
+  "src/components/A11yControl.astro": {
+   "loc": 513,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 514,
+   "churn_deleted": 1,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 1,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.017018,
+    "betweenness_sum": 0.000526,
+    "betweenness_max": 0.000526,
+    "nodes": 14
+   },
+   "hotspot_rank": 118,
+   "hotspot_score": 0.021
+  },
+  "src/components/AccessibilityIcon.astro": {
+   "loc": 34,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 34,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 4,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 166,
+   "hotspot_score": 0.0052
+  },
+  "src/components/Breadcrumb.astro": {
+   "loc": 41,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 43,
+   "churn_deleted": 2,
+   "fan_in": 2,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 13,
+    "functions": 1,
+    "ccn_max": 2,
+    "ccn_total": 2,
+    "longest_fn_nloc": 6,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00148,
+    "betweenness_sum": 0.00098,
+    "betweenness_max": 0.00098,
+    "nodes": 2
+   },
+   "hotspot_rank": 109,
+   "hotspot_score": 0.0235
+  },
+  "src/components/ClaimRow.astro": {
+   "loc": 64,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 70,
+   "churn_deleted": 6,
+   "fan_in": 3,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 16,
+    "functions": 1,
+    "ccn_max": 3,
+    "ccn_total": 3,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000316,
+    "betweenness_max": 0.000316,
+    "nodes": 2
+   },
+   "hotspot_rank": 106,
+   "hotspot_score": 0.0243
+  },
+  "src/components/CriteriaMatrix.astro": {
+   "loc": 84,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 2,
+   "churn_deleted": 2,
+   "fan_in": 1,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 15,
+    "functions": 2,
+    "ccn_max": 1,
+    "ccn_total": 2,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000402,
+    "betweenness_max": 0.000402,
+    "nodes": 3
+   },
+   "hotspot_rank": 147,
+   "hotspot_score": 0.0076
+  },
+  "src/components/DisclosureIndicator.astro": {
+   "loc": 30,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 32,
+   "churn_deleted": 2,
+   "fan_in": 3,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 2,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 8e-05,
+    "betweenness_max": 8e-05,
+    "nodes": 1
+   },
+   "hotspot_rank": 141,
+   "hotspot_score": 0.0104
+  },
+  "src/components/EmptyState.astro": {
+   "loc": 17,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 17,
+   "churn_deleted": 0,
+   "fan_in": 7,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 2,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.0,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 167,
+   "hotspot_score": 0.0052
+  },
+  "src/components/EntityCard.astro": {
+   "loc": 48,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 53,
+   "churn_deleted": 5,
+   "fan_in": 3,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 12,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 120,
+   "hotspot_score": 0.0208
+  },
+  "src/components/FacetBar.astro": {
+   "loc": 111,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 217,
+   "churn_deleted": 106,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 4,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 82,
+   "hotspot_score": 0.0312
+  },
+  "src/components/FilterBar.astro": {
+   "loc": 126,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 8,
+   "churn_added": 252,
+   "churn_deleted": 126,
+   "fan_in": 5,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 14,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00111,
+    "betweenness_sum": 5.4e-05,
+    "betweenness_max": 5.4e-05,
+    "nodes": 1
+   },
+   "hotspot_rank": 66,
+   "hotspot_score": 0.0416
+  },
+  "src/components/InlineMd.astro": {
+   "loc": 67,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 71,
+   "churn_deleted": 4,
+   "fan_in": 2,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 52,
+    "functions": 1,
+    "ccn_max": 2,
+    "ccn_total": 2,
+    "longest_fn_nloc": 46,
+    "worst_fn": "parseCode"
+   },
+   "centrality": {
+    "degree_sum": 0.00333,
+    "betweenness_sum": 5.4e-05,
+    "betweenness_max": 5.4e-05,
+    "nodes": 4
+   },
+   "hotspot_rank": 136,
+   "hotspot_score": 0.0127
+  },
+  "src/components/Lightbox.astro": {
+   "loc": 110,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 110,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 0,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00185,
+    "betweenness_sum": 5.4e-05,
+    "betweenness_max": 5.4e-05,
+    "nodes": 3
+   },
+   "hotspot_rank": 168,
+   "hotspot_score": 0.0052
+  },
+  "src/components/NotAssessedCell.astro": {
+   "loc": 9,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 9,
+   "churn_deleted": 0,
+   "fan_in": 2,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   }
+  },
+  "src/components/ObjectTypeIcon.astro": {
+   "loc": 75,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 77,
+   "churn_deleted": 2,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 7,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00148,
+    "betweenness_sum": 2.7e-05,
+    "betweenness_max": 2.7e-05,
+    "nodes": 2
+   },
+   "hotspot_rank": 130,
+   "hotspot_score": 0.0156
+  },
+  "src/components/PageHeader.astro": {
+   "loc": 244,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 377,
+   "churn_deleted": 133,
+   "fan_in": 12,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 14,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00259,
+    "betweenness_sum": 0.000982,
+    "betweenness_max": 0.000982,
+    "nodes": 2
+   },
+   "hotspot_rank": 49,
+   "hotspot_score": 0.0524
+  },
+  "src/components/PaperGrain.astro": {
+   "loc": 5,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 5,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 2,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 169,
+   "hotspot_score": 0.0052
+  },
+  "src/components/ResponsibleAIExcluded.astro": {
+   "loc": 77,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 82,
+   "churn_deleted": 5,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 15,
+    "functions": 1,
+    "ccn_max": 1,
+    "ccn_total": 1,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00111,
+    "betweenness_sum": 2.6e-05,
+    "betweenness_max": 2.6e-05,
+    "nodes": 2
+   },
+   "hotspot_rank": 139,
+   "hotspot_score": 0.0115
+  },
+  "src/components/ResponsibleAIFilters.astro": {
+   "loc": 174,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 8,
+   "churn_added": 370,
+   "churn_deleted": 196,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 14,
+    "functions": 2,
+    "ccn_max": 2,
+    "ccn_total": 3,
+    "longest_fn_nloc": 1,
+    "worst_fn": "isProductPressed"
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.000107,
+    "betweenness_max": 0.000107,
+    "nodes": 1
+   },
+   "hotspot_rank": 61,
+   "hotspot_score": 0.045
+  },
+  "src/components/ResponsibleAIFootnotes.astro": {
+   "loc": 80,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 88,
+   "churn_deleted": 8,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 15,
+    "functions": 1,
+    "ccn_max": 1,
+    "ccn_total": 1,
+    "longest_fn_nloc": 2,
+    "worst_fn": "slugify"
+   },
+   "centrality": {
+    "degree_sum": 0.00148,
+    "betweenness_sum": 0.000321,
+    "betweenness_max": 0.000321,
+    "nodes": 2
+   },
+   "hotspot_rank": 91,
+   "hotspot_score": 0.0273
+  },
+  "src/components/ResponsibleAIMatrix.astro": {
+   "loc": 597,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 23,
+   "churn_added": 1113,
+   "churn_deleted": 516,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 92,
+    "functions": 1,
+    "ccn_max": 11,
+    "ccn_total": 11,
+    "longest_fn_nloc": 64,
+    "worst_fn": "renderDetail"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000482,
+    "betweenness_max": 0.000482,
+    "nodes": 2
+   },
+   "hotspot_rank": 18,
+   "hotspot_score": 0.1321
+  },
+  "src/components/ResponsibleAISummary.astro": {
+   "loc": 255,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 269,
+   "churn_deleted": 14,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 29,
+    "functions": 1,
+    "ccn_max": 1,
+    "ccn_total": 1,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00185,
+    "betweenness_sum": 0.00036,
+    "betweenness_max": 0.00036,
+    "nodes": 2
+   },
+   "hotspot_rank": 92,
+   "hotspot_score": 0.0273
+  },
+  "src/components/SearchInput.astro": {
+   "loc": 23,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 23,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 2,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 170,
+   "hotspot_score": 0.0052
+  },
+  "src/components/ShouldIDecisionTree.astro": {
+   "loc": 947,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 953,
+   "churn_deleted": 6,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 5,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00259,
+    "betweenness_sum": 8e-05,
+    "betweenness_max": 8e-05,
+    "nodes": 4
+   },
+   "hotspot_rank": 142,
+   "hotspot_score": 0.0104
+  },
+  "src/components/SourceRow.astro": {
+   "loc": 56,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 81,
+   "churn_deleted": 25,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 9,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.0,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 121,
+   "hotspot_score": 0.0208
+  },
+  "src/components/TurnOffGuide.astro": {
+   "loc": 364,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 533,
+   "churn_deleted": 169,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 55,
+    "functions": 2,
+    "ccn_max": 3,
+    "ccn_total": 4,
+    "longest_fn_nloc": 11,
+    "worst_fn": "fmtDate"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000386,
+    "betweenness_max": 0.000386,
+    "nodes": 2
+   },
+   "hotspot_rank": 73,
+   "hotspot_score": 0.0359
+  },
+  "src/components/VerdictBadge.astro": {
+   "loc": 30,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 5,
+   "churn_added": 60,
+   "churn_deleted": 30,
+   "fan_in": 4,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 8,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00111,
+    "betweenness_sum": 0.000745,
+    "betweenness_max": 0.000745,
+    "nodes": 1
+   },
+   "hotspot_rank": 98,
+   "hotspot_score": 0.0263
+  },
+  "src/components/VerdictDistribution.astro": {
+   "loc": 33,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 33,
+   "churn_deleted": 0,
+   "fan_in": 3,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 5,
+    "functions": 1,
+    "ccn_max": 1,
+    "ccn_total": 1,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000241,
+    "betweenness_max": 0.000241,
+    "nodes": 3
+   },
+   "hotspot_rank": 138,
+   "hotspot_score": 0.0116
+  },
+  "src/components/Wallpaper.astro": {
+   "loc": 23,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 34,
+   "churn_deleted": 11,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 12,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 143,
+   "hotspot_score": 0.0104
+  },
+  "src/content.config.ts": {
+   "loc": 425,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 29,
+   "churn_added": 447,
+   "churn_deleted": 22,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 373,
+    "functions": 9,
+    "ccn_max": 9,
+    "ccn_total": 32,
+    "longest_fn_nloc": 197,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.014058,
+    "betweenness_sum": 0.000819,
+    "betweenness_max": 0.000819,
+    "nodes": 18
+   },
+   "hotspot_rank": 14,
+   "hotspot_score": 0.1872
+  },
+  "src/layouts/Base.astro": {
+   "loc": 755,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 40,
+   "churn_added": 1147,
+   "churn_deleted": 392,
+   "fan_in": 18,
+   "fan_out": 3,
+   "complexity": {
+    "nloc": 67,
+    "functions": 2,
+    "ccn_max": 3,
+    "ccn_total": 4,
+    "longest_fn_nloc": 2,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.005919,
+    "betweenness_sum": 0.002051,
+    "betweenness_max": 0.002051,
+    "nodes": 4
+   },
+   "hotspot_rank": 9,
+   "hotspot_score": 0.2133
+  },
+  "src/layouts/ResourcePage.astro": {
+   "loc": 43,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 59,
+   "churn_deleted": 16,
+   "fan_in": 2,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 25,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.001274,
+    "betweenness_max": 0.001274,
+    "nodes": 1
+   },
+   "hotspot_rank": 128,
+   "hotspot_score": 0.0162
+  },
+  "src/lib/citations.ts": {
+   "loc": 27,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 30,
+   "churn_deleted": 3,
+   "fan_in": 1,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 23,
+    "functions": 1,
+    "ccn_max": 6,
+    "ccn_total": 6,
+    "longest_fn_nloc": 21,
+    "worst_fn": "buildCitationIndex"
+   },
+   "centrality": {
+    "degree_sum": 0.00185,
+    "betweenness_sum": 4e-05,
+    "betweenness_max": 4e-05,
+    "nodes": 2
+   },
+   "hotspot_rank": 114,
+   "hotspot_score": 0.0224
+  },
+  "src/lib/criteria.ts": {
+   "loc": 56,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 2,
+   "churn_deleted": 2,
+   "fan_in": 5,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 46,
+    "functions": 3,
+    "ccn_max": 7,
+    "ccn_total": 12,
+    "longest_fn_nloc": 24,
+    "worst_fn": "buildCriteriaIndex"
+   },
+   "centrality": {
+    "degree_sum": 0.005549,
+    "betweenness_sum": 0.000121,
+    "betweenness_max": 0.000121,
+    "nodes": 6
+   },
+   "hotspot_rank": 124,
+   "hotspot_score": 0.0188
+  },
+  "src/lib/entityTypes.ts": {
+   "loc": 62,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 6,
+   "churn_added": 70,
+   "churn_deleted": 8,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 47,
+    "functions": 4,
+    "ccn_max": 3,
+    "ccn_total": 6,
+    "longest_fn_nloc": 3,
+    "worst_fn": "getEntityParent"
+   },
+   "centrality": {
+    "degree_sum": 0.008879,
+    "betweenness_sum": 0.000397,
+    "betweenness_max": 0.000397,
+    "nodes": 11
+   },
+   "hotspot_rank": 70,
+   "hotspot_score": 0.0381
+  },
+  "src/lib/research.ts": {
+   "loc": 22,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 22,
+   "churn_deleted": 0,
+   "fan_in": 6,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 20,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00296,
+    "betweenness_sum": 0.000216,
+    "betweenness_max": 0.000216,
+    "nodes": 4
+   },
+   "hotspot_rank": 155,
+   "hotspot_score": 0.0053
+  },
+  "src/lib/resourceSchema.ts": {
+   "loc": 170,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 170,
+   "churn_deleted": 0,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 146,
+    "functions": 7,
+    "ccn_max": 11,
+    "ccn_total": 37,
+    "longest_fn_nloc": 61,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.009989,
+    "betweenness_sum": 0.000375,
+    "betweenness_max": 0.000351,
+    "nodes": 10
+   },
+   "hotspot_rank": 56,
+   "hotspot_score": 0.0472
+  },
+  "src/lib/seo.ts": {
+   "loc": 48,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 61,
+   "churn_deleted": 13,
+   "fan_in": 4,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 15,
+    "functions": 4,
+    "ccn_max": 2,
+    "ccn_total": 6,
+    "longest_fn_nloc": 4,
+    "worst_fn": "shouldNoindex"
+   },
+   "centrality": {
+    "degree_sum": 0.006289,
+    "betweenness_sum": 3e-06,
+    "betweenness_max": 3e-06,
+    "nodes": 6
+   },
+   "hotspot_rank": 89,
+   "hotspot_score": 0.0276
+  },
+  "src/lib/sourceQuality.ts": {
+   "loc": 87,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 88,
+   "churn_deleted": 1,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 68,
+    "functions": 3,
+    "ccn_max": 11,
+    "ccn_total": 18,
+    "longest_fn_nloc": 21,
+    "worst_fn": "countSourcesByIndependence"
+   },
+   "centrality": {
+    "degree_sum": 0.007399,
+    "betweenness_sum": 1.7e-05,
+    "betweenness_max": 1.7e-05,
+    "nodes": 11
+   },
+   "hotspot_rank": 83,
+   "hotspot_score": 0.0307
+  },
+  "src/lib/verdict.ts": {
+   "loc": 58,
+   "lang": "ts",
+   "tracked": true,
+   "churn_commits": 3,
+   "churn_added": 60,
+   "churn_deleted": 2,
+   "fan_in": 5,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 50,
+    "functions": 4,
+    "ccn_max": 2,
+    "ccn_total": 5,
+    "longest_fn_nloc": 5,
+    "worst_fn": "verdictCounts"
+   },
+   "centrality": {
+    "degree_sum": 0.007029,
+    "betweenness_sum": 0.000478,
+    "betweenness_max": 0.000478,
+    "nodes": 9
+   },
+   "hotspot_rank": 115,
+   "hotspot_score": 0.0215
+  },
+  "src/pages/404.astro": {
+   "loc": 90,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 97,
+   "churn_deleted": 7,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 1,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 144,
+   "hotspot_score": 0.0104
+  },
+  "src/pages/credits.astro": {
+   "loc": 17,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 2,
+   "churn_added": 18,
+   "churn_deleted": 1,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 1,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   },
+   "hotspot_rank": 145,
+   "hotspot_score": 0.0104
+  },
+  "src/pages/index.astro": {
+   "loc": 1042,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 30,
+   "churn_added": 1943,
+   "churn_deleted": 862,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 157,
+    "functions": 16,
+    "ccn_max": 9,
+    "ccn_total": 35,
+    "longest_fn_nloc": 21,
+    "worst_fn": "verdictOccluded"
+   },
+   "centrality": {
+    "degree_sum": 0.0037,
+    "betweenness_sum": 0.001739,
+    "betweenness_max": 0.001739,
+    "nodes": 3
+   },
+   "hotspot_rank": 13,
+   "hotspot_score": 0.1962
+  },
+  "src/pages/research/claims/[...slug].astro": {
+   "loc": 498,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 8,
+   "complexity": {
+    "nloc": 98,
+    "functions": 5,
+    "ccn_max": 3,
+    "ccn_total": 7,
+    "longest_fn_nloc": 5,
+    "worst_fn": "isoDate"
+   },
+   "centrality": null,
+   "hotspot_rank": 134,
+   "hotspot_score": 0.0131
+  },
+  "src/pages/research/claims/index.astro": {
+   "loc": 62,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 7,
+   "complexity": {
+    "nloc": 33,
+    "functions": 4,
+    "ccn_max": 3,
+    "ccn_total": 6,
+    "longest_fn_nloc": 4,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 148,
+   "hotspot_score": 0.0068
+  },
+  "src/pages/research/companies/index.astro": {
+   "loc": 60,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 19,
+    "functions": 6,
+    "ccn_max": 1,
+    "ccn_total": 6,
+    "longest_fn_nloc": 11,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 149,
+   "hotspot_score": 0.0068
+  },
+  "src/pages/research/criteria/[slug].astro": {
+   "loc": 94,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 2,
+   "churn_deleted": 1,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 57,
+    "functions": 11,
+    "ccn_max": 4,
+    "ccn_total": 16,
+    "longest_fn_nloc": 15,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 111,
+   "hotspot_score": 0.0233
+  },
+  "src/pages/research/criteria/index.astro": {
+   "loc": 81,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 6,
+   "complexity": {
+    "nloc": 29,
+    "functions": 4,
+    "ccn_max": 3,
+    "ccn_total": 6,
+    "longest_fn_nloc": 14,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 150,
+   "hotspot_score": 0.0068
+  },
+  "src/pages/research/entities/[...slug].astro": {
+   "loc": 453,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 8,
+   "complexity": {
+    "nloc": 79,
+    "functions": 7,
+    "ccn_max": 2,
+    "ccn_total": 8,
+    "longest_fn_nloc": 4,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 131,
+   "hotspot_score": 0.0142
+  },
+  "src/pages/research/index.astro": {
+   "loc": 651,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 10,
+   "churn_added": 739,
+   "churn_deleted": 88,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 82,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": null,
+   "hotspot_rank": 50,
+   "hotspot_score": 0.0519
+  },
+  "src/pages/research/products/index.astro": {
+   "loc": 60,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 19,
+    "functions": 6,
+    "ccn_max": 1,
+    "ccn_total": 6,
+    "longest_fn_nloc": 11,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 151,
+   "hotspot_score": 0.0068
+  },
+  "src/pages/research/sources/[...slug].astro": {
+   "loc": 230,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 1,
+   "churn_added": 1,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 5,
+   "complexity": {
+    "nloc": 45,
+    "functions": 3,
+    "ccn_max": 1,
+    "ccn_total": 3,
+    "longest_fn_nloc": 4,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 146,
+   "hotspot_score": 0.0086
+  },
+  "src/pages/research/sources/index.astro": {
+   "loc": 136,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 54,
+    "functions": 3,
+    "ccn_max": 6,
+    "ccn_total": 12,
+    "longest_fn_nloc": 19,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 133,
+   "hotspot_score": 0.0136
+  },
+  "src/pages/research/subjects/index.astro": {
+   "loc": 47,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 18,
+    "functions": 6,
+    "ccn_max": 1,
+    "ccn_total": 6,
+    "longest_fn_nloc": 11,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 152,
+   "hotspot_score": 0.0068
+  },
+  "src/pages/research/topics/[topic].astro": {
+   "loc": 96,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 5,
+   "churn_deleted": 4,
+   "fan_in": 0,
+   "fan_out": 6,
+   "complexity": {
+    "nloc": 38,
+    "functions": 9,
+    "ccn_max": 3,
+    "ccn_total": 11,
+    "longest_fn_nloc": 9,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 78,
+   "hotspot_score": 0.0332
+  },
+  "src/pages/research/topics/index.astro": {
+   "loc": 65,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 0,
+   "churn_added": 0,
+   "churn_deleted": 0,
+   "fan_in": 0,
+   "fan_out": 4,
+   "complexity": {
+    "nloc": 17,
+    "functions": 5,
+    "ccn_max": 1,
+    "ccn_total": 5,
+    "longest_fn_nloc": 11,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": null,
+   "hotspot_rank": 154,
+   "hotspot_score": 0.0056
+  },
+  "src/pages/resources/[...slug].astro": {
+   "loc": 235,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 21,
+   "churn_added": 386,
+   "churn_deleted": 151,
+   "fan_in": 0,
+   "fan_out": 10,
+   "complexity": {
+    "nloc": 38,
+    "functions": 2,
+    "ccn_max": 1,
+    "ccn_total": 2,
+    "longest_fn_nloc": 4,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.008139,
+    "betweenness_sum": 0.002388,
+    "betweenness_max": 0.002388,
+    "nodes": 4
+   },
+   "hotspot_rank": 22,
+   "hotspot_score": 0.1125
+  },
+  "src/pages/resources/index.astro": {
+   "loc": 136,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 7,
+   "churn_added": 232,
+   "churn_deleted": 96,
+   "fan_in": 0,
+   "fan_out": 1,
+   "complexity": {
+    "nloc": 32,
+    "functions": 2,
+    "ccn_max": 1,
+    "ccn_total": 2,
+    "longest_fn_nloc": 1,
+    "worst_fn": "(anonymous)"
+   },
+   "centrality": {
+    "degree_sum": 0.00222,
+    "betweenness_sum": 0.000224,
+    "betweenness_max": 0.000224,
+    "nodes": 3
+   },
+   "hotspot_rank": 67,
+   "hotspot_score": 0.0387
+  },
+  "src/pages/values.astro": {
+   "loc": 59,
+   "lang": "astro",
+   "tracked": true,
+   "churn_commits": 4,
+   "churn_added": 81,
+   "churn_deleted": 22,
+   "fan_in": 0,
+   "fan_out": 2,
+   "complexity": {
+    "nloc": 2,
+    "functions": 0,
+    "ccn_max": 0,
+    "ccn_total": 0,
+    "longest_fn_nloc": 0,
+    "worst_fn": null
+   },
+   "centrality": {
+    "degree_sum": 0.00074,
+    "betweenness_sum": 0.00114,
+    "betweenness_max": 0.00114,
+    "nodes": 1
+   },
+   "hotspot_rank": 116,
+   "hotspot_score": 0.0213
+  },
+  "src/styles/global.css": {
+   "loc": 243,
+   "lang": "css",
+   "tracked": true,
+   "churn_commits": 9,
+   "churn_added": 247,
+   "churn_deleted": 4,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   }
+  },
+  "src/styles/resources.css": {
+   "loc": 325,
+   "lang": "css",
+   "tracked": true,
+   "churn_commits": 14,
+   "churn_added": 391,
+   "churn_deleted": 66,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   }
+  },
+  "src/styles/tokens.css": {
+   "loc": 244,
+   "lang": "css",
+   "tracked": true,
+   "churn_commits": 13,
+   "churn_added": 261,
+   "churn_deleted": 17,
+   "fan_in": 1,
+   "fan_out": 0,
+   "complexity": null,
+   "centrality": {
+    "degree_sum": 0.00037,
+    "betweenness_sum": 0.0,
+    "betweenness_max": 0.0,
+    "nodes": 1
+   }
+  },
+  "tasks.py": {
+   "loc": 180,
+   "lang": "py",
+   "tracked": true,
+   "churn_commits": 11,
+   "churn_added": 314,
+   "churn_deleted": 134,
+   "fan_in": 0,
+   "fan_out": 0,
+   "complexity": {
+    "nloc": 86,
+    "functions": 11,
+    "ccn_max": 5,
+    "ccn_total": 18,
+    "longest_fn_nloc": 12,
+    "worst_fn": "_audit"
+   },
+   "centrality": {
+    "degree_sum": 0.019238,
+    "betweenness_sum": 0.000147,
+    "betweenness_max": 5.8e-05,
+    "nodes": 24
+   },
+   "hotspot_rank": 36,
+   "hotspot_score": 0.0776
+  }
+ },
+ "hotspots_top30": [
+  {
+   "path": "pipeline/orchestrator/pipeline.py",
+   "score": 0.9254,
+   "churn_commits": 77,
+   "ccn_total": 288,
+   "betweenness_sum": 0.430436,
+   "rank": 1
+  },
+  {
+   "path": "pipeline/orchestrator/cli.py",
+   "score": 0.7551,
+   "churn_commits": 56,
+   "ccn_total": 354,
+   "betweenness_sum": 0.138045,
+   "rank": 2
+  },
+  {
+   "path": "pipeline/orchestrator/persistence.py",
+   "score": 0.4139,
+   "churn_commits": 36,
+   "ccn_total": 95,
+   "betweenness_sum": 0.257347,
+   "rank": 3
+  },
+  {
+   "path": "pipeline/tests/test_cli.py",
+   "score": 0.2455,
+   "churn_commits": 17,
+   "ccn_total": 102,
+   "betweenness_sum": 0.090185,
+   "rank": 4
+  },
+  {
+   "path": "pipeline/linter/checks.py",
+   "score": 0.2416,
+   "churn_commits": 16,
+   "ccn_total": 111,
+   "betweenness_sum": 0.071175,
+   "rank": 5
+  },
+  {
+   "path": "pipeline/researcher/decomposed.py",
+   "score": 0.2411,
+   "churn_commits": 20,
+   "ccn_total": 81,
+   "betweenness_sum": 0.098318,
+   "rank": 6
+  },
+  {
+   "path": "pipeline/tests/test_orchestrator.py",
+   "score": 0.2354,
+   "churn_commits": 24,
+   "ccn_total": 86,
+   "betweenness_sum": 0.029256,
+   "rank": 7
+  },
+  {
+   "path": "pipeline/common/models.py",
+   "score": 0.2258,
+   "churn_commits": 23,
+   "ccn_total": 18,
+   "betweenness_sum": 0.18515,
+   "rank": 8
+  },
+  {
+   "path": "src/layouts/Base.astro",
+   "score": 0.2133,
+   "churn_commits": 40,
+   "ccn_total": 4,
+   "betweenness_sum": 0.002051,
+   "rank": 9
+  },
+  {
+   "path": "pipeline/tests/test_audit_trail.py",
+   "score": 0.2049,
+   "churn_commits": 12,
+   "ccn_total": 84,
+   "betweenness_sum": 0.102487,
+   "rank": 10
+  },
+  {
+   "path": "pipeline/tests/test_onboard.py",
+   "score": 0.2008,
+   "churn_commits": 20,
+   "ccn_total": 67,
+   "betweenness_sum": 0.045606,
+   "rank": 11
+  },
+  {
+   "path": "pipeline/tests/test_researcher_decomposed.py",
+   "score": 0.2001,
+   "churn_commits": 14,
+   "ccn_total": 82,
+   "betweenness_sum": 0.074652,
+   "rank": 12
+  },
+  {
+   "path": "src/pages/index.astro",
+   "score": 0.1962,
+   "churn_commits": 30,
+   "ccn_total": 35,
+   "betweenness_sum": 0.001739,
+   "rank": 13
+  },
+  {
+   "path": "src/content.config.ts",
+   "score": 0.1872,
+   "churn_commits": 29,
+   "ccn_total": 32,
+   "betweenness_sum": 0.000819,
+   "rank": 14
+  },
+  {
+   "path": "pipeline/orchestrator/review_queue.py",
+   "score": 0.1685,
+   "churn_commits": 5,
+   "ccn_total": 112,
+   "betweenness_sum": 0.034378,
+   "rank": 15
+  },
+  {
+   "path": "pipeline/analyst/agent.py",
+   "score": 0.1637,
+   "churn_commits": 17,
+   "ccn_total": 48,
+   "betweenness_sum": 0.045552,
+   "rank": 16
+  },
+  {
+   "path": "pipeline/tests/test_linter.py",
+   "score": 0.1366,
+   "churn_commits": 9,
+   "ccn_total": 63,
+   "betweenness_sum": 0.040103,
+   "rank": 17
+  },
+  {
+   "path": "src/components/ResponsibleAIMatrix.astro",
+   "score": 0.1321,
+   "churn_commits": 23,
+   "ccn_total": 11,
+   "betweenness_sum": 0.000482,
+   "rank": 18
+  },
+  {
+   "path": "pipeline/tests/test_templates.py",
+   "score": 0.1284,
+   "churn_commits": 11,
+   "ccn_total": 54,
+   "betweenness_sum": 0.022056,
+   "rank": 19
+  },
+  {
+   "path": "pipeline/common/templates.py",
+   "score": 0.1221,
+   "churn_commits": 9,
+   "ccn_total": 43,
+   "betweenness_sum": 0.057582,
+   "rank": 20
+  },
+  {
+   "path": "pipeline/orchestrator/checkpoints.py",
+   "score": 0.1139,
+   "churn_commits": 8,
+   "ccn_total": 37,
+   "betweenness_sum": 0.06573,
+   "rank": 21
+  },
+  {
+   "path": "src/pages/resources/[...slug].astro",
+   "score": 0.1125,
+   "churn_commits": 21,
+   "ccn_total": 2,
+   "betweenness_sum": 0.002388,
+   "rank": 22
+  },
+  {
+   "path": "pipeline/tests/test_analyst.py",
+   "score": 0.1087,
+   "churn_commits": 10,
+   "ccn_total": 28,
+   "betweenness_sum": 0.054009,
+   "rank": 23
+  },
+  {
+   "path": "pipeline/tests/test_tools.py",
+   "score": 0.1023,
+   "churn_commits": 4,
+   "ccn_total": 41,
+   "betweenness_sum": 0.075839,
+   "rank": 24
+  },
+  {
+   "path": "pipeline/orchestrator/entity_resolution.py",
+   "score": 0.1019,
+   "churn_commits": 10,
+   "ccn_total": 30,
+   "betweenness_sum": 0.034522,
+   "rank": 25
+  },
+  {
+   "path": "pipeline/tests/test_review_queue.py",
+   "score": 0.1006,
+   "churn_commits": 3,
+   "ccn_total": 58,
+   "betweenness_sum": 0.041958,
+   "rank": 26
+  },
+  {
+   "path": "scripts/llm-tester/harness/infomaniak.py",
+   "score": 0.0989,
+   "churn_commits": 2,
+   "ccn_total": 73,
+   "betweenness_sum": 0.01305,
+   "rank": 27
+  },
+  {
+   "path": "pipeline/tests/test_models.py",
+   "score": 0.0983,
+   "churn_commits": 11,
+   "ccn_total": 33,
+   "betweenness_sum": 0.008386,
+   "rank": 28
+  },
+  {
+   "path": "scripts/llm-tester/harness/greenpt.py",
+   "score": 0.0887,
+   "churn_commits": 1,
+   "ccn_total": 70,
+   "betweenness_sum": 0.009589,
+   "rank": 29
+  },
+  {
+   "path": "pipeline/tests/test_source_url_dedup.py",
+   "score": 0.0886,
+   "churn_commits": 7,
+   "ccn_total": 39,
+   "betweenness_sum": 0.017511,
+   "rank": 30
+  }
+ ],
+ "import_edges": [
+  {
+   "source": "pipeline/analyst/agent.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/analyst/agent.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/analyst/agent.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/analyst/agent.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/agent.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/agent.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/bundle.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/bundle.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/bundle.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/compare.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/compare.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/models.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/auditor/report.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/common/content_loader.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/common/publisher_quality.py",
+   "target": "pipeline/common/blocklist.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/common/publisher_quality.py",
+   "target": "pipeline/common/source_classification.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/agent.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/agent.py",
+   "target": "pipeline/common/timeouts.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/agent.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/agent.py",
+   "target": "pipeline/ingestor/tools/wayback.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/agent.py",
+   "target": "pipeline/ingestor/tools/web_fetch.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/models.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/tools/wayback.py",
+   "target": "pipeline/common/timeouts.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/ingestor/validation.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/__main__.py",
+   "target": "pipeline/linter/report.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/__main__.py",
+   "target": "pipeline/linter/runner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/checks.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/checks.py",
+   "target": "pipeline/linter/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/checks.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/prune.py",
+   "target": "pipeline/linter/runner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/report.py",
+   "target": "pipeline/linter/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/runner.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/runner.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/runner.py",
+   "target": "pipeline/linter/checks.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/linter/runner.py",
+   "target": "pipeline/linter/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/checkpoints.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/checkpoints.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/logging_setup.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/source_classification.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/ingestor/validation.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/templates.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/templates.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/auditor/compare.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/auditor/report.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/review_queue.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/linter/runner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/linter/report.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/stats.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/auditor/compare.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/cli.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/entity_resolution.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/entity_resolution.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/common/source_classification.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/persistence.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/blocklist.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/logging_setup.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/templates.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/timeouts.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/auditor/bundle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/auditor/compare.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/ingestor/tools/web_fetch.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/source_classification.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/pipeline.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review_queue.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review_queue.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review_queue.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review_queue.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/review_queue.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/stats.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/stats.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/stats.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/orchestrator/stats.py",
+   "target": "pipeline/common/sidecar.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/common/blocklist.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/common/canonical_url.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/common/publisher_quality.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/researcher/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/researcher/planner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/researcher/tools/arxiv.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/researcher/tools/tavily.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/entity_enricher.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/entity_enricher.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/entity_verifier.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/entity_verifier.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/planner.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/scorer.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/arxiv.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/arxiv.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/arxiv.py",
+   "target": "pipeline/common/timeouts.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/tavily.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/tavily.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/researcher/tools/tavily.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/conftest.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/conftest.py",
+   "target": "pipeline/common/logging_setup.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/researcher/planner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_acceptance.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_agent.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_agent.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_agent.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_agent.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_agent.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_analyst.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_arxiv_search.py",
+   "target": "pipeline/common/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_arxiv_search.py",
+   "target": "pipeline/researcher/tools/arxiv.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_audit_trail.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_auditor_agent.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_auditor_agent.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_auditor_agent.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_auditor_models.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_auditor_models.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_blocklist.py",
+   "target": "pipeline/common/blocklist.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_brave_search.py",
+   "target": "pipeline/researcher/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_canonical_url.py",
+   "target": "pipeline/common/canonical_url.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_checkpoints.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_checkpoints.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_classify_source_type.py",
+   "target": "pipeline/common/source_classification.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli_stats.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_cli_stats.py",
+   "target": "pipeline/orchestrator/stats.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_compare.py",
+   "target": "pipeline/auditor/compare.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_compare.py",
+   "target": "pipeline/auditor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_compare.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_content_loader.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_enricher.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_enricher.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_enricher.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_resolution.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_resolution.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_resolution.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_resolution.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_resolution.py",
+   "target": "pipeline/linter/checks.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_verifier.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_verifier.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_entity_verifier.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_frontmatter.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_frontmatter.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_ingest_urls.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_ingest_urls.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_ingest_urls.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_ingestor_models.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_ingestor_models.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/common/instructions.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_instructions.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_linter.py",
+   "target": "pipeline/linter/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_linter.py",
+   "target": "pipeline/linter/report.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_linter.py",
+   "target": "pipeline/linter/checks.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_logging_setup.py",
+   "target": "pipeline/common/logging_setup.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_logging_setup.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_logging_setup.py",
+   "target": "pipeline/common/logging_setup.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_logging_setup.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_models.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/common/content_loader.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/orchestrator/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/orchestrator/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_verifier.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/entity_enricher.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/researcher/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_onboard.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_orchestrator.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_prefetch.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_prefetch.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_prefetch.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_publish.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/analyst/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/auditor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/common/frontmatter.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_integration.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_planner.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_research_planner.py",
+   "target": "pipeline/researcher/planner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/planner.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/common/publisher_quality.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/entity_resolution.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/common/publisher_quality.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/researcher/tools/tavily.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_researcher_decomposed.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_review_queue.py",
+   "target": "pipeline/orchestrator/review_queue.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_review_queue.py",
+   "target": "pipeline/orchestrator/cli.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_review_queue.py",
+   "target": "pipeline/orchestrator/review_queue.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_review_queue.py",
+   "target": "pipeline/orchestrator/review.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_scorer.py",
+   "target": "pipeline/common/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_scorer.py",
+   "target": "pipeline/researcher/scorer.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/common/utils.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/orchestrator/persistence.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_source_url_dedup.py",
+   "target": "pipeline/researcher/decomposed.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_step_error_vocab.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tavily_search.py",
+   "target": "pipeline/common/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tavily_search.py",
+   "target": "pipeline/researcher/tools/tavily.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_templates.py",
+   "target": "pipeline/common/templates.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_terminal_fetch.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_terminal_fetch.py",
+   "target": "pipeline/ingestor/tools/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_terminal_fetch.py",
+   "target": "pipeline/ingestor/tools/web_fetch.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_terminal_fetch.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_throttle.py",
+   "target": "pipeline/common/throttle.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_throttle.py",
+   "target": "pipeline/common/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/ingestor/agent.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/ingestor/tools/wayback.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/ingestor/tools/web_fetch.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/checkpoints.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/pipeline.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/orchestrator/__init__.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "pipeline/tests/test_tools.py",
+   "target": "pipeline/ingestor/models.py",
+   "source_type": "deterministic"
+  },
+  {
+   "source": "astro.config.ts",
+   "target": "src/lib/seo.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/A11yControl.astro",
+   "target": "src/components/AccessibilityIcon.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ClaimRow.astro",
+   "target": "src/components/VerdictBadge.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ClaimRow.astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/CriteriaMatrix.astro",
+   "target": "src/components/VerdictBadge.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/CriteriaMatrix.astro",
+   "target": "src/components/NotAssessedCell.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/EntityCard.astro",
+   "target": "src/components/VerdictDistribution.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/FilterBar.astro",
+   "target": "src/components/SearchInput.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/FilterBar.astro",
+   "target": "src/components/FacetBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/FilterBar.astro",
+   "target": "src/components/DisclosureIndicator.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ObjectTypeIcon.astro",
+   "target": "src/lib/entityTypes.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/PageHeader.astro",
+   "target": "src/components/Breadcrumb.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/PageHeader.astro",
+   "target": "src/components/ObjectTypeIcon.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/PageHeader.astro",
+   "target": "src/lib/entityTypes.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ResponsibleAIFilters.astro",
+   "target": "src/components/DisclosureIndicator.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ResponsibleAIMatrix.astro",
+   "target": "src/components/ResponsibleAIFilters.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/ResponsibleAISummary.astro",
+   "target": "src/components/InlineMd.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/TurnOffGuide.astro",
+   "target": "src/components/InlineMd.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/VerdictBadge.astro",
+   "target": "src/lib/verdict.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/components/VerdictDistribution.astro",
+   "target": "src/lib/verdict.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/Base.astro",
+   "target": "src/styles/tokens.css",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/Base.astro",
+   "target": "src/styles/global.css",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/Base.astro",
+   "target": "src/components/A11yControl.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/ResourcePage.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/ResourcePage.astro",
+   "target": "src/components/Wallpaper.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/ResourcePage.astro",
+   "target": "src/components/PaperGrain.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/layouts/ResourcePage.astro",
+   "target": "src/styles/resources.css",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/lib/citations.ts",
+   "target": "src/lib/criteria.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/404.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/credits.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/index.astro",
+   "target": "src/lib/verdict.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/components/VerdictBadge.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/components/DisclosureIndicator.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/lib/entityTypes.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/lib/verdict.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/lib/seo.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/[...slug].astro",
+   "target": "src/lib/sourceQuality.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/components/ClaimRow.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/components/FilterBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/lib/verdict.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/claims/index.astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/companies/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/companies/index.astro",
+   "target": "src/components/EntityCard.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/companies/index.astro",
+   "target": "src/components/FilterBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/companies/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/companies/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/[slug].astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/[slug].astro",
+   "target": "src/lib/criteria.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/[slug].astro",
+   "target": "src/lib/criteria.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/[slug].astro",
+   "target": "src/components/CriteriaMatrix.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/[slug].astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/lib/criteria.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/components/FilterBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/criteria/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/lib/criteria.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/components/VerdictBadge.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/components/NotAssessedCell.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/lib/entityTypes.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/entities/[...slug].astro",
+   "target": "src/lib/seo.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/products/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/products/index.astro",
+   "target": "src/components/EntityCard.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/products/index.astro",
+   "target": "src/components/FilterBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/products/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/products/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/[...slug].astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/[...slug].astro",
+   "target": "src/lib/citations.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/[...slug].astro",
+   "target": "src/components/ClaimRow.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/[...slug].astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/[...slug].astro",
+   "target": "src/lib/seo.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/index.astro",
+   "target": "src/components/FilterBar.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/sources/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/subjects/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/subjects/index.astro",
+   "target": "src/components/EntityCard.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/subjects/index.astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/subjects/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/components/VerdictDistribution.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/components/ClaimRow.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/[topic].astro",
+   "target": "src/components/EmptyState.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/index.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/index.astro",
+   "target": "src/lib/research.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/index.astro",
+   "target": "src/components/VerdictDistribution.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/research/topics/index.astro",
+   "target": "src/components/PageHeader.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/layouts/ResourcePage.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/TurnOffGuide.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/ResponsibleAIMatrix.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/ResponsibleAISummary.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/ResponsibleAIExcluded.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/ResponsibleAIFootnotes.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/Lightbox.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/components/ShouldIDecisionTree.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/lib/resourceSchema.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/[...slug].astro",
+   "target": "src/content.config.ts",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/resources/index.astro",
+   "target": "src/layouts/ResourcePage.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/values.astro",
+   "target": "src/layouts/Base.astro",
+   "source_type": "grep-approx"
+  },
+  {
+   "source": "src/pages/values.astro",
+   "target": "src/components/Breadcrumb.astro",
+   "source_type": "grep-approx"
+  }
+ ],
+ "by_dir": {
+  ".": {
+   "files": 2,
+   "loc": 241
+  },
+  "pipeline/analyst": {
+   "files": 2,
+   "loc": 314
+  },
+  "pipeline/auditor": {
+   "files": 6,
+   "loc": 344
+  },
+  "pipeline/common": {
+   "files": 15,
+   "loc": 1747
+  },
+  "pipeline/ingestor": {
+   "files": 4,
+   "loc": 308
+  },
+  "pipeline/ingestor/tools": {
+   "files": 3,
+   "loc": 223
+  },
+  "pipeline/linter": {
+   "files": 7,
+   "loc": 930
+  },
+  "pipeline/orchestrator": {
+   "files": 9,
+   "loc": 6526
+  },
+  "pipeline/researcher": {
+   "files": 7,
+   "loc": 1015
+  },
+  "pipeline/researcher/tools": {
+   "files": 3,
+   "loc": 273
+  },
+  "pipeline/tests": {
+   "files": 45,
+   "loc": 13771
+  },
+  "scripts": {
+   "files": 5,
+   "loc": 365
+  },
+  "scripts/llm-tester": {
+   "files": 2,
+   "loc": 208
+  },
+  "scripts/llm-tester/harness": {
+   "files": 5,
+   "loc": 764
+  },
+  "scripts/llm-tester/trace": {
+   "files": 1,
+   "loc": 195
+  },
+  "scripts/seo": {
+   "files": 3,
+   "loc": 176
+  },
+  "src": {
+   "files": 1,
+   "loc": 425
+  },
+  "src/components": {
+   "files": 28,
+   "loc": 4237
+  },
+  "src/layouts": {
+   "files": 2,
+   "loc": 798
+  },
+  "src/lib": {
+   "files": 8,
+   "loc": 530
+  },
+  "src/pages": {
+   "files": 4,
+   "loc": 1208
+  },
+  "src/pages/research": {
+   "files": 1,
+   "loc": 651
+  },
+  "src/pages/research/claims": {
+   "files": 2,
+   "loc": 560
+  },
+  "src/pages/research/companies": {
+   "files": 1,
+   "loc": 60
+  },
+  "src/pages/research/criteria": {
+   "files": 2,
+   "loc": 175
+  },
+  "src/pages/research/entities": {
+   "files": 1,
+   "loc": 453
+  },
+  "src/pages/research/products": {
+   "files": 1,
+   "loc": 60
+  },
+  "src/pages/research/sources": {
+   "files": 2,
+   "loc": 366
+  },
+  "src/pages/research/subjects": {
+   "files": 1,
+   "loc": 47
+  },
+  "src/pages/research/topics": {
+   "files": 2,
+   "loc": 161
+  },
+  "src/pages/resources": {
+   "files": 2,
+   "loc": 371
+  },
+  "src/styles": {
+   "files": 3,
+   "loc": 812
+  }
+ }
+}

@@ -1,0 +1,280 @@
+{
+ "provenance": {
+  "commit": "43a1575d73a38932173dab461d4d66c15ce9efdb",
+  "generated_by": "enum_drift.py",
+  "python_source": "pipeline/common/models.py",
+  "ts_source": "src/content.config.ts",
+  "pairing": "value-set Jaccard >= 0.5"
+ },
+ "in_sync": [
+  {
+   "python_enum": "Verdict",
+   "python_line": 76,
+   "ts_enum": "verdict:165",
+   "ts_line": 165,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "Confidence",
+   "python_line": 86,
+   "ts_enum": "confidence:174",
+   "ts_line": 174,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "ClaimStatus",
+   "python_line": 92,
+   "ts_enum": "status:203",
+   "ts_line": 203,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "Phase",
+   "python_line": 99,
+   "ts_enum": "phase:206",
+   "ts_line": 206,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "BlockedReason",
+   "python_line": 106,
+   "ts_enum": "blocked_reason:208",
+   "ts_line": 208,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "Category",
+   "python_line": 112,
+   "ts_enum": "topics:154",
+   "ts_line": 154,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "SourceKind",
+   "python_line": 137,
+   "ts_enum": "kind:16",
+   "ts_line": 16,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "Independence",
+   "python_line": 148,
+   "ts_enum": "independence:27",
+   "ts_line": 27,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "VerificationLevel",
+   "python_line": 160,
+   "ts_enum": "verification_level:177",
+   "ts_line": 177,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  },
+  {
+   "python_enum": "EntityType",
+   "python_line": 174,
+   "ts_enum": "type:223",
+   "ts_line": 223,
+   "jaccard": 1.0,
+   "only_in_python": [],
+   "only_in_ts": [],
+   "in_sync": true
+  }
+ ],
+ "drifted": [],
+ "python_only": [
+  {
+   "python_enum": "VerdictSeverity",
+   "line": 180,
+   "values": [
+    "match",
+    "adjacent",
+    "major",
+    "opposite"
+   ]
+  }
+ ],
+ "ts_only": [
+  {
+   "ts_enum": "source_type:26",
+   "line": 26,
+   "values": [
+    "primary",
+    "secondary",
+    "tertiary"
+   ]
+  },
+  {
+   "ts_enum": "stage:49",
+   "line": 49,
+   "values": [
+    "research",
+    "ingest"
+   ]
+  },
+  {
+   "ts_enum": "origin:50",
+   "line": 50,
+   "values": [
+    "brave",
+    "tavily",
+    "arxiv",
+    "s2",
+    "openalex",
+    "edgar"
+   ]
+  },
+  {
+   "ts_enum": "recovered_via:51",
+   "line": 51,
+   "values": [
+    "archive_org"
+   ]
+  },
+  {
+   "ts_enum": "outcome:52",
+   "line": 52,
+   "values": [
+    "matched",
+    "recovered"
+   ]
+  },
+  {
+   "ts_enum": "independence:192",
+   "line": 192,
+   "values": [
+    "first-party",
+    "independent",
+    "unknown"
+   ]
+  },
+  {
+   "ts_enum": "verification_status:226",
+   "line": 226,
+   "values": [
+    "verified",
+    "unverified-startup",
+    "unverified-other"
+   ]
+  },
+  {
+   "ts_enum": "entity_type:255",
+   "line": 255,
+   "values": [
+    "company",
+    "product",
+    "subject"
+   ]
+  },
+  {
+   "ts_enum": "topics:256",
+   "line": 256,
+   "values": [
+    "ai-safety",
+    "environmental-impact",
+    "product-comparison",
+    "consumer-guide",
+    "ai-literacy",
+    "data-privacy",
+    "industry-analysis",
+    "regulation-policy"
+   ]
+  },
+  {
+   "ts_enum": "subjects:290",
+   "line": 290,
+   "values": [
+    "environmental",
+    "models-safety",
+    "privacy-data",
+    "business",
+    "product-access"
+   ]
+  },
+  {
+   "ts_enum": "subjects:298",
+   "line": 298,
+   "values": [
+    "yes",
+    "no",
+    "no-good",
+    "partial",
+    "planned",
+    "text",
+    "unknown",
+    "na"
+   ]
+  },
+  {
+   "ts_enum": "status:326",
+   "line": 326,
+   "values": [
+    "active",
+    "excluded"
+   ]
+  },
+  {
+   "ts_enum": "layout:407",
+   "line": 407,
+   "values": [
+    "article",
+    "matrix",
+    "guide",
+    "tool"
+   ]
+  },
+  {
+   "ts_enum": "wallpaper:408",
+   "line": 408,
+   "values": [
+    "default",
+    "ai-safety",
+    "responsible-ai",
+    "none"
+   ]
+  },
+  {
+   "ts_enum": "topics:409",
+   "line": 409,
+   "values": [
+    "ai-literacy",
+    "ai-safety",
+    "consumer-guide",
+    "responsible-ai"
+   ]
+  }
+ ],
+ "summary": {
+  "python_enums": 11,
+  "ts_enum_sites": 25,
+  "in_sync": 10,
+  "drifted": 0
+ }
+}

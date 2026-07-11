@@ -1,0 +1,2049 @@
+{
+ "provenance": {
+  "commit": "43a1575d73a38932173dab461d4d66c15ce9efdb",
+  "generated_by": "taxonomy analysts (docs, code, reader) merged; counts trace to word-frequency/*.json or recorded greps",
+  "note": "variant sample quotes were mechanically verified against the repo"
+ },
+ "concepts": [
+  {
+   "concept": "Claim topic classification (the 8-value subject-area vocabulary)",
+   "variants": [
+    {
+     "term": "Category (Python enum)",
+     "layer": "pipeline",
+     "count_source": "grep -c 'Category' pipeline/orchestrator/cli.py = 7; word-frequency/pipeline-identifiers.json word_parts topic=13, topics=34",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 112,
+      "quote": "class Category(str, Enum):"
+     }
+    },
+    {
+     "term": "topics (frontmatter / Zod field)",
+     "layer": "docs",
+     "count_source": "grep -c 'topics' pipeline/orchestrator/cli.py = 24; enum-drift.json in_sync pair 'Category -> topics:154'",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 154,
+      "quote": "topics: z.array(z.enum(["
+     }
+    },
+    {
+     "term": "Category / CATEGORY_LABELS (TS type)",
+     "layer": "src",
+     "count_source": "word-frequency/site-identifiers.json word_parts category=4, topic=8",
+     "sample": {
+      "file": "src/lib/research.ts",
+      "line": 11,
+      "quote": "export const CATEGORY_LABELS: Record<Category, string> = {"
+     }
+    },
+    {
+     "term": "topic (reader URL /research/topics/ and CLI --topic)",
+     "layer": "ui",
+     "count_source": "grep -c 'reassess' pipeline/orchestrator/cli.py = 4 (step-audit shares the --topic option); site route src/pages/research/topics/",
+     "sample": {
+      "file": "pipeline/orchestrator/cli.py",
+      "line": 1303,
+      "quote": "@click.option(\"--topic\", default=None, help=\"Audit all claims with a given topic\")"
+     }
+    },
+    {
+     "term": "category (CSS class rendering topic labels)",
+     "layer": "ui",
+     "count_source": "grep -c 'ai-literacy' src/content.config.ts = 3 (three hand-synced copies of the value list in one file)",
+     "sample": {
+      "file": "src/components/ClaimRow.astro",
+      "line": 36,
+      "quote": "<span class=\"category\">{topicLabels}</span>"
+     }
+    }
+   ],
+   "collision": "The field name `topics` is also used by the resources collection with a different, incompatible 4-value vocabulary (includes 'responsible-ai', which is not a Category value). One word, two enums, in the same schema file.",
+   "recommendation": {
+    "canonical": "topic / Topic",
+    "rationale": "Readers already see /research/topics/ and 'Topics'; the frontmatter field is already `topics`. Only the code types disagree. Rename Python `Category` -> `Topic`, TS `Category`/`CATEGORY_LABELS` -> `Topic`/`TOPIC_LABELS`, and the CSS class `category` -> `topic`. Give the resources vocabulary its own field name (e.g. `resource_topics` or `themes`) or fold its values into the main vocabulary.",
+    "blast_radius": "Pipeline: pipeline/common/models.py plus its importers (metrics.json:files['pipeline/common/models.py'].fan_in = 48 modules import common.models; only the Category symbol users change: analyst/agent.py, auditor/models.py, auditor/bundle.py, orchestrator/{cli,persistence,pipeline}.py per grep). Site: src/lib/research.ts (metrics.json:files['src/lib/research.ts'].fan_in = 6). Zero content migration: research/*.md already says topics."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Verdict (the judgment on a claim)",
+   "variants": [
+    {
+     "term": "Verdict enum (7 values, both languages)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts verdict=34; enum-drift.json in_sync pair 'Verdict -> verdict:165'",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 76,
+      "quote": "class Verdict(str, Enum):"
+     }
+    },
+    {
+     "term": "verdict (frontmatter field holding the enum value)",
+     "layer": "docs",
+     "count_source": "word-frequency/site-identifiers.json word_parts verdict=15",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 165,
+      "quote": "verdict: z.enum(["
+     }
+    },
+    {
+     "term": "VerdictAssessment (analyst's whole output object: title, narrative, topics, seo_title, takeaway, verification_level...)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts assessment=11",
+     "sample": {
+      "file": "pipeline/analyst/agent.py",
+      "line": 137,
+      "quote": "class VerdictAssessment(BaseModel):"
+     }
+    },
+    {
+     "term": "verdict (attribute on AnalystOutput whose type is the whole VerdictAssessment)",
+     "layer": "pipeline",
+     "count_source": "grep VerdictAssessment pipeline/analyst/agent.py, pipeline/orchestrator/persistence.py (verdict_write_kwargs takes 'verdict: VerdictAssessment')",
+     "sample": {
+      "file": "pipeline/analyst/agent.py",
+      "line": 220,
+      "quote": "verdict: VerdictAssessment"
+     }
+    },
+    {
+     "term": "verdict (docs: 'the combined post-review artifact')",
+     "layer": "docs",
+     "count_source": "grep -c 'Evaluator' AGENTS.md = 4 (same paragraph defines this third meaning)",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 11,
+      "quote": "The combined post-review artifact is the **verdict**."
+     }
+    }
+   ],
+   "collision": "'verdict' means (a) the 7-value enum, (b) the analyst's entire output model including the claim title (`ao.verdict.title` is legal and confusing), and (c) in AGENTS.md the combined post-review artifact. Additionally, the identifier VERDICT_ORDER exists on both sides of the language boundary with different semantics: display sort order of all 7 values in TS vs a 5-value severity-distance scale in Python.",
+   "recommendation": {
+    "canonical": "verdict = the enum value only",
+    "rationale": "Rename `VerdictAssessment` -> `ClaimAssessment` (it assesses a claim and carries far more than a verdict), `AnalystOutput.verdict` -> `assessment`, and `verdict_only_agent` -> `assessment_agent`. Rename the Python severity table `VERDICT_ORDER` -> `VERDICT_SEVERITY_SCALE` so it can never be confused with the TS display order.",
+    "blast_radius": "Python only: analyst/agent.py, orchestrator/pipeline.py (import at line 43), orchestrator/persistence.py (verdict_write_kwargs), auditor/compare.py, plus tests. No schema, content, or site change: the frontmatter field keeps its enum meaning."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "The fourth agent role (independent re-assessment of the analyst)",
+   "variants": [
+    {
+     "term": "Evaluator (docs role name)",
+     "layer": "docs",
+     "count_source": "grep -c 'Evaluator' AGENTS.md = 4",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 118,
+      "quote": "| **Evaluator** | Produces an independent evaluation of analyst output, returning `IndependentAssessment` | Automated | `auditor/` |"
+     }
+    },
+    {
+     "term": "auditor (package, agent, model override, sidecar keys)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts auditor=10, audit=17; grep -c 'auditor_' pipeline/orchestrator/cli.py = 10",
+     "sample": {
+      "file": "pipeline/auditor/agent.py",
+      "line": 15,
+      "quote": "auditor_agent = Agent("
+     }
+    },
+    {
+     "term": "step-audit / audit (CLI verb)",
+     "layer": "pipeline",
+     "count_source": "grep -c 'step-audit' pipeline/orchestrator/cli.py = 9",
+     "sample": {
+      "file": "pipeline/orchestrator/cli.py",
+      "line": 1300,
+      "quote": "@main.command(\"step-audit\")"
+     }
+    },
+    {
+     "term": "evaluating (Phase enum value, persisted in claim frontmatter)",
+     "layer": "pipeline",
+     "count_source": "enum-drift.json in_sync pair 'Phase -> phase:206'",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 103,
+      "quote": "EVALUATING = \"evaluating\""
+     }
+    }
+   ],
+   "collision": "Within code itself the split is live: the AgentName is 'auditor', the CLI verb is 'audit', but the pipeline Phase for the same step is 'evaluating' \u2014 the only evaluator-family word in code. A contributor grepping 'audit' will not find the phase that represents auditing.",
+   "recommendation": {
+    "canonical": "Auditor / audit",
+    "rationale": "Code is uniformly audit-family except Phase.EVALUATING; docs are Evaluator-family. Renaming docs is near-zero cost; renaming the code direction (auditor/ -> evaluator/) touches package paths, AgentName, sidecar keys (analyst_/auditor_), CLI, and Zod. Standardize docs on Auditor (drop the deferred evaluator/ rename entirely) and rename Phase.EVALUATING -> AUDITING with value 'auditing'.",
+    "blast_radius": "Docs: AGENTS.md + docs/architecture/glossary.md role tables. Code: Phase enum in pipeline/common/models.py, phase z.enum in src/content.config.ts:206, and any in-flight claims carrying phase: evaluating (research/ content is regenerated by the pipeline, so migration is a re-run, not a hand edit). Sidecar keys and package name stay."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Analyst-vs-auditor comparison record",
+   "variants": [
+    {
+     "term": "primary_* / assessed_* (ComparisonResult fields)",
+     "layer": "pipeline",
+     "count_source": "grep -c 'primary_' pipeline/auditor/compare.py = 8",
+     "sample": {
+      "file": "pipeline/auditor/compare.py",
+      "line": 71,
+      "quote": "primary_verdict=primary_verdict,"
+     }
+    },
+    {
+     "term": "analyst_* / auditor_* (sidecar YAML keys and Zod auditSchema)",
+     "layer": "docs",
+     "count_source": "grep -c 'analyst_verdict\\|auditor_verdict' pipeline/orchestrator/persistence.py = 2",
+     "sample": {
+      "file": "pipeline/orchestrator/persistence.py",
+      "line": 395,
+      "quote": "\"analyst_verdict\": comparison.primary_verdict.value,"
+     }
+    },
+    {
+     "term": "consistency (field on VerificationResult)",
+     "layer": "pipeline",
+     "count_source": "grep -n 'consistency: ComparisonResult' pipeline/orchestrator/pipeline.py = 1 site",
+     "sample": {
+      "file": "pipeline/orchestrator/pipeline.py",
+      "line": 107,
+      "quote": "consistency: ComparisonResult | None = None"
+     }
+    },
+    {
+     "term": "independent evaluation (docs) / IndependentAssessment (auditor output model)",
+     "layer": "docs",
+     "count_source": "grep -c 'Evaluator' AGENTS.md = 4 (role row names IndependentAssessment)",
+     "sample": {
+      "file": "pipeline/auditor/models.py",
+      "line": 40,
+      "quote": "class IndependentAssessment(BaseModel):"
+     }
+    },
+    {
+     "term": "audit.audit (site access path)",
+     "layer": "src",
+     "count_source": "grep -c 'audit' 'src/pages/research/claims/[...slug].astro' = 40",
+     "sample": {
+      "file": "src/pages/research/claims/[...slug].astro",
+      "line": 209,
+      "quote": "<p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>"
+     }
+    }
+   ],
+   "collision": "'primary' in primary_verdict means the analyst's verdict, while 'primary' in source_type/publisher classification means a first-party publisher (src/content.config.ts:26 `source_type: z.enum(['primary', 'secondary', 'tertiary'])`). Both vocabularies are live in the auditor's input space. Also 'assessed' on the site means 'this criterion has a claim at all' (src/components/CriteriaMatrix.astro:15 `const assessed = rows.filter(r => r.verdict);`) \u2014 a third meaning of the assess family.",
+   "recommendation": {
+    "canonical": "analyst_* / auditor_* prefixes end-to-end",
+    "rationale": "The persisted sidecar format and the site already use analyst_/auditor_; only the in-memory Python layer says primary_/assessed_. Rename ComparisonResult fields primary_* -> analyst_*, assessed_* -> auditor_*, and VerificationResult.consistency -> audit_comparison. This kills the primary-vs-primary collision for free.",
+    "blast_radius": "Python only: pipeline/auditor/{compare,models,report}.py, orchestrator/{persistence,pipeline}.py, tests (test_compare.py, test_auditor_*). Persisted YAML and the Zod auditSchema are untouched \u2014 that is the point."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "The .audit.yaml sidecar (run provenance record)",
+   "variants": [
+    {
+     "term": ".audit.yaml / audit sidecar",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts sidecar=103, audit=17",
+     "sample": {
+      "file": "pipeline/common/sidecar.py",
+      "line": 1,
+      "quote": "\"\"\"Read/write helpers for the `.audit.yaml` sidecar that lives next to each claim.\"\"\""
+     }
+    },
+    {
+     "term": "auditSchema (Zod schema for the WHOLE sidecar)",
+     "layer": "src",
+     "count_source": "word-frequency/site-identifiers.json identifiers auditSchema=1",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 33,
+      "quote": "const auditSchema = z.object({"
+     }
+    },
+    {
+     "term": "audit: (nullable block INSIDE the sidecar holding only the auditor comparison)",
+     "layer": "docs",
+     "count_source": "grep -c 'audit' 'src/pages/research/claims/[...slug].astro' = 40",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 58,
+      "quote": "audit: z.object({"
+     }
+    }
+   ],
+   "collision": "One word, two nesting levels, different meanings, visible in a single expression: `audit.audit === null` (src/pages/research/claims/[...slug].astro:205). The outer 'audit' is mostly provenance (pipeline_run, models_used, sources_consulted, human_review); the inner 'audit' is the actual auditor comparison. The file name promises an audit; it is chiefly a run record.",
+   "recommendation": {
+    "canonical": "sidecar (outer record) vs audit (inner auditor-comparison block)",
+    "rationale": "Rename the Zod schema auditSchema -> sidecarSchema and the claims-collection field `audit:` -> `sidecar:` so site code reads `sidecar.audit.analyst_verdict`. Renaming the file extension .audit.yaml -> .run.yaml is the honest fix but touches every existing sidecar plus CI globs; defer it, and note it where the sidecar is documented.",
+    "blast_radius": "Site: src/content.config.ts (claims schema line 215 `audit: auditSchema.optional(),`) and src/pages/research/claims/[...slug].astro. Pipeline unchanged (it writes YAML keys, not the collection field name). Deferred file-rename step would touch pipeline/common/sidecar.py, orchestrator/persistence.py, loader, CI, and all existing research/claims/**/*.audit.yaml."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Criterion / claim template (reusable research question)",
+   "variants": [
+    {
+     "term": "template / TemplateRecord / templates.yaml (pipeline)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts template=48, templates=49 (vs criterion=12, criteria=9); grep -c 'template' pipeline/orchestrator/cli.py = 70",
+     "sample": {
+      "file": "pipeline/common/templates.py",
+      "line": 32,
+      "quote": "class TemplateRecord:"
+     }
+    },
+    {
+     "term": "criteria (site collection, pages, and reader URL /research/criteria/)",
+     "layer": "src",
+     "count_source": "word-frequency/site-identifiers.json word_parts criteria=17; 'template' does not appear in site word_parts at all",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 245,
+      "quote": "const criteria = defineCollection({"
+     }
+    },
+    {
+     "term": "criteria_slug (claim frontmatter field, set from template.slug)",
+     "layer": "docs",
+     "count_source": "grep criteria_slug pipeline/orchestrator/cli.py (lines 472-1179)",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 202,
+      "quote": "criteria_slug: z.string().optional(),"
+     }
+    },
+    {
+     "term": "criterion = 'reusable claim template' (docs define one as the other)",
+     "layer": "docs",
+     "count_source": "AGENTS.md line 11 defines the equivalence",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 11,
+      "quote": "**criteria** (reusable claim templates, intake-only)"
+     }
+    }
+   ],
+   "collision": "The site collection named `criteria` is loaded from a file named `templates.yaml` (src/content.config.ts:246 `loader: file('research/templates.yaml', {`). The vocabulary flips exactly at the Python/TS boundary: pipeline says template ~97 word-part occurrences, site says criteria and never says template. `criteria_slug` compounds it: a plural noun used as a singular reference.",
+   "recommendation": {
+    "canonical": "criterion / criteria",
+    "rationale": "Reader URLs, site pages, docs, and the claim frontmatter field already use criteria; only pipeline internals use template. Rename pipeline/common/templates.py -> criteria.py, TemplateRecord -> Criterion, template_slug -> criterion_slug, load_templates -> load_criteria; rename research/templates.yaml -> research/criteria.yaml last (one loader path + one pipeline path + CI). Also rename the claim field criteria_slug -> criterion_slug during the same schema pass, since content is pipeline-regenerated.",
+    "blast_radius": "Largest rename in this report: pipeline/orchestrator/cli.py (grep -c 'template' = 70 matching lines; metrics.json:files['pipeline/orchestrator/cli.py'].loc = 2340), pipeline/common/templates.py and its importers, orchestrator/pipeline.py, tests; src/content.config.ts loader path; research/templates.yaml file move. Stage it: code identifiers first (no behavior change), file + frontmatter field second."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Verification (four unrelated meanings)",
+   "variants": [
+    {
+     "term": "verify_claim / VerifyConfig / VerificationResult (running the whole pipeline once)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts verify=23, verification=20",
+     "sample": {
+      "file": "pipeline/orchestrator/pipeline.py",
+      "line": 277,
+      "quote": "async def verify_claim("
+     }
+    },
+    {
+     "term": "verification_level (claim: source-pool diversity scale)",
+     "layer": "docs",
+     "count_source": "grep -c 'verification_level' src/content.config.ts = 2; enum-drift.json in_sync pair 'VerificationLevel -> verification_level:177'",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 177,
+      "quote": "verification_level: z.enum(["
+     }
+    },
+    {
+     "term": "verification_status (entity: identity vetting; TS-only enum, raw strings in Python)",
+     "layer": "docs",
+     "count_source": "grep -c 'verification_status' src/content.config.ts = 1; enum-drift.json ts_only 'verification_status:226'",
+     "sample": {
+      "file": "src/lib/entityTypes.ts",
+      "line": 26,
+      "quote": "export type VerificationStatus ="
+     }
+    },
+    {
+     "term": "entity verifier (agent that classifies entity legitimacy)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts verifier=7",
+     "sample": {
+      "file": "pipeline/researcher/entity_verifier.py",
+      "line": 1,
+      "quote": "\"\"\"Entity verifier: classifies a candidate entity as verified, ambiguous, or unverified (tool-free, Haiku)."
+     }
+    },
+    {
+     "term": "unverified (Verdict value: insufficient evidence for the claim)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts unverified=8",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 82,
+      "quote": "UNVERIFIED = \"unverified\""
+     }
+    }
+   ],
+   "collision": "KF-12 named the level/status pair; the overload is actually 4-way plus the Verdict value. 'verified' can mean: the pipeline ran (VerificationResult), the sources are diverse (independently-verified level), the entity is real (verification_status: verified / entity verifier), or is the opposite of a claim being unverified (Verdict). The reader-facing label makes it worse: VerificationLevel value 'multiply-verified' renders as 'Cross-verified' (src/lib/sourceQuality.ts:19), so the site label cannot be grepped back to the enum.",
+   "recommendation": {
+    "canonical": "verification = the claim-level source-pool scale, nothing else",
+    "rationale": "Rename the pipeline-run family: verify_claim -> run_claim_pipeline, VerifyConfig -> PipelineConfig, VerificationResult -> ClaimRunResult (pure internal rename). Rename the entity field verification_status -> vetting_status in a schema pass (content regenerated by pipeline). Align label and value: either rename the enum value multiply-verified -> cross-verified or change the label to 'Multiply verified'.",
+    "blast_radius": "Run-family rename: orchestrator/{pipeline,cli}.py, researcher/decomposed.py, common/{timeouts,models,logging_setup}.py, tests (VerifyConfig import sites per grep). vetting_status: content.config.ts, entityTypes.ts, persistence.py + analyst/agent.py branches, entity frontmatter regeneration. Label/value alignment: one line either side."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Pipeline stage naming (agent noun vs step verb vs phase gerund)",
+   "variants": [
+    {
+     "term": "agent nouns: researcher / analyst / auditor / ingestor",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts agent=42, analyst=35, auditor=10, ingestor=8",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 68,
+      "quote": "AgentName = Literal[\"researcher\", \"analyst\", \"auditor\", \"ingestor\"]"
+     }
+    },
+    {
+     "term": "step verbs: step-research / step-ingest / step-analyze / step-audit",
+     "layer": "pipeline",
+     "count_source": "grep -c 'step-audit' pipeline/orchestrator/cli.py = 9",
+     "sample": {
+      "file": "pipeline/orchestrator/cli.py",
+      "line": 121,
+      "quote": "[\"lint\", \"stats\", \"step-research\", \"step-ingest\", \"step-analyze\", \"step-audit\", \"claim-probe\"]),"
+     }
+    },
+    {
+     "term": "phase gerunds: researching / ingesting / analyzing / evaluating",
+     "layer": "docs",
+     "count_source": "enum-drift.json in_sync pair 'Phase -> phase:206'",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 100,
+      "quote": "RESEARCHING = \"researching\""
+     }
+    },
+    {
+     "term": "FailureStep: mixes step verbs AND agent nouns in one Literal",
+     "layer": "pipeline",
+     "count_source": "single definition site, pipeline/common/models.py",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 190,
+      "quote": "FailureStep = Literal[\"research\", \"ingest\", \"analyst\", \"auditor\"]"
+     }
+    },
+    {
+     "term": "acquisition.stage: yet a fourth word ('stage') for the same axis, with a 2-value vocabulary",
+     "layer": "docs",
+     "count_source": "enum-drift.json ts_only 'stage:49'",
+     "sample": {
+      "file": "src/content.config.ts",
+      "line": 49,
+      "quote": "stage: z.enum(['research', 'ingest']),"
+     }
+    }
+   ],
+   "collision": "FailureStep is internally inconsistent: 'research' and 'ingest' are step verbs, 'analyst' and 'auditor' are agent nouns. And the mapping between families is irregular at the last position: auditor -> step-audit -> phase 'evaluating'. These values are persisted (pipeline_run.failure.step in the sidecar, phase in claim frontmatter), so drift is visible to anyone triaging.",
+   "recommendation": {
+    "canonical": "step verbs: research / ingest / analyze / audit (matching the CLI)",
+    "rationale": "The CLI surface already committed to the verb family and is operator-visible. Change FailureStep to Literal[\"research\", \"ingest\", \"analyze\", \"audit\"], and Phase values to researching/ingesting/analyzing/auditing. Keep AgentName nouns \u2014 agents are things, steps are actions; the fix is that each family must be complete and regular, with one comment in models.py stating the noun<->verb mapping.",
+    "blast_radius": "FailureStep: pipeline/common/models.py + failure construction sites in orchestrator/pipeline.py + sidecar consumers (dr-debug-blocked skill, docs); old sidecars keep old strings unless regenerated. Phase: models.py, content.config.ts:206, in-flight claims only (phase is absent on terminal states)."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Source classification axes (kind / source_type / independence / publisher_quality)",
+   "variants": [
+    {
+     "term": "kind (what the document is)",
+     "layer": "docs",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts kind=9; enum-drift.json in_sync 'SourceKind -> kind:16'",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 137,
+      "quote": "class SourceKind(str, Enum):"
+     }
+    },
+    {
+     "term": "source_type: primary/secondary/tertiary (post-ingest, from publisher+kind)",
+     "layer": "pipeline",
+     "count_source": "enum-drift.json ts_only 'source_type:26' (no Python enum; returns bare strings)",
+     "sample": {
+      "file": "pipeline/common/source_classification.py",
+      "line": 63,
+      "quote": "def classify_source_type(publisher: str, kind: str) -> str:"
+     }
+    },
+    {
+     "term": "independence: first-party/independent/unknown (derived FROM source_type)",
+     "layer": "docs",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts independence=10; enum-drift.json in_sync 'Independence -> independence:27'",
+     "sample": {
+      "file": "pipeline/common/source_classification.py",
+      "line": 103,
+      "quote": "def independence_for_source_type(source_type: str) -> str:"
+     }
+    },
+    {
+     "term": "publisher_quality: primary/secondary/tertiary/forum (pre-ingest, from hostname)",
+     "layer": "pipeline",
+     "count_source": "word-frequency/pipeline-identifiers.json word_parts publisher=10",
+     "sample": {
+      "file": "pipeline/common/publisher_quality.py",
+      "line": 21,
+      "quote": "\"\"\"Return 'primary', 'secondary', 'tertiary', or 'forum' for a URL's hostname."
+     }
+    }
+   ],
+   "collision": "source_type and publisher_quality reuse the identical value words primary/secondary/tertiary but are different functions with different inputs (publisher+kind vs hostname) and different codomains (publisher_quality adds 'forum'). And 'primary' here collides with primary_verdict (= the analyst's verdict) in the auditor package. Four axes for one object is two too many.",
+   "recommendation": {
+    "canonical": "two persisted axes: kind + independence; one internal derivation: publisher_tier",
+    "rationale": "independence is what the site renders and what verification_level consumes; source_type exists only as its input, and publisher_quality is a pre-ingest approximation of source_type. Rename both internal classifiers to one concept: classify_source_type -> publisher_tier_for_source, classify_url_publisher_quality -> publisher_tier_for_url (values primary-tier/secondary-tier/tertiary-tier/forum, breaking the word-collision with primary_verdict). Deprecate the optional source_type frontmatter field once nothing reads it.",
+    "blast_radius": "pipeline/common/{source_classification,publisher_quality}.py, researcher/{scorer,decomposed}.py, orchestrator write paths, tests (test_classify_source_type.py); src/content.config.ts drops an optional field (existing source files keep it harmlessly until regenerated)."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "Entity type vs object type (and the subject/topic residue)",
+   "variants": [
+    {
+     "term": "EntityType: company/product/subject (both languages, in sync)",
+     "layer": "pipeline",
+     "count_source": "enum-drift.json in_sync 'EntityType -> type:223'",
+     "sample": {
+      "file": "pipeline/common/models.py",
+      "line": 174,
+      "quote": "class EntityType(str, Enum):"
+     }
+    },
+    {
+     "term": "ENTITY_TYPE_LABELS: actually labels page/object types incl. topic, claim, source, criterion",
+     "layer": "src",
+     "count_source": "word-frequency/site-identifiers.json identifiers ENTITY_TYPE_LABELS=1, KNOWN_TYPES=1",
+     "sample": {
+      "file": "src/lib/entityTypes.ts",
+      "line": 11,
+      "quote": "topic:     \"Topic\","
+     }
+    },
+    {
+     "term": "object types (docs' collective term for criteria/entities/sources/claims)",
+     "layer": "docs",
+     "count_source": "AGENTS.md line 11 opening sentence",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 11,
+      "quote": "The system tracks four object types:"
+     }
+    },
+    {
+     "term": "'topic' as an entity type in an LLM-facing field description (the enum says subject)",
+     "layer": "pipeline",
+     "count_source": "single site, pipeline/analyst/agent.py",
+     "sample": {
+      "file": "pipeline/analyst/agent.py",
+      "line": 108,
+      "quote": "entity_type: EntityType = Field(description=\"One of: company, product, topic\")"
+     }
+    }
+   ],
+   "collision": "ENTITY_TYPE_LABELS is a misleading name twice over: most of its keys (topic, claim, source, criterion) are not entity types, and it is consumed by ObjectTypeIcon (src/components/ObjectTypeIcon.astro:9 `const KNOWN_TYPES = Object.keys(ENTITY_TYPE_LABELS);`) \u2014 the component name already knows the truth. The analyst description telling the model 'topic' where the enum only accepts 'subject' is worse than cosmetic: it invites schema-validation retries.",
+   "recommendation": {
+    "canonical": "object type (superset: company/product/subject/claim/source/criterion/topic); entity type = the 3-value subset",
+    "rationale": "Rename ENTITY_TYPE_LABELS -> OBJECT_TYPE_LABELS (matching ObjectTypeIcon and AGENTS.md); keep ENTITY_TYPE_PARENTS as-is (its keys really are entity types). Fix agent.py:108 to \"One of: company, product, subject\" immediately \u2014 one-line, LLM-facing, zero risk.",
+    "blast_radius": "src/lib/entityTypes.ts, src/components/{PageHeader,ObjectTypeIcon}.astro; one docstring line in pipeline/analyst/agent.py. No schema or content change."
+   },
+   "described_by": [
+    "taxonomy-code"
+   ]
+  },
+  {
+   "concept": "independent second opinion on the analyst's verdict (the Evaluator)",
+   "variants": [
+    {
+     "term": "Evaluator",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['evaluator']=80",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 118,
+      "quote": "Produces an independent evaluation of analyst output, returning `IndependentAssessment`"
+     }
+    },
+    {
+     "term": "auditor (package)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['auditor']=150",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 64,
+      "quote": "directory rename to `pipeline/evaluator/` deferred to post-v1"
+     }
+    },
+    {
+     "term": "Auditor agent",
+     "layer": "docs",
+     "count_source": "grep -n 'Auditor agent' docs/architecture/content-model.md = 2 lines (128, 130)",
+     "sample": {
+      "file": "docs/architecture/content-model.md",
+      "line": 128,
+      "quote": "Verdict from the Auditor agent"
+     }
+    },
+    {
+     "term": "dr step-audit",
+     "layer": "docs",
+     "count_source": "grep -rn 'step-audit' docs AGENTS.md --include='*.md' (non-reports) = 7",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 162,
+      "quote": "CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias)"
+     }
+    },
+    {
+     "term": "Reassess / dr reassess",
+     "layer": "docs",
+     "count_source": "grep -rni 'reassess' docs AGENTS.md --include='*.md' (non-reports) = 43",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 162,
+      "quote": "CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias)"
+     }
+    },
+    {
+     "term": "evaluate (stale CLI name)",
+     "layer": "docs",
+     "count_source": "grep -n 'claim-promote, evaluate, ingest' AGENTS.md = 1 (line 155)",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 155,
+      "quote": "claim-promote, evaluate, ingest"
+     }
+    },
+    {
+     "term": "IndependentAssessment (output type)",
+     "layer": "docs",
+     "count_source": "grep -rn 'IndependentAssessment' docs AGENTS.md --include='*.md' (non-reports) = 6",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 118,
+      "quote": "returning `IndependentAssessment`"
+     }
+    },
+    {
+     "term": "adversarial review / independent assessment",
+     "layer": "docs",
+     "count_source": "grep -n 'adversarial review' docs/architecture/onboarding.md = 1 (line 89)",
+     "sample": {
+      "file": "docs/architecture/onboarding.md",
+      "line": 89,
+      "quote": "Independent assessment of the analyst's verdict (open loop)"
+     }
+    }
+   ],
+   "collision": "The same step is a noun pile (Evaluator/Auditor), a verb pile (evaluate/audit/reassess/assess/review), and an artifact pile (independent evaluation/IndependentAssessment/adversarial review). 'analyst auditor' (43) and 'analyst evaluator' (22) both appear as bigrams in the same corpus (word-frequency/docs.json:bigrams).",
+   "recommendation": {
+    "canonical": "Evaluator (role), evaluation (artifact), dr step-evaluate (CLI)",
+    "rationale": "The glossary already ruled Evaluator canonical; every other name is transition residue. One noun, one verb, one artifact removes eight synonyms.",
+    "blast_radius": "Docs: glossary crosswalk, AGENTS.md role table + directory-layout comment + tooling table row (line 155), content-model.md sidecar field notes, onboarding.md, research-flow.md line 67. Pipeline (post-v1, already deferred): pipeline/auditor/ dir, sidecar auditor_* field names, step-audit CLI. Sidecar field renames touch every existing .audit.yaml, so field names need a compat window; docs-only fixes (AGENTS.md:155 stale 'evaluate, ingest') are free today."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "provenance record of a pipeline run (the audit sidecar / audit trail)",
+   "variants": [
+    {
+     "term": "audit sidecar / .audit.yaml",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:bigrams['audit sidecar']=62",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 100,
+      "quote": "Paired YAML file at the same path as a claim `.md`."
+     }
+    },
+    {
+     "term": "audit trail",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:bigrams['audit trail']=55",
+     "sample": {
+      "file": "docs/plans/audit-trail-extensions.md",
+      "line": 1,
+      "quote": "# Plan: Audit trail extensions (Phase 2 + Phase 3)"
+     }
+    },
+    {
+     "term": "auditor_ sidecar fields",
+     "layer": "docs",
+     "count_source": "grep -n 'auditor_' docs/architecture/content-model.md = 3 lines",
+     "sample": {
+      "file": "docs/architecture/content-model.md",
+      "line": 141,
+      "quote": "sidecar field names retain the `auditor_` prefix in v1"
+     }
+    }
+   ],
+   "collision": "'audit' the noun (provenance record every claim carries) vs 'audit' the verb (running the Evaluator via dr step-audit) vs 'Auditor' (agent whose verdicts land in auditor_verdict inside the audit sidecar). A reader of content-model.md meets audit.auditor_verdict: the provenance object holding the evaluation agent's output, two meanings fused in one dotted path.",
+   "recommendation": {
+    "canonical": "audit = provenance only (audit sidecar, audit trail); the evaluation step never uses the word",
+    "rationale": "Provenance is the sense readers and ClaimReview consumers need; the step already has a better name (evaluate). Reserving the word makes 'audit' greppable for provenance work.",
+    "blast_radius": "Docs: glossary Reassess row, research-flow.md notes, AGENTS.md command list. CLI: step-audit -> step-evaluate rename (alias for one release). Sidecar: auditor_verdict -> evaluator_verdict is a schema+content migration (Zod, Pydantic, existing .audit.yaml files, Astro loader) so it belongs with the already-deferred package rename, not before."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "reusable claim template (criterion)",
+   "variants": [
+    {
+     "term": "criterion / criteria",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['criterion']=114, words['criteria']=147",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 18,
+      "quote": "A reusable claim template applied uniformly across entities"
+     }
+    },
+    {
+     "term": "claim template / template entry",
+     "layer": "docs",
+     "count_source": "grep -rni 'claim template' docs AGENTS.md --include='*.md' (non-reports) = 32; word-frequency/docs.json:words['template']=213",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 176,
+      "quote": "Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`"
+     }
+    },
+    {
+     "term": "templates.yaml (the file)",
+     "layer": "docs",
+     "count_source": "grep -rn 'templates.yaml' docs AGENTS.md --include='*.md' (non-reports) = 73",
+     "sample": {
+      "file": "docs/architecture/content-model.md",
+      "line": 145,
+      "quote": "Criteria are loaded from a single YAML file (`research/templates.yaml`), not via glob."
+     }
+    },
+    {
+     "term": "criteria_slug (back-reference field)",
+     "layer": "docs",
+     "count_source": "grep -rn 'criteria_slug' docs AGENTS.md --include='*.md' (non-reports) = 59",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 35,
+      "quote": "Optional back-reference linking a claim to the criterion template it was generated from"
+     }
+    }
+   ],
+   "collision": "'criteria' also means test acceptance criteria in plans (grep -rni 'acceptance criteria' docs = 21, e.g. docs/plans/audit-trail-extensions.md:73). 'template' also means agent prompt templates and Astro layouts. Even the glossary's own definition needs the rival name to explain itself ('A reusable claim template').",
+   "recommendation": {
+    "canonical": "criterion (the object); research/criteria.yaml (the file, post-v1 rename)",
+    "rationale": "The Zod collection is already named criteria and the field is criteria_slug: the code has voted. 'Claim template' should survive only as the one-line definition in the glossary, not as a competing name; the file rename removes the last surface that teaches contributors to say 'template'.",
+    "blast_radius": "File rename touches pipeline/common/templates.py loader path, content.config.ts criteria loader, dr claim-promote, CI lint, and 73 doc references (non-reports grep above). Doc-only cleanup (prefer 'criterion' in prose, keep 'acceptance criteria' as-is since it is a different concept) costs nothing and can be done now."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "the automation layer (pipeline) vs the human+CI process (workflow)",
+   "variants": [
+    {
+     "term": "pipeline",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['pipeline']=489",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 92,
+      "quote": "The collective automation: agents + CLI + shared utilities"
+     }
+    },
+    {
+     "term": "workflow",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['workflow']=137",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 88,
+      "quote": "The workflow implements roles as runnable code under `pipeline/`"
+     }
+    },
+    {
+     "term": "research workflow (doc)",
+     "layer": "docs",
+     "count_source": "grep -n 'research-workflow' docs/architecture/README.md = 1 (line 10)",
+     "sample": {
+      "file": "docs/architecture/README.md",
+      "line": 10,
+      "quote": "Content lifecycle, agent roles, content rules, review cadence, quality gates"
+     }
+    },
+    {
+     "term": "research flow (doc)",
+     "layer": "docs",
+     "count_source": "grep -n 'research-flow' docs/architecture/README.md = 1 (line 13)",
+     "sample": {
+      "file": "docs/architecture/README.md",
+      "line": 13,
+      "quote": "Mermaid flow diagrams: initiation paths, pipeline, sign-off, rejection, publish, recheck"
+     }
+    }
+   ],
+   "collision": "The glossary's '## Workflow' section (line 86) contains exactly one term: 'Pipeline'. Its lead sentence says the workflow IS code under pipeline/, while research-workflow.md uses 'workflow' for the end-to-end human+CI process ('How research content moves from idea to published claim'). Two architecture docs (research-workflow.md, research-flow.md) then cover the same lifecycle in prose vs diagrams, with 'flow' as a third near-synonym.",
+   "recommendation": {
+    "canonical": "pipeline = the Python automation; workflow = the end-to-end operator process that contains the pipeline; retire 'flow'",
+    "rationale": "That split matches actual usage in research-workflow.md; the glossary section header is the outlier. Merging research-flow.md's diagrams into research-workflow.md (or renaming it research-diagrams.md) removes the flow/workflow pun that already caused a deferred sweep stub.",
+    "blast_radius": "Docs only: glossary section retitle (Workflow -> Pipeline), merge or rename research-flow.md (inbound links from at least 8 plan files per grep of 'research-flow' in docs/plans), README.md map row. No code changes."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "claim lifecycle state",
+   "variants": [
+    {
+     "term": "status enum (schema)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['status']=303",
+     "sample": {
+      "file": "docs/architecture/research-workflow.md",
+      "line": 104,
+      "quote": "`status` (`draft` | `published` | `archived` | `blocked`)"
+     }
+    },
+    {
+     "term": "glossary Lifecycle states (adds queued, in-progress)",
+     "layer": "docs",
+     "count_source": "grep -n 'queued' docs/architecture/glossary.md = 1 (line 142)",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 142,
+      "quote": "Intake recorded, pipeline not yet run"
+     }
+    },
+    {
+     "term": "research-flow state machine (adds under_review, stale)",
+     "layer": "docs",
+     "count_source": "grep -rn 'under_review' docs AGENTS.md --include='*.md' (non-reports) = 4",
+     "sample": {
+      "file": "docs/architecture/research-flow.md",
+      "line": 24,
+      "quote": "draft --> under_review: PR opened"
+     }
+    },
+    {
+     "term": "lifecycle states (vision doc, 4-value set)",
+     "layer": "docs",
+     "count_source": "grep -n 'lifecycle states' docs/architecture/vision-state-machine.md = 1 (line 7)",
+     "sample": {
+      "file": "docs/architecture/vision-state-machine.md",
+      "line": 7,
+      "quote": "Claims move through lifecycle states (draft, blocked, published, archived) and transient pipeline phases"
+     }
+    }
+   ],
+   "collision": "Three different state sets all presented as 'the claim lifecycle': the 4-value schema enum, the glossary's 6 states (queued and in-progress are not schema states), and research-flow.md's 6 states (under_review and stale exist in no schema or CLI; they are derived from PR status and elapsed time). A contributor cannot tell which states are storable, which are derived, and which are aspirational.",
+   "recommendation": {
+    "canonical": "the schema `status` enum is the only thing called a state; everything else is labeled a derived condition (queued, under review, stale) or a `phase`",
+    "rationale": "Schema authority is already the project's stated rule ('Zod in content.config.ts is the single source of truth'); the state diagrams should visibly distinguish stored states (boxes) from derived conditions (annotations) so the diagram stops asserting states the system cannot represent.",
+    "blast_radius": "Docs only: research-flow.md diagram 1 legend + relabel, glossary Lifecycle table (mark queued/in-progress as derived, no schema field), vision-state-machine.md is already consistent. No code changes; this is the cheapest high-trust fix in the corpus."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "pipeline progress marker (phase)",
+   "variants": [
+    {
+     "term": "phase (claim frontmatter field)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['phase']=415",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 29,
+      "quote": "Optional pipeline-progress field, set by the Orchestrator while a claim is in flight"
+     }
+    },
+    {
+     "term": "Phase N (plan stage numbering)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:bigrams['phase phase']=23 (from 'Phase 2 + Phase 3' style headings)",
+     "sample": {
+      "file": "docs/plans/audit-trail-extensions.md",
+      "line": 1,
+      "quote": "# Plan: Audit trail extensions (Phase 2 + Phase 3)"
+     }
+    }
+   ],
+   "collision": "'phase' is simultaneously a schema enum (researching/ingesting/analyzing/evaluating) and a plan-stage counter. vision-state-machine.md:49 uses both senses within one document ('The Phase 2 and Phase 3 audit-trail work' vs 'transient pipeline phases'). The operator's own convention (memory: use feature names, not phase numbers) is violated by active plan titles.",
+   "recommendation": {
+    "canonical": "phase = the claim frontmatter field, exclusively; plans use named stages ('extended-data stage', 'transition-log stage')",
+    "rationale": "The schema field is load-bearing and rendered; plan numbering is arbitrary and already contradicts the operator's stated convention. Named stages also survive re-scoping, numbered phases don't.",
+    "blast_radius": "Docs only: retitle audit-trail-extensions.md sections and the cross-references in vision-state-machine.md (lines 49, 57) and research-outputs-improvement-plan.md. Zero code impact."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "the human running the system",
+   "variants": [
+    {
+     "term": "operator",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['operator']=350",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 11,
+      "quote": "The operator runs `dr review --approve` to publish"
+     }
+    },
+    {
+     "term": "Research Lead",
+     "layer": "docs",
+     "count_source": "grep -rn 'Research Lead' docs AGENTS.md --include='*.md' (non-reports) = 8",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 112,
+      "quote": "Orchestrates work from `QUEUE.md`"
+     }
+    },
+    {
+     "term": "reviewer",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['reviewer']=232",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 101,
+      "quote": "Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`"
+     }
+    },
+    {
+     "term": "human",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['human']=111; bigrams['human review']=38",
+     "sample": {
+      "file": "docs/architecture/research-flow.md",
+      "line": 229,
+      "quote": "Human sign-off on a claim is recorded by `dr review`"
+     }
+    }
+   ],
+   "collision": "The corpus's most-used actor word (operator, 350) is defined nowhere: the glossary Roles table lists Research Lead (8 uses) instead, and uses 'Operator(s)' undefined in its own rows (glossary.md lines 27, 146). Whether operator, Research Lead, and reviewer are one person, three hats, or three people is unstated.",
+   "recommendation": {
+    "canonical": "Operator, defined in the glossary; Research Lead becomes 'the operator wearing the planning hat' or is retired; reviewer stays as the recorded-identity field name only",
+    "rationale": "Usage has decided: docs are written to the operator. A one-row glossary entry ('Operator: the human who runs dr commands, reviews drafts, and signs off; in v1 the same person also fills the Research Lead role') resolves 350 occurrences at once.",
+    "blast_radius": "Docs only: add glossary Roles row, adjust AGENTS.md role table note. The 232 'reviewer' hits are mostly the plan Review-history template (bigram 'date reviewer'=85) and need no change."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "verification (three unrelated meanings)",
+   "variants": [
+    {
+     "term": "verification_level (claim: source-pool diversity)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['verification']=174; bigrams['verification scale']=25",
+     "sample": {
+      "file": "docs/architecture/content-model.md",
+      "line": 69,
+      "quote": "Source-pool diversity signal, set by the analyst"
+     }
+    },
+    {
+     "term": "verification_status (entity: identity vetting)",
+     "layer": "docs",
+     "count_source": "grep -n 'verification_status' docs/architecture/content-model.md = 1 (line 49)",
+     "sample": {
+      "file": "docs/architecture/content-model.md",
+      "line": 49,
+      "quote": "`verified`, `unverified-startup`, or `unverified-other`"
+     }
+    },
+    {
+     "term": "Verification (glossary layer = tests/checks)",
+     "layer": "docs",
+     "count_source": "grep -n 'unit tests, citation check, build validation' docs/architecture/glossary.md = 1 (line 204)",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 204,
+      "quote": "unit tests, citation check, build validation"
+     }
+    },
+    {
+     "term": "verification scale",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:bigrams['verification scale']=25",
+     "sample": {
+      "file": "docs/architecture/source-quality.md",
+      "line": 7,
+      "quote": "## What the verification scale measures"
+     }
+    }
+   ],
+   "collision": "source-quality.md:124 uses verification_status and (implicitly) verification_level reasoning in the same paragraph; the glossary separately uses 'Verification' as the name of the tests-and-checks vocabulary layer. Same word, three domains: source diversity, entity identity, CI.",
+   "recommendation": {
+    "canonical": "verification_level keeps the word (it is reader-facing and shipped); entity field becomes identity_status (post-v1); the glossary layer renames to 'Checks'",
+    "rationale": "The claim-level scale is the concept readers see and the one with a whole doc behind it; the entity field is about whether the entity is a real, disambiguated company, which 'identity' says better; the layer rename is a one-cell edit.",
+    "blast_radius": "identity_status rename touches Zod + Pydantic + onboarding flow + entity pages + content backfill (a real migration, schedule with other post-v1 renames). Glossary layer rename and a disambiguation note in source-quality.md are docs-only, do them now."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "subject / topic (entity type vs taxonomy vs plain English)",
+   "variants": [
+    {
+     "term": "subject (entity type)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['subject']=111",
+     "sample": {
+      "file": "docs/UNSCHEDULED.md",
+      "line": 294,
+      "quote": "Subjects can be abstract or natural-world topics"
+     }
+    },
+    {
+     "term": "subject (plain English, in the definition of Entity)",
+     "layer": "docs",
+     "count_source": "grep -n 'A stable subject' docs/architecture/glossary.md = 1 (line 15)",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 15,
+      "quote": "A stable subject (company, product, or subject) that claims are about"
+     }
+    },
+    {
+     "term": "topics (claim taxonomy field)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['topic']=91",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 26,
+      "quote": "renamed from singular `category` per `docs/plans/completed/multi-topic.md`"
+     }
+    },
+    {
+     "term": "topics (queue intake, plain English)",
+     "layer": "docs",
+     "count_source": "grep -n 'URLs/topics' docs/architecture/glossary.md = 1 (line 155)",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 155,
+      "quote": "Intake list of URLs/topics to process"
+     }
+    },
+    {
+     "term": "sector (retired entity type, now reused for industry verticals)",
+     "layer": "docs",
+     "count_source": "grep -rn 'sector' docs AGENTS.md (non-reports): active-doc hits only in docs/plans/source-quality-followups.md (5) and docs/UNSCHEDULED.md (1); rest are historical/completed plans",
+     "sample": {
+      "file": "docs/plans/source-quality-followups.md",
+      "line": 120,
+      "quote": "#### White label domain classification by sector"
+     }
+    }
+   ],
+   "collision": "The glossary defines Entity as 'A stable subject (company, product, or subject)': the word 'subject' appears twice with two meanings in one sentence. UNSCHEDULED.md then defines subjects as 'topics', colliding with the topics taxonomy field. Meanwhile the retired entity-type name 'sector' has been reincarnated in an active plan to mean publisher industry verticals, so grepping the rename now yields false positives.",
+   "recommendation": {
+    "canonical": "Entity def: 'A stable thing claims are about (a company, product, or subject)'; 'topic' reserved for the topics taxonomy; source-quality-followups.md says 'industry vertical' instead of 'sector'",
+    "rationale": "Two one-line doc edits eliminate the circular definition and the taxonomy collision; the vertical rename keeps 'sector' greppable as purely historical.",
+    "blast_radius": "Docs only: glossary.md:15, UNSCHEDULED.md:294 phrasing, source-quality-followups.md sections (3 spots). No code or content."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "citation checking",
+   "variants": [
+    {
+     "term": "Citation check (ruled canonical)",
+     "layer": "docs",
+     "count_source": "grep -n 'Citation check' AGENTS.md docs/architecture/glossary.md = 2 (AGENTS.md:11, glossary.md:211)",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 11,
+      "quote": "**Citation check** is a static CI verification, not an agent."
+     }
+    },
+    {
+     "term": "Citation Auditor (role/agent)",
+     "layer": "docs",
+     "count_source": "grep -rn 'Citation Auditor' docs AGENTS.md --include='*.md' (non-reports) = 24",
+     "sample": {
+      "file": "docs/architecture/research-workflow.md",
+      "line": 44,
+      "quote": "The Citation Auditor responsibility is covered by three separate tools"
+     }
+    },
+    {
+     "term": "Citation checker (script)",
+     "layer": "docs",
+     "count_source": "grep -n 'Citation checker' docs/architecture/research-workflow.md = 1 (line 118)",
+     "sample": {
+      "file": "docs/architecture/research-workflow.md",
+      "line": 118,
+      "quote": "Citation checker: `scripts/check-citations.ts`"
+     }
+    }
+   ],
+   "collision": "AGENTS.md rules that citation checking is 'a static CI verification, not an agent', yet research-workflow.md keeps a 'Citation Auditor' with a role table row, a tools section, and a future as an 'agent' (line 100). This both violates the ruling and re-collides with the Auditor/Evaluator pile: two different 'auditors' now exist in the docs.",
+   "recommendation": {
+    "canonical": "citation check (a check, lower-case, no role)",
+    "rationale": "The ruling already exists; research-workflow.md just predates it. Folding the 'Citation Auditor tools' section into the quality-gates section removes the last agent-flavored naming.",
+    "blast_radius": "Docs only: research-workflow.md (5 spots incl. the section heading that research-flow.md:37 deep-links to, so update that anchor too), UNSCHEDULED.md backlog phrasing. No code."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "human sign-off on a claim (review)",
+   "variants": [
+    {
+     "term": "review / dr review",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['review']=483",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 164,
+      "quote": "Record human sign-off in the audit sidecar; optionally flip status"
+     }
+    },
+    {
+     "term": "sign-off",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:words['sign-off']=123",
+     "sample": {
+      "file": "docs/architecture/research-flow.md",
+      "line": 229,
+      "quote": "Human sign-off on a claim is recorded by `dr review`"
+     }
+    },
+    {
+     "term": "Review (PR step in the content lifecycle)",
+     "layer": "docs",
+     "count_source": "grep -n 'The change goes through a pull request' docs/architecture/research-workflow.md = 1 (line 20)",
+     "sample": {
+      "file": "docs/architecture/research-workflow.md",
+      "line": 20,
+      "quote": "**Review** -- The change goes through a pull request"
+     }
+    },
+    {
+     "term": "Review history (plan review records)",
+     "layer": "docs",
+     "count_source": "word-frequency/docs.json:bigrams['review history']=104",
+     "sample": {
+      "file": "AGENTS.md",
+      "line": 246,
+      "quote": "must have a `## Review history` section at the bottom of the file"
+     }
+    }
+   ],
+   "collision": "'review' carries at least five senses in the corpus: claim sign-off (dr review), the PR step, plan Review-history records (the #1 bigram in the whole docs corpus at 104), pipeline checkpoints (review_sources, review_disagreement), and the review-queue CLI. The top word-frequency signal for the corpus is process scaffolding, not the product concept.",
+   "recommendation": {
+    "canonical": "sign-off = the recorded human approval of a claim; 'review' unqualified is reserved for that same act, and every other sense carries a qualifier (PR review, plan review, checkpoint)",
+    "rationale": "The docs already reach for 'sign-off' when precision matters (research-flow.md section 5); making it the defined term costs one glossary row and disambiguates the corpus's most overloaded verb without renaming the dr review CLI.",
+    "blast_radius": "Docs only: one glossary entry + qualifier sweep in research-workflow.md step 4 ('PR review'). dr review CLI name unchanged; checkpoint identifiers unchanged (they are code-facing)."
+   },
+   "described_by": [
+    "taxonomy-docs"
+   ]
+  },
+  {
+   "concept": "verdict definition (what each of the 7 verdict values means)",
+   "variants": [
+    {
+     "term": "VERDICT_TOOLTIP (badge hover text)",
+     "layer": "src",
+     "count_source": "word-frequency/ui-copy.json:words['verdict'] = 13",
+     "sample": {
+      "file": "src/lib/verdict.ts",
+      "line": 21,
+      "quote": "'mostly-false': 'Claim is largely inaccurate with some basis in fact',"
+     }
+    },
+    {
+     "term": "FAQ 'Verdicts' list (rendered twice: HTML + FAQPage JSON-LD)",
+     "layer": "ui",
+     "count_source": "grep -c 'Mostly false' src/pages/research/index.astro = 1 (HTML list; JSON-LD block omits per-verdict definitions)",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 248,
+      "quote": "<strong>Mostly false</strong>, contains a kernel of truth but is misleading in its overall characterization."
+     }
+    },
+    {
+     "term": "glossary 'Verdict definitions' (operational rules)",
+     "layer": "docs",
+     "count_source": "grep -c 'mostly-false' docs/architecture/glossary.md = 2",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 47,
+      "quote": "The claim is misleading or wrong in its main thrust, though some narrow element is accurate."
+     }
+    }
+   ],
+   "collision": "Three parallel English definitions of the same enum, already drifted: 'mixed' is 'significant elements of both truth and falsehood' (tooltip), 'partially accurate; evidence supports some aspects' (FAQ), and 'a reader acting on the claim would be misled about at least one material element' (glossary). A reader who hovers the badge and then reads the FAQ gets two different rules.",
+   "recommendation": {
+    "canonical": "One VERDICT_DEFINITIONS record in src/lib/verdict.ts (short reader sentence per verdict); tooltip and FAQ list render from it; docs/architecture/glossary.md keeps only the longer operator decision rules and links to verdict.ts as the reader-facing source of truth.",
+    "rationale": "Verdict wording is the site's core trust surface; any drift between the badge and the methodology page reads as sloppiness exactly where precision is promised.",
+    "blast_radius": "src/lib/verdict.ts (add one record), src/pages/research/index.astro (replace 7 hand-written <li> items), docs/architecture/glossary.md (add pointer). No schema or pipeline change; verdict slugs untouched."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "criterion (the reusable question asked of every entity)",
+   "variants": [
+    {
+     "term": "Criteria / criterion",
+     "layer": "ui",
+     "count_source": "word-frequency/ui-copy.json:words['criterion'] = 8; word-frequency/ui-copy.json:labeled_phrases['Criteria'] = 2",
+     "sample": {
+      "file": "src/pages/research/criteria/index.astro",
+      "line": 37,
+      "quote": "Criteria are the questions we ask of every company and product."
+     }
+    },
+    {
+     "term": "claim template / template library",
+     "layer": "ui",
+     "count_source": "grep -rc 'claim template' src/pages = 2 files (research/index.astro, entities/[...slug].astro)",
+     "sample": {
+      "file": "src/pages/research/entities/[...slug].astro",
+      "line": 198,
+      "quote": "How this {entity.data.type} fares against applicable claim templates."
+     }
+    },
+    {
+     "term": "templates.yaml (file name and top-level `templates:` key)",
+     "layer": "pipeline",
+     "count_source": "grep -c 'templates.yaml' src/content.config.ts = 1",
+     "sample": {
+      "file": "research/templates.yaml",
+      "line": 15,
+      "quote": "text: \"COMPANY has STRUCTURE corporate structure\""
+     }
+    },
+    {
+     "term": "std (code variable + CSS class prefix, apparent 'standard' residue)",
+     "layer": "src",
+     "count_source": "grep -c 'std' src/pages/research/criteria/[slug].astro = 11",
+     "sample": {
+      "file": "src/pages/research/criteria/[slug].astro",
+      "line": 74,
+      "quote": "<PageHeader crumbs={criteriaCrumbs} type=\"criterion\" title={std.data.text}>"
+     }
+    }
+   ],
+   "collision": "Four names for one concept, and two of them ('Criteria' heading and 'claim templates' explainer) appear in the same reader-visible section of the entity page. 'std' suggests a fifth retired name ('standard') still living in variable names and CSS classes.",
+   "recommendation": {
+    "canonical": "criterion (plural Criteria) in every reader-facing string; 'template' survives only inside research/templates.yaml and pipeline code until the file is renamed to research/criteria.yaml post-v1.",
+    "rationale": "Readers should never need to learn that a criterion IS a claim template; the entity-page explainer can say 'How this subject fares against the criteria that apply to it.' The std->criterion variable rename is mechanical and removes a ghost term.",
+    "blast_radius": "Reader copy: 2 strings (src/pages/research/index.astro:304, src/pages/research/entities/[...slug].astro:198). Code: std identifiers/CSS in 2 criteria pages (grep -c 'std' src/pages/research/criteria/[slug].astro = 11). File rename touches src/content.config.ts loader, pipeline/common/templates.py, and docs; defer with the auditor->evaluator batch (extends KF-10)."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "topic (the 8-slug subject-matter taxonomy on claims and criteria)",
+   "variants": [
+    {
+     "term": "Topics (nav label, index page, facet label)",
+     "layer": "ui",
+     "count_source": "word-frequency/ui-copy.json:labeled_phrases['Topics'] = 2",
+     "sample": {
+      "file": "src/layouts/Base.astro",
+      "line": 48,
+      "quote": "{ href: '/research/topics',      label: 'Topics' },"
+     }
+    },
+    {
+     "term": "Category / CATEGORY_LABELS (code-layer name for the same values)",
+     "layer": "src",
+     "count_source": "grep -rln 'CATEGORY_LABELS' src = 7 files",
+     "sample": {
+      "file": "src/lib/research.ts",
+      "line": 11,
+      "quote": "export const CATEGORY_LABELS: Record<Category, string> = {"
+     }
+    },
+    {
+     "term": "topics (frontmatter field, renamed from category)",
+     "layer": "docs",
+     "count_source": "word-frequency/ui-copy.json:words['topics'] = 2",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 26,
+      "quote": "Field name is `topics` (renamed from singular `category` per `docs/plans/completed/multi-topic.md`)."
+     }
+    }
+   ],
+   "collision": "The category->topics rename (KF-08) stopped at the schema boundary: the reader sees 'Topic'/'Topics' everywhere, but every src helper is still Category/CATEGORY_LABELS/CATEGORIES, and CSS classes like .category-label render topic values. A contributor greps 'topic' and misses the code that implements it.",
+   "recommendation": {
+    "canonical": "topic everywhere: rename Category->Topic, CATEGORY_LABELS->TOPIC_LABELS, CATEGORIES->TOPICS in src/lib/research.ts, plus the .category-* CSS classes.",
+    "rationale": "The reader-facing word already won; the code-layer alias is pure translation cost.",
+    "blast_radius": "src/lib/research.ts + its 7 importing files (grep -rln 'CATEGORY_LABELS' src = 7); no schema, content, or pipeline change since the frontmatter field is already `topics`."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "subject (the third entity type: a research area that is not a company or product)",
+   "variants": [
+    {
+     "term": "Subjects (section label, entity-type label)",
+     "layer": "ui",
+     "count_source": "word-frequency/ui-copy.json:labeled_phrases['Subjects'] = 2",
+     "sample": {
+      "file": "src/lib/entityTypes.ts",
+      "line": 4,
+      "quote": "subject: { label: \"Subjects\",  href: \"/research/subjects\"  },"
+     }
+    },
+    {
+     "term": "subject (generic English word used to define Entity)",
+     "layer": "docs",
+     "count_source": "grep -c 'stable subject' docs/architecture/glossary.md = 1",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 15,
+      "quote": "A stable subject (company, product, or subject) that claims are about"
+     }
+    }
+   ],
+   "collision": "'Subject' is simultaneously the genus ('a stable subject... that claims are about') and one species of that genus (type: subject). Readers additionally face Subjects next to Topics with no definition anywhere on the site distinguishing them, and Subjects is dropped from the main nav while its sibling entity types Companies and Products are present.",
+   "recommendation": {
+    "canonical": "Keep 'Subjects' as the reader label (rename residue from 'sector' is already settled, KF-09) but (a) define Entity in docs as 'a stable thing claims are about', reserving 'subject' for the type, and (b) give /research/subjects a one-line disclaimer like the sources index has, e.g. 'Research areas that are not a single company or product, such as US data centers.'",
+    "rationale": "The genus/species pun is free to fix in docs; the missing on-page definition is the actual reader gap since word-frequency shows Subjects surfaces with zero explanatory copy.",
+    "blast_radius": "docs/architecture/glossary.md 1 row; src/pages/research/subjects/index.astro 1 added <p>; optionally Base.astro nav (1 line) to stop demoting Subjects."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "the 'verified' word family (four different reader-facing meanings)",
+   "variants": [
+    {
+     "term": "Unverified (claim verdict: evidence insufficient)",
+     "layer": "src",
+     "count_source": "word-frequency/ui-copy.json:words['unverified'] = 2",
+     "sample": {
+      "file": "src/lib/verdict.ts",
+      "line": 23,
+      "quote": "'unverified': 'Insufficient evidence to assess this claim',"
+     }
+    },
+    {
+     "term": "Unverified \u2014 ... (entity verification_status badge: identity/documentation sparse)",
+     "layer": "src",
+     "count_source": "grep -c 'unverified-' src/lib/entityTypes.ts = 4",
+     "sample": {
+      "file": "src/lib/entityTypes.ts",
+      "line": 33,
+      "quote": "'unverified-startup': 'Unverified \u2014 sparse public documentation (early-stage / startup)',"
+     }
+    },
+    {
+     "term": "verification_level scale on claims (Claimed ... Cross-verified)",
+     "layer": "src",
+     "count_source": "grep -c 'verified' src/lib/sourceQuality.ts = 12",
+     "sample": {
+      "file": "src/lib/sourceQuality.ts",
+      "line": 19,
+      "quote": "'multiply-verified': 'Cross-verified',"
+     }
+    },
+    {
+     "term": "Reviewed / Unreviewed (human sign-off badge)",
+     "layer": "ui",
+     "count_source": "grep -c 'eviewed' src/pages/research/claims/[...slug].astro = 10",
+     "sample": {
+      "file": "src/pages/research/claims/[...slug].astro",
+      "line": 137,
+      "quote": "{isReviewed ? \"\u2713 Reviewed\" : \"Unreviewed\"}"
+     }
+    }
+   ],
+   "collision": "A single claim page can show an 'Unverified' verdict badge, an 'Independently verified' verification-level chip, and an 'Unreviewed' review-state pill at once; the entity page adds a fourth 'Unverified \u2014 ...' badge with yet another meaning. Same word family, four axes (extends KF-12).",
+   "recommendation": {
+    "canonical": "Reserve 'unverified/verified' exclusively for the claim-evidence axes (verdict + verification_level). Rename the entity badge copy away from the word entirely ('Limited public record' / 'Sparse public documentation') and rename the human-review pill to 'Human-reviewed' / 'Awaiting human review'.",
+    "rationale": "These are the site's trust badges; if the same word marks both 'we could not verify the claim' and 'this company barely exists on paper', the badges stop carrying information.",
+    "blast_radius": "Copy-only for the entity badge (src/lib/entityTypes.ts VERIFICATION_STATUS_BADGE_TEXT, 2 strings; slugs unchanged so no pipeline/schema edits) and the review pill (src/pages/research/claims/[...slug].astro, 1 line). verification_level labels unchanged."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "scheduled re-evaluation of a published claim",
+   "variants": [
+    {
+     "term": "Review cadence / 'reviewed every N days' (claim page)",
+     "layer": "ui",
+     "count_source": "grep -c 'Review cadence' src/pages/research/claims/[...slug].astro = 1",
+     "sample": {
+      "file": "src/pages/research/claims/[...slug].astro",
+      "line": 259,
+      "quote": "This claim is reviewed every {claim.data.recheck_cadence_days} days."
+     }
+    },
+    {
+     "term": "recheck cadence (FAQ + schema field recheck_cadence_days)",
+     "layer": "ui",
+     "count_source": "grep -c 'recheck' src/pages/research/index.astro = 1",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 273,
+      "quote": "Each claim has a recheck cadence, typically 60 days (pricing: 14 to 30 days; policy:"
+     }
+    },
+    {
+     "term": "Recheck / Reassess (glossary lifecycle vocabulary)",
+     "layer": "docs",
+     "count_source": "grep -c 'Recheck' docs/architecture/glossary.md = 2",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 166,
+      "quote": "**Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` (manual today; no scheduler) |"
+     }
+    }
+   ],
+   "collision": "On the claim page, 'Reviewed' (human sign-off badge, line 137) and 'reviewed every N days' (automated recheck, line 259) use the same verb for different mechanisms two screens apart. The FAQ and the schema both say 'recheck'; only the claim-page section drifted to 'review'.",
+   "recommendation": {
+    "canonical": "recheck for the scheduled re-run; review only for human sign-off. Claim page heading becomes 'Recheck schedule' and the sentence 'This claim is rechecked every N days.'",
+    "rationale": "Matches the schema field (recheck_cadence_days), the FAQ, and the glossary; removes the only surface that conflates the two.",
+    "blast_radius": "2 strings in src/pages/research/claims/[...slug].astro; nothing else uses the 'review cadence' phrasing (grep -c 'Review cadence' src/pages/research/claims/[...slug].astro = 1)."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "the second-opinion agent (independent check of the analyst's draft verdict)",
+   "variants": [
+    {
+     "term": "auditor agent (reader-facing FAQ + JSON-LD)",
+     "layer": "ui",
+     "count_source": "word-frequency/ui-copy.json:words['auditor'] = 3",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 228,
+      "quote": "An auditor agent checks the draft for consistency"
+     }
+    },
+    {
+     "term": "Auditor (claim-page Verdict check section)",
+     "layer": "ui",
+     "count_source": "grep -c 'uditor' src/pages/research/claims/[...slug].astro = 2",
+     "sample": {
+      "file": "src/pages/research/claims/[...slug].astro",
+      "line": 210,
+      "quote": "<p>Auditor: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>"
+     }
+    },
+    {
+     "term": "Evaluator (canonical role name per glossary)",
+     "layer": "docs",
+     "count_source": "grep -c 'Evaluator' docs/architecture/glossary.md = 5",
+     "sample": {
+      "file": "docs/architecture/glossary.md",
+      "line": 64,
+      "quote": "| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1)"
+     }
+    }
+   ],
+   "collision": "KF-07's role/package/CLI three-way split leaks into reader copy: the site explains its own methodology using the name ('auditor') that the project's canonical vocabulary already deprecated in favor of Evaluator. 'Audit' additionally means the .audit.yaml sidecar and the 'Research process' disclosure on the same page.",
+   "recommendation": {
+    "canonical": "evaluator agent in all reader-facing strings now; the pipeline/auditor/ directory rename stays deferred, since display strings do not depend on it.",
+    "rationale": "Reader copy is the cheapest layer to fix and the most damaging place to be inconsistent; fixing it first also locks the target name before the code rename.",
+    "blast_radius": "4 strings across 2 files (src/pages/research/index.astro lines 50+228; src/pages/research/claims/[...slug].astro lines 206+210). Sidecar field names (audit.auditor_verdict) unchanged \u2014 only labels move."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "source classification as shown to readers",
+   "variants": [
+    {
+     "term": "three tiers: Primary / Secondary / Tertiary (FAQ)",
+     "layer": "ui",
+     "count_source": "word-frequency/ui-copy.json:words['secondary'] = 2",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 332,
+      "quote": "<strong>Primary</strong>, the organization's own output: company disclosures,"
+     }
+    },
+    {
+     "term": "source_type chip + tooltip (source detail page)",
+     "layer": "src",
+     "count_source": "grep -c 'source_type' src/pages/research/sources/[...slug].astro = 4",
+     "sample": {
+      "file": "src/pages/research/sources/[...slug].astro",
+      "line": 33,
+      "quote": "secondary: \"Journalism, independent research, academic papers\","
+     }
+    },
+    {
+     "term": "independence counts: 'company-published / independent / unclassified' (claim page)",
+     "layer": "src",
+     "count_source": "grep -c 'company-published' src/lib/sourceQuality.ts = 1",
+     "sample": {
+      "file": "src/lib/sourceQuality.ts",
+      "line": 82,
+      "quote": "if (counts.firstParty > 0) parts.push(`${counts.firstParty} company-published`);"
+     }
+    },
+    {
+     "term": "kind chip (report/article/documentation/...)",
+     "layer": "src",
+     "count_source": "word-frequency/ui-copy.json:words['kind'] = 5",
+     "sample": {
+      "file": "src/pages/research/sources/[...slug].astro",
+      "line": 74,
+      "quote": "{source.data.kind}"
+     }
+    }
+   ],
+   "collision": "KF-13's four internal axes surface as three unexplained reader axes: the FAQ promises 'three tiers', the claim page counts 'company-published' vs 'independent' (internally first-party \u2014 a term readers never see), and source pages add a 'kind' chip. The FAQ's secondary-tier definition ('journalism, academic papers, analyst reports, third-party certification records') and the chip tooltip ('Journalism, independent research, academic papers') have already drifted.",
+   "recommendation": {
+    "canonical": "One reader vocabulary defined in one module: 'Source tier' (Primary/Secondary/Tertiary, one definition string reused by both FAQ and tooltip) and 'Source independence' (company-published/independent). 'kind' stays a plain format chip. Extract the tier definition strings from src/pages/research/sources/[...slug].astro into src/lib/sourceQuality.ts and render the FAQ list from them.",
+    "rationale": "Definitions duplicated between a page-local Record and hand-written FAQ prose will keep drifting; sourceQuality.ts already exists as the natural home.",
+    "blast_radius": "src/pages/research/sources/[...slug].astro (move 2 Records), src/lib/sourceQuality.ts (receive them), src/pages/research/index.astro (render FAQ tier list from the module). No schema change."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "the sponsoring brand and the word 'sponsored'",
+   "variants": [
+    {
+     "term": "TreadLightly AI (footer, FAQ)",
+     "layer": "ui",
+     "count_source": "grep -rl 'TreadLightly AI' src = 2 files",
+     "sample": {
+      "file": "src/layouts/Base.astro",
+      "line": 341,
+      "quote": "Dangerous Robot is a research project sponsored by <a href=\"https://treadlightly.ai\">TreadLightly AI</a>"
+     }
+    },
+    {
+     "term": "TreadLightlyAI (responsible-ai comparison page)",
+     "layer": "ui",
+     "count_source": "grep -c 'TreadLightlyAI' src/content/resources/responsible-ai.md = 3",
+     "sample": {
+      "file": "src/content/resources/responsible-ai.md",
+      "line": 286,
+      "quote": "FULL DISCLOSURE: Dangerous Robot is sponsored by TreadLightlyAI."
+     }
+    },
+    {
+     "term": "'no sponsored verdicts' (methodology Limits)",
+     "layer": "ui",
+     "count_source": "grep -c 'sponsored' src/pages/research/index.astro = 3",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 292,
+      "quote": "<strong>No paid research.</strong> No commissions, no sponsored verdicts."
+     }
+    }
+   ],
+   "collision": "Two collisions: (1) the brand is spelled two ways ('TreadLightly AI' vs 'TreadLightlyAI') across reader surfaces; (2) 'sponsored' means site funding in the footer and the disclosure line, but paid-verdict corruption in the methodology Limits and COI FAQ, so the site literally says it is sponsored and that nothing is sponsored (extends KF-15).",
+   "recommendation": {
+    "canonical": "One brand spelling site-wide (whichever treadlightly.ai itself uses), and reserve 'sponsored' for the paid-content sense the site denies: footer and disclosure become 'funded by TreadLightly AI' or 'a TreadLightly AI project'.",
+    "rationale": "For a transparency site, the funding sentence is the single line skeptical readers will quote; it should not share its key verb with the corruption the Limits section disclaims.",
+    "blast_radius": "3 files, 4 strings: src/layouts/Base.astro:341, src/content/resources/responsible-ai.md:286 (+2 spelling-only occurrences), src/pages/research/index.astro COI answer (spelling only). No code or schema."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "what Dangerous Robot calls itself",
+   "variants": [
+    {
+     "term": "structured research hub (default meta description)",
+     "layer": "src",
+     "count_source": "grep -rc 'structured research hub' src/layouts/Base.astro = 1",
+     "sample": {
+      "file": "src/layouts/Base.astro",
+      "line": 25,
+      "quote": "Dangerous Robot is a structured research hub tracking AI company environmental and safety claims"
+     }
+    },
+    {
+     "term": "a transparency index (home hero meta)",
+     "layer": "ui",
+     "count_source": "grep -c 'a transparency index' src/pages/index.astro = 1",
+     "sample": {
+      "file": "src/pages/index.astro",
+      "line": 237,
+      "quote": "<span>a transparency index</span>"
+     }
+    },
+    {
+     "term": "The research tool (research index eyebrow)",
+     "layer": "ui",
+     "count_source": "grep -c 'The research tool' src/pages/research/index.astro = 1",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 91,
+      "quote": "<p class=\"eyebrow\">The research tool</p>"
+     }
+    },
+    {
+     "term": "structured research project (FAQ) / research project (footer)",
+     "layer": "ui",
+     "count_source": "grep -c 'structured research project' src/pages/research/index.astro = 2",
+     "sample": {
+      "file": "src/pages/research/index.astro",
+      "line": 26,
+      "quote": "Dangerous Robot is a structured research project that routes human questions through a Python pipeline"
+     }
+    }
+   ],
+   "collision": "Five self-descriptions (hub, index, tool, project, plus the 'AI Transparency Research' home <title>) across four reader surfaces. 'Index' is especially loaded: /resources/ai-safety is about FLI's AI Safety Index, so 'a transparency index' invites readers to expect scored rankings the site does not produce.",
+   "recommendation": {
+    "canonical": "research hub in metadata and prose ('Dangerous Robot is a research hub that...'); drop 'index' and 'tool' as self-descriptions.",
+    "rationale": "'Hub' is already in the highest-distribution string (the default meta description) and does not promise a scoring methodology the way 'index' does.",
+    "blast_radius": "4 strings: src/pages/index.astro:237, src/pages/research/index.astro:91 (eyebrow) and the FAQ/footer phrasing; SEO titles unchanged."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  },
+  {
+   "concept": "empty/inapplicable cell states in comparison matrices",
+   "variants": [
+    {
+     "term": "Not assessed (criteria matrix: no claim exists yet)",
+     "layer": "src",
+     "count_source": "word-frequency/ui-copy.json:labeled_phrases['Not assessed'] = 1",
+     "sample": {
+      "file": "src/components/NotAssessedCell.astro",
+      "line": 3,
+      "quote": "<span class=\"not-assessed\" aria-label=\"Not assessed\">\u2014</span>"
+     }
+    },
+    {
+     "term": "N/A (verdict not-applicable: assessed, does not apply)",
+     "layer": "src",
+     "count_source": "grep -c \"'not-applicable': 'N/A'\" src/lib/verdict.ts = 1",
+     "sample": {
+      "file": "src/lib/verdict.ts",
+      "line": 24,
+      "quote": "'not-applicable': 'This criterion does not apply to this entity',"
+     }
+    },
+    {
+     "term": "Not applicable (Responsible AI matrix dash)",
+     "layer": "src",
+     "count_source": "word-frequency/ui-copy.json:labeled_phrases['Not applicable'] = 1",
+     "sample": {
+      "file": "src/components/ResponsibleAIMatrix.astro",
+      "line": 183,
+      "quote": "<span class=\"na\" aria-label=\"Not applicable\">&ndash;</span>"
+     }
+    }
+   ],
+   "collision": "Two visually identical dashes carry different meanings ('\u2014' = not assessed yet in the criteria matrix; '\u2013' = not applicable in the Responsible AI matrix), while the semantically 'not applicable' verdict renders as 'N/A'. A reader comparing the two matrices has no way to learn the distinction; the criteria matrix ships no legend.",
+   "recommendation": {
+    "canonical": "'Not assessed' (em-dash, no claim yet) vs 'N/A' (assessed, inapplicable) everywhere, with a one-line legend on any matrix that uses either; the Responsible AI dash should adopt 'N/A' and its aria-label should match the visible legend term.",
+    "rationale": "The distinction (coverage gap vs deliberate non-applicability) is exactly the kind of nuance the site claims to care about; today it is encoded only in dash length.",
+    "blast_radius": "src/components/NotAssessedCell.astro (unchanged), src/components/ResponsibleAIMatrix.astro (1 span + legend row), src/components/CriteriaMatrix.astro (add legend line); glossary entries below."
+   },
+   "described_by": [
+    "taxonomy-reader"
+   ]
+  }
+ ],
+ "glossary": [
+  {
+   "term": "Audit (noun)",
+   "plain_definition": "The provenance record of how a claim was produced: which models ran, which sources were consulted, who signed off. Lives in the .audit.yaml sidecar. Not the act of evaluating a verdict.",
+   "confusables": [
+    "dr step-audit",
+    "Evaluator",
+    "Citation check"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "audit sidecar (.audit.yaml)",
+   "plain_definition": "A YAML file next to each claim recording how the claim was produced: models used, sources consulted, failure info, human sign-off, and (inside its nullable `audit:` block) the analyst-vs-auditor comparison. Despite the name, most of it is run provenance, not the audit.",
+   "confusables": [
+    "audit: block (the inner comparison)",
+    "auditSchema (Zod schema for the whole sidecar)",
+    "audit trail",
+    "audit.audit (site access path)"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Auditor (docs may say Evaluator)",
+   "plain_definition": "The fourth pipeline agent. It re-judges a claim from the same evidence without seeing the analyst's verdict, then the comparison is recorded. Docs call the role 'Evaluator'; all code (package auditor/, auditor_agent, dr step-audit, auditor_verdict) says auditor. The pipeline phase for this step is named 'evaluating'.",
+   "confusables": [
+    "Evaluator",
+    "step-audit",
+    "reassess (deprecated CLI alias)",
+    "evaluating (Phase value)"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Claim",
+   "plain_definition": "A single checkable statement about an entity ('PRODUCT is hosted on renewable energy'), published with a verdict, confidence level, and cited sources.",
+   "confusables": [
+    "criterion",
+    "verdict"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Confidence",
+   "plain_definition": "How strong the evidence behind a verdict is: high, medium, or low. A claim can be 'true' with low confidence.",
+   "confusables": [
+    "verdict"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Criterion",
+   "plain_definition": "A reusable question the site asks of many entities (e.g. 'excludes frontier models'). Each criterion generates one claim per applicable entity. Stored in research/templates.yaml. Unrelated to a plan's acceptance criteria.",
+   "confusables": [
+    "claim template",
+    "templates.yaml",
+    "acceptance criteria"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "criterion (plural: criteria)",
+   "plain_definition": "A reusable research question (e.g. 'COMPANY publishes a sustainability report') applied across many entities to generate claims. Stored in research/templates.yaml; pipeline code calls it a 'template' (TemplateRecord, template_slug); the site and reader pages call it 'criteria'. Same object.",
+   "confusables": [
+    "template",
+    "templates.yaml",
+    "criteria_slug (the claim field linking back to one criterion)"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Entity",
+   "plain_definition": "A thing claims are about: a company, a product, or a subject.",
+   "confusables": [
+    "subject",
+    "topic"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Evaluation",
+   "plain_definition": "The Evaluator's independent second opinion on the Analyst's draft verdict. Stored in the audit sidecar; disagreements go to the operator, never auto-resolved.",
+   "confusables": [
+    "audit",
+    "assessment",
+    "adversarial review",
+    "reassess"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "Evaluator (agent)",
+   "plain_definition": "The pipeline agent that independently re-checks the analyst's draft verdict against the sources. Older copy and code call it the auditor.",
+   "confusables": [
+    "auditor",
+    "analyst",
+    "audit sidecar"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Frontier-scale model",
+   "plain_definition": "A model that at release is top-5 on major benchmarks or larger than 100B parameters. A moving target; claim narratives state which test was applied and when.",
+   "confusables": [
+    "frontier AI",
+    "large model"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "independence",
+   "plain_definition": "Per-source field: 'first-party' (the entity talking about itself), 'independent', or 'unknown'. Derived mechanically from source_type (primary->first-party, secondary->independent, tertiary->unknown). Readers see first-party rendered as 'company-published' and unknown as 'unclassified'.",
+   "confusables": [
+    "source_type (primary/secondary/tertiary)",
+    "publisher_quality (pre-ingest hostname guess, adds 'forum')",
+    "kind (report/article/paper/... \u2014 what the document is)"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "needs_review vs human_review",
+   "plain_definition": "needs_review is a machine-set boolean in the sidecar's audit block: the auditor disagreed enough that an operator should look. human_review is the sidecar block recording that an operator actually signed off (reviewer, date, notes). `dr review` writes the latter; nothing automatic clears the former.",
+   "confusables": [
+    "dr review (CLI command)",
+    "review-queue",
+    "ReviewMode 'review' (sign-off without status change)"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Not assessed vs N/A",
+   "plain_definition": "'Not assessed' (\u2014) means no claim exists yet for that entity/criterion pair. 'N/A' means the pair was assessed and the criterion does not apply.",
+   "confusables": [
+    "not applicable"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Open-weight model",
+   "plain_definition": "A model whose trained weights are downloadable and runnable on your own infrastructure, as opposed to a proprietary model reachable only through the vendor's service.",
+   "confusables": [
+    "open source"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Operator",
+   "plain_definition": "The human who runs dr commands, reviews drafts, and signs claims off. In v1 the same person also fills the Research Lead role (planning and queueing work).",
+   "confusables": [
+    "Research Lead",
+    "reviewer",
+    "human"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "Phase",
+   "plain_definition": "The claim frontmatter field naming which pipeline step is in flight (researching, ingesting, analyzing, evaluating). Plans use named stages, not phase numbers.",
+   "confusables": [
+    "Phase 2 (plan stage)",
+    "step",
+    "status"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "primary",
+   "plain_definition": "Two meanings. On sources: a first-party publisher (source_type 'primary'). In the auditor package: the analyst's original result (primary_verdict, primary_confidence) as opposed to the auditor's (assessed_verdict). Check which axis you are on before grepping.",
+   "confusables": [
+    "primary_verdict",
+    "source_type: primary",
+    "first-party"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Recheck cadence",
+   "plain_definition": "How often a published claim is scheduled for automated re-research (default every 60 days). Shown as the 'as of' date. Distinct from human review.",
+   "confusables": [
+    "review",
+    "as of"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Reviewed / Unreviewed",
+   "plain_definition": "Whether a named human operator has signed off on this specific claim. Auto-published claims render as Unreviewed until a human review is recorded.",
+   "confusables": [
+    "unverified",
+    "recheck"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Sign-off",
+   "plain_definition": "The recorded human approval of a claim, written to the audit sidecar by dr review. Distinct from PR review (code/content diff approval) and from a plan's Review history rows.",
+   "confusables": [
+    "review",
+    "approve",
+    "publish",
+    "human review"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "Source tier",
+   "plain_definition": "Primary (the organization's own output), Secondary (independent journalism or research), or Tertiary (advocacy, opinion, aggregators).",
+   "confusables": [
+    "kind",
+    "independence",
+    "publisher quality"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "Status vs derived condition",
+   "plain_definition": "status is the stored claim state (draft, published, archived, blocked). Conditions like queued, under review, and stale are derived from QUEUE.md, PR state, or elapsed time; they are never written to frontmatter.",
+   "confusables": [
+    "state",
+    "lifecycle",
+    "under_review",
+    "stale",
+    "queued"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "step vs phase vs agent",
+   "plain_definition": "Same pipeline position, three vocabularies: the agent (noun: researcher/ingestor/analyst/auditor), the CLI step (verb: step-research/step-ingest/step-analyze/step-audit), and the claim's phase (gerund: researching/ingesting/analyzing/evaluating). Note the last column: the auditor's phase is 'evaluating', and FailureStep mixes both families ('research', 'ingest', 'analyst', 'auditor').",
+   "confusables": [
+    "FailureStep",
+    "acquisition.stage (2-value: research/ingest)",
+    "Phase"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Subject",
+   "plain_definition": "An entity type for things that are not a single company or product (e.g. us-data-centers, generative-ai). Not the same as a claim's topics tags.",
+   "confusables": [
+    "topic",
+    "topics",
+    "sector (retired name)",
+    "entity"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "topic",
+   "plain_definition": "One of eight subject-area slugs (ai-safety, environmental-impact, ...) attached to every claim and criterion. In Python code this vocabulary is the `Category` enum; on the site it is the `Category` TS type, the `topics` frontmatter field, and the /research/topics/ pages. All four are the same thing.",
+   "confusables": [
+    "Category",
+    "category (CSS class)",
+    "topics (resources collection \u2014 a different 4-value list)",
+    "subject (an entity type, NOT a topic)"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Unverified (verdict)",
+   "plain_definition": "Sources were sought but none directly answers the claim either way. Not the same as an unverified entity, an unreviewed claim, or a low verification level.",
+   "confusables": [
+    "Unreviewed",
+    "verification_status",
+    "verification level"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-reader"
+  },
+  {
+   "term": "verdict",
+   "plain_definition": "The seven-value judgment on a claim (true ... false, unverified, not-applicable). In analyst code, `AnalystOutput.verdict` confusingly holds the entire VerdictAssessment (title, narrative, topics, and the verdict), not just the value.",
+   "confusables": [
+    "VerdictAssessment (analyst's full output)",
+    "IndependentAssessment (auditor's output)",
+    "draft verdict (docs: analyst's proposal pre-review)",
+    "VERDICT_ORDER (display order in TS; severity scale in Python)"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Verification level",
+   "plain_definition": "A claim field measuring how diverse its source pool is (claimed through multiply-verified). It does not mean the claim was independently confirmed. Unrelated to an entity's verification_status (identity vetting) and to CI checks.",
+   "confusables": [
+    "verification_status",
+    "verification scale",
+    "verified"
+   ],
+   "audience": "reader",
+   "subsystem": "taxonomy-docs"
+  },
+  {
+   "term": "verification_level vs verification_status",
+   "plain_definition": "Unrelated despite the shared word. verification_level (on claims): how diverse the source pool is, from 'claimed' to 'multiply-verified' (shown to readers as 'Cross-verified'). verification_status (on entities): whether the entity's identity was vetted ('verified', 'unverified-startup', 'unverified-other').",
+   "confusables": [
+    "verify_claim (runs the whole pipeline)",
+    "entity verifier (agent)",
+    "unverified (a Verdict value)",
+    "Cross-verified (reader label for multiply-verified)"
+   ],
+   "audience": "both",
+   "subsystem": "taxonomy-code"
+  },
+  {
+   "term": "Workflow vs pipeline",
+   "plain_definition": "The pipeline is the Python automation under pipeline/. The workflow is the whole process around it: queueing, pipeline runs, PR review, sign-off, publish, recheck.",
+   "confusables": [
+    "research-flow",
+    "flow",
+    "lifecycle"
+   ],
+   "audience": "contributor",
+   "subsystem": "taxonomy-docs"
+  }
+ ]
+}

@@ -1,0 +1,107 @@
+# Codebase analysis — 2026-07
+
+An adversarial architecture and taxonomy review of the dangerousrobot.org codebase
+(`src/` + `pipeline/` + `docs/`), scoped to exclude `research/` content but include the
+research flow and schemas. Start with [`ANALYSIS.md`](ANALYSIS.md).
+
+## What's here
+
+| Path | What it is |
+|---|---|
+| `ANALYSIS.md` | The narrative report: architectural shape, congestion, pattern mapping, taxonomy, prioritized recommendations |
+| `data/architecture.json` | L1→L3 component model with metrics, findings, and proposed-change deltas per node |
+| `data/findings.json` | All 188 findings with evidence, verifier verdicts, and the 13 stress-tested clean-slate designs |
+| `data/terminology.json` | 32 tracked concepts, their name variants by layer, collisions, and canonical recommendations |
+| `data/metrics.json` | LOC, git churn, cyclomatic complexity (lizard), import graphs, graphify centrality, hotspot ranking |
+| `data/word-frequency/*.json` | Word-cloud source data: docs prose, pipeline identifiers, site identifiers, reader-facing UI copy |
+| `data/enum-drift.json` | Mechanical diff of Python enum values vs. their Zod counterparts |
+| `data/data-conformance.json` | Mechanical sweep of `research/` content shape (frontmatter coverage, sidecar pairing, enum violations) — the only place this report touches content, and only its shape |
+| `diagrams/architecture.md`, `diagrams/flows.md` | Mermaid diagrams (render natively on GitHub): C4 context/container, focal component views, sequence diagrams, documented-vs-storable state machine |
+| `artifacts/*.html` | The three interactive pages, pre-built and committed (also published as hosted Artifacts) |
+| `scripts/*.py` | The deterministic Phase-0 scripts that produced every number in `data/` |
+| `generate-artifacts.mjs` | Rebuilds `artifacts/*.html` from `data/` after any edit |
+
+## The three interactive artifacts
+
+1. **`architecture-explorer.html`** — zoomable L1→L2→L3 map. Click any container or
+   component for its metrics, findings, and (where proposed) a current-vs-proposed toggle.
+2. **`taxonomy-explorer.html`** — the concept/collision table (primary view), a proposed
+   glossary, and word clouds per corpus (secondary — the collision table is the substance).
+3. **`findings-dashboard.html`** — all 188 findings, filterable, with a churn×complexity
+   congestion-quadrant chart and the clean-slate stress-test results.
+
+All three are self-contained HTML (CSS/JS/data inlined) so they work as hosted Artifacts
+under a strict content-security policy, and also open directly from disk or GitHub Pages.
+
+## Methodology
+
+**Ground truth (deterministic, `scripts/`).** Before any LLM analysis ran, `compute_metrics.py`
+computed LOC/churn/complexity/import graphs/graphify-centrality for every source file,
+`word_frequency.py` built the four word-cloud corpora, `enum_drift.py` diffed the Python and
+Zod vocabularies, and `data_conformance.py` swept the content corpus's shape. Every number
+that appears in `ANALYSIS.md` or an artifact traces back to one of these files — analysts
+were instructed to cite metric references, never to recount or estimate.
+
+**Analysis (16 agents, one round).** Each of 12 subsystem analysts, 1 pattern-mapper, and 3
+taxonomy analysts (docs / code identifiers / reader-facing copy) worked from a briefing
+containing its file scope, metrics slice, overlapping graphify graph communities (as an L3
+decomposition hypothesis to agree or disagree with), and pre-seeded findings from the
+scoping pass. Every finding required a verbatim evidence quote — not a paraphrase — because
+those quotes were mechanically re-verified before any human or LLM judgment was applied to
+them (188/188 evidence sets checked; 1 finding's evidence failed the grep and was dropped
+before verification even started).
+
+**Verification (16 independent verifiers + 13 skeptics).** A second agent, blind to the
+first agent's reasoning, was assigned each subsystem's findings with instructions to
+*refute*, not confirm: check the interpretation against the surrounding code, and for every
+high-severity finding, look for a simpler fix than the one proposed. 27 of 188 findings were
+downgraded in severity on this pass; 3 were rejected outright and kept visible in
+`findings.json` as the audit trail rather than deleted. Separately, each of the 13
+clean-slate "if rebuilt today" designs was stress-tested by an independent skeptic for
+whether its named dependencies actually exist, whether its stated migration cost was honest,
+and whether a simpler partial version would capture most of the value. All 13 came back
+`adapt` — none survived unmodified, none were rejected outright.
+
+**Synthesis.** `data/architecture.json` merges the per-subsystem component models
+deterministically (by evidence-file path, not by LLM judgment); the proposed-change deltas
+on top of it were authored by hand from the confirmed-high findings and the clean-slate
+corrections, not generated by an agent.
+
+## Limitations
+
+- **Analyst self-reference risk.** These analysis scripts and their outputs live inside the
+  repo the analysts were reading (`docs/reports/codebase-analysis-2026-07/`). One clean-slate
+  design (linter) initially referenced this report's own `enum_drift.py` script as if it were
+  existing pipeline tooling; the stress-test skeptic caught it and an editorial correction is
+  attached to that entry in `findings.json`. Findings' evidence was swept for the same
+  contamination and none was found, but the risk class is real for any repo-internal
+  analysis tool and worth checking again after future runs.
+- **Import graphs are approximate for TypeScript/Astro.** The Python import graph is
+  AST-derived and exact; the TS/Astro graph is regex-derived and misses re-exports and
+  dynamic imports. Edges are tagged `grep-approx` in `architecture.json` where this applies.
+- **Graphify graph is one build old at analysis time** (`graphify update` was run in Phase 0,
+  but the graph itself has known limits: 17% of its edges are INFERRED at avg. confidence
+  0.54; this report's centrality metrics filter to EXTRACTED edges only).
+- **`research/` content itself was not evaluated** — only its shape (frontmatter coverage,
+  sidecar pairing). The current corpus is small (5 claims, 36 sources, 14 entities), so
+  `data-conformance.json`'s findings are not representative of behavior at scale.
+- **Single verification round.** Findings were verified once by one independent agent, not
+  iterated to consensus. The "adapt, never adopt" pattern across all 13 clean-slate designs
+  is a meaningful signal but reflects one skeptic's read each, not a panel.
+
+## Regenerating
+
+```bash
+# ground truth (repeat after any code change to refresh numbers)
+.venv/bin/python docs/reports/codebase-analysis-2026-07/scripts/compute_metrics.py
+.venv/bin/python docs/reports/codebase-analysis-2026-07/scripts/word_frequency.py
+.venv/bin/python docs/reports/codebase-analysis-2026-07/scripts/enum_drift.py
+.venv/bin/python docs/reports/codebase-analysis-2026-07/scripts/data_conformance.py
+
+# rebuild the three interactive artifacts from data/
+node docs/reports/codebase-analysis-2026-07/generate-artifacts.mjs
+```
+
+The 16-analyst / 16-verifier / 13-skeptic LLM pass is not scripted for re-run — it was
+orchestrated as a one-time multi-agent review. Re-running it means repeating the fan-out
+described above with fresh agents.
