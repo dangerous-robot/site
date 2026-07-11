@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Internal reports — dangerousrobot.org</title>
+<link rel="stylesheet" href="artifacts/src/shared.css" />
+<style>
+  body { padding: 0 0 60px; }
+  .wrap { max-width: 880px; }
+  .notice {
+    display: flex; gap: 8px; align-items: baseline;
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; margin: 18px 0 28px;
+    background: var(--surface);
+  }
+  section { margin: 0 0 34px; }
+  section > h2 {
+    font-size: 13px; font-weight: 650; letter-spacing: 0.02em;
+    text-transform: uppercase; color: var(--muted);
+    margin: 0 0 4px;
+  }
+  section > p.lede { margin: 0 0 14px; color: var(--ink-2); font-size: 13px; max-width: 62ch; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .card {
+    display: block; text-decoration: none; color: inherit;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 13px 15px; box-shadow: var(--shadow);
+    transition: border-color .12s;
+  }
+  .card:hover { border-color: var(--accent); text-decoration: none; }
+  .card .name { font-weight: 650; font-size: 13.5px; margin-bottom: 3px; }
+  .card .desc { font-size: 11.5px; color: var(--ink-2); line-height: 1.4; }
+  .card .path { display: block; margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .filelist { display: flex; flex-direction: column; gap: 2px; }
+  .filelist a {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-2);
+    padding: 4px 8px; border-radius: 5px; text-decoration: none;
+  }
+  .filelist a:hover { background: var(--accent-soft); color: var(--ink); text-decoration: none; }
+  .filelist .n { color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand">
+    <div class="eyebrow">dangerousrobot.org · internal · not published to GitHub Pages</div>
+    <div class="title">Reports index</div>
+  </div>
+</div>
+<div class="wrap">
+
+  <div class="notice">
+    <span>⚠</span>
+    <span>This page and everything it links to lives under <code>docs/</code>, which the Astro build never
+    reads — nothing here reaches <code>dist/</code> or GitHub Pages. Open <code>index.html</code> directly
+    from a checkout, or serve <code>docs/reports/codebase-analysis-2026-07/</code> locally.</span>
+  </div>
+
+  <section>
+    <h2>Codebase analysis — 2026-07</h2>
+    <p class="lede">Adversarial architecture and taxonomy review of the site and pipeline. Start with
+      <a href="ANALYSIS.md">ANALYSIS.md</a>; methodology and limitations are in
+      <a href="README.md">README.md</a>.</p>
+    <div class="cards">
+      <a class="card" href="artifacts/architecture-explorer.html">
+        <div class="name">🗺️ Architecture explorer</div>
+        <div class="desc">Zoomable L1→L3 map with metrics, findings, and a current-vs-proposed toggle.</div>
+        <span class="path">artifacts/architecture-explorer.html</span>
+      </a>
+      <a class="card" href="artifacts/taxonomy-explorer.html">
+        <div class="name">📖 Taxonomy &amp; glossary explorer</div>
+        <div class="desc">Contested terminology across code, docs, and reader-facing copy, plus word clouds.</div>
+        <span class="path">artifacts/taxonomy-explorer.html</span>
+      </a>
+      <a class="card" href="artifacts/findings-dashboard.html">
+        <div class="name">🔍 Findings dashboard</div>
+        <div class="desc">All 188 findings, filterable, with the congestion quadrant and clean-slate verdicts.</div>
+        <span class="path">artifacts/findings-dashboard.html</span>
+      </a>
+      <a class="card" href="artifacts/graphify-graph.html">
+        <div class="name">🕸️ Graphify knowledge graph</div>
+        <div class="desc">Force-directed structural graph of the repo — communities, god nodes, edges.</div>
+        <span class="path">artifacts/graphify-graph.html</span>
+      </a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Diagrams</h2>
+    <p class="lede">Mermaid sources — render natively on GitHub, or paste into any Mermaid viewer.</p>
+    <div class="filelist">
+      <a href="diagrams/architecture.md">diagrams/architecture.md <span class="n">— L1/L2/L3 context, container, and focal component views</span></a>
+      <a href="diagrams/flows.md">diagrams/flows.md <span class="n">— verify_claim sequence, claim state machine (current vs. documented)</span></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>Data</h2>
+    <p class="lede">Everything the report and artifacts cite traces back to one of these files.</p>
+    <div class="filelist">
+      <a href="data/architecture.json">data/architecture.json <span class="n">— component model + proposed-change deltas</span></a>
+      <a href="data/findings.json">data/findings.json <span class="n">— 188 findings, evidence, verifier verdicts, clean slates</span></a>
+      <a href="data/terminology.json">data/terminology.json <span class="n">— concepts, variants, collisions, canonical recommendations</span></a>
+      <a href="data/metrics.json">data/metrics.json <span class="n">— LOC, churn, complexity, centrality, hotspot ranking</span></a>
+      <a href="data/enum-drift.json">data/enum-drift.json <span class="n">— Python enum vs. Zod schema diff</span></a>
+      <a href="data/data-conformance.json">data/data-conformance.json <span class="n">— research/ content shape sweep</span></a>
+      <a href="data/word-frequency/docs.json">data/word-frequency/docs.json</a>
+      <a href="data/word-frequency/pipeline-identifiers.json">data/word-frequency/pipeline-identifiers.json</a>
+      <a href="data/word-frequency/site-identifiers.json">data/word-frequency/site-identifiers.json</a>
+      <a href="data/word-frequency/ui-copy.json">data/word-frequency/ui-copy.json</a>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>

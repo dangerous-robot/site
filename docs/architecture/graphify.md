@@ -65,23 +65,19 @@ The graphify skill (`/graphify "<question>"`) uses `graphify-out/graph.json` dir
 
 ## Publishing the interactive graph
 
-The interactive `graph.html` is served via GitHub Pages at
-`dangerousrobot.org/graphify/graph.html`, unlisted (not linked from the site)
-and non-indexed. Because `graphify-out/` is git-ignored, publishing means
-copying the built HTML into `public/` (which Astro copies verbatim into
-`dist/`) and re-applying the noindex guard:
+The interactive `graph.html` is kept internal, not served via GitHub Pages.
+Because `graphify-out/` is git-ignored, sharing a copy means committing it
+into the internal reports directory:
 
 ```
-mkdir -p public/graphify
-cp graphify-out/graph.html public/graphify/graph.html
-# re-inject the noindex meta (regenerated graph.html does not carry it)
-.venv/bin/python -c "from pathlib import Path; p=Path('public/graphify/graph.html'); h=p.read_text('utf-8'); \
-p.write_text(h.replace('<head>', '<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">', 1)) if 'name=\"robots\"' not in h else None"
+cp graphify-out/graph.html docs/reports/codebase-analysis-2026-07/artifacts/graphify-graph.html
 ```
 
-`public/robots.txt` also disallows `/graphify/`, so crawling is blocked even if
-the meta is ever dropped. The file is 2.6MB and re-commits as a large diff each
-time it is republished, so republish deliberately, not on every rebuild.
+`docs/` is never read by the Astro build, so nothing under it reaches `dist/`
+or the live site. Open `docs/reports/codebase-analysis-2026-07/index.html`
+locally to browse it alongside the other internal reports. The file is
+2.6MB and re-commits as a large diff each time it's refreshed, so update it
+deliberately, not on every rebuild.
 
 ## Keeping it current
 
