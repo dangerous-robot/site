@@ -64,7 +64,8 @@ for (const page of PAGES) {
   const js = bundle.outputFiles[0].text;
   // </script injection guard for inlined JSON
   const dataJson = JSON.stringify(page.data).replace(/</g, "\\u003c");
-  const html = `<title>${page.title}</title>
+  const html = `<meta charset="utf-8" />
+<title>${page.title}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>${css}</style>
 <body>

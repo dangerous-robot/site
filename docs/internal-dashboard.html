@@ -11,7 +11,7 @@
   .wrap { max-width: 880px; }
   .notice {
     display: flex; gap: 8px; align-items: baseline;
-    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
     border: 1px solid var(--border); border-radius: 8px;
     padding: 8px 12px; margin: 18px 0 28px;
     background: var(--surface);
@@ -32,8 +32,8 @@
   }
   .card:hover { border-color: var(--accent); text-decoration: none; }
   .card .name { font-weight: 650; font-size: 13.5px; margin-bottom: 3px; }
-  .card .desc { font-size: 11.5px; color: var(--ink-2); line-height: 1.4; }
-  .card .path { display: block; margin-top: 8px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .card .desc { font-size: 12px; color: var(--ink-2); line-height: 1.4; }
+  .card .path { display: block; margin-top: 8px; font-family: var(--mono); font-size: 11px; color: var(--muted); }
   .filelist { display: flex; flex-direction: column; gap: 2px; }
   .filelist a {
     font-family: var(--mono); font-size: 12px; color: var(--ink-2);
@@ -41,6 +41,16 @@
   }
   .filelist a:hover { background: var(--accent-soft); color: var(--ink); text-decoration: none; }
   .filelist .n { color: var(--muted); }
+  .diagram-group { margin: 0 0 18px; }
+  .diagram-group:last-child { margin-bottom: 0; }
+  .diagram-source {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--muted); margin: 0 0 8px;
+  }
+  .diagram-block { padding: 13px 15px; margin: 0 0 10px; }
+  .diagram-block h4 { margin: 0 0 8px; font-size: 13px; font-weight: 650; }
+  .diagram-block .mermaid { display: flex; justify-content: center; overflow-x: auto; }
+  .diagram-block svg { max-width: 100%; }
 </style>
 </head>
 <body>
@@ -90,10 +100,212 @@
 
   <section>
     <h2>Diagrams</h2>
-    <p class="lede">Mermaid sources — render natively on GitHub, or paste into any Mermaid viewer.</p>
-    <div class="filelist">
-      <a href="reports/codebase-analysis-2026-07/diagrams/architecture.md">reports/codebase-analysis-2026-07/diagrams/architecture.md <span class="n">— L1/L2/L3 context, container, and focal component views</span></a>
-      <a href="reports/codebase-analysis-2026-07/diagrams/flows.md">reports/codebase-analysis-2026-07/diagrams/flows.md <span class="n">— verify_claim sequence, claim state machine (current vs. documented)</span></a>
+    <p class="lede">Rendered live from the Mermaid sources below — those files stay the source of truth;
+      this page just renders them instead of linking out. Also render natively on GitHub, or paste into
+      any Mermaid viewer: <a href="reports/codebase-analysis-2026-07/diagrams/architecture.md">architecture.md</a>,
+      <a href="reports/codebase-analysis-2026-07/diagrams/flows.md">flows.md</a>.</p>
+    <div class="diagram-group">
+      <h3 class="diagram-source">diagrams/architecture.md</h3>
+      <div class="panel diagram-block">
+        <h4>L1 — System context</h4>
+        <pre class="mermaid">flowchart LR
+    operator(["Operator&lt;br/&gt;(runs dr CLI, reviews checkpoints)"])
+    reader(["Reader"])
+
+    subgraph sys ["dangerousrobot.org research system"]
+        pipeline["Research pipeline&lt;br/&gt;(Python, PydanticAI)"]
+        store[("research/&lt;br/&gt;Markdown + YAML")]
+        site["Astro static site"]
+    end
+
+    llm["LLM providers&lt;br/&gt;Infomaniak · GreenPT · Anthropic · OpenAI · Google"]
+    search["Search backends&lt;br/&gt;Tavily · Brave · arXiv"]
+    wayback["Wayback Machine"]
+    gh["GitHub Actions + Pages"]
+
+    operator -->|commands + sign-off| pipeline
+    pipeline -->|inference| llm
+    pipeline -->|source discovery| search
+    pipeline -->|archive lookups| wayback
+    pipeline -->|writes claims, sources,&lt;br/&gt;entities, audit sidecars| store
+    store -->|read at build time&lt;br/&gt;via content collections| site
+    site -->|dist/| gh
+    reader -->|dangerousrobot.org| gh</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>L2 — Containers (current)</h4>
+        <pre class="mermaid">flowchart TB
+    subgraph sys ["dangerousrobot.org research system"]
+        direction LR
+        pipeline["&lt;b&gt;pipeline/&lt;/b&gt;&lt;br/&gt;dr CLI + 4 agents&lt;br/&gt;researcher · ingestor · analyst · auditor"]
+        store[("&lt;b&gt;research/&lt;/b&gt;&lt;br/&gt;claims + .audit.yaml sidecars&lt;br/&gt;sources · entities · templates.yaml")]
+        site["&lt;b&gt;src/&lt;/b&gt;&lt;br/&gt;Astro 6 · Zod collections&lt;br/&gt;claims-with-audit loader"]
+        tooling["&lt;b&gt;tooling&lt;/b&gt;&lt;br/&gt;tasks.py · npm scripts&lt;br/&gt;ci.yml · deploy.yml · scripts/"]
+        docs["&lt;b&gt;docs/&lt;/b&gt;&lt;br/&gt;architecture reference · plans&lt;br/&gt;AGENTS.md"]
+    end
+
+    pipeline -->|writes| store
+    site -->|reads| store
+    tooling -->|astro build + Zod validation| site
+    tooling -->|dr lint gate| pipeline
+    tooling -.->|"unit tests NOT wired into CI (SCI-01)"| pipeline
+    docs -.->|"describes (drift tracked in findings)"| pipeline
+    docs -.->|describes| site</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>L3 focal view — orchestrator internals</h4>
+        <pre class="mermaid">flowchart TB
+    subgraph orch ["pipeline/orchestrator/"]
+        cli["cli.py — dr command surface&lt;br/&gt;(claim-* commands, step-* commands,&lt;br/&gt;review, publish, stats)"]
+        engine["pipeline.py — verify engine&lt;br/&gt;verify_claim() · onboard_entity()"]
+        gates["checkpoints.py&lt;br/&gt;CheckpointHandler protocol&lt;br/&gt;(CLI-interactive / auto-approve)"]
+        persist["persistence.py&lt;br/&gt;claim/source/entity/sidecar writers"]
+        entres["entity_resolution.py&lt;br/&gt;ResolvedEntity from on-disk file"]
+        queue["review_queue.py + review.py&lt;br/&gt;sign-off and queue"]
+    end
+
+    agents["agent packages&lt;br/&gt;researcher · ingestor · analyst · auditor"]
+    common["common/&lt;br/&gt;models · frontmatter · content_loader"]
+    store[("research/")]
+
+    cli -->|"constructs VerifyConfig, runs"| engine
+    cli -.->|"step-* commands bypass engine&lt;br/&gt;and call agents directly (AT-02)"| agents
+    cli -.->|"claim-refresh embeds its own&lt;br/&gt;persistence branches (OCLI-02)"| store
+    engine --> gates
+    engine --> agents
+    engine --> entres
+    engine --> persist
+    queue --> store
+    persist --> store
+    engine --> common
+    cli --> common</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>L3 focal view — the content integration boundary</h4>
+        <pre class="mermaid">flowchart LR
+    subgraph write ["Write side (Python)"]
+        agents["agents produce&lt;br/&gt;pydantic outputs"]
+        persist["persistence.py&lt;br/&gt;+ frontmatter.py"]
+        enums1["common/models.py&lt;br/&gt;enum vocabulary (mirror #1)"]
+        linter["linter/checks.py&lt;br/&gt;hand-copied field rules (mirror #2)"]
+    end
+
+    subgraph filesystem ["research/ (the contract surface)"]
+        claim["claim .md"]
+        sidecar[".audit.yaml"]
+        src["source .md"]
+        ent["entity .md"]
+    end
+
+    subgraph read ["Read side (TypeScript)"]
+        zod["content.config.ts&lt;br/&gt;Zod schemas (mirror #3 — only enforced copy)"]
+        loader["claims-with-audit loader&lt;br/&gt;merges sidecar into claim.audit"]
+        libs["src/lib/verdict.ts etc.&lt;br/&gt;display vocab (mirror #4)"]
+        pages["pages render collections"]
+    end
+
+    agents --> persist
+    enums1 --> persist
+    persist -->|"write (unvalidated against Zod)"| claim &amp; sidecar &amp; src &amp; ent
+    linter -.->|"dr lint: optional, value-blind (LINT-01)"| filesystem
+    claim &amp; sidecar --> loader
+    src &amp; ent --> zod
+    loader --> zod
+    zod --> pages
+    libs --> pages
+    zod -.->|"strips pipeline-written fields:&lt;br/&gt;research, sub_questions, failure (SCH-01)"| sidecar</pre>
+      </div>
+    </div>
+    <div class="diagram-group">
+      <h3 class="diagram-source">diagrams/flows.md</h3>
+      <div class="panel diagram-block">
+        <h4>Claim lifecycle — documented (research-flow.md §1)</h4>
+        <pre class="mermaid">stateDiagram-v2
+    [*] --> draft
+    draft --> blocked: threshold gate fails
+    blocked --> archived: dr review --archive
+    draft --> under_review: PR opened
+    under_review --> draft: PR closed
+    under_review --> published: approve + merge
+    published --> stale: recheck_cadence_days elapsed
+    stale --> under_review: refresh + PR
+    published --> archived: dr review --archive
+    archived --> [*]</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>Claim lifecycle — storable today (ClaimStatus: draft | published | archived | blocked)</h4>
+        <pre class="mermaid">stateDiagram-v2
+    [*] --> draft: dr claim-draft / onboard
+    draft --> blocked: threshold gate (status + blocked_reason written)
+    draft --> published: dr review --approve / dr publish (bulk)
+    blocked --> archived: dr review --archive
+    published --> archived: dr review --archive
+    published --> draft: dr claim-refresh rewrites
+    archived --> [*]
+
+    note right of published
+        "stale" is a lint-time computation
+        (next_recheck_due in the past),
+        not a stored state
+    end note</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>verify_claim — the implemented sequence</h4>
+        <pre class="mermaid">sequenceDiagram
+    actor Op as Operator (dr claim-*)
+    participant E as verify_claim()
+    participant R as Researcher (planner->search->scorer)
+    participant I as Ingestor (one per URL, concurrent)
+    participant H as Checkpoint handler
+    participant A as Analyst
+    participant X as Auditor ("Evaluator")
+    participant P as persistence.py
+
+    Op->>E: claim text + entity ref + VerifyConfig
+    E->>R: decomposed_research()
+    R-->>E: scored URLs + sub-questions
+    E->>E: dedup + blocklist + max_sources cap
+
+    par one ingest per URL
+        E->>I: URL
+        I-->>E: SourceFile (or failure)
+    end
+
+    E->>H: review_sources checkpoint
+    H-->>E: proceed / halt
+
+    alt usable sources &lt; 4
+        E->>P: claim written status=blocked + blocked_reason
+    else proceed
+        E->>A: sources + entity context
+        A-->>E: AnalystOutput (verdict, narrative, overrides)
+        E->>X: analyst output + sources (minus independence/kind data - AT-01)
+        X-->>E: IndependentAssessment -> ComparisonResult
+        opt verdicts disagree
+            E->>H: review_disagreement checkpoint
+            H-->>E: accept / flag
+        end
+        E->>P: claim + .audit.yaml sidecar written
+    end
+    E-->>Op: VerificationResult
+
+    Note over Op,P: dr step-research / step-ingest / step-analyze / step-audit&lt;br/&gt;call R, I, A, X directly, bypassing this engine's&lt;br/&gt;validation, timeouts, and persistence (AT-02)</pre>
+      </div>
+      <div class="panel diagram-block">
+        <h4>The quality gate — three definitions of "check"</h4>
+        <pre class="mermaid">flowchart TB
+    subgraph gates ["Three 'check' definitions"]
+        npm["npm run check&lt;br/&gt;build + lint:md + check:citations"]
+        inv["inv check&lt;br/&gt;build + lint + unit tests"]
+        ci["ci.yml&lt;br/&gt;build + lint:md + citations + dr lint --severity error"]
+    end
+    deploy["deploy.yml -> GitHub Pages"]
+    tests["pipeline unit tests&lt;br/&gt;(pytest, ~45 modules)"]
+
+    ci --> deploy
+    inv -->|"only gate that runs"| tests
+    ci -.->|"never runs (SCI-01)"| tests</pre>
+      </div>
     </div>
   </section>
 
@@ -115,5 +327,14 @@
   </section>
 
 </div>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.16.0/dist/mermaid.min.js"
+  integrity="sha384-T/0lMUdJpd2S1ZHtRiofG3htU3xPCrFVeAQ1UUE2TJwlEJSV5NUwn30kP28n238E"
+  crossorigin="anonymous"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+  });
+</script>
 </body>
 </html>

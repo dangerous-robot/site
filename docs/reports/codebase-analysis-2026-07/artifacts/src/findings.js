@@ -31,12 +31,12 @@ wrap.append(kpi);
 const charts = el("div", { style: "display:grid;grid-template-columns:repeat(auto-fit,minmax(430px,1fr));gap:14px;margin-bottom:14px" });
 wrap.append(charts);
 
-function chartPanel(title, note) {
+function chartPanel(title, note, { full = false } = {}) {
   const p = el("div", { class: "panel" });
   p.innerHTML = `<div class="panel-head"><h2>${esc(title)}</h2><span class="note">${esc(note)}</span></div>`;
   const body = el("div", { class: "panel-body" });
   p.append(body);
-  charts.append(p);
+  (full ? wrap : charts).append(p);
   return body;
 }
 
@@ -49,12 +49,12 @@ function chartPanel(title, note) {
   const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, style: "width:100%;display:block" });
   for (const t of xs.ticks(5)) {
     svg.append(svgEl("line", { x1: xs(t), x2: xs(t), y1: M.t, y2: H - M.b, stroke: "var(--grid)" }));
-    const lb = svgEl("text", { x: xs(t), y: H - M.b + 16, fill: "var(--muted)", "font-size": 9.5, "text-anchor": "middle", class: "monolabel" });
+    const lb = svgEl("text", { x: xs(t), y: H - M.b + 16, fill: "var(--muted)", "font-size": 10.5, "text-anchor": "middle", class: "monolabel" });
     lb.textContent = t; svg.append(lb);
   }
   for (const t of ys.ticks(5)) {
     svg.append(svgEl("line", { y1: ys(t), y2: ys(t), x1: M.l, x2: W - M.r, stroke: "var(--grid)" }));
-    const lb = svgEl("text", { x: M.l - 6, y: ys(t) + 3, fill: "var(--muted)", "font-size": 9.5, "text-anchor": "end", class: "monolabel" });
+    const lb = svgEl("text", { x: M.l - 6, y: ys(t) + 3, fill: "var(--muted)", "font-size": 10.5, "text-anchor": "end", class: "monolabel" });
     lb.textContent = t; svg.append(lb);
   }
   const xl = svgEl("text", { x: (M.l + W - M.r) / 2, y: H - 6, fill: "var(--ink-2)", "font-size": 10.5, "text-anchor": "middle" });
@@ -70,7 +70,7 @@ function chartPanel(title, note) {
     c.addEventListener("mouseleave", () => tip.hide());
     svg.append(c);
     if (h.rank <= 3) {
-      const t = svgEl("text", { x: xs(h.churn_commits), y: ys(h.ccn_total) - r - 4, fill: "var(--ink)", "font-size": 9.5, "text-anchor": "middle", class: "monolabel" });
+      const t = svgEl("text", { x: xs(h.churn_commits), y: ys(h.ccn_total) - r - 4, fill: "var(--ink)", "font-size": 10.5, "text-anchor": "middle", class: "monolabel" });
       t.textContent = h.path.split("/").pop(); svg.append(t);
     }
   }
@@ -95,7 +95,7 @@ function chartPanel(title, note) {
   const COLORS = { high: "var(--critical)", medium: "var(--serious)", low: "var(--warning)" };
   items.forEach(([sub, c], i) => {
     const y = i * ROW + 6;
-    const lb = svgEl("text", { x: M.l - 8, y: y + 10, fill: "var(--ink-2)", "font-size": 10, "text-anchor": "end", class: "monolabel" });
+    const lb = svgEl("text", { x: M.l - 8, y: y + 10, fill: "var(--ink-2)", "font-size": 11, "text-anchor": "end", class: "monolabel" });
     lb.textContent = sub; svg.append(lb);
     let x = M.l;
     for (const sev of ["high", "medium", "low"]) {
@@ -107,7 +107,7 @@ function chartPanel(title, note) {
       svg.append(rect);
       x += xs(c[sev]);
     }
-    const total = svgEl("text", { x: x + 5, y: y + 10, fill: "var(--muted)", "font-size": 9.5, class: "monolabel" });
+    const total = svgEl("text", { x: x + 5, y: y + 10, fill: "var(--muted)", "font-size": 10.5, class: "monolabel" });
     total.textContent = c.high + c.medium + c.low; svg.append(total);
   });
   body.append(svg);
@@ -119,13 +119,16 @@ function chartPanel(title, note) {
 
 // Clean-slate verdicts
 {
-  const body = chartPanel("Clean-slate designs, stress-tested", "each 'if rebuilt today' proposal was attacked by an independent skeptic");
+  const body = chartPanel("Clean-slate designs, stress-tested", "each 'if rebuilt today' proposal was attacked by an independent skeptic", { full: true });
   const t = el("table", { class: "data" });
-  t.innerHTML = `<thead><tr><th>subsystem</th><th>design</th><th>skeptic verdict</th></tr></thead><tbody>
+  t.innerHTML = `<thead><tr><th>subsystem</th><th>design</th><th>skeptic verdict</th><th>adapted proposal</th></tr></thead><tbody>
     ${cleanSlates.map((s) => `<tr>
       <td class="mono">${esc(s.subsystem)}</td>
       <td style="max-width:300px">${esc(s.title)}</td>
       <td>${s.stress_test ? `<span class="chip ${s.stress_test.verdict === "adopt" ? "st-confirmed" : s.stress_test.verdict === "reject" ? "st-rejected" : "sev-low"}"><span class="dot"></span>${esc(s.stress_test.verdict)}</span>` : "—"}</td>
+      <td style="max-width:380px">${s.stress_test?.verdict === "adapt" && s.stress_test.simpler_alternative
+        ? `<details><summary style="cursor:pointer;font-weight:650;color:var(--accent)">view adaptation</summary><p style="margin:6px 0 0;color:var(--ink-2)">${esc(s.stress_test.simpler_alternative)}</p></details>`
+        : "—"}</td>
     </tr>`).join("")}</tbody>`;
   body.append(el("div", { style: "overflow-x:auto" }, t));
 }
