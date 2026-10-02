@@ -21,8 +21,14 @@ for (const e of entities) {
   entityNameMap.set(e.id, { name: e.data.name, aliases: e.data.aliases ?? [] });
 }
 
+// Claim titles are pipeline-generated; escape them so only the <strong>
+// wrappers added below render as markup through set:html.
+function escapeHtml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function boldInTitle(title: string, entityId: string, criteriaSlug?: string): string {
-  let result = title;
+  let result = escapeHtml(title);
   const entry = entityNameMap.get(entityId);
   if (entry) {
     for (const term of [entry.name, ...entry.aliases]) {
@@ -56,13 +62,13 @@ const menu = [
     href: '/writing',
     label: 'Writing',
     short: 'Writing',
-    note: 'New posts on avoiding AI, or using it wisely.',
+    note: 'Posts on avoiding AI, or using it wisely.',
   },
   {
     href: '/resources/turn-off-ai',
     label: 'Turn off the AI you didn’t ask for',
     short: 'Turn off AI',
-    note: 'Meta AI, Google AI Overviews, Copilot: how to switch them off.',
+    note: 'Meta AI, Google AI Overviews, Copilot: what can be switched off, and what to try when it can’t.',
   },
   {
     href: '/resources/should-i',
@@ -92,7 +98,7 @@ const menu = [
     href: '/values',
     label: 'What this site stands for',
     short: 'Values',
-    note: 'The editorial position, uncited and plainly stated.',
+    note: 'Where this site stands, in plain words.',
   },
 ];
 
@@ -754,10 +760,9 @@ const websiteSchema = {
     cursor: pointer;
     padding: 0;
     border-radius: 0;
-    box-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-fab);
     transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   }
-  :global([data-theme="light"]) .hero-burger { box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08); }
   .hero-burger:hover { border-color: var(--color-accent); color: var(--color-accent); }
   .hero-burger:focus-visible {
     outline: 2px solid var(--color-accent);
@@ -808,12 +813,11 @@ const websiteSchema = {
     z-index: 400;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--shadow-popover);
     min-width: 14rem;
     max-width: calc(100vw - 2 * var(--space-md));
     animation: dropdownIn 0.2s cubic-bezier(.2, .8, .2, 1) both;
   }
-  :global([data-theme="light"]) .hero-nav { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
   .hero-nav[hidden] { display: none; }
   @keyframes dropdownIn {
     from { opacity: 0; transform: translateY(-6px); }
@@ -869,6 +873,9 @@ const websiteSchema = {
       right: -24vw;
       top: -1rem;
     }
+    /* On phones the mark sits behind the headline; fade it so the text stays clean. */
+    .hero-logo { opacity: 0.08; }
+    :global([data-theme="light"]) .hero-logo { opacity: 0.06; }
   }
 
   /* =========================================================

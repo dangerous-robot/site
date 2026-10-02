@@ -6,6 +6,9 @@ import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
 
 const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
+// Banner label follows the pre-release stage in VERSION.md; final releases show none.
+const releaseStage = siteVersion.match(/-(alpha|beta|rc)\b/)?.[1];
+const releaseLabel = releaseStage === 'rc' ? 'RELEASE CANDIDATE' : releaseStage ? `${releaseStage.toUpperCase()} RELEASE` : null;
 const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@600&display=swap";
 
 interface Props {
@@ -148,9 +151,11 @@ const orgSchema = {
     </script>
   </head>
   <body>
-    <div class="alpha-banner" role="status">
-      <span class="alpha-tag">BETA RELEASE</span>
-    </div>
+    {releaseLabel && (
+      <div class="alpha-banner" role="status">
+        <span class="alpha-tag">{releaseLabel}</span>
+      </div>
+    )}
     {chrome === 'standard' && (
       <Fragment>
         <a href="#main-content" class="skip-nav">Skip to main content</a>

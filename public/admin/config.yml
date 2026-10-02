@@ -37,16 +37,21 @@ collections:
         label: Description
         widget: string
         hint: One sentence, 200 characters max (longer fails the site build).
+        maxlength: 200
       - name: pubDate
         label: Publish date
         widget: datetime
+        type: date
         format: YYYY-MM-DD
-        time_format: false
+        # UTC keeps a date picked in Seattle from saving as the previous day.
+        input_timezone: utc
       - name: updatedDate
         label: Updated date
         widget: datetime
+        type: date
         format: YYYY-MM-DD
-        time_format: false
+        # UTC keeps a date picked in Seattle from saving as the previous day.
+        input_timezone: utc
         required: false
       - { name: author, label: Author, widget: string, default: Brandon Faloona }
       - { name: draft, label: Draft, widget: boolean, default: false }

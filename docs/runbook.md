@@ -19,7 +19,7 @@ Default port: **4321**. Use this port when inspecting changes. Avoid starting du
 Posts live in `src/content/writing/<slug>.md` and publish at `/writing/<slug>`. The schema is the `writing` collection in `src/content.config.ts`. RSS: `/writing/rss.xml`.
 
 **With the CMS (local):** Sveltia CMS, config in `public/admin/config.yml`.
-1. With the dev server running, open http://localhost:4321/admin/index.html in Chrome (the bare `/admin/` path 404s under Astro dev).
+1. With the dev server running, open http://localhost:4321/admin/index.html in a Chromium browser such as Chrome, Edge, or Brave (the bare `/admin/` path 404s under Astro dev). Firefox and Safari cannot use the local-repository mode.
 2. Click **Work with Local Repository** and pick the repo root folder.
 3. Create or edit a post. Files are written straight to disk; nothing is committed.
 4. Review the diff and commit as usual.

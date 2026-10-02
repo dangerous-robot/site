@@ -13,6 +13,8 @@ export async function GET(context: APIContext) {
     site: context.site!,
     // Matches trailingSlash: "never" in astro.config.ts.
     trailingSlash: false,
+    xmlns: { atom: 'http://www.w3.org/2005/Atom' },
+    customData: '<language>en-us</language><atom:link href="https://dangerousrobot.org/writing/rss.xml" rel="self" type="application/rss+xml"/>',
     items: posts.map((post) => ({
       title: post.data.title,
       description: post.data.description,
