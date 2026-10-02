@@ -1,4 +1,4 @@
-1.0.0-beta.2
+1.1.0-alpha.1
 
 Pre-release stages (toward 1.0.0):
 - `alpha.N`: roadmap checklist still has open items; schema may still change.
@@ -13,6 +13,6 @@ Version semantics (post-1.0):
 - Minor: new entity type, new criterion, new phase shipped
 - Patch: content corrections, verdict updates, bug fixes, source additions
 
-Active release: docs/v1.0.0-roadmap.md
-Next release: docs/v1.1.0-roadmap.md
+Active release: docs/v1.1.0-roadmap.md
+Next release: none yet
 Future release plans live at docs/v{semver}.md.

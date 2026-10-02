@@ -227,6 +227,26 @@ summary: Independent safety assessment grading 8 AI companies across 6 domains.
 ---
 ```
 
+## Editorial Collections
+
+Hand-authored content under `src/content/` is defined in the same `src/content.config.ts` but is not part of the research model above: it has no entity, claim, or source references. The `resources` collection is described in [site.md](site.md#content-collections).
+
+### Writing
+
+Blog posts for `/writing`. One Markdown file per post at `src/content/writing/{slug}.md`, loaded by `glob()`; the filename (without `.md`) is the post id and URL slug (`/writing/{slug}`). Posts can be written by hand or through the Sveltia CMS admin, whose `public/admin/config.yml` mirrors this schema.
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `title` | string | yes | |
+| `description` | string | yes | Max 200 characters; longer fails the build. Used in the post list, meta description, and RSS item |
+| `pubDate` | date | yes | Coerced from `YYYY-MM-DD`; sorts the list and feed newest first |
+| `updatedDate` | date | no | Shown in the byline when present |
+| `author` | string | no | Default `Brandon Faloona` |
+| `draft` | boolean | no | Default `false` |
+| `tags` | string[] | no | Default `[]`; free-form (no enum). Emitted as RSS categories |
+
+**Draft behaviour.** Pages read posts through `getPosts()` in `src/lib/writing.ts`: in dev (`astro dev`) drafts are listed and rendered with a "Draft" tag so authors can preview them; in production builds they are filtered out, so no page is generated. The RSS feed (`/writing/rss.xml`) excludes drafts in both dev and production.
+
 ## Build-Time Validation
 
 Astro's content layer validates all frontmatter against the Zod schemas in `src/content.config.ts` during `astro build` and `astro dev`. Invalid frontmatter -- missing required fields, wrong enum values, malformed URLs -- will fail the build with a descriptive error.

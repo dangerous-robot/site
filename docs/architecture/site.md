@@ -1,24 +1,24 @@
 # Site Architecture
 
-Static Astro site that renders structured research content (claims, sources, entities) into GitHub Pages.
+Static Astro site, deployed to GitHub Pages, that publishes writing and editorial guides on AI literacy alongside structured research content (claims, sources, entities).
 
 ## Stack
 
 | Component     | Detail                        |
 |---------------|-------------------------------|
-| Framework     | Astro 6.x (`^6.1.8`)         |
+| Framework     | Astro 6.x (`^6.4.8`)         |
 | Node          | >= 22                         |
 | Output        | Static HTML (default adapter) |
 | Hosting       | GitHub Pages                  |
 | Custom domain | `dangerousrobot.org`          |
 
-Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `js-yaml` (YAML parsing in the `content.config.ts` loaders), and `lucide-astro` (icons). Dev dependencies are `markdownlint-cli2`, `gray-matter`, `tsx` (used by lint and validation scripts), and `@types/js-yaml`.
+Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `@astrojs/rss` (the `/writing` feed), `js-yaml` (YAML parsing in the `content.config.ts` loaders), and `lucide-astro` (icons). Dev dependencies are `markdownlint-cli2`, `gray-matter`, `tsx` (used by lint and validation scripts), and `@types/js-yaml`.
 
 ## Content Collections
 
-The site mixes pipeline-managed research content (under `research/`, outside `src/`) with hand-authored editorial content (under `src/content/resources/`). Astro's content layer loads both via loaders defined in `src/content.config.ts`.
+The site mixes pipeline-managed research content (under `research/`, outside `src/`) with hand-authored editorial content (under `src/content/resources/` and `src/content/writing/`). Astro's content layer loads both via loaders defined in `src/content.config.ts`.
 
-Five collections are defined:
+Six collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
@@ -27,6 +27,7 @@ Five collections are defined:
 | `entities`  | `glob()` from `research/entities`      | name, type (company/product/subject), website, description |
 | `criteria`  | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 | `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
+| `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, draft, tags |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -35,6 +36,8 @@ The `claims` collection uses a custom loader (`claims-with-audit`) that reads ea
 The `criteria` collection uses a `file()` loader, loading all entries from a single YAML file rather than individual Markdown files.
 
 The `resources` collection holds editorial articles for the `/resources/` section (decision tools, comparison articles, reference guides). Its schema is independent of the research collections: it carries a layout discriminator (`article | matrix | guide | tool`), a wallpaper variant, a small resources-scoped `topics` enum (`ai-literacy`, `ai-safety`, `consumer-guide`, `responsible-ai`), and an optional `data` payload that is validated per layout at render time. See AGENTS.md "Editorial content" section for the boundary between `research/` and `src/content/resources/`.
+
+The `writing` collection holds blog posts for `/writing`. Posts are authored by hand or through the Sveltia CMS admin (see [Writing and the admin](#writing-and-the-admin)). Field reference and draft rules are in [content-model.md](content-model.md#writing).
 
 ### Content directory structure
 
@@ -61,6 +64,9 @@ src/content/resources/
   responsible-ai.md
   should-i.md
   turn-off-ai.md
+
+src/content/writing/
+  why-dangerous-robot-exists.md
 ```
 
 Subdirectory structure within each `glob`-loaded collection is flexible -- the loader picks up all `**/*.md` files under the base path. The full relative path (minus extension) becomes the entry's `id`, which drives URL slugs.
@@ -69,15 +75,19 @@ Subdirectory structure within each `glob`-loaded collection is flexible -- the l
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-The site has three top-level URL spaces:
+The site has four top-level URL spaces:
 
-- `/` -- the research-tool landing (claim scatter).
+- `/` -- the homepage: the site's thesis in excerpts, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
+- `/writing/*` -- blog posts, plus an RSS feed.
 - `/research/*` -- the research tool: claims, entities, sources, criteria, taxonomy indexes, plus a `/research/` hub that explains how the tool works (FAQ + explainer).
 - `/resources/*` -- the editorial section: hand-authored articles, comparison matrices, decision tools, and how-to guides.
 
 | Route pattern                  | File                                              | Data source                                 |
 |--------------------------------|---------------------------------------------------|---------------------------------------------|
-| `/`                            | `src/pages/index.astro`                           | `claims` collection                         |
+| `/`                            | `src/pages/index.astro`                           | `claims`, `entities`, `criteria` collections |
+| `/writing`                     | `src/pages/writing/index.astro`                   | `writing` collection (newest first)         |
+| `/writing/[...slug]`           | `src/pages/writing/[...slug].astro`               | `writing` collection                        |
+| `/writing/rss.xml`             | `src/pages/writing/rss.xml.ts`                    | `writing` collection (drafts excluded)      |
 | `/research`                    | `src/pages/research/index.astro`                  | Static explainer + FAQ content              |
 | `/research/claims`             | `src/pages/research/claims/index.astro`           | `claims` collection                         |
 | `/research/claims/[...slug]`   | `src/pages/research/claims/[...slug].astro`       | `claims` collection                         |
@@ -156,6 +166,32 @@ Both decorative layers honor `prefers-reduced-motion` and the site's `[data-moti
 
 Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CREDITS.md` in that directory).
 
+### Homepage
+
+`src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
+
+1. **Hero** -- the "Dangerous Robot" wordmark as a masthead and the headline line "The tools arrived before the lessons."
+2. **Where to start** -- a visible `<nav>` list of seven deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
+3. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
+4. **Trust** -- closing lines from the thesis, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon.
+
+**The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/turn-off-ai`, `/resources/should-i`, `/resources/ai-safety`, `/resources/responsible-ai`, `/research`, `/values`. The `short` labels match the section labels `Base.astro` uses on other pages. The site-wide nav in `Base.astro` does not include Writing; that is intentional.
+
+**The two placed claim cards.** `PREFERRED_EXHIBITS` names one claim id per column (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability` and `subjects/ai-model-producers/ai-producers-existential-score`). If a preferred claim is missing or unpublished (the research pipeline regenerates these files), `pickExhibit()` falls back to the next unused published claim tagged `highlight`, subject claims first, then by id. With no candidate the column renders without a card. Claim titles are bolded with entity names and criteria vocabulary, which is why the page loads the `entities` and `criteria` collections alongside published `claims`.
+
+The thesis text on the page is in the `dangers` array and the markup; it is excerpted, not loaded from the first post. The page also emits a `WebSite` JSON-LD block.
+
+### Writing and the admin
+
+`/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline (author, publish date, optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. The feed is not yet advertised with a `<link rel="alternate">` in `<head>`; `Base.astro` has no head slot for it.
+
+**Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines one `writing` collection mirroring the Zod schema, with media in `public/images/writing`. `robots.txt` disallows `/admin/`.
+
+- **Local-repository workflow (works now).** With the dev server running, open `http://localhost:4321/admin/index.html` in Chrome (the bare `/admin/` path 404s under Astro dev), choose "Work with Local Repository", and pick the repo root. Edits are written to `src/content/writing/` on disk; nothing is committed.
+- **Production login (not set up).** The `github` backend needs the sveltia-cms-auth OAuth worker deployed on Cloudflare Workers and `backend.base_url` set in `config.yml`.
+
+Step-by-step authoring instructions, by CMS or by hand, are in [`docs/runbook.md`](../runbook.md) "Writing posts".
+
 ### How dynamic routes work
 
 Each dynamic route file exports `getStaticPaths()`, which:
@@ -168,7 +204,8 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 ### Cross-linking
 
-- The homepage scatter links each highlighted claim card to `/research/claims/{id}`.
+- The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, four `/resources/*` entries, `/research`, and `/values`.
+- The homepage's closing section links the first post, `/writing/why-dangerous-robot-exists`.
 - Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`).
 - Entity detail pages query published claims and display those whose `entity` field matches.
 
@@ -182,6 +219,10 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 |---------------|----------|----------------------------------------------------------------|
 | `title`       | `string` | Required. Rendered as `{title} - Dangerous Robot` in `<title>` |
 | `description` | `string` | Falls back to a default site description                       |
+| `layout`      | `'reading' \| 'wide' \| 'bare'` | `'reading'` (narrow column). `'bare'` removes width constraints for bespoke pages such as the homepage |
+| `chrome`      | `'standard' \| 'minimal'` | `'standard'` draws the site-wide nav; `'minimal'` leaves navigation to the page (the homepage) |
+| `ogImage`     | `string` | `/dr-logo.png`                                                 |
+| `noindex`     | `boolean` | `false`; `true` emits `noindex,nofollow`                       |
 
 ### Structure
 
@@ -207,7 +248,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 npm run build     # runs `astro build`
 ```
 
-Produces a `dist/` directory containing static HTML, CSS, JS, and assets. There are no framework islands (no `client:` directives). Client-side behavior comes from vanilla `<script>` blocks in a dozen or so components and pages (`FilterBar`, `FacetBar`, `ShouldIDecisionTree`, `TurnOffGuide`, `A11yControl`, the homepage scatter, and others), which Astro bundles as module-scoped scripts.
+Produces a `dist/` directory containing static HTML, CSS, JS, and assets. There are no framework islands (no `client:` directives). Client-side behavior comes from vanilla `<script>` blocks in a dozen or so components and pages (`FilterBar`, `FacetBar`, `ShouldIDecisionTree`, `TurnOffGuide`, `A11yControl`, the homepage hamburger menu, and others), which Astro bundles as module-scoped scripts.
 
 The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which GitHub Pages needs for custom domain routing.
 

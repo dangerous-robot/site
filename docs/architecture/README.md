@@ -4,8 +4,8 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 
 | File | Describes |
 |------|-----------|
-| [site.md](site.md) | Astro stack, page routing, layout, build output, deployment |
-| [content-model.md](content-model.md) | Content types (entities, claims, sources, criteria), Zod schemas, relationships, directory conventions |
+| [site.md](site.md) | Astro stack, page routing, homepage, writing + Sveltia CMS admin, layout, build output, deployment |
+| [content-model.md](content-model.md) | Content types (entities, claims, sources, criteria, plus the editorial `writing` collection), Zod schemas, relationships, directory conventions |
 | [ci-deploy.md](ci-deploy.md) | CI/CD workflows, quality checks, citation validation, npm scripts |
 | [research-workflow.md](research-workflow.md) | Content lifecycle, agent roles, content rules, review cadence, quality gates |
 | [onboarding.md](onboarding.md) | `dr onboard` flow, template screening, checkpoint protocol, company/product relationships |
