@@ -1,6 +1,24 @@
 [tool.uv.workspace]
 members = ["pipeline"]
 
+# Security floors for transitive dependencies with high/critical advisories
+# (pip-audit, 2026-10-02). uv only reads constraint-dependencies from the
+# workspace root, so these cannot live in pipeline/pyproject.toml.
+[tool.uv]
+constraint-dependencies = [
+    "aiohttp>=3.14.3",
+    "anyio>=4.14.2",
+    "cryptography>=50.0.0",
+    "joserfc>=1.6.8",
+    "mcp>=1.28.1",
+    "pyasn1>=0.6.4",
+    "pyjwt>=2.14.0",
+    "python-multipart>=0.0.30",
+    "soupsieve>=2.8.4",
+    "starlette>=1.3.1",
+    "urllib3>=2.8.0",
+]
+
 [tool.pytest.ini_options]
 markers = [
     "acceptance: live end-to-end tests that hit real APIs (requires API keys in .env)",
