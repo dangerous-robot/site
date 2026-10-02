@@ -422,4 +422,17 @@ const resources = defineCollection({
   }),
 });
 
-export const collections = { sources, claims, entities, criteria, resources };
+const writing = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: 'src/content/writing' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().max(200),
+    pubDate: z.coerce.date(),
+    updatedDate: z.coerce.date().optional(),
+    author: z.string().default('Brandon Faloona'),
+    draft: z.boolean().default(false),
+    tags: z.array(z.string()).default([]),
+  }),
+});
+
+export const collections = { sources, claims, entities, criteria, resources, writing };

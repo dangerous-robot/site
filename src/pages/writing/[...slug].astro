@@ -1,0 +1,68 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getPosts, formatPostDate, isoDate, type Post } from '../../lib/writing';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+interface Props { post: Post }
+const { post } = Astro.props;
+const { title, description, author, pubDate, updatedDate, draft } = post.data;
+const { Content } = await render(post);
+---
+<Base title={title} description={description} layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Writing', href: '/writing' },
+      { label: title },
+    ]} />
+    <h1>{title}</h1>
+    <p class="byline">
+      {draft && <span class="draft-tag">Draft</span>}
+      By {author} · <time datetime={isoDate(pubDate)}>{formatPostDate(pubDate)}</time>
+      {updatedDate && <> · Updated <time datetime={isoDate(updatedDate)}>{formatPostDate(updatedDate)}</time></>}
+    </p>
+
+    <div class="post-body">
+      <Content />
+    </div>
+
+    <footer class="post-footer">
+      <a href="/writing">← All writing</a>
+    </footer>
+  </article>
+</Base>
+
+<style>
+  .byline {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-xl);
+  }
+
+  .draft-tag {
+    margin-right: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 0.35em;
+  }
+
+  .post-body :global(h2) {
+    margin-top: var(--space-2xl);
+  }
+
+  .post-footer {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+  }
+</style>

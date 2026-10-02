@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://unpkg.com/@sveltia/cms/schema/sveltia-cms.json
+
+# Local use: open http://localhost:4321/admin/index.html in Chrome (Astro dev
+# does not serve the /admin/ folder index) and click "Work with Local Repository",
+# then pick this repo's root folder. Edits are written to disk; commit them yourself.
+#
+# Production login (TODO): GitHub sign-in needs the Sveltia CMS Authenticator
+# (https://github.com/sveltia/sveltia-cms-auth) deployed as a Cloudflare Worker,
+# with its URL set as backend.base_url below.
+backend:
+  name: github
+  repo: dangerous-robot/site
+  branch: main
+  # base_url: https://<your-sveltia-cms-auth-worker>.workers.dev
+
+media_folder: public/images/writing
+public_folder: /images/writing
+
+# Drop empty optional fields (e.g. updatedDate) instead of writing empty
+# strings, which Astro's content schema would reject.
+output:
+  omit_empty_optional_fields: true
+
+collections:
+  # Mirrors the `writing` collection schema in src/content.config.ts.
+  - name: writing
+    label: Writing
+    label_singular: Post
+    folder: src/content/writing
+    create: true
+    slug: "{{slug}}"
+    extension: md
+    format: frontmatter
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: description
+        label: Description
+        widget: string
+        hint: One sentence, 200 characters max (longer fails the site build).
+      - name: pubDate
+        label: Publish date
+        widget: datetime
+        format: YYYY-MM-DD
+        time_format: false
+      - name: updatedDate
+        label: Updated date
+        widget: datetime
+        format: YYYY-MM-DD
+        time_format: false
+        required: false
+      - { name: author, label: Author, widget: string, default: Brandon Faloona }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: tags, label: Tags, widget: list, required: false }
+      - { name: body, label: Body, widget: markdown }

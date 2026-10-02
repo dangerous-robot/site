@@ -1,0 +1,110 @@
+---
+import Base from '../../layouts/Base.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import { getPosts, formatPostDate, isoDate } from '../../lib/writing';
+
+const posts = await getPosts();
+const lede = 'Posts on avoiding AI, or using it wisely.';
+---
+<Base title="Writing" description={lede} layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Writing' },
+    ]} />
+    <h1>Writing</h1>
+    <p class="lede">{lede}</p>
+
+    {posts.length === 0
+      ? <p class="empty">No posts yet.</p>
+      : <ul class="post-list">
+          {posts.map((post) => (
+            <li>
+              <a href={`/writing/${post.id}`} class="post-item">
+                <span class="post-title">
+                  {post.data.title}
+                  {post.data.draft && <span class="draft-tag">Draft</span>}
+                </span>
+                <time class="post-date" datetime={isoDate(post.data.pubDate)}>{formatPostDate(post.data.pubDate)}</time>
+                <span class="post-desc">{post.data.description}</span>
+              </a>
+            </li>
+          ))}
+        </ul>}
+  </article>
+</Base>
+
+<style>
+  .lede {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-xl);
+  }
+
+  .post-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 2px solid var(--color-accent);
+  }
+
+  .post-list li {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .post-item {
+    display: block;
+    padding: var(--space-md) 0;
+    text-decoration: none;
+  }
+
+  .post-item:hover {
+    text-decoration: none;
+  }
+
+  .post-item:hover .post-title {
+    text-decoration: underline;
+  }
+
+  .post-title {
+    display: block;
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    color: var(--color-accent);
+    margin-bottom: 0.25rem;
+  }
+
+  .post-date {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-xs);
+  }
+
+  .post-desc {
+    display: block;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    line-height: var(--line-height-body);
+  }
+
+  .draft-tag {
+    margin-left: var(--space-sm);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 0.35em;
+    vertical-align: middle;
+  }
+
+  .empty {
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+</style>
