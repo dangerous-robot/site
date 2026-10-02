@@ -104,30 +104,53 @@ const menu = [
 
 /*
  * One exhibit per danger: a published claim whose verdict backs the column's
- * sentence. Preferred ids first; if one is missing or unpublished (the research
- * pipeline regenerates these files), fall back to the next unused highlight
- * claim, subjects first, then by id, so the page never breaks. No claim: no card.
+ * sentence. Order of preference for each column:
+ *   1. published claims tagged `home-familiar` / `home-second` (operator-set),
+ *   2. the preferred id below,
+ *   3. the next unused `highlight` claim, subjects first, then by id.
+ * Tag a FALSE or MIXED claim for a column to show that checking can come out
+ * either way. The research pipeline regenerates claim files, so every step
+ * tolerates missing claims; no candidate means no card.
  */
-const PREFERRED_EXHIBITS = {
+type Column = 'familiar' | 'second';
+type Claim = (typeof allClaims)[number];
+
+const PREFERRED_EXHIBITS: Record<Column, string> = {
   familiar: 'subjects/generative-ai/using-generative-ai-harms-cognitive-ability',
   second: 'subjects/ai-model-producers/ai-producers-existential-score',
 };
+
+const byId = (a: Claim, b: Claim) => a.id.localeCompare(b.id);
+const taggedFor = (col: Column) =>
+  allClaims.filter((c) => c.data.tags.includes(`home-${col}`)).sort(byId);
 
 const highlightPool = allClaims
   .filter((c) => c.data.tags.includes('highlight'))
   .sort(
     (a, b) =>
-      Number(b.id.startsWith('subjects/')) - Number(a.id.startsWith('subjects/')) ||
-      a.id.localeCompare(b.id),
+      Number(b.id.startsWith('subjects/')) - Number(a.id.startsWith('subjects/')) || byId(a, b),
   );
 
+function firstChoice(col: Column, used: Set<string>): Claim | undefined {
+  return (
+    taggedFor(col).find((c) => !used.has(c.id)) ??
+    allClaims.find((c) => c.id === PREFERRED_EXHIBITS[col] && !used.has(c.id)) ??
+    highlightPool.find((c) => !used.has(c.id))
+  );
+}
+
+const picks: Partial<Record<Column, Claim>> = {};
 const usedExhibits = new Set<string>();
-function pickExhibit(preferredId: string) {
-  const claim =
-    allClaims.find((c) => c.id === preferredId && !usedExhibits.has(c.id)) ??
-    highlightPool.find((c) => !usedExhibits.has(c.id));
+for (const col of ['familiar', 'second'] as Column[]) {
+  const claim = firstChoice(col, usedExhibits);
+  if (claim) {
+    picks[col] = claim;
+    usedExhibits.add(claim.id);
+  }
+}
+
+function toExhibit(claim: Claim | undefined) {
   if (!claim) return null;
-  usedExhibits.add(claim.id);
   return {
     verdict: claim.data.verdict as string,
     titleHtml: boldInTitle(claim.data.title, claim.data.entity, claim.data.criteria_slug),
@@ -146,7 +169,7 @@ const dangers = [
       'A chainsaw is dangerous too, but much less so if you learn how it works and practice using it.',
     text:
       'Much of what AI can do to your privacy, your money, your attention or your judgment can be handled the same way.',
-    exhibit: pickExhibit(PREFERRED_EXHIBITS.familiar),
+    exhibit: toExhibit(picks.familiar),
   },
   {
     id: 'second',
@@ -154,7 +177,7 @@ const dangers = [
     quote:
       'The people building these systems say, on the record, that AI will become more capable than we are, and that they do not yet know how to control it.',
     text: 'You cannot train your way out of that.',
-    exhibit: pickExhibit(PREFERRED_EXHIBITS.second),
+    exhibit: toExhibit(picks.second),
   },
 ];
 

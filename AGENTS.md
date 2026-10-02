@@ -92,7 +92,9 @@ Each claim may carry an optional `tags:` array of free-form strings. Tags are op
 
 | Tag | Effect |
 |-----|--------|
-| `highlight` | Claim appears in the homepage scatter |
+| `highlight` | Fallback pool for the homepage claim cards when a column has no tagged or preferred claim |
+| `home-familiar` | Published claim becomes the card under "The familiar kind" on the homepage (overrides the default) |
+| `home-second` | Published claim becomes the card under "The second kind" on the homepage (overrides the default) |
 
 Any other tag is accepted and stored. New behavioral tags should be added to this table when introduced.
 
