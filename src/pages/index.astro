@@ -251,9 +251,12 @@ const websiteSchema = {
         </h2>
 
         <div class="dangers__grid">
-          {dangers.map((d) => (
+          {dangers.map((d, i) => (
             <div class:list={['danger', `danger--${d.id}`]}>
-              <h3 class="danger__kind">{d.kind}</h3>
+              <h3 class="danger__kind">
+                <span class="danger__num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+                {d.kind}
+              </h3>
               <p class="danger__quote">{d.quote}</p>
               <p class="danger__text">{d.text}</p>
 
@@ -530,28 +533,47 @@ const websiteSchema = {
     color: var(--color-text-heading);
     text-wrap: balance;
   }
+  /* One frame, two halves. The columns share row tracks (subgrid), so label,
+     quote, answer and exhibit line up across the seam and read as a pair:
+     the same question, answered twice. */
   .dangers__grid {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: clamp(var(--space-xl), 5vw, 5rem);
+    grid-template-rows: auto auto auto 1fr;
+    border-top: 2px solid var(--color-accent);
+    border-bottom: var(--rule);
   }
 
   .danger {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-md);
+    display: grid;
+    grid-row: span 4;
+    grid-template-rows: subgrid;
+    row-gap: var(--space-md);
+    align-content: start;
     min-width: 0;
+    padding: var(--space-lg) clamp(var(--space-lg), 3vw, 3rem) var(--space-xl) 0;
   }
   .danger--second {
     border-left: var(--rule);
     padding-left: clamp(var(--space-lg), 3vw, 3rem);
+    padding-right: 0;
   }
   .danger__kind {
     margin: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
     font-family: var(--font-body);
     font-size: var(--font-size-base);
     font-weight: 600;
     color: var(--color-text-muted);
+  }
+  .danger__num {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--color-accent);
   }
   .danger__quote {
     margin: 0;
@@ -564,16 +586,24 @@ const websiteSchema = {
     color: var(--color-text-heading);
     text-wrap: pretty;
   }
+  /* The answer line: same treatment in both columns, on the same row, so the
+     eye reads straight across from "can be handled" to "cannot train". */
   .danger__text {
     margin: 0;
     max-width: var(--measure);
-    color: var(--color-text-muted);
+    padding-left: var(--space-md);
+    border-left: 3px solid var(--color-accent);
+    font-weight: 600;
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    line-height: 1.45;
+    color: var(--color-text-heading);
+    align-self: start;
   }
 
-  /* The exhibit sits at the base of its column; margin-top: auto keeps both
-     cards on the same baseline when the columns' text differs in length. */
+  /* The exhibit fills the last shared row and sits at its base, so both cards
+     share a baseline whatever the text above them. */
   .exhibit {
-    margin-top: auto;
+    align-self: end;
     padding-top: var(--space-xl);
     display: flex;
     flex-direction: column;
@@ -856,13 +886,18 @@ const websiteSchema = {
       grid-template-columns: minmax(0, 1fr);
       row-gap: var(--space-2xl);
     }
+    .dangers__grid { grid-template-rows: none; }
+    .danger {
+      grid-row: auto;
+      grid-template-rows: none;
+      padding-right: 0;
+    }
+    /* Stacked, the second half opens with the same accent rule as the first. */
     .danger--second {
       border-left: none;
       padding-left: 0;
-      border-top: var(--rule);
-      padding-top: var(--space-xl);
+      border-top: 2px solid var(--color-accent);
     }
-    .exhibit { margin-top: 0; }
     .trust__inner { grid-template-columns: minmax(0, 1fr); }
     .trust__aside { justify-content: flex-start; }
   }

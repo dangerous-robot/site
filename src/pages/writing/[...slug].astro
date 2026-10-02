@@ -55,6 +55,12 @@ const { Content } = await render(post);
     padding: 0 0.35em;
   }
 
+  /* Long-form measure: the shared reading column runs ~90 characters a line
+     at desktop widths; cap post text near 70. */
+  .post-body {
+    max-width: 36rem;
+  }
+
   .post-body :global(h2) {
     margin-top: var(--space-2xl);
   }
