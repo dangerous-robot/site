@@ -15,21 +15,6 @@ for (const c of allCriteria) {
   }
 }
 
-const navLinks = [
-  { href: '/research',  label: 'Research' },
-  { href: '/resources', label: 'Resources' },
-];
-
-const subjectHighlights = allClaims
-  .filter((c) => c.data.tags.includes('highlight') && c.id.startsWith('subjects/'))
-  .sort((a, b) => a.id.localeCompare(b.id));
-
-const otherHighlights = allClaims
-  .filter((c) => c.data.tags.includes('highlight') && !c.id.startsWith('subjects/'))
-  .sort((a, b) => a.id.localeCompare(b.id));
-
-const otherSlots = Math.max(0, 5 - subjectHighlights.length);
-
 // Build entity name lookup for bolding entity names in claim titles.
 const entityNameMap = new Map<string, { name: string; aliases: string[] }>();
 for (const e of entities) {
@@ -38,7 +23,6 @@ for (const e of entities) {
 
 function boldInTitle(title: string, entityId: string, criteriaSlug?: string): string {
   let result = title;
-  // Entity name and aliases
   const entry = entityNameMap.get(entityId);
   if (entry) {
     for (const term of [entry.name, ...entry.aliases]) {
@@ -46,7 +30,7 @@ function boldInTitle(title: string, entityId: string, criteriaSlug?: string): st
       result = result.replace(new RegExp(`(${escaped})`, 'gi'), '<strong>$1</strong>');
     }
   }
-  // Criteria vocabulary terms (hyphenated terms also match with spaces)
+  // Criteria vocabulary terms (hyphenated terms also match with spaces).
   const vocabTerms = criteriaSlug ? criteriaVocab.get(criteriaSlug) : undefined;
   if (vocabTerms) {
     for (const term of vocabTerms) {
@@ -57,326 +41,704 @@ function boldInTitle(title: string, entityId: string, criteriaSlug?: string): st
   return result;
 }
 
-// Subject card(s) first so the wedge generator anchors them at the cluster center.
-const scatterItems = [
-  ...subjectHighlights.map((c) => ({
-    verdict: c.data.verdict as string,
-    title: c.data.title as string,
-    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
-    href: `/research/claims/${c.id}`,
-    isSubject: true,
-  })),
-  ...otherHighlights.slice(0, otherSlots).map((c) => ({
-    verdict: c.data.verdict as string,
-    title: c.data.title as string,
-    titleHtml: boldInTitle(c.data.title, c.data.entity, c.data.criteria_slug),
-    href: `/research/claims/${c.id}`,
-    isSubject: false,
-  })),
-];
-
-const fmtVerdict = (v: string) => VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
-
-const websiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "Dangerous Robot",
-  "url": "https://dangerousrobot.org",
-  "description": "Dangerous Robot is a structured research hub tracking AI company environmental and safety claims. Built for journalists, researchers, and policy teams.",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "https://dangerousrobot.org/research/claims?q={search_term_string}",
-    },
-    "query-input": "required name=search_term_string",
-  },
-};
-
-function rnd(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
+const fmtVerdict = (v: string) =>
+  VERDICT_LABELS[v as Verdict]?.toUpperCase() ?? v.replace(/-/g, ' ').toUpperCase();
 
 /*
- * Wedge-polar scatter: card 0 anchors near the cluster center; cards 1–4
- * sit in four 90° wedges (upper-right, upper-left, lower-left, lower-right)
- * with random radius and angle jitter. Two cards land in the mid band, two
- * in the outer band. Y-component is squashed so the cluster reads wider
- * than tall — keeps the "horizontal preference" the design calls for.
- *
- * Z-order is assigned after placement: visually-lower cards (larger y)
- * render in front so any overlap covers the lower card's body, never its
- * top-edge verdict label. Subject cards always sit on top.
- *
- * After placement, a collision pass nudges any card whose body would cover
- * a different card's verdict region (top-left 90×43px).
+ * The homepage menu. One array, rendered twice: the visible "Where to start"
+ * list (label + note) and the hamburger dropdown (short label). The short
+ * labels match the section labels Base.astro uses on every other page, so
+ * the dropdown here and the site nav elsewhere name the same pages the same
+ * way. Destinations are fixed; labels are editorial.
  */
-const CARD_W = 290;
-const CARD_H = 174;
-const VERDICT_W = 95;
-const VERDICT_H = 43;
-const Y_SQUASH = 0.55;
+const menu = [
+  {
+    href: '/writing',
+    label: 'Writing',
+    short: 'Writing',
+    note: 'New posts on avoiding AI, or using it wisely.',
+  },
+  {
+    href: '/resources/turn-off-ai',
+    label: 'Turn off the AI you didn’t ask for',
+    short: 'Turn off AI',
+    note: 'Meta AI, Google AI Overviews, Copilot: how to switch them off.',
+  },
+  {
+    href: '/resources/should-i',
+    label: 'Should I use AI for this?',
+    short: 'Should I use AI?',
+    note: 'A few questions worth asking before you hand a task over.',
+  },
+  {
+    href: '/resources/ai-safety',
+    label: 'How AI companies score on safety',
+    short: 'AI Safety Index',
+    note: 'The Future of Life Institute’s index: the best grade is a C+.',
+  },
+  {
+    href: '/resources/responsible-ai',
+    label: 'Which chatbots behave responsibly',
+    short: 'Responsible AI',
+    note: 'GreenPT, Ecosia AI, Euria and others compared on privacy, environment and transparency.',
+  },
+  {
+    href: '/research',
+    label: 'Company claims, checked',
+    short: 'Research',
+    note: 'Verdicts on what AI companies say about safety and the environment, each with its sources.',
+  },
+  {
+    href: '/values',
+    label: 'What this site stands for',
+    short: 'Values',
+    note: 'The editorial position, uncited and plainly stated.',
+  },
+];
 
-type Pos = { x: number; y: number; rotate: number; z: number };
+/*
+ * One exhibit per danger: a published claim whose verdict backs the column's
+ * sentence. Preferred ids first; if one is missing or unpublished (the research
+ * pipeline regenerates these files), fall back to the next unused highlight
+ * claim, subjects first, then by id, so the page never breaks. No claim: no card.
+ */
+const PREFERRED_EXHIBITS = {
+  familiar: 'subjects/generative-ai/using-generative-ai-harms-cognitive-ability',
+  second: 'subjects/ai-model-producers/ai-producers-existential-score',
+};
 
-function drawPosition(slot: number): { x: number; y: number; rotate: number } {
-  if (slot === 0) {
-    const r = rnd(0, 35);
-    const a = rnd(0, 2 * Math.PI);
-    return { x: Math.cos(a) * r, y: Math.sin(a) * r * Y_SQUASH, rotate: rnd(-13, 13) };
-  }
-  // Wedges anchored at 45°, 135°, 225°, 315° with ±22.5° jitter.
-  const wedgeCenters = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Math.PI) / 4];
-  const radiusBands: Array<[number, number]> = [
-    [140, 210], // slot 1 — mid
-    [140, 210], // slot 2 — mid
-    [235, 315], // slot 3 — outer
-    [235, 315], // slot 4 — outer
-  ];
-  const a = wedgeCenters[slot - 1] + rnd(-Math.PI / 8, Math.PI / 8);
-  const [rMin, rMax] = radiusBands[slot - 1];
-  const r = rnd(rMin, rMax);
-  return { x: Math.cos(a) * r, y: Math.sin(a) * r * Y_SQUASH, rotate: rnd(-13, 13) };
-}
+const highlightPool = allClaims
+  .filter((c) => c.data.tags.includes('highlight'))
+  .sort(
+    (a, b) =>
+      Number(b.id.startsWith('subjects/')) - Number(a.id.startsWith('subjects/')) ||
+      a.id.localeCompare(b.id),
+  );
 
-function verdictOccluded(positions: Array<{ x: number; y: number }>, victim: number): boolean {
-  const v = positions[victim];
-  const vBox = {
-    left: v.x - CARD_W / 2,
-    right: v.x - CARD_W / 2 + VERDICT_W,
-    top: v.y - CARD_H / 2,
-    bottom: v.y - CARD_H / 2 + VERDICT_H,
+const usedExhibits = new Set<string>();
+function pickExhibit(preferredId: string) {
+  const claim =
+    allClaims.find((c) => c.id === preferredId && !usedExhibits.has(c.id)) ??
+    highlightPool.find((c) => !usedExhibits.has(c.id));
+  if (!claim) return null;
+  usedExhibits.add(claim.id);
+  return {
+    verdict: claim.data.verdict as string,
+    titleHtml: boldInTitle(claim.data.title, claim.data.entity, claim.data.criteria_slug),
+    href: `/research/claims/${claim.id}`,
   };
-  for (let j = 0; j < positions.length; j++) {
-    if (j === victim) continue;
-    // Only a problem if j renders in front of victim. Visually-lower (larger y)
-    // ends up on top after z-assignment; victim 0 (subject) always wins.
-    if (victim === 0) continue;
-    if (positions[j].y <= v.y) continue;
-    const p = positions[j];
-    const pBox = { left: p.x - CARD_W / 2, right: p.x + CARD_W / 2, top: p.y - CARD_H / 2, bottom: p.y + CARD_H / 2 };
-    if (pBox.right < vBox.left || pBox.left > vBox.right) continue;
-    if (pBox.bottom < vBox.top || pBox.top > vBox.bottom) continue;
-    return true;
-  }
-  return false;
 }
 
-const SLOT_COUNT = 5;
-const rawPositions: Array<{ x: number; y: number; rotate: number }> = [];
-for (let i = 0; i < SLOT_COUNT; i++) rawPositions.push(drawPosition(i));
+// The thesis's own split, one column each. Quotes are thesis sentences; each
+// text line is one shortened sentence so the page quotes the thesis without
+// reprinting it (about 150 of its 420 words appear on the page).
+const dangers = [
+  {
+    id: 'familiar',
+    kind: 'The familiar kind',
+    quote:
+      'A chainsaw is dangerous too, but much less so if you learn how it works and practice using it.',
+    text:
+      'Much of what AI can do to your privacy, your money, your attention or your judgment can be handled the same way.',
+    exhibit: pickExhibit(PREFERRED_EXHIBITS.familiar),
+  },
+  {
+    id: 'second',
+    kind: 'The second kind',
+    quote:
+      'The people building these systems say, on the record, that AI will become more capable than we are, and that they do not yet know how to control it.',
+    text: 'You cannot train your way out of that.',
+    exhibit: pickExhibit(PREFERRED_EXHIBITS.second),
+  },
+];
 
-for (let attempt = 0; attempt < 12; attempt++) {
-  let anyCollision = false;
-  for (let i = 0; i < SLOT_COUNT; i++) {
-    if (verdictOccluded(rawPositions, i)) {
-      anyCollision = true;
-      // Redraw the offending front-card: pick the lowest-positioned culprit and re-roll its slot.
-      let worst = -1;
-      for (let j = 0; j < SLOT_COUNT; j++) {
-        if (j === i) continue;
-        if (rawPositions[j].y > rawPositions[i].y) {
-          if (worst === -1 || rawPositions[j].y > rawPositions[worst].y) worst = j;
-        }
-      }
-      if (worst >= 0) rawPositions[worst] = drawPosition(worst);
-    }
-  }
-  if (!anyCollision) break;
-}
+const pageDescription =
+  'The danger of AI in plain sight, with evidence you can check: writing and guides on avoiding AI or using it wisely, safety scores for the companies building it, and company claims checked against sources.';
 
-// Z-order: visually lower (larger y) = closer to viewer.
-const sorted = rawPositions
-  .map((p, i) => ({ i, y: p.y }))
-  .sort((a, b) => a.y - b.y);
-const zRank = new Array<number>(SLOT_COUNT);
-sorted.forEach((entry, rank) => {
-  zRank[entry.i] = 2 + rank;
-});
-
-const cardPositions: Pos[] = rawPositions.map((p, i) => ({
-  x: Math.round(p.x),
-  y: Math.round(p.y),
-  rotate: +p.rotate.toFixed(1),
-  z: zRank[i],
-}));
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Dangerous Robot',
+  url: 'https://dangerousrobot.org',
+  description: pageDescription,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://dangerousrobot.org/research/claims?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
 ---
 
-<Base title="AI Transparency Research" chrome="minimal" layout="bare">
-  <section class="hero" aria-labelledby="hero-title">
-    <div class="hero-logo-wrap" id="hero-logo-wrap" aria-hidden="true">
-      <img src="/dr-logo.png" alt="" class="hero-logo hero-logo--base" id="hero-logo" />
-      <img src="/dr-logo.png" alt="" class="hero-logo hero-logo--ghost" />
-    </div>
+<Base title="Avoid AI, or use it wisely" description={pageDescription} chrome="minimal" layout="bare">
+  <a href="#start" class="skip-nav">Skip to where to start</a>
 
-    <div class="hero-scan" aria-hidden="true"></div>
+  <button
+    class="hero-burger"
+    id="hero-burger"
+    type="button"
+    aria-label="Open navigation"
+    aria-expanded="false"
+    aria-controls="hero-nav"
+  >
+    <span class="hero-burger__bars" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </span>
+    <span class="hero-burger__close" aria-hidden="true">
+      <span></span><span></span>
+    </span>
+  </button>
 
-    <button
-      class="hero-burger"
-      id="hero-burger"
-      type="button"
-      aria-label="Open navigation"
-      aria-expanded="false"
-      aria-controls="hero-nav"
-    >
-      <span class="hero-burger__bars" aria-hidden="true">
-        <span></span><span></span><span></span>
-      </span>
-      <span class="hero-burger__close" aria-hidden="true">
-        <span></span><span></span>
-      </span>
-    </button>
+  <nav class="hero-nav" id="hero-nav" aria-label="Site navigation" hidden>
+    <ul class="hero-nav__list" role="list">
+      {menu.map((m) => (
+        <li><a href={m.href}>{m.short}</a></li>
+      ))}
+    </ul>
+  </nav>
 
-    <div class="hero-body">
-      <header class="hero-head">
-        <p class="hero-meta" aria-hidden="true">
-          <span>DR</span>
-          <span class="hero-meta__dot">&middot;</span>
-          <span>vol.001</span>
-          <span class="hero-meta__dot">&middot;</span>
-          <span>a transparency index</span>
-        </p>
+  <div class="home">
+    <!-- Hero: wordmark as a masthead, the thesis's six-word line as the headline. -->
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-logo-wrap" aria-hidden="true">
+        <img src="/dr-logo.png" alt="" class="hero-logo" />
+      </div>
 
+      <div class="hero-inner">
         <h1 class="hero-title" id="hero-title">
           <span class="hero-title__row">
             <span class="hero-title__word" data-text="Dangerous">Dangerous</span>
           </span>
           <span class="hero-title__row hero-title__row--indent">
-            <span class="hero-title__word hero-title__word--italic" data-text="Robot">Robot</span>
+            <span class="hero-title__word hero-title__word--robot" data-text="Robot">Robot</span>
           </span>
         </h1>
 
-        <p class="hero-tag">
-          AI Through a Critical Human Lens
-        </p>
-      </header>
-
-      <div class="claim-scatter" aria-label="Sample claims from the archive">
-        {scatterItems.map((c, i) => {
-          const p = cardPositions[i];
-          return (
-            <a
-              class="claim-card"
-              href={c.href}
-              style={`--pos-x:${p.x}px;--pos-y:${p.y}px;--pos-rotate:${p.rotate}deg;--pos-z:${c.isSubject ? 12 : p.z}`}
-            >
-              <span class="claim-card__header">
-                <span class={`claim-card__verdict claim-card__verdict--${c.verdict}`}>{fmtVerdict(c.verdict)}</span>
-              </span>
-              <span class="claim-card__body" set:html={c.titleHtml} />
-            </a>
-          );
-        })}
+        <p class="hero-line">The tools arrived before the lessons.</p>
       </div>
-    </div>
+    </section>
 
-  </section>
+    <!-- The visible menu: all seven destinations in one list, above the fold at 1440x900. -->
+    <nav class="start" id="start" aria-labelledby="start-title" tabindex="-1">
+      <div class="start__inner">
+        <h2 class="start__title" id="start-title">Where to start</h2>
+        <ul class="menu" role="list">
+          {menu.map((m) => (
+            <li class="menu__item">
+              <a class="menu__link" href={m.href}>
+                <span class="menu__label">{m.label}</span>
+                <span class="menu__note">{m.note}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </nav>
 
-  <nav
-    class="hero-nav"
-    id="hero-nav"
-    aria-label="Site navigation"
-    hidden
-  >
-    <ul class="hero-nav__list" role="list">
-      {navLinks.map((l) => (
-        <li>
-          <a href={l.href}>{l.label}</a>
-        </li>
-      ))}
-    </ul>
-  </nav>
+    <!-- The two dangers: the argument, with one checked claim at the base of each column. -->
+    <section class="dangers" aria-labelledby="dangers-title">
+      <div class="dangers__inner">
+        <h2 class="dangers__title" id="dangers-title">
+          AI is a dangerous tool, but we keep using it because it is useful.
+        </h2>
+
+        <div class="dangers__grid">
+          {dangers.map((d) => (
+            <div class:list={['danger', `danger--${d.id}`]}>
+              <h3 class="danger__kind">{d.kind}</h3>
+              <p class="danger__quote">{d.quote}</p>
+              <p class="danger__text">{d.text}</p>
+
+              {d.exhibit && (
+                <div class="exhibit">
+                  <p class="exhibit__caption">From the research archive</p>
+                  <a class="claim-card" href={d.exhibit.href}>
+                    <span class="claim-card__header">
+                      <span class={`claim-card__verdict claim-card__verdict--${d.exhibit.verdict}`}>
+                        {fmtVerdict(d.exhibit.verdict)}
+                      </span>
+                    </span>
+                    <span class="claim-card__body" set:html={d.exhibit.titleHtml} />
+                  </a>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust: where the two columns meet, the full statement, and the colophon. -->
+    <section class="trust" aria-labelledby="trust-title">
+      <div class="trust__inner">
+        <div class="trust__body">
+          <h2 class="trust__title" id="trust-title">Both kinds of danger come down to trust.</h2>
+          <p class="trust__quote">Trust should be earned. Right now it is being decided for you.</p>
+          <p class="trust__text">Choices add up to market pressure. Voices add up to policy.</p>
+        </div>
+
+        <div class="trust__aside">
+          <a class="menu__link menu__link--statement" href="/writing/why-dangerous-robot-exists">
+            <span class="menu__label">Why Dangerous Robot exists</span>
+            <span class="menu__note">The full statement, in one piece.</span>
+          </a>
+          <p class="trust__colophon">
+            This site is built with the help of AI. Every claim on it has a source, and a
+            person who stands behind it.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+
   <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
 </Base>
 
 <style>
-  .hero {
-    position: relative;
-    min-height: 100vh;
-    min-height: 100svh;
-    overflow: hidden;
-    padding: clamp(var(--space-lg), 4vw, var(--space-2xl));
-    padding-top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px);
-    padding-bottom: clamp(var(--space-2xl), 10vh, 5rem);
-    display: flex;
-    flex-direction: column;
-    gap: clamp(var(--space-sm), 1.5vh, var(--space-md));
+  /* =========================================================
+     Page frame. Base's bare layout gives no gutters or max width.
+     ========================================================= */
+  .home {
+    --gutter: clamp(var(--space-md), 4vw, var(--space-2xl));
+    --page-max: 88rem;
+    --measure: 36rem;
+    --rule: 1px solid var(--color-border);
     isolation: isolate;
   }
 
-  /* -------- oversized logo (wrap + ghost)
-     Sized and positioned entirely in vh so horizontal viewport changes
-     never move the logo vertically. -------- */
+  /* Page-level skip link: Base renders none in minimal chrome, and the burger
+     lives inside <main>, so the target is the menu, not #main-content. */
+  .skip-nav {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 500;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-accent);
+    color: var(--color-bg);
+    font-family: var(--font-mono);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    border-radius: 0 0 var(--radius-sm) 0;
+  }
+  .skip-nav:focus { left: 0; }
+
+  /* =========================================================
+     Hero
+     ========================================================= */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 18px) var(--gutter)
+      clamp(var(--space-lg), 3vh, var(--space-xl));
+  }
+
+  /* The robot, as a static watermark off the hero's right edge. Clipped by
+     .hero so it never widens the page. */
   .hero-logo-wrap {
     position: absolute;
-    left: -18vh;
-    bottom: calc(-3vh - 0.4em);
-    width: 98vh;
-    height: 98vh;
-    pointer-events: none;
-    z-index: 0;
+    top: -2rem;
+    right: -2rem;
+    width: clamp(240px, 32vw, 500px);
+    aspect-ratio: 1;
     transform: rotate(-8deg);
-    transform-origin: 50% 50%;
-  }
-  @media (max-width: 680px) {
-    .hero-logo-wrap {
-      left: 0;
-      width: min(125vh, 100vw);
-      height: min(125vh, 100vw);
-      bottom: 20vh;
-    }
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
   }
   .hero-logo {
-    position: absolute;
-    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
-    user-select: none;
     max-width: none;
-    max-height: none;
-    will-change: transform, opacity;
-    transition: opacity 700ms ease;
+    opacity: 0.14;
   }
-  .hero-logo--base { opacity: 0.2; }
-  .hero-logo--ghost { opacity: 0; transition: none; }
+  :global([data-theme="dark"]) .hero-logo { filter: invert(1) brightness(0.92); }
+  :global([data-theme="light"]) .hero-logo { filter: none; opacity: 0.1; }
 
-  /* Base logo: fully themed. Ghost: rendered at a grey mid-tone so
-     its flash never reads as a stark black-or-white shape. */
-  :global([data-theme="light"]) .hero-logo--base { filter: none; opacity: 0.18; }
-  :global([data-theme="dark"])  .hero-logo--base { filter: invert(1) brightness(0.92); }
-  :global([data-theme="light"]) .hero-logo--ghost { filter: invert(1) brightness(0.65); }
-  :global([data-theme="dark"])  .hero-logo--ghost { filter: invert(1) brightness(0.35); }
-
-  .hero-logo--base.is-dimmed { opacity: 0.14; }
-  :global([data-theme="light"]) .hero-logo--base.is-dimmed { opacity: 0.08; }
-
-  /* -------- scanlines -------- */
-  .hero-scan {
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 3px,
-      rgba(255, 255, 255, 0.015) 3px,
-      rgba(255, 255, 255, 0.015) 4px
-    );
-    pointer-events: none;
+  .hero-inner {
+    position: relative;
     z-index: 1;
-    mix-blend-mode: overlay;
-  }
-  :global([data-theme="light"]) .hero-scan {
-    background: repeating-linear-gradient(
-      0deg,
-      transparent 0,
-      transparent 3px,
-      rgba(0, 0, 0, 0.02) 3px,
-      rgba(0, 0, 0, 0.02) 4px
-    );
+    max-width: var(--page-max);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(var(--space-md), 2vh, var(--space-lg));
   }
 
-  /* -------- hamburger (plain div bars — no SVG, no currentColor quirks) -------- */
+  /* Wordmark, reduced to a masthead so the line below it is the headline. */
+  .hero-title {
+    margin: 0;
+    font-family: var(--font-wordmark);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-heading);
+    display: flex;
+    flex-direction: column;
+    gap: 0.05em;
+    max-width: 100%;
+  }
+  .hero-title__row {
+    display: flex;
+    align-items: baseline;
+    white-space: nowrap;
+  }
+  .hero-title__row--indent { padding-left: 0.55em; }
+  .hero-title__word {
+    display: inline-block;
+    position: relative;
+    font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.15;
+    will-change: transform;
+  }
+  .hero-title__word--robot {
+    font-weight: 800;
+    color: var(--color-text);
+    padding-bottom: 0.14em;
+  }
+  .hero-title__word--robot::after {
+    content: '';
+    position: absolute;
+    left: 0.14em;
+    bottom: 0;
+    width: 0.52em;
+    height: 0.05em;
+    background: var(--color-accent);
+  }
+
+  /* The one bold spend on the page. Two lines on a wide screen:
+     "The tools arrived / before the lessons." Floor checked at 390px with a
+     20px root (42px): "arrived before" still fits one line. The cap keeps the
+     hero short enough for the menu to start on screen at 1440x900. */
+  .hero-line {
+    margin: 0;
+    max-width: 20ch;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(2.1rem, 7vw, 5.5rem);
+    line-height: 0.98;
+    letter-spacing: -0.02em;
+    color: var(--color-text-heading);
+    text-wrap: balance;
+  }
+
+  /* =========================================================
+     Where to start: the visible menu
+     ========================================================= */
+  .start {
+    padding: clamp(var(--space-lg), 3vh, var(--space-xl)) var(--gutter)
+      clamp(var(--space-xl), 5vh, var(--space-2xl));
+    border-top: 2px solid var(--color-accent);
+  }
+  .start:focus { outline: none; }
+  .start__inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+  }
+  .start__title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+
+  /* One link treatment for every destination on the page. */
+  .menu {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: var(--rule);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .menu__item { border-bottom: var(--rule); }
+
+  .menu__link {
+    display: block;
+    padding: var(--space-sm) 0 var(--space-md);
+    text-decoration: none;
+    color: var(--color-text);
+  }
+  .menu__label {
+    display: block;
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--color-accent);
+  }
+  .menu__note {
+    display: block;
+    margin-top: 0.2em;
+    max-width: 64ch;
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+    color: var(--color-text-muted);
+  }
+  .menu__link:hover { text-decoration: none; }
+  .menu__link:hover .menu__label {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
+  }
+  .menu__link:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Two columns, filled column-first (1–4 left, 5–7 right), so the list reads
+     top to bottom like a contents page rather than across rows. */
+  @media (min-width: 761px) {
+    .menu {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(4, auto);
+      grid-auto-flow: column;
+      column-gap: clamp(var(--space-xl), 5vw, 5rem);
+    }
+  }
+
+  /* =========================================================
+     The two dangers
+     ========================================================= */
+  .dangers {
+    padding: clamp(var(--space-xl), 5vh, var(--space-2xl)) var(--gutter);
+    border-top: var(--rule);
+  }
+  .dangers__inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+  }
+  .dangers__title {
+    margin: 0 0 clamp(var(--space-xl), 5vh, var(--space-2xl));
+    max-width: 24ch;
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+    line-height: 1.2;
+    color: var(--color-text-heading);
+    text-wrap: balance;
+  }
+  .dangers__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: clamp(var(--space-xl), 5vw, 5rem);
+  }
+
+  .danger {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    min-width: 0;
+  }
+  .danger--second {
+    border-left: var(--rule);
+    padding-left: clamp(var(--space-lg), 3vw, 3rem);
+  }
+  .danger__kind {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+  .danger__quote {
+    margin: 0;
+    max-width: var(--measure);
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+    line-height: 1.3;
+    color: var(--color-text-heading);
+    text-wrap: pretty;
+  }
+  .danger__text {
+    margin: 0;
+    max-width: var(--measure);
+    color: var(--color-text-muted);
+  }
+
+  /* The exhibit sits at the base of its column; margin-top: auto keeps both
+     cards on the same baseline when the columns' text differs in length. */
+  .exhibit {
+    margin-top: auto;
+    padding-top: var(--space-xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .exhibit__caption {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* =========================================================
+     Claim card: the site's index card, placed, not scattered.
+     Paper stays cream in both themes; it is a physical object.
+     ========================================================= */
+  .claim-card {
+    width: min(290px, 100%);
+    aspect-ratio: 5 / 3; /* landscape index card, ~174px tall */
+    display: flex;
+    flex-direction: column;
+    padding: 0 14px;
+    margin: var(--space-xs) 0 var(--space-sm);
+    overflow: hidden;
+    /*
+     * Layered background:
+     * 1. Cream mask (0–43px) + single red rule at 43px
+     * 2. Ruled lines every 26px, phased so the first lands at 43px
+     * 3. Cream base
+     */
+    background:
+      linear-gradient(to bottom, #f8f5ea 43px, rgba(176, 22, 22, 0.6) 43px, rgba(176, 22, 22, 0.6) 44px, transparent 44px),
+      repeating-linear-gradient(transparent 0, transparent 25px, rgba(28, 18, 12, 0.14) 25px, rgba(28, 18, 12, 0.14) 26px),
+      #f8f5ea;
+    background-size: auto, 100% 26px, auto;
+    background-position: 0 0, 0 18px, 0 0;
+    background-repeat: no-repeat, repeat, no-repeat;
+    border: 1px solid rgba(0, 0, 0, 0.09);
+    border-radius: 2px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.08),
+      0 6px 18px rgba(0, 0, 0, 0.1);
+    color: #2a2520;
+    text-decoration: none;
+    transform: rotate(var(--tilt, 0deg));
+    transform-origin: 50% 50%;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .danger--familiar .claim-card { --tilt: -2deg; }
+  .danger--second .claim-card { --tilt: 1.5deg; }
+  /* Cream on the light page background needs a firmer edge to read as paper. */
+  :global([data-theme="light"]) .claim-card { border-color: rgba(40, 30, 20, 0.22); }
+  :global([data-theme="dark"]) .claim-card {
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.5),
+      0 10px 28px rgba(0, 0, 0, 0.55);
+  }
+  .claim-card:hover {
+    text-decoration: none;
+    transform: rotate(var(--tilt, 0deg)) translateY(-4px);
+  }
+  .claim-card:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+  }
+
+  .claim-card__header {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .claim-card__verdict {
+    display: inline-flex;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border: 2px solid currentColor;
+    border-radius: 3px;
+    padding: 0.1em 0.35em;
+    line-height: 1;
+  }
+  /* Verdict colours tuned for the cream card, not the page theme. */
+  .claim-card__verdict--true           { color: #0b8c42; }
+  .claim-card__verdict--mostly-true    { color: #2da862; }
+  .claim-card__verdict--mixed          { color: #cc7800; }
+  .claim-card__verdict--mostly-false   { color: #dd3f2f; }
+  .claim-card__verdict--false          { color: #c81010; }
+  .claim-card__verdict--unverified     { color: #6060a0; }
+  .claim-card__verdict--not-applicable { color: #888899; }
+
+  .claim-card__body {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 500;
+    line-height: 26px; /* matches the ruled lines */
+    color: #2a2520;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .claim-card__body :global(strong) { font-weight: 700; }
+
+  /* =========================================================
+     Trust: where the two columns meet
+     ========================================================= */
+  .trust {
+    background: var(--color-surface);
+    border-top: 2px solid var(--color-accent);
+    padding: var(--space-2xl) var(--gutter) calc(var(--space-2xl) + var(--space-lg));
+  }
+  .trust__inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(16rem, 5fr);
+    column-gap: clamp(var(--space-xl), 5vw, 5rem);
+    row-gap: var(--space-xl);
+  }
+  .trust__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+  .trust__title {
+    margin: 0;
+    font-family: var(--font-heading);
+    font-weight: 400;
+    font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+    line-height: 1.25;
+    color: var(--color-text-heading);
+  }
+  .trust__quote {
+    margin: 0;
+    max-width: var(--measure);
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: clamp(1.2rem, 1.8vw, 1.5rem);
+    line-height: 1.35;
+    color: var(--color-text);
+  }
+  .trust__text {
+    margin: 0;
+    max-width: var(--measure);
+    color: var(--color-text-muted);
+  }
+  .trust__aside {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--space-lg);
+  }
+  .menu__link--statement {
+    border-top: var(--rule);
+    border-bottom: var(--rule);
+  }
+  .trust__colophon {
+    margin: 0;
+    max-width: 44ch;
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+    color: var(--color-text-faint);
+  }
+
+  /* =========================================================
+     Hamburger + dropdown. Fixed: on a scrolling page with no site
+     nav bar, this is the only navigation chrome, so it stays put.
+     ========================================================= */
   .hero-burger {
     position: fixed;
     top: clamp(var(--space-md), 2.2vw, var(--space-lg));
@@ -395,9 +757,7 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     box-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
     transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
   }
-  :global([data-theme="light"]) .hero-burger {
-    box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08);
-  }
+  :global([data-theme="light"]) .hero-burger { box-shadow: 0 1px 10px rgba(0, 0, 0, 0.08); }
   .hero-burger:hover { border-color: var(--color-accent); color: var(--color-accent); }
   .hero-burger:focus-visible {
     outline: 2px solid var(--color-accent);
@@ -425,7 +785,6 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
   .hero-burger__bars > span:nth-child(1) { top: 0; }
   .hero-burger__bars > span:nth-child(2) { top: 50%; transform: translateY(-50%); }
   .hero-burger__bars > span:nth-child(3) { bottom: 0; }
-
   .hero-burger__close { opacity: 0; }
   .hero-burger__close > span {
     display: block;
@@ -439,245 +798,9 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
   }
   .hero-burger__close > span:nth-child(1) { transform: translateY(-50%) rotate(45deg); }
   .hero-burger__close > span:nth-child(2) { transform: translateY(-50%) rotate(-45deg); }
-
   .hero-burger[aria-expanded="true"] .hero-burger__bars { opacity: 0; }
   .hero-burger[aria-expanded="true"] .hero-burger__close { opacity: 1; }
 
-  /* -------- hero body: wordmark left, scatter right -------- */
-  .hero-body {
-    display: grid;
-    grid-template-columns: clamp(300px, 38%, 500px) 1fr;
-    align-items: start;
-    flex: 1;
-    position: relative;
-    z-index: 3;
-  }
-
-  /* -------- hero header -------- */
-  .hero-head {
-    position: relative;
-    z-index: 5; /* renders above scatter cards as they slide under */
-    display: flex;
-    flex-direction: column;
-    gap: clamp(var(--space-md), 2vh, var(--space-lg));
-    padding-right: var(--space-lg);
-  }
-
-  .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5em;
-    margin: 0;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    letter-spacing: 0.26em;
-    text-transform: uppercase;
-    color: var(--color-text-faint);
-  }
-  .hero-meta__dot { opacity: 0.4; }
-
-  .hero-title {
-    margin: 0;
-    font-family: var(--font-wordmark);
-    font-weight: 600;
-    line-height: 1;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--color-text-heading);
-    display: flex;
-    flex-direction: column;
-    gap: 0.05em;
-    max-width: 100%;
-  }
-  .hero-title__row {
-    display: flex;
-    align-items: baseline;
-    white-space: nowrap;
-  }
-  .hero-title__row--indent { padding-left: 0.55em; }
-  .hero-title__word {
-    display: inline-block;
-    position: relative;
-    font-size: clamp(2rem, 5.2vw, 4.4rem);
-    font-weight: 600;
-    max-width: 100%;
-    line-height: 1.15;
-    will-change: transform;
-    transition: opacity 600ms ease;
-  }
-  .hero-title__word--italic {
-    font-style: normal;
-    font-weight: 800;
-    color: var(--color-text);
-    padding-bottom: 0.14em;
-  }
-  .hero-title__word--italic::after {
-    content: '';
-    position: absolute;
-    left: 0.14em;
-    bottom: 0;
-    width: 0.52em;
-    height: 0.05em;
-    background: var(--color-accent);
-  }
-
-  .hero-title__word.is-dimmed { opacity: 0.5; transition: opacity 80ms ease; }
-
-  .hero-tag {
-    margin: 0;
-    max-width: 42ch;
-    font-family: var(--font-body);
-    font-size: clamp(1.1rem, 1.5vw, 1.3rem);
-    font-weight: 600;
-    line-height: 1.5;
-    color: var(--color-text);
-  }
-
-  /* -------- scattered claim cards -------- */
-  .claim-scatter {
-    position: relative;
-    z-index: 2; /* stacking context below hero-head — cards slide under wordmark */
-    overflow: visible;
-    align-self: stretch;
-    min-height: clamp(380px, 55vh, 600px);
-    /* Scales the per-card (x, y) offsets independently so the cluster can tighten
-       horizontally and stretch vertically on narrow viewports. */
-    --scatter-scale-x: 1;
-    --scatter-scale-y: 1;
-  }
-
-  .claim-card {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    z-index: var(--pos-z);
-    --base-transform:
-      translate(-50%, -50%)
-      translate(calc(var(--pos-x, 0px) * var(--scatter-scale-x)),
-                calc(var(--pos-y, 0px) * var(--scatter-scale-y)));
-    transform: var(--base-transform) rotate(var(--pos-rotate, 0deg));
-    width: 290px;
-    aspect-ratio: 5 / 3; /* index card landscape — ~174px tall */
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    padding: 0 14px 0;
-    overflow: hidden;
-    /*
-     * Layered background:
-     * 1. Cream mask (0–43px) + single red rule at 43px
-     * 2. Black ruled lines every 26px, phased so first line also lands at 43px
-     *    (phase = 18px → lines at 43, 69, 95, 121, 147, 173)
-     * 3. Cream base color
-     */
-    background:
-      linear-gradient(
-        to bottom,
-        #f8f5ea 43px,
-        rgba(176, 22, 22, 0.6) 43px,
-        rgba(176, 22, 22, 0.6) 44px,
-        transparent 44px
-      ),
-      repeating-linear-gradient(
-        transparent 0px,
-        transparent 25px,
-        rgba(28, 18, 12, 0.14) 25px,
-        rgba(28, 18, 12, 0.14) 26px
-      ),
-      #f8f5ea;
-    background-size: auto, 100% 26px, auto;
-    background-position: 0 0, 0 18px, 0 0;
-    background-repeat: no-repeat, repeat, no-repeat;
-    border: 1px solid rgba(0, 0, 0, 0.09);
-    border-radius: 2px;
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.08),
-      0 5px 16px rgba(0, 0, 0, 0.1),
-      0 12px 32px rgba(0, 0, 0, 0.07);
-    text-decoration: none;
-    color: #2a2520;
-    cursor: pointer;
-    transform-origin: center center;
-    transition:
-      transform 0.35s cubic-bezier(.2, .8, .2, 1),
-      box-shadow 0.35s ease;
-    will-change: transform, box-shadow;
-  }
-  :global([data-theme="dark"]) .claim-card {
-    box-shadow:
-      0 2px 6px rgba(0, 0, 0, 0.5),
-      0 8px 24px rgba(0, 0, 0, 0.6),
-      0 20px 52px rgba(0, 0, 0, 0.4);
-  }
-
-  .claim-card:hover {
-    transform: var(--base-transform) translateY(-7px) scale(1.03);
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.12),
-      0 16px 40px rgba(0, 0, 0, 0.2),
-      0 32px 80px rgba(0, 0, 0, 0.14);
-    /* Above the subject-card z-bump (12) so hover always wins. */
-    z-index: 20;
-  }
-  :global([data-theme="dark"]) .claim-card:hover {
-    box-shadow:
-      0 4px 12px rgba(0, 0, 0, 0.55),
-      0 16px 48px rgba(0, 0, 0, 0.7),
-      0 32px 80px rgba(0, 0, 0, 0.5);
-  }
-  .claim-card:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 3px;
-    z-index: 20;
-  }
-
-  .claim-card__header {
-    height: 43px;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-  }
-
-  .claim-card__verdict {
-    display: inline-flex;
-    align-items: center;
-    font-family: var(--font-mono);
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    border: 2px solid currentColor;
-    border-radius: 3px;
-    padding: 0.1em 0.35em;
-    line-height: 1;
-  }
-  /* Card-context verdict colors: vivid against the cream (#f8f5ea) card background */
-  .claim-card__verdict--true          { color: #0b8c42; }
-  .claim-card__verdict--mostly-true   { color: #2da862; }
-  .claim-card__verdict--mixed         { color: #cc7800; }
-  .claim-card__verdict--mostly-false  { color: #dd3f2f; }
-  .claim-card__verdict--false         { color: #c81010; }
-  .claim-card__verdict--unverified    { color: #6060a0; }
-  .claim-card__verdict--not-applicable { color: #888899; }
-
-  .claim-card__body {
-    font-family: var(--font-body);
-    font-size: 0.85rem;
-    line-height: 26px; /* matches ruled-line spacing */
-    color: #2a2520;
-    font-weight: 500;
-    margin-top: 0;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .claim-card__body strong {
-    font-weight: 700;
-  }
-
-  /* -------- nav dropdown (right-aligned, matches standard collapsed nav) -------- */
   .hero-nav {
     position: fixed;
     top: calc(clamp(var(--space-md), 2.2vw, var(--space-lg)) + 52px + 6px);
@@ -687,11 +810,10 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     border: 1px solid var(--color-border);
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
     min-width: 14rem;
-    animation: dropdownIn 0.2s cubic-bezier(.2,.8,.2,1) both;
+    max-width: calc(100vw - 2 * var(--space-md));
+    animation: dropdownIn 0.2s cubic-bezier(.2, .8, .2, 1) both;
   }
-  :global([data-theme="light"]) .hero-nav {
-    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
-  }
+  :global([data-theme="light"]) .hero-nav { box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
   .hero-nav[hidden] { display: none; }
   @keyframes dropdownIn {
     from { opacity: 0; transform: translateY(-6px); }
@@ -700,149 +822,81 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
   .hero-nav__list {
     list-style: none;
     margin: 0;
-    padding: var(--space-sm) var(--space-xl) var(--space-lg);
+    padding: var(--space-sm) var(--space-xl) var(--space-md);
   }
-  .hero-nav__list li {
-    border-top: 1px solid var(--color-border);
-  }
-  .hero-nav__list li:first-child {
-    border-top: none;
-  }
+  /* Not var(--rule): the dropdown sits outside .home, where that token lives. */
+  .hero-nav__list li { border-top: 1px solid var(--color-border); }
+  .hero-nav__list li:first-child { border-top: none; }
   .hero-nav__list a {
     display: block;
-    padding: var(--space-md) 0;
+    padding: var(--space-sm) 0;
     text-decoration: none;
     color: var(--color-nav-link-hover);
-    font-size: 1.15rem;
-    font-weight: 700;
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.3;
     transition: color 0.18s;
   }
-  .hero-nav__list a:hover,
+  .hero-nav__list a:hover { color: var(--color-accent); text-decoration: none; }
   .hero-nav__list a:focus-visible {
     color: var(--color-accent);
-    outline: none;
-  }
-  .hero-nav__list a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
 
-  /* -------- logo glitch: subtle single-ghost flash -------- */
-  .hero-logo-wrap.is-glitching .hero-logo--ghost {
-    animation: logoGhost 200ms ease-out both;
-  }
-  .hero-logo-wrap.is-glitching .hero-logo--base {
-    animation: logoJolt 160ms ease-out both;
-  }
-  @keyframes logoGhost {
-    0%   { opacity: 0; transform: translate(0, 0); }
-    15%  { opacity: 0.175; transform: translate(8px, -4px); }
-    60%  { opacity: 0.175; transform: translate(8px, -4px); }
-    100% { opacity: 0; transform: translate(0, 0); }
-  }
-  @keyframes logoJolt {
-    0%, 100% { transform: translate(0, 0); }
-    40%      { transform: translate(-1.5px, 1px); }
-    70%      { transform: translate(1px, 0); }
+  /* =========================================================
+     Responsive
+     ========================================================= */
+  @media (max-width: 760px) {
+    .dangers__grid {
+      grid-template-columns: minmax(0, 1fr);
+      row-gap: var(--space-2xl);
+    }
+    .danger--second {
+      border-left: none;
+      padding-left: 0;
+      border-top: var(--rule);
+      padding-top: var(--space-xl);
+    }
+    .exhibit { margin-top: 0; }
+    .trust__inner { grid-template-columns: minmax(0, 1fr); }
+    .trust__aside { justify-content: flex-start; }
   }
 
-  /* -------- wordmark glitch: muted RGB split -------- */
-  .hero-title__word.is-glitching {
-    animation: textGlitch 240ms steps(5, end) both;
-  }
-  @keyframes textGlitch {
-    0%, 100% { transform: translate(0, 0); text-shadow: none; }
-    20% {
-      transform: translate(-1.5px, 0);
-      text-shadow:
-        2px 0 0 rgba(196, 78, 62, 0.25),
-        -2px 0 0 rgba(66, 149, 139, 0.28);
+  @media (max-width: 540px) {
+    .hero-logo-wrap {
+      width: 72vw;
+      right: -24vw;
+      top: -1rem;
     }
-    40% {
-      transform: translate(2px, -0.5px);
-      text-shadow:
-        -2px 0 0 rgba(196, 78, 62, 0.25),
-        2px 0 0 rgba(66, 149, 139, 0.28);
-    }
-    60% {
-      transform: translate(-1px, 0.5px);
-      text-shadow:
-        1.5px 0 0 rgba(196, 78, 62, 0.25),
-        -1.5px 0 0 rgba(66, 149, 139, 0.28);
-    }
-    80% { transform: translate(0.5px, 0); text-shadow: none; }
   }
 
-  /* -------- reduced motion (OS preference) -------- */
+  /* =========================================================
+     Motion: the OS preference and the site's own switch both
+     stop every transition and animation on the page.
+     ========================================================= */
   @media (prefers-reduced-motion: reduce) {
-    .hero-logo-wrap.is-glitching .hero-logo--ghost,
-    .hero-logo-wrap.is-glitching .hero-logo--base,
-    .hero-title__word.is-glitching { animation: none; }
-    .hero-logo { transition: none; }
     .hero-nav { animation: none; }
-    .hero-burger, .hero-burger__icon,
-    .claim-card,
-    .hero-nav__list a, .hero-title__word {
-      transition: none !important;
-    }
+    .hero-burger,
+    .hero-burger__bars,
+    .hero-burger__close,
+    .hero-nav__list a,
+    .claim-card { transition: none !important; }
+    .claim-card:hover { transform: rotate(var(--tilt, 0deg)); }
   }
-
-  /* -------- reduced motion (site preference) -------- */
-  :root[data-motion="reduce"] .hero-logo,
-  :root[data-motion="reduce"] .hero-title__word,
+  :root[data-motion="reduce"] .hero-nav { animation: none; }
   :root[data-motion="reduce"] .hero-burger,
-  :root[data-motion="reduce"] .hero-burger__icon,
-  :root[data-motion="reduce"] .claim-card,
+  :root[data-motion="reduce"] .hero-burger__bars,
+  :root[data-motion="reduce"] .hero-burger__close,
   :root[data-motion="reduce"] .hero-nav__list a,
-  :root[data-motion="reduce"] .hero-nav {
-    transition: none !important;
-    animation: none;
-  }
-
-  /* Mid-viewport: tighten the cluster so outer cards don't crash into the wordmark column. */
-  @media (max-width: 960px) and (min-width: 681px) {
-    .claim-scatter {
-      --scatter-scale-x: 0.7;
-      --scatter-scale-y: 0.7;
-    }
-  }
-
-  /* Mobile: stack hero into a single column. We hide the second mid-band card and
-     the second outer-band card so the surviving trio splits between hemispheres:
-     center, one mid card below center (slot 1, 45°), and one outer card above
-     center (slot 3, 225°). The cluster is tightened horizontally and stretched
-     vertically so the cards fan down the column instead of piling up. */
-  @media (max-width: 680px) {
-    .hero-body {
-      grid-template-columns: 1fr;
-    }
-    .claim-scatter {
-      min-height: 460px;
-      --scatter-scale-x: 0.6;
-      --scatter-scale-y: 1.5;
-    }
-    .claim-card {
-      width: clamp(190px, 55vw, 260px);
-      aspect-ratio: 7 / 5;
-    }
-    /* Hide slot 2 (second mid card) and slot 4 (second outer card). */
-    .claim-card:nth-child(3),
-    .claim-card:nth-child(5) { display: none; }
-  }
+  :root[data-motion="reduce"] .claim-card { transition: none !important; }
+  :root[data-motion="reduce"] .claim-card:hover { transform: rotate(var(--tilt, 0deg)); }
 </style>
 
-<!-- Letter spans are injected dynamically and lack Astro's scoped cid attribute,
-     so their rules must live in a global block. -->
+<!-- Letter spans are injected by the script below and lack Astro's scoped cid
+     attribute, so their rules must live in a global block. -->
 <style is:global>
-  .hero-title__letter {
-    display: inline-block;
-    transition: opacity 600ms ease;
-  }
-
-  .hero-title__letter.is-dimmed {
-    opacity: 0.5;
-    transition: opacity 80ms ease;
-  }
+  .hero-title__letter { display: inline-block; }
 
   @keyframes letterGlitch {
     0%, 100% { transform: translate(0, 0); text-shadow: none; }
@@ -876,10 +930,8 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
 
   @media (prefers-reduced-motion: reduce) {
     .hero-title__letter.is-glitching { animation: none; }
-    .hero-title__letter { transition: none !important; }
   }
   :root[data-motion="reduce"] .hero-title__letter.is-glitching { animation: none; }
-  :root[data-motion="reduce"] .hero-title__letter { transition: none !important; }
 </style>
 
 <script is:inline>
@@ -887,6 +939,7 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       || document.documentElement.dataset.motion === 'reduce';
 
+    /* ---- burger / dropdown ---- */
     const burger = document.getElementById('hero-burger');
     const dropdown = document.getElementById('hero-nav');
 
@@ -923,6 +976,9 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
 
     if (prefersReduced) return;
 
+    /* ---- wordmark letter glitch: the page's one ambient motion ----
+       Each word is split into letter spans with an .sr-only copy of the
+       text first, so the accessible name of the h1 is unchanged. */
     const randBetween = (min, max) => min + Math.random() * (max - min);
 
     const words = Array.from(document.querySelectorAll('.hero-title__word'));
@@ -935,18 +991,6 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
         ).join('');
       return Array.from(word.querySelectorAll('.hero-title__letter'));
     });
-
-    const scheduleGlitch = (el, className, opts) => {
-      const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
-      const tick = () => {
-        el.classList.add(className);
-        window.setTimeout(() => {
-          el.classList.remove(className);
-          window.setTimeout(tick, randBetween(minGap, maxGap));
-        }, randBetween(minDur, maxDur));
-      };
-      window.setTimeout(tick, randBetween(700, 3700));
-    };
 
     const pickSlice = (letters) => {
       if (!letters.length) return [];
@@ -984,7 +1028,6 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
           });
           const scheduleNext = () => window.setTimeout(tick, randBetween(minGap, maxGap));
           if (stragglerIdx >= 0) {
-            const stragglerDelay = randBetween(1000, 3000);
             const hold = glitchHoldStates[Math.floor(Math.random() * glitchHoldStates.length)];
             const el = slice[stragglerIdx];
             el.style.transform = hold.transform;
@@ -993,7 +1036,7 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
               el.style.removeProperty('transform');
               el.style.removeProperty('text-shadow');
               scheduleNext();
-            }, stragglerDelay);
+            }, randBetween(1000, 3000));
           } else {
             scheduleNext();
           }
@@ -1002,41 +1045,8 @@ const cardPositions: Pos[] = rawPositions.map((p, i) => ({
       window.setTimeout(tick, randBetween(700, 3700));
     };
 
-    const scheduleDimTargets = (getTargets, holdMs, minGap, maxGap, secondHoldMs) => {
-      const applyDim = (targets) => targets.forEach((t) => t.classList.add('is-dimmed'));
-      const clearDim = (targets) => targets.forEach((t) => t.classList.remove('is-dimmed'));
-      const tick = () => {
-        const targets = getTargets();
-        applyDim(targets);
-        window.setTimeout(() => {
-          clearDim(targets);
-          const scheduleNext = () => window.setTimeout(tick, randBetween(minGap, maxGap));
-          if (!secondHoldMs) return scheduleNext();
-          window.setTimeout(() => {
-            const targets2 = getTargets();
-            applyDim(targets2);
-            window.setTimeout(() => {
-              clearDim(targets2);
-              scheduleNext();
-            }, secondHoldMs);
-          }, randBetween(180, 300));
-        }, holdMs);
-      };
-      window.setTimeout(tick, randBetween(12000, 27000));
-    };
-
-    const logoWrap = document.getElementById('hero-logo-wrap');
-    if (logoWrap) {
-      scheduleGlitch(logoWrap, 'is-glitching', { minDur: 200, maxDur: 220, minGap: 7500, maxGap: 14000 });
-    }
     wordLetters.forEach((letters) => {
       scheduleGlitchLetters(letters, { minDur: 150, maxDur: 350, minGap: 6250, maxGap: 12500 });
-    });
-
-    const baseLogo = document.getElementById('hero-logo');
-    if (baseLogo) scheduleDimTargets(() => [baseLogo], 1100, 35000, 55000);
-    wordLetters.forEach((letters, i) => {
-      scheduleDimTargets(() => pickSlice(letters), 450, 40000 + i * 5000, 65000, 160);
     });
   })();
 </script>
