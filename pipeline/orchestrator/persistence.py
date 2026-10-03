@@ -286,14 +286,17 @@ def _write_claim_file(
         )
 
     # Preserve operator-edited takeaway/seo_title when force-overwriting an
-    # existing file and the analyst didn't suggest a new value.
+    # existing file and the analyst didn't suggest a new value. Published
+    # corrections are always kept: they are the public record of what changed.
     existing_takeaway = ""
     existing_seo_title = ""
+    existing_corrections = None
     if claim_path.exists() and force:
         try:
             existing_fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
             existing_takeaway = existing_fm.get("takeaway", "") or ""
             existing_seo_title = existing_fm.get("seo_title", "") or ""
+            existing_corrections = existing_fm.get("corrections") or None
         except Exception as exc:
             logger.warning("Could not read existing claim for field preservation: %s", exc)
 
@@ -313,6 +316,7 @@ def _write_claim_file(
         "as_of": datetime.date.today(),
         "sources": source_ids,
         "source_overrides": source_overrides,
+        "corrections": existing_corrections,
         "tags": [],
     }
     claim_path.write_text(

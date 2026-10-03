@@ -19,7 +19,7 @@ from ingestor.models import SourceFile, SourceFrontmatter
 from common.models import SourceKind
 from orchestrator.cli import main
 from common.models import Category
-from common.frontmatter import parse_frontmatter
+from common.frontmatter import parse_frontmatter, serialize_frontmatter
 from common.models import BlockedReason, Phase
 from orchestrator.persistence import (
     _build_sources_consulted,
@@ -771,6 +771,29 @@ class TestWriteClaimFile:
         path = tmp_path / "research" / "claims" / "test-entity" / "test-claim.md"
         assert "replacement" in path.read_text(encoding="utf-8")
         assert "original" not in path.read_text(encoding="utf-8")
+
+    def test_force_overwrite_preserves_corrections(self, tmp_path):
+        path = self._call(tmp_path, narrative="original")
+        fm, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        corrections = [{
+            "date": datetime.date(2026, 10, 1),
+            "summary": "Source misread",
+            "previous_verdict": "false",
+        }]
+        fm["corrections"] = corrections
+        path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+
+        self._call(tmp_path, force=True, narrative="replacement")
+
+        fm_after, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        # The frontmatter dumper writes dates as quoted ISO strings.
+        assert fm_after["corrections"] == [{**corrections[0], "date": "2026-10-01"}]
+
+    def test_no_corrections_key_when_none_existed(self, tmp_path):
+        self._call(tmp_path, narrative="original")
+        path = self._call(tmp_path, force=True, narrative="replacement")
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert "corrections" not in fm
 
 
 # ---------------------------------------------------------------------------
