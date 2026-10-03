@@ -795,6 +795,26 @@ class TestWriteClaimFile:
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         assert "corrections" not in fm
 
+    def test_force_overwrite_preserves_tags(self, tmp_path):
+        path = self._call(tmp_path, narrative="original")
+        fm, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        fm["tags"] = ["home-familiar", "highlight"]
+        path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+
+        self._call(tmp_path, force=True, narrative="replacement")
+
+        fm_after, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm_after["tags"] == ["home-familiar", "highlight"]
+
+    def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
+        path = self._call(tmp_path, narrative="original")
+        path.write_text("---\ntitle: [unclosed\n---\noriginal\n", encoding="utf-8")
+
+        with pytest.raises(ValueError, match="cannot parse existing claim"):
+            self._call(tmp_path, force=True, narrative="replacement")
+
+        assert "original" in path.read_text(encoding="utf-8")
+
 
 # ---------------------------------------------------------------------------
 # dr review CLI

@@ -28,7 +28,7 @@ CANONICAL_CLAIM_KEYS = {
     "verification_level", "cap_rationale", "source_overrides",
     "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
     "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
-    "audit", "seo_title", "tags",
+    "audit", "seo_title", "tags", "corrections",
 }
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
 CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}

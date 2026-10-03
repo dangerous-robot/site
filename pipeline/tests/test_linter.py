@@ -332,6 +332,11 @@ class TestUnknownFrontmatterKeys:
         fms = {str(claim): {"title": "T", "entity": "companies/foo", "criteria_slug": "x"}}
         assert check_unknown_frontmatter_keys([claim], fms, [], {}) == []
 
+    def test_corrections_key_no_issue(self):
+        claim = _p("research/claims/foo/bar.md")
+        fms = {str(claim): {"title": "T", "corrections": [{"date": "2026-10-01", "summary": "s"}]}}
+        assert check_unknown_frontmatter_keys([claim], fms, [], {}) == []
+
     def test_unknown_key_raises_warning(self):
         claim = _p("research/claims/foo/bar.md")
         fms = {str(claim): {"title": "T", "extra_field": "value"}}

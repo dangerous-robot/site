@@ -286,19 +286,22 @@ def _write_claim_file(
         )
 
     # Preserve operator-edited takeaway/seo_title when force-overwriting an
-    # existing file and the analyst didn't suggest a new value. Published
-    # corrections are always kept: they are the public record of what changed.
-    existing_takeaway = ""
-    existing_seo_title = ""
-    existing_corrections = None
+    # existing file and the analyst didn't suggest a new value. Corrections
+    # (the public record of what changed) and tags (homepage card picks) are
+    # operator-owned and always kept.
+    existing_fm: dict = {}
     if claim_path.exists() and force:
         try:
             existing_fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-            existing_takeaway = existing_fm.get("takeaway", "") or ""
-            existing_seo_title = existing_fm.get("seo_title", "") or ""
-            existing_corrections = existing_fm.get("corrections") or None
         except Exception as exc:
-            logger.warning("Could not read existing claim for field preservation: %s", exc)
+            # Overwriting would silently drop operator-owned fields.
+            raise ValueError(
+                f"cannot parse existing claim {claim_path}; fix its frontmatter before re-running: {exc}"
+            ) from exc
+    existing_takeaway = existing_fm.get("takeaway", "") or ""
+    existing_seo_title = existing_fm.get("seo_title", "") or ""
+    existing_corrections = existing_fm.get("corrections") or None
+    existing_tags = existing_fm.get("tags") or []
 
     fm = {
         "title": title,
@@ -317,7 +320,7 @@ def _write_claim_file(
         "sources": source_ids,
         "source_overrides": source_overrides,
         "corrections": existing_corrections,
-        "tags": [],
+        "tags": existing_tags,
     }
     claim_path.write_text(
         serialize_frontmatter(fm, narrative.rstrip() + "\n"),
