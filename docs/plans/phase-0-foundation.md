@@ -12,10 +12,10 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 
 - [x] A1 to A5, A7: copy items (title tag, meta description, tagline, north star, footer, brand spelling)
 - [x] A6: "sponsored by" retired in `src/` and `README.md`
-- [ ] A8: README intro done; GitHub repository description not set (operator runs `gh repo edit`)
+- [x] A8: README intro and GitHub repository description set (description confirmed via `gh repo view`, 2026-10-03)
 - [x] B1 to B5: `/about`, `/corrections`, issue form (`config.yml` blocks blank issues), contact alias on About, `corrections` field on claims
-- [ ] B6: runbook "Corrections" note done; the interaction-limits setting itself is an operator step
-- [ ] B3 labels: operator creates the `correction` and `source-submission` labels (`gh label create`, see runbook "Corrections"); GitHub drops template labels that do not exist
+- [x] B6: runbook "Corrections" note done; interaction limits set to `existing_users`, expires 2027-04-03 (renew before then)
+- [x] B3 labels: `correction` and `source-submission` labels created
 - [x] C1 to C5: reviewer display, verdict badge link, verdict statement, `<details>` auto-open, signed Values page
 - [x] D1, D2: `ai_assisted` field and byline wording
 - [ ] D3: set on `why-dangerous-robot-exists`; the guest-authored pledge post is left unset (operator call)
@@ -24,7 +24,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [ ] F3: skipped, operator call; `docs/discovery/` is untracked so deletion is unrecoverable
 - [x] `src/lib/seo.ts`: no change needed, the alpha-noindex patterns do not match `/about` or `/corrections` (checked in code; `dist/` check pending)
 - [ ] Verification checklist: not yet run
-- [ ] Needs from Brandon, item 1: create the `contact@dangerousrobot.org` alias before deploy
+- [x] Needs from Brandon, item 1: `contact@dangerousrobot.org` alias created (Brandon, 2026-10-03)
 - [ ] Needs from Brandon, items 4 and 5: review the two draft About paragraphs; confirm `main` is pushed and deployed
 
 ## Goal
