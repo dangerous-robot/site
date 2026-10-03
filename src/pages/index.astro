@@ -2,6 +2,7 @@
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
+import { SITE_DESCRIPTION } from '../lib/seo';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -181,15 +182,12 @@ const dangers = [
   },
 ];
 
-const pageDescription =
-  "A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it.";
-
 const websiteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   name: 'Dangerous Robot',
   url: 'https://dangerousrobot.org',
-  description: pageDescription,
+  description: SITE_DESCRIPTION,
   potentialAction: {
     '@type': 'SearchAction',
     target: {
@@ -205,7 +203,6 @@ const websiteSchema = {
   title="Dangerous Robot - A guide to AI's dangers, with evidence you can check"
   titleIsFull
   socialTitle="Dangerous Robot: Act while the choice is still yours."
-  description={pageDescription}
   chrome="minimal"
   layout="bare"
 >

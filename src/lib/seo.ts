@@ -15,6 +15,9 @@
  * accessible at the same paths; the only thing that changes is the
  * `<meta name="robots">` tag and sitemap inclusion.
  */
+export const SITE_DESCRIPTION =
+  "A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it.";
+
 export const INDEX_ALPHA_DETAIL_PAGES = false as boolean;
 
 /**

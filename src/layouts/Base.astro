@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import "../styles/tokens.css";
 import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
+import { SITE_DESCRIPTION } from "../lib/seo";
 
 const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
@@ -31,7 +32,7 @@ const {
   title,
   titleIsFull = false,
   socialTitle,
-  description = "A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it.",
+  description = SITE_DESCRIPTION,
   layout = 'reading',
   chrome = 'standard',
   ogImage = '/dr-logo.png',

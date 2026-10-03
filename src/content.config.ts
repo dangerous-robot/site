@@ -3,6 +3,7 @@ import { glob, file } from 'astro/loaders';
 import yaml from 'js-yaml';
 import fs from 'node:fs/promises';
 import nodePath from 'node:path';
+import { VERDICT_ORDER } from './lib/verdict';
 
 const sources = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/sources' }),
@@ -98,16 +99,6 @@ async function walkMdFiles(dir: string, base: string = dir): Promise<string[]> {
   return results;
 }
 
-const CLAIM_VERDICTS = [
-  'true',
-  'mostly-true',
-  'mixed',
-  'mostly-false',
-  'false',
-  'unverified',
-  'not-applicable',
-] as const;
-
 const claims = defineCollection({
   loader: {
     name: 'claims-with-audit',
@@ -172,7 +163,7 @@ const claims = defineCollection({
       'regulation-policy',
     ])).min(1).max(3),
     // Operational definitions for each verdict live in docs/architecture/glossary.md.
-    verdict: z.enum(CLAIM_VERDICTS),
+    verdict: z.enum(VERDICT_ORDER),
     confidence: z.enum(['high', 'medium', 'low']),
     // Source-pool diversity signal. Set by the analyst from `independence` + `kind`
     // on the claim's sources. See docs/architecture/source-quality.md.
@@ -220,7 +211,7 @@ const claims = defineCollection({
     corrections: z.array(z.object({
       date: z.coerce.date(),
       summary: z.string(),
-      previous_verdict: z.enum(CLAIM_VERDICTS),
+      previous_verdict: z.enum(VERDICT_ORDER),
     })).optional(),
   }),
 });

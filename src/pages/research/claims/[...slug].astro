@@ -137,11 +137,9 @@ const claimReview = {
         <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
         <span class="as-of">{asOfDate}</span>
         <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
-          {!isReviewed
-            ? "Unreviewed"
-            : reviewer
-              ? <>Reviewed and approved by <a href={reviewer.href}>{reviewer.name}</a></>
-              : "Reviewed"}
+          {reviewer
+            ? <>Reviewed and approved by <a href={reviewer.href}>{reviewer.name}</a></>
+            : isReviewed ? "Reviewed" : "Unreviewed"}
         </span>
       </div>
       {claim.data.corrections && claim.data.corrections.length > 0 && (
@@ -149,7 +147,7 @@ const claimReview = {
           {claim.data.corrections.map((c) => (
             <p class="correction">
               Corrected {isoDate(c.date)}: {c.summary}
-              <span class="correction-prior">Previous verdict: {VERDICT_LABELS[c.previous_verdict as Verdict] ?? c.previous_verdict}</span>
+              <span class="correction-prior">Previous verdict: {VERDICT_LABELS[c.previous_verdict]}</span>
             </p>
           ))}
         </section>

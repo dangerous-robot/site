@@ -1,8 +1,8 @@
-export type Verdict = 'true' | 'mostly-true' | 'mixed' | 'mostly-false' | 'false' | 'unverified' | 'not-applicable';
-
-export const VERDICT_ORDER: Verdict[] = [
+export const VERDICT_ORDER = [
   'true', 'mostly-true', 'mixed', 'mostly-false', 'false', 'unverified', 'not-applicable',
-];
+] as const;
+
+export type Verdict = (typeof VERDICT_ORDER)[number];
 
 export const VERDICT_LABELS: Record<Verdict, string> = {
   'true': 'True',
