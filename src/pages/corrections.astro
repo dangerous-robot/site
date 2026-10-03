@@ -1,0 +1,42 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+
+const formUrl = 'https://github.com/dangerous-robot/site/issues/new?template=correction.yml';
+---
+<Base title="Corrections" description="How to report an error on Dangerous Robot, and what happens to a claim when it is corrected." layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Corrections' },
+    ]} />
+    <h1>Corrections</h1>
+
+    <p class="lede">
+      If something on this site is wrong, tell us. Corrections go through a GitHub issue form.
+    </p>
+
+    <p>
+      The form asks for the page or claim URL, what is wrong, and a link to the evidence. Filing it needs a GitHub account.
+    </p>
+    <p>
+      <a href={formUrl} target="_blank" rel="noopener noreferrer">Open the correction form</a>
+    </p>
+
+    <h2>What happens next</h2>
+    <p>
+      Brandon Faloona reviews every report. When a claim changes, the claim page shows "Corrected [date]: what changed" and keeps the prior verdict visible. The full history is in the <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">public repository</a>.
+    </p>
+  </article>
+</Base>
+
+<style>
+  .lede {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  article h2 {
+    margin-top: var(--space-2xl);
+  }
+</style>

@@ -1,0 +1,28 @@
+name: Report a correction
+description: Report an error on a Dangerous Robot page or claim.
+title: "[Correction] "
+labels: ["correction"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Page or claim URL
+      description: The address of the page or claim that has the error.
+      placeholder: https://dangerousrobot.org/research/claims/...
+    validations:
+      required: true
+  - type: textarea
+    id: what-is-wrong
+    attributes:
+      label: What is wrong
+      description: Say what the page or claim states, and what you think is incorrect.
+    validations:
+      required: true
+  - type: input
+    id: evidence
+    attributes:
+      label: Evidence
+      description: A link to a source that shows what is wrong.
+      placeholder: https://
+    validations:
+      required: true

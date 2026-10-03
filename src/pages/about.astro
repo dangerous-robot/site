@@ -1,0 +1,75 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+---
+<Base title="About" description="Who runs Dangerous Robot, what the site is and is not, and how it is made." layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'About' },
+    ]} />
+    <h1>About</h1>
+
+    <section id="who-runs-this">
+      <h2>Who runs this</h2>
+      <p>
+        Dangerous Robot is run by one person, Brandon Faloona, who reviews and approves every claim on it. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it.
+      </p>
+    </section>
+
+    <section id="what-this-site-is">
+      <h2>What this site is</h2>
+      <p>
+        For people deciding whether to trust AI with something that matters, Dangerous Robot is a guide to the danger, with evidence you can check. It shows the source and the person behind every claim, and says what you can do about it.
+      </p>
+    </section>
+
+    <section id="what-this-site-does-not-do">
+      <h2>What this site does not do</h2>
+      <ul>
+        <li>Not a news site.</li>
+        <li>Not a thought-leadership or policy shop.</li>
+        <li>Not a fact-checking organization, though its research record carries verdicts.</li>
+        <li>Not a position organization; one page states what it advocates.</li>
+        <li>No verdict on claims about TreadLightlyAI.</li>
+        <li>Does not state the size, likelihood or timing of existential risk as settled.</li>
+        <li>Does not rank the two risk axes.</li>
+        <li>Does not claim AI-free production.</li>
+      </ul>
+    </section>
+
+    <section id="where-it-stands">
+      <h2>Where it stands</h2>
+      <p>
+        Dangerous Robot holds that AI carries some existential risk, because the people building these systems say so on the record. How large that risk is, how likely, and when, this site does not state as settled. The full position is on the <a href="/values">Values page</a>.
+      </p>
+    </section>
+
+    <section id="how-it-is-made">
+      <h2>How it is made</h2>
+      <p>
+        Dangerous Robot is built with the help of AI. Agents search for sources and draft each verdict. Brandon Faloona reviews and approves every claim before it is published. Every source is listed, and you can check them. The pipeline and the models it uses are described in the <a href="/research#methodology">methodology section</a>.
+      </p>
+    </section>
+
+    <section id="corrections">
+      <h2>Corrections</h2>
+      <p>
+        Found an error? See <a href="/corrections">how corrections work</a>.
+      </p>
+    </section>
+
+    <section id="contact">
+      <h2>Contact</h2>
+      <p>
+        For legal and safety matters, write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>. To report an error on a page or claim, use <a href="/corrections">corrections</a> instead.
+      </p>
+    </section>
+  </article>
+</Base>
+
+<style>
+  article h2 {
+    margin-top: var(--space-2xl);
+  }
+</style>
