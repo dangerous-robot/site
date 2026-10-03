@@ -98,6 +98,16 @@ async function walkMdFiles(dir: string, base: string = dir): Promise<string[]> {
   return results;
 }
 
+const CLAIM_VERDICTS = [
+  'true',
+  'mostly-true',
+  'mixed',
+  'mostly-false',
+  'false',
+  'unverified',
+  'not-applicable',
+] as const;
+
 const claims = defineCollection({
   loader: {
     name: 'claims-with-audit',
@@ -162,15 +172,7 @@ const claims = defineCollection({
       'regulation-policy',
     ])).min(1).max(3),
     // Operational definitions for each verdict live in docs/architecture/glossary.md.
-    verdict: z.enum([
-      'true',
-      'mostly-true',
-      'mixed',
-      'mostly-false',
-      'false',
-      'unverified',
-      'not-applicable',
-    ]),
+    verdict: z.enum(CLAIM_VERDICTS),
     confidence: z.enum(['high', 'medium', 'low']),
     // Source-pool diversity signal. Set by the analyst from `independence` + `kind`
     // on the claim's sources. See docs/architecture/source-quality.md.
@@ -213,6 +215,13 @@ const claims = defineCollection({
     // Free-form operator-set tags. Behavioral tags are documented in AGENTS.md.
     tags: z.array(z.string()).default([]),
     audit: auditSchema.optional(),
+    // Public correction notes, newest first by convention. A correction keeps the
+    // verdict it replaced visible, so readers can see what changed.
+    corrections: z.array(z.object({
+      date: z.coerce.date(),
+      summary: z.string(),
+      previous_verdict: z.enum(CLAIM_VERDICTS),
+    })).optional(),
   }),
 });
 
@@ -430,6 +439,7 @@ const writing = defineCollection({
     pubDate: z.coerce.date(),
     updatedDate: z.coerce.date().optional(),
     author: z.string().default('Brandon Faloona'),
+    ai_assisted: z.boolean().default(false),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
   }),

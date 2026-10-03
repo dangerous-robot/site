@@ -3,6 +3,7 @@ title: "Why Dangerous Robot exists"
 description: "AI is useful and dangerous, and both kinds of danger come down to trust: who decides how far to trust it with your data, your money and your choices."
 pubDate: 2026-10-02
 author: "Brandon Faloona"
+ai_assisted: true
 draft: false
 tags:
   - ai-literacy

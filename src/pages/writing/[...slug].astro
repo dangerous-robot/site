@@ -11,7 +11,7 @@ export async function getStaticPaths() {
 
 interface Props { post: Post }
 const { post } = Astro.props;
-const { title, description, author, pubDate, updatedDate, draft } = post.data;
+const { title, description, author, ai_assisted, pubDate, updatedDate, draft } = post.data;
 const { Content } = await render(post);
 ---
 <Base title={title} description={description} layout="reading">
@@ -24,7 +24,7 @@ const { Content } = await render(post);
     <h1>{title}</h1>
     <p class="byline">
       {draft && <span class="draft-tag">Draft</span>}
-      By {author} · <time datetime={isoDate(pubDate)}>{formatPostDate(pubDate)}</time>
+      Written by {author}{ai_assisted && ', with AI assistance'} · <time datetime={isoDate(pubDate)}>{formatPostDate(pubDate)}</time>
       {updatedDate && <> · Updated <time datetime={isoDate(updatedDate)}>{formatPostDate(updatedDate)}</time></>}
     </p>
 

@@ -3,14 +3,17 @@ import { VERDICT_LABELS, VERDICT_TOOLTIP } from '../lib/verdict';
 interface Props {
   verdict: string;
   size?: 'sm' | 'md';
+  /** Renders the badge as a link. Leave unset where the badge already sits inside another link. */
+  href?: string;
 }
-const { verdict, size = 'md' } = Astro.props;
+const { verdict, size = 'md', href } = Astro.props;
+const Tag = href ? 'a' : 'span';
 const label = VERDICT_LABELS[verdict as keyof typeof VERDICT_LABELS] ?? verdict;
 const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
 ---
-<span class:list={['chip', 'verdict-badge', `verdict-${verdict}`, size]} title={tooltip}>
+<Tag class:list={['chip', 'verdict-badge', `verdict-${verdict}`, size]} title={tooltip} href={href}>
   {label}
-</span>
+</Tag>
 <style>
 /* Verdict ranks strongest in the chip family via deeper tint + bold. */
 .verdict-badge {
@@ -20,6 +23,10 @@ const tooltip = VERDICT_TOOLTIP[verdict as keyof typeof VERDICT_TOOLTIP] ?? '';
   font-weight: 700;
 }
 .verdict-badge.sm { font-size: var(--font-size-2xs); padding: 2px var(--space-xs); }
+/* Chips never underline; a linked badge signals hover with a deeper tint. */
+a.verdict-badge,
+a.verdict-badge:hover { text-decoration: none; }
+a.verdict-badge:hover { --chip-tint: 40%; }
 .verdict-true       { --chip-color: var(--color-verdict-true); }
 .verdict-mostly-true { --chip-color: var(--color-verdict-mostly-true); }
 .verdict-mixed      { --chip-color: var(--color-verdict-mixed); }

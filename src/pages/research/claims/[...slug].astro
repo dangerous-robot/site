@@ -7,6 +7,7 @@ import DisclosureIndicator from "../../../components/DisclosureIndicator.astro";
 import { buildEntityMap, getEntityParent, resolveMadeBy } from "../../../lib/entityTypes";
 import { VERDICT_RATINGS, VERDICT_LABELS, type Verdict } from "../../../lib/verdict";
 import { shouldNoindex } from "../../../lib/seo";
+import { resolveReviewer } from "../../../lib/reviewers";
 import {
   CAPPED_VERIFICATION_LEVELS,
   VERIFICATION_LEVEL_GLOSS,
@@ -89,6 +90,8 @@ const sourceCounts = countSourcesByIndependence(
 const sourceCountText = formatSourceCounts(sourceCounts);
 
 const isReviewed = !!(audit?.human_review.reviewer);
+// An unmapped reviewer still counts as reviewed, but the page never prints the raw value.
+const reviewer = resolveReviewer(audit?.human_review.reviewer);
 
 const claimDescription = claim.data.takeaway
   ?? `${entityLabel}: ${claim.data.title}`.slice(0, 155);
@@ -130,13 +133,27 @@ const claimReview = {
         </p>
       )}
       <div class="meta">
-        <VerdictBadge verdict={claim.data.verdict} />
+        <VerdictBadge verdict={claim.data.verdict} href="/research#methodology" />
         <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
         <span class="as-of">{asOfDate}</span>
         <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
-          {isReviewed ? "✓ Reviewed" : "Unreviewed"}
+          {!isReviewed
+            ? "Unreviewed"
+            : reviewer
+              ? <>Reviewed and approved by <a href={reviewer.href}>{reviewer.name}</a></>
+              : "Reviewed"}
         </span>
       </div>
+      {claim.data.corrections && claim.data.corrections.length > 0 && (
+        <section class="corrections" aria-label="Corrections">
+          {claim.data.corrections.map((c) => (
+            <p class="correction">
+              Corrected {isoDate(c.date)}: {c.summary}
+              <span class="correction-prior">Previous verdict: {VERDICT_LABELS[c.previous_verdict as Verdict] ?? c.previous_verdict}</span>
+            </p>
+          ))}
+        </section>
+      )}
       {claim.data.takeaway && (
         <p class="takeaway">{claim.data.takeaway}</p>
       )}
@@ -221,7 +238,7 @@ const claimReview = {
             <section class="audit-section">
               <h3>Human review</h3>
               {reviewedAt ? (
-                <p>Reviewed {reviewedAt}{audit.human_review.reviewer ? ` by ${audit.human_review.reviewer}` : ''}</p>
+                <p>Reviewed {reviewedAt}{reviewer ? ` by ${reviewer.name}` : ''}</p>
               ) : (
                 <p class="audit-muted">Pending human review</p>
               )}
@@ -317,6 +334,24 @@ const claimReview = {
   }
 
   .confidence, .as-of { color: var(--color-text-muted); font-size: var(--font-size-sm); }
+
+  .corrections {
+    margin: 0 0 var(--space-sm);
+  }
+
+  .correction {
+    margin: 0 0 var(--space-xs);
+    padding: var(--space-xs) var(--space-sm);
+    border-left: 2px solid var(--color-text-faint);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    line-height: 1.5;
+  }
+
+  .correction-prior {
+    display: block;
+    color: var(--color-text-muted);
+  }
 
   .takeaway {
     font-size: var(--font-size-md);

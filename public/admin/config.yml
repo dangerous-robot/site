@@ -54,6 +54,7 @@ collections:
         input_timezone: utc
         required: false
       - { name: author, label: Author, widget: string, default: Brandon Faloona }
+      - { name: ai_assisted, label: AI assisted, widget: boolean, default: false, hint: On when AI drafted the text }
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: body, label: Body, widget: markdown }

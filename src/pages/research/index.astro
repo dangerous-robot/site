@@ -79,7 +79,7 @@ const faqSchema = {
       "name": "What conflicts of interest exist?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Dangerous Robot and TreadLightly AI share the same founder. Many claims here back assertions on the TreadLightly site, which shapes what gets researched. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.",
+        "text": "Dangerous Robot is run by Brandon Faloona. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.",
       },
     },
   ],
@@ -216,6 +216,11 @@ const faqSchema = {
       <details id="methodology">
         <summary>What methodology is used for research?</summary>
         <div class="answer">
+          <p>
+            A verdict is our reading of the public record as of the date shown. AI agents draft it;
+            the person named on the claim approves it. Every source is listed, and you can check them.
+            One person reviews everything today. If we are wrong, <a href="/corrections">tell us here</a>.
+          </p>
           <h3>How a claim is published</h3>
           <p>Claims move through a pipeline before they appear on the site:</p>
           <ol>
@@ -362,9 +367,10 @@ const faqSchema = {
         <summary>What conflicts of interest exist?</summary>
         <div class="answer">
           <p>
-            Dangerous Robot and <a href="https://treadlightly.ai" target="_blank" rel="noopener noreferrer">TreadLightly AI</a> share the same founder.
-            Many claims here back assertions on the TreadLightly site, so it's worth reading with
-            that in mind: what gets researched is shaped by that work.
+            Dangerous Robot is run by <a href="/about#who-runs-this">Brandon Faloona</a>.
+            He also makes <a href="https://treadlightly.ai" target="_blank" rel="noopener noreferrer">TreadLightlyAI</a>, an AI chatbot.
+            TreadLightlyAI appears on this site under the same criteria and sources as every other
+            product, and the site publishes no verdict on claims about it.
           </p>
           <p>
             No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or
@@ -383,6 +389,20 @@ const faqSchema = {
     </section>
   </article>
 </Base>
+
+<script>
+  // Browsers do not open a closed <details> when the URL fragment names it
+  // (e.g. /research#methodology from a verdict label), so open it ourselves.
+  function openTargetDetails() {
+    let id = location.hash.slice(1);
+    // A malformed escape in the fragment throws; fall back to the raw value.
+    try { id = decodeURIComponent(id); } catch {}
+    const el = id ? document.getElementById(id) : null;
+    if (el instanceof HTMLDetailsElement) el.open = true;
+  }
+  openTargetDetails();
+  window.addEventListener('hashchange', openTargetDetails);
+</script>
 
 <style>
   .research-explainer {
