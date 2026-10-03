@@ -62,6 +62,6 @@ const segs = parseInline(text);
   <strong>{seg.inner.map((s) =>
     s.kind === 'code' ? <code>{s.text}</code> :
     s.kind === 'link' ? <a href={s.url} target="_blank" rel="noopener noreferrer">{s.text}</a> :
-    s.text
+    s.kind === 'plain' ? s.text : null
   )}</strong>
 ))}

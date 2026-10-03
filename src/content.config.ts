@@ -1,4 +1,5 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+import { z } from 'astro/zod';
 import { glob, file } from 'astro/loaders';
 import yaml from 'js-yaml';
 import fs from 'node:fs/promises';
@@ -245,7 +246,7 @@ const entities = defineCollection({
 const criteria = defineCollection({
   loader: file('research/templates.yaml', {
     parser: (text) => {
-      const data = yaml.load(text) as { templates: unknown[] };
+      const data = yaml.load(text) as { templates: Record<string, unknown>[] };
       return data.templates;
     },
   }),
@@ -334,7 +335,7 @@ const matrixFeature = z.object({
   label: z.string(),
   group: matrixGroupKey,
   ideal: z.object({
-    value: z.string(),
+    value: matrixCellType,
     note: z.string().optional(),
   }).optional(),
   cells: z.record(z.string(), matrixCell),

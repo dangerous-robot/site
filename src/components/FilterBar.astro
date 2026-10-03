@@ -25,7 +25,7 @@ const initiallyCollapsed = true;
         type="button"
         class="facet-toggle-btn"
         id="facet-toggle"
-        aria-expanded={String(!initiallyCollapsed)}
+        aria-expanded={initiallyCollapsed ? 'false' : 'true'}
         aria-controls="facet-bar"
       >
         <DisclosureIndicator />

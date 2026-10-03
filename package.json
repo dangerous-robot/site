@@ -10,7 +10,8 @@
     "astro": "astro",
     "lint:md": "markdownlint-cli2 'research/**/*.md'",
     "check:citations": "tsx scripts/check-citations.ts",
-    "check": "npm run build && npm run lint:md && npm run check:citations"
+    "check:types": "astro check",
+    "check": "npm run check:types && npm run build && npm run lint:md && npm run check:citations"
   },
   "engines": {
     "node": ">=22"
@@ -23,6 +24,7 @@
     "lucide-astro": "^0.556.0"
   },
   "devDependencies": {
+    "@astrojs/check": "^0.9.10",
     "@types/js-yaml": "^4.0.9",
     "d3-cloud": "^1.2.9",
     "d3-force": "^3.0.0",
@@ -34,6 +36,7 @@
     "esbuild": "^0.28.1",
     "gray-matter": "^4.0.3",
     "markdownlint-cli2": "^0.17.2",
-    "tsx": "^4.19.4"
+    "tsx": "^4.19.4",
+    "typescript": "^6.0.3"
   }
 }

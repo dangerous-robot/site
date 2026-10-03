@@ -1,5 +1,5 @@
 import { defineConfig } from "astro/config";
-import sitemap from "@astrojs/sitemap";
+import sitemap, { ChangeFreqEnum } from "@astrojs/sitemap";
 import { isAlphaDetailPath, INDEX_ALPHA_DETAIL_PAGES } from "./src/lib/seo";
 
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
   },
   integrations: [
     sitemap({
-      changefreq: "weekly",
+      changefreq: ChangeFreqEnum.WEEKLY,
       priority: 0.7,
       // Exclude alpha-stage detail pages while INDEX_ALPHA_DETAIL_PAGES is false.
       // Pages still ship with <meta name="robots" content="noindex,nofollow">,
@@ -35,7 +35,7 @@ export default defineConfig({
       },
       serialize(item) {
         if (item.url.includes("/research/claims/")) {
-          return { ...item, changefreq: "monthly", priority: 0.9 };
+          return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.9 };
         }
         if (
           item.url.includes("/research/entities/") ||
@@ -43,18 +43,18 @@ export default defineConfig({
           item.url.includes("/research/products/") ||
           item.url.includes("/research/subjects/")
         ) {
-          return { ...item, changefreq: "weekly", priority: 0.8 };
+          return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.8 };
         }
         if (item.url === "https://dangerousrobot.org/research/sources") {
-          return { ...item, changefreq: "weekly", priority: 0.5 };
+          return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.5 };
         }
         if (item.url.includes("/research/sources/")) {
-          return { ...item, changefreq: "monthly", priority: 0.4 };
+          return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.4 };
         }
         if (item.url.includes("/resources/") || item.url.endsWith("/resources")) {
-          return { ...item, changefreq: "monthly", priority: 0.7 };
+          return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.7 };
         }
-        return { ...item, changefreq: "weekly", priority: 0.7 };
+        return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.7 };
       },
     }),
   ],
