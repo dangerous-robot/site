@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
+import { WRITING_LEDE } from '../lib/writing';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -28,24 +29,41 @@ function escapeHtml(text: string): string {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+const escapeRegExp = (term: string) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 function boldInTitle(title: string, entityId: string, criteriaSlug?: string): string {
-  let result = escapeHtml(title);
+  const patterns: RegExp[] = [];
   const entry = entityNameMap.get(entityId);
   if (entry) {
     for (const term of [entry.name, ...entry.aliases]) {
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      result = result.replace(new RegExp(`(${escaped})`, 'gi'), '<strong>$1</strong>');
+      patterns.push(new RegExp(escapeRegExp(term), 'gi'));
     }
   }
   // Criteria vocabulary terms (hyphenated terms also match with spaces).
   const vocabTerms = criteriaSlug ? criteriaVocab.get(criteriaSlug) : undefined;
   if (vocabTerms) {
     for (const term of vocabTerms) {
-      const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/-/g, '[\\s\\-]');
-      result = result.replace(new RegExp(`\\b(${escaped})\\b`, 'gi'), '<strong>$1</strong>');
+      patterns.push(new RegExp(`\\b${escapeRegExp(term).replace(/-/g, '[\\s\\-]')}\\b`, 'gi'));
     }
   }
-  return result;
+  // Match on the raw title and escape afterwards, so a term can never match
+  // inside an HTML entity or a <strong> tag added for an earlier term.
+  const ranges: [number, number][] = [];
+  for (const rx of patterns) {
+    for (const m of title.matchAll(rx)) {
+      const start = m.index;
+      const end = start + m[0].length;
+      if (end > start && !ranges.some(([s, e]) => start < e && end > s)) ranges.push([start, end]);
+    }
+  }
+  ranges.sort((a, b) => a[0] - b[0]);
+  let result = '';
+  let pos = 0;
+  for (const [start, end] of ranges) {
+    result += escapeHtml(title.slice(pos, start)) + '<strong>' + escapeHtml(title.slice(start, end)) + '</strong>';
+    pos = end;
+  }
+  return result + escapeHtml(title.slice(pos));
 }
 
 const fmtVerdict = (v: string) =>
@@ -63,18 +81,18 @@ const menu = [
     href: '/writing',
     label: 'Writing',
     short: 'Writing',
-    note: 'Posts on avoiding AI, or using it wisely.',
+    note: WRITING_LEDE,
   },
   {
     href: '/resources/turn-off-ai',
     label: 'Turn off the AI you didn’t ask for',
-    short: 'Turn off AI',
+    short: 'Turn Off AI',
     note: 'Meta AI, Google AI Overviews, Copilot: what can be switched off, and what to try when it can’t.',
   },
   {
     href: '/resources/should-i',
     label: 'Should I use AI for this?',
-    short: 'Should I use AI?',
+    short: 'Should I Use AI?',
     note: 'A few questions worth asking before you hand a task over.',
   },
   {
@@ -998,15 +1016,20 @@ const websiteSchema = {
     animation-fill-mode: both;
   }
 
+  /* !important beats the inline hold styles a straggler may already carry
+     when the reader turns motion off mid-cycle. */
   @media (prefers-reduced-motion: reduce) {
     .hero-title__letter.is-glitching { animation: none; }
+    .hero-title__letter { transform: none !important; text-shadow: none !important; }
   }
   :root[data-motion="reduce"] .hero-title__letter.is-glitching { animation: none; }
+  :root[data-motion="reduce"] .hero-title__letter { transform: none !important; text-shadow: none !important; }
 </style>
 
 <script is:inline>
   (function () {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // Re-checked on every glitch cycle: A11yControl can switch motion off after load.
+    const motionReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
       || document.documentElement.dataset.motion === 'reduce';
 
     /* ---- burger / dropdown ---- */
@@ -1044,7 +1067,7 @@ const websiteSchema = {
       });
     }
 
-    if (prefersReduced) return;
+    if (motionReduced()) return;
 
     /* ---- wordmark letter glitch: the page's one ambient motion ----
        Each word is split into letter spans with an .sr-only copy of the
@@ -1083,6 +1106,10 @@ const websiteSchema = {
     const scheduleGlitchLetters = (letters, opts) => {
       const { minDur = 90, maxDur = 120, minGap = 4200, maxGap = 11500 } = opts || {};
       const tick = () => {
+        if (motionReduced()) {
+          window.setTimeout(tick, randBetween(minGap, maxGap));
+          return;
+        }
         const slice = pickSlice(letters);
         const duration = Math.floor(randBetween(minDur, maxDur));
         const hasStraggler = slice.length > 1 && Math.random() < 0.5;

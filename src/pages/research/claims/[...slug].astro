@@ -89,9 +89,8 @@ const sourceCounts = countSourcesByIndependence(
 );
 const sourceCountText = formatSourceCounts(sourceCounts);
 
-const isReviewed = !!(audit?.human_review.reviewer);
-// An unmapped reviewer still counts as reviewed, but the page never prints the raw value.
-const reviewer = resolveReviewer(audit?.human_review.reviewer);
+const reviewer = resolveReviewer(audit?.human_review.reviewer, `claim ${claim.id}`);
+const isReviewed = !!reviewer;
 
 const claimDescription = claim.data.takeaway
   ?? `${entityLabel}: ${claim.data.title}`.slice(0, 155);
@@ -139,7 +138,7 @@ const claimReview = {
         <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
           {reviewer
             ? <>Reviewed and approved by <a href={reviewer.href}>{reviewer.name}</a></>
-            : isReviewed ? "Reviewed" : "Unreviewed"}
+            : "Unreviewed"}
         </span>
       </div>
       {claim.data.corrections && claim.data.corrections.length > 0 && (

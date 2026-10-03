@@ -6,6 +6,13 @@
     <title>Dangerous Robot CMS</title>
   </head>
   <body>
-    <script src="https://unpkg.com/@sveltia/cms/dist/sveltia-cms.js"></script>
+    <!-- Pinned with an integrity hash so a new CDN release can't change this page unannounced.
+         To upgrade: bump the version, then recompute with
+         curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
+    <script
+      src="https://unpkg.com/@sveltia/cms@0.227.3/dist/sveltia-cms.js"
+      integrity="sha384-8hMzaf/90SQ5tmWKilMTR2nNU+HEw84lYds8R0eo32rjS6u1h98IrxiM3Jde+XLN"
+      crossorigin="anonymous"
+    ></script>
   </body>
 </html>

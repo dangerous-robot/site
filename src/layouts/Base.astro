@@ -5,6 +5,7 @@ import "../styles/tokens.css";
 import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
 import { SITE_DESCRIPTION } from "../lib/seo";
+import { WRITING_FEED_TITLE } from "../lib/writing";
 
 const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
@@ -49,6 +50,7 @@ type Section = { href: string; label: string; links: NavLink[] };
 const TOP_LINKS: NavLink[] = [
   { href: '/research',  label: 'Research' },
   { href: '/resources', label: 'Resources' },
+  { href: '/writing',   label: 'Writing' },
 ];
 
 const SECTIONS: Section[] = [
@@ -73,6 +75,7 @@ const SECTIONS: Section[] = [
       { href: '/resources/responsible-ai', label: 'Responsible AI' },
     ],
   },
+  { href: '/writing', label: 'Writing', links: [] },
 ];
 
 const pathname = Astro.url.pathname;
@@ -102,6 +105,7 @@ const orgSchema = {
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="canonical" href={Astro.url.href} />
+    <link rel="alternate" type="application/rss+xml" title={WRITING_FEED_TITLE} href="/writing/rss.xml" />
     <meta name="robots" content={noindex ? 'noindex,nofollow' : 'index,follow,max-image-preview:large'} />
     <meta name="generator" content={Astro.generator} />
     <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
@@ -219,15 +223,17 @@ const orgSchema = {
                     >
                       {s.label}
                     </a>
-                    <ul class="dropdown-section-links" role="list">
-                      {s.links.map((l) => (
-                        <li>
-                          <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
-                            {l.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+                    {s.links.length > 0 && (
+                      <ul class="dropdown-section-links" role="list">
+                        {s.links.map((l) => (
+                          <li>
+                            <a href={l.href} aria-current={pathname === l.href ? 'page' : undefined}>
+                              {l.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

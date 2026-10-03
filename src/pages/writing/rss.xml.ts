@@ -1,20 +1,19 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
-import { getCollection } from 'astro:content';
+import { getFeedPosts, WRITING_FEED_TITLE, WRITING_LEDE } from '../../lib/writing';
 
 export async function GET(context: APIContext) {
-  // Unlike the pages, the feed never includes drafts, even in dev.
-  const posts = (await getCollection('writing', ({ data }) => !data.draft))
-    .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+  const posts = await getFeedPosts();
+  const selfUrl = new URL('/writing/rss.xml', context.site).href;
 
   return rss({
-    title: 'Dangerous Robot: Writing',
-    description: 'Posts on avoiding AI, or using it wisely.',
+    title: WRITING_FEED_TITLE,
+    description: WRITING_LEDE,
     site: context.site!,
     // Matches trailingSlash: "never" in astro.config.ts.
     trailingSlash: false,
     xmlns: { atom: 'http://www.w3.org/2005/Atom' },
-    customData: '<language>en-us</language><atom:link href="https://dangerousrobot.org/writing/rss.xml" rel="self" type="application/rss+xml"/>',
+    customData: `<language>en-us</language><atom:link href="${selfUrl}" rel="self" type="application/rss+xml"/>`,
     items: posts.map((post) => ({
       title: post.data.title,
       description: post.data.description,

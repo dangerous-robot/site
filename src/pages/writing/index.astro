@@ -1,10 +1,10 @@
 ---
 import Base from '../../layouts/Base.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
-import { getPosts, formatPostDate, isoDate } from '../../lib/writing';
+import { getPosts, formatPostDate, isoDate, WRITING_LEDE } from '../../lib/writing';
 
 const posts = await getPosts();
-const lede = 'Posts on avoiding AI, or using it wisely.';
+const lede = WRITING_LEDE;
 ---
 <Base title="Writing" description={lede} layout="reading">
   <article class="reading">

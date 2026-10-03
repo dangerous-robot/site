@@ -9,8 +9,16 @@ const REVIEWERS: Record<string, ReviewerDisplay> = {
   'brandon@dangerousrobot.org': { name: 'Brandon Faloona', href: '/about#who-runs-this' },
 };
 
-/** Display info for a raw reviewer value, or null when the value is empty or has no mapping. Callers must never print the raw value. */
-export function resolveReviewer(raw: string | null | undefined): ReviewerDisplay | null {
+/**
+ * Display info for a raw reviewer value, or null when the value is empty.
+ * Throws on a value with no mapping, failing the build: a reviewed claim must
+ * name the person who stands behind it. Callers must never print the raw value.
+ */
+export function resolveReviewer(raw: string | null | undefined, context: string): ReviewerDisplay | null {
   if (!raw) return null;
-  return REVIEWERS[raw.trim().toLowerCase()] ?? null;
+  const display = REVIEWERS[raw.trim().toLowerCase()];
+  if (!display) {
+    throw new Error(`${context}: reviewer has no entry in src/lib/reviewers.ts; add one before building`);
+  }
+  return display;
 }
