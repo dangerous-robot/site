@@ -182,7 +182,7 @@ const dangers = [
 ];
 
 const pageDescription =
-  'The danger of AI in plain sight, with evidence you can check: writing and guides on avoiding AI or using it wisely, safety scores for the companies building it, and company claims checked against sources.';
+  "A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it.";
 
 const websiteSchema = {
   '@context': 'https://schema.org',
@@ -201,7 +201,14 @@ const websiteSchema = {
 };
 ---
 
-<Base title="Avoid AI, or use it wisely" description={pageDescription} chrome="minimal" layout="bare">
+<Base
+  title="Dangerous Robot - A guide to AI's dangers, with evidence you can check"
+  titleIsFull
+  socialTitle="Dangerous Robot: Act while the choice is still yours."
+  description={pageDescription}
+  chrome="minimal"
+  layout="bare"
+>
   <a href="#start" class="skip-nav">Skip to where to start</a>
 
   <button
@@ -244,6 +251,8 @@ const websiteSchema = {
             <span class="hero-title__word hero-title__word--robot" data-text="Robot">Robot</span>
           </span>
         </h1>
+
+        <p class="hero-tagline">Act while the choice is still yours.</p>
 
         <p class="hero-line">The tools arrived before the lessons.</p>
       </div>
@@ -307,7 +316,7 @@ const websiteSchema = {
       <div class="trust__inner">
         <div class="trust__body">
           <h2 class="trust__title" id="trust-title">Both kinds of danger come down to trust.</h2>
-          <p class="trust__quote">Trust should be earned. Right now it is being decided for you.</p>
+          <p class="trust__quote">The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours.</p>
           <p class="trust__text">Choices add up to market pressure. Voices add up to policy.</p>
         </div>
 
@@ -317,8 +326,7 @@ const websiteSchema = {
             <span class="menu__note">The full statement, in one piece.</span>
           </a>
           <p class="trust__colophon">
-            This site is built with the help of AI. Every claim on it has a source, and a
-            person who stands behind it.
+            Built with the help of AI. Every claim has a source, and a person who stands behind it.
           </p>
         </div>
       </div>
@@ -441,6 +449,16 @@ const websiteSchema = {
     width: 0.52em;
     height: 0.05em;
     background: var(--color-accent);
+  }
+
+  /* Sits close under the wordmark; the hero line below stays the headline. */
+  .hero-tagline {
+    margin: 0;
+    max-width: var(--measure);
+    font-family: var(--font-heading);
+    font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+    line-height: 1.3;
+    color: var(--color-text-muted);
   }
 
   /* The one bold spend on the page. Two lines on a wide screen:

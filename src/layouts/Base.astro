@@ -13,6 +13,10 @@ const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Orbitron:wght@6
 
 interface Props {
   title: string;
+  /** When true, `title` is the whole <title> and the " - Dangerous Robot" suffix is not appended. Default false. */
+  titleIsFull?: boolean;
+  /** Overrides og:title and twitter:title. Defaults to the same text as <title>. */
+  socialTitle?: string;
   description?: string;
   /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. 'bare': no constraints, for bespoke layouts. */
   layout?: 'reading' | 'wide' | 'bare';
@@ -25,14 +29,17 @@ interface Props {
 
 const {
   title,
-  description = "Dangerous Robot is a structured research hub tracking AI company environmental and safety claims. Built for journalists, researchers, and policy teams.",
+  titleIsFull = false,
+  socialTitle,
+  description = "A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it.",
   layout = 'reading',
   chrome = 'standard',
   ogImage = '/dr-logo.png',
   noindex = false,
 } = Astro.props;
 
-const ogTitle = `${title} - Dangerous Robot`;
+const fullTitle = titleIsFull ? title : `${title} - Dangerous Robot`;
+const ogTitle = socialTitle ?? fullTitle;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
 type NavLink = { href: string; label: string };
@@ -88,7 +95,7 @@ const orgSchema = {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title} - Dangerous Robot</title>
+    <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
@@ -342,10 +349,11 @@ const orgSchema = {
     </main>
 
     <footer class="site-footer">
+      <p>Built with the help of AI. Every claim has a source, and a person who stands behind it.</p>
+      <p>A community project from the maker of <a href="https://treadlightly.ai">TreadLightlyAI</a>.</p>
       <p>
-        Dangerous Robot is a research project sponsored by <a href="https://treadlightly.ai">TreadLightly AI</a>
-      </p>
-      <p>
+        <a href="/about">About</a>
+        &nbsp;·&nbsp;
         <a href="/values">Values</a>
         &nbsp;·&nbsp;
         <a href="/research#methodology">Methodology</a>

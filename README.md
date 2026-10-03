@@ -1,5 +1,7 @@
 # dangerous-robot/site
 
+A guide to AI's dangers for people deciding whether to trust AI with something that matters. Evidence you can check, a named person behind every claim, and what you can do about it.
+
 The home of [dangerousrobot.org](https://dangerousrobot.org) and the research that backs it.
 
 Dangerous Robot is a structured research project that evaluates claims made by and about
@@ -46,8 +48,8 @@ External contributions are welcome. The lowest-friction paths:
 ## Conflicts of interest
 
 This project is operated by Brandon Faloona, who also founded
-[TreadLightly AI](https://treadlightly.ai). Many claims here back assertions made on the
-TreadLightly AI site. See the [FAQ](https://dangerousrobot.org/faq#conflicts-of-interest)
+[TreadLightlyAI](https://treadlightly.ai). Many claims here back assertions made on the
+TreadLightlyAI site. See the [FAQ](https://dangerousrobot.org/faq#conflicts-of-interest)
 for the full disclosure.
 
 ## License
