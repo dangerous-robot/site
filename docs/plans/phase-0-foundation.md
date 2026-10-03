@@ -21,7 +21,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [x] D3: set on `why-dangerous-robot-exists`; pledge post settled by Brandon 2026-10-03 (no `ai_assisted` field; the post is untracked and `draft: true`)
 - [x] E1 to E3: disclosure sentence, corrections link, product note kept
 - [x] F1, F2: roadmap section 9, `architecture/site.md`, `runbook.md`
-- [ ] F3: skipped, operator call; `docs/discovery/` is untracked so deletion is unrecoverable
+- [x] F3: `docs/discovery/` deleted (Brandon, 2026-10-03); AGENTS.md "Discovery records" points to the Drive folder
 - [x] `src/lib/seo.ts`: no change needed, the alpha-noindex patterns do not match `/about` or `/corrections` (checked in code; `dist/` check pending)
 - [ ] Verification checklist: items 2 to 12 verified against `dist/`; 13 and 14 need a deploy
 - [x] Needs from Brandon, item 1: `contact@dangerousrobot.org` alias created (Brandon, 2026-10-03)

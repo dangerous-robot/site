@@ -215,6 +215,10 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 - Use lowercase kebab-case slugs: `openai.md`, `training-data-consent.md`
 - Sources go in year directories: `sources/2026/polytechnique-energy.md`
 
+## Discovery records
+
+Product decisions (mission, audience, positioning, messaging, early roadmap) are recorded in the Google Drive folder "Dangerous Robot — Vision & Discovery" (https://drive.google.com/drive/folders/1t0PBJVq-5ZYSZEDRwc93qdtybxoDsJ6g; private). Its Decisions Log is the source of truth; plans that implement a decision quote the decided wording so they can be built without Drive access. Do not copy the records into the repo.
+
 ## Plans & Backlog
 
 All plans live under `docs/plans/`. Lifecycle determines subdirectory:
