@@ -32,10 +32,13 @@ title: "Post title"
 description: "One sentence, 200 characters max."
 pubDate: 2026-10-02
 author: "Brandon Faloona"   # optional, this is the default
+ai_assisted: false          # optional; true when AI drafted the text
 draft: false                # optional
 tags: [ai-literacy]         # optional
 ---
 ```
+
+**Byline:** the post page prints "Written by {author}". With `ai_assisted: true` it prints "Written by {author}, with AI assistance" (the CMS field is "AI assisted"). Set it on when AI drafted the text. Guest authors keep their own names.
 
 **Drafts:** `draft: true` posts show in dev (marked Draft) and are left out of production builds and the RSS feed.
 
@@ -43,6 +46,27 @@ tags: [ai-literacy]         # optional
 1. Register a GitHub OAuth app.
 2. Deploy https://github.com/sveltia/sveltia-cms-auth on Cloudflare Workers with that app's credentials.
 3. Set `backend.base_url` in `public/admin/config.yml` to the Worker URL.
+
+## Corrections
+
+Readers report errors through the GitHub issue form `.github/ISSUE_TEMPLATE/correction.yml`, linked from `/corrections`. Reports arrive as issues with the `correction` label. A published correction is recorded in the claim's optional `corrections` frontmatter (`date`, `summary`, `previous_verdict`), which the claim page shows under the meta row. A forced pipeline rewrite of the claim file keeps existing `corrections` entries.
+
+**Issue labels (operator step, once).** GitHub skips a template label that does not exist in the repo, so create the labels the issue templates apply:
+
+```bash
+gh label create correction -R dangerous-robot/site --description "Reader-reported error on a page or claim"
+gh label create source-submission -R dangerous-robot/site --description "Reader-submitted source"
+```
+
+Legal and safety matters go to `contact@dangerousrobot.org`, a domain alias the operator creates and points at an inbox. It is the only non-public contact path and is shown on `/about#contact`.
+
+**Interaction limits (operator setting, not code).** To keep the correction form and the issue tracker usable, limit who can open issues and comment on the repo. This is a GitHub setting, not part of the site build:
+
+```bash
+gh api -X PUT repos/dangerous-robot/site/interaction-limits -f limit=existing_users -f expiry=six_months
+```
+
+The same setting is in the repo's Moderation settings. A limit expires (anywhere from one day to six months) and then lapses on its own, so renew it before the expiry date. Nothing in the repo records that date; put it in your own calendar.
 
 <!-- TODO: plan additional runbook sections
 Sections still needed:

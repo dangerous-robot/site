@@ -22,12 +22,12 @@ Six collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
-| `claims`    | custom `claims-with-audit` loader      | title, entity, topics, verdict, confidence, as_of, sources, audit (sidecar) |
+| `claims`    | custom `claims-with-audit` loader      | title, entity, topics, verdict, confidence, as_of, sources, audit (sidecar), corrections (optional) |
 | `sources`   | `glob()` from `research/sources`       | url, title, publisher, kind, summary, key_quotes         |
 | `entities`  | `glob()` from `research/entities`      | name, type (company/product/subject), website, description |
 | `criteria`  | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 | `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
-| `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, draft, tags |
+| `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, ai_assisted, draft, tags |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -75,7 +75,7 @@ Subdirectory structure within each `glob`-loaded collection is flexible -- the l
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-The site has four top-level URL spaces:
+The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/values`, `/credits`):
 
 - `/` -- the homepage: the site's thesis in excerpts, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
 - `/writing/*` -- blog posts, plus an RSS feed.
@@ -103,6 +103,8 @@ The site has four top-level URL spaces:
 | `/research/criteria/[slug]`    | `src/pages/research/criteria/[slug].astro`        | `criteria` collection                       |
 | `/resources`                   | `src/pages/resources/index.astro`                 | `resources` collection (hub list)           |
 | `/resources/[...slug]`         | `src/pages/resources/[...slug].astro`             | `resources` collection (layout dispatch)    |
+| `/about`                       | `src/pages/about.astro`                           | Static content (who runs the site, what it does and does not do, contact) |
+| `/corrections`                 | `src/pages/corrections.astro`                     | Static content (links the GitHub correction issue form) |
 | `/values`                      | `src/pages/values.astro`                          | Static content                              |
 | `/credits`                     | `src/pages/credits.astro`                         | Static content                              |
 | `/404`                         | `src/pages/404.astro`                             | Static content (noindex, GitHub Pages error page) |
@@ -170,10 +172,10 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 
 `src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
 
-1. **Hero** -- the "Dangerous Robot" wordmark as a masthead and the headline line "The tools arrived before the lessons."
+1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("Act while the choice is still yours."), and the headline line "The tools arrived before the lessons."
 2. **Where to start** -- a visible `<nav>` list of seven deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
 3. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
-4. **Trust** -- closing lines from the thesis, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon.
+4. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).
 
 **The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/turn-off-ai`, `/resources/should-i`, `/resources/ai-safety`, `/resources/responsible-ai`, `/research`, `/values`. The `short` labels match the section labels `Base.astro` uses on other pages. The site-wide nav in `Base.astro` does not include Writing; that is intentional.
 
@@ -183,7 +185,7 @@ The thesis text on the page is in the `dangers` array and the markup; it is exce
 
 ### Writing and the admin
 
-`/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline (author, publish date, optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. The feed is not yet advertised with a `<link rel="alternate">` in `<head>`; `Base.astro` has no head slot for it.
+`/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline ("Written by {author}", or "Written by {author}, with AI assistance" when the post's `ai_assisted` flag is on; publish date; optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. The feed is not yet advertised with a `<link rel="alternate">` in `<head>`; `Base.astro` has no head slot for it.
 
 **Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines one `writing` collection mirroring the Zod schema, with media in `public/images/writing`. `robots.txt` disallows `/admin/`.
 
@@ -206,7 +208,7 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 - The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, four `/resources/*` entries, `/research`, and `/values`.
 - The homepage's closing section links the first post, `/writing/why-dangerous-robot-exists`.
-- Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`).
+- Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`). The verdict badge links to `/research#methodology`, and the reviewer line links to `/about#who-runs-this`. The reviewer's name comes from `src/lib/reviewers.ts`, which maps the raw reviewer value in the audit sidecar; an unmapped value prints no name.
 - Entity detail pages query published claims and display those whose `entity` field matches.
 
 ## Layout
@@ -218,7 +220,9 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 | Prop          | Type     | Default                                                        |
 |---------------|----------|----------------------------------------------------------------|
 | `title`       | `string` | Required. Rendered as `{title} - Dangerous Robot` in `<title>` |
-| `description` | `string` | Falls back to a default site description                       |
+| `titleIsFull` | `boolean` | `false`; `true` makes `title` the whole `<title>` with no suffix (the homepage only) |
+| `socialTitle` | `string` | Overrides `og:title` and `twitter:title`; defaults to the `<title>` text |
+| `description` | `string` | Falls back to the site's decided meta description              |
 | `layout`      | `'reading' \| 'wide' \| 'bare'` | `'reading'` (narrow column). `'bare'` removes width constraints for bespoke pages such as the homepage |
 | `chrome`      | `'standard' \| 'minimal'` | `'standard'` draws the site-wide nav; `'minimal'` leaves navigation to the page (the homepage) |
 | `ogImage`     | `string` | `/dr-logo.png`                                                 |
@@ -232,7 +236,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
   <body>
     <nav>      -- site name + nav links to list pages
     <main>     -- <slot /> receives page content
-    <footer>   -- TreadLightly AI attribution
+    <footer>   -- method line, maker line (TreadLightlyAI linked), links: About, Values, Methodology, Credits
 ```
 
 ### Styling approach
