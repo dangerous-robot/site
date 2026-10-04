@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 ---
-<Base title="About" description="Who runs Dangerous Robot, what the site is and is not, and how it is made." layout="reading">
+<Base title="About" description="What Dangerous Robot is, where it stands, how it is made, and who runs it." layout="reading">
   <article class="reading">
     <Breadcrumb crumbs={[
       { label: 'Home', href: '/' },
@@ -10,52 +10,47 @@ import Breadcrumb from '../components/Breadcrumb.astro';
     ]} />
     <h1>About</h1>
 
-    <section id="who-runs-this">
-      <h2>Who runs this</h2>
-      <p>
-        Dangerous Robot is run by one person, Brandon Faloona, who reviews and approves every claim on it. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it.
-      </p>
-    </section>
-
     <section id="what-this-site-is">
       <h2>What this site is</h2>
       <p>
-        For people deciding whether to trust AI with something that matters, Dangerous Robot is a guide to the danger, with evidence you can check. It shows the source and the person behind every claim, and says what you can do about it.
+        AI is changing things faster than most of us can take in, and some of the risks are hard to believe. Dangerous Robot tries to take both seriously without getting carried away. It gathers what is known about AI's dangers, lists every source so you can check it, and points to what you can do.
       </p>
-    </section>
-
-    <section id="what-this-site-does-not-do">
-      <h2>What this site does not do</h2>
-      <ul>
-        <li>Not a news site.</li>
-        <li>Not a thought-leadership or policy shop.</li>
-        <li>Not a fact-checking organization, though its research record carries verdicts.</li>
-        <li>Not a position organization; one page states what it advocates.</li>
-        <li>No verdict on claims about TreadLightlyAI.</li>
-        <li>Does not state the size, likelihood or timing of existential risk as settled.</li>
-        <li>Does not rank the two risk axes.</li>
-        <li>Does not claim AI-free production.</li>
-      </ul>
+      <p>
+        It is also a place to learn. If you want to understand how these tools work and where they fall short, the guides and resources here are a starting point, and they link to good material elsewhere.
+      </p>
     </section>
 
     <section id="where-it-stands">
       <h2>Where it stands</h2>
       <p>
-        Dangerous Robot holds that AI carries some existential risk, because the people building these systems say so on the record. How large that risk is, how likely, and when, this site does not state as settled. The full position is on the <a href="/values">Values page</a>.
+        People disagree about AI, sometimes sharply, and this site makes room for that. It starts from four positions, explained on the <a href="/values">Values page</a>:
       </p>
+      <ul>
+        <li>AI safety is unsolved.</li>
+        <li>AI is fueling environmental destruction.</li>
+        <li>AI outcomes are being decided by a small group of people.</li>
+        <li>Staying human and connected to each other will be essential.</li>
+      </ul>
     </section>
 
     <section id="how-it-is-made">
       <h2>How it is made</h2>
       <p>
-        Dangerous Robot is built with the help of AI. Agents search for sources and draft each verdict. Brandon Faloona reviews and approves every claim before it is published. Every source is listed, and you can check them. The pipeline and the models it uses are described in the <a href="/research#methodology">methodology section</a>.
+        Dangerous Robot is built with the help of AI. Agents search for sources and draft each verdict. A human reviews and approves every claim before it is published, and every source is listed so you can check it. The aim is to use AI where it helps and keep the judgment human. The pipeline and the models it uses are described in the <a href="/research#methodology">methodology section</a>.
+      </p>
+    </section>
+
+    <section id="who-runs-this">
+      <h2>Who runs this</h2>
+      <p>
+        Brandon Faloona runs Dangerous Robot and reviews every claim on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
       </p>
     </section>
 
     <section id="corrections">
       <h2>Corrections</h2>
       <p>
-        Found an error? See <a href="/corrections">how corrections work</a>.
+        Found an error? Here is <a href="/corrections">how corrections work</a>.
       </p>
     </section>
 
