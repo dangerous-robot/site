@@ -1,18 +1,17 @@
-1.1.0-alpha.1
+1.0.0-beta.3
 
-Pre-release stages (toward 1.0.0):
-- `alpha.N`: roadmap checklist still has open items; schema may still change.
-- `beta.N`: checklist complete, schema frozen; content, bug fixes, and small non-breaking refinements. No schema changes or new breaking features.
-- `rc.N`: would-ship candidate; promote to `1.0.0` if no blockers surface.
+Pre-release stage (toward 1.0.0):
+- `beta.N`: a deployed release before 1.0.0. Content, features and schema may still change. Each deploy bumps N.
+- `1.0.0`: the beta label is dropped, by Brandon's call. There are no alpha or rc stages in this line.
 
-Use dotted numeric identifiers (`alpha.1`, `alpha.2`) so they sort numerically.
-Examples: `1.0.0-alpha.2` → `1.0.0-beta.1` → `1.0.0-rc.1` → `1.0.0`.
+Use dotted numeric identifiers (`beta.3`, `beta.4`) so they sort numerically. Tag each deploy (`v1.0.0-beta.3`).
+
+History: 1.0.0 did not ship. `1.0.0-beta.2` was the last build deployed before the refocus; the repo briefly used `1.1.0-alpha.1` (2026-10-02 to 2026-10-04) and was reset to `1.0.0-beta.3`.
 
 Version semantics (post-1.0):
 - Major: breaking change to verdict enum, criterion definitions, or entity URL structure
-- Minor: new entity type, new criterion, new phase shipped
+- Minor: new entity type, new criterion, new feature shipped
 - Patch: content corrections, verdict updates, bug fixes, source additions
 
-Active release: docs/v1.1.0-roadmap.md
-Next release: none yet
-Future release plans live at docs/v{semver}.md.
+Active release: docs/v1.0.0-roadmap.md
+Future release plans live at docs/v{semver}-roadmap.md.

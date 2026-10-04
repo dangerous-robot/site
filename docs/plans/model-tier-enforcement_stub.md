@@ -2,7 +2,7 @@
 
 **Status**: Stub — scaffolded from Q4 of the retired `pre-launch-questions.md` (2026-07-09). Not implementation-ready; flesh out before building.
 
-**Suffix**: `_stub` — placeholder. Committed at `docs/plans/` top level (not `drafts/`) because committed docs link to it (`docs/v1.0.0-roadmap.md`, `docs/architecture/glossary.md`).
+**Suffix**: `_stub` — placeholder. Committed at `docs/plans/` top level (not `drafts/`) because committed docs link to it (`docs/plans/completed/v1.0.0-roadmap_superseded.md`, `docs/architecture/glossary.md`).
 
 ## Problem
 
