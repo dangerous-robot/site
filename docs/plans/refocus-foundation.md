@@ -23,9 +23,9 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [x] F1, F2: roadmap section 9, `architecture/site.md`, `runbook.md`
 - [x] F3: `docs/discovery/` deleted (Brandon, 2026-10-03); AGENTS.md "Discovery records" points to the Drive folder
 - [x] `src/lib/seo.ts`: no change needed, the alpha-noindex patterns do not match `/about` or `/corrections` (checked in code; `dist/` check pending)
-- [x] Verification checklist: items 2 to 12 verified against `dist/` (2026-10-04); 13 and 14 need a deploy
+- [x] Verification checklist: items 2 to 12 verified against `dist/` (2026-10-04); 13 and 14 verified live after the deploy (2026-10-04)
 - [x] Needs from Brandon, item 1: `contact@dangerousrobot.org` alias created (Brandon, 2026-10-03)
-- [ ] Needs from Brandon, items 4 and 5: review the two draft About paragraphs; confirm `main` is pushed and deployed
+- [x] Needs from Brandon, items 4 and 5: About reviewed and rewritten by Brandon (2026-10-04); `main` pushed, deployed and tagged `v1.0.0-beta.3` (2026-10-04)
 
 ## Goal
 
