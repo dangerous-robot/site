@@ -189,7 +189,7 @@ beta.3 ships as checked above; the deploy gate does not move. The pull-forwards 
 - [ ] J1: indexing trigger rewritten
 - [ ] K1: `resources` collection in the CMS (articles only)
 - [ ] Verification checklist, beta.4
-- [ ] Needs from Brandon, beta.4: items 2, 3 and 5 (items 1 and 4 answered 2026-10-04)
+- [x] Needs from Brandon, beta.4: all five items answered 2026-10-04
 
 ### G. Pledge on the homepage
 
@@ -240,10 +240,10 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 ### Needs from Brandon, beta.4
 
 1. ~~The pledge signatory form's URL, and whether the homepage menu entry links to the post (default) or to the form directly.~~ Answered 2026-10-04: no outside form. Signatures are collected on the post itself by a Cloudflare Worker and D1 database (name and email with email confirmation, opt-in public names, list held by Brandon only), so the menu entry links to the post. beta.4 waits for that build; G1 depends on it. Architecture draft: `docs/plans/drafts/petition-signatures-architecture.md` (gitignored), to become a plan.
-2. Claimless entities (I3): option A, hide them from the Companies and Products lists (default), or option B, drop the two sub-nav links.
-3. Values: footer and homepage menu only (default), or also in the nav top row.
+2. ~~Claimless entities (I3): option A, hide them from the Companies and Products lists (default), or option B, drop the two sub-nav links.~~ Answered 2026-10-04: option A.
+3. ~~Values: footer and homepage menu only (default), or also in the nav top row.~~ Answered 2026-10-04: footer and homepage menu only.
 4. ~~Whether 1.0.0 shipped.~~ Answered 2026-10-04: it did not. The version line reset to `1.0.0-beta.3` (this plan's foundation) and `1.0.0-beta.4` (these pull-forwards); `VERSION.md` and the roadmap record it.
-5. Confirm H4 (delete `research/v1-launch-set.md` now) rather than keep it until the tracker for the chatbot guide release exists.
+5. ~~Confirm H4 (delete `research/v1-launch-set.md` now) rather than keep it until the tracker for the chatbot guide release exists.~~ Answered 2026-10-04: delete now.
 
 ### Verification checklist, beta.4
 
