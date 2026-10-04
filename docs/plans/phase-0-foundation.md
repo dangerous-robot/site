@@ -1,6 +1,6 @@
 # Phase 0: foundation
 
-**Status**: `in progress` (implemented, not yet verified; operator items open, see Status checklist)
+**Status**: `in progress` (phase 0 implemented, deploy checks open; phase 0.1 pull-forwards added 2026-10-03, not started; see both Status checklists)
 **Last updated**: 2026-10-03
 **Source of truth**: the discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (Decisions Log; "07 — Early Roadmap"). Every copy string those records decided is reproduced here verbatim, so this plan can be implemented without reading them.
 
@@ -178,6 +178,89 @@ Copy rules for anything else written under this plan: plain words, no em dashes,
 13. The GitHub repository description matches the decided project description.
 14. After deploy, the live homepage matches item 2.
 
+## Phase 0.1: pull-forwards (added 2026-10-03)
+
+Phase 0 ships as checked above; the deploy gate does not move. Phase 0.1 is a second checklist in the same plan, run after the phase 0 deploy, for work that became worth doing once there was more time. Each item either needs no decision beyond the records (G, H, I1, I2, I4, J, K) or carries its decision in "Needs from Brandon, phase 0.1" below (I3). Nothing here uses phase 1 vocabulary: no scope field, no guides rename, no actions type, no lifecycle status, no nav relabel. The rules in "Decided copy" and "Implementation notes" apply.
+
+### Status checklist, phase 0.1
+
+- [ ] G1, G2: pledge post finished and on the homepage
+- [ ] H1 to H5: research record hygiene
+- [ ] I1, I2, I4: one navigation source, About in the top row, docs synced
+- [ ] I3: claimless entities (after the operator call below)
+- [ ] J1: indexing trigger rewritten
+- [ ] K1: `resources` collection in the CMS (articles only)
+- [ ] Verification checklist, phase 0.1
+- [ ] Needs from Brandon, phase 0.1: items 1 to 5
+
+### G. Pledge on the homepage
+
+The content record (05) puts the pledge on the homepage after the lead guide; the early roadmap record (07) says the pledge "joins as it exists". The post exists at `src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` (`draft: true`, author Wade Hudson, no `ai_assisted` field by Brandon's decision). Its URL stays `/writing/pledge-prohibit-ai-self-improvement-pledge`; the move to an actions URL, with a redirect, is phase 1.
+
+| ID | Item | Files |
+|---|---|---|
+| G1 | Finish the post: the editor's note ends "add yourself as a signatory to the pledge at ..." with no destination; link the signatory form (URL in "Needs from Brandon, phase 0.1", item 1) and set `draft: false`. Keep the guest author. Write the minimum: the note's existing sentences plus the link. | `src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` |
+| G2 | Homepage: add the pledge to the `menu` array as the eighth entry, after Values: `label` "Sign the pledge", `short` "Pledge", `note` one plain sentence naming what the pledge asks for (legislation prohibiting AI systems from improving their own capabilities without human control). The link target is the post, unless item 1 says the form directly. No new homepage section in phase 0.1: the menu is the one place the homepage lists destinations, and a new block is the kind of ad hoc layout change AGENTS.md "UI & Design Standards" asks us to check first. | `src/pages/index.astro` |
+
+### H. Research record hygiene
+
+Reader-facing defects in the research record found on 2026-10-03. None changes a verdict, so `as_of` dates stay.
+
+| ID | Item | Files |
+|---|---|---|
+| H1 | `brave-browser/renewable-energy-hosting` is published and tagged `highlight`, and three fields are cut off mid-word: `takeaway` ends "was found, let .", `seo_title` is "Brave Browser Hosting Not on Renewable, S!" (it is the page `<title>`), `cap_rationale` ends "independent v." Rewrite each by hand from the claim body and its sources, plain words, each a complete sentence; `seo_title` at most 42 characters. Sources and verdict unchanged. | `research/claims/brave-browser/renewable-energy-hosting.md` |
+| H2 | Research hub copy that contradicts About: the FAQ "What is this site?" opens "Dangerous Robot is a structured research project" and says every claim "aspires to be reviewed and approved by a human operator"; the Limits list says "Operators approve." Rewrite the first answer to open with the positioning statement's second sentence ("Dangerous Robot is a guide to the danger, with evidence you can check."), say the research record is the evidence behind it, link `/about`, and state that Brandon Faloona reviews and approves every published claim. In Limits, "Operators approve. Human reviewers can be wrong." becomes "One person approves, and can be wrong." Keep everything else in the FAQ. | `src/pages/research/index.astro` |
+| H3 | The `ai-model-producers` subject entity's `description` and body are generated filler ("landscape", "leading the charge", "sharper focus") on a public page. Replace both with three plain sentences: what the term covers (companies that train and release large AI models), the examples the site uses it for (the six named in the FLI index claim), and that claims under this subject are about the group, not one company. Keep `aliases` and `search_hints`. | `research/entities/subjects/ai-model-producers.md` |
+| H4 | `research/v1-launch-set.md` lists 27 claims, including `brave-leo/*`, that are not on disk (disk: 3 published, 2 draft). Delete it (`git rm`). The phase 1 plan writes its own research-load tracker (products times criteria). Check for links first: `rg -n "v1-launch-set" docs/ research/ AGENTS.md README.md` and fix any that remain. | `research/v1-launch-set.md`, any file that links it |
+| H5 | Nine empty, untracked directories under `research/claims/` (anthropic, brave-software, chatgpt, claude, gemini, google, greenpt, openai, treadlightlyai). Remove them: `find research/claims -type d -empty -delete`. No commit results. | local filesystem only |
+
+Noted, not an item: the two draft `subjects/us-data-centers` claims carry `verdict: unverified` with `confidence: high` and `medium`. Drafts do not render in production; the pairing is a pipeline question for phase 1's gates.
+
+### I. Navigation: one source, no relabels
+
+Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writing; `SECTIONS` with Values under Research), the homepage `menu` (seven entries whose `short` labels are meant to match the sections), and the footer (About, Values, Methodology, Credits). The phase 1 nav decision (Guides, Claims, Act, About; scopes once two have a guide) is not made here; no label or URL changes except adding About.
+
+| ID | Item | Files |
+|---|---|---|
+| I1 | New `src/lib/nav.ts` exporting `TOP_LINKS`, `SECTIONS`, and `FOOTER_LINKS`. `Base.astro` imports all three and renders the footer links from `FOOTER_LINKS` (today they are literal anchors). `index.astro` keeps its editorial `menu` array (labels and notes are editorial) but takes each entry's `short` label from `nav.ts` by `href`, so the hamburger and the site nav cannot drift. | `src/lib/nav.ts` (new), `src/layouts/Base.astro`, `src/pages/index.astro` |
+| I2 | About joins `TOP_LINKS` as the last entry (Research, Resources, Writing, About). Values leaves the Research sub-nav; it stays in the footer and the homepage menu. Whether Values also joins the top row is item 3 in "Needs from Brandon, phase 0.1"; default is footer and menu only. | `src/lib/nav.ts` |
+| I3 | Claimless entities. Six companies and four of five products have no published claims, and Companies and Products are sub-nav links. Option A (default): `/research/companies` and `/research/products` list only entities with at least one published claim; detail URLs stay and render as they do today. Option B: drop Companies and Products from the Research sub-nav until the guide's claims exist; list pages unchanged. Item 2 in "Needs from Brandon, phase 0.1" picks. Either way `/research/entities/[...slug]` is untouched. | `src/pages/research/companies/index.astro`, `src/pages/research/products/index.astro`, or `src/lib/nav.ts` |
+| I4 | Docs that lag the code: roadmap §3 says RSS autodiscovery "is not emitted yet" and "Writing ... is not in the site-wide nav"; `architecture/site.md` says the same in the Homepage and Writing sections. `Base.astro` emits the `<link rel="alternate">` (line 108) and lists Writing in `TOP_LINKS`. Fix both docs, then update `architecture/site.md` Layout and Structure for `nav.ts`, the About link, and I3's outcome. | `docs/v1.1.0-roadmap.md`, `docs/architecture/site.md` |
+
+### J. Indexing trigger
+
+| ID | Item | Files |
+|---|---|---|
+| J1 | `src/lib/seo.ts` keeps `INDEX_ALPHA_DETAIL_PAGES = false` (decided 2026-10-03: claim, source and entity pages stay noindexed for now). Its comment names the flip trigger as "GA (the 1.0.0 release)", which no longer describes anything: `VERSION.md` is `1.1.0-alpha.1` and `docs/v1.0.0-roadmap.md` never moved to `completed/`. Rewrite the comment: the flag flips when the first guide ("Before you trust an AI chatbot", phase 1) is live and its claims are published, by a decision recorded in the phase 1 plan. Add the same sentence to roadmap §9. Keep the flag name and the patterns. | `src/lib/seo.ts`, `docs/v1.1.0-roadmap.md` |
+
+### K. CMS: editorial articles
+
+| ID | Item | Files |
+|---|---|---|
+| K1 | Add a second Sveltia collection, `resources`, for `layout: article` entries only, so plain guides and explainers can be written in the admin. Mirror `src/content.config.ts`: `title` (string), `description` (string, maxlength 200, same hint as writing), `pubDate` (date, UTC), `layout` (hidden, default `article`), `wallpaper` (select: default, ai-safety, responsible-ai, none), `topics` (select, multiple, min 1 max 3: ai-literacy, ai-safety, consumer-guide, responsible-ai), `noindex` (boolean, default false), `further_reading` (list of title, url, publisher optional, last_checked optional date), `body` (markdown). Omit `data`. Set `filter: { field: layout, value: article }` so the matrix, guide and tool entries do not open in the admin; their `data` payloads are not editable there. Media folder: `public/images/resources` (create it with a `.gitkeep`). Add "Resources" to the runbook's "Writing posts" section. Production login stays the roadmap §3 follow-up; it is not duplicated here. | `public/admin/config.yml`, `public/images/resources/.gitkeep` (new), `docs/runbook.md` |
+
+### Needs from Brandon, phase 0.1
+
+1. The pledge signatory form's URL, and whether the homepage menu entry links to the post (default) or to the form directly.
+2. Claimless entities (I3): option A, hide them from the Companies and Products lists (default), or option B, drop the two sub-nav links.
+3. Values: footer and homepage menu only (default), or also in the nav top row.
+4. Whether 1.0.0 shipped. If it did, `git mv docs/v1.0.0-roadmap.md docs/plans/completed/` and reword `VERSION.md`'s "Pre-release stages (toward 1.0.0)" to the current release; if it did not, say so in `VERSION.md` so the version string and the stage notes agree.
+5. Confirm H4 (delete `research/v1-launch-set.md` now) rather than keep it until the phase 1 tracker exists.
+
+### Verification checklist, phase 0.1
+
+15. `inv check` passes.
+16. `/writing/pledge-prohibit-ai-self-improvement-pledge` renders in a production build (not a draft), the editor's note links to the form, and the homepage "Where to start" list and hamburger both show the pledge entry with its label and short label.
+17. The `brave-browser/renewable-energy-hosting` page shows a complete takeaway, a `<title>` that is a complete phrase, and a complete cap rationale; `rg -n "let \.|, S!|independent v\." research/claims` returns nothing.
+18. `/research`: the first FAQ answer links `/about` and names Brandon Faloona as the reviewer; `rg -n "structured research project|aspires to be|Operators approve" src/` returns nothing.
+19. `/research/entities/subjects/ai-model-producers` shows the rewritten description; `rg -n "landscape|leading the charge|sharper focus" research/entities` returns nothing.
+20. `research/v1-launch-set.md` is gone and `rg -n "v1-launch-set" docs/ research/ AGENTS.md README.md` returns nothing; `find research/claims -type d -empty` returns nothing.
+21. Every standard-chrome page's top row reads Research, Resources, Writing, About; Values is not under Research; the footer links come from `nav.ts`; each homepage hamburger label equals the `nav.ts` label for the same `href`.
+22. I3's chosen option is in effect: either the Companies and Products lists show only entities with published claims, or the two sub-nav links are gone. Entity detail URLs still resolve.
+23. `src/lib/seo.ts`'s comment and roadmap §9 name the first guide as the indexing trigger; `rg -n "1\.0\.0" src/lib/seo.ts` returns nothing.
+24. The admin at `http://localhost:4321/admin/index.html` lists Writing and Resources; Resources opens `ai-safety` and does not list `responsible-ai`, `should-i` or `turn-off-ai`; a test article saved from the admin passes the build, then is deleted.
+25. Roadmap §3 and `architecture/site.md` no longer say RSS autodiscovery is missing or that Writing is outside the site nav.
+
 ## Cross-references
 
 - Discovery records (Drive): "07 — Early Roadmap" (phase 0 decisions and the phase 1 proposals), "06 — Messaging" (copy), "04 — Trust & Transparency Model" (reviewer, corrections, disclosure placement), "05 — Content Model & Structure" (homepage order, amended for phase 0 by 07), Decisions Log (newest first).
@@ -189,3 +272,4 @@ Copy rules for anything else written under this plan: plain words, no em dashes,
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-10-03 | agent (claude-fable-5-1, Cowork session with Brandon) | implementation, iterated | Written from the discovery records after reading `Base.astro`, `index.astro`, `claims/[...slug].astro`, `research/index.astro`, `content.config.ts`, `public/admin/config.yml`, `responsible-ai.md`, `v1.1.0-roadmap.md`, `architecture/site.md`. Line numbers are as of 2026-10-03. Decisions and scope confirmed by Brandon in the Area 7 session; the two draft About paragraphs await his review. |
+| 2026-10-03 | agent (claude-fable-5-1, Cowork session with Brandon) | implementation, iterated | Added "Phase 0.1: pull-forwards" (sections G to K, their checklist, needs list and verification items 15 to 25) after reading `Base.astro`, `index.astro`, `seo.ts`, `content.config.ts`, `public/admin/config.yml`, `research/index.astro`, the five claim files, `templates.yaml`, `v1-launch-set.md` and the Drive record "07 — Early Roadmap". Phase 0 scope and gate unchanged. Decisions by Brandon the same day: pledge signatory form is the homepage addition; claim pages stay noindexed with a new trigger; pull-forwards tracked in this file. |
