@@ -19,37 +19,40 @@ const cards = entities.map(entity => {
     verdicts: entityClaims.map(c => c.data.verdict),
     claimCount: entityClaims.length,
   };
-}).sort((a, b) => a.name.localeCompare(b.name));
+})
+  // Entities without a published claim keep their detail pages but stay off this list.
+  .filter(card => card.claimCount > 0)
+  .sort((a, b) => a.name.localeCompare(b.name));
 ---
 <Base title="Products" layout="wide">
   <PageHeader variant="index" type="product" title="Products" />
-  <FilterBar
-    total={cards.length}
-    searchPlaceholder="Search products…"
-    searchDataAttr="data-name"
-    facets={[{ id: 'has-claims', label: 'Claims', values: [{ value: 'true', label: 'Has claims' }] }]}
-  />
-  <div class="entity-grid" id="entity-grid">
-    {cards.map(card => (
-      <div
-        data-filterable
-        data-name={card.name.toLowerCase()}
-        data-has-claims={card.claimCount > 0 ? 'true' : 'false'}
-      >
-        <EntityCard
-          name={card.name}
-          slug={card.slug}
-          entityType="product"
-          description={card.description}
-          verdicts={card.verdicts}
-          claimCount={card.claimCount}
+  {cards.length === 0
+    ? <EmptyState message="No products have published claims yet." />
+    : <Fragment>
+        <FilterBar
+          total={cards.length}
+          searchPlaceholder="Search products…"
+          searchDataAttr="data-name"
         />
-      </div>
-    ))}
-  </div>
-  <div id="filter-empty" hidden>
-    <EmptyState message="No products match this filter." />
-  </div>
+        <div class="entity-grid" id="entity-grid">
+          {cards.map(card => (
+            <div data-filterable data-name={card.name.toLowerCase()}>
+              <EntityCard
+                name={card.name}
+                slug={card.slug}
+                entityType="product"
+                description={card.description}
+                verdicts={card.verdicts}
+                claimCount={card.claimCount}
+              />
+            </div>
+          ))}
+        </div>
+        <div id="filter-empty" hidden>
+          <EmptyState message="No products match this filter." />
+        </div>
+      </Fragment>
+  }
 </Base>
 <style>
 .entity-grid {

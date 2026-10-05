@@ -6,6 +6,7 @@ import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
 import { SITE_DESCRIPTION } from "../lib/seo";
 import { WRITING_FEED_TITLE } from "../lib/writing";
+import { TOP_LINKS, SECTIONS, FOOTER_LINKS, type NavLink } from "../lib/nav";
 
 const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
@@ -44,45 +45,14 @@ const fullTitle = titleIsFull ? title : `${title} - Dangerous Robot`;
 const ogTitle = socialTitle ?? fullTitle;
 const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
-type NavLink = { href: string; label: string };
-type Section = { href: string; label: string; links: NavLink[] };
-
-const TOP_LINKS: NavLink[] = [
-  { href: '/research',  label: 'Research' },
-  { href: '/resources', label: 'Resources' },
-  { href: '/writing',   label: 'Writing' },
-];
-
-const SECTIONS: Section[] = [
-  {
-    href: '/research',
-    label: 'Research',
-    links: [
-      { href: '/research/topics',      label: 'Topics' },
-      { href: '/research/claims',      label: 'Claims' },
-      { href: '/research/companies',   label: 'Companies' },
-      { href: '/research/products',    label: 'Products' },
-      { href: '/values',               label: 'Values' },
-    ],
-  },
-  {
-    href: '/resources',
-    label: 'Resources',
-    links: [
-      { href: '/resources/should-i',       label: 'Should I Use AI?' },
-      { href: '/resources/ai-safety',      label: 'AI Safety Index' },
-      { href: '/resources/turn-off-ai',    label: 'Turn Off AI' },
-      { href: '/resources/responsible-ai', label: 'Responsible AI' },
-    ],
-  },
-  { href: '/writing', label: 'Writing', links: [] },
-];
-
 const pathname = Astro.url.pathname;
 const currentSection = SECTIONS.find(
   (s) => pathname === s.href || pathname.startsWith(s.href + '/') || s.links.some(l => pathname === l.href),
 ) ?? null;
 const navLinks: NavLink[] = currentSection?.links ?? [];
+const footerInternal = FOOTER_LINKS.filter((l) => !l.external);
+const footerExternal = FOOTER_LINKS.filter((l) => l.external);
+const footerSeparator = " &nbsp;·&nbsp; ";
 
 const orgSchema = {
   "@context": "https://schema.org",
@@ -359,19 +329,14 @@ const orgSchema = {
       <p>Built with the help of AI. Every claim has a source, and a person who stands behind it.</p>
       <p>A community project from the maker of <a href="https://treadlightly.ai">TreadLightlyAI</a>.</p>
       <p>
-        <a href="/about">About</a>
-        &nbsp;·&nbsp;
-        <a href="/values">Values</a>
-        &nbsp;·&nbsp;
-        <a href="/research#methodology">Methodology</a>
-        &nbsp;·&nbsp;
-        <a href="/credits">Credits</a>
+        {footerInternal.map((l, i) => (
+          <Fragment>{i > 0 && <Fragment set:html={footerSeparator} />}<a href={l.href}>{l.label}</a></Fragment>
+        ))}
       </p>
       <p>
-        <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">GitHub</a>
-        &nbsp;·&nbsp;
-        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>
-        &nbsp;·&nbsp;
+        {footerExternal.map((l) => (
+          <Fragment><a href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a><Fragment set:html={footerSeparator} /></Fragment>
+        ))}
         v{siteVersion}
       </p>
     </footer>

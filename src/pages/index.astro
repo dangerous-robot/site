@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
+import { navLabel } from '../lib/nav';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -71,55 +72,61 @@ const fmtVerdict = (v: string) =>
 
 /*
  * The homepage menu. One array, rendered twice: the visible "Where to start"
- * list (label + note) and the hamburger dropdown (short label). The short
- * labels match the section labels Base.astro uses on every other page, so
- * the dropdown here and the site nav elsewhere name the same pages the same
- * way. Destinations are fixed; labels are editorial.
+ * list (label + note) and the hamburger dropdown (short label). Labels and
+ * notes are editorial. The short label comes from nav.ts by href, so the
+ * dropdown here and the site nav elsewhere cannot name the same page two
+ * ways; only a page nav.ts does not list sets its own `short`. Setting
+ * `short` on a listed page, or neither, fails the build.
  */
-const menu = [
+const menuEntries = [
   {
     href: '/writing',
     label: 'Writing',
-    short: 'Writing',
     note: WRITING_LEDE,
   },
   {
     href: '/resources/turn-off-ai',
     label: 'Turn off the AI you didn’t ask for',
-    short: 'Turn Off AI',
     note: 'Meta AI, Google AI Overviews, Copilot: what can be switched off, and what to try when it can’t.',
   },
   {
     href: '/resources/should-i',
     label: 'Should I use AI for this?',
-    short: 'Should I Use AI?',
     note: 'A few questions worth asking before you hand a task over.',
   },
   {
     href: '/resources/ai-safety',
     label: 'How AI companies score on safety',
-    short: 'AI Safety Index',
     note: 'The Future of Life Institute’s index: the best grade is a C+.',
   },
   {
     href: '/resources/responsible-ai',
     label: 'Which chatbots behave responsibly',
-    short: 'Responsible AI',
     note: 'GreenPT, Ecosia AI, Euria and others compared on privacy, environment and transparency.',
   },
   {
     href: '/research',
     label: 'Company claims, checked',
-    short: 'Research',
     note: 'Verdicts on what AI companies say about safety and the environment, each with its sources.',
   },
   {
     href: '/values',
     label: 'What this site stands for',
-    short: 'Values',
     note: 'Where this site stands, in plain words.',
   },
 ];
+
+const menu = menuEntries.map((m: { href: string; label: string; note: string; short?: string }) => {
+  const fromNav = navLabel(m.href);
+  if (fromNav && m.short) {
+    throw new Error(`Homepage menu: ${m.href} is in src/lib/nav.ts; drop its own short label.`);
+  }
+  const short = fromNav ?? m.short;
+  if (!short) {
+    throw new Error(`Homepage menu: ${m.href} needs a short label, in src/lib/nav.ts or on the entry.`);
+  }
+  return { ...m, short };
+});
 
 /*
  * One exhibit per danger: a published claim whose verdict backs the column's
