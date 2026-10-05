@@ -3,6 +3,7 @@ name: Brave Browser
 type: product
 verification_status: verified
 website: https://brave.com
+parent_company: companies/brave-software
 description: Brave Browser is an open-source privacy-focused web browser developed
   by Brave Software that blocks ads and trackers by default, integrates AI tools,
   and rewards users via its Basic Attention Token cryptocurrency.

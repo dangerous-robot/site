@@ -16,7 +16,7 @@ from common.frontmatter import parse_frontmatter
 from common.models import EntityType, Independence
 from common.source_classification import EntityIdentity, entity_first_party_reason
 from ingestor.models import SourceFile
-from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for
+from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for, parse_entity_ref
 from orchestrator.pipeline import VerifyConfig, research_claim, verify_claim
 from researcher.decomposed import ResearchOutput
 
@@ -130,6 +130,17 @@ def test_identity_loads_parent_file(tmp_path: Path) -> None:
 def test_identity_falls_back_to_parent_name_when_file_missing(tmp_path: Path) -> None:
     identity = entity_identity_for(_resolved("companies/brave-software"), tmp_path)
     assert "brave software" in identity.names
+
+
+# --- E3: the real Brave entities --------------------------------------------
+
+
+def test_brave_entity_has_parent(repo_root: Path) -> None:
+    resolved = parse_entity_ref("products/brave-browser", repo_root)
+    identity = entity_identity_for(resolved, repo_root)
+    assert "brave software" in identity.names
+    assert "brave" in identity.names  # alias on companies/brave-software
+    assert entity_first_party_reason("Brave Software", FORUM_URL, identity) is not None
 
 
 # --- E2: verify_claim relabels the analyst's pool and records overrides -----

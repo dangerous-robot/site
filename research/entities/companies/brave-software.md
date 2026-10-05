@@ -2,6 +2,8 @@
 name: Brave Software
 type: company
 website: https://brave.com/about/#company-info
+aliases:
+- Brave
 description: A privacy-focused software company developing the Brave web browser and
   search engine, which emphasizes user data protection through features like an independent
   search index and ad-free experiences supported by optional crypto microtransactions.
