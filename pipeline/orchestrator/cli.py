@@ -349,7 +349,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     from common.content_loader import resolve_repo_root
     from common.frontmatter import serialize_frontmatter
     from common.source_classification import classify_source_type, independence_for_source_type
-    from ingestor.agent import IngestorDeps, ingestor_agent
+    from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent
     from ingestor.validation import validate_source_file
 
     root_str: str
@@ -374,6 +374,14 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
 
             sf = res.output
+            if not fetch_succeeded(deps):
+                reason = (
+                    deps.fetch_errors[-1]
+                    if deps.fetch_errors
+                    else "the model returned a source without fetching the page"
+                )
+                click.echo(f"Error: fetch failed, no page text for {url}: {reason}", err=True)
+                return 1
             validation = validate_source_file(sf, url, root_str)
             for w in validation.warnings:
                 click.echo(f"Warning: {w}", err=True)

@@ -199,3 +199,38 @@ async def test_model_url_replaced_with_requested_url(tmp_path) -> None:
         outcome = await _run_ingest_one(url, _scripted_model([url], _source_args(echoed)), tmp_path)
     assert isinstance(outcome, tuple)
     assert outcome[1].frontmatter.url == url
+
+
+# ---------------------------------------------------------------------------
+# dr step-ingest
+# ---------------------------------------------------------------------------
+
+
+def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
+    from click.testing import CliRunner
+
+    from orchestrator.cli import main
+
+    url = "https://builder.aws.amazon.com/renewable"
+    (tmp_path / "research" / "sources").mkdir(parents=True)
+    with respx.mock:
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        with ingestor_agent.override(model=_scripted_model([url], _source_args(url))):
+            with patch(
+                "ingestor.agent.ingestor_agent.override",
+                side_effect=lambda **kw: _noop_ctx(),
+            ):
+                result = CliRunner().invoke(
+                    main,
+                    [
+                        "--model", "test", "--ingestor-model", "test",
+                        "step-ingest", url, "--write", "--skip-wayback",
+                        "--repo-root", str(tmp_path),
+                    ],
+                )
+    assert result.exit_code == 1, result.output
+    error_lines = [ln for ln in result.output.splitlines() if ln.startswith("Error:")]
+    assert len(error_lines) == 1
+    assert "fetch failed" in error_lines[0]
+    assert "nodename" in error_lines[0]
+    assert list((tmp_path / "research" / "sources").rglob("*.md")) == []
