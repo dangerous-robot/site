@@ -116,12 +116,13 @@ def run_all_checks(
     # Build source ID set: "2025/fli-safety-index" style
     source_ids: set[str] = set()
     source_id_to_path: dict[str, Path] = {}
+    source_fms_by_id: dict[str, dict] = {}
     for p in source_files:
         rel = p.relative_to(repo_root / "research" / "sources")
         sid = str(rel.with_suffix("")).replace("\\", "/")
         source_ids.add(sid)
         source_id_to_path[sid] = p
-    source_fms_by_id = {sid: source_fms[str(p)] for sid, p in source_id_to_path.items()}
+        source_fms_by_id[sid] = source_fms[str(p)]
 
     issues: list[LintIssue] = []
     issues += check_orphaned_claims(claim_files, claim_fms, entity_index)

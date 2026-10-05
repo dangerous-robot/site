@@ -45,6 +45,11 @@ def has_citation_reference(text: str) -> bool:
     return bool(_CITATION.search(text))
 
 
+# Fields too short to hold a source title: the analyst must rewrite a
+# citation out of them, and `dr lint` checks them alongside the body.
+NO_CITATION_FIELDS = ("takeaway", "cap_rationale")
+
+
 def find_citation_references(text: str) -> list[tuple[str, str]]:
     """Every citation reference in ``text`` as ``(kind, matched text)``.
 

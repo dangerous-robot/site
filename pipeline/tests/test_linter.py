@@ -6,6 +6,8 @@ from pathlib import Path
 
 import pytest
 
+from analyst.citations import NO_CITATION_FIELDS
+
 from linter.models import LintIssue
 from linter.report import format_summary_report
 from linter.checks import (
@@ -463,16 +465,11 @@ class TestRawCitationTokens:
         assert issues[0].check_id == "numbered-source-reference"
         assert issues[0].severity == "error"
 
-    def test_numbered_source_reference_in_takeaway(self):
-        issues = self._check("Clean body.", takeaway="Brave says so (Source 1).")
-        assert len(issues) == 1
-        assert issues[0].check_id == "numbered-source-reference"
-        assert "takeaway" in issues[0].message
-
-    def test_numbered_source_reference_in_cap_rationale(self):
-        issues = self._check("Clean body.", cap_rationale="Only Source 2 is first-party.")
+    @pytest.mark.parametrize("field", NO_CITATION_FIELDS)
+    def test_numbered_source_reference_in_short_field(self, field):
+        issues = self._check("Clean body.", **{field: "Only Source 2 is first-party."})
         assert [i.check_id for i in issues] == ["numbered-source-reference"]
-        assert "cap_rationale" in issues[0].message
+        assert field in issues[0].message
 
     def test_clean_body_no_issue(self):
         body = "Brave cites *AWS Cloud Sustainability* for its hosting."

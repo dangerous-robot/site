@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from analyst.citations import find_citation_references
-from common.models import Confidence, VerificationLevel
+from analyst.citations import NO_CITATION_FIELDS, find_citation_references
+from common.models import Confidence, Independence, VerificationLevel
 
 from .models import LintIssue
 
@@ -39,7 +39,6 @@ INDEPENDENT_SOURCES_REQUIRED = {
     VerificationLevel.INDEPENDENTLY_VERIFIED.value: 1,
     VerificationLevel.MULTIPLY_VERIFIED.value: 2,
 }
-CITATION_CHECKED_FIELDS = ("takeaway", "cap_rationale")
 CITATION_ISSUE_KINDS = {
     "bracket": ("raw-citation-token", "raw citation token(s)"),
     "numbered": ("numbered-source-reference", "numbered source reference(s)"),
@@ -605,7 +604,7 @@ def check_raw_citation_tokens(
     for path in claim_files:
         fm = claim_frontmatters.get(str(path), {})
         fields = {"body": claim_bodies.get(str(path), "")}
-        for key in CITATION_CHECKED_FIELDS:
+        for key in NO_CITATION_FIELDS:
             value = fm.get(key)
             if isinstance(value, str):
                 fields[key] = value
@@ -653,7 +652,7 @@ def check_verification_level_pool(
         independent = sum(
             1 for ref in refs
             if overrides.get(ref, source_frontmatters.get(ref, {}).get("independence"))
-            == "independent"
+            == Independence.INDEPENDENT.value
         )
         if independent < required:
             issues.append(LintIssue(
