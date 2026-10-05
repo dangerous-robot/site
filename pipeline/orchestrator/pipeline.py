@@ -41,13 +41,13 @@ from pydantic_ai import Agent, capture_run_messages
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
-from analyst.agent import EntityResolution
-from orchestrator.entity_resolution import ResolvedEntity, SearchHints
+from analyst.agent import EntityResolution, SourceOverride
+from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_var
-from common.models import BlockedReason, Category, Confidence, EntityType, Verdict
+from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
 from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slug_from_url, slugify
@@ -61,7 +61,11 @@ from ingestor.validation import validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from common.models import SubQuestion
-from common.source_classification import classify_source_type, independence_for_source_type
+from common.source_classification import (
+    classify_source_type,
+    entity_first_party_reason,
+    independence_for_source_type,
+)
 from orchestrator.persistence import build_source_url_index, load_source_dict, resolve_source_slugs
 from researcher.decomposed import ResearchOutput
 
@@ -379,6 +383,8 @@ async def verify_claim(
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
 
+            entity_overrides = _apply_entity_match(result.sources, resolved_entity, repo_root)
+
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
@@ -445,6 +451,7 @@ async def verify_claim(
                 if cfg.show_progress:
                     progress("  ! analyst failed to produce an assessment")
                 return result
+            _merge_entity_overrides(analyst_out.verdict, entity_overrides)
 
             # Step 4: Auditor
             say("  › Auditing")
@@ -466,6 +473,62 @@ async def verify_claim(
                 progress("Pipeline complete.")
 
     return result
+
+
+def _apply_entity_match(
+    sources: list[dict],
+    resolved_entity: ResolvedEntity | None,
+    repo_root: Path,
+) -> list[SourceOverride]:
+    """Relabel the claim entity's own sources ``first-party`` in place.
+
+    A source's file-level ``independence`` is entity-agnostic (a brave.com
+    page can be independent evidence on an AWS claim), so the correction is
+    per claim: the analyst sees the corrected label, and the returned
+    overrides are recorded on the claim's ``source_overrides`` so the site's
+    source counts agree with the level. Only ever moves toward first-party.
+    """
+    if resolved_entity is None:
+        return []
+    identity = entity_identity_for(resolved_entity, repo_root)
+    overrides: list[SourceOverride] = []
+    for sd in sources:
+        if sd.get("independence") == Independence.FIRST_PARTY.value:
+            continue
+        reason = entity_first_party_reason(sd.get("publisher") or "", sd.get("url") or "", identity)
+        if reason is None:
+            continue
+        sd["independence"] = Independence.FIRST_PARTY.value
+        logger.info("Entity match: %s is first-party (%s)", sd.get("source_id"), reason)
+        if sd.get("source_id"):
+            overrides.append(SourceOverride(
+                source=sd["source_id"],
+                independence=Independence.FIRST_PARTY,
+                reason=f"Entity match: {reason}.",
+            ))
+    return overrides
+
+
+def _merge_entity_overrides(
+    verdict: VerdictAssessment, overrides: list[SourceOverride]
+) -> None:
+    """Add entity-match overrides to the analyst's, one entry per source.
+
+    The entity match beats any label, so an analyst override for the same
+    source that is not ``first-party`` is corrected rather than duplicated.
+    """
+    if not overrides:
+        return
+    merged = list(verdict.source_overrides or [])
+    by_source = {o.source: o for o in merged}
+    for override in overrides:
+        prior = by_source.get(override.source)
+        if prior is None:
+            merged.append(override)
+        elif prior.independence != Independence.FIRST_PARTY:
+            prior.independence = Independence.FIRST_PARTY
+            prior.reason = override.reason
+    verdict.source_overrides = merged
 
 
 def _build_sub_questions_block(
@@ -1097,6 +1160,8 @@ async def research_claim(
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
 
+            entity_overrides = _apply_entity_match(result.sources, resolved_entity, repo_root)
+
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
@@ -1152,6 +1217,7 @@ async def research_claim(
                 if analyst_failure is not None and result.failure is None:
                     result.failure = analyst_failure
                 return result
+            _merge_entity_overrides(analyst_out.verdict, entity_overrides)
 
             result.entity = analyst_out.entity.entity_name
 
