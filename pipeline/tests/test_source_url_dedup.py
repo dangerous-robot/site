@@ -15,7 +15,6 @@ from common.models import SubQuestion
 from orchestrator.pipeline import (
     VerifyConfig,
     _apply_url_dedup,
-    _collapse_equivalent_urls,
     _ingest_urls,
     _invert_addresses,
 )
@@ -222,32 +221,12 @@ class TestApplyUrlDedup:
         assert [(u, sid) for u, sid, _ in cached] == [(urls[0], "2026/a")]
 
 
-class TestCollapseEquivalentUrls:
-    def test_later_equivalent_url_dropped_and_addresses_merged(self) -> None:
-        urls = ["https://x.com/a", "https://b.com/", "https://www.x.com/a/?utm_source=y"]
-        addresses = {
-            "https://x.com/a": ["sq1"],
-            "https://www.x.com/a/?utm_source=y": ["sq1", "sq2"],
-        }
-
-        bodies = {"https://www.x.com/a/?utm_source=y": "page text"}
-
-        kept = _collapse_equivalent_urls(urls, addresses, bodies)
-
-        assert kept == ["https://x.com/a", "https://b.com/"]
-        assert addresses["https://x.com/a"] == ["sq1", "sq2"]
-        assert bodies["https://x.com/a"] == "page text"
-
-    def test_unparseable_url_kept_as_is(self) -> None:
-        assert _collapse_equivalent_urls(["not a url", "not a url"], {}, {}) == ["not a url"]
-
-
 def test_invert_addresses_uses_source_addresses_over_disk_url() -> None:
     """A cached source's on-disk url can differ from the researcher's URL."""
     sub_questions = [SubQuestion(id="sq1", question="q?", rationale="r.")]
     sources = [{"url": "https://x.com/a", "source_id": "2026/a", "addresses": ["sq1"]}]
 
-    coverage = _invert_addresses(sub_questions, {"https://www.x.com/a/": ["sq1"]}, sources)
+    coverage = _invert_addresses(sub_questions, sources)
 
     assert coverage == {"sq1": ["2026/a"]}
 

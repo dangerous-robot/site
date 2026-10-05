@@ -10,7 +10,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from common.blocklist import BlocklistEntry, filter_urls
-from common.canonical_url import canonicalize
+from common.canonical_url import canonical_key, canonicalize
 from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from orchestrator.checkpoints import StepError
@@ -479,10 +479,7 @@ async def decomposed_research(
             out.trace["scorer_dropped_all"] = True
             out.errors.append(_research_err("scorer_dropped_all", f"URL scorer dropped all {len(candidates)} candidates"))
             return out
-        return _commit(
-            [c.url for c in scored.kept],
-            {c.url: list(c.addresses) for c in scored.kept},
-        )
+        return _commit(*_merge_kept(scored.kept, candidates))
     except asyncio.TimeoutError:
         out.errors.append(_research_err("timeout", "URL scorer timed out"))
         return _commit(*_fallback_to_candidates())
@@ -490,6 +487,30 @@ async def decomposed_research(
         out.errors.append(_research_err("model_error", str(exc)))
         logger.error("URL scorer failed: %s", exc)
         return _commit(*_fallback_to_candidates())
+
+
+def _merge_kept(
+    kept: list[ScoredCandidate], candidates: list[SearchCandidate]
+) -> tuple[list[str], dict[str, list[str]]]:
+    """Map each kept URL to its candidate's URL and merge same-page duplicates.
+
+    The scorer can echo a candidate URL in another form (``www.``, trailing
+    slash, tracking params). Using the candidate's own URL keeps its
+    prefetched body reachable, and merging stops two forms of one page from
+    being ingested as separate sources with the same id.
+    """
+    by_key = {canonical_key(c.url): c.url for c in candidates}
+    urls: list[str] = []
+    addresses: dict[str, list[str]] = {}
+    for sc in kept:
+        url = by_key.setdefault(canonical_key(sc.url), sc.url)
+        if url not in addresses:
+            urls.append(url)
+            addresses[url] = []
+        for sq_id in sc.addresses:
+            if sq_id not in addresses[url]:
+                addresses[url].append(sq_id)
+    return urls, addresses
 
 
 def _group_queries_by_sq(planned) -> dict[str, list[str]]:

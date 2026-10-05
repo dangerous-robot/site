@@ -263,21 +263,20 @@ async def test_model_url_replaced_with_requested_url(tmp_path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
+def _invoke_step_ingest(tmp_path, url: str, mock_kwargs: dict, model_url: str):
     from click.testing import CliRunner
 
     from orchestrator.cli import main
 
-    url = "https://builder.aws.amazon.com/renewable"
     (tmp_path / "research" / "sources").mkdir(parents=True)
     with respx.mock:
-        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
-        with ingestor_agent.override(model=_scripted_model([url], _source_args(url))):
+        respx.get(url).mock(**mock_kwargs)
+        with ingestor_agent.override(model=_scripted_model([url], _source_args(model_url))):
             with patch(
                 "ingestor.agent.ingestor_agent.override",
                 side_effect=lambda **kw: nullcontext(),
             ):
-                result = CliRunner().invoke(
+                return CliRunner().invoke(
                     main,
                     [
                         "--model", "test", "--ingestor-model", "test",
@@ -285,6 +284,13 @@ def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
                         "--repo-root", str(tmp_path),
                     ],
                 )
+
+
+def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
+    url = "https://builder.aws.amazon.com/renewable"
+    result = _invoke_step_ingest(
+        tmp_path, url, {"side_effect": httpx.ConnectError(_DNS_ERROR)}, url
+    )
     assert result.exit_code == 1, result.output
     error_lines = [ln for ln in result.output.splitlines() if ln.startswith("Error:")]
     assert len(error_lines) == 1
@@ -294,28 +300,11 @@ def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
 
 
 def test_step_ingest_keeps_requested_url_when_model_echoes_redirect(tmp_path) -> None:
-    from click.testing import CliRunner
-
-    from orchestrator.cli import main
-
     url = "https://brave.com/transparency/"
-    echoed = "https://brave.com/transparency-report/"
-    (tmp_path / "research" / "sources").mkdir(parents=True)
-    with respx.mock:
-        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
-        with ingestor_agent.override(model=_scripted_model([url], _source_args(echoed))):
-            with patch(
-                "ingestor.agent.ingestor_agent.override",
-                side_effect=lambda **kw: nullcontext(),
-            ):
-                result = CliRunner().invoke(
-                    main,
-                    [
-                        "--model", "test", "--ingestor-model", "test",
-                        "step-ingest", url, "--write", "--skip-wayback",
-                        "--repo-root", str(tmp_path),
-                    ],
-                )
+    result = _invoke_step_ingest(
+        tmp_path, url, {"return_value": httpx.Response(200, html=_HTML)},
+        "https://brave.com/transparency-report/",
+    )
     assert result.exit_code == 0, result.output
     written = list((tmp_path / "research" / "sources").rglob("*.md"))
     assert len(written) == 1

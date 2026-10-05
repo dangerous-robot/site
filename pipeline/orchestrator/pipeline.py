@@ -46,7 +46,7 @@ from analyst.citations import clean_citations
 from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
-from common.canonical_url import canonicalize
+from common.canonical_url import canonical_key
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
@@ -363,7 +363,6 @@ async def verify_claim(
             repo_root = _cfg_repo_root(cfg)
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
-            urls = _collapse_equivalent_urls(urls, ro.url_addresses, ro.prefetched_bodies)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
@@ -399,7 +398,7 @@ async def verify_claim(
             # with zero addressing sources keep an empty list to surface the
             # gap to the analyst and the audit sidecar.
             result.sub_question_coverage = _invert_addresses(
-                ro.sub_questions, ro.url_addresses, result.sources
+                ro.sub_questions, result.sources
             )
 
             if cfg.show_progress:
@@ -559,26 +558,24 @@ def _build_sub_questions_block(
 
 def _invert_addresses(
     sub_questions: list[SubQuestion],
-    url_addresses: dict[str, list[str]],
     sources: list[dict],
 ) -> dict[str, list[str]]:
-    """Build a sq_id -> [source_id] map from per-URL addresses + ingested sources.
+    """Build a sq_id -> [source_id] map from the ingested sources' addresses.
 
     Sub-questions with no addressing source keep an empty list so the
     coverage gap is observable. ``sources`` is the post-ingest list of
-    source dicts (cached + fresh combined); each must carry ``url`` and
-    ``source_id``.
+    source dicts (cached + fresh combined); each carries ``source_id`` and
+    the ``addresses`` of the researcher URL it came from.
     """
     coverage: dict[str, list[str]] = {sq.id: [] for sq in sub_questions}
     for sd in sources:
-        url = sd.get("url")
         sid = sd.get("source_id")
-        if not url or not sid:
+        if not sid:
             continue
-        # A cached source's url is the one on disk, which can differ in form
-        # from the researcher's URL that ``addresses`` was looked up by.
-        addresses = sd["addresses"] if "addresses" in sd else url_addresses.get(url, [])
-        for sq_id in addresses:
+        # Read ``addresses`` rather than re-looking up by ``url``: a cached
+        # source's url is the one on disk, which can differ in form from the
+        # researcher's URL.
+        for sq_id in sd.get("addresses", []):
             if sq_id in coverage and sid not in coverage[sq_id]:
                 coverage[sq_id].append(sid)
     return coverage
@@ -618,44 +615,6 @@ def _apply_blocklist_cap(
     return urls, out_errors
 
 
-def _canonical_or_raw(url: str) -> str:
-    try:
-        return canonicalize(url)
-    except ValueError:
-        return url
-
-
-def _collapse_equivalent_urls(
-    urls: list[str],
-    url_addresses: dict[str, list[str]],
-    prefetched_bodies: dict[str, str],
-) -> list[str]:
-    """Drop URLs that canonicalize equal to an earlier one in the batch.
-
-    The dropped URL's sub-question addresses and prefetched body move to the
-    kept URL, so its coverage survives and a shielded publisher is not
-    refetched. Two forms of one page would otherwise both be ingested and
-    resolve to the same source id, listing it twice.
-    """
-    kept: dict[str, str] = {}
-    out: list[str] = []
-    for url in urls:
-        key = _canonical_or_raw(url)
-        first = kept.get(key)
-        if first is None:
-            kept[key] = url
-            out.append(url)
-            continue
-        logger.info("dedup-batch: %s is the same page as %s", url, first)
-        merged = url_addresses.setdefault(first, [])
-        for sq_id in url_addresses.get(url, []):
-            if sq_id not in merged:
-                merged.append(sq_id)
-        if url in prefetched_bodies and first not in prefetched_bodies:
-            prefetched_bodies[first] = prefetched_bodies[url]
-    return out
-
-
 def _apply_url_dedup(
     urls: list[str],
     url_index: dict[str, str],
@@ -663,19 +622,17 @@ def _apply_url_dedup(
 ) -> tuple[list[str], list[tuple[str, str, dict]]]:
     """Partition urls into those to ingest and those already on disk.
 
-    A URL matches a file on disk by canonical form (``www.``, trailing
-    slash and tracking params ignored), not only by exact string.
+    ``url_index`` is keyed by ``canonical_key`` (see
+    ``build_source_url_index``), so ``www.``, trailing-slash and
+    tracking-param variants match the file on disk.
 
     Returns (to_ingest, cached) where cached is a list of
     (url, source_id, source_dict) triples.
     """
-    by_canonical: dict[str, str] = {}
-    for indexed_url, indexed_id in url_index.items():
-        by_canonical.setdefault(_canonical_or_raw(indexed_url), indexed_id)
     to_ingest: list[str] = []
     cached: list[tuple[str, str, dict]] = []
     for url in urls:
-        source_id = url_index.get(url) or by_canonical.get(_canonical_or_raw(url))
+        source_id = url_index.get(canonical_key(url))
         if source_id:
             sd = load_source_dict(source_id, repo_root)
             if sd is not None:
@@ -1206,7 +1163,6 @@ async def research_claim(
             progress("  › Ingesting", log=False)
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
             url_index = build_source_url_index(repo_root)
-            urls = _collapse_equivalent_urls(urls, ro.url_addresses, ro.prefetched_bodies)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
@@ -1240,7 +1196,7 @@ async def research_claim(
             all_errors = research_errors + ingest_errors
 
             result.sub_question_coverage = _invert_addresses(
-                ro.sub_questions, ro.url_addresses, result.sources
+                ro.sub_questions, result.sources
             )
 
             # Checkpoint: review sources

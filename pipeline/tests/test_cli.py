@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from unittest.mock import patch
+
 import pytest
 from click.testing import CliRunner
 
 import click
 
+from analyst.citations import clean_citations
 from orchestrator.cli import (
     _check_provider_api_keys,
     _required_env_for_model,
@@ -970,13 +974,6 @@ class TestOnboardCLIPhaseB:
 
 
 def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tmp_path) -> None:
-    from unittest.mock import patch as _patch
-
-    from click.testing import CliRunner
-
-    from analyst.citations import clean_citations
-    from orchestrator.cli import main
-
     research = tmp_path / "research"
     (research / "entities" / "companies").mkdir(parents=True)
     (research / "entities" / "companies" / "acme.md").write_text(
@@ -996,18 +993,18 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
 
     captured: list[list[dict]] = []
 
-    from types import SimpleNamespace as _NS
-
     async def _fake_analyse(entity_name, claim_text, source_dicts, cfg):
         captured.append(source_dicts)
-        verdict = _NS(
+        verdict = SimpleNamespace(
             title="Acme is green", topics=[], narrative="N.",
-            verdict=_NS(value="unverified"), confidence=_NS(value="low"),
-            verification_level=_NS(value="claimed"),
+            verdict=SimpleNamespace(value="unverified"),
+            confidence=SimpleNamespace(value="low"),
+            verification_level=SimpleNamespace(value="claimed"),
         )
-        return _NS(entity=_NS(entity_name="Acme", entity_type="company"), verdict=verdict), None
+        entity = SimpleNamespace(entity_name="Acme", entity_type="company")
+        return SimpleNamespace(entity=entity, verdict=verdict), None
 
-    with _patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
+    with patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
         result = CliRunner().invoke(
             main,
             ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],

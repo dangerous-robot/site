@@ -25,7 +25,7 @@ from common.models import (
     Verdict,
 )
 from common.source_classification import classify_source_type, independence_for_source_type
-from common.canonical_url import same_resource
+from common.canonical_url import canonical_key, same_resource
 from common.utils import host_token, slugify
 from ingestor.models import SourceFile
 
@@ -79,8 +79,9 @@ def _search_hints_dict(search_hints: "SearchHints | None") -> dict[str, list[str
 
 
 def build_source_url_index(repo_root: Path) -> dict[str, str]:
-    """Scan research/sources/*/*.md and return a url -> source_id mapping.
+    """Scan research/sources/*/*.md and return a canonical url -> source_id mapping.
 
+    Keys are ``canonical_key(url)``, so look up with the same function.
     source_id is in the format "{year}/{slug}" matching what _write_source_files
     returns. Files that are unreadable, lack frontmatter, or have no url field
     are silently skipped.
@@ -98,7 +99,7 @@ def build_source_url_index(repo_root: Path) -> dict[str, str]:
         if not url:
             continue
         source_id = f"{path.parent.name}/{path.stem}"
-        index[url] = source_id
+        index[canonical_key(str(url))] = source_id
     return index
 
 

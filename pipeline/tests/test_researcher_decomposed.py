@@ -12,6 +12,7 @@ from pydantic_ai.models.test import TestModel
 from researcher.planner import PlannedQuery, ResearchPlan, research_planner_agent
 from researcher.scorer import ScoredCandidate, ScoredURLs, SearchCandidate, url_scorer_agent
 from researcher.decomposed import (
+    _merge_kept,
     _select_research_origins,
     decomposed_research,
     execute_searches,
@@ -1080,3 +1081,32 @@ def test_founded_omitted_from_scorer_prompt_when_unset() -> None:
     assert "Founded:" not in prompt, (
         f"Did not expect a 'Founded:' line when founded is None:\n{prompt}"
     )
+
+
+def test_merge_kept_maps_variants_to_candidate_url_and_merges_addresses() -> None:
+    candidates = [
+        SearchCandidate(url="https://x.com/a", title="A", snippet="a", from_query="q1"),
+        SearchCandidate(url="https://b.com/", title="B", snippet="b", from_query="q1"),
+    ]
+    kept = [
+        ScoredCandidate(url="https://www.x.com/a/?utm_source=y", addresses=["sq1"]),
+        ScoredCandidate(url="https://b.com/", addresses=["sq1"]),
+        ScoredCandidate(url="https://x.com/a", addresses=["sq1", "sq2"]),
+    ]
+
+    urls, addresses = _merge_kept(kept, candidates)
+
+    assert urls == ["https://x.com/a", "https://b.com/"]
+    assert addresses == {"https://x.com/a": ["sq1", "sq2"], "https://b.com/": ["sq1"]}
+
+
+def test_merge_kept_merges_variants_absent_from_candidates() -> None:
+    kept = [
+        ScoredCandidate(url="https://new.com/p", addresses=["sq1"]),
+        ScoredCandidate(url="https://www.new.com/p/", addresses=["sq2"]),
+    ]
+
+    urls, addresses = _merge_kept(kept, [])
+
+    assert urls == ["https://new.com/p"]
+    assert addresses == {"https://new.com/p": ["sq1", "sq2"]}

@@ -931,11 +931,16 @@ def claim_refresh(
     # directory path relative to claims_dir if frontmatter entity is absent.
     write_entity_ref = entity_ref or str(claim_path.parent.relative_to(claims_dir))
 
+    def _persist_sources() -> list[str]:
+        # A cached and a fresh source can still name the same file (a
+        # redirect target stored on disk), so keep the first of each id.
+        return list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
+
     # Mirror onboard's write pattern (four branches).
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
-        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
+        source_ids = _persist_sources()
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -984,7 +989,7 @@ def claim_refresh(
 
     # Branch B: analyst failed (no blocked_reason, no analyst_output).
     if vr.analyst_output is None:
-        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
+        source_ids = _persist_sources()
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -1040,7 +1045,7 @@ def claim_refresh(
     else:
         title_ok, title_reason = True, None
     if not title_ok:
-        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
+        source_ids = _persist_sources()
         try:
             inherited_topics = [Category(t) for t in template.topics]
         except ValueError:
@@ -1085,8 +1090,7 @@ def claim_refresh(
         return
 
     # Branch D: success.
-    fresh_ids = _write_source_files(vr.source_files, root) if vr.source_files else []
-    source_ids = list(dict.fromkeys(vr.cached_source_ids + fresh_ids))
+    source_ids = _persist_sources()
     try:
         inherited_topics = [Category(t) for t in template.topics] if template else list(ao.verdict.topics)
     except ValueError as exc:

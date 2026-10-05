@@ -154,6 +154,14 @@ def _normalize_query(query: str) -> str:
     return urlencode(kept, doseq=False)
 
 
+def canonical_key(url: str) -> str:
+    """Canonical form for use as a lookup key; malformed URLs key as themselves."""
+    try:
+        return canonicalize(url)
+    except ValueError:
+        return url.strip()
+
+
 def same_resource(a: str | None, b: str | None) -> bool:
     """True when two URLs canonicalize equal; missing or malformed URLs never match."""
     if not a or not b:
