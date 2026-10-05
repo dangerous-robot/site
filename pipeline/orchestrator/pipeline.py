@@ -42,6 +42,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution, SourceOverride
+from analyst.citations import clean_citations
 from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
@@ -1024,6 +1025,7 @@ async def _analyse_claim(
         if verdict_assessment is None:
             return None, _analyst_failure(exc)
         _merge_entity_overrides(verdict_assessment, entity_overrides)
+        _clean_verdict_citations(verdict_assessment, sources)
         entity_resolution = EntityResolution(
             entity_name=resolved_entity.entity_name,
             entity_type=resolved_entity.entity_type,
@@ -1036,7 +1038,22 @@ async def _analyse_claim(
         output, _, exc = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
     if output is None:
         return None, _analyst_failure(exc)
+    _clean_verdict_citations(output.verdict, sources)
     return output, None
+
+
+def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) -> None:
+    """Rewrite citation tokens and "Source N" references as source titles.
+
+    ``sources`` must be the list, in order, that the analyst prompt was built
+    from: "Source N" means the Nth source listed there.
+    """
+    verdict.narrative, unresolved = clean_citations(verdict.narrative, sources)
+    if verdict.takeaway is not None:
+        verdict.takeaway, more = clean_citations(verdict.takeaway, sources)
+        unresolved += more
+    if unresolved:
+        logger.warning("Analyst output has unresolved citation references: %s", unresolved)
 
 
 async def _audit_claim(

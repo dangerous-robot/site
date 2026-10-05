@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
+import re
+from contextlib import contextmanager
+from unittest.mock import patch
+
+import pytest
+from pydantic_ai.models.test import TestModel
+
+from analyst.agent import verdict_only_agent
 from analyst.citations import clean_citations
+from common.models import EntityType
+from orchestrator.entity_resolution import ResolvedEntity
+from orchestrator.pipeline import VerifyConfig, _analyse_claim
 
 NBSP = " "
 
@@ -71,3 +82,59 @@ def test_open_source_3d_untouched() -> None:
     text, unresolved = clean_citations("an open Source 3D printer", _sources())
     assert text == "an open Source 3D printer"
     assert unresolved == []
+
+
+# --- T5: _analyse_claim returns cleaned narrative and takeaway --------------
+
+
+@contextmanager
+def _noop_ctx():
+    yield
+
+
+@pytest.mark.asyncio
+async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
+    sources = [
+        {**s, "publisher": "Example", "summary": "A page.", "url": f"https://example.org/{s['slug']}"}
+        for s in _sources(2)
+    ]
+    model = TestModel(
+        custom_output_args={
+            "title": "Brave hosts on renewable energy",
+            "verdict": "unverified",
+            "confidence": "low",
+            "narrative": f"Brave says so【2026/source-1】 and Source{NBSP}1 agrees.",
+            "topics": ["environmental-impact"],
+            "verification_level": "claimed",
+            "cap_rationale": "Only the company's own pages address the claim.",
+            "seo_title": "Brave renewable hosting claim",
+            "takeaway": "See Source 1.",
+        }
+    )
+    resolved = ResolvedEntity(
+        entity_ref="products/brave-browser",
+        entity_name="Brave Browser",
+        entity_type=EntityType.PRODUCT,
+        entity_description="",
+    )
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path))
+
+    with verdict_only_agent.override(model=model):
+        # Keep our TestModel: neutralize the orchestrator's own override.
+        with patch(
+            "orchestrator.pipeline.verdict_only_agent.override",
+            side_effect=lambda **kw: _noop_ctx(),
+        ):
+            out, failure = await _analyse_claim(
+                "Brave Browser", "Brave is hosted on renewable energy", sources, cfg,
+                resolved_entity=resolved,
+            )
+
+    assert failure is None
+    narrative = out.verdict.narrative
+    takeaway = out.verdict.takeaway
+    for text in (narrative, takeaway):
+        assert "【" not in text
+        assert not re.search(r"Source\s+1", text)
+    assert narrative == "Brave says so (*Title 1*) and *Title 1* agrees."
+    assert takeaway == "See *Title 1*."
