@@ -29,20 +29,22 @@ def _make_source_file(url: str, slug: str) -> SourceFile:
     )
 
 
-def _make_cfg(max_sources: int = 6, candidate_pool_size: int = 24) -> VerifyConfig:
+def _make_cfg(repo_root, max_sources: int = 6, candidate_pool_size: int = 24) -> VerifyConfig:
+    # A per-test repo root: _ingest_urls resolves slug collisions against
+    # research/sources/ under it, so a shared directory would leak state.
     return VerifyConfig(
         model="test",
-        repo_root="/tmp",
+        repo_root=str(repo_root),
         max_sources=max_sources,
         candidate_pool_size=candidate_pool_size,
     )
 
 
 @pytest.mark.asyncio
-async def test_ingest_urls_stops_at_target() -> None:
+async def test_ingest_urls_stops_at_target(tmp_path) -> None:
     """_ingest_urls returns exactly max_sources results and stops early."""
     urls = [f"https://example.com/{i}" for i in range(24)]
-    cfg = _make_cfg(max_sources=6, candidate_pool_size=24)
+    cfg = _make_cfg(tmp_path, max_sources=6, candidate_pool_size=24)
     sem = asyncio.Semaphore(8)
     call_count = 0
 
@@ -61,10 +63,10 @@ async def test_ingest_urls_stops_at_target() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ingest_urls_all_fail() -> None:
+async def test_ingest_urls_all_fail(tmp_path) -> None:
     """When every URL fails, results is empty and all failures are in errors."""
     urls = [f"https://fail.example.com/{i}" for i in range(10)]
-    cfg = _make_cfg(max_sources=6, candidate_pool_size=24)
+    cfg = _make_cfg(tmp_path, max_sources=6, candidate_pool_size=24)
     sem = asyncio.Semaphore(8)
 
     async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None, **_):
@@ -83,10 +85,10 @@ async def test_ingest_urls_all_fail() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ingest_urls_partial_success() -> None:
+async def test_ingest_urls_partial_success(tmp_path) -> None:
     """When only 3 of 24 URLs succeed, returns those 3 (fewer than target is fine)."""
     urls = [f"https://example.com/{i}" for i in range(24)]
-    cfg = _make_cfg(max_sources=6, candidate_pool_size=24)
+    cfg = _make_cfg(tmp_path, max_sources=6, candidate_pool_size=24)
     sem = asyncio.Semaphore(8)
     # First 3 URLs succeed; all others fail.
     successes = set(urls[:3])
@@ -108,10 +110,10 @@ async def test_ingest_urls_partial_success() -> None:
 
 
 @pytest.mark.asyncio
-async def test_ingest_urls_small_pool() -> None:
+async def test_ingest_urls_small_pool(tmp_path) -> None:
     """With fewer URLs than max_sources, all are attempted and none crash."""
     urls = [f"https://example.com/{i}" for i in range(5)]
-    cfg = _make_cfg(max_sources=6, candidate_pool_size=24)
+    cfg = _make_cfg(tmp_path, max_sources=6, candidate_pool_size=24)
     sem = asyncio.Semaphore(8)
     call_count = 0
 

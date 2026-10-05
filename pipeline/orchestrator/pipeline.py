@@ -62,7 +62,7 @@ from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from common.models import SubQuestion
 from common.source_classification import classify_source_type, independence_for_source_type
-from orchestrator.persistence import build_source_url_index, load_source_dict
+from orchestrator.persistence import build_source_url_index, load_source_dict, resolve_source_slugs
 from researcher.decomposed import ResearchOutput
 
 logger = logging.getLogger(__name__)
@@ -838,7 +838,11 @@ async def _ingest_urls(
 
     tasks = [asyncio.create_task(_worker(url)) for url in pool]
     await asyncio.gather(*tasks, return_exceptions=True)
-    return results[:target], errors
+    kept = results[:target]
+    # Source ids (year/slug) reach the analyst, coverage map and sidecar
+    # before any file is written, so collisions are settled here.
+    resolve_source_slugs(kept, Path(cfg.repo_root or str(resolve_repo_root())))
+    return kept, errors
 
 
 def _build_source_dict(sf: SourceFile) -> dict:

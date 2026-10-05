@@ -8,12 +8,17 @@ id is used anywhere, and the write path never cites another URL's file.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 from pathlib import Path
+from unittest.mock import patch
+
+import pytest
 
 from common.frontmatter import parse_frontmatter
 from ingestor.models import SourceFile
 from orchestrator.persistence import resolve_source_slugs
+from orchestrator.pipeline import VerifyConfig, _ingest_urls
 
 MS_URL = "https://datacenters.microsoft.com/sustainability/"
 AWS_URL = "https://aws.amazon.com/sustainability"
@@ -108,3 +113,25 @@ def test_unparseable_existing_url_counts_as_different(tmp_path: Path) -> None:
     sf = _sf(AWS_URL)
     resolve_source_slugs([(AWS_URL, sf)], tmp_path)
     assert sf.slug == "aws-amazon-sustainability"
+
+
+# --- C2: _ingest_urls assigns ids before analysis ---------------------------
+
+
+@pytest.mark.asyncio
+async def test_ingest_urls_assigns_unique_ids(tmp_path: Path) -> None:
+    _write_existing(tmp_path, "2026/sustainability", MS_URL)
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=6)
+
+    async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None, **_):
+        return (url, _sf(url))
+
+    with patch("orchestrator.pipeline._ingest_one", side_effect=_fake_ingest_one):
+        results, errors = await _ingest_urls(
+            None, [AWS_URL, AWS_UTIL_URL], cfg, asyncio.Semaphore(8)
+        )
+
+    assert errors == []
+    slugs = [sf.slug for _url, sf in results]
+    assert len(set(slugs)) == 2
+    assert "sustainability" not in slugs
