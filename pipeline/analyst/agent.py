@@ -281,8 +281,8 @@ def build_analyst_prompt(
 
     if sources:
         parts.append("## Source materials")
-        for i, src in enumerate(sources, 1):
-            parts.append(f"### Source {i}: {src['title']}")
+        for src in sources:
+            parts.append(f"### {src['title']}")
             if src.get("source_id"):
                 parts.append(f"Source id: {src['source_id']}")
             parts.append(f"Publisher: {src['publisher']}")

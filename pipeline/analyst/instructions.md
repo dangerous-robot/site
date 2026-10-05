@@ -107,7 +107,9 @@ TAKEAWAY:
 RULES:
 - Base your verdict ONLY on the provided source materials
 - The narrative should be factual and balanced, not advocacy
-- Cite sources by title when making specific claims in the narrative
+- Cite sources by title in italics, for example *AWS Cloud Sustainability*. Never
+  write source ids, bracketed tokens such as 【2026/example】, or numbered
+  references such as "Source 3".
 - Use `unverified` only when sources discuss the topic area but fail to engage
   with the claim's central assertion at all -- they circle it without touching it.
 - For claims with a vocabulary placeholder ("one of (A, B, C ...)"), before

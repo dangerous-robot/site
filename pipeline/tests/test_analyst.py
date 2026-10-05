@@ -63,6 +63,21 @@ class TestAnalystPrompt:
         prompt = build_analyst_prompt("X", "Claim", [])
         assert "No sources were found" in prompt
 
+    def test_prompt_has_no_numbered_source_headings(self) -> None:
+        # Numbered headings invite the model to write "Source 3" in the
+        # published narrative; titles and ids are enough to cite by.
+        sources = [
+            {"title": "First Report", "source_id": "2026/first", "publisher": "Pub", "summary": "S"},
+            {"title": "Second Report", "source_id": "2026/second", "publisher": "Pub", "summary": "S"},
+        ]
+        prompt = build_analyst_prompt("Ecosia", "Some claim", sources)
+        assert "### First Report\n" in prompt
+        assert "### Second Report\n" in prompt
+        assert "Source id: 2026/first" in prompt
+        assert "Source id: 2026/second" in prompt
+        assert "### Source 1" not in prompt
+        assert "### Source 2" not in prompt
+
     def test_renders_sub_questions_block(self) -> None:
         sub_questions = [
             SubQuestion(id="sq1", question="Does Ecosia publish energy data?", rationale="direct"),
