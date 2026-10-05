@@ -94,8 +94,8 @@ The site has four top-level URL spaces, plus a few single static pages (`/about`
 | `/research/sources`            | `src/pages/research/sources/index.astro`          | `sources` collection                        |
 | `/research/sources/[...slug]`  | `src/pages/research/sources/[...slug].astro`      | `sources` collection                        |
 | `/research/entities/[...slug]` | `src/pages/research/entities/[...slug].astro`     | `entities` collection                       |
-| `/research/companies`          | `src/pages/research/companies/index.astro`        | `entities` (company type)                   |
-| `/research/products`           | `src/pages/research/products/index.astro`         | `entities` (product type)                   |
+| `/research/companies`          | `src/pages/research/companies/index.astro`        | `entities` (company type), only those with a published claim |
+| `/research/products`           | `src/pages/research/products/index.astro`         | `entities` (product type), only those with a published claim |
 | `/research/subjects`           | `src/pages/research/subjects/index.astro`         | `entities` (subject type)                   |
 | `/research/topics`             | `src/pages/research/topics/index.astro`           | `claims` (cross-cutting taxonomy)           |
 | `/research/topics/[topic]`     | `src/pages/research/topics/[topic].astro`         | `claims` (filtered by topic)                |
@@ -112,6 +112,8 @@ The site has four top-level URL spaces, plus a few single static pages (`/about`
 The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/research/claims/anthropic/existential-safety-score`).
 
 Entities of type `subject` are listed at `/research/subjects/` and have detail pages at `/research/entities/subjects/[slug]`.
+
+`/research/companies` and `/research/products` list only entities with at least one published claim; every entity keeps its detail page at `/research/entities/[...slug]`. As of 2026-10-04 that is no companies (the page shows "No companies have published claims yet.") and one product, Brave Browser.
 
 ### URL restructure (2026-05) and redirects
 
@@ -177,7 +179,7 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 3. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
 4. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).
 
-**The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/turn-off-ai`, `/resources/should-i`, `/resources/ai-safety`, `/resources/responsible-ai`, `/research`, `/values`. The `short` labels match the section labels `Base.astro` uses on other pages. The site-wide nav in `Base.astro` does not include Writing; that is intentional.
+**The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/turn-off-ai`, `/resources/should-i`, `/resources/ai-safety`, `/resources/responsible-ai`, `/research`, `/values`. Labels and notes are editorial. Each `short` label comes from `navLabel(href)` in `src/lib/nav.ts`; an entry sets its own `short` only when `nav.ts` does not list its `href`. The build fails if an entry sets `short` for an `href` that `nav.ts` lists, or if neither supplies one.
 
 **The two placed claim cards.** Each column picks a published claim in this order: claims tagged `home-familiar` or `home-second` (by id), then the default in `PREFERRED_EXHIBITS` (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability` and `subjects/ai-model-producers/ai-producers-existential-score`), then the next unused claim tagged `highlight` (subject claims first, then by id). Tagging a FALSE or MIXED claim for one column lets the homepage show that checking can come out either way. With no candidate the column renders without a card. Claim titles are bolded with entity names and criteria vocabulary, which is why the page loads the `entities` and `criteria` collections alongside published `claims`.
 
@@ -185,9 +187,9 @@ The thesis text on the page is in the `dangers` array and the markup; it is exce
 
 ### Writing and the admin
 
-`/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline ("Written by {author}", or "Written by {author}, with AI assistance" when the post's `ai_assisted` flag is on; publish date; optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. The feed is not yet advertised with a `<link rel="alternate">` in `<head>`; `Base.astro` has no head slot for it.
+`/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline ("Written by {author}", or "Written by {author}, with AI assistance" when the post's `ai_assisted` flag is on; publish date; optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. `Base.astro` advertises the feed with a `<link rel="alternate" type="application/rss+xml">` in `<head>` on every page.
 
-**Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines one `writing` collection mirroring the Zod schema, with media in `public/images/writing`. `robots.txt` disallows `/admin/`.
+**Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines two collections mirroring the Zod schemas: `writing` (media in `public/images/writing`) and `resources`, which lists only `layout: article` entries (media in `public/images/resources`); the matrix, guide and tool entries are edited by hand. `robots.txt` disallows `/admin/`.
 
 - **Local-repository workflow (works now).** With the dev server running, open `http://localhost:4321/admin/index.html` in Chrome (the bare `/admin/` path 404s under Astro dev), choose "Work with Local Repository", and pick the repo root. Edits are written to `src/content/writing/` on disk; nothing is committed.
 - **Production login (not set up).** The `github` backend needs the sveltia-cms-auth OAuth worker deployed on Cloudflare Workers and `backend.base_url` set in `config.yml`.
@@ -234,10 +236,12 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 <html>
   <head>       -- charset, viewport, title, description, global styles
   <body>
-    <nav>      -- site name + nav links to list pages
+    <nav>      -- site name, top row, current section's sub-row (standard chrome only)
     <main>     -- <slot /> receives page content
-    <footer>   -- method line, maker line (TreadLightlyAI linked), links: About, Values, Methodology, Credits
+    <footer>   -- method line, maker line (TreadLightlyAI linked), footer links, version
 ```
+
+**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). `TOP_LINKS` is derived from `SECTIONS`, and the collapsed (hamburger) menu renders `SECTIONS`. `FOOTER_LINKS` holds the footer links: About, Values, Methodology and Credits on one row, then GitHub and CC-BY-4.0 (marked `external`) with the version on the next. `navLabel(href)` gives the homepage menu its short labels.
 
 ### Styling approach
 

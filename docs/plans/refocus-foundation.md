@@ -1,6 +1,6 @@
 # The refocus: foundation (1.0.0-beta.3) and pull-forwards (1.0.0-beta.4)
 
-**Status**: `in progress` (beta.3 foundation implemented, deploy checks open; beta.4 pull-forwards added 2026-10-03, not started; see both Status checklists)
+**Status**: `in progress` (beta.3 deployed and tagged 2026-10-04; beta.4 implemented except G1/G2, verification pending; see both Status checklists)
 **Last updated**: 2026-10-04
 **Source of truth**: the discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (Decisions Log; "07 — Early Roadmap"). Every copy string those records decided is reproduced here verbatim, so this plan can be implemented without reading them.
 
@@ -182,12 +182,12 @@ beta.3 ships as checked above; the deploy gate does not move. The pull-forwards 
 
 ### Status checklist, beta.4
 
-- [ ] G1, G2: pledge post finished and on the homepage
-- [ ] H1 to H5: research record hygiene
-- [ ] I1, I2, I4: one navigation source, About in the top row, docs synced
-- [ ] I3: claimless entities (after the operator call below)
-- [ ] J1: indexing trigger rewritten
-- [ ] K1: `resources` collection in the CMS (articles only)
+- [ ] G1, G2: pledge post finished and on the homepage (waits on the signature build in [`petition-signatures.md`](petition-signatures.md))
+- [x] H1 to H5: research record hygiene
+- [x] I1, I2, I4: one navigation source, About in the top row, docs synced
+- [x] I3: claimless entities (option A: hidden from the Companies and Products lists)
+- [x] J1: indexing trigger rewritten
+- [x] K1: `resources` collection in the CMS (articles only)
 - [ ] Verification checklist, beta.4
 - [x] Needs from Brandon, beta.4: all five items answered 2026-10-04
 
@@ -197,7 +197,7 @@ The content record (05) puts the pledge on the homepage after the lead guide; th
 
 | ID | Item | Files |
 |---|---|---|
-| G1 | Finish the post: the editor's note ends "add yourself as a signatory to the pledge at ..." with no destination; link the signatory form (URL in "Needs from Brandon, beta.4", item 1) and set `draft: false`. Keep the guest author. Write the minimum: the note's existing sentences plus the link. | `src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` |
+| G1 | Finish the post: the editor's note ends "add yourself as a signatory to the pledge at ..." with no destination; link the signature form at `#sign` on the same post (`petition-signatures.md` S4; see "Needs from Brandon, beta.4", item 1) and set `draft: false`. Keep the guest author. Write the minimum: the note's existing sentences plus the link. | `src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` |
 | G2 | Homepage: add the pledge to the `menu` array as the eighth entry, after Values: `label` "Sign the pledge", `short` "Pledge", `note` one plain sentence naming what the pledge asks for (legislation prohibiting AI systems from improving their own capabilities without human control). The link target is the post, unless item 1 says the form directly. No new homepage section in beta.4: the menu is the one place the homepage lists destinations, and a new block is the kind of ad hoc layout change AGENTS.md "UI & Design Standards" asks us to check first. | `src/pages/index.astro` |
 
 ### H. Research record hygiene
@@ -208,7 +208,7 @@ Reader-facing defects in the research record found on 2026-10-03. None changes a
 |---|---|---|
 | H1 | `brave-browser/renewable-energy-hosting` is published and tagged `highlight`, and three fields are cut off mid-word: `takeaway` ends "was found, let .", `seo_title` is "Brave Browser Hosting Not on Renewable, S!" (it is the page `<title>`), `cap_rationale` ends "independent v." Rewrite each by hand from the claim body and its sources, plain words, each a complete sentence; `seo_title` at most 42 characters. Sources and verdict unchanged. | `research/claims/brave-browser/renewable-energy-hosting.md` |
 | H2 | Research hub copy that contradicts About: the FAQ "What is this site?" opens "Dangerous Robot is a structured research project" and says every claim "aspires to be reviewed and approved by a human operator"; the Limits list says "Operators approve." Rewrite the first answer to open with the positioning statement's second sentence ("Dangerous Robot is a guide to the danger, with evidence you can check."), say the research record is the evidence behind it, link `/about`, and state that Brandon Faloona reviews and approves every published claim. In Limits, "Operators approve. Human reviewers can be wrong." becomes "One person approves, and can be wrong." Keep everything else in the FAQ. | `src/pages/research/index.astro` |
-| H3 | The `ai-model-producers` subject entity's `description` and body are generated filler ("landscape", "leading the charge", "sharper focus") on a public page. Replace both with three plain sentences: what the term covers (companies that train and release large AI models), the examples the site uses it for (the six named in the FLI index claim), and that claims under this subject are about the group, not one company. Keep `aliases` and `search_hints`. | `research/entities/subjects/ai-model-producers.md` |
+| H3 | The `ai-model-producers` subject entity's `description` and body are generated filler ("landscape", "leading the charge", "sharper focus") on a public page. Replace both with three plain sentences: what the term covers (companies that train and release large AI models), the examples the site uses it for (the seven named in the FLI index claim; first written as "six"), and that claims under this subject are about the group, not one company. Keep `aliases` and `search_hints`. | `research/entities/subjects/ai-model-producers.md` |
 | H4 | `research/v1-launch-set.md` lists 27 claims, including `brave-leo/*`, that are not on disk (disk: 3 published, 2 draft). Delete it (`git rm`). The plan for the chatbot guide release writes its own research-load tracker (products times criteria). Check for links first: `rg -n "v1-launch-set" docs/ research/ AGENTS.md README.md` and fix any that remain. | `research/v1-launch-set.md`, any file that links it |
 | H5 | Nine empty, untracked directories under `research/claims/` (anthropic, brave-software, chatgpt, claude, gemini, google, greenpt, openai, treadlightlyai). Remove them: `find research/claims -type d -empty -delete`. No commit results. | local filesystem only |
 
@@ -239,7 +239,7 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 
 ### Needs from Brandon, beta.4
 
-1. ~~The pledge signatory form's URL, and whether the homepage menu entry links to the post (default) or to the form directly.~~ Answered 2026-10-04: no outside form. Signatures are collected on the post itself by a Cloudflare Worker and D1 database (name and email with email confirmation, opt-in public names, list held by Brandon only), so the menu entry links to the post. beta.4 waits for that build; G1 depends on it. Architecture draft: `docs/plans/drafts/petition-signatures-architecture.md` (gitignored), to become a plan.
+1. ~~The pledge signatory form's URL, and whether the homepage menu entry links to the post (default) or to the form directly.~~ Answered 2026-10-04: no outside form. Signatures are collected on the post itself by a Cloudflare Worker and D1 database (name and email with email confirmation, opt-in public names, list held by Brandon only), so the menu entry links to the post. beta.4 waits for that build; G1 depends on it. Plan: [`petition-signatures.md`](petition-signatures.md).
 2. ~~Claimless entities (I3): option A, hide them from the Companies and Products lists (default), or option B, drop the two sub-nav links.~~ Answered 2026-10-04: option A.
 3. ~~Values: footer and homepage menu only (default), or also in the nav top row.~~ Answered 2026-10-04: footer and homepage menu only.
 4. ~~Whether 1.0.0 shipped.~~ Answered 2026-10-04: it did not. The version line reset to `1.0.0-beta.3` (this plan's foundation) and `1.0.0-beta.4` (these pull-forwards); `VERSION.md` and the roadmap record it.
@@ -248,11 +248,11 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 ### Verification checklist, beta.4
 
 15. `inv check` passes.
-16. `/writing/pledge-prohibit-ai-self-improvement-pledge` renders in a production build (not a draft), the editor's note links to the form, and the homepage "Where to start" list and hamburger both show the pledge entry with its label and short label.
+16. `/writing/pledge-prohibit-ai-self-improvement-pledge` renders in a production build (not a draft), the editor's note links to the signature form at `#sign`, and the homepage "Where to start" list and hamburger both show the pledge entry with its label and short label.
 17. The `brave-browser/renewable-energy-hosting` page shows a complete takeaway, a `<title>` that is a complete phrase, and a complete cap rationale; `rg -n "let \.|, S!|independent v\." research/claims` returns nothing.
 18. `/research`: the first FAQ answer links `/about` and names Brandon Faloona as the reviewer; `rg -n "structured research project|aspires to be|Operators approve" src/` returns nothing.
 19. `/research/entities/subjects/ai-model-producers` shows the rewritten description; `rg -n "landscape|leading the charge|sharper focus" research/entities` returns nothing.
-20. `research/v1-launch-set.md` is gone and `rg -n "v1-launch-set" docs/ research/ AGENTS.md README.md` returns nothing; `find research/claims -type d -empty` returns nothing.
+20. `research/v1-launch-set.md` is gone and no markdown link to it remains: `rg -n "\]\([^)]*v1-launch-set" docs/ research/ AGENTS.md README.md src/` returns nothing; `find research/claims -type d -empty` returns nothing. Plain-text mentions of `v1-launch-set` in this plan, the roadmap, `docs/decisions.md` and completed plans are expected.
 21. Every standard-chrome page's top row reads Research, Resources, Writing, About; Values is not under Research; the footer links come from `nav.ts`; each homepage hamburger label equals the `nav.ts` label for the same `href`.
 22. I3's chosen option is in effect: either the Companies and Products lists show only entities with published claims, or the two sub-nav links are gone. Entity detail URLs still resolve.
 23. `src/lib/seo.ts`'s comment and roadmap §9 name the first guide as the indexing trigger; `rg -n "1\.0\.0" src/lib/seo.ts` returns nothing.
@@ -272,3 +272,4 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 | 2026-10-03 | agent (claude-fable-5-1, Cowork session with Brandon) | implementation, iterated | Written from the discovery records after reading `Base.astro`, `index.astro`, `claims/[...slug].astro`, `research/index.astro`, `content.config.ts`, `public/admin/config.yml`, `responsible-ai.md`, `v1.1.0-roadmap.md`, `architecture/site.md`. Line numbers are as of 2026-10-03. Decisions and scope confirmed by Brandon in the Area 7 session; the two draft About paragraphs await his review. |
 | 2026-10-03 | agent (claude-fable-5-1, Cowork session with Brandon) | implementation, iterated | Added "Phase 0.1: pull-forwards" (sections G to K, their checklist, needs list and verification items 15 to 25) after reading `Base.astro`, `index.astro`, `seo.ts`, `content.config.ts`, `public/admin/config.yml`, `research/index.astro`, the five claim files, `templates.yaml`, `v1-launch-set.md` and the Drive record "07 — Early Roadmap". Phase 0 scope and gate unchanged. Decisions by Brandon the same day: pledge signatory form is the homepage addition; claim pages stay noindexed with a new trigger; pull-forwards tracked in this file. |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | rename | Renamed from `phase-0-foundation.md`. Phase 0 is now `1.0.0-beta.3`, phase 0.1 is `1.0.0-beta.4`, phase 1 is "the chatbot guide release" (a later beta), per Brandon's version reset. Wording only; scope, items and decided copy unchanged. Needs item 4 answered. Earlier rows keep the old names. |
+| 2026-10-04 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | implementation | Implemented H1 to H5, I1 to I4, J1 and K1 (parallel agents, one per item group); G1 and G2 wait on the signature build in `petition-signatures.md`, and the beta.4 verification checklist has not run. Deviations reported: H1 left out the body's AWS hosting claim (no cited source says it). H2 also updated the FAQPage JSON-LD in the page head to match the visible answer. H3 names seven companies, not six: the FLI Summer 2025 index graded seven (row H3 corrected). H4 turned the five markdown links to `v1-launch-set.md` into plain text and left plain-text history mentions (see item 20). I1/I2 put About in `SECTIONS` as well as `TOP_LINKS` (the collapsed menu renders `SECTIONS`), put the GitHub and CC-BY-4.0 links in `FOOTER_LINKS` with an `external` flag, and let a homepage menu entry set its own `short` only when `nav.ts` does not list its `href` (so G2's `short: "Pledge"` works). I3 (option A) also removed the "Has claims" filter from both lists, and an empty list shows only the EmptyState message; Companies is empty today. K1 gave `further_reading.url` `type: url` to match the schema's URL check. Promoted the petition draft to `petition-signatures.md`; Needs item 1 now links it, and row G1 and item 16 now name the on-page form at `#sign`; item 20 checks for links only. Open, not fixed here: the Brave claim body cites an AWS host and "Sources 4, 8" that its six sources do not support, tags three brave.com pages `independent`, and its `false` verdict rests on missing evidence (pipeline question); `research/index.astro` still says it "tracks claims about AI companies and products" and names "the operator" in other FAQ answers; `docs/decisions.md` still points at the gitignored petition draft. |
