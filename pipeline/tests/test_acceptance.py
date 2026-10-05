@@ -169,7 +169,11 @@ async def test_research_planner_structure() -> None:
 @pytest.mark.acceptance
 @_skip_stage
 async def test_analyst_false_from_unambiguous_source() -> None:
-    """Analyst returns false+high when a canned source directly contradicts the claim."""
+    """Analyst returns false+high when first-party and independent sources directly contradict the claim.
+
+    High confidence needs two or more independent sources (common/verdict-scale.md);
+    with only first-party sources the analyst's confidence cap forces low.
+    """
     claim = "ExampleCorp runs all inference on 100% renewable energy"
     sources = [
         {
@@ -188,7 +192,42 @@ async def test_analyst_false_from_unambiguous_source() -> None:
                 "agreements for renewable energy and has made no public commitments toward "
                 "carbon neutrality or renewable energy procurement."
             ),
-        }
+            "kind": "report",
+            "independence": "first-party",
+        },
+        {
+            "title": "Regional Grid Emissions Audit 2024",
+            "publisher": "State Public Utilities Commission",
+            "summary": "Independent audit of electricity sourcing for large data center customers.",
+            "key_quotes": [
+                "ExampleCorp's metered data center load was supplied 100% by coal and natural gas generation.",
+                "The audit found no renewable energy certificates or power purchase agreements held by ExampleCorp.",
+            ],
+            "body": (
+                "The commission audited utility supply records for every data center customer above "
+                "10 MW. ExampleCorp's facilities drew all of their electricity from coal and natural "
+                "gas plants. ExampleCorp held no renewable energy certificates and no power purchase "
+                "agreements during the audit period."
+            ),
+            "kind": "report",
+            "independence": "independent",
+        },
+        {
+            "title": "Where the Cloud Gets Its Power",
+            "publisher": "Energy Policy Institute",
+            "summary": "Investigation of fuel sources behind major data center operators.",
+            "key_quotes": [
+                "Utility interconnection filings show ExampleCorp's data centers are served only by fossil-fuel plants.",
+                "ExampleCorp has no renewable contracts on record with any grid operator.",
+            ],
+            "body": (
+                "Our review of interconnection filings and grid operator contract registries found "
+                "that ExampleCorp's data centers are served exclusively by coal and gas plants, and "
+                "that ExampleCorp has no renewable energy contracts on record."
+            ),
+            "kind": "article",
+            "independence": "independent",
+        },
     ]
 
     prompt = build_analyst_prompt("ExampleCorp", claim, sources)
