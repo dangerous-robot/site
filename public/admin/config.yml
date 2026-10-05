@@ -58,3 +58,64 @@ collections:
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: body, label: Body, widget: markdown }
+
+  # Mirrors the `resources` collection schema in src/content.config.ts, for
+  # `layout: article` entries only. Matrix, guide and tool entries carry a
+  # structured `data` payload the admin cannot edit, so the filter hides them.
+  - name: resources
+    label: Resources
+    label_singular: Article
+    folder: src/content/resources
+    filter: { field: layout, value: article }
+    create: true
+    slug: "{{slug}}"
+    extension: md
+    format: frontmatter
+    # Leading slash: relative to the repo root, not the entry file.
+    media_folder: /public/images/resources
+    public_folder: /images/resources
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: description
+        label: Description
+        widget: string
+        hint: One sentence, 200 characters max (longer fails the site build).
+        maxlength: 200
+      - name: pubDate
+        label: Publish date
+        widget: datetime
+        type: date
+        format: YYYY-MM-DD
+        # UTC keeps a date picked in Seattle from saving as the previous day.
+        input_timezone: utc
+      - { name: layout, label: Layout, widget: hidden, default: article }
+      - name: wallpaper
+        label: Wallpaper
+        widget: select
+        options: [default, ai-safety, responsible-ai, none]
+        default: default
+      - name: topics
+        label: Topics
+        widget: select
+        multiple: true
+        min: 1
+        max: 3
+        options: [ai-literacy, ai-safety, consumer-guide, responsible-ai]
+      - { name: noindex, label: Hide from search engines, widget: boolean, default: false }
+      - name: further_reading
+        label: Further reading
+        widget: list
+        required: false
+        fields:
+          - { name: title, label: Title, widget: string }
+          - { name: url, label: URL, widget: string, type: url }
+          - { name: publisher, label: Publisher, widget: string, required: false }
+          - name: last_checked
+            label: Last checked
+            widget: datetime
+            type: date
+            format: YYYY-MM-DD
+            # UTC keeps a date picked in Seattle from saving as the previous day.
+            input_timezone: utc
+            required: false
+      - { name: body, label: Body, widget: markdown }

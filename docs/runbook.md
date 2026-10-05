@@ -42,6 +42,8 @@ tags: [ai-literacy]         # optional
 
 **Drafts:** `draft: true` posts show in dev (marked Draft) and are left out of production builds and the RSS feed.
 
+**Resources:** the CMS **Resources** collection edits plain articles (`layout: article`) in `src/content/resources/`, published at `/resources/<slug>`. The matrix, guide and tool pages (`responsible-ai`, `turn-off-ai`, `should-i`) carry structured `data`, so the CMS hides them; edit those by hand. Images go in `public/images/resources/`.
+
 **Production login (TODO):** the CMS can only sign in to GitHub on the live site once these are done:
 1. Register a GitHub OAuth app.
 2. Deploy https://github.com/sveltia/sveltia-cms-auth on Cloudflare Workers with that app's credentials.
