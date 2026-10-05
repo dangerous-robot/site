@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
@@ -16,6 +17,7 @@ from auditor.agent import auditor_agent
 from common.content_loader import resolve_repo_root
 from common.frontmatter import parse_frontmatter
 from ingestor.agent import ingestor_agent
+from ingestor.models import SourceFile, SourceFrontmatter
 from orchestrator.checkpoints import AutoApproveCheckpointHandler
 from orchestrator.pipeline import (
     OnboardResult,
@@ -49,6 +51,18 @@ async def _fake_research_with_url(*args, **kwargs):
 
 async def _fake_research_empty(*args, **kwargs):
     return _ro()
+
+
+def _make_source_file(url: str, slug: str) -> SourceFile:
+    return SourceFile(
+        frontmatter=SourceFrontmatter(
+            url=url, title="Report", publisher="Example", accessed_date=datetime.date(2026, 5, 1),
+            kind="report", summary="A test summary.",
+        ),
+        body="Body content.",
+        slug=slug,
+        year=2026,
+    )
 
 
 async def _no_probe(*args, **kwargs):
@@ -265,6 +279,34 @@ class TestOnboardKeepsSourcesOnDisk:
         for rel in written:
             fm, _ = parse_frontmatter((tmp_path / rel).read_text(encoding="utf-8"))
             assert fm["sources"] == ["2025/report"], rel
+
+
+    @pytest.mark.asyncio
+    async def test_later_templates_reuse_a_source_written_earlier(self, tmp_path: Path) -> None:
+        _setup_tmp_repo(tmp_path)
+        from orchestrator import pipeline as pipeline_mod
+
+        ingested: list[list[str]] = []
+
+        async def fake_ingest(client, urls, cfg, sem, **kwargs):
+            ingested.append(list(urls))
+            return [(u, _make_source_file(u, "report")) for u in urls], []
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+            patch.object(pipeline_mod, "_research", side_effect=_fake_research_with_url),
+            patch.object(pipeline_mod, "_ingest_urls", side_effect=fake_ingest),
+        ):
+            config = VerifyConfig(model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path))
+            result = await onboard_entity("TestCorp", "company", config=config)
+
+        fetched = [urls for urls in ingested if urls]
+        # One fetch for the light-research pass, one for the first template.
+        assert len(fetched) == 2, ingested
+        assert len(result.claims_blocked) + len(result.claims_created) == 4
 
 
 class TestOnboardEntitySeedUrl:
