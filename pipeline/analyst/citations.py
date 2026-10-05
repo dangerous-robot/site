@@ -20,15 +20,21 @@ import re
 #
 # Numbered reference: singular "Source" takes exactly one number, so the "3"
 # in "Per Source 1, 3 data centers" stays prose; only plural "Sources" takes a
-# list. Case-insensitive; `\b` before "source" excludes "resources 2". `\s`
-# is Unicode-aware, so U+00A0 after "Source" matches. The `\b` after the
-# digits keeps "Source 3D" untouched. An optional ": *Title*" after the
-# reference is swallowed so the title is not written twice.
+# list. Lowercase forms are ordinary prose ("the source 2 weeks ago", "open
+# source 2.0") unless they are a plural list of two or more numbers ("as
+# sources 2 and 4 show"); rewriting prose into a title changes its meaning,
+# and a missed reference is still caught by the lint check. `\b` before
+# "source" excludes "resources 2". `\s` is Unicode-aware, so U+00A0 after
+# "Source" matches. The `\b` after the digits keeps "Source 3D" untouched. An
+# optional ": *Title*" after the reference is swallowed so the title is not
+# written twice.
+_LIST_SEP = r"\s*(?:,\s*and|,|and|&)\s*"
 _CITATION = re.compile(
     r"(?P<bracket>(?:[^\S\n]*【[^】]*】)+)"
-    r"|\b(?:source\s+(?P<one>\d+)|sources\s+(?P<many>\d+(?:\s*(?:,\s*and|,|and|&)\s*\d+)*))\b"
-    r"(?::\s*\*[^*\n]*\*)?",
-    re.IGNORECASE,
+    r"|\b(?:Source\s+(?P<one>\d+)"
+    rf"|Sources\s+(?P<many>\d+(?:{_LIST_SEP}\d+)*)"
+    rf"|sources\s+(?P<list>\d+(?:{_LIST_SEP}\d+)+))\b"
+    r"(?::\s*\*[^*\n]*\*)?"
 )
 _BRACKET_TOKEN = re.compile(r"【([^】]*)】")
 
@@ -95,7 +101,7 @@ def clean_citations(
         return f" ({_join_titles(titles)})"
 
     def source_n(match: re.Match[str]) -> str:
-        numbers = [int(n) for n in re.findall(r"\d+", match.group("one") or match.group("many"))]
+        numbers = [int(n) for n in re.findall(r"\d+", match.group("one") or match.group("many") or match.group("list"))]
         if any(n < 1 or n > len(sources) for n in numbers):
             unresolved.append(match.group(0))
             return match.group(0)

@@ -112,6 +112,16 @@ def test_lowercase_sources_list() -> None:
     assert unresolved == []
 
 
+@pytest.mark.parametrize(
+    "prose",
+    ["the source 2 weeks ago said", "built on open source 2.0 tools", "one of the sources 3 years on"],
+)
+def test_lowercase_prose_untouched(prose: str) -> None:
+    text, unresolved = clean_citations(prose, _sources())
+    assert text == prose
+    assert unresolved == []
+
+
 def test_resources_not_matched() -> None:
     text, unresolved = clean_citations("water resources 2 and 3 are scarce", _sources())
     assert text == "water resources 2 and 3 are scarce"
