@@ -25,7 +25,7 @@ from common.models import (
     Verdict,
 )
 from common.source_classification import classify_source_type, independence_for_source_type
-from common.canonical_url import canonicalize
+from common.canonical_url import same_resource
 from common.utils import host_token, slugify
 from ingestor.models import SourceFile
 
@@ -133,16 +133,6 @@ def load_source_dict(source_id: str, repo_root: Path) -> dict | None:
     }
 
 
-def _same_resource(a: str | None, b: str | None) -> bool:
-    """True when two URLs canonicalize equal; malformed URLs never match."""
-    if not a or not b:
-        return False
-    try:
-        return canonicalize(a) == canonicalize(b)
-    except ValueError:
-        return False
-
-
 def _url_on_disk(path: Path) -> str | None:
     try:
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
@@ -177,13 +167,13 @@ def _resolve_one_slug(
     for candidate in _slug_candidates(sf.slug, url):
         source_id = f"{sf.year}/{candidate}"
         if source_id in assigned:
-            if _same_resource(assigned[source_id], url):
+            if same_resource(assigned[source_id], url):
                 return candidate
             continue
         path = sources_dir / f"{candidate}.md"
         if not path.exists():
             return candidate
-        if _same_resource(_url_on_disk(path), url):
+        if same_resource(_url_on_disk(path), url):
             return candidate
     raise AssertionError("unreachable: candidate generator is infinite")
 
@@ -240,7 +230,7 @@ def _write_source_files(
                 break
             except FileExistsError:
                 existing_url = _url_on_disk(target_path)
-                if _same_resource(existing_url, sf.frontmatter.url):
+                if same_resource(existing_url, sf.frontmatter.url):
                     logger.info("Source already exists, skipping: %s", target_path)
                     break
                 resolved = _resolve_one_slug(sf, repo_root, {})

@@ -248,6 +248,7 @@ def _make_ingest_ctx(
     deps = IngestorDeps(
         http_client=client,
         repo_root="/tmp",
+        requested_url="https://example.com/",
         skip_wayback=skip_wayback,
         today=datetime.date(2026, 4, 19),
     )

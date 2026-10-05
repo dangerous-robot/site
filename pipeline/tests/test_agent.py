@@ -21,6 +21,7 @@ def test_deps(tmp_path) -> IngestorDeps:
     return IngestorDeps(
         http_client=httpx.AsyncClient(),
         repo_root=str(tmp_path),
+        requested_url="https://example.com/",
         today=datetime.date(2026, 4, 19),
     )
 

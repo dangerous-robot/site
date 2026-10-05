@@ -27,6 +27,7 @@ def _make_ctx(
     deps = IngestorDeps(
         http_client=client,
         repo_root="/tmp",
+        requested_url="https://example.com/",
         skip_wayback=True,
         today=datetime.date(2026, 5, 8),
         prefetched_bodies=prefetched_bodies,

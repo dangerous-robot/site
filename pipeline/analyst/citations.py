@@ -82,35 +82,26 @@ def clean_citations(text: str, sources: list[dict]) -> tuple[str, list[str]]:
     lookup = _title_lookup(sources)
     unresolved: list[str] = []
 
-    def bracket_run(run: str) -> str:
+    def replace(m: re.Match[str]) -> str:
+        # Only the alternation's named groups capture, so `lastgroup` names
+        # the branch: "bracket", or "one"/"many"/"list" for a numbered one.
+        kind = m.lastgroup
         titles: list[str] = []
-        for token in _BRACKET_TOKEN.finditer(run):
-            key = token.group(1).split("†", 1)[0].strip()
-            title = lookup.get(key)
-            if title is None:
-                unresolved.append(token.group(0))
-            elif title not in titles:
-                titles.append(title)
-        return f" ({_join_titles(titles)})" if titles else ""
-
-    def source_n(match: re.Match[str]) -> str:
-        numbers = [int(n) for n in re.findall(r"\d+", match.group("one") or match.group("many") or match.group("list"))]
-        if any(n < 1 or n > len(sources) for n in numbers):
-            unresolved.append(match.group(0))
-            return match.group(0)
-        titles: list[str] = []
-        for n in numbers:
-            title = sources[n - 1].get("title")
+        if kind == "bracket":
+            for token in _BRACKET_TOKEN.finditer(m[kind]):
+                title = lookup.get(token[1].split("†", 1)[0].strip())
+                if title is None:
+                    unresolved.append(token[0])
+                elif title not in titles:
+                    titles.append(title)
+            return f" ({_join_titles(titles)})" if titles else ""
+        for n in map(int, re.findall(r"\d+", m[kind])):
+            title = sources[n - 1].get("title") if 1 <= n <= len(sources) else None
             if not title:
-                unresolved.append(match.group(0))
-                return match.group(0)
+                unresolved.append(m[0])
+                return m[0]
             if title not in titles:
                 titles.append(title)
         return _join_titles(titles)
-
-    def replace(match: re.Match[str]) -> str:
-        if match.group("bracket") is not None:
-            return bracket_run(match.group("bracket"))
-        return source_n(match)
 
     return _CITATION.sub(replace, text), unresolved

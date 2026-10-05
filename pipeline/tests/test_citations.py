@@ -1,9 +1,8 @@
-"""Tests for analyst.citations.clean_citations."""
+"""Tests for citation cleaning and the short-field citation check."""
 
 from __future__ import annotations
 
-import re
-from contextlib import contextmanager
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import pytest
@@ -129,18 +128,19 @@ def test_resources_not_matched() -> None:
     assert unresolved == []
 
 
+_VERDICT_ARGS = {
+    "title": "Brave hosts on renewable energy",
+    "verdict": "unverified",
+    "confidence": "low",
+    "narrative": "A narrative.",
+    "topics": ["environmental-impact"],
+    "verification_level": "claimed",
+    "seo_title": "Brave renewable hosting claim",
+}
+
+
 def _verdict(**overrides) -> VerdictAssessment:
-    args = {
-        "title": "Brave hosts on renewable energy",
-        "verdict": "unverified",
-        "confidence": "low",
-        "narrative": "A narrative.",
-        "topics": ["environmental-impact"],
-        "verification_level": "claimed",
-        "seo_title": "Brave renewable hosting claim",
-    }
-    args.update(overrides)
-    return VerdictAssessment(**args)
+    return VerdictAssessment(**{**_VERDICT_ARGS, **overrides})
 
 
 @pytest.mark.parametrize("field", ["takeaway", "cap_rationale"])
@@ -159,11 +159,6 @@ def test_short_fields_accept_clean_text(field: str, text: str) -> None:
 # --- T5: _analyse_claim returns a cleaned narrative -------------------------
 
 
-@contextmanager
-def _noop_ctx():
-    yield
-
-
 @pytest.mark.asyncio
 async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
     sources = [
@@ -172,13 +167,8 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
     ]
     model = TestModel(
         custom_output_args={
-            "title": "Brave hosts on renewable energy",
-            "verdict": "unverified",
-            "confidence": "low",
+            **_VERDICT_ARGS,
             "narrative": f"Brave says so【2026/source-1】 and Source{NBSP}1 agrees.",
-            "topics": ["environmental-impact"],
-            "verification_level": "claimed",
-            "seo_title": "Brave renewable hosting claim",
         }
     )
     resolved = ResolvedEntity(
@@ -193,7 +183,7 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
         # Keep our TestModel: neutralize the orchestrator's own override.
         with patch(
             "orchestrator.pipeline.verdict_only_agent.override",
-            side_effect=lambda **kw: _noop_ctx(),
+            side_effect=lambda **kw: nullcontext(),
         ):
             out, failure = await _analyse_claim(
                 "Brave Browser", "Brave is hosted on renewable energy", sources, cfg,
@@ -201,7 +191,4 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
             )
 
     assert failure is None
-    narrative = out.verdict.narrative
-    assert "【" not in narrative
-    assert not re.search(r"Source\s+1", narrative)
-    assert narrative == "Brave says so (*Title 1*) and *Title 1* agrees."
+    assert out.verdict.narrative == "Brave says so (*Title 1*) and *Title 1* agrees."

@@ -152,3 +152,13 @@ def _normalize_query(query: str) -> str:
     # Stable sort by key; duplicate-key value order is preserved.
     kept.sort(key=lambda kv: kv[0])
     return urlencode(kept, doseq=False)
+
+
+def same_resource(a: str | None, b: str | None) -> bool:
+    """True when two URLs canonicalize equal; missing or malformed URLs never match."""
+    if not a or not b:
+        return False
+    try:
+        return canonicalize(a) == canonicalize(b)
+    except ValueError:
+        return False

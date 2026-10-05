@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from contextlib import contextmanager
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import httpx
@@ -34,11 +34,12 @@ _HTML = (
 
 
 def _make_ctx(
-    client: httpx.AsyncClient, prefetched: dict[str, str] | None = None
+    client: httpx.AsyncClient, requested_url: str, prefetched: dict[str, str] | None = None
 ) -> RunContext[IngestorDeps]:
     deps = IngestorDeps(
         http_client=client,
         repo_root="/tmp",
+        requested_url=requested_url,
         skip_wayback=True,
         today=datetime.date(2026, 10, 4),
         prefetched_bodies=prefetched or {},
@@ -56,28 +57,39 @@ async def test_web_fetch_records_success_and_failure() -> None:
         respx.get(ok_url).mock(return_value=httpx.Response(200, html=_HTML))
         respx.get(dns_url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
         async with httpx.AsyncClient() as client:
-            ok_ctx = _make_ctx(client)
+            ok_ctx = _make_ctx(client, ok_url)
             await web_fetch(ok_ctx, ok_url)
 
-            dns_ctx = _make_ctx(client)
+            dns_ctx = _make_ctx(client, dns_url)
             result = await web_fetch(dns_ctx, dns_url)
 
-            pre_ctx = _make_ctx(client, prefetched={pre_url: "Body from Tavily."})
+            pre_ctx = _make_ctx(client, pre_url, prefetched={pre_url: "Body from Tavily."})
             await web_fetch(pre_ctx, pre_url)
 
     assert ok_ctx.deps.fetched_text[ok_url]
     assert ok_ctx.deps.fetch_errors == []
-    assert fetch_failure_reason(ok_ctx.deps, ok_url) is None
+    assert fetch_failure_reason(ok_ctx.deps) is None
 
     # The tool still returns an error dict so the model can try wayback.
     assert "error" in result
     assert dns_ctx.deps.fetched_text == {}
     assert len(dns_ctx.deps.fetch_errors) == 1
     assert "nodename" in dns_ctx.deps.fetch_errors[0]
-    assert fetch_failure_reason(dns_ctx.deps, dns_url) == dns_ctx.deps.fetch_errors[0]
+    assert fetch_failure_reason(dns_ctx.deps) == dns_ctx.deps.fetch_errors[0]
 
     assert pre_ctx.deps.fetched_text[pre_url] == "Body from Tavily."
-    assert fetch_failure_reason(pre_ctx.deps, pre_url) is None
+    assert fetch_failure_reason(pre_ctx.deps) is None
+
+
+async def _fetch_one(requested_url: str, fetched: str) -> RunContext[IngestorDeps]:
+    """Run ``web_fetch`` on ``fetched`` (which loads) while ingesting ``requested_url``."""
+    with respx.mock:
+        respx.get(fetched).mock(return_value=httpx.Response(200, html=_HTML))
+        async with httpx.AsyncClient() as client:
+            ctx = _make_ctx(client, requested_url)
+            await web_fetch(ctx, fetched)
+    assert ctx.deps.fetched_text[fetched]
+    return ctx
 
 
 @pytest.mark.parametrize(
@@ -89,9 +101,10 @@ async def test_web_fetch_records_success_and_failure() -> None:
         "https://web.archive.org/web/https://brave.com/transparency/",
     ],
 )
-def test_requested_page_or_its_archive_copy_counts(fetched: str) -> None:
-    deps = IngestorDeps(http_client=None, repo_root="/tmp", fetched_text={fetched: "text"})
-    assert fetch_failure_reason(deps, "https://brave.com/transparency/") is None
+@pytest.mark.asyncio
+async def test_requested_page_or_its_archive_copy_counts(fetched: str) -> None:
+    ctx = await _fetch_one("https://brave.com/transparency/", fetched)
+    assert fetch_failure_reason(ctx.deps) is None
 
 
 @pytest.mark.parametrize(
@@ -101,9 +114,10 @@ def test_requested_page_or_its_archive_copy_counts(fetched: str) -> None:
         "https://web.archive.org/web/2025/https://brave.com/privacy/",
     ],
 )
-def test_other_page_text_does_not_count(fetched: str) -> None:
-    deps = IngestorDeps(http_client=None, repo_root="/tmp", fetched_text={fetched: "text"})
-    reason = fetch_failure_reason(deps, "https://brave.com/transparency/")
+@pytest.mark.asyncio
+async def test_other_page_text_does_not_count(fetched: str) -> None:
+    ctx = await _fetch_one("https://brave.com/transparency/", fetched)
+    reason = fetch_failure_reason(ctx.deps)
     assert reason is not None
     assert "https://brave.com/transparency/" in reason
 
@@ -111,11 +125,6 @@ def test_other_page_text_does_not_count(fetched: str) -> None:
 # ---------------------------------------------------------------------------
 # _ingest_one: reject outputs with no fetched page text or failed validation
 # ---------------------------------------------------------------------------
-
-
-@contextmanager
-def _noop_ctx():
-    yield
 
 
 def _source_args(url: str, **overrides) -> dict:
@@ -160,7 +169,7 @@ async def _run_ingest_one(url: str, model: FunctionModel, tmp_path):
             # Keep our FunctionModel: neutralize the orchestrator's own override.
             with patch(
                 "orchestrator.pipeline.ingestor_agent.override",
-                side_effect=lambda **kw: _noop_ctx(),
+                side_effect=lambda **kw: nullcontext(),
             ):
                 return await _ingest_one(client, url, cfg, _TODAY, asyncio.Semaphore(8))
 
@@ -262,7 +271,7 @@ def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
         with ingestor_agent.override(model=_scripted_model([url], _source_args(url))):
             with patch(
                 "ingestor.agent.ingestor_agent.override",
-                side_effect=lambda **kw: _noop_ctx(),
+                side_effect=lambda **kw: nullcontext(),
             ):
                 result = CliRunner().invoke(
                     main,

@@ -113,7 +113,7 @@ async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
     # The TestModel ingestor returns a SourceFile without calling web_fetch,
     # which _ingest_one rejects as fetch_failed; this test covers what gets
     # written, so treat every ingest as fetched (see test_ingest_fetch_failure.py).
-    monkeypatch.setattr("orchestrator.pipeline.fetch_failure_reason", lambda deps, url: None)
+    monkeypatch.setattr("orchestrator.pipeline.fetch_failure_reason", lambda deps: None)
 
     with (
         ingestor_agent.override(model=_ingestor_model()),

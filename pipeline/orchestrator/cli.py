@@ -362,7 +362,9 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
 
     async def _run():
         async with httpx.AsyncClient() as client:
-            deps = IngestorDeps(http_client=client, repo_root=root_str, skip_wayback=skip_wayback)
+            deps = IngestorDeps(
+                http_client=client, repo_root=root_str, requested_url=url, skip_wayback=skip_wayback
+            )
             prompt = f"Ingest this URL and produce a SourceFile:\n\nURL: {url}\nToday's date: {deps.today.isoformat()}\n"
             try:
                 with ingestor_agent.override(model=resolve_model(ingestor_model)):
@@ -375,7 +377,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
 
             sf = res.output
-            reason = fetch_failure_reason(deps, url)
+            reason = fetch_failure_reason(deps)
             if reason is not None:
                 click.echo(f"Error: fetch failed, no page text for {url}: {reason}", err=True)
                 return 1

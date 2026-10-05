@@ -12,7 +12,7 @@ from pathlib import Path
 import httpx
 from pydantic_ai import Agent, RunContext
 
-from common.canonical_url import canonicalize
+from common.canonical_url import same_resource
 from common.instructions import load_instructions
 from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
@@ -36,6 +36,9 @@ class IngestorDeps:
 
     http_client: httpx.AsyncClient
     repo_root: str
+    # The URL being ingested. A fetch of it, or of its archive.org copy, is
+    # what ``fetch_failure_reason`` requires.
+    requested_url: str
     skip_wayback: bool = False
     today: datetime.date = field(default_factory=datetime.date.today)
     # url -> body string supplied by the researcher (e.g., Tavily's
@@ -49,10 +52,13 @@ class IngestorDeps:
     # Filled by ``web_fetch`` so the orchestrator can reject a SourceFile
     # whose page never loaded: the tool returns error dicts (not raises) on
     # transport failures so the model can still reach ``wayback_check``,
-    # which leaves the model free to invent a summary. Keyed by the URL the
-    # tool was called with; the text is kept for key-quote checks.
+    # which leaves the model free to invent a summary. ``fetched_text`` is
+    # keyed by the URL the tool was called with and kept for key-quote
+    # checks; the ``requested_*`` fields cover only ``requested_url``.
     fetched_text: dict[str, str] = field(default_factory=dict)
     fetch_errors: list[str] = field(default_factory=list)
+    requested_fetched: bool = False
+    requested_errors: list[str] = field(default_factory=list)
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
@@ -60,39 +66,25 @@ class IngestorDeps:
 _ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[^/]*/)?(https?://.+)")
 
 
-def _same_page(a: str, b: str) -> bool:
-    try:
-        return canonicalize(a) == canonicalize(b)
-    except ValueError:
-        return False
-
-
 def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
     archived = _ARCHIVE_COPY.match(fetched)
-    return _same_page(archived.group(1) if archived else fetched, url)
+    return same_resource(archived.group(1) if archived else fetched, url)
 
 
-def fetch_failure_reason(deps: IngestorDeps, url: str) -> str | None:
-    """Why no text was fetched for ``url``, or None when it (or its archive.org copy) was.
+def fetch_failure_reason(deps: IngestorDeps) -> str | None:
+    """Why ``deps.requested_url`` yielded no text, or None when it (or its archive.org copy) did.
 
     Text from any other page does not count: the model can fetch an unrelated
     page after the requested one fails and summarize that instead.
     """
-    if any(_is_page_or_archive_copy(fetched, url) for fetched in deps.fetched_text):
+    if deps.requested_fetched:
         return None
-    # Errors are recorded as "<url>: <message>"; prefer the requested page's own.
-    own_errors = [
-        e for e in deps.fetch_errors
-        if _is_page_or_archive_copy(e.split(": ", 1)[0], url)
-    ]
-    if own_errors:
-        return own_errors[-1]
+    if deps.requested_errors:
+        return deps.requested_errors[-1]
     if deps.fetched_text:
-        return f"no text fetched for {url}; only other pages were fetched: " + ", ".join(
+        return f"no text fetched for {deps.requested_url}; only other pages were fetched: " + ", ".join(
             deps.fetched_text
         )
-    if deps.fetch_errors:
-        return deps.fetch_errors[-1]
     return "model returned a source without fetching the page"
 
 
@@ -127,10 +119,23 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """
     if not url.startswith(("http://", "https://")):
         return {"error": f"Invalid URL: {url!r} (must start with http:// or https://)", "url": url}
-    prefetched = ctx.deps.prefetched_bodies.get(url)
+    deps = ctx.deps
+    is_requested = _is_page_or_archive_copy(url, deps.requested_url)
+
+    def record_text(text: str) -> None:
+        deps.fetched_text[url] = text
+        deps.requested_fetched = deps.requested_fetched or is_requested
+
+    def record_error(message: str) -> None:
+        entry = f"{url}: {message}"
+        deps.fetch_errors.append(entry)
+        if is_requested:
+            deps.requested_errors.append(entry)
+
+    prefetched = deps.prefetched_bodies.get(url)
     if prefetched:
         logger.info("Prefetch hit (Tavily raw_content): %s", url)
-        ctx.deps.fetched_text[url] = prefetched
+        record_text(prefetched)
         return {
             "title": "",
             "description": "",
@@ -140,7 +145,7 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
             "url": url,
         }
     try:
-        resp = await ctx.deps.http_client.get(
+        resp = await deps.http_client.get(
             url, timeout=default_httpx_timeout(), follow_redirects=True
         )
         _raise_if_terminal(resp, url)
@@ -150,7 +155,7 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
                 "429 from %s; sleeping %.1fs and retrying once", url, RATE_LIMIT_RETRY_S
             )
             await asyncio.sleep(RATE_LIMIT_RETRY_S)
-            resp = await ctx.deps.http_client.get(
+            resp = await deps.http_client.get(
                 url, timeout=default_httpx_timeout(), follow_redirects=True
             )
             if resp.status_code == 429:
@@ -160,17 +165,17 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
         resp.raise_for_status()
         ct = resp.headers.get("content-type", "")
         if any(t in ct for t in _BINARY_CONTENT_TYPES):
-            ctx.deps.fetch_errors.append(f"{url}: unsupported content type {ct}")
+            record_error(f"unsupported content type {ct}")
             return {"error": f"Unsupported content type: {ct}", "url": url}
         page = extract_page_data(resp.text, url)
         if page.get("text"):
-            ctx.deps.fetched_text[url] = page["text"]
+            record_text(page["text"])
         else:
-            ctx.deps.fetch_errors.append(f"{url}: page returned no text")
+            record_error("page returned no text")
         return page
     except httpx.HTTPError as exc:
         logger.error("Failed to fetch %s: %s", url, exc)
-        ctx.deps.fetch_errors.append(f"{url}: {exc}")
+        record_error(str(exc))
         return {"error": str(exc), "url": url}
 
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-from contextlib import contextmanager
+from contextlib import nullcontext
 from unittest.mock import patch
 
 import httpx
@@ -26,17 +26,12 @@ from ingestor.tools.web_fetch import TERMINAL_STATUS_CODES, TerminalFetchError
 from orchestrator.pipeline import VerifyConfig, _ingest_one
 
 
-@contextmanager
-def _noop_ctx():
-    """No-op context manager used to neutralize nested agent overrides."""
-    yield
-
-
 def _make_ctx(client: httpx.AsyncClient) -> RunContext[IngestorDeps]:
     """Build a minimal RunContext sufficient for calling the web_fetch tool."""
     deps = IngestorDeps(
         http_client=client,
         repo_root="/tmp",
+        requested_url="https://example.com/",
         skip_wayback=True,
         today=datetime.date(2026, 4, 19),
     )
@@ -227,6 +222,7 @@ class TestAgentRetryBudget:
                 deps = IngestorDeps(
                     http_client=client,
                     repo_root="/tmp",
+                    requested_url="https://example.com/",
                     skip_wayback=True,
                     today=datetime.date(2026, 4, 19),
                 )
@@ -257,7 +253,7 @@ class TestOrchestratorMapping:
                 with ingestor_agent.override(model=_make_web_fetch_caller_model(url)):
                     with patch(
                         "orchestrator.pipeline.ingestor_agent.override",
-                        side_effect=lambda **kw: _noop_ctx(),
+                        side_effect=lambda **kw: nullcontext(),
                     ):
                         outcome = await _ingest_one(
                             client, url, cfg, datetime.date(2026, 4, 19), asyncio.Semaphore(8)

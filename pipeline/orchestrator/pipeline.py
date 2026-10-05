@@ -714,7 +714,7 @@ def _check_ingested_source(
     The model can return a SourceFile after every fetch failed, or without
     calling ``web_fetch`` at all; its summary is then invented.
     """
-    message = fetch_failure_reason(deps, url)
+    message = fetch_failure_reason(deps)
     if message is not None:
         logger.warning("Rejected ingest (no page text fetched): %s: %s", url, message)
         return StepError(step="ingest", url=url, error_type="fetch_failed", message=message)
@@ -769,6 +769,7 @@ async def _ingest_one(
     deps = IngestorDeps(
         http_client=client,
         repo_root=str(repo_root),
+        requested_url=url,
         skip_wayback=cfg.skip_wayback,
         today=today,
         prefetched_bodies={url: prefetched_body} if prefetched_body else {},
