@@ -31,7 +31,16 @@ export async function sendEmail(env: Env, email: Email): Promise<void> {
   }
 }
 
-export function confirmationEmail(to: string, title: string, name: string, showName: boolean, confirmUrl: string, removeUrl: string): Email {
+export interface ConfirmationDetails {
+  to: string;
+  title: string;
+  name: string;
+  showName: boolean;
+  confirmUrl: string;
+  removeUrl: string;
+}
+
+export function confirmationEmail({ to, title, name, showName, confirmUrl, removeUrl }: ConfirmationDetails): Email {
   return {
     to,
     subject: `Confirm your signature: ${title}`,

@@ -1,6 +1,6 @@
 import { applyD1Migrations, env, reset } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker, { cleanup } from '../src/index';
+import worker, { cleanup, HOURLY_EMAIL_CAP } from '../src/index';
 
 const SITE = 'https://dangerousrobot.org';
 const API = 'https://api.dangerousrobot.org';
@@ -308,14 +308,14 @@ describe('spam layers', () => {
           ).bind(SLUG, 'Seed', `seed${ageMs}-${i}@example.org`, new Date(Date.now() - ageMs).toISOString(), `seed${ageMs}-${i}`),
         ),
       );
-    await seed(30, 61 * 60_000);
-    await seed(29, 60_000);
+    await seed(HOURLY_EMAIL_CAP, 61 * 60_000);
+    await seed(HOURLY_EMAIL_CAP - 1, 60_000);
     expect((await sign()).status).toBe(200);
     expect(sentEmails).toHaveLength(1);
     const res = await sign();
     expect(res.status).toBe(429);
     expect(sentEmails).toHaveLength(1);
-    expect(await rowCount()).toBe(60);
+    expect(await rowCount()).toBe(2 * HOURLY_EMAIL_CAP);
   });
 
   it('refuses a browser POST from another origin', async () => {

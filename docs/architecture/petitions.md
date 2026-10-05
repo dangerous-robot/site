@@ -26,7 +26,7 @@ The site stays static. The sign block fetches the Worker at build time (3-second
 
 The browser fetch sends a URL-encoded body with only an `Accept` header, so it is a CORS "simple" request with no preflight. `ALLOWED_ORIGINS` (a `wrangler.toml` var) controls which origins get CORS headers and may POST to `/sign`. A missing Origin (non-browser clients) is accepted; `Origin: null` is refused, because sandboxed iframes on any site send it. The site's `strict-origin-when-cross-origin` referrer policy means real browsers send the true origin.
 
-Known limit: the per-IP rate limit counts per Cloudflare machine, so a script opening fresh connections gets past it (seen in production on 2026-10-04). The real ceiling is the site-wide cap of 30 confirmation emails per hour. That still allows a script to use up Resend's free 100 emails a day in a few hours and draw bounces from fake addresses. The plan's response if it happens is ALTCHA.
+Known limit: the per-IP rate limit counts per Cloudflare machine, so a script opening fresh connections gets past it (seen in production on 2026-10-04). The real ceiling is the site-wide cap of 30 addresses emailed per hour (counted by `signatures.created_at`, indexed; each address can still get one re-send per 10 minutes, so the email count can run higher). It also means 30 bogus sign-ups in an hour lock out real signers until the hour passes. The cap still allows a script to use up Resend's free 100 emails a day in a few hours and draw bounces from fake addresses. The plan's response if it happens is ALTCHA.
 
 ## Privacy rules the code enforces
 
@@ -39,7 +39,7 @@ Known limit: the per-IP rate limit counts per Cloudflare machine, so a script op
 
 ## Spam layers
 
-Honeypot field, a 3-second minimum fill time (the page script sends how long the page was open, measured with `performance.now()` so a wrong system clock cannot drop a signer; a missing value is accepted for the no-JS form, so this check is weak), the per-IP rate limit, the site-wide cap of 30 confirmation emails an hour, and the email confirmation itself (unconfirmed signatures never count). No CAPTCHA. If spam appears, the plan's order is self-hosted ALTCHA first, Turnstile second.
+Honeypot field, a 3-second minimum fill time (the page script sends how long the page was open, measured with `performance.now()` so a wrong system clock cannot drop a signer; a missing value is accepted for the no-JS form, so this check is weak), the per-IP rate limit, the site-wide cap of 30 addresses emailed an hour, and the email confirmation itself (unconfirmed signatures never count). No CAPTCHA. If spam appears, the plan's order is self-hosted ALTCHA first, Turnstile second.
 
 ## Email modes
 

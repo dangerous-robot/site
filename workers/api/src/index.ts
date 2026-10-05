@@ -6,10 +6,12 @@ const MIN_FILL_MS = 3000;
 // An unconfirmed address gets at most one confirmation email per window, so the
 // form cannot be used to flood someone else's inbox.
 const RESEND_WINDOW_MS = 10 * 60_000;
-// Site-wide ceiling on confirmation emails. The per-IP limiter counts per
-// Cloudflare machine, so a script opening fresh connections slips past it; this
-// cap is what actually bounds mail sent to strangers from our domain.
-const HOURLY_EMAIL_CAP = 30;
+// Site-wide ceiling on addresses emailed per window. The per-IP limiter counts
+// per Cloudflare machine, so a script opening fresh connections slips past it;
+// this cap bounds how many strangers we can mail. Each address can still get one
+// email per RESEND_WINDOW_MS, since a re-send reuses its row.
+export const HOURLY_EMAIL_CAP = 30;
+const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
@@ -114,12 +116,13 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (email.length > EMAIL_MAX || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return reply(request, env, 400, 'Please enter a valid email address.', petition.post_url);
   }
-  const consent = form.get('show_name') ? 1 : 0;
+  const showName = form.get('show_name') !== null;
 
-  // Every email sent sets its row's created_at, so recent rows count recent emails.
+  // Every email sent sets its row's created_at, so recent rows count recently emailed addresses.
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
+  const now = Date.now();
   const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM signatures WHERE created_at > ?')
-    .bind(new Date(Date.now() - 3_600_000).toISOString())
+    .bind(new Date(now - CAP_WINDOW_MS).toISOString())
     .first<{ n: number }>();
   if (recent!.n >= HOURLY_EMAIL_CAP) {
     return reply(request, env, 429, 'A lot of people are signing right now. Please try again in an hour.', petition.post_url);
@@ -129,7 +132,6 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   // A repeat signature from an unconfirmed address gets a fresh token and email,
   // unless one went out within RESEND_WINDOW_MS. A confirmed address is left
   // alone. Every case gets the same reply, so the form never reveals who has signed.
-  const now = Date.now();
   const row = await env.DB.prepare(
     `INSERT INTO signatures (petition_slug, name, email, display_consent, created_at, token_hash)
      VALUES (?, ?, ?, ?, ?, ?)
@@ -139,13 +141,13 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
      WHERE signatures.confirmed_at IS NULL AND signatures.created_at < ?
      RETURNING id`,
   )
-    .bind(slug, name, email, consent, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
+    .bind(slug, name, email, showName ? 1 : 0, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
     .first<{ id: number }>();
 
   if (row) {
     const base = `${new URL(request.url).origin}/petitions/${slug}`;
     try {
-      await sendEmail(env, confirmationEmail(email, petition.title, name, consent === 1, `${base}/confirm?t=${token}`, `${base}/remove?t=${token}`));
+      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
     } catch (err) {
       console.error(err);
       // Drop the row so an immediate retry is not swallowed by the resend window.
@@ -181,14 +183,15 @@ async function confirm(request: Request, env: Env, slug: string): Promise<Respon
         .first<{ id: number; confirmed_at: string | null }>()
     : null;
   if (!sig) return invalidLink(petition);
-  if (!sig.confirmed_at) {
+  let confirmedAt = sig.confirmed_at;
+  if (!confirmedAt) {
     if (petition.status === 'closed') return messagePage('Petition closed', closedText(petition), petition.post_url, 409);
     // COALESCE keeps the first timestamp if a concurrent confirm (a link scanner) won the race.
     const updated = await env.DB.prepare('UPDATE signatures SET confirmed_at = COALESCE(confirmed_at, ?) WHERE id = ? RETURNING confirmed_at')
       .bind(new Date().toISOString(), sig.id)
       .first<{ confirmed_at: string }>();
     if (!updated) return invalidLink(petition);
-    sig.confirmed_at = updated.confirmed_at;
+    confirmedAt = updated.confirmed_at;
   }
   // Rank among confirmed signatures, so reloading the thank-you page shows the same number.
   const rank = await env.DB.prepare(
@@ -196,7 +199,7 @@ async function confirm(request: Request, env: Env, slug: string): Promise<Respon
      WHERE petition_slug = ? AND confirmed_at IS NOT NULL
        AND (confirmed_at < ? OR (confirmed_at = ? AND id <= ?))`,
   )
-    .bind(slug, sig.confirmed_at, sig.confirmed_at, sig.id)
+    .bind(slug, confirmedAt, confirmedAt, sig.id)
     .first<{ n: number }>();
   return messagePage('Thank you', `Your signature is confirmed. You are signatory ${rank!.n}.`, petition.post_url);
 }
