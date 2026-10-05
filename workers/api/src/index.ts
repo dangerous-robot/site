@@ -3,6 +3,9 @@ import { confirmationEmail, sendEmail } from './email';
 import { actionPage, messagePage } from './pages';
 
 const MIN_FILL_MS = 3000;
+// An unconfirmed address gets at most one confirmation email per window, so the
+// form cannot be used to flood someone else's inbox.
+const RESEND_WINDOW_MS = 10 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
@@ -90,8 +93,11 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
 
   // Bots get the same answer as people, so they learn nothing from it.
   if (field('website') !== '') return checkEmail();
-  const started = Number(field('started'));
-  if (started > 0 && Date.now() - started < MIN_FILL_MS) return checkEmail();
+  // Milliseconds the page was open, measured by the browser's own monotonic clock
+  // (not compared against ours, so a skewed client clock cannot drop a signer).
+  // Absent for the no-JS form, which is accepted.
+  const elapsed = Number(field('elapsed'));
+  if (elapsed > 0 && elapsed < MIN_FILL_MS) return checkEmail();
 
   if (petition.status === 'closed') return reply(request, env, 409, closedText(petition), petition.post_url);
 
@@ -106,19 +112,20 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   const consent = form.get('show_name') ? 1 : 0;
 
   const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
-  // A repeat signature from an unconfirmed address gets a fresh token and email.
-  // A confirmed address is left alone and gets the same reply, so the form
-  // never reveals who has signed.
+  // A repeat signature from an unconfirmed address gets a fresh token and email,
+  // unless one went out within RESEND_WINDOW_MS. A confirmed address is left
+  // alone. Every case gets the same reply, so the form never reveals who has signed.
+  const now = Date.now();
   const row = await env.DB.prepare(
     `INSERT INTO signatures (petition_slug, name, email, display_consent, created_at, token_hash)
      VALUES (?, ?, ?, ?, ?, ?)
      ON CONFLICT (petition_slug, email) DO UPDATE SET
        name = excluded.name, display_consent = excluded.display_consent,
        created_at = excluded.created_at, token_hash = excluded.token_hash
-     WHERE signatures.confirmed_at IS NULL
+     WHERE signatures.confirmed_at IS NULL AND signatures.created_at < ?
      RETURNING id`,
   )
-    .bind(slug, name, email, consent, new Date().toISOString(), await sha256(token))
+    .bind(slug, name, email, consent, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
     .first<{ id: number }>();
 
   if (row) {

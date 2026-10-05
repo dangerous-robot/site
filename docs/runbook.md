@@ -99,7 +99,7 @@ npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET status =
 
 ```bash
 npx wrangler d1 execute dr-api --remote --json --command "SELECT name, email, display_consent, created_at, confirmed_at, petition_slug FROM signatures WHERE petition_slug = '<slug>' AND confirmed_at IS NOT NULL ORDER BY confirmed_at" \
-  | jq -r '.[0].results | (.[0] | keys_unsorted) as $k | ($k | @csv), (.[] | [.[$k[]]] | @csv)' > signatures-<slug>.csv
+  | jq -r '["name","email","display_consent","created_at","confirmed_at","petition_slug"] as $k | ($k | @csv), (.[0].results[] | [.[$k[]]] | @csv)' > signatures-<slug>.csv
 ```
 
 **Remove a signer on request** (a message to `contact@dangerousrobot.org`). Emails are stored lowercased. This is a hard delete; check the row count in the output.

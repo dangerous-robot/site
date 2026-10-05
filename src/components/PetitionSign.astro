@@ -40,10 +40,10 @@ const closed = state?.status === 'closed';
     <div class="petition-trap" aria-hidden="true">
       <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
     </div>
-    <input type="hidden" name="started" value="" />
+    <input type="hidden" name="elapsed" value="" />
     <button type="submit">Sign</button>
-    <p class="petition-status" role="status" aria-live="polite"></p>
   </form>
+  <p class="petition-status" role="status" aria-live="polite"></p>
 
   <p class="petition-privacy">
     We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
@@ -62,13 +62,15 @@ const closed = state?.status === 'closed';
   if (section) {
     const { api, slug } = section.dataset;
     const form = section.querySelector<HTMLFormElement>('.petition-form')!;
-    const status = form.querySelector<HTMLElement>('.petition-status')!;
+    const status = section.querySelector<HTMLElement>('.petition-status')!;
     const countEl = section.querySelector<HTMLElement>('[data-count]')!;
     const namesBox = section.querySelector<HTMLElement>('.petition-names')!;
     const namesList = section.querySelector<HTMLElement>('[data-names]')!;
 
-    // The Worker drops submissions sent within 3 seconds of page load.
-    form.querySelector<HTMLInputElement>('input[name="started"]')!.value = String(Date.now());
+    // The Worker drops submissions sent within 3 seconds of page load. Elapsed
+    // time from performance.now() is immune to a wrong system clock.
+    const loadedAt = performance.now();
+    const elapsedInput = form.querySelector<HTMLInputElement>('input[name="elapsed"]')!;
 
     function render(s: PetitionState) {
       countEl.textContent = petitionSummary(s);
@@ -93,6 +95,7 @@ const closed = state?.status === 'closed';
       const button = form.querySelector('button')!;
       button.disabled = true;
       status.textContent = '';
+      elapsedInput.value = String(Math.round(performance.now() - loadedAt));
       try {
         // URL-encoded body + Accept header keeps this a CORS "simple" request (no preflight).
         const res = await fetch(form.action, {
@@ -102,7 +105,8 @@ const closed = state?.status === 'closed';
         });
         const body = await res.json();
         if (res.ok) {
-          form.replaceChildren(Object.assign(document.createElement('p'), { textContent: 'Check your email for a link to confirm your signature.' }));
+          form.hidden = true;
+          status.textContent = 'Check your email for a link to confirm your signature.';
           return;
         }
         status.textContent = body.error ?? 'Something went wrong. Please try again.';

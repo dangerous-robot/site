@@ -48,7 +48,7 @@ interface SignOpts {
   email?: string;
   consent?: boolean;
   honeypot?: string;
-  started?: number;
+  elapsed?: number;
   json?: boolean;
   ip?: string;
   origin?: string | null;
@@ -59,7 +59,7 @@ function sign(o: SignOpts = {}): Promise<Response> {
     name: o.name ?? 'Ada Lovelace',
     email: o.email ?? `signer${++ipCounter}@example.org`,
     website: o.honeypot ?? '',
-    started: String(o.started ?? Date.now() - 10_000),
+    elapsed: String(o.elapsed ?? 10_000),
   });
   if (o.consent) body.set('show_name', 'on');
   const headers: Record<string, string> = {
@@ -173,11 +173,19 @@ describe('repeat signatures', () => {
   it('re-sends with a fresh token while unconfirmed, keeping one row', async () => {
     await sign({ email: 'again@example.org' });
     const first = lastToken('confirm');
+    await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
     await sign({ email: 'again@example.org' });
     expect(sentEmails).toHaveLength(2);
     expect(await rowCount()).toBe(1);
     expect((await post('confirm', first)).status).toBe(400);
     expect((await post('confirm', lastToken('confirm'))).status).toBe(200);
+  });
+
+  it('sends at most one email per address within ten minutes', async () => {
+    const first = await sign({ email: 'flood@example.org' });
+    const second = await sign({ email: 'flood@example.org' });
+    expect(await second.json()).toEqual(await first.json());
+    expect(sentEmails).toHaveLength(1);
   });
 
   it('gives a confirmed address the same reply and sends nothing', async () => {
@@ -244,7 +252,7 @@ describe('spam layers', () => {
   });
 
   it('answers a too-fast submission like a success and stores nothing', async () => {
-    const res = await sign({ started: Date.now() - 500 });
+    const res = await sign({ elapsed: 500 });
     expect(res.status).toBe(200);
     expect(await rowCount()).toBe(0);
   });
@@ -268,6 +276,8 @@ describe('spam layers', () => {
 
   it('refuses a browser POST from another origin', async () => {
     expect((await sign({ origin: 'https://evil.example' })).status).toBe(403);
+    // Sandboxed iframes send "null"; accepting it would void this check.
+    expect((await sign({ origin: 'null' })).status).toBe(403);
     expect(await rowCount()).toBe(0);
   });
 });

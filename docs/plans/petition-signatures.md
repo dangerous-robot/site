@@ -74,7 +74,8 @@ Checked in the repo on 2026-10-04.
 - Why the extra click on confirm and remove: email link scanners (Outlook Safe Links, Gmail prefetch, corporate proxies) fetch every URL in a message. A one-click GET would let a scanner confirm a signature or silently delete one.
 - Rate limit: the Workers rate-limiting binding (`[[ratelimits]]` in `wrangler.toml`, 5 per 60 seconds per IP). Counts are approximate and per Cloudflare location. No rate-limit table, so no IP or IP hash ever reaches D1.
 - One signature per address per petition (unique index on `petition_slug`, lowercased `email`). Re-signing while unconfirmed rotates the token and resends; re-signing a confirmed address sends nothing and gets the same "check your email" reply, so the form never reveals who has signed.
-- Minimum fill time is weak by design: the page sets the start timestamp in JS at load, and a missing timestamp (the no-JS form) is accepted.
+- Minimum fill time is weak by design: the page script sends the elapsed milliseconds (`performance.now()`, not the system clock, so clock skew cannot drop a signer), and a missing value (the no-JS form) is accepted.
+- An unconfirmed address gets at most one confirmation email per 10 minutes, so the form cannot flood someone else's inbox.
 - A scheduled Worker trigger (cron) deletes unconfirmed rows older than 7 days and, for closed petitions past the retention window, nulls the email column.
 - D1 queries use bound parameters only, as `public-feedback.md` requires for its Worker.
 
