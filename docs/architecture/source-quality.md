@@ -44,6 +44,15 @@ Each source carries `independence: first-party | independent | unknown`. The ing
 
 The proxy is a starting classification. It has a known failure mode (next section).
 
+### Entity match: the claim entity's own pages
+
+The proxy knows nothing about the claim's entity, so a page published by the entity itself can arrive labelled `independent` (a "Brave Software" report on brave.com proxies to `secondary`, and the ingest model can also set the label). When the pipeline knows the claim's entity (`dr claim-refresh`, `dr onboard`, `dr verify`, and `research_claim` when the entity is pre-resolved), it applies a deterministic match before the analyst runs (`entity_first_party_reason` in `pipeline/common/source_classification.py`). A source is `first-party` for the claim when either:
+
+- **Host**: its URL host (without `www.`) equals or is a subdomain of the host of the entity's `website` or its parent company's `website`. `search.brave.com` matches `brave.com`; `notbrave.com` and `brave.com.example.net` do not.
+- **Publisher**: its `publisher`, lowercased with punctuation and a trailing `inc`/`llc`/`ltd` removed, equals the entity's `name`, `legal_name` or an alias, or the same fields on the parent company (`parent_company` on the entity file). Equality, not substring: "Meta" does not match "Metacritic".
+
+The match beats any label and only ever moves a source toward `first-party`. The analyst sees the corrected label, and each correction is recorded on the claim as a `source_overrides` entry with a reason starting "Entity match:" (see [Source overrides on claims](#source-overrides-on-claims)). The source file's `independence` is not changed: a brave.com page is first-party on a Brave claim and may be independent evidence on another entity's claim. `parent_company` and `aliases:` on the entity files are the levers: without `parent_company`, a forum thread published by "Brave Software" on another host does not match a Brave Browser claim.
+
 ### `source_type` and `independence`: why both?
 
 Two fields, two different questions:
@@ -66,8 +75,9 @@ Edges where the proxy is imprecise:
 - **Regulator filings about (not by) the entity** are `primary` by publisher rule (sec.gov, ftc.gov) and proxied to `first-party`. The document originates outside the entity but speaks with regulator authority — neither label fits cleanly. Today the proxy treats them as first-party; the analyst can correct per-claim if it matters.
 - **Academic articles authored by entity employees** are `secondary` by publisher (arxiv, IEEE) and proxied to `independent`. They may functionally be entity-authored content disclosed through a third-party venue. Independent venue, not independent author.
 - **Secondary sources that restate primary numbers without original analysis** — by far the most common edge — are addressed per-claim via `source_overrides` (see § Source overrides on claims). Other edges currently rely on the analyst flagging them in the narrative.
+- **The claim entity's own pages** labelled `independent` (by the proxy or the ingest model) are handled: the entity match above relabels them `first-party` for that claim and records a `source_overrides` entry.
 
-When the v1.x publisher-groups registry lands and the deferred `coi_with_subject` field is added, the proxy can be tightened. For v1, the analyst's restatement test is the only persistent correction mechanism.
+When the v1.x publisher-groups registry lands and the deferred `coi_with_subject` field is added, the proxy can be tightened. For v1, the analyst's restatement test and the entity match are the only persistent correction mechanisms.
 
 ### Known failure mode: independent restatement of primary disclosures
 
@@ -103,7 +113,7 @@ Claims where absence of evidence is the primary basis should use `verdict: unver
 
 ## Source overrides on claims
 
-A claim may carry an optional `source_overrides:` list to record per-claim overrides of source-level fields. Today this exists only for the restatement failure mode above:
+A claim may carry an optional `source_overrides:` list to record per-claim overrides of source-level fields. Two things write it: the analyst, for the restatement failure mode above, and the pipeline's entity match (see [Entity match](#entity-match-the-claim-entitys-own-pages)), whose entries have a reason starting "Entity match:". Example of an analyst override:
 
 ```yaml
 source_overrides:
@@ -117,7 +127,7 @@ The analyst sets these. They have two purposes:
 1. They make the analyst's per-claim judgment legible — a reader can see why a source the file says is `independent` was treated as `first-party` for this claim.
 2. They are honest in the data: `verification_level` derivation uses the overridden values, not the raw source-file values.
 
-The source file's `independence` is unchanged; the override is scoped to the one claim that detected the restatement.
+The source file's `independence` is unchanged; the override is scoped to the one claim it was recorded on.
 
 ## Entity metadata
 
