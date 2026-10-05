@@ -325,6 +325,15 @@ Run: `dr claim-refresh brave-browser/renewable-energy-hosting`, run_id `e1cbe5eb
 | RF19 | Low | `2024/new-approach-to-data-center-and-clean-energy-growth` body is wrapped in `---`, so its summary renders as an H2 heading on the source page. | Reproduced | Ingest model output; no body normalization before write. | Astro markdown processor on the file body outputs `<hr>` then `<h2 ...>`. | [Pipeline markdown emitter bugs](#pipeline-markdown-emitter-bugs-2026-05-08) |
 | RF20 | Low | The analyst sees only the ingest model's 1-3 sentence body, labeled "Full text", never page text, so ingest-model errors (RF2, RF10) flow straight into the verdict. Also: `as_of` uses local date while `ran_at` is UTC, model text carries U+2011/U+00A0/U+202F characters, frontmatter style churn. | Isolated | `analyst/agent.py:302`; `orchestrator/persistence.py:319`. | Analyst request in the run log shows each source as summary, quotes and a short "Full text" paragraph. | [Analyst decomposition](#analyst-decomposition-cost-lever) |
 
+Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plans/claim-refresh-integrity-fixes.md)):
+
+| ID | Sev | Issue | Likely cause | Related |
+|----|-----|-------|--------------|---------|
+| RF21 | Low | When the write-time guard renames a slug (another run wrote the same slug after `_ingest_urls` resolved it), the analyst prompt, `source_overrides` and sidecar keep the old id. Narrow window, needs two concurrent runs. | `_write_source_files` returns the new id but source dicts were built earlier (`orchestrator/pipeline.py` `research_claim`) | RF1 |
+| RF22 | Medium | `validate_source_file` in the refresh path drops whole sources for fixable problems: a year before 2000 (real older reports) or a model-written non-archive.org `archived_url`. | Validation errors map to `invalid_source`; no repair step (clear the bad field) before rejecting | RF2, RF10 |
+| RF23 | Low | Slug resolution compares only the stored `url`; an existing file that stored a redirect target, or a URL that canonicalizes differently, is treated as another page, so a duplicate file is written instead of reusing it. | `persistence.py` `_resolve_one_slug` and the exact-URL index | [Dedup detection](#dedup-detection-on-url-ingest-and-claim-creation) |
+| RF24 | Low | `_apply_entity_match` reads `sd["source_id"]`; `dr step-analyze` builds source dicts without it, so passing a resolved entity there would raise. Safe today only because step-analyze passes none. | `orchestrator/pipeline.py` `_apply_entity_match`; step-analyze source dicts | RF13 |
+
 ---
 
 ## Decouple subject from entity model
