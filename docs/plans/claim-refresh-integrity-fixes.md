@@ -1,6 +1,6 @@
 # Plan: claim-refresh integrity fixes (RF1 to RF4)
 
-**Status**: `ready` (not started; Needs from Brandon answered 2026-10-04)
+**Status**: `in progress` (all code items done 2026-10-04; T4 and V1 wait on Brandon's Brave refresh)
 **Last updated**: 2026-10-04
 **Reviewed by:** self-review, 2026-10-04 (see Review history)
 **Findings**: RF1 to RF4 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
@@ -13,23 +13,23 @@ Paths are under `pipeline/` unless they start with `docs/`, `research/`, `src/` 
 
 Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 
-- [ ] S0: link this plan from the four RF rows in `docs/UNSCHEDULED.md`
-- [ ] F1: fetch-success record on `IngestorDeps` (RF2, shared)
-- [ ] F2: `_ingest_one` rejects sources with no successful fetch or failed validation (RF2)
-- [ ] F3: `dr step-ingest` rejects sources with no successful fetch (RF2)
-- [ ] C1: source id resolver with collision handling (RF1, shared)
-- [ ] C2: resolve ids in `_ingest_urls` before analysis (RF1)
-- [ ] C3: `_write_source_files` never returns the id of a different URL (RF1)
-- [ ] C4: `dr step-ingest` write path uses the resolver; `--force` only overwrites the same URL (RF1)
-- [ ] E1: entity match helper (RF3, shared)
-- [ ] E2: apply entity match to the analyst's source pool and record `source_overrides` (RF3)
-- [ ] E3: `parent_company` and the "Brave" alias on the Brave entities (RF3; Q1 answered: both)
-- [ ] E4: `docs/architecture/source-quality.md` describes the entity match
-- [ ] T1: citation cleaner module (RF4)
-- [ ] T2: analyst prompt and instructions stop inviting "Source N" (RF4)
-- [ ] T3: hand-fix the `ai-producers-existential-score` body (RF4; Q2 answered: delete the sub-question block)
+- [x] S0: link this plan from the four RF rows in `docs/UNSCHEDULED.md`
+- [x] F1: fetch-success record on `IngestorDeps` (RF2, shared)
+- [x] F2: `_ingest_one` rejects sources with no successful fetch or failed validation (RF2)
+- [x] F3: `dr step-ingest` rejects sources with no successful fetch (RF2)
+- [x] C1: source id resolver with collision handling (RF1, shared)
+- [x] C2: resolve ids in `_ingest_urls` before analysis (RF1)
+- [x] C3: `_write_source_files` never returns the id of a different URL (RF1)
+- [x] C4: `dr step-ingest` write path uses the resolver; `--force` only overwrites the same URL (RF1)
+- [x] E1: entity match helper (RF3, shared)
+- [x] E2: apply entity match to the analyst's source pool and record `source_overrides` (RF3)
+- [x] E3: `parent_company` and the "Brave" alias on the Brave entities (RF3; Q1 answered: both)
+- [x] E4: `docs/architecture/source-quality.md` describes the entity match
+- [x] T1: citation cleaner module (RF4)
+- [x] T2: analyst prompt and instructions stop inviting "Source N" (RF4)
+- [x] T3: hand-fix the `ai-producers-existential-score` body (RF4; Q2 answered: delete the sub-question block)
 - [ ] T4: lint rules: citation tokens (error) and level-vs-pool mismatch (warning) (RF4, RF3); lands after the Brave refresh in V1 is approved (Q3)
-- [ ] T5: wire the citation cleaner into `_analyse_claim` (RF4)
+- [x] T5: wire the citation cleaner into `_analyse_claim` (RF4)
 - [ ] V1: Verification section passes; Brandon's end-to-end refresh inspected
 
 ## Facts the plan relies on
@@ -293,3 +293,4 @@ RF5 (research drifts off the entity; scorer order), RF6 (verdict instability), R
 |------|----------|-------|---------|
 | 2026-10-04 | agent (claude-opus-5-5), self-review | implementation, iterated | Checked every path:line against HEAD `d57ae1d` and fixed seven stale line references. Moved RF1 disambiguation from write time to `_ingest_urls` (ids are used before writing, K1) and kept a write-time guard that preserves one id per input (K3). Chose per-claim `source_overrides` over editing file labels for RF3 so the site count agrees (K8, K9). Confirmed `brave-browser.md` lacks `parent_company` (added Q1). Confirmed level is model-chosen, so RF3 tests labels and adds a lint check. Ordered T4 after T3 so CI stays green. Dropped `[parallel]` checklist tags so only the Lanes section declares parallel work. Counted the Brave body's Source N references (four). |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | implementation, second pass | Read RF1 to RF4 sections against the findings and spot-checked `orchestrator/cli.py:1087`, `src/content.config.ts:235` (`parent_company` exists in the schema; other product entities already set it). No changes to the steps. Added the untracked sub-question-coverage habit to Out of scope. Watch in F2: running `validate_source_file` in the refresh path may reject more sources than expected; the plan accepts that. |
+| 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | implementation | Implemented S0, F1 to F3, C1 to C4, E1 to E4, T1 to T3 (two parallel lanes in worktrees, merged to main) and T5, all test-first; 846 unit tests pass. A /simplify pass (20512f3) moved the entity match and overrides from `verify_claim`/`research_claim` into `_analyse_claim` (one site, next to the T5 cleaner), replaced `fetch_succeeded` with `fetch_failure_reason`, and merged three URL-host helpers into `common/utils.url_host`/`host_matches`. Deviations: the entity match also rewrites an analyst override that was not first-party; step-ingest writes a host-prefixed file instead of failing on a slug taken by another URL; `test_research_integration.py` patches the fetch check because its fake ingestor never fetches. |
