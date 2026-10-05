@@ -237,6 +237,36 @@ class TestOnboardEntityNoDoubleIngest:
         assert research_calls <= 5, f"expected <=5 research calls, got {research_calls}"
 
 
+class TestOnboardKeepsSourcesOnDisk:
+    @pytest.mark.asyncio
+    async def test_claims_list_sources_already_on_disk(self, tmp_path: Path, monkeypatch) -> None:
+        """A researcher URL already stored as a source must still be listed on the claim."""
+        _setup_tmp_repo(tmp_path)
+        existing = tmp_path / "research" / "sources" / "2025" / "report.md"
+        existing.parent.mkdir(parents=True)
+        existing.write_text(
+            "---\nurl: https://example.com/report\ntitle: Report\npublisher: Example\n"
+            "accessed_date: 2025-01-01\nkind: report\nsummary: A stored report.\n---\nBody.\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path))
+            result = await onboard_entity("TestCorp", "company", config=config)
+
+        written = [p for p, _reason in result.claims_blocked] + result.claims_created
+        assert written
+        for rel in written:
+            fm, _ = parse_frontmatter((tmp_path / rel).read_text(encoding="utf-8"))
+            assert fm["sources"] == ["2025/report"], rel
+
+
 class TestOnboardEntitySeedUrl:
     @pytest.mark.asyncio
     async def test_seed_url_skips_researcher(self, tmp_path: Path, monkeypatch) -> None:

@@ -152,6 +152,24 @@ class VerificationResult(BaseModel):
     def cached_source_ids(self) -> list[str]:
         return [sid for _url, sid, _sd in self.cached_sources]
 
+    def persist_sources(self, repo_root: Path, url_index: dict[str, str] | None = None) -> list[str]:
+        """Write the fresh sources and return every source id for the claim.
+
+        Cached ids come first. A cached and a fresh source can still name the
+        same file (a redirect target stored on disk), so each id appears once.
+        With ``url_index``, the fresh sources are added to it under both the
+        requested and the stored URL, so later claims in the same run reuse
+        them instead of fetching again.
+        """
+        from orchestrator.persistence import _write_source_files
+
+        fresh_ids = _write_source_files(self.source_files, repo_root)
+        if url_index is not None:
+            for (url, sf), sid in zip(self.source_files, fresh_ids):
+                url_index.setdefault(canonical_key(url), sid)
+                url_index.setdefault(canonical_key(sf.frontmatter.url), sid)
+        return list(dict.fromkeys(self.cached_source_ids + fresh_ids))
+
 
 def below_threshold(usable_sources: list) -> bool:
     """True when fewer than four usable sources are available.
@@ -1700,7 +1718,6 @@ async def onboard_entity(
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
-        _write_source_files,
         verdict_write_kwargs,
     )
 
@@ -2071,11 +2088,7 @@ async def onboard_entity(
                     # (and later re-run or archive) the halted work.
                     # Sources that did ingest are still written out.
                     if vr.blocked_reason is not None:
-                        source_ids = (
-                            _write_source_files(vr.source_files, repo_root)
-                            if vr.source_files
-                            else []
-                        )
+                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2135,11 +2148,7 @@ async def onboard_entity(
                     # Analyst-failure branch: persist a placeholder so the
                     # operator has a discoverable artifact to re-run or archive.
                     if not vr.analyst_output:
-                        source_ids = (
-                            _write_source_files(vr.source_files, repo_root)
-                            if vr.source_files
-                            else []
-                        )
+                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2196,11 +2205,7 @@ async def onboard_entity(
                     ao = vr.analyst_output
                     title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
                     if not title_ok:
-                        source_ids = (
-                            _write_source_files(vr.source_files, repo_root)
-                            if vr.source_files
-                            else []
-                        )
+                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2251,7 +2256,7 @@ async def onboard_entity(
                         continue
 
                     # Write sources (reuse verify_claim's already-ingested sources)
-                    source_ids = _write_source_files(vr.source_files, repo_root) if vr.source_files else []
+                    source_ids = vr.persist_sources(repo_root, onboard_url_index)
 
                     # Write claim file. The claim inherits the source
                     # criterion's full `topics` set by default (per

@@ -12,7 +12,9 @@ import pytest
 from ingestor.models import SourceFile, SourceFrontmatter
 from orchestrator.persistence import build_source_url_index, load_source_dict
 from common.models import SubQuestion
+from common.canonical_url import canonical_key
 from orchestrator.pipeline import (
+    VerificationResult,
     VerifyConfig,
     _apply_url_dedup,
     _ingest_urls,
@@ -384,6 +386,31 @@ class TestVerifyClaimSurfacesCachedSources:
         assert consulted[0]["title"] == "Cached Source 0"
         assert consulted[0]["url"] == "https://example.com/cached-0"
         assert all(entry["ingested"] is True for entry in consulted)
+
+
+class TestPersistSources:
+    def _result(self, cached_ids: list[str], fresh: list[tuple[str, SourceFile]]) -> VerificationResult:
+        return VerificationResult(
+            entity="E", claim_text="C", urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+            source_files=fresh,
+            cached_sources=[(f"https://example.com/{sid}", sid, {}) for sid in cached_ids],
+        )
+
+    def test_returns_cached_then_fresh_ids_without_repeats(self, tmp_path: Path) -> None:
+        sf = _make_source_file("https://example.com/fresh", "fresh")
+        vr = self._result(["2025/old", "2026/fresh"], [("https://example.com/fresh", sf)])
+        assert vr.persist_sources(tmp_path) == ["2025/old", "2026/fresh"]
+        assert (tmp_path / "research" / "sources" / "2026" / "fresh.md").exists()
+
+    def test_adds_requested_and_stored_urls_to_the_index(self, tmp_path: Path) -> None:
+        # A redirect leaves the requested URL and the stored one different;
+        # a later claim may find either form.
+        sf = _make_source_file("https://example.com/final", "final")
+        vr = self._result([], [("https://example.com/start", sf)])
+        index: dict[str, str] = {}
+        vr.persist_sources(tmp_path, index)
+        assert index[canonical_key("https://www.example.com/start/")] == "2026/final"
+        assert index[canonical_key("https://example.com/final")] == "2026/final"
 
 
 # --- slug_from_url tests ---
