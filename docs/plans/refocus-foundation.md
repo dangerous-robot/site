@@ -1,6 +1,6 @@
 # The refocus: foundation (1.0.0-beta.3) and pull-forwards (1.0.0-beta.4)
 
-**Status**: `in progress` (beta.3 deployed and tagged 2026-10-04; beta.4 implemented except G1/G2, verified except items 16 and 24; see both Status checklists)
+**Status**: `in progress` (beta.3 deployed and tagged 2026-10-04; beta.4 implemented, verified except item 24; see both Status checklists)
 **Last updated**: 2026-10-04
 **Source of truth**: the discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (Decisions Log; "07 — Early Roadmap"). Every copy string those records decided is reproduced here verbatim, so this plan can be implemented without reading them.
 
@@ -182,13 +182,13 @@ beta.3 ships as checked above; the deploy gate does not move. The pull-forwards 
 
 ### Status checklist, beta.4
 
-- [ ] G1, G2: pledge post finished and on the homepage (waits on the signature build in [`petition-signatures.md`](petition-signatures.md))
+- [x] G1, G2: pledge post finished and on the homepage (2026-10-05; signatures collected per [`petition-signatures.md`](petition-signatures.md))
 - [x] H1 to H5: research record hygiene
 - [x] I1, I2, I4: one navigation source, About in the top row, docs synced
 - [x] I3: claimless entities (option A: hidden from the Companies and Products lists)
 - [x] J1: indexing trigger rewritten
 - [x] K1: `resources` collection in the CMS (articles only)
-- [ ] Verification checklist, beta.4: items 15, 17 to 23 and 25 pass (2026-10-04, `inv check` and built `dist/`); 16 waits on G1; 24 waits on Brandon (the admin needs the local repository folder picker)
+- [ ] Verification checklist, beta.4: items 15 to 23 and 25 pass (2026-10-04, `inv check` and built `dist/`; 16 on 2026-10-05); 24 waits on Brandon (the admin needs the local repository folder picker)
 - [x] Needs from Brandon, beta.4: all five items answered 2026-10-04
 
 ### G. Pledge on the homepage
@@ -274,3 +274,4 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | rename | Renamed from `phase-0-foundation.md`. Phase 0 is now `1.0.0-beta.3`, phase 0.1 is `1.0.0-beta.4`, phase 1 is "the chatbot guide release" (a later beta), per Brandon's version reset. Wording only; scope, items and decided copy unchanged. Needs item 4 answered. Earlier rows keep the old names. |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | implementation | Implemented H1 to H5, I1 to I4, J1 and K1 (parallel agents, one per item group); G1 and G2 wait on the signature build in `petition-signatures.md`, and the beta.4 verification checklist has not run. Deviations reported: H1 left out the body's AWS hosting claim (no cited source says it). H2 also updated the FAQPage JSON-LD in the page head to match the visible answer. H3 names seven companies, not six: the FLI Summer 2025 index graded seven (row H3 corrected). H4 turned the five markdown links to `v1-launch-set.md` into plain text and left plain-text history mentions (see item 20). I1/I2 put About in `SECTIONS` as well as `TOP_LINKS` (the collapsed menu renders `SECTIONS`), put the GitHub and CC-BY-4.0 links in `FOOTER_LINKS` with an `external` flag, and let a homepage menu entry set its own `short` only when `nav.ts` does not list its `href` (so G2's `short: "Pledge"` works). I3 (option A) also removed the "Has claims" filter from both lists, and an empty list shows only the EmptyState message; Companies is empty today. K1 gave `further_reading.url` `type: url` to match the schema's URL check. Promoted the petition draft to `petition-signatures.md`; Needs item 1 now links it, and row G1 and item 16 now name the on-page form at `#sign`; item 20 checks for links only. Open, not fixed here: the Brave claim body cites an AWS host and "Sources 4, 8" that its six sources do not support, tags three brave.com pages `independent`, and its `false` verdict rests on missing evidence (pipeline question); `research/index.astro` still says it "tracks claims about AI companies and products" and names "the operator" in other FAQ answers; `docs/decisions.md` still points at the gitignored petition draft. |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | verification | Ran the beta.4 verification checklist: `inv check` passes; items 17 to 23 and 25 pass with positive controls (item 20 checks for markdown links only, as noted at the item). Item 16 waits on G1, item 24 on Brandon. |
+| 2026-10-05 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | implementation | G1: the published editor's note had no signatory sentence; added one, linking `#sign`. G2: menu entry "Sign the pledge" (short "Pledge") added after Values; the list is now two columns of four. Item 16 passes on a production build (post not a draft, note links `#sign`, list label and hamburger short label present). |

@@ -114,6 +114,12 @@ const menuEntries = [
     label: 'What this site stands for',
     note: 'Where this site stands, in plain words.',
   },
+  {
+    href: '/writing/pledge-prohibit-ai-self-improvement-pledge',
+    label: 'Sign the pledge',
+    short: 'Pledge',
+    note: 'Support laws that stop AI systems from improving their own capabilities without human control.',
+  },
 ];
 
 const menu = menuEntries.map((m: { href: string; label: string; note: string; short?: string }) => {
@@ -280,7 +286,7 @@ const websiteSchema = {
       </div>
     </section>
 
-    <!-- The visible menu: all seven destinations in one list, above the fold at 1440x900. -->
+    <!-- The visible menu: all eight destinations in one list, above the fold at 1440x900. -->
     <nav class="start" id="start" aria-labelledby="start-title" tabindex="-1">
       <div class="start__inner">
         <h2 class="start__title" id="start-title">Where to start</h2>
