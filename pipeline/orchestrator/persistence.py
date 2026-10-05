@@ -231,12 +231,27 @@ def _write_source_files(
             fm_dict["independence"] = independence_for_source_type(source_type)
         markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
 
-        try:
-            with target_path.open("x", encoding="utf-8") as f:
-                f.write(markdown)
-            logger.info("Wrote source: %s", target_path)
-        except FileExistsError:
-            logger.info("Source already exists, skipping: %s", target_path)
+        # Callers normally resolve slugs first (``resolve_source_slugs``);
+        # this guard covers callers that skip it, so an id returned here
+        # always names a file for this URL.
+        while True:
+            try:
+                with target_path.open("x", encoding="utf-8") as f:
+                    f.write(markdown)
+                logger.info("Wrote source: %s", target_path)
+                break
+            except FileExistsError:
+                existing_url = _url_on_disk(target_path)
+                if _same_resource(existing_url, sf.frontmatter.url):
+                    logger.info("Source already exists, skipping: %s", target_path)
+                    break
+                resolved = _resolve_one_slug(sf, repo_root, {})
+                logger.warning(
+                    "Source %s/%s already holds %s; writing %s as %s/%s",
+                    sf.year, sf.slug, existing_url, sf.frontmatter.url, sf.year, resolved,
+                )
+                sf.slug = resolved
+                target_path = target_dir / f"{sf.slug}.md"
 
         source_ids.append(f"{sf.year}/{sf.slug}")
 

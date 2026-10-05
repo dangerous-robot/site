@@ -17,7 +17,7 @@ import pytest
 
 from common.frontmatter import parse_frontmatter
 from ingestor.models import SourceFile
-from orchestrator.persistence import resolve_source_slugs
+from orchestrator.persistence import _write_source_files, resolve_source_slugs
 from orchestrator.pipeline import VerifyConfig, _ingest_urls
 
 MS_URL = "https://datacenters.microsoft.com/sustainability/"
@@ -135,3 +135,32 @@ async def test_ingest_urls_assigns_unique_ids(tmp_path: Path) -> None:
     slugs = [sf.slug for _url, sf in results]
     assert len(set(slugs)) == 2
     assert "sustainability" not in slugs
+
+
+# --- C3: write guard --------------------------------------------------------
+
+
+def test_write_source_files_never_returns_other_urls_id(tmp_path: Path) -> None:
+    ms_path = _write_existing(tmp_path, "2026/sustainability", MS_URL)
+    before = ms_path.read_bytes()
+    items = [(AWS_URL, _sf(AWS_URL)), (AWS_UTIL_URL, _sf(AWS_UTIL_URL))]
+
+    ids = _write_source_files(items, tmp_path)
+
+    assert len(ids) == 2
+    assert len(set(ids)) == 2
+    for source_id, (url, sf) in zip(ids, items):
+        fm, _ = parse_frontmatter(
+            (tmp_path / "research" / "sources" / f"{source_id}.md").read_text()
+        )
+        assert fm["url"] == url
+        assert source_id == f"{sf.year}/{sf.slug}"
+    assert ms_path.read_bytes() == before
+
+
+def test_write_source_files_same_url_keeps_existing_id(tmp_path: Path) -> None:
+    existing = _write_existing(tmp_path, "2026/sustainability", AWS_URL)
+    before = existing.read_bytes()
+    ids = _write_source_files([(AWS_URL, _sf(AWS_URL))], tmp_path)
+    assert ids == ["2026/sustainability"]
+    assert existing.read_bytes() == before
