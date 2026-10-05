@@ -1,6 +1,6 @@
 # Plan: claim-refresh integrity fixes (RF1 to RF4)
 
-**Status**: `ready` (not started)
+**Status**: `ready` (not started; Needs from Brandon answered 2026-10-04)
 **Last updated**: 2026-10-04
 **Reviewed by:** self-review, 2026-10-04 (see Review history)
 **Findings**: RF1 to RF4 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
@@ -23,12 +23,12 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 - [ ] C4: `dr step-ingest` write path uses the resolver; `--force` only overwrites the same URL (RF1)
 - [ ] E1: entity match helper (RF3, shared)
 - [ ] E2: apply entity match to the analyst's source pool and record `source_overrides` (RF3)
-- [ ] E3: `parent_company` on the Brave Browser entity (RF3, needs Brandon, item Q1)
+- [ ] E3: `parent_company` and the "Brave" alias on the Brave entities (RF3; Q1 answered: both)
 - [ ] E4: `docs/architecture/source-quality.md` describes the entity match
 - [ ] T1: citation cleaner module (RF4)
 - [ ] T2: analyst prompt and instructions stop inviting "Source N" (RF4)
-- [ ] T3: hand-fix the two published claim bodies (RF4, needs Brandon, items Q2 and Q3)
-- [ ] T4: lint rules: citation tokens (error) and level-vs-pool mismatch (warning) (RF4, RF3)
+- [ ] T3: hand-fix the `ai-producers-existential-score` body (RF4; Q2 answered: delete the sub-question block)
+- [ ] T4: lint rules: citation tokens (error) and level-vs-pool mismatch (warning) (RF4, RF3); lands after the Brave refresh in V1 is approved (Q3)
 - [ ] T5: wire the citation cleaner into `_analyse_claim` (RF4)
 - [ ] V1: Verification section passes; Brandon's end-to-end refresh inspected
 
@@ -60,7 +60,7 @@ Shared pieces first: F1 (fetch record) before F2 and F3; C1 (resolver) before C2
 ## Lanes
 
 - **Lane core** (serial, in this order): S0, F1, F2, F3, C1, C2, C3, C4, E1, E2, E3, E4, then T5. Scope: `ingestor/agent.py`, `orchestrator/pipeline.py`, `orchestrator/persistence.py`, `orchestrator/cli.py`, `orchestrator/checkpoints.py`, `orchestrator/entity_resolution.py`, `common/source_classification.py`, `research/entities/products/brave-browser.md`, `research/entities/companies/brave-software.md`, `docs/architecture/source-quality.md`, `docs/UNSCHEDULED.md`, and their tests.
-- **Lane text** (serial within the lane, T1 to T4 in order; independent of lane core, so the two lanes can run in parallel): T1, T2, T3, T4. T4 must land after T3 or CI fails on the two published claims. Scope: `analyst/citations.py` (new), `analyst/agent.py`, `analyst/instructions.md`, `linter/checks.py`, `linter/runner.py`, the two claim files in K14, `tests/test_citations.py` (new), `tests/test_linter.py`, `tests/test_analyst.py`.
+- **Lane text** (serial within the lane, T1 to T4 in order; independent of lane core, so the two lanes can run in parallel): T1, T2, T3; T4 waits for V1. T4 must land after T3 and after the Brave claim is replaced by Brandon's refresh (Q3), or CI fails on the published Brave body. Scope: `analyst/citations.py` (new), `analyst/agent.py`, `analyst/instructions.md`, `linter/checks.py`, `linter/runner.py`, the two claim files in K14, `tests/test_citations.py` (new), `tests/test_linter.py`, `tests/test_analyst.py`.
 - T5 runs after both lanes finish (it touches `orchestrator/pipeline.py` and imports T1).
 
 RF2 lands before RF1 because a failed fetch is the worse defect (invented content) and both touch `_ingest_one`/step-ingest; doing RF2 first keeps C4's diff on a step-ingest that already has its fetch check.
@@ -184,7 +184,7 @@ The match beats any label, including the ingest model's (the forum thread's `ind
 
 ### E3: `parent_company` on Brave Browser
 
-- Add `parent_company: companies/brave-software` to `research/entities/products/brave-browser.md` and, if Brandon agrees, `aliases: [Brave]` to `research/entities/companies/brave-software.md` (needs Brandon, Q1). Test: `tests/test_entity_independence.py::test_brave_entity_has_parent` loads the real entity with `parse_entity_ref("products/brave-browser", repo_root)` and asserts the identity includes "brave software". Fails until the edit lands.
+- Add `parent_company: companies/brave-software` to `research/entities/products/brave-browser.md` and `aliases: [Brave]` to `research/entities/companies/brave-software.md` (Q1). Test: `tests/test_entity_independence.py::test_brave_entity_has_parent` loads the real entity with `parse_entity_ref("products/brave-browser", repo_root)` and asserts the identity includes "brave software". Fails until the edit lands.
 - Commit: `fix(entities): link Brave Browser to Brave Software`
 
 ### E4: architecture doc
@@ -229,14 +229,14 @@ The match beats any label, including the ingest model's (the forum thread's `ind
 - Change: `analyst/agent.py:285` heading to `### {title}`; `analyst/instructions.md:110` becomes: "Cite sources by title in italics, for example *AWS Cloud Sustainability*. Never write source ids, bracketed tokens such as 【2026/example】, or numbered references such as \"Source 3\"." The auditor prompt (`auditor/agent.py:48`) keeps its numbering; its text is not published.
 - Commit: `fix(analyst): stop numbering sources in the prompt`
 
-### T3: hand-fix the published bodies
+### T3: hand-fix the `ai-producers-existential-score` body
 
-- `research/claims/subjects/ai-model-producers/ai-producers-existential-score.md:30-39`: replace the six tokens with titles from the source files (`2025/ai-safety-index-summer-2025` is "2025 AI Safety Index"; `2025/ai-safety-future-of-life-institute-risk-mitigation` is "AI Safety Report: Top 3 Companies Outpace Rivals In Risk"). Whether to also remove the "Sub-question coverage" block (`:36-39`, internal ids `sq1` to `sq3`) is Q2.
-- `research/claims/brave-browser/renewable-energy-hosting.md:28`: remove the four "Source N" references, rewording the two sentences that cite sources 7 and 8, which are not in the list (Q3). Name a source by title only where the reference clearly maps to a listed source after reading it.
-- No frontmatter change on either file. Test: T4's lint passes on the real repo.
-- Commit: `fix(claims): replace raw citation references in two published claims`
+- `research/claims/subjects/ai-model-producers/ai-producers-existential-score.md:30-39`: replace the six tokens with titles from the source files (`2025/ai-safety-index-summer-2025` is "2025 AI Safety Index"; `2025/ai-safety-future-of-life-institute-risk-mitigation` is "AI Safety Report: Top 3 Companies Outpace Rivals In Risk"). Also delete the "Sub-question coverage" block (`:36-39`, internal ids `sq1` to `sq3`) (Q2).
+- The Brave body is not hand-edited (Q3): Brandon's refresh in V1 replaces it after lane core and T5 land.
+- No frontmatter change. Test: T4's citation rule (unit-tested first) passes on this file.
+- Commit: `fix(claims): replace raw citation tokens in the existential-score claim`
 
-### T4: lint rules (after T3)
+### T4: lint rules (after T3 and the approved Brave refresh)
 
 - Failing tests first, `tests/test_linter.py`:
   - `test_raw_citation_token_is_error`: body with `【2026/631793】` gives one `raw-citation-token` issue, severity `error`.
@@ -273,15 +273,15 @@ Run from the repo root (`cd` as its own call first).
 3. Claim frontmatter: every brave.com or Brave Software source appears in `source_overrides` as `first-party` with a reason; `verification_level` is `claimed` or `self-reported` unless a source not published by Brave or its parent supports the claim; `cap_rationale` is present when capped.
 4. Claim body and `takeaway`: no `【`, no "Source N"; `dr lint --severity error` still clean.
 5. Claim page on the dev server (`inv dev`, port 4321): the source count line ("N sources (X company-published, Y independent)") agrees with the level.
-6. Keep or discard the refreshed file (Q3): the refresh still demotes to draft and overwrites `seo_title` (RF7, RF8).
+6. The refresh replaces the published Brave claim (Q3). It lands as draft with a new `seo_title` and no review record (RF7, RF8): check the new `seo_title` reads correctly for the verdict, then `dr review --claim brave-browser/renewable-energy-hosting --approve` once satisfied. Then land T4.
 
 ## Needs from Brandon
 
 | Id | Decision | Recommendation |
 |----|----------|----------------|
-| Q1 | Add `parent_company: companies/brave-software` to `research/entities/products/brave-browser.md` (E3). Without it the forum thread (publisher "Brave Software" on `community.brave.app`) stays `independent`. Optionally also `aliases: [Brave]` on `companies/brave-software.md`, so a page labelled publisher "Brave" matches. | Yes to both |
-| Q2 | In `ai-producers-existential-score`, also delete the "Sub-question coverage" block (pipeline ids `sq1` to `sq3` mean nothing to readers), or only fix the tokens. | Delete it; the Evidence Summary already says the same thing |
-| Q3 | Brave published body: hand-edit now and keep it published (T3), with your end-to-end refresh as a throwaway check; or let the refresh replace it (draft status, new verdict, RF7/RF8 losses). | Hand-edit; discard the refresh output unless its verdict is clearly better |
+| Q1 (answered 2026-10-04: both) | Add `parent_company: companies/brave-software` to `research/entities/products/brave-browser.md` (E3). Without it the forum thread (publisher "Brave Software" on `community.brave.app`) stays `independent`. Optionally also `aliases: [Brave]` on `companies/brave-software.md`, so a page labelled publisher "Brave" matches. | Yes to both |
+| Q2 (answered 2026-10-04: delete) | In `ai-producers-existential-score`, also delete the "Sub-question coverage" block (pipeline ids `sq1` to `sq3` mean nothing to readers), or only fix the tokens. | Delete it; the Evidence Summary already says the same thing |
+| Q3 (answered 2026-10-04: let the refresh replace it) | Brave published body: hand-edit now and keep it published (T3), with your end-to-end refresh as a throwaway check; or let the refresh replace it (draft status, new verdict, RF7/RF8 losses). | Hand-edit; discard the refresh output unless its verdict is clearly better |
 
 ## Out of scope (follow-ups)
 
