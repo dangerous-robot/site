@@ -155,11 +155,10 @@ class VerificationResult(BaseModel):
     def persist_sources(self, repo_root: Path, url_index: dict[str, str] | None = None) -> list[str]:
         """Write the fresh sources and return every source id for the claim.
 
-        Cached ids come first. A cached and a fresh source can still name the
-        same file (a redirect target stored on disk), so each id appears once.
-        With ``url_index``, the fresh sources are added to it under both the
-        requested and the stored URL, so later claims in the same run reuse
-        them instead of fetching again.
+        A cached and a fresh source can still name the same file (a redirect
+        target stored on disk), so each id appears once. ``url_index`` gains
+        the fresh sources under both the requested and the stored URL, so
+        later claims in the same run reuse them instead of fetching again.
         """
         from orchestrator.persistence import _write_source_files
 
@@ -2083,12 +2082,14 @@ async def onboard_entity(
                     if vr.errors:
                         result.errors.extend(f"{slug}: {e}" for e in vr.errors)
 
+                    # Every branch below writes a claim, so sources go to disk first.
+                    source_ids = vr.persist_sources(repo_root, onboard_url_index)
+
                     # Threshold-blocked branch: persist a placeholder claim
                     # file with status='blocked' so the operator can see
                     # (and later re-run or archive) the halted work.
                     # Sources that did ingest are still written out.
                     if vr.blocked_reason is not None:
-                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2148,7 +2149,6 @@ async def onboard_entity(
                     # Analyst-failure branch: persist a placeholder so the
                     # operator has a discoverable artifact to re-run or archive.
                     if not vr.analyst_output:
-                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2205,7 +2205,6 @@ async def onboard_entity(
                     ao = vr.analyst_output
                     title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
                     if not title_ok:
-                        source_ids = vr.persist_sources(repo_root, onboard_url_index)
                         try:
                             inherited_topics = [Category(t) for t in template.topics]
                         except ValueError:
@@ -2254,9 +2253,6 @@ async def onboard_entity(
                             reason_label,
                         )
                         continue
-
-                    # Write sources (reuse verify_claim's already-ingested sources)
-                    source_ids = vr.persist_sources(repo_root, onboard_url_index)
 
                     # Write claim file. The claim inherits the source
                     # criterion's full `topics` set by default (per

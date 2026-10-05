@@ -931,10 +931,10 @@ def claim_refresh(
     write_entity_ref = entity_ref or str(claim_path.parent.relative_to(claims_dir))
 
     # Mirror onboard's write pattern (four branches).
+    source_ids = vr.persist_sources(root)
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
-        source_ids = vr.persist_sources(root)
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -983,7 +983,6 @@ def claim_refresh(
 
     # Branch B: analyst failed (no blocked_reason, no analyst_output).
     if vr.analyst_output is None:
-        source_ids = vr.persist_sources(root)
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -1039,7 +1038,6 @@ def claim_refresh(
     else:
         title_ok, title_reason = True, None
     if not title_ok:
-        source_ids = vr.persist_sources(root)
         try:
             inherited_topics = [Category(t) for t in template.topics]
         except ValueError:
@@ -1084,7 +1082,6 @@ def claim_refresh(
         return
 
     # Branch D: success.
-    source_ids = vr.persist_sources(root)
     try:
         inherited_topics = [Category(t) for t in template.topics] if template else list(ao.verdict.topics)
     except ValueError as exc:

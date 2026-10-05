@@ -46,9 +46,8 @@ function call(path: string, init: RequestInit = {}): Promise<Response> {
 interface SignOpts {
   name?: string;
   email?: string;
-  consent?: boolean;
-  /** Raw show_name value, for clients that send something other than a checked box. */
-  showName?: string;
+  /** true sends a checked box; a string sends that raw show_name value. */
+  consent?: boolean | string;
   honeypot?: string;
   elapsed?: number;
   json?: boolean;
@@ -63,8 +62,8 @@ function sign(o: SignOpts = {}): Promise<Response> {
     website: o.honeypot ?? '',
     elapsed: String(o.elapsed ?? 10_000),
   });
-  if (o.consent) body.set('show_name', 'on');
-  if (o.showName !== undefined) body.set('show_name', o.showName);
+  if (typeof o.consent === 'string') body.set('show_name', o.consent);
+  else if (o.consent) body.set('show_name', 'on');
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'CF-Connecting-IP': o.ip ?? `10.0.0.${++ipCounter}`,
@@ -125,7 +124,7 @@ describe('signing and consent', () => {
   });
 
   it('treats only a checked box as consent to show the name', async () => {
-    for (const value of ['', '0', 'false']) await sign({ email: `v${value}@example.org`, showName: value });
+    for (const value of ['', '0', 'false']) await sign({ email: `v${value}@example.org`, consent: value });
     const rows = await env.DB.prepare('SELECT display_consent FROM signatures').all<{ display_consent: number }>();
     expect(rows.results.map((r) => r.display_consent)).toEqual([0, 0, 0]);
   });
