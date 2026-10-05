@@ -44,6 +44,19 @@ class IngestorDeps:
     # Drained by the orchestrator post-run; see ``wayback_check`` docstring.
     wayback_failures: list[dict] = field(default_factory=list)
     acquisition_writes: dict[str, dict] = field(default_factory=dict)
+    # Filled by ``web_fetch`` so the orchestrator can reject a SourceFile
+    # whose page never loaded: the tool returns error dicts (not raises) on
+    # transport failures so the model can still reach ``wayback_check``,
+    # which leaves the model free to invent a summary. Keyed by the URL the
+    # tool was called with; the text is kept for key-quote checks.
+    fetched_text: dict[str, str] = field(default_factory=dict)
+    fetch_errors: list[str] = field(default_factory=list)
+
+
+def fetch_succeeded(deps: IngestorDeps) -> bool:
+    """True when at least one ``web_fetch`` call in the run returned page text."""
+    return bool(deps.fetched_text)
+
 
 ingestor_agent = Agent(
     "test",
@@ -79,6 +92,7 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     prefetched = ctx.deps.prefetched_bodies.get(url)
     if prefetched:
         logger.info("Prefetch hit (Tavily raw_content): %s", url)
+        ctx.deps.fetched_text[url] = prefetched
         return {
             "title": "",
             "description": "",
@@ -108,10 +122,17 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
         resp.raise_for_status()
         ct = resp.headers.get("content-type", "")
         if any(t in ct for t in _BINARY_CONTENT_TYPES):
+            ctx.deps.fetch_errors.append(f"{url}: unsupported content type {ct}")
             return {"error": f"Unsupported content type: {ct}", "url": url}
-        return extract_page_data(resp.text, url)
+        page = extract_page_data(resp.text, url)
+        if page.get("text"):
+            ctx.deps.fetched_text[url] = page["text"]
+        else:
+            ctx.deps.fetch_errors.append(f"{url}: page returned no text")
+        return page
     except httpx.HTTPError as exc:
         logger.error("Failed to fetch %s: %s", url, exc)
+        ctx.deps.fetch_errors.append(f"{url}: {exc}")
         return {"error": str(exc), "url": url}
 
 
