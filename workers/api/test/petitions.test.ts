@@ -149,6 +149,15 @@ describe('signing and consent', () => {
     expect(((await res.json()) as { error: string }).error).toContain('could not send');
   });
 
+  it('lets the signer retry at once after a Resend failure', async () => {
+    resendStatus = 500;
+    expect((await sign({ email: 'retry@example.org' })).status).toBe(502);
+    resendStatus = 200;
+    expect((await sign({ email: 'retry@example.org' })).status).toBe(200);
+    expect(sentEmails).toHaveLength(2);
+    expect(await rowCount()).toBe(1);
+  });
+
   it('rejects a missing name or a malformed email', async () => {
     expect((await sign({ name: '  ' })).status).toBe(400);
     expect((await sign({ email: 'not-an-email' })).status).toBe(400);
@@ -235,6 +244,13 @@ describe('email link scanners', () => {
   it('rejects a malformed token', async () => {
     expect((await post('confirm', 'garbage')).status).toBe(400);
     expect((await post('confirm', '')).status).toBe(400);
+  });
+
+  it('answers a body that is not a form with 400, not a crash', async () => {
+    const bad = { method: 'POST', headers: { Origin: SITE, 'Content-Type': 'application/json' }, body: '{}' };
+    expect((await call(`/petitions/${SLUG}/sign`, bad)).status).toBe(400);
+    expect((await call(`/petitions/${SLUG}/confirm`, bad)).status).toBe(400);
+    expect((await call(`/petitions/${SLUG}/sign`, { method: 'POST', headers: { Origin: SITE } })).status).toBe(400);
   });
 
   it('serves pages that leak no token through Referer', async () => {

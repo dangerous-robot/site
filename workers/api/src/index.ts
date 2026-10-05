@@ -91,7 +91,8 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   const { success } = await env.SIGN_LIMITER.limit({ key: request.headers.get('CF-Connecting-IP') ?? 'unknown' });
   if (!success) return reply(request, env, 429, 'Too many attempts. Please try again in a minute.', petition.post_url);
 
-  const form = await request.formData();
+  const form = await readForm(request);
+  if (!form) return reply(request, env, 400, 'The form could not be read. Please try again.', petition.post_url);
   const field = (k: string) => String(form.get(k) ?? '').trim();
   const checkEmail = () => reply(request, env, 200, 'Check your email for a link to confirm your signature.', petition.post_url, 'Check your email');
 
@@ -147,6 +148,8 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
       await sendEmail(env, confirmationEmail(email, petition.title, `${base}/confirm?t=${token}`, `${base}/remove?t=${token}`));
     } catch (err) {
       console.error(err);
+      // Drop the row so an immediate retry is not swallowed by the resend window.
+      await env.DB.prepare('DELETE FROM signatures WHERE id = ?').bind(row.id).run();
       return reply(request, env, 502, 'We could not send the confirmation email. Please try again later.', petition.post_url);
     }
   }
@@ -180,8 +183,12 @@ async function confirm(request: Request, env: Env, slug: string): Promise<Respon
   if (!sig) return invalidLink(petition);
   if (!sig.confirmed_at) {
     if (petition.status === 'closed') return messagePage('Petition closed', closedText(petition), petition.post_url, 409);
-    sig.confirmed_at = new Date().toISOString();
-    await env.DB.prepare('UPDATE signatures SET confirmed_at = ? WHERE id = ? AND confirmed_at IS NULL').bind(sig.confirmed_at, sig.id).run();
+    // COALESCE keeps the first timestamp if a concurrent confirm (a link scanner) won the race.
+    const updated = await env.DB.prepare('UPDATE signatures SET confirmed_at = COALESCE(confirmed_at, ?) WHERE id = ? RETURNING confirmed_at')
+      .bind(new Date().toISOString(), sig.id)
+      .first<{ confirmed_at: string }>();
+    if (!updated) return invalidLink(petition);
+    sig.confirmed_at = updated.confirmed_at;
   }
   // Rank among confirmed signatures, so reloading the thank-you page shows the same number.
   const rank = await env.DB.prepare(
@@ -206,8 +213,17 @@ async function remove(request: Request, env: Env, slug: string): Promise<Respons
 }
 
 async function formTokenHash(request: Request): Promise<string | null> {
-  const token = String((await request.formData()).get('t') ?? '');
+  const token = String((await readForm(request))?.get('t') ?? '');
   return token ? sha256(token) : null;
+}
+
+/** null when the body is missing or not a form; formData() throws on those. */
+async function readForm(request: Request): Promise<FormData | null> {
+  try {
+    return await request.formData();
+  } catch {
+    return null;
+  }
 }
 
 function notFoundPage(): Response {
