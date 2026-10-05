@@ -6,15 +6,13 @@ topics:
 verdict: 'false'
 confidence: medium
 verification_level: claimed
-cap_rationale: Confidence is capped at medium. All publicly available audits, certifications,
-  or reported partnerships concerning energy usage lack concrete evidence that Brave
-  directly employs renewable hosting (e.g., no third-party audit by Greenpeace, no
-  ISO 14001 or similar certifications found). Sources (especially Source 2 and 4)
-  are primarily first-party documentation, which doesn’t provide independent v.
-takeaway: Brave Browser's infrastructure is hosted partly via AWS without proven renewable
-  energy usage. No independent green certification or on-the-record commitment to
-  100% renewable hosting was found, let .
-seo_title: Brave Browser Hosting Not on Renewable, S!
+cap_rationale: "Confidence is capped at medium because the cited Brave pages are Brave's
+  own and say nothing about where its servers get their power, and no independent
+  audit or certification of its hosting was found."
+takeaway: "No evidence shows that Brave's servers run on renewable energy: Brave's
+  own pages make no such commitment, and no audit or certification of its hosting
+  was found."
+seo_title: No evidence Brave is hosted on renewables
 criteria_slug: renewable-energy-hosting
 status: published
 as_of: '2026-05-09'
