@@ -333,6 +333,7 @@ Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plan
 | RF22 | Medium | `validate_source_file` in the refresh path drops whole sources for fixable problems: a year before 2000 (real older reports) or a model-written non-archive.org `archived_url`. | Validation errors map to `invalid_source`; no repair step (clear the bad field) before rejecting | RF2, RF10 |
 | RF23 | Low | Slug resolution compares only the stored `url`; an existing file that stored a redirect target, or a URL that canonicalizes differently, is treated as another page, so a duplicate file is written instead of reusing it. | `persistence.py` `_resolve_one_slug` and the exact-URL index | [Dedup detection](#dedup-detection-on-url-ingest-and-claim-creation) |
 | RF24 | Low | `_apply_entity_match` reads `sd["source_id"]`; `dr step-analyze` builds source dicts without it, so passing a resolved entity there would raise. Safe today only because step-analyze passes none. | `orchestrator/pipeline.py` `_apply_entity_match`; step-analyze source dicts | RF13 |
+| RF25 | Low | `dr lint`'s level-vs-pool check counts a source as independent only from its file label or a claim override, like the site; the analyst falls back to a label derived from `source_type` when the file has none, so for a legacy source with no `independence` field the two can disagree. | `linter/checks.py` `check_verification_level_pool` vs `orchestrator/persistence.py` `load_source_dict` fallback | RF3 |
 
 ---
 
@@ -418,3 +419,17 @@ Initial tracking doc: [`reader-glossary.md`](reader-glossary.md) (working draft;
 | Grow the term list | Seed entries as they come up in research and matrix work. Group loosely by domain (AI / AI-safety / data-center / energy / energy-markets) once there are enough to justify it. Keep each definition short and source-backed where possible. |
 | Decide reader-facing surface | Options: (a) standalone `/glossary` page, (b) per-term anchors that other pages link to, (c) tooltip/popover on first use. Pick once there are ~15+ terms. |
 | Wire into matrix and claim pages | Replace inline parentheticals ("RECs", "PUE 1.06") with links to the glossary entry once the surface exists. |
+
+---
+
+## Petition Worker follow-ups
+
+Deferred from the 2026-10-04 build review of `workers/api/` ([petition-signatures.md](plans/petition-signatures.md), [architecture/petitions.md](architecture/petitions.md)). None block launch.
+
+| Work Item | Notes |
+|-----------|-------|
+| Run Worker tests in CI | `workers/api` has its own `package.json`; `ci.yml` runs only the site build. Add a job: `npm ci` and `npm test` in `workers/api/`. |
+| Deploy the Worker from GitHub Actions | Today `wrangler deploy` is manual (runbook "Petitions"). Needs a Cloudflare API token as a repo secret. |
+| Cheaper public count reads if traffic grows | `GET /petitions/{slug}` is `no-store` (one D1 batch per page view). Options: `no-cache` plus an ETag (count plus newest `confirmed_at`), or Workers Cache API with a short TTL purged on confirm. |
+| Cap the public names list | The JSON returns every opted-in name. Add a `LIMIT` and a "show all" fetch once the list is long. |
+| Keep Worker page colors in sync with `tokens.css` | `workers/api/src/pages.ts` copies hex values by hand. A test could read `src/styles/tokens.css` and compare. |

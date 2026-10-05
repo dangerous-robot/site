@@ -1,6 +1,6 @@
 # Petition signatures
 
-**Status**: `planned` (design decided by Brandon 2026-10-04; nothing built; account steps not done)
+**Status**: `in progress` (Worker, sign block and runbook built and tested locally 2026-10-04; not deployed; pledge post not wired up)
 **Last updated**: 2026-10-04
 **Decision** (`docs/decisions.md`, 2026-10-04, quoted): "Pledge signatures are collected on the site. A Cloudflare Worker and D1 database (the stack `docs/plans/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. ..."
 
@@ -14,8 +14,9 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [ ] Needs from Brandon: account steps 1 to 4
 - [x] Needs from Brandon: copy, policy and naming items 5 to 9
 - [x] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers (`workers/api/`, 25 tests in `workers/api/test/`)
-- [ ] S1 to S4: `petition` field, Sveltia mirror, sign block on the post, pledge post wired up
-- [ ] O1: runbook section "Petitions: open, close, export, remove"
+- [x] S1 to S3: `petition` field, Sveltia mirror, sign block on the post (`src/components/PetitionSign.astro`, shared text in `src/lib/petition.ts`)
+- [ ] S4: pledge post wired up (the post file is untracked and owned by the pledge-post work; Brandon to add `petition:` and the `#sign` link)
+- [x] O1: runbook section "Petitions: open, close, export, remove"; architecture doc `docs/architecture/petitions.md`
 - [ ] Testing table run against a deployed Worker
 - [ ] `refocus-foundation.md` G1 unblocked (pledge post links `#sign`, `draft: false`)
 
@@ -69,7 +70,7 @@ Checked in the repo on 2026-10-04.
   - `POST /petitions/{slug}/sign`: honeypot, time check, rate limit, insert unconfirmed, send email. A `fetch` from the component gets JSON and the component shows "check your email" in place; a plain form POST (no JS) gets a Worker-served "check your email" page that links back to `post_url`.
   - `GET /petitions/{slug}/confirm?t=` and `GET /petitions/{slug}/remove?t=`: each shows a landing page with one button; nothing changes on GET.
   - `POST` to the same two paths: sets `confirmed_at`, or hard-deletes, then returns a Worker-served result page ("Thank you, you are signatory N", N being the confirmed count after this row; or "Your signature is removed") that links back to `post_url#sign`. Worker pages are plain HTML with inline styles and load nothing from outside `api.dangerousrobot.org`.
-  - `GET /petitions/{slug}`: public JSON with `status`, `count`, and `names[]` for consenting confirmed signers; browser-cached 60 seconds (Cloudflare does not edge-cache Worker responses by header).
+  - `GET /petitions/{slug}`: public JSON with `status`, `count`, and `names[]` for consenting confirmed signers; not cached (`no-store`), so a signer returning from the confirm page sees the new count; one D1 read per page view.
 - Why the extra click on confirm and remove: email link scanners (Outlook Safe Links, Gmail prefetch, corporate proxies) fetch every URL in a message. A one-click GET would let a scanner confirm a signature or silently delete one.
 - Rate limit: the Workers rate-limiting binding (`[[ratelimits]]` in `wrangler.toml`, 5 per 60 seconds per IP). Counts are approximate and per Cloudflare location. No rate-limit table, so no IP or IP hash ever reaches D1.
 - One signature per address per petition (unique index on `petition_slug`, lowercased `email`). Re-signing while unconfirmed rotates the token and resends; re-signing a confirmed address sends nothing and gets the same "check your email" reply, so the form never reveals who has signed.
@@ -124,7 +125,7 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 |---|---|---|
 | W1 | Worker project with `wrangler.toml`, bound to the D1 database and the `api.dangerousrobot.org` route | `workers/api/` (new) |
 | W2 | D1 schema and migration for `petitions` and `signatures` as in "Worker and data" | `workers/api/migrations/` (new) |
-| W3 | Routes: sign (JSON for the component, "check your email" page for a no-JS POST), confirm (GET landing, POST action returning the "signatory N" page), remove (GET landing, POST action returning the removed page), public JSON with 60-second cache; CORS limited to `https://dangerousrobot.org`. Result pages link back to `post_url#sign` | `workers/api/src/` |
+| W3 | Routes: sign (JSON for the component, "check your email" page for a no-JS POST), confirm (GET landing, POST action returning the "signatory N" page), remove (GET landing, POST action returning the removed page), public JSON (not cached); CORS limited to `https://dangerousrobot.org`. Result pages link back to `post_url#sign` | `workers/api/src/` |
 | W4 | Confirmation email through Resend with confirm and remove links; tokens stored as hashes | `workers/api/src/` |
 | W5 | Cron trigger: purge unconfirmed rows older than 7 days; null emails on closed petitions past retention | `workers/api/src/`, `wrangler.toml` |
 | W6 | Spam layers: honeypot, minimum fill time (3 seconds), per-IP rate limit through the rate-limiting binding (5 sign POSTs per IP per minute); closed petitions refuse signatures | `workers/api/src/` |

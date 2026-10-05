@@ -70,6 +70,48 @@ gh api -X PUT repos/dangerous-robot/site/interaction-limits -f limit=existing_us
 
 The same setting is in the repo's Moderation settings. A limit expires (anywhere from one day to six months) and then lapses on its own, so renew it before the expiry date. Nothing in the repo records that date; put it in your own calendar.
 
+## Petitions: open, close, export, remove
+
+Signatures live in the `dr-api` D1 database behind the `dr-api` Worker (`workers/api/`, served at `api.dangerousrobot.org`). Design and privacy rules: `docs/architecture/petitions.md`. Run every command below from `workers/api/` (`cd workers/api` first, as its own command). Drop `--remote` to run against the local database that `wrangler dev` uses.
+
+**Deploy (first time, or after a Worker change).** The Worker is not deployed by GitHub Actions.
+
+```bash
+npm ci
+npx wrangler secret put RESEND_API_KEY      # first time only; paste the Resend sending key
+npx wrangler d1 migrations apply dr-api --remote
+npx wrangler deploy
+```
+
+**Open a petition.** Add the row, then set `petition: <slug>` in the post's frontmatter (CMS field "Petition slug"). The sign block appears under the post body.
+
+```bash
+npx wrangler d1 execute dr-api --remote --command "INSERT INTO petitions (slug, title, post_url, status, opened_at) VALUES ('<slug>', '<title>', 'https://dangerousrobot.org/writing/<post-slug>', 'open', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+```
+
+**Close a petition.** Export first if you need the emails: the daily cleanup deletes the email column for closed petitions (names, consent and dates stay).
+
+```bash
+npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET status = 'closed', closed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE slug = '<slug>'"
+```
+
+**Export confirmed signatures to CSV.** The file holds emails: keep it on your machine and delete it when done.
+
+```bash
+npx wrangler d1 execute dr-api --remote --json --command "SELECT name, email, display_consent, created_at, confirmed_at, petition_slug FROM signatures WHERE petition_slug = '<slug>' AND confirmed_at IS NOT NULL ORDER BY confirmed_at" \
+  | jq -r '.[0].results | (.[0] | keys_unsorted) as $k | ($k | @csv), (.[] | [.[$k[]]] | @csv)' > signatures-<slug>.csv
+```
+
+**Remove a signer on request** (a message to `contact@dangerousrobot.org`). Emails are stored lowercased. This is a hard delete; check the row count in the output.
+
+```bash
+npx wrangler d1 execute dr-api --remote --command "DELETE FROM signatures WHERE email = lower('<address>')"
+```
+
+After a petition closes the email is gone, so match on `name` and `petition_slug` instead.
+
+**Local testing.** `cp .dev.vars.example .dev.vars` (emails print to the terminal instead of sending), `npx wrangler d1 migrations apply dr-api --local`, insert a petition row without `--remote`, then `npx wrangler dev`. Start the site with `PUBLIC_PETITION_API=http://localhost:8787` so the sign block talks to the local Worker. Unit tests: `npm test`.
+
 <!-- TODO: plan additional runbook sections
 Sections still needed:
 - Deploy process (GitHub Actions)

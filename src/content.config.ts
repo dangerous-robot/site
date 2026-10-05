@@ -434,6 +434,8 @@ const writing = defineCollection({
     ai_assisted: z.boolean().default(false),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
+    /** Slug of a petition row in the dr-api Worker; renders a sign block under the post. */
+    petition: z.string().optional(),
   }),
 });
 

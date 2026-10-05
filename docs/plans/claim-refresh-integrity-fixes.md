@@ -1,6 +1,6 @@
 # Plan: claim-refresh integrity fixes (RF1 to RF4)
 
-**Status**: `in progress` (all code items done 2026-10-04; T4 and V1 wait on Brandon's Brave refresh)
+**Status**: `done` (2026-10-04)
 **Last updated**: 2026-10-04
 **Reviewed by:** self-review, 2026-10-04 (see Review history)
 **Findings**: RF1 to RF4 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
@@ -28,9 +28,9 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 - [x] T1: citation cleaner module (RF4)
 - [x] T2: analyst prompt and instructions stop inviting "Source N" (RF4)
 - [x] T3: hand-fix the `ai-producers-existential-score` body (RF4; Q2 answered: delete the sub-question block)
-- [ ] T4: lint rules: citation tokens (error) and level-vs-pool mismatch (warning) (RF4, RF3); lands after the Brave refresh in V1 is approved (Q3)
+- [x] T4: lint rules: citation tokens (error) and level-vs-pool mismatch (warning) (RF4, RF3); lands after the Brave refresh in V1 is approved (Q3)
 - [x] T5: wire the citation cleaner into `_analyse_claim` (RF4)
-- [ ] V1: Verification section passes; Brandon's end-to-end refresh inspected
+- [x] V1: Verification section passes; Brandon's end-to-end refresh inspected
 
 ## Facts the plan relies on
 
@@ -295,3 +295,4 @@ RF5 (research drifts off the entity; scorer order), RF6 (verdict instability), R
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | implementation, second pass | Read RF1 to RF4 sections against the findings and spot-checked `orchestrator/cli.py:1087`, `src/content.config.ts:235` (`parent_company` exists in the schema; other product entities already set it). No changes to the steps. Added the untracked sub-question-coverage habit to Out of scope. Watch in F2: running `validate_source_file` in the refresh path may reject more sources than expected; the plan accepts that. |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | implementation | Implemented S0, F1 to F3, C1 to C4, E1 to E4, T1 to T3 (two parallel lanes in worktrees, merged to main) and T5, all test-first; 846 unit tests pass. A /simplify pass (20512f3) moved the entity match and overrides from `verify_claim`/`research_claim` into `_analyse_claim` (one site, next to the T5 cleaner), replaced `fetch_succeeded` with `fetch_failure_reason`, and merged three URL-host helpers into `common/utils.url_host`/`host_matches`. Deviations: the entity match also rewrites an analyst override that was not first-party; step-ingest writes a host-prefixed file instead of failing on a slug taken by another URL; `test_research_integration.py` patches the fetch check because its fake ingestor never fetches. |
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | code review | `/code-review` (high) over 669dd71..1cca488: 10 findings. Fixed test-first: citation lists, single-pass cleaning, case handling and strip mode for `takeaway`/`cap_rationale` (f6dddc5, then 9ad59f0 keeps lowercase prose such as "the source 2 weeks ago" untouched); fetch check now requires the requested page or its archive.org copy (57d3679). Tracked as RF21 to RF24 in `docs/UNSCHEDULED.md`. Deferred to RF10: fetched page text is kept but key quotes are not yet checked. |
+| 2026-10-04 | agent (claude-opus-5-5, Claude Code session with Brandon) | implementation | V1: Brandon ran `dr claim-refresh brave-browser/renewable-energy-hosting` and approved it (8940eba; unverified, low, self-reported; brave.com sources first-party via entity match). T4 lint rules landed test-first (2e97a0b, tidied in ebb4d6b); real repo lints with 0 errors and no new warnings. Open: the refreshed `seo_title` reads as an affirmation for an unverified verdict (RF7). |

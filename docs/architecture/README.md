@@ -14,4 +14,5 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 | [source-quality.md](source-quality.md) | Verification scale, independence proxy + restatement failure mode, confidence cap, source overrides |
 | [open-issues.md](open-issues.md) | Design questions from architecture review that require decisions before implementation |
 | [vision-state-machine.md](vision-state-machine.md) | Architectural vision (direction, not current state): claims as state machines, audit trail as event log |
+| [petitions.md](petitions.md) | Petition signing: `dr-api` Worker and D1, routes, sign block on writing posts, privacy rules, spam layers |
 | [graphify.md](graphify.md) | Graphify knowledge-graph tool: scope, install, GreenPT extraction backend, query and update commands |

@@ -71,8 +71,6 @@ async function getPetition(request: Request, env: Env, slug: string): Promise<Re
       names: (names.results as { name: string }[]).map((r) => r.name),
     },
     200,
-    // Browser cache only; Cloudflare does not edge-cache Worker responses by header.
-    { 'Cache-Control': 'public, max-age=60' },
   );
 }
 
@@ -99,7 +97,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
 
   const name = field('name').replace(/\s+/g, ' ');
   const email = field('email').toLowerCase();
-  if (!name || name.length > NAME_MAX || /[\u0000-\u001f<>]/.test(name)) {
+  if (!name || name.length > NAME_MAX || /[\u0000-\u001f]/.test(name)) {
     return reply(request, env, 400, `Please enter your name (up to ${NAME_MAX} characters).`, petition.post_url);
   }
   if (email.length > EMAIL_MAX || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -223,8 +221,9 @@ function corsHeaders(request: Request, env: Env): Record<string, string> {
   return { 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
 }
 
-function json(request: Request, env: Env, body: unknown, status: number, extra: Record<string, string> = {}): Response {
-  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...corsHeaders(request, env), ...extra } });
+// no-store: a signer returning from the confirm page must see the new count.
+function json(request: Request, env: Env, body: unknown, status: number): Response {
+  return Response.json(body, { status, headers: { 'Cache-Control': 'no-store', ...corsHeaders(request, env) } });
 }
 
 /** JSON for the site's fetch; a full page for a plain no-JS form POST. */

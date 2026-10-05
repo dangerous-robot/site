@@ -10,7 +10,8 @@ main { max-width:36rem; margin:0 auto; padding:3rem 1rem; }
 h1 { font:normal 1.6rem/1.3 Georgia,"Times New Roman",Times,serif; color:var(--heading); margin:0 0 1rem; }
 p { margin:0 0 1rem; }
 a { color:var(--accent); }
-button { font:inherit; padding:.5rem 1.25rem; border:1px solid var(--accent); border-radius:6px; background:var(--accent); color:#fff; cursor:pointer; }
+form { margin:0 0 1.5rem; }
+button { font:inherit; font-size:.9rem; padding:.5rem 1.5rem; border:1px solid var(--accent); border-radius:6px; background:transparent; color:var(--accent); cursor:pointer; }
 button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
 `;
 

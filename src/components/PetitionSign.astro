@@ -1,0 +1,198 @@
+---
+// Sign block for a petition post. Signatures live in the dr-api Worker
+// (workers/api/); the page fetches the live count and public names from it.
+import { petitionSummary, type PetitionState } from '../lib/petition';
+
+interface Props { slug: string }
+const { slug } = Astro.props;
+
+const api = import.meta.env.PUBLIC_PETITION_API ?? 'https://api.dangerousrobot.org';
+
+// Build-time snapshot for readers without JS. The Worker may be down or the
+// petition row not created yet; the build must not fail on that.
+let state: PetitionState | null = null;
+try {
+  const res = await fetch(`${api}/petitions/${slug}`, { signal: AbortSignal.timeout(3000) });
+  if (res.ok) state = await res.json();
+} catch {}
+
+const closed = state?.status === 'closed';
+---
+<section id="sign" class="petition" data-api={api} data-slug={slug}>
+  <h2>Add your signature</h2>
+  <p class="petition-count" data-count>
+    {state && petitionSummary(state)}
+  </p>
+
+  <form class="petition-form" method="post" action={`${api}/petitions/${slug}/sign`} hidden={closed}>
+    <label>
+      <span>Name</span>
+      <input type="text" name="name" required maxlength="100" autocomplete="name" />
+    </label>
+    <label>
+      <span>Email</span>
+      <input type="email" name="email" required maxlength="254" autocomplete="email" />
+    </label>
+    <label class="petition-consent">
+      <input type="checkbox" name="show_name" />
+      <span>Show my name on the public list of signers</span>
+    </label>
+    <div class="petition-trap" aria-hidden="true">
+      <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+    </div>
+    <input type="hidden" name="started" value="" />
+    <button type="submit">Sign</button>
+    <p class="petition-status" role="status" aria-live="polite"></p>
+  </form>
+
+  <p class="petition-privacy">
+    We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
+  </p>
+
+  <div class="petition-names" hidden={!state?.names.length}>
+    <h3>Public signatories</h3>
+    <ul data-names>{state?.names.map((name) => <li>{name}</li>)}</ul>
+  </div>
+</section>
+
+<script>
+  import { petitionSummary, type PetitionState } from '../lib/petition';
+
+  const section = document.querySelector<HTMLElement>('section.petition');
+  if (section) {
+    const { api, slug } = section.dataset;
+    const form = section.querySelector<HTMLFormElement>('.petition-form')!;
+    const status = form.querySelector<HTMLElement>('.petition-status')!;
+    const countEl = section.querySelector<HTMLElement>('[data-count]')!;
+    const namesBox = section.querySelector<HTMLElement>('.petition-names')!;
+    const namesList = section.querySelector<HTMLElement>('[data-names]')!;
+
+    // The Worker drops submissions sent within 3 seconds of page load.
+    form.querySelector<HTMLInputElement>('input[name="started"]')!.value = String(Date.now());
+
+    function render(s: PetitionState) {
+      countEl.textContent = petitionSummary(s);
+      form.hidden = s.status === 'closed';
+      namesList.replaceChildren(
+        ...s.names.map((name) => {
+          const li = document.createElement('li');
+          li.textContent = name;
+          return li;
+        }),
+      );
+      namesBox.hidden = s.names.length === 0;
+    }
+
+    fetch(`${api}/petitions/${slug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((s: PetitionState | null) => s && render(s))
+      .catch(() => {});
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = form.querySelector('button')!;
+      button.disabled = true;
+      status.textContent = '';
+      try {
+        // URL-encoded body + Accept header keeps this a CORS "simple" request (no preflight).
+        const res = await fetch(form.action, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body: new URLSearchParams(new FormData(form) as unknown as Record<string, string>),
+        });
+        const body = await res.json();
+        if (res.ok) {
+          form.replaceChildren(Object.assign(document.createElement('p'), { textContent: 'Check your email for a link to confirm your signature.' }));
+          return;
+        }
+        status.textContent = body.error ?? 'Something went wrong. Please try again.';
+      } catch {
+        status.textContent = 'Could not reach the server. Please try again.';
+      }
+      button.disabled = false;
+    });
+  }
+</script>
+
+<style>
+  .petition {
+    max-width: 36rem;
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .petition-count {
+    color: var(--color-text-muted);
+  }
+
+  .petition-form {
+    display: grid;
+    gap: var(--space-md);
+    margin: var(--space-lg) 0;
+  }
+
+  .petition-form label:not(.petition-consent) {
+    display: grid;
+    gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+  }
+
+  /* Input look matches SearchInput.astro. :where() keeps specificity low so
+     the button rule below can override border and color. */
+  .petition-form :where(input[type='text'], input[type='email'], button) {
+    padding: var(--space-sm) var(--space-md);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-size: var(--font-size-sm);
+    font-family: var(--font-body);
+  }
+
+  .petition-form :where(input[type='text'], input[type='email']) {
+    background: var(--color-surface);
+  }
+
+  .petition-consent {
+    display: flex;
+    font-size: var(--font-size-sm);
+    align-items: center;
+    gap: var(--space-sm);
+  }
+
+  /* Off-screen rather than display:none, which some bots detect and skip. */
+  .petition-trap {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .petition-form button {
+    justify-self: start;
+    padding-inline: var(--space-lg);
+    background: transparent;
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    cursor: pointer;
+  }
+
+  .petition-form button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+
+  .petition-status:empty {
+    display: none;
+  }
+
+  .petition-privacy {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  .petition-names ul {
+    padding-left: var(--space-lg);
+  }
+</style>

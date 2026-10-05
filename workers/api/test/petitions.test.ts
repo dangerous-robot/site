@@ -107,7 +107,7 @@ describe('signing and consent', () => {
     expect(body.count).toBe(2);
     expect(body.names).toEqual(['Shown Person']);
     expect(res.headers.get('Access-Control-Allow-Origin')).toBe(SITE);
-    expect(res.headers.get('Cache-Control')).toBe('public, max-age=60');
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 
   it('records consent on the row with its timestamp', async () => {

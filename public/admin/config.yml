@@ -57,6 +57,7 @@ collections:
       - { name: ai_assisted, label: AI assisted, widget: boolean, default: false, hint: On when AI drafted the text }
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
+      - { name: petition, label: Petition slug, widget: string, required: false, hint: Slug of the petition row in the dr-api Worker; adds a sign block under the post }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for
