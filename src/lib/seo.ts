@@ -9,10 +9,13 @@ export const SITE_DESCRIPTION =
  * from AI agent research and may be incomplete or wrong. We do not
  * want them in the search index until the content stabilizes.
  *
- * Flip trigger: GA (the 1.0.0 release). Pages stay noindexed through the
- * remaining beta/rc stages. At 1.0.0, flip the flag below to true (and
- * rebuild + redeploy) to make these pages indexable and re-include them in
- * the sitemap. The flag name keeps its historical `ALPHA` spelling.
+ * Flip trigger: the flag flips when the first guide ("Before you trust an
+ * AI chatbot", the chatbot guide release) is live and its claims are
+ * published, by a decision recorded in the plan for the chatbot guide
+ * release. Until then these pages stay noindexed. To flip, set the flag
+ * below to true (and rebuild + redeploy) to make these pages indexable and
+ * re-include them in the sitemap. The flag name keeps its historical
+ * `ALPHA` spelling.
  *
  * URLs are stable across the flip. Already-published pages remain
  * accessible at the same paths; the only thing that changes is the
