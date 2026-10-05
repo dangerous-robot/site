@@ -351,6 +351,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     from common.source_classification import classify_source_type, independence_for_source_type
     from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent
     from ingestor.validation import validate_source_file
+    from orchestrator.persistence import resolve_source_slugs
 
     root_str: str
     try:
@@ -401,6 +402,9 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 click.echo(markdown)
                 return 0
 
+            # After resolving, an existing file at the slug always has this
+            # URL, so --force can only overwrite the same page.
+            resolve_source_slugs([(url, sf)], Path(root_str))
             target_dir = Path(root_str) / "research" / "sources" / str(sf.year)
             target_dir.mkdir(parents=True, exist_ok=True)
             target_path = target_dir / f"{sf.slug}.md"

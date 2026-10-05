@@ -10,13 +10,21 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+from contextlib import contextmanager
 from pathlib import Path
 from unittest.mock import patch
 
+import httpx
 import pytest
+import respx
+from click.testing import CliRunner
+from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from common.frontmatter import parse_frontmatter
+from ingestor.agent import ingestor_agent
 from ingestor.models import SourceFile
+from orchestrator.cli import main
 from orchestrator.persistence import _write_source_files, resolve_source_slugs
 from orchestrator.pipeline import VerifyConfig, _ingest_urls
 
@@ -164,3 +172,70 @@ def test_write_source_files_same_url_keeps_existing_id(tmp_path: Path) -> None:
     ids = _write_source_files([(AWS_URL, _sf(AWS_URL))], tmp_path)
     assert ids == ["2026/sustainability"]
     assert existing.read_bytes() == before
+
+
+# --- C4: dr step-ingest write path ------------------------------------------
+
+
+@contextmanager
+def _noop_ctx():
+    yield
+
+
+def _fetch_then_return(url: str, source: dict) -> FunctionModel:
+    called = False
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        nonlocal called
+        if not called:
+            called = True
+            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        return ModelResponse(
+            parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)]
+        )
+
+    return FunctionModel(_fn)
+
+
+def _invoke_step_ingest(tmp_path: Path, url: str, *flags: str):
+    source = _sf(url).model_dump(mode="json")
+    html = "<html><head><title>AWS</title></head><body><p>AWS sustainability.</p></body></html>"
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=html))
+        with ingestor_agent.override(model=_fetch_then_return(url, source)):
+            with patch(
+                "ingestor.agent.ingestor_agent.override",
+                side_effect=lambda **kw: _noop_ctx(),
+            ):
+                return CliRunner().invoke(
+                    main,
+                    [
+                        "--model", "test", "--ingestor-model", "test",
+                        "step-ingest", url, *flags, "--skip-wayback",
+                        "--repo-root", str(tmp_path),
+                    ],
+                )
+
+
+def test_step_ingest_force_does_not_overwrite_other_url(tmp_path: Path) -> None:
+    ms_path = _write_existing(tmp_path, "2026/sustainability", MS_URL)
+    before = ms_path.read_bytes()
+
+    result = _invoke_step_ingest(tmp_path, AWS_URL, "--force")
+
+    assert result.exit_code == 0, result.output
+    assert ms_path.read_bytes() == before
+    new_path = tmp_path / "research" / "sources" / "2026" / "aws-amazon-sustainability.md"
+    fm, _ = parse_frontmatter(new_path.read_text())
+    assert fm["url"] == AWS_URL
+
+
+def test_step_ingest_force_overwrites_same_url(tmp_path: Path) -> None:
+    existing = _write_existing(tmp_path, "2026/sustainability", AWS_URL)
+
+    result = _invoke_step_ingest(tmp_path, AWS_URL, "--force")
+
+    assert result.exit_code == 0, result.output
+    fm, _ = parse_frontmatter(existing.read_text())
+    assert fm["title"] == "AWS Sustainability"
+    assert not (tmp_path / "research" / "sources" / "2026" / "aws-amazon-sustainability.md").exists()
