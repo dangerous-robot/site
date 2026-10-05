@@ -436,6 +436,8 @@ const writing = defineCollection({
     tags: z.array(z.string()).default([]),
     /** Slug of a petition row in the dr-api Worker; renders a sign block under the post. */
     petition: z.string().optional(),
+    /** The text signers put their name to; the sign block sets it large above the count. */
+    petition_statement: z.string().optional(),
   }),
 });
 

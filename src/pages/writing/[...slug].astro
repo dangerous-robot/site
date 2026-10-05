@@ -12,7 +12,7 @@ export async function getStaticPaths() {
 
 interface Props { post: Post }
 const { post } = Astro.props;
-const { title, description, author, ai_assisted, pubDate, updatedDate, draft, petition } = post.data;
+const { title, description, author, ai_assisted, pubDate, updatedDate, draft, petition, petition_statement } = post.data;
 const { Content } = await render(post);
 ---
 <Base title={title} description={description} layout="reading">
@@ -33,7 +33,7 @@ const { Content } = await render(post);
       <Content />
     </div>
 
-    {petition && <PetitionSign slug={petition} />}
+    {petition && <PetitionSign slug={petition} statement={petition_statement} />}
 
     <footer class="post-footer">
       <a href="/writing">← All writing</a>

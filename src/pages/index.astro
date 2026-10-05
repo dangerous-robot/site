@@ -5,6 +5,7 @@ import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
 import { navLabel } from '../lib/nav';
+import { PETITION_API, fetchPetitionState, petitionSummary } from '../lib/petition';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -122,7 +123,20 @@ const menuEntries = [
   },
 ];
 
-const menu = menuEntries.map((m: { href: string; label: string; note: string; short?: string }) => {
+/*
+ * An entry for a petition post carries its signature tally. The petition is
+ * read from the post's frontmatter, so this file never names one; the fetch
+ * never fails the build (see fetchPetitionState).
+ */
+const writing = await getCollection('writing');
+async function petitionTally(href: string): Promise<{ slug: string; text: string } | undefined> {
+  const slug = writing.find((p) => `/writing/${p.id}` === href)?.data.petition;
+  if (!slug) return undefined;
+  const state = await fetchPetitionState(PETITION_API, slug, 3000);
+  return state ? { slug, text: petitionSummary(state) } : undefined;
+}
+
+const menu = await Promise.all(menuEntries.map(async (m: { href: string; label: string; note: string; short?: string }) => {
   const fromNav = navLabel(m.href);
   if (fromNav && m.short) {
     throw new Error(`Homepage menu: ${m.href} is in src/lib/nav.ts; drop its own short label.`);
@@ -131,8 +145,8 @@ const menu = menuEntries.map((m: { href: string; label: string; note: string; sh
   if (!short) {
     throw new Error(`Homepage menu: ${m.href} needs a short label, in src/lib/nav.ts or on the entry.`);
   }
-  return { ...m, short };
-});
+  return { ...m, short, tally: await petitionTally(m.href) };
+}));
 
 /*
  * One exhibit per danger: a published claim whose verdict backs the column's
@@ -294,7 +308,10 @@ const websiteSchema = {
           {menu.map((m) => (
             <li class="menu__item">
               <a class="menu__link" href={m.href}>
-                <span class="menu__label">{m.label}</span>
+                <span class="menu__label">
+                  {m.label}
+                  {m.tally && <span class="chip menu__tally" data-petition-tally={m.tally.slug}>{m.tally.text}</span>}
+                </span>
                 <span class="menu__note">{m.note}</span>
               </a>
             </li>
@@ -360,6 +377,19 @@ const websiteSchema = {
 
   <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
 </Base>
+
+<script>
+  // The tally chip is a build-time snapshot that ages between deploys; refresh
+  // it in place. A failed fetch leaves the snapshot. No chip is added when the
+  // build had none, so the menu never shifts after load.
+  import { PETITION_API, fetchPetitionState, petitionSummary } from '../lib/petition';
+
+  for (const chip of document.querySelectorAll<HTMLElement>('[data-petition-tally]')) {
+    fetchPetitionState(PETITION_API, chip.dataset.petitionTally!).then((s) => {
+      if (s) chip.textContent = petitionSummary(s);
+    });
+  }
+</script>
 
 <style>
   /* =========================================================
@@ -546,6 +576,20 @@ const websiteSchema = {
     font-weight: 600;
     line-height: 1.3;
     color: var(--color-accent);
+  }
+  /* The petition's tally, as a small chip after its label. Inline-block, so the
+     label's hover underline stops at the label text. */
+  .menu__tally {
+    --chip-color: var(--color-text-muted);
+    display: inline-block;
+    margin-left: var(--space-sm);
+    padding: 0.1em 0.45em;
+    vertical-align: 0.15em;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
   }
   .menu__note {
     display: block;

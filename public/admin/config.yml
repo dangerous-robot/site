@@ -58,6 +58,7 @@ collections:
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: petition, label: Petition slug, widget: string, required: false, hint: Slug of the petition row in the dr-api Worker; adds a sign block under the post }
+      - { name: petition_statement, label: Petition statement, widget: text, required: false, hint: The sentence signers put their name to; the sign block sets it large above the count }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for

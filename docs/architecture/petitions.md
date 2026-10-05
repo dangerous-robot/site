@@ -10,9 +10,11 @@ How readers sign a petition on a writing post, and where the signatures live. Pl
 | `dr-api` D1 database | Cloudflare, region WNAM; schema in `workers/api/migrations/` | `petitions` and `signatures` tables |
 | Sign block | `src/components/PetitionSign.astro`, rendered by `src/pages/writing/[...slug].astro` | Form, count, public names, privacy notice |
 | `petition` frontmatter field | `writing` collection in `src/content.config.ts`, mirrored in `public/admin/config.yml` | Links a post to a petition row by slug |
+| `petition_statement` frontmatter field | Same two files, optional | The sentence signers put their name to; the sign block sets it above the count |
+| Homepage tally | `src/pages/index.astro`, menu entry for a post with `petition` set | Count beside the menu label, from the same build-time fetch, refreshed in the browser |
 | Resend | External, called over HTTPS from the Worker | Delivers the one confirmation email |
 
-The site stays static. The sign block fetches the Worker at build time (3-second timeout; any error renders no count, so a Worker outage never fails the site build) and again in the browser on load for a live count.
+The site stays static. The sign block and the homepage fetch the Worker at build time through `fetchPetitionState` in `src/lib/petition.ts` (3-second timeout; any error renders no count, so a Worker outage never fails the site build); both fetch again in the browser on load for a live count, and keep the snapshot if that fails.
 
 ## Routes
 

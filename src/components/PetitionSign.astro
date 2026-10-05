@@ -1,62 +1,106 @@
 ---
-// Sign block for a petition post. Signatures live in the dr-api Worker
-// (workers/api/); the page fetches the live count and public names from it.
-import { petitionSummary, type PetitionState } from '../lib/petition';
+// Sign block for a petition post, laid out as a public tally board: the
+// statement, a large signature count with the petition's status, the form
+// beside it, and the public signers as a roll call. Signatures live in the
+// dr-api Worker (workers/api/); the page fetches the live count and public
+// names from it.
+import {
+  PETITION_API,
+  fetchPetitionState,
+  formatClosedDate,
+  formatCount,
+  signatureWord,
+  statusLabel,
+} from '../lib/petition';
 
-interface Props { slug: string }
-const { slug } = Astro.props;
-
-const api = import.meta.env.PUBLIC_PETITION_API ?? 'https://api.dangerousrobot.org';
+interface Props {
+  slug: string;
+  /** The text signers put their name to. Shown above the tally when set. */
+  statement?: string;
+}
+const { slug, statement } = Astro.props;
 
 // Build-time snapshot for readers without JS. The Worker may be down or the
 // petition row not created yet; the build must not fail on that.
-let state: PetitionState | null = null;
-try {
-  const res = await fetch(`${api}/petitions/${slug}`, { signal: AbortSignal.timeout(3000) });
-  if (res.ok) state = await res.json();
-} catch {}
-
+const state = await fetchPetitionState(PETITION_API, slug, 3000);
 const closed = state?.status === 'closed';
+const names = state?.names ?? [];
 ---
-<section id="sign" class="petition" data-api={api} data-slug={slug}>
+<section id="sign" class="petition" data-api={PETITION_API} data-slug={slug}>
   <h2>Add your signature</h2>
-  <p class="petition-count" data-count>
-    {state && petitionSummary(state)}
-  </p>
+  {statement && <p class="petition-statement">{statement}</p>}
 
-  <form class="petition-form" method="post" action={`${api}/petitions/${slug}/sign`} hidden={closed}>
-    <label>
-      <span>Name</span>
-      <input type="text" name="name" required maxlength="100" autocomplete="name" />
-    </label>
-    <label>
-      <span>Email</span>
-      <input type="email" name="email" required maxlength="254" autocomplete="email" />
-    </label>
-    <label class="petition-consent">
-      <input type="checkbox" name="show_name" />
-      <span>Show my name on the public list of signers</span>
-    </label>
-    <div class="petition-trap" aria-hidden="true">
-      <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+  <div class="petition-board">
+    <div class="petition-tally">
+      <p class="petition-tally__count">
+        {/* Without a snapshot the numeral is a placeholder dash, so it is hidden from
+            readers of the text until the browser fetch fills it in. */}
+        <strong class="petition-tally__number" data-count aria-hidden={state ? undefined : 'true'}>
+          {state ? formatCount(state.count) : '–'}
+        </strong>
+        {!state && <span class="sr-only" data-unavailable>Signature count unavailable</span>}
+        <span class="petition-tally__unit" data-unit aria-hidden={state ? undefined : 'true'}>{signatureWord(state?.count ?? 0)}</span>
+      </p>
+      <p class="petition-tally__status" hidden={!state}>
+        <span class="chip petition-tally__chip" data-status={state?.status} data-status-label>{state && statusLabel(state)}</span>
+        <time class="petition-tally__closed" data-closed-at datetime={state?.closed_at ?? undefined} hidden={!(closed && state?.closed_at)}>
+          {closed && state?.closed_at && `on ${formatClosedDate(state.closed_at)}`}
+        </time>
+      </p>
     </div>
-    <input type="hidden" name="elapsed" value="" />
-    <button type="submit">Sign</button>
-  </form>
-  <p class="petition-status" role="status" aria-live="polite"></p>
 
-  <p class="petition-privacy">
-    We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
-  </p>
+    <div class="petition-sign">
+      <form class="petition-form" method="post" action={`${PETITION_API}/petitions/${slug}/sign`} hidden={closed}>
+        <label>
+          <span>Name</span>
+          <input type="text" name="name" required maxlength="100" autocomplete="name" />
+        </label>
+        <label>
+          <span>Email</span>
+          <input type="email" name="email" required maxlength="254" autocomplete="email" />
+        </label>
+        <label class="petition-consent">
+          <input type="checkbox" name="show_name" />
+          <span>Show my name on the public list of signers</span>
+        </label>
+        <div class="petition-trap" aria-hidden="true">
+          <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <input type="hidden" name="elapsed" value="" />
+        <button type="submit">Sign</button>
+      </form>
+      <p class="petition-status" role="status" aria-live="polite"></p>
 
-  <div class="petition-names" hidden={!state?.names.length}>
+      <p class="petition-privacy">
+        We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
+      </p>
+    </div>
+  </div>
+
+  <div class="petition-names" hidden={names.length === 0}>
     <h3>Public signatories</h3>
-    <ul data-names>{state?.names.map((name) => <li>{name}</li>)}</ul>
+    <p class="petition-roll__note" data-hidden-signers hidden={!(state && state.count > names.length)}>
+      Signers who chose not to be listed are counted but not named.
+    </p>
+    <div class="petition-roll-wrap">
+      <ul class="petition-roll" id="petition-roll" data-names>{names.map((name) => <li>{name}</li>)}</ul>
+    </div>
+    {/* Shown by the script only when the roll overflows its cap; without JS the whole roll is visible. */}
+    <button type="button" class="petition-roll__toggle" data-roll-toggle aria-expanded="false" aria-controls="petition-roll" hidden>
+      Show all {formatCount(names.length)} names
+    </button>
   </div>
 </section>
 
 <script>
-  import { petitionSummary, type PetitionState } from '../lib/petition';
+  import {
+    fetchPetitionState,
+    formatClosedDate,
+    formatCount,
+    signatureWord,
+    statusLabel,
+    type PetitionState,
+  } from '../lib/petition';
 
   const section = document.querySelector<HTMLElement>('section.petition');
   if (section) {
@@ -64,17 +108,74 @@ const closed = state?.status === 'closed';
     const form = section.querySelector<HTMLFormElement>('.petition-form')!;
     const status = section.querySelector<HTMLElement>('.petition-status')!;
     const countEl = section.querySelector<HTMLElement>('[data-count]')!;
+    const unitEl = section.querySelector<HTMLElement>('[data-unit]')!;
+    const statusRow = section.querySelector<HTMLElement>('.petition-tally__status')!;
+    const chip = section.querySelector<HTMLElement>('[data-status-label]')!;
+    const closedAt = section.querySelector<HTMLTimeElement>('[data-closed-at]')!;
     const namesBox = section.querySelector<HTMLElement>('.petition-names')!;
+    const rollWrap = section.querySelector<HTMLElement>('.petition-roll-wrap')!;
     const namesList = section.querySelector<HTMLElement>('[data-names]')!;
+    const hiddenSigners = section.querySelector<HTMLElement>('[data-hidden-signers]')!;
+    const toggle = section.querySelector<HTMLButtonElement>('[data-roll-toggle]')!;
 
     // The Worker drops submissions sent within 3 seconds of page load. Elapsed
     // time from performance.now() is immune to a wrong system clock.
     const loadedAt = performance.now();
     const elapsedInput = form.querySelector<HTMLInputElement>('input[name="elapsed"]')!;
 
+    let rollSize = namesList.children.length;
+    const showAllText = () => `Show all ${formatCount(rollSize)} names`;
+
+    // Clip a long roll and offer the rest behind a button. Measured, not
+    // counted: whether ~150 names overflow depends on name length and width.
+    // A roll the reader has opened stays open.
+    function capRoll() {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      namesBox.classList.add('is-capped');
+      const overflows = rollWrap.scrollHeight > rollWrap.clientHeight + 1;
+      namesBox.classList.toggle('is-capped', overflows && !expanded);
+      toggle.hidden = !overflows;
+      if (!overflows) toggle.setAttribute('aria-expanded', 'false');
+      toggle.textContent = overflows && expanded ? 'Show fewer names' : showAllText();
+    }
+
+    toggle.addEventListener('click', () => {
+      const expanded = toggle.getAttribute('aria-expanded') === 'true';
+      namesBox.classList.toggle('is-capped', expanded);
+      toggle.setAttribute('aria-expanded', String(!expanded));
+      toggle.textContent = expanded ? showAllText() : 'Show fewer names';
+    });
+
+    // Re-measure when the roll's width changes (phone rotation, font-size
+    // switch) and once web fonts settle. Width only: the cap itself changes
+    // the roll's height, so observing that would loop.
+    let rollWidth = -1;
+    new ResizeObserver(([entry]) => {
+      const width = entry.contentRect.width;
+      if (width === rollWidth) return;
+      rollWidth = width;
+      capRoll();
+    }).observe(namesList);
+    document.fonts?.ready.then(capRoll);
+
     function render(s: PetitionState) {
-      countEl.textContent = petitionSummary(s);
-      form.hidden = s.status === 'closed';
+      countEl.textContent = formatCount(s.count);
+      countEl.removeAttribute('aria-hidden');
+      section!.querySelector('[data-unavailable]')?.remove();
+      unitEl.textContent = signatureWord(s.count);
+      unitEl.removeAttribute('aria-hidden');
+
+      const closed = s.status === 'closed';
+      chip.textContent = statusLabel(s);
+      chip.dataset.status = s.status;
+      if (closed && s.closed_at) {
+        closedAt.dateTime = s.closed_at;
+        closedAt.textContent = `on ${formatClosedDate(s.closed_at)}`;
+      }
+      closedAt.hidden = !(closed && s.closed_at);
+      statusRow.hidden = false;
+      form.hidden = closed;
+
       namesList.replaceChildren(
         ...s.names.map((name) => {
           const li = document.createElement('li');
@@ -82,13 +183,13 @@ const closed = state?.status === 'closed';
           return li;
         }),
       );
-      namesBox.hidden = s.names.length === 0;
+      rollSize = s.names.length;
+      hiddenSigners.hidden = !(s.count > rollSize);
+      namesBox.hidden = rollSize === 0;
+      capRoll();
     }
 
-    fetch(`${api}/petitions/${slug}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((s: PetitionState | null) => s && render(s))
-      .catch(() => {});
+    fetchPetitionState(api!, slug!).then((s) => s && render(s));
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -119,21 +220,96 @@ const closed = state?.status === 'closed';
 </script>
 
 <style>
+  /* Spans the full reading column, unlike the 36rem post text: the board is a
+     two-column data panel, not prose. The statement keeps the prose measure. */
   .petition {
-    max-width: 36rem;
     margin-top: var(--space-2xl);
     padding-top: var(--space-lg);
     border-top: 1px solid var(--color-border);
   }
 
-  .petition-count {
+  /* Upright, not italic: the editor's note above is already an italic
+     blockquote, and the statement is a declaration, not a quotation. */
+  .petition-statement {
+    margin: var(--space-md) 0 0;
+    max-width: 36rem;
+    font-family: var(--font-heading);
+    font-size: clamp(1.25rem, 2vw, 1.5rem);
+    line-height: 1.35;
+    color: var(--color-text-heading);
+    text-wrap: pretty;
+  }
+
+  /* Same opening device as the homepage's trust section: accent rule over a
+     surface panel. Tally left, form right; stacked on phones, count first. */
+  .petition-board {
+    display: grid;
+    grid-template-columns: minmax(11rem, 1fr) minmax(0, 2fr);
+    column-gap: var(--space-xl);
+    row-gap: var(--space-lg);
+    margin-top: var(--space-xl);
+    padding: var(--space-lg);
+    background: var(--color-surface);
+    border-top: 2px solid var(--color-accent);
+  }
+
+  .petition-tally {
+    min-width: 0;
+  }
+
+  .petition-tally__count {
+    margin: 0;
+    display: grid;
+    line-height: 1.3;
     color: var(--color-text-muted);
+  }
+
+  /* The one bold spend in the block: the site's display face, which otherwise
+     appears only in page titles. Tabular figures keep a live count from
+     shifting the unit beneath it as digits change. */
+  .petition-tally__number {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2.75rem, 6vw, 3.75rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-heading);
+  }
+  /* The placeholder dash, before any count is known. */
+  .petition-tally__number[aria-hidden] {
+    color: var(--color-text-faint);
+  }
+
+  .petition-tally__status {
+    margin: var(--space-md) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* Chip weights match VerdictBadge; the accent marks an open petition, the
+     faint text color a closed one. */
+  .petition-tally__chip {
+    --chip-tint: 25%;
+    padding: var(--space-xs) var(--space-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+  }
+  .petition-tally__chip[data-status='open'] { --chip-color: var(--color-accent); }
+  .petition-tally__chip[data-status='closed'] { --chip-color: var(--color-text-faint); }
+
+  .petition-sign {
+    min-width: 0;
   }
 
   .petition-form {
     display: grid;
     gap: var(--space-md);
-    margin: var(--space-lg) 0;
+    margin: 0 0 var(--space-lg);
   }
 
   .petition-form label:not(.petition-consent) {
@@ -142,8 +318,11 @@ const closed = state?.status === 'closed';
     font-size: var(--font-size-sm);
   }
 
-  /* Input look matches SearchInput.astro. :where() keeps specificity low so
-     the button rule below can override border and color. */
+  /* Input look matches SearchInput.astro, except the field sits on the page
+     color with the faint text color as its edge: on the white light-theme
+     panel the surface and border tokens barely separate from it. :where()
+     keeps specificity low so the button rule below can override border and
+     color. */
   .petition-form :where(input[type='text'], input[type='email'], button) {
     padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--color-border);
@@ -154,7 +333,8 @@ const closed = state?.status === 'closed';
   }
 
   .petition-form :where(input[type='text'], input[type='email']) {
-    background: var(--color-surface);
+    background: var(--color-bg);
+    border-color: var(--color-text-faint);
   }
 
   .petition-consent {
@@ -187,16 +367,89 @@ const closed = state?.status === 'closed';
     cursor: wait;
   }
 
+  .petition-status {
+    margin: 0 0 var(--space-lg);
+    font-weight: 600;
+  }
+
   .petition-status:empty {
     display: none;
   }
 
   .petition-privacy {
+    margin: 0;
     font-size: var(--font-size-xs);
+    line-height: 1.5;
     color: var(--color-text-muted);
   }
 
-  .petition-names ul {
-    padding-left: var(--space-lg);
+  .petition-names {
+    margin-top: var(--space-xl);
+  }
+
+  .petition-names h3 {
+    margin-bottom: var(--space-sm);
+  }
+
+  /* Names flow inline with a hairline between them. The list is shifted left
+     by one separator and the wrapper clips it, so the first name on each row
+     starts flush with no leading rule. */
+  .petition-roll-wrap {
+    overflow: hidden;
+  }
+
+  .petition-roll {
+    --roll-gap: var(--space-sm);
+    list-style: none;
+    margin: 0 0 0 calc(-1 * var(--roll-gap) - 1px);
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: var(--space-xs);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+  }
+
+  /* :global: the script rebuilds these items, and they lack Astro's scoped attribute. */
+  .petition-roll :global(li) {
+    padding: 0 var(--roll-gap);
+    border-left: 1px solid var(--color-text-faint);
+    overflow-wrap: anywhere;
+  }
+
+  /* About six rows; the fade shows there is more below. */
+  .petition-names.is-capped .petition-roll-wrap {
+    max-height: 9.5em;
+    mask-image: linear-gradient(to bottom, #000 65%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, #000 65%, transparent);
+  }
+
+  .petition-roll__note {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  .petition-roll__toggle {
+    margin-top: var(--space-sm);
+    padding: var(--space-xs) 0;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+
+  .petition-roll__toggle:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  @media (max-width: 640px) {
+    .petition-board {
+      grid-template-columns: minmax(0, 1fr);
+      padding: var(--space-md);
+    }
   }
 </style>
