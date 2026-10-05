@@ -363,7 +363,7 @@ async def verify_claim(
             repo_root = _cfg_repo_root(cfg)
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
-            urls = _collapse_equivalent_urls(urls, ro.url_addresses)
+            urls = _collapse_equivalent_urls(urls, ro.url_addresses, ro.prefetched_bodies)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
@@ -626,13 +626,16 @@ def _canonical_or_raw(url: str) -> str:
 
 
 def _collapse_equivalent_urls(
-    urls: list[str], url_addresses: dict[str, list[str]]
+    urls: list[str],
+    url_addresses: dict[str, list[str]],
+    prefetched_bodies: dict[str, str],
 ) -> list[str]:
     """Drop URLs that canonicalize equal to an earlier one in the batch.
 
-    The dropped URL's sub-question addresses move to the kept URL, so its
-    coverage survives. Two forms of one page would otherwise both be
-    ingested and resolve to the same source id, listing it twice.
+    The dropped URL's sub-question addresses and prefetched body move to the
+    kept URL, so its coverage survives and a shielded publisher is not
+    refetched. Two forms of one page would otherwise both be ingested and
+    resolve to the same source id, listing it twice.
     """
     kept: dict[str, str] = {}
     out: list[str] = []
@@ -648,6 +651,8 @@ def _collapse_equivalent_urls(
         for sq_id in url_addresses.get(url, []):
             if sq_id not in merged:
                 merged.append(sq_id)
+        if url in prefetched_bodies and first not in prefetched_bodies:
+            prefetched_bodies[first] = prefetched_bodies[url]
     return out
 
 
@@ -1201,7 +1206,7 @@ async def research_claim(
             progress("  › Ingesting", log=False)
             logger.info("Step 2/5: Ingesting %d sources...", len(urls))
             url_index = build_source_url_index(repo_root)
-            urls = _collapse_equivalent_urls(urls, ro.url_addresses)
+            urls = _collapse_equivalent_urls(urls, ro.url_addresses, ro.prefetched_bodies)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))

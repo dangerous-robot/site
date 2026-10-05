@@ -230,13 +230,16 @@ class TestCollapseEquivalentUrls:
             "https://www.x.com/a/?utm_source=y": ["sq1", "sq2"],
         }
 
-        kept = _collapse_equivalent_urls(urls, addresses)
+        bodies = {"https://www.x.com/a/?utm_source=y": "page text"}
+
+        kept = _collapse_equivalent_urls(urls, addresses, bodies)
 
         assert kept == ["https://x.com/a", "https://b.com/"]
         assert addresses["https://x.com/a"] == ["sq1", "sq2"]
+        assert bodies["https://x.com/a"] == "page text"
 
     def test_unparseable_url_kept_as_is(self) -> None:
-        assert _collapse_equivalent_urls(["not a url", "not a url"], {}) == ["not a url"]
+        assert _collapse_equivalent_urls(["not a url", "not a url"], {}, {}) == ["not a url"]
 
 
 def test_invert_addresses_uses_source_addresses_over_disk_url() -> None:

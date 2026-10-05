@@ -996,15 +996,25 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
 
     captured: list[list[dict]] = []
 
+    from types import SimpleNamespace as _NS
+
     async def _fake_analyse(entity_name, claim_text, source_dicts, cfg):
         captured.append(source_dicts)
-        return None, None
+        verdict = _NS(
+            title="Acme is green", topics=[], narrative="N.",
+            verdict=_NS(value="unverified"), confidence=_NS(value="low"),
+            verification_level=_NS(value="claimed"),
+        )
+        return _NS(entity=_NS(entity_name="Acme", entity_type="company"), verdict=verdict), None
 
     with _patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
-        CliRunner().invoke(
+        result = CliRunner().invoke(
             main,
             ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],
         )
+
+    assert result.exit_code == 0, result.output
+    assert "Level:      claimed" in result.output
 
     [sources] = captured
     assert sources[0]["source_id"] == "2026/foo"

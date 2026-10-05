@@ -524,6 +524,7 @@ def step_analyze(
     click.echo(f"Topics:     {', '.join(t.value for t in a.verdict.topics)}")
     click.echo(f"Verdict:    {a.verdict.verdict.value}")
     click.echo(f"Confidence: {a.verdict.confidence.value}")
+    click.echo(f"Level:      {a.verdict.verification_level.value}")
     click.echo(f"Narrative:")
     for line in a.verdict.narrative.strip().split("\n"):
         click.echo(f"  {line}")
