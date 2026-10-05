@@ -12,7 +12,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 
 - [x] Design questions answered by Brandon, 2026-10-04 (see Decisions)
 - [ ] Needs from Brandon: account steps 1 to 4
-- [ ] Needs from Brandon: copy, policy and naming items 5 to 9
+- [x] Needs from Brandon: copy, policy and naming items 5 to 9
 - [ ] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers
 - [ ] S1 to S4: `petition` field, Sveltia mirror, sign block on the post, pledge post wired up
 - [ ] O1: runbook section "Petitions: open, close, export, remove"
@@ -81,9 +81,13 @@ Client-side fetch of `GET /petitions/{slug}` (recommended): live, one small modu
 
 Open for the build step: the no-JS number means `astro build` fetches the Worker during the GitHub Actions build. Decide what the build does when the Worker is down or the petition row does not exist yet (fail, or render no number).
 
-### Privacy blurb (draft, Brandon to approve)
+### Privacy blurb (approved by Brandon 2026-10-04)
 
-"We keep your name, your email, and whether you said we may show your name. Your email is used once to confirm your signature and never shown. Cloudflare stores the list; Resend delivers the one email. Remove yourself any time with the link in that email or by writing to contact@dangerousrobot.org. Emails are deleted 12 months after a petition closes."
+"We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to contact@dangerousrobot.org."
+
+Consent checkbox label: "Show my name on the public list of signers" (unchecked by default).
+
+The blurb makes no retention promise on purpose; the cleanup in P5 still runs.
 
 ## Requirements
 
@@ -91,7 +95,7 @@ Functional:
 
 - R1: Create a petition by adding a row (slug, title, status, opened date) and a frontmatter field on the post; no admin UI.
 - R2: A visitor signs with name and email, confirms by email, and lands on a "thank you, you are signatory N" page.
-- R3: The post shows the current count. Signatories who opted in appear in a public list (name only, newest first; name format is Needs item 7).
+- R3: The post shows the current count. Signatories who opted in appear in a public list (name only, newest first, exactly as the signer typed it).
 - R4: Export to CSV with exactly the columns the privacy blurb promises.
 - R5: Close a petition; the page and the Worker both reflect it.
 - R6: Remove a signer on request within days, not weeks, and have the count drop.
@@ -103,12 +107,12 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 - P2 Consent for display: separate, unchecked box; email never displayed; consent recorded with its timestamp so it can be shown on request.
 - P3 Verification vs friction: email confirmation costs one extra click and loses some signers, but it makes the count mean something, stops most bots without a CAPTCHA, and gives each signer a removal link. The UK Parliament petition site uses the same step for the same reasons ([petition.parliament.uk FAQ via Full Fact](https://fullfact.org/europe/possible-repeatedly-sign-parliamentary-petition/)).
 - P4 Spam without an invasive CAPTCHA: layers that touch no third party first; a CAPTCHA only when evidence demands it. This differs from the `public-feedback.md` Decisions table's Turnstile row (Turnstile in the stack) on purpose: email confirmation already gates petitions, and the feedback forms have no such gate. Revisit if the feedback forms ship with Turnstile and one consistent stack matters more.
-- P5 Retention: unconfirmed rows purged after 7 days; emails deleted 12 months after a petition closes (name, consent flag and date kept for the record). Both numbers are placeholders (Needs item 6).
+- P5 Retention: unconfirmed rows purged after 7 days; emails deleted when a petition closes (name, consent flag and date kept for the record). Not promised in the blurb.
 - P6 Deletion: self-service link plus a manual path via `contact@dangerousrobot.org`; deletion is a hard delete, not a flag.
 - P7 Law: GDPR likely does not apply by letter (a site merely reachable from the EU is not "targeting" per EDPB guidance summaries: [Hunton](https://hunton.com/privacy-and-information-security-law/edpb-publishes-final-version-of-guidelines-on-the-gdprs-territorial-scope)), but the pledge invites "international agreement," so behave as if it does: consent as the basis, a short notice, access and erasure on request. CCPA thresholds ($25M revenue, 100k California residents' data, or 50% revenue from selling data) are not met ([California AG](https://oag.ca.gov/privacy/ccpa), checked 2026-10-04). Washington has no comprehensive consumer privacy statute in force as of mid-2026 (secondary sources: [privacylawmap](https://privacylawmap.com/blog/washington-state-privacy-law-guide), [BakerHostetler](https://www.bakerlaw.com/insights/washington-states-2026-tech-legislative-agenda-what-in-house-counsel-should-watch/); unverified against the legislature's site).
 - P8 No third-party trackers: the post loads nothing from outside `dangerousrobot.org` and `api.dangerousrobot.org`.
 - P9 Who can see the data: Brandon (Cloudflare account, wrangler) and the processors Cloudflare (storage, US/global edge) and Resend (email delivery, US). The notice names both. The list goes to no one else (decision 4).
-- P10 Honest copy: the notice says what is kept, for how long, who can see it, and how to be removed.
+- P10 Honest copy: the notice says what is kept, who can see it, and how to be removed.
 
 ## Scope
 
@@ -144,15 +148,15 @@ Account steps (about an hour):
 
 1. Done 2026-10-04: D1 database `dr-api` created in region WNAM (`database_id` `8594b5ae-cfeb-470c-b0cd-8509df1fe108`, for W1's `wrangler.toml`). No manual `api` DNS record: declare `api.dangerousrobot.org` as a Worker custom domain in `wrangler.toml` and the deploy creates the record and certificate.
 2. Cloudflare: set the Worker secrets `RESEND_API_KEY` and `TOKEN_SALT`, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
-3. Resend: create the account and verify `dangerousrobot.org` (SPF and DKIM records added in Cloudflare DNS).
+3. Done 2026-10-04: Resend account created and `dangerousrobot.org` verified.
 4. Resend: choose the sender address (`pledge@` or `no-reply@dangerousrobot.org`).
 
 Copy and policy:
 
-5. Approve the privacy blurb above.
-6. Set the retention and rate-limit numbers (placeholders: 7 days for unconfirmed rows, 12 months after close for emails, 5 sign POSTs per IP hash per minute).
-7. Public name format: full name, or first name plus last initial.
-8. Rate-limit response for the sixth POST in a minute from one IP: 429, or 200 with no row (no signal to bots).
+5. Decided 2026-10-04: privacy blurb approved as written above, naming Cloudflare and Resend.
+6. Decided 2026-10-04: unconfirmed rows purged after 7 days; emails deleted when a petition closes; 5 sign POSTs per IP hash per minute.
+7. Decided 2026-10-04: public name shown exactly as typed, only with the box checked.
+8. Decided 2026-10-04: the sixth POST in a minute gets 429 with a plain "try again in a minute" message.
 9. Decided 2026-10-04: Worker directory `workers/api/`, D1 database `dr-api` (one Worker serves petitions and, later, feedback). Recorded in `public-feedback.md` Decisions table, Worker location.
 
 ## Testing
