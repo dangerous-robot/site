@@ -1043,22 +1043,13 @@ async def _analyse_claim(
 
 
 def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) -> None:
-    """Clean citation tokens and "Source N" references from reader-facing text.
+    """Replace citation tokens and "Source N" references in the narrative with source titles.
 
-    The narrative gets source titles in their place. ``takeaway`` (200 chars)
-    and ``cap_rationale`` (400) only have the references removed, since an
-    inserted title can push them past the site schema's length limits.
-
+    ``takeaway`` and ``cap_rationale`` reject citations at validation time.
     ``sources`` must be the list, in order, that the analyst prompt was built
     from: "Source N" means the Nth source listed there.
     """
     verdict.narrative, unresolved = clean_citations(verdict.narrative, sources)
-    for field in ("takeaway", "cap_rationale"):
-        value = getattr(verdict, field)
-        if value is not None:
-            cleaned, more = clean_citations(value, sources, strip=True)
-            setattr(verdict, field, cleaned)
-            unresolved += more
     if unresolved:
         logger.warning("Analyst output has unresolved citation references: %s", unresolved)
 

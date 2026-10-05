@@ -7,13 +7,14 @@ from contextlib import contextmanager
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 from pydantic_ai.models.test import TestModel
 
 from analyst.agent import VerdictAssessment, verdict_only_agent
 from analyst.citations import clean_citations
 from common.models import EntityType
 from orchestrator.entity_resolution import ResolvedEntity
-from orchestrator.pipeline import VerifyConfig, _analyse_claim, _clean_verdict_citations
+from orchestrator.pipeline import VerifyConfig, _analyse_claim
 
 NBSP = " "
 
@@ -128,20 +129,6 @@ def test_resources_not_matched() -> None:
     assert unresolved == []
 
 
-def test_strip_mode_removes_without_titles() -> None:
-    text, unresolved = clean_citations(
-        "Renewable (Sources 2, 4) per the report【2026/source-1】 .", _sources(), strip=True
-    )
-    assert text == "Renewable per the report."
-    assert unresolved == []
-
-
-def test_strip_mode_leaves_out_of_range() -> None:
-    text, unresolved = clean_citations("see Source 9.", _sources(6), strip=True)
-    assert text == "see Source 9."
-    assert unresolved == ["Source 9"]
-
-
 def _verdict(**overrides) -> VerdictAssessment:
     args = {
         "title": "Brave hosts on renewable energy",
@@ -156,27 +143,20 @@ def _verdict(**overrides) -> VerdictAssessment:
     return VerdictAssessment(**args)
 
 
-def test_takeaway_stays_within_limit_after_cleaning() -> None:
-    token = "【2026/long】"
-    body = ("w " * 100)[: 185 - len(token) - 1]
-    takeaway = f"{body}{token}."
-    assert len(takeaway) == 185
-    verdict = _verdict(takeaway=takeaway)
-    # A 40-char title inserted here would push the takeaway past 200.
-    _clean_verdict_citations(verdict, [{"title": "A" * 40, "source_id": "2026/long"}])
-    assert len(verdict.takeaway) <= 200
-    assert verdict.takeaway == f"{body}."
+@pytest.mark.parametrize("field", ["takeaway", "cap_rationale"])
+@pytest.mark.parametrize("text", ["See Source 1.", "Only the company's pages address it【2026/source-1】."])
+def test_short_fields_reject_citations(field: str, text: str) -> None:
+    with pytest.raises(ValidationError, match="without citing sources"):
+        _verdict(**{field: text})
 
 
-def test_cap_rationale_cleaned() -> None:
-    verdict = _verdict(
-        cap_rationale="Only the company's own pages address the claim【2026/source-1】."
-    )
-    _clean_verdict_citations(verdict, _sources())
-    assert verdict.cap_rationale == "Only the company's own pages address the claim."
+@pytest.mark.parametrize("field", ["takeaway", "cap_rationale"])
+@pytest.mark.parametrize("text", ["Only the company's own pages address the claim.", "It runs on an open Source 3D printer."])
+def test_short_fields_accept_clean_text(field: str, text: str) -> None:
+    assert getattr(_verdict(**{field: text}), field) == text
 
 
-# --- T5: _analyse_claim returns cleaned narrative and takeaway --------------
+# --- T5: _analyse_claim returns a cleaned narrative -------------------------
 
 
 @contextmanager
@@ -198,9 +178,7 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
             "narrative": f"Brave says so【2026/source-1】 and Source{NBSP}1 agrees.",
             "topics": ["environmental-impact"],
             "verification_level": "claimed",
-            "cap_rationale": "Only the company's own pages address the claim【2026/source-2】.",
             "seo_title": "Brave renewable hosting claim",
-            "takeaway": "See Source 1.",
         }
     )
     resolved = ResolvedEntity(
@@ -224,12 +202,6 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
 
     assert failure is None
     narrative = out.verdict.narrative
-    takeaway = out.verdict.takeaway
-    cap_rationale = out.verdict.cap_rationale
-    for text in (narrative, takeaway, cap_rationale):
-        assert "【" not in text
-        assert not re.search(r"Source\s+1", text)
+    assert "【" not in narrative
+    assert not re.search(r"Source\s+1", narrative)
     assert narrative == "Brave says so (*Title 1*) and *Title 1* agrees."
-    # Short fields drop references rather than grow past their length limits.
-    assert takeaway == "See."
-    assert cap_rationale == "Only the company's own pages address the claim."

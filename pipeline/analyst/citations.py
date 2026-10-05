@@ -2,8 +2,9 @@
 
 Some models cite with bracket tokens (【2025/some-id】, native to gpt-oss) or
 with numbered references ("Source 3", "Sources 2, 4"). Neither means anything
-on the published site, so both are rewritten to italic source titles, or
-removed from fields too short to hold a title.
+on the published site, so in the narrative both are rewritten to italic
+source titles. Fields too short to hold a title reject them instead (see
+`has_citation_reference`), so the model rewrites the sentence.
 """
 
 from __future__ import annotations
@@ -38,10 +39,10 @@ _CITATION = re.compile(
 )
 _BRACKET_TOKEN = re.compile(r"【([^】]*)】")
 
-# Strip-mode tidying of what a removal leaves behind.
-_EMPTY_PARENS = re.compile(r"[^\S\n]*\(\s*\)")
-_SPACE_BEFORE_PUNCT = re.compile(r"[^\S\n]+([.,;:!?)])")
-_SPACE_RUN = re.compile(r"[^\S\n]{2,}")
+
+def has_citation_reference(text: str) -> bool:
+    """True when ``text`` holds a bracket token or a numbered source reference."""
+    return bool(_CITATION.search(text))
 
 
 def _join_titles(titles: list[str]) -> str:
@@ -63,18 +64,13 @@ def _title_lookup(sources: list[dict]) -> dict[str, str]:
     return lookup
 
 
-def clean_citations(
-    text: str, sources: list[dict], *, strip: bool = False
-) -> tuple[str, list[str]]:
+def clean_citations(text: str, sources: list[dict]) -> tuple[str, list[str]]:
     """Replace citation tokens and "Source N" references with source titles.
 
     `sources` must be the list given to `build_analyst_prompt`, in the same
     order: "Source N" maps to `sources[N - 1]`. Bracket ids are matched on
     each source's `source_id` (or `slug`); an id is the text before any
     `†` suffix inside the brackets.
-
-    With `strip=True` resolved references are removed instead of replaced,
-    for length-capped fields where an inserted title could break the limit.
 
     Unknown bracket ids are removed. A numbered reference with any number
     out of range is left as written, so the lint check can catch it.
@@ -85,7 +81,6 @@ def clean_citations(
 
     lookup = _title_lookup(sources)
     unresolved: list[str] = []
-    removed = False
 
     def bracket_run(run: str) -> str:
         titles: list[str] = []
@@ -96,9 +91,7 @@ def clean_citations(
                 unresolved.append(token.group(0))
             elif title not in titles:
                 titles.append(title)
-        if strip or not titles:
-            return ""
-        return f" ({_join_titles(titles)})"
+        return f" ({_join_titles(titles)})" if titles else ""
 
     def source_n(match: re.Match[str]) -> str:
         numbers = [int(n) for n in re.findall(r"\d+", match.group("one") or match.group("many") or match.group("list"))]
@@ -113,20 +106,11 @@ def clean_citations(
                 return match.group(0)
             if title not in titles:
                 titles.append(title)
-        return "" if strip else _join_titles(titles)
+        return _join_titles(titles)
 
     def replace(match: re.Match[str]) -> str:
-        nonlocal removed
         if match.group("bracket") is not None:
-            out = bracket_run(match.group("bracket"))
-        else:
-            out = source_n(match)
-        removed = removed or out == ""
-        return out
+            return bracket_run(match.group("bracket"))
+        return source_n(match)
 
-    text = _CITATION.sub(replace, text)
-    if strip and removed:
-        text = _EMPTY_PARENS.sub("", text)
-        text = _SPACE_BEFORE_PUNCT.sub(r"\1", text)
-        text = _SPACE_RUN.sub(" ", text).strip()
-    return text, unresolved
+    return _CITATION.sub(replace, text), unresolved

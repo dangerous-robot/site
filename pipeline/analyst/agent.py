@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
+from analyst.citations import has_citation_reference
 from common.instructions import common, load_instructions
 from common.models import Category, Confidence, EntityType, Independence, SubQuestion, Verdict, VerificationLevel
 from common.utils import slugify
@@ -210,6 +211,17 @@ class VerdictAssessment(BaseModel):
         if v is None:
             return v
         _reject_if_truncated(v, require_sentence_end=True)
+        return v
+
+    @field_validator("takeaway", "cap_rationale")
+    @classmethod
+    def _no_citations(cls, v: str | None) -> str | None:
+        # Too short to hold a source title in place of the reference (the
+        # narrative gets one), so the model must rewrite the sentence.
+        if v is not None and has_citation_reference(v):
+            raise ValueError(
+                "cites a source (【...】 token or \"Source N\"); state it without citing sources"
+            )
         return v
 
 
