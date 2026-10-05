@@ -8,17 +8,24 @@ record on ``IngestorDeps`` and the checks that reject such outputs.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
+from contextlib import contextmanager
+from unittest.mock import patch
 
 import httpx
 import pytest
 import respx
 from pydantic_ai import RunContext
+from pydantic_ai.messages import ModelResponse, ToolCallPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
-from ingestor.agent import IngestorDeps, fetch_succeeded, web_fetch
+from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent, web_fetch
+from orchestrator.pipeline import VerifyConfig, _ingest_one
 
+_TODAY = datetime.date(2026, 10, 4)
 _DNS_ERROR = "[Errno 8] nodename nor servname provided, or not known"
 _HTML = (
     "<html><head><title>Transparency</title></head>"
@@ -71,3 +78,124 @@ async def test_web_fetch_records_success_and_failure() -> None:
 
     assert pre_ctx.deps.fetched_text[pre_url] == "Body from Tavily."
     assert fetch_succeeded(pre_ctx.deps)
+
+
+# ---------------------------------------------------------------------------
+# _ingest_one: reject outputs with no fetched page text or failed validation
+# ---------------------------------------------------------------------------
+
+
+@contextmanager
+def _noop_ctx():
+    yield
+
+
+def _source_args(url: str, **overrides) -> dict:
+    frontmatter = {
+        "url": url,
+        "title": "Brave transparency report",
+        "publisher": "Brave Software",
+        "accessed_date": _TODAY.isoformat(),
+        "kind": "report",
+        "summary": "Brave publishes a transparency report.",
+    }
+    frontmatter.update(overrides)
+    return {
+        "frontmatter": frontmatter,
+        "body": "Brave publishes a transparency report.",
+        "slug": "transparency",
+        "year": 2025,
+    }
+
+
+def _scripted_model(fetch_urls: list[str], source: dict) -> FunctionModel:
+    """Call ``web_fetch`` once per URL in order, then return ``source``."""
+    step = 0
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        nonlocal step
+        if step < len(fetch_urls):
+            url = fetch_urls[step]
+            step += 1
+            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        return ModelResponse(
+            parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)]
+        )
+
+    return FunctionModel(_fn)
+
+
+async def _run_ingest_one(url: str, model: FunctionModel, tmp_path):
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), skip_wayback=True)
+    async with httpx.AsyncClient() as client:
+        with ingestor_agent.override(model=model):
+            # Keep our FunctionModel: neutralize the orchestrator's own override.
+            with patch(
+                "orchestrator.pipeline.ingestor_agent.override",
+                side_effect=lambda **kw: _noop_ctx(),
+            ):
+                return await _ingest_one(client, url, cfg, _TODAY, asyncio.Semaphore(8))
+
+
+@pytest.mark.asyncio
+async def test_dns_failure_returns_fetch_failed(tmp_path) -> None:
+    url = "https://builder.aws.amazon.com/renewable"
+    with respx.mock:
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        outcome = await _run_ingest_one(url, _scripted_model([url], _source_args(url)), tmp_path)
+    assert not isinstance(outcome, tuple)
+    assert outcome.error_type == "fetch_failed"
+    assert outcome.step == "ingest"
+    assert outcome.url == url
+    assert "nodename" in outcome.message
+
+
+@pytest.mark.asyncio
+async def test_model_skips_fetch_returns_fetch_failed(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    outcome = await _run_ingest_one(url, _scripted_model([], _source_args(url)), tmp_path)
+    assert not isinstance(outcome, tuple)
+    assert outcome.error_type == "fetch_failed"
+    assert "without fetching" in outcome.message
+
+
+@pytest.mark.asyncio
+async def test_wayback_recovery_still_ingests(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    archive = "https://web.archive.org/web/2025/https://brave.com/transparency/"
+    with respx.mock:
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        respx.get(archive).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url, archive], _source_args(url, archived_url=archive)),
+            tmp_path,
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[0] == url
+
+
+@pytest.mark.asyncio
+async def test_invalid_archived_url_returns_invalid_source(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url], _source_args(url, archived_url="https://archive.ph/abc")),
+            tmp_path,
+        )
+    assert not isinstance(outcome, tuple)
+    assert outcome.error_type == "invalid_source"
+    assert "archived_url" in outcome.message
+
+
+@pytest.mark.asyncio
+async def test_model_url_replaced_with_requested_url(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    echoed = "https://brave.com/transparency-report/"
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(url, _scripted_model([url], _source_args(echoed)), tmp_path)
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.url == url

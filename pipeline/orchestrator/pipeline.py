@@ -55,8 +55,9 @@ from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
-from ingestor.agent import IngestorDeps, ingestor_agent
+from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent
 from ingestor.models import SourceFile
+from ingestor.validation import validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from common.models import SubQuestion
@@ -644,6 +645,43 @@ def _trace_acquisition_sink(research_trace: object) -> dict | None:
     return research_trace.setdefault("acquisition", {})
 
 
+def _check_ingested_source(
+    url: str, sf: SourceFile, deps: IngestorDeps, cfg: VerifyConfig
+) -> tuple[str, SourceFile] | StepError:
+    """Accept the ingest model's SourceFile only if a page was fetched and it validates.
+
+    The model can return a SourceFile after every fetch failed, or without
+    calling ``web_fetch`` at all; its summary is then invented.
+    """
+    if not fetch_succeeded(deps):
+        message = (
+            deps.fetch_errors[-1]
+            if deps.fetch_errors
+            else "model returned a source without fetching the page"
+        )
+        logger.warning("Rejected ingest (no page text fetched): %s: %s", url, message)
+        return StepError(step="ingest", url=url, error_type="fetch_failed", message=message)
+
+    # The dedup index keys on the requested URL; a model echoing a redirect
+    # target would otherwise fail the URL-match check and drop a good source.
+    if sf.frontmatter.url != url:
+        logger.info(
+            "Ingest model returned url %s for %s; keeping the requested url",
+            sf.frontmatter.url, url,
+        )
+        sf.frontmatter.url = url
+    validation = validate_source_file(sf, url, cfg.repo_root or "")
+    for warning in validation.warnings:
+        logger.warning("Ingest validation warning for %s: %s", url, warning)
+    if not validation.ok:
+        message = "; ".join(validation.errors)
+        logger.warning("Rejected ingest (invalid source): %s: %s", url, message)
+        return StepError(step="ingest", url=url, error_type="invalid_source", message=message)
+
+    logger.info("Ingested: %s -> %s", url, sf.frontmatter.title)
+    return (url, sf)
+
+
 async def _ingest_one(
     client: httpx.AsyncClient,
     url: str,
@@ -691,8 +729,9 @@ async def _ingest_one(
         derived = slug_from_url(url)
         if derived:
             sf.slug = derived
-        logger.info("Ingested: %s -> %s", url, sf.frontmatter.title)
-        outcome: tuple[str, SourceFile] | StepError = (url, sf)
+        outcome: tuple[str, SourceFile] | StepError = _check_ingested_source(
+            url, sf, deps, cfg
+        )
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
         outcome = StepError(

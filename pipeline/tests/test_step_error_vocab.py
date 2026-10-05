@@ -42,6 +42,8 @@ DOCUMENTED_LITERALS: frozenset[str] = frozenset(
         "blocked_host",
         "all_blocked",
         "http_error",
+        "fetch_failed",
+        "invalid_source",
         # Model
         "model_error",
         "api_key_missing",

@@ -33,6 +33,10 @@ class StepError:
           not a literal; e.g. ``http_404``, ``http_410``)
         - ``http_error``               -- non-terminal HTTP failure
           (exception class name contains ``"HTTP"``)
+        - ``fetch_failed``             -- the ingest model returned a source
+          but no ``web_fetch`` call returned page text
+        - ``invalid_source``           -- the ingested source failed
+          ``validate_source_file`` (slug, year, archived_url domain)
 
     Model (``step="research"`` or ``step="ingest"``):
         - ``model_error``              -- agent run raised an unexpected exception
