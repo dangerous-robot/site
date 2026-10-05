@@ -349,9 +349,10 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     from common.content_loader import resolve_repo_root
     from common.frontmatter import serialize_frontmatter
     from common.source_classification import classify_source_type, independence_for_source_type
-    from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent
-    from ingestor.validation import validate_source_file
+    from ingestor.agent import IngestorDeps, ingestor_agent
+    from orchestrator.checkpoints import StepError
     from orchestrator.persistence import resolve_source_slugs
+    from orchestrator.pipeline import _check_ingested_source
 
     root_str: str
     try:
@@ -376,18 +377,14 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 click.echo(f"Error: agent failed: {exc}", err=True)
                 return 1
 
-            sf = res.output
-            reason = fetch_failure_reason(deps)
-            if reason is not None:
-                click.echo(f"Error: fetch failed, no page text for {url}: {reason}", err=True)
+            checked = _check_ingested_source(url, res.output, deps, Path(root_str))
+            if isinstance(checked, StepError):
+                if checked.error_type == "fetch_failed":
+                    click.echo(f"Error: fetch failed, no page text for {url}: {checked.message}", err=True)
+                else:
+                    click.echo(f"Validation error: {checked.message}", err=True)
                 return 1
-            validation = validate_source_file(sf, url, root_str)
-            for w in validation.warnings:
-                click.echo(f"Warning: {w}", err=True)
-            if not validation.ok:
-                for e in validation.errors:
-                    click.echo(f"Validation error: {e}", err=True)
-                return 1
+            _url, sf = checked
 
             fm_dict = sf.frontmatter.model_dump(mode="python")
             source_type = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)

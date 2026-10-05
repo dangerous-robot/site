@@ -291,3 +291,32 @@ def test_step_ingest_fetch_failure_writes_nothing(tmp_path) -> None:
     assert "fetch failed" in error_lines[0]
     assert "nodename" in error_lines[0]
     assert list((tmp_path / "research" / "sources").rglob("*.md")) == []
+
+
+def test_step_ingest_keeps_requested_url_when_model_echoes_redirect(tmp_path) -> None:
+    from click.testing import CliRunner
+
+    from orchestrator.cli import main
+
+    url = "https://brave.com/transparency/"
+    echoed = "https://brave.com/transparency-report/"
+    (tmp_path / "research" / "sources").mkdir(parents=True)
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        with ingestor_agent.override(model=_scripted_model([url], _source_args(echoed))):
+            with patch(
+                "ingestor.agent.ingestor_agent.override",
+                side_effect=lambda **kw: nullcontext(),
+            ):
+                result = CliRunner().invoke(
+                    main,
+                    [
+                        "--model", "test", "--ingestor-model", "test",
+                        "step-ingest", url, "--write", "--skip-wayback",
+                        "--repo-root", str(tmp_path),
+                    ],
+                )
+    assert result.exit_code == 0, result.output
+    written = list((tmp_path / "research" / "sources").rglob("*.md"))
+    assert len(written) == 1
+    assert f"url: {url}" in written[0].read_text()
