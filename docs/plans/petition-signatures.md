@@ -1,7 +1,7 @@
 # Petition signatures
 
-**Status**: `in progress` (Worker, sign block and runbook built and tested locally 2026-10-04; not deployed; pledge post not wired up)
-**Last updated**: 2026-10-04
+**Status**: `in progress` (launched 2026-10-05: Worker deployed, pledge post live with the sign block; two production tests deferred to `docs/UNSCHEDULED.md`)
+**Last updated**: 2026-10-05
 **Decision** (`docs/decisions.md`, 2026-10-04, quoted): "Pledge signatures are collected on the site. A Cloudflare Worker and D1 database (the stack `docs/plans/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. ..."
 
 Very basic petition management for dangerousrobot.org: open a petition, collect signatures on the post itself, show a count and (with consent) a public signatory list, export, close, and remove a signer on request. The first petition is the pledge post; more pledges may follow.
@@ -11,14 +11,14 @@ Very basic petition management for dangerousrobot.org: open a petition, collect 
 Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 
 - [x] Design questions answered by Brandon, 2026-10-04 (see Decisions)
-- [ ] Needs from Brandon: account steps 1 to 4
+- [x] Needs from Brandon: account steps 1 to 4 (Worker deployed 2026-10-05, version 547e1171)
 - [x] Needs from Brandon: copy, policy and naming items 5 to 9
 - [x] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers (`workers/api/`, 25 tests in `workers/api/test/`)
 - [x] S1 to S3: `petition` field, Sveltia mirror, sign block on the post (`src/components/PetitionSign.astro`, shared text in `src/lib/petition.ts`)
-- [ ] S4: pledge post wired up (the post file is untracked and owned by the pledge-post work; Brandon to add `petition:` and the `#sign` link)
+- [x] S4: pledge post wired up (`petition: prohibit-ai-self-improvement`, published 2026-10-05; Brandon dropped the "at ..." ending instead of linking `#sign`)
 - [x] O1: runbook section "Petitions: open, close, export, remove"; architecture doc `docs/architecture/petitions.md`
-- [ ] Testing table run against a deployed Worker
-- [ ] `refocus-foundation.md` G1 unblocked (pledge post links `#sign`, `draft: false`)
+- [x] Testing table run against a deployed Worker, 2026-10-05, except Export and No-JS path (deferred to `docs/UNSCHEDULED.md`, Petition Worker follow-ups). Fixes found on the way: hourly email cap, review fixes W1 to W4, self-hosted fonts, Cloudflare analytics and email obfuscation turned off
+- [x] `refocus-foundation.md` G1 unblocked (pledge post live with the sign block, `draft: false`)
 
 ## Goal
 
@@ -151,7 +151,7 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 Account steps (about an hour):
 
 1. Done 2026-10-04: D1 database `dr-api` created in region WNAM (`database_id` `8594b5ae-cfeb-470c-b0cd-8509df1fe108`, for W1's `wrangler.toml`). No manual `api` DNS record: declare `api.dangerousrobot.org` as a Worker custom domain in `wrangler.toml` and the deploy creates the record and certificate.
-2. Cloudflare: set the Worker secret `RESEND_API_KEY`, apply the migration, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
+2. Done 2026-10-05: Cloudflare: set the Worker secret `RESEND_API_KEY`, apply the migration, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
 3. Done 2026-10-04: Resend account created and `dangerousrobot.org` verified.
 4. Decided 2026-10-04: sender `no-reply@dangerousrobot.org` (`MAIL_FROM` in `workers/api/wrangler.toml`).
 

@@ -435,4 +435,5 @@ Deferred from the 2026-10-04 build review of `workers/api/` ([petition-signature
 | Deploy the Worker from GitHub Actions | Today `wrangler deploy` is manual (runbook "Petitions"). Needs a Cloudflare API token as a repo secret. |
 | Cheaper public count reads if traffic grows | `GET /petitions/{slug}` is `no-store` (one D1 batch per page view). Options: `no-cache` plus an ETag (count plus newest `confirmed_at`), or Workers Cache API with a short TTL purged on confirm. |
 | Cap the public names list | The JSON returns every opted-in name. Add a `LIMIT` and a "show all" fetch once the list is long. |
+| Run the two deferred production tests | Testing table rows Export (runbook export query; CSV header must be exactly `name, email, display_consent, created_at, confirmed_at, petition_slug`) and No-JS path (sign with scripts off; expect the Worker's "check your email" page). Skipped at launch 2026-10-05; everything else passed. |
 | Keep Worker page colors in sync with `tokens.css` | `workers/api/src/pages.ts` copies hex values by hand. A test could read `src/styles/tokens.css` and compare. |
