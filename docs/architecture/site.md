@@ -191,7 +191,7 @@ The thesis text on the page is in the `dangers` array and the markup; it is exce
 
 **Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines two collections mirroring the Zod schemas: `writing` (media in `public/images/writing`) and `resources`, which lists only `layout: article` entries (media in `public/images/resources`); the matrix, guide and tool entries are edited by hand. `robots.txt` disallows `/admin/`.
 
-- **Local-repository workflow (works now).** With the dev server running, open `http://localhost:4321/admin/index.html` in Chrome (the bare `/admin/` path 404s under Astro dev), choose "Work with Local Repository", and pick the repo root. Edits are written to `src/content/writing/` on disk; nothing is committed.
+- **Local-repository workflow (works now).** With the dev server running, open `http://localhost:4321/admin/index.html` in Chrome (the bare `/admin/` path 404s under Astro dev), choose "Work with Local Repository", and pick the repo root. Edits are written to `src/content/writing/` or `src/content/resources/` (images under `public/images/`) on disk; nothing is committed.
 - **Production login (not set up).** The `github` backend needs the sveltia-cms-auth OAuth worker deployed on Cloudflare Workers and `backend.base_url` set in `config.yml`.
 
 Step-by-step authoring instructions, by CMS or by hand, are in [`docs/runbook.md`](../runbook.md) "Writing posts".

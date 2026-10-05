@@ -11,10 +11,10 @@ export const SITE_DESCRIPTION =
  *
  * Flip trigger: the flag flips when the first guide ("Before you trust an
  * AI chatbot", the chatbot guide release) is live and its claims are
- * published, by a decision recorded in the plan for the chatbot guide
- * release. Until then these pages stay noindexed. To flip, set the flag
- * below to true (and rebuild + redeploy) to make these pages indexable and
- * re-include them in the sitemap. The flag name keeps its historical
+ * published, by a decision recorded in docs/decisions.md. Until then
+ * these pages stay noindexed. To flip, set the flag below to true (and
+ * rebuild + redeploy) to make these pages indexable and re-include them
+ * in the sitemap. The flag name keeps its historical
  * `ALPHA` spelling.
  *
  * URLs are stable across the flip. Already-published pages remain
