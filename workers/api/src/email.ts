@@ -31,12 +31,15 @@ export async function sendEmail(env: Env, email: Email): Promise<void> {
   }
 }
 
-export function confirmationEmail(to: string, title: string, confirmUrl: string, removeUrl: string): Email {
+export function confirmationEmail(to: string, title: string, name: string, showName: boolean, confirmUrl: string, removeUrl: string): Email {
   return {
     to,
     subject: `Confirm your signature: ${title}`,
     text: [
       `Someone, hopefully you, signed "${title}" on dangerousrobot.org with this email address.`,
+      '',
+      `Name: ${name}`,
+      `Shown on the public list: ${showName ? 'yes' : 'no'}`,
       '',
       'Confirm your signature:',
       confirmUrl,
@@ -44,7 +47,9 @@ export function confirmationEmail(to: string, title: string, confirmUrl: string,
       'Remove your signature, now or any time later:',
       removeUrl,
       '',
-      'If you did not sign, ignore this email and the signature will not be counted.',
+      'Signing again with this address sends a new email; a newer email replaces the links in this one.',
+      '',
+      'If you did not sign, or the details above are wrong, ignore this email and the signature will not be counted.',
       '',
       'Dangerous Robot',
     ].join('\n'),

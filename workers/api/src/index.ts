@@ -145,7 +145,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (row) {
     const base = `${new URL(request.url).origin}/petitions/${slug}`;
     try {
-      await sendEmail(env, confirmationEmail(email, petition.title, `${base}/confirm?t=${token}`, `${base}/remove?t=${token}`));
+      await sendEmail(env, confirmationEmail(email, petition.title, name, consent === 1, `${base}/confirm?t=${token}`, `${base}/remove?t=${token}`));
     } catch (err) {
       console.error(err);
       // Drop the row so an immediate retry is not swallowed by the resend window.

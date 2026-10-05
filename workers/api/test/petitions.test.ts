@@ -176,6 +176,15 @@ describe('signing and consent', () => {
     expect(mail.text).toContain(`${API}/petitions/${SLUG}/confirm?t=`);
     expect(mail.text).toContain(`${API}/petitions/${SLUG}/remove?t=`);
   });
+
+  it('shows the signer the name and display choice they are confirming', async () => {
+    // A re-sign can change both, so the address owner must see what the link will confirm.
+    await sign({ name: 'Grace Hopper', consent: true });
+    expect(sentEmails.at(-1)!.text).toContain('Name: Grace Hopper\nShown on the public list: yes');
+    await sign({ name: 'Alan Turing' });
+    expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no');
+    expect(sentEmails.at(-1)!.text).toContain('a newer email replaces');
+  });
 });
 
 describe('repeat signatures', () => {
