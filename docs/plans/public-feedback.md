@@ -16,7 +16,7 @@ The standard GitHub issue/PR path should be gated by this process. GitHub contri
 
 | # | Decision | Choice | Notes |
 |---|----------|--------|-------|
-| 1 | Worker location | Same repo (`workers/feedback/`) | Simpler for solo maintainer |
+| 1 | Worker location | Same repo (`workers/api/`; was `workers/feedback/`, renamed 2026-10-04 because one Worker serves petitions too) | Simpler for solo maintainer |
 | 2 | Turnstile | Include | Free, invisible, no user friction. Added to spam prevention stack |
 | 3 | API subdomain | `api.dangerousrobot.org` | Clean separation from static site |
 | 4 | Gating strategy | Strongly guided (templates + contact links) | Can switch to hard gated (Actions-based) later if needed |
@@ -105,7 +105,7 @@ Rationale:
 - Can programmatically create GitHub issues when submissions are approved
 - D1 is SQLite -- familiar, debuggable, exportable
 - The Worker is ~200 lines of code; the admin dashboard is ~100 more
-- Worker lives in `workers/feedback/` in this repo
+- Worker lives in `workers/api/` in this repo
 - `api.dangerousrobot.org` routes to the Worker
 
 ## 4. Admin Review Workflow
@@ -492,7 +492,7 @@ Response:
 9. Add "Report a problem" links to claim and source detail pages (deep-link to `/feedback?type=flag&page_url=...`)
 10. Add "Feedback" link in site footer
 11. Add Cloudflare Turnstile to the form
-10. Set up Cloudflare Worker project in `workers/feedback/`
+10. Set up Cloudflare Worker project in `workers/api/`
 11. Create D1 database with the submissions schema
 12. Implement the Worker: validation, input length limits, spam checks (honeypot, time, rate limit via KV, content heuristic, Turnstile server-side verification), CORS, D1 insert with bound parameters
 13. Configure `api.dangerousrobot.org` DNS to route to the Worker
@@ -645,7 +645,7 @@ The word "claim" is project-internal. Users think in terms of problems, opinions
 
 ## 9. Resolved Decisions
 
-1. **Worker location**: Same repo (`workers/feedback/`). Simpler for solo maintainer.
+1. **Worker location**: Same repo (`workers/api/`, renamed from `workers/feedback/` 2026-10-04). Simpler for solo maintainer.
 2. **Email provider**: Resend (free tier: 100/day). Set up in Phase 2 with admin CLI.
 3. **Formspree**: Skipped. Going straight to Cloudflare Workers + D1.
 4. **Turnstile**: Included. Form requires JS; `<noscript>` fallback provides an email contact alternative.

@@ -116,12 +116,12 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 
 | ID | Item | Files |
 |---|---|---|
-| W1 | Worker project with `wrangler.toml`, bound to the D1 database and the `api.dangerousrobot.org` route. Directory name is Needs item 9 | `workers/<name>/` (new) |
-| W2 | D1 schema and migration for `petitions` and `signatures` as in "Worker and data" | `workers/<name>/migrations/` (new) |
-| W3 | Routes: sign (JSON for the component, "check your email" page for a no-JS POST), confirm (GET landing, POST action returning the "signatory N" page), remove (GET landing, POST action returning the removed page), public JSON with 60-second cache; CORS limited to `https://dangerousrobot.org`. Result pages link back to `post_url#sign` | `workers/<name>/src/` |
-| W4 | Confirmation email through Resend with confirm and remove links; tokens stored as hashes | `workers/<name>/src/` |
-| W5 | Cron trigger: purge unconfirmed rows older than 7 days; null emails on closed petitions past retention | `workers/<name>/src/`, `wrangler.toml` |
-| W6 | Spam layers: honeypot, minimum fill time (3 seconds), per-IP rate limit on a salted hash (5 sign POSTs per IP hash per minute, placeholder in Needs item 6); closed petitions refuse signatures | `workers/<name>/src/` |
+| W1 | Worker project with `wrangler.toml`, bound to the D1 database and the `api.dangerousrobot.org` route | `workers/api/` (new) |
+| W2 | D1 schema and migration for `petitions` and `signatures` as in "Worker and data" | `workers/api/migrations/` (new) |
+| W3 | Routes: sign (JSON for the component, "check your email" page for a no-JS POST), confirm (GET landing, POST action returning the "signatory N" page), remove (GET landing, POST action returning the removed page), public JSON with 60-second cache; CORS limited to `https://dangerousrobot.org`. Result pages link back to `post_url#sign` | `workers/api/src/` |
+| W4 | Confirmation email through Resend with confirm and remove links; tokens stored as hashes | `workers/api/src/` |
+| W5 | Cron trigger: purge unconfirmed rows older than 7 days; null emails on closed petitions past retention | `workers/api/src/`, `wrangler.toml` |
+| W6 | Spam layers: honeypot, minimum fill time (3 seconds), per-IP rate limit on a salted hash (5 sign POSTs per IP hash per minute, placeholder in Needs item 6); closed petitions refuse signatures | `workers/api/src/` |
 
 ### S. Site
 
@@ -142,8 +142,8 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 
 Account steps (about an hour):
 
-1. Cloudflare: create the D1 database (name is Needs item 9) and add the `api` DNS record for `api.dangerousrobot.org`.
-2. Cloudflare: set the Worker secrets `RESEND_API_KEY` and `TOKEN_SALT`, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist).
+1. Done 2026-10-04: D1 database `dr-api` created in region WNAM (`database_id` `8594b5ae-cfeb-470c-b0cd-8509df1fe108`, for W1's `wrangler.toml`). No manual `api` DNS record: declare `api.dangerousrobot.org` as a Worker custom domain in `wrangler.toml` and the deploy creates the record and certificate.
+2. Cloudflare: set the Worker secrets `RESEND_API_KEY` and `TOKEN_SALT`, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
 3. Resend: create the account and verify `dangerousrobot.org` (SPF and DKIM records added in Cloudflare DNS).
 4. Resend: choose the sender address (`pledge@` or `no-reply@dangerousrobot.org`).
 
@@ -153,11 +153,11 @@ Copy and policy:
 6. Set the retention and rate-limit numbers (placeholders: 7 days for unconfirmed rows, 12 months after close for emails, 5 sign POSTs per IP hash per minute).
 7. Public name format: full name, or first name plus last initial.
 8. Rate-limit response for the sixth POST in a minute from one IP: 429, or 200 with no row (no signal to bots).
-9. Worker directory name and D1 database name (written `<db>` below until chosen). `public-feedback.md` Decisions table, Worker location, says `workers/feedback/`; one Worker will serve petitions and, later, feedback, so a neutral name may fit better. Pending; record the answer in both plans.
+9. Decided 2026-10-04: Worker directory `workers/api/`, D1 database `dr-api` (one Worker serves petitions and, later, feedback). Recorded in `public-feedback.md` Decisions table, Worker location.
 
 ## Testing
 
-Oracles are a `wrangler d1 execute <db> --command "..."` query or a `curl` against the Worker, not a dashboard look.
+Oracles are a `wrangler d1 execute dr-api --command "..."` query or a `curl` against the Worker, not a dashboard look.
 
 | Area | Action | Expected | Artifact |
 |---|---|---|---|
