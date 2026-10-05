@@ -943,7 +943,7 @@ def claim_refresh(
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
-        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
+        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -992,7 +992,7 @@ def claim_refresh(
 
     # Branch B: analyst failed (no blocked_reason, no analyst_output).
     if vr.analyst_output is None:
-        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
+        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
         try:
             inherited_topics = [Category(t) for t in template.topics] if template else []
         except ValueError:
@@ -1048,7 +1048,7 @@ def claim_refresh(
     else:
         title_ok, title_reason = True, None
     if not title_ok:
-        source_ids = vr.cached_source_ids + _write_source_files(vr.source_files, root)
+        source_ids = list(dict.fromkeys(vr.cached_source_ids + _write_source_files(vr.source_files, root)))
         try:
             inherited_topics = [Category(t) for t in template.topics]
         except ValueError:

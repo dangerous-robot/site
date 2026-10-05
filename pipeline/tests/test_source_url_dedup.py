@@ -11,7 +11,14 @@ import pytest
 
 from ingestor.models import SourceFile, SourceFrontmatter
 from orchestrator.persistence import build_source_url_index, load_source_dict
-from orchestrator.pipeline import VerifyConfig, _apply_url_dedup, _ingest_urls
+from common.models import SubQuestion
+from orchestrator.pipeline import (
+    VerifyConfig,
+    _apply_url_dedup,
+    _collapse_equivalent_urls,
+    _ingest_urls,
+    _invert_addresses,
+)
 from common.utils import slug_from_url
 
 
@@ -199,6 +206,47 @@ class TestApplyUrlDedup:
         assert len(cached) == 1
         _url, source_id, _sd = cached[0]
         assert source_id == url_index["https://example.com/known"]
+
+    def test_apply_url_dedup_matches_canonical_form(self, tmp_path: Path) -> None:
+        """www., trailing slash and tracking params still hit the file on disk."""
+        _write_source_md(
+            tmp_path / "research" / "sources" / "2026" / "a.md",
+            url="https://x.com/a",
+        )
+        url_index = build_source_url_index(tmp_path)
+        urls = ["https://www.x.com/a/?utm_source=y"]
+
+        to_ingest, cached = _apply_url_dedup(urls, url_index, tmp_path)
+
+        assert to_ingest == []
+        assert [(u, sid) for u, sid, _ in cached] == [(urls[0], "2026/a")]
+
+
+class TestCollapseEquivalentUrls:
+    def test_later_equivalent_url_dropped_and_addresses_merged(self) -> None:
+        urls = ["https://x.com/a", "https://b.com/", "https://www.x.com/a/?utm_source=y"]
+        addresses = {
+            "https://x.com/a": ["sq1"],
+            "https://www.x.com/a/?utm_source=y": ["sq1", "sq2"],
+        }
+
+        kept = _collapse_equivalent_urls(urls, addresses)
+
+        assert kept == ["https://x.com/a", "https://b.com/"]
+        assert addresses["https://x.com/a"] == ["sq1", "sq2"]
+
+    def test_unparseable_url_kept_as_is(self) -> None:
+        assert _collapse_equivalent_urls(["not a url", "not a url"], {}) == ["not a url"]
+
+
+def test_invert_addresses_uses_source_addresses_over_disk_url() -> None:
+    """A cached source's on-disk url can differ from the researcher's URL."""
+    sub_questions = [SubQuestion(id="sq1", question="q?", rationale="r.")]
+    sources = [{"url": "https://x.com/a", "source_id": "2026/a", "addresses": ["sq1"]}]
+
+    coverage = _invert_addresses(sub_questions, {"https://www.x.com/a/": ["sq1"]}, sources)
+
+    assert coverage == {"sq1": ["2026/a"]}
 
 
 # --- target cap tests ---
