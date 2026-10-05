@@ -430,12 +430,13 @@ const websiteSchema = {
       clamp(var(--space-lg), 3vh, var(--space-xl));
   }
 
-  /* The robot, as a static watermark off the hero's right edge. Clipped by
-     .hero so it never widens the page. */
+  /* The robot, as a static watermark inside the hero's right gutter, on the
+     same right edge as the menu column below. Clipped by .hero so it never
+     widens the page. */
   .hero-logo-wrap {
     position: absolute;
     top: -2rem;
-    right: -2rem;
+    right: max(var(--gutter), calc((100% - var(--page-max)) / 2));
     width: clamp(240px, 32vw, 500px);
     aspect-ratio: 1;
     transform: rotate(-8deg);
@@ -1009,8 +1010,8 @@ const websiteSchema = {
 
   @media (max-width: 540px) {
     .hero-logo-wrap {
-      width: 72vw;
-      right: -24vw;
+      width: 56vw;
+      right: var(--gutter);
       top: -1rem;
     }
     /* On phones the mark sits behind the headline; fade it so the text stays clean. */
