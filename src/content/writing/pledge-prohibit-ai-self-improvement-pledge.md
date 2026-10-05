@@ -2,7 +2,6 @@
 title: Prohibit AI Self-Improvement Pledge
 description: Show your support for AI Safety.
 pubDate: 2026-10-05
-updatedDate: 2026-10-02
 author: Wade Hudson
 ai_assisted: true
 draft: false
