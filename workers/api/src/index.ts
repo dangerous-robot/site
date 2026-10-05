@@ -6,10 +6,9 @@ const MIN_FILL_MS = 3000;
 // An unconfirmed address gets at most one confirmation email per window, so the
 // form cannot be used to flood someone else's inbox.
 const RESEND_WINDOW_MS = 10 * 60_000;
-// Site-wide ceiling on addresses emailed per window. The per-IP limiter counts
-// per Cloudflare machine, so a script opening fresh connections slips past it;
-// this cap bounds how many strangers we can mail. Each address can still get one
-// email per RESEND_WINDOW_MS, since a re-send reuses its row.
+// Site-wide ceiling on confirmation emails per window, re-sends included. The
+// per-IP limiter counts per Cloudflare machine, so a script opening fresh
+// connections slips past it; this cap bounds how much mail the form can send.
 export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
@@ -52,6 +51,7 @@ export async function cleanup(env: Env, now = new Date()): Promise<void> {
   const cutoff = new Date(now.getTime() - UNCONFIRMED_TTL_DAYS * 86_400_000).toISOString();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM signatures WHERE confirmed_at IS NULL AND created_at < ?').bind(cutoff),
+    env.DB.prepare('DELETE FROM email_sends WHERE sent_at < ?').bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString()),
     env.DB.prepare(
       "UPDATE signatures SET email = NULL WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')",
     ),
@@ -116,12 +116,12 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (email.length > EMAIL_MAX || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return reply(request, env, 400, 'Please enter a valid email address.', petition.post_url);
   }
-  const showName = form.get('show_name') !== null;
+  // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
+  const showName = form.get('show_name') === 'on';
 
-  // Every email sent sets its row's created_at, so recent rows count recently emailed addresses.
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
   const now = Date.now();
-  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM signatures WHERE created_at > ?')
+  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends WHERE sent_at > ?')
     .bind(new Date(now - CAP_WINDOW_MS).toISOString())
     .first<{ n: number }>();
   if (recent!.n >= HOURLY_EMAIL_CAP) {
@@ -154,6 +154,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
       await env.DB.prepare('DELETE FROM signatures WHERE id = ?').bind(row.id).run();
       return reply(request, env, 502, 'We could not send the confirmation email. Please try again later.', petition.post_url);
     }
+    await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(new Date(now).toISOString()).run();
   }
   return checkEmail();
 }

@@ -161,7 +161,7 @@ Copy and policy:
 6. Decided 2026-10-04: unconfirmed rows purged after 7 days; emails deleted when a petition closes; 5 sign POSTs per IP per minute.
 7. Decided 2026-10-04: public name shown exactly as typed, only with the box checked.
 8. Decided 2026-10-04: the sixth POST in a minute gets 429 with a plain "try again in a minute" message.
-10. Decided 2026-10-04 (after the deployed test): a site-wide cap of 30 confirmation emails per hour; over it, `/sign` returns 429 "try again in an hour". The per-IP limiter counts per Cloudflare machine, so fresh connections slipped past it in production (15 spaced POSTs, all 200; over one connection, 429 from the 7th). The cap counts recently emailed addresses (rows by `created_at`), not individual sends; migration 0002 indexes `created_at`.
+10. Decided 2026-10-04 (after the deployed test): a site-wide cap of 30 confirmation emails per hour; over it, `/sign` returns 429 "try again in an hour". The per-IP limiter counts per Cloudflare machine, so fresh connections slipped past it in production (15 spaced POSTs, all 200; over one connection, 429 from the 7th). The cap counts recently emailed addresses (rows by `created_at`), not individual sends; migration 0002 indexes `created_at`. Changed 2026-10-05 after code review: re-sends reuse their row, so row counting let one script send unlimited re-sends; the cap now counts sends in the timestamp-only `email_sends` table (migration 0003), and the shared ceiling still lets 30 bogus sign-ups lock out real signers for an hour (accepted; ALTCHA is the response).
 9. Decided 2026-10-04: Worker directory `workers/api/`, D1 database `dr-api` (one Worker serves petitions and, later, feedback). Recorded in `public-feedback.md` Decisions table, Worker location.
 
 ## Testing

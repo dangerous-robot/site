@@ -47,6 +47,8 @@ interface SignOpts {
   name?: string;
   email?: string;
   consent?: boolean;
+  /** Raw show_name value, for clients that send something other than a checked box. */
+  showName?: string;
   honeypot?: string;
   elapsed?: number;
   json?: boolean;
@@ -62,6 +64,7 @@ function sign(o: SignOpts = {}): Promise<Response> {
     elapsed: String(o.elapsed ?? 10_000),
   });
   if (o.consent) body.set('show_name', 'on');
+  if (o.showName !== undefined) body.set('show_name', o.showName);
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'CF-Connecting-IP': o.ip ?? `10.0.0.${++ipCounter}`,
@@ -119,6 +122,12 @@ describe('signing and consent', () => {
       { email: 'yes@example.org', display_consent: 1 },
     ]);
     expect(rows.results.every((r) => typeof r.created_at === 'string')).toBe(true);
+  });
+
+  it('treats only a checked box as consent to show the name', async () => {
+    for (const value of ['', '0', 'false']) await sign({ email: `v${value}@example.org`, showName: value });
+    const rows = await env.DB.prepare('SELECT display_consent FROM signatures').all<{ display_consent: number }>();
+    expect(rows.results.map((r) => r.display_consent)).toEqual([0, 0, 0]);
   });
 
   it('never shows an email address in the public JSON', async () => {
@@ -302,10 +311,8 @@ describe('spam layers', () => {
   it('stops sending confirmation emails once the hourly cap is reached', async () => {
     const seed = (n: number, ageMs: number) =>
       env.DB.batch(
-        Array.from({ length: n }, (_, i) =>
-          env.DB.prepare(
-            'INSERT INTO signatures (petition_slug, name, email, created_at, token_hash) VALUES (?, ?, ?, ?, ?)',
-          ).bind(SLUG, 'Seed', `seed${ageMs}-${i}@example.org`, new Date(Date.now() - ageMs).toISOString(), `seed${ageMs}-${i}`),
+        Array.from({ length: n }, () =>
+          env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(new Date(Date.now() - ageMs).toISOString()),
         ),
       );
     await seed(HOURLY_EMAIL_CAP, 61 * 60_000);
@@ -315,7 +322,17 @@ describe('spam layers', () => {
     const res = await sign();
     expect(res.status).toBe(429);
     expect(sentEmails).toHaveLength(1);
-    expect(await rowCount()).toBe(2 * HOURLY_EMAIL_CAP);
+    expect(await rowCount()).toBe(1);
+  });
+
+  it('counts re-sends to one address toward the hourly cap', async () => {
+    for (let i = 0; i <= HOURLY_EMAIL_CAP; i++) {
+      // Age the row past the resend window so each POST is due a fresh email.
+      await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+      const res = await sign({ email: 'target@example.org' });
+      expect(res.status).toBe(i < HOURLY_EMAIL_CAP ? 200 : 429);
+    }
+    expect(sentEmails).toHaveLength(HOURLY_EMAIL_CAP);
   });
 
   it('refuses a browser POST from another origin', async () => {
@@ -352,6 +369,11 @@ describe('schema', () => {
     const names = cols.results.map((c) => c.name);
     expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash']);
   });
+
+  it('logs email sends by time alone', async () => {
+    const cols = await env.DB.prepare('PRAGMA table_info(email_sends)').all<{ name: string }>();
+    expect(cols.results.map((c) => c.name)).toEqual(['sent_at']);
+  });
 });
 
 describe('daily cleanup', () => {
@@ -362,6 +384,15 @@ describe('daily cleanup', () => {
     expect(await rowCount()).toBe(2);
     await cleanup(env, new Date(Date.now() + 8 * 86_400_000));
     expect(await rowCount()).toBe(1);
+  });
+
+  it('prunes the email send log once it falls outside the cap window', async () => {
+    await sign();
+    const sends = async () => (await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends').first<{ n: number }>())!.n;
+    await cleanup(env, new Date(Date.now() + 30 * 60_000));
+    expect(await sends()).toBe(1);
+    await cleanup(env, new Date(Date.now() + 61 * 60_000));
+    expect(await sends()).toBe(0);
   });
 
   it('deletes emails on closed petitions but keeps the signature', async () => {
