@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
+from analyst.citations import find_citation_references
 from common.models import Confidence, VerificationLevel
 
 from .models import LintIssue
@@ -33,6 +34,16 @@ CANONICAL_CLAIM_KEYS = {
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
 CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}
 CAPPED_CONFIDENCE_VALUES = {Confidence.MEDIUM.value, Confidence.HIGH.value}
+# Thresholds from analyst/instructions.md (verification_level rules).
+INDEPENDENT_SOURCES_REQUIRED = {
+    VerificationLevel.INDEPENDENTLY_VERIFIED.value: 1,
+    VerificationLevel.MULTIPLY_VERIFIED.value: 2,
+}
+CITATION_CHECKED_FIELDS = ("takeaway", "cap_rationale")
+CITATION_ISSUE_KINDS = {
+    "bracket": ("raw-citation-token", "raw citation token(s)"),
+    "numbered": ("numbered-source-reference", "numbered source reference(s)"),
+}
 PLACEHOLDER_PATHS = {"/login", "/signup", "/register"}
 PLACEHOLDER_DOMAINS = {"example.com", "example.org"}
 ENTITY_DIR_TO_TYPE = {
@@ -575,5 +586,87 @@ def check_unreferenced_entities(
                 severity="info",
                 message=f'entity "{eid}" is not referenced by any claim',
                 hint="add a claim for this entity or remove the entity file",
+            ))
+    return issues
+
+
+def check_raw_citation_tokens(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    claim_bodies: dict[str, str],
+) -> list[LintIssue]:
+    """Error on 【id】 tokens or "Source N" references in reader-facing claim text.
+
+    Neither means anything on the site. The analyst output is cleaned before
+    write (`analyst/citations.py`); this catches what the cleaner leaves
+    (out-of-range numbers) and anything edited in by hand.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        fields = {"body": claim_bodies.get(str(path), "")}
+        for key in CITATION_CHECKED_FIELDS:
+            value = fm.get(key)
+            if isinstance(value, str):
+                fields[key] = value
+        for field_name, text in fields.items():
+            found: dict[str, list[str]] = {}
+            for kind, token in find_citation_references(text):
+                found.setdefault(kind, []).append(token)
+            for kind, tokens in found.items():
+                check_id, label = CITATION_ISSUE_KINDS[kind]
+                issues.append(LintIssue(
+                    path=str(path),
+                    check_id=check_id,
+                    severity="error",
+                    message=f"{field_name} has {label}: " + ", ".join(tokens),
+                    hint="cite the source by its title in italics, e.g. *AWS Cloud Sustainability*",
+                ))
+    return issues
+
+
+def check_verification_level_pool(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    source_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Warn when `verification_level` needs more independent sources than the pool has.
+
+    `source_frontmatters` is keyed by source id ("2026/foo"). Effective
+    independence is the claim's `source_overrides` entry when it sets one,
+    else the source file's label, matching `src/lib/sourceQuality.ts`
+    (`countSourcesByIndependence`) so the warning agrees with the site's count.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        level = fm.get("verification_level")
+        required = INDEPENDENT_SOURCES_REQUIRED.get(level)
+        if required is None:
+            continue
+        overrides = {
+            o["source"]: o["independence"]
+            for o in fm.get("source_overrides") or []
+            if isinstance(o, dict) and isinstance(o.get("source"), str) and o.get("independence")
+        }
+        refs = [r for r in fm.get("sources") or [] if isinstance(r, str)]
+        independent = sum(
+            1 for ref in refs
+            if overrides.get(ref, source_frontmatters.get(ref, {}).get("independence"))
+            == "independent"
+        )
+        if independent < required:
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="verification-level-pool-mismatch",
+                severity="warning",
+                message=(
+                    f"verification_level `{level}` needs {required} independent "
+                    f"source(s); the pool has {independent}"
+                ),
+                hint=(
+                    "lower `verification_level` to match the pool, or correct the "
+                    "source's `independence` / the claim's `source_overrides`"
+                ),
             ))
     return issues

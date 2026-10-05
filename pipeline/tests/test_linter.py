@@ -23,10 +23,12 @@ from linter.checks import (
     check_placeholder_website,
     check_published_criterion,
     check_published_review_signoff,
+    check_raw_citation_tokens,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
     check_unreferenced_entities,
     check_unreferenced_sources,
+    check_verification_level_pool,
 )
 
 
@@ -432,3 +434,112 @@ class TestFormatSummaryReport:
         warning_pos = report.index("small-warning")
         info_pos = report.index("minor-info")
         assert error_pos < warning_pos < info_pos
+
+
+class TestRawCitationTokens:
+    CLAIM = _p("research/claims/foo/bar.md")
+
+    def _check(self, body: str = "", **fm):
+        return check_raw_citation_tokens(
+            [self.CLAIM], {str(self.CLAIM): fm}, {str(self.CLAIM): body}
+        )
+
+    def test_raw_citation_token_is_error(self):
+        issues = self._check("Renewable hosting is unconfirmed【2026/631793】.")
+        assert len(issues) == 1
+        assert issues[0].check_id == "raw-citation-token"
+        assert issues[0].severity == "error"
+        assert "【2026/631793】" in issues[0].message
+
+    @pytest.mark.parametrize("body", [
+        "Brave says so (Source 1).",
+        "Brave says so (Source 2).",
+        "AWS reports it (Sources 4, 8).",
+        "As sources 2 and 4 show, it is unclear.",
+    ])
+    def test_numbered_source_reference_is_error(self, body):
+        issues = self._check(body)
+        assert len(issues) == 1
+        assert issues[0].check_id == "numbered-source-reference"
+        assert issues[0].severity == "error"
+
+    def test_numbered_source_reference_in_takeaway(self):
+        issues = self._check("Clean body.", takeaway="Brave says so (Source 1).")
+        assert len(issues) == 1
+        assert issues[0].check_id == "numbered-source-reference"
+        assert "takeaway" in issues[0].message
+
+    def test_numbered_source_reference_in_cap_rationale(self):
+        issues = self._check("Clean body.", cap_rationale="Only Source 2 is first-party.")
+        assert [i.check_id for i in issues] == ["numbered-source-reference"]
+        assert "cap_rationale" in issues[0].message
+
+    def test_clean_body_no_issue(self):
+        body = "Brave cites *AWS Cloud Sustainability* for its hosting."
+        assert self._check(body, takeaway="No public evidence.") == []
+
+    def test_open_source_3d_no_issue(self):
+        assert self._check("An open Source 3D printer, mentioned by the source 2 weeks ago.") == []
+
+
+class TestVerificationLevelPool:
+    CLAIM = _p("research/claims/foo/bar.md")
+    SOURCES = {
+        "2026/brave-home": {"independence": "first-party"},
+        "2026/brave-transparency": {"independence": "first-party"},
+        "2026/aws-report": {"independence": "independent"},
+        "2026/press": {"independence": "independent"},
+    }
+
+    def _check(self, level, sources, overrides=None):
+        fm = {"verification_level": level, "sources": sources}
+        if overrides is not None:
+            fm["source_overrides"] = overrides
+        return check_verification_level_pool(
+            [self.CLAIM], {str(self.CLAIM): fm}, self.SOURCES
+        )
+
+    def test_level_claims_independent_with_none_in_pool(self):
+        issues = self._check(
+            "independently-verified", ["2026/brave-home", "2026/brave-transparency"]
+        )
+        assert len(issues) == 1
+        assert issues[0].check_id == "verification-level-pool-mismatch"
+        assert issues[0].severity == "warning"
+
+    def test_one_independent_source_supports_independently_verified(self):
+        assert self._check(
+            "independently-verified", ["2026/brave-home", "2026/aws-report"]
+        ) == []
+
+    def test_override_removes_only_independent_source(self):
+        overrides = [{
+            "source": "2026/aws-report", "independence": "first-party", "reason": "r",
+        }]
+        issues = self._check(
+            "independently-verified", ["2026/brave-home", "2026/aws-report"], overrides
+        )
+        assert [i.check_id for i in issues] == ["verification-level-pool-mismatch"]
+
+    def test_override_can_supply_independent_source(self):
+        overrides = [{
+            "source": "2026/brave-home", "independence": "independent", "reason": "r",
+        }]
+        assert self._check(
+            "independently-verified", ["2026/brave-home"], overrides
+        ) == []
+
+    def test_multiply_verified_with_one_independent_warns(self):
+        issues = self._check(
+            "multiply-verified", ["2026/brave-home", "2026/aws-report"]
+        )
+        assert [i.check_id for i in issues] == ["verification-level-pool-mismatch"]
+
+    def test_multiply_verified_with_two_independent_no_issue(self):
+        assert self._check(
+            "multiply-verified", ["2026/aws-report", "2026/press"]
+        ) == []
+
+    def test_lower_levels_not_checked(self):
+        assert self._check("claimed", ["2026/brave-home"]) == []
+        assert self._check("self-reported", ["2026/brave-home"]) == []

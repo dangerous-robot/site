@@ -45,6 +45,19 @@ def has_citation_reference(text: str) -> bool:
     return bool(_CITATION.search(text))
 
 
+def find_citation_references(text: str) -> list[tuple[str, str]]:
+    """Every citation reference in ``text`` as ``(kind, matched text)``.
+
+    ``kind`` is ``"bracket"`` for 【id】 runs and ``"numbered"`` for "Source N"
+    forms. Shares the cleaner's pattern so `dr lint` flags exactly what the
+    cleaner would rewrite.
+    """
+    return [
+        ("bracket" if m.lastgroup == "bracket" else "numbered", m[0].strip())
+        for m in _CITATION.finditer(text or "")
+    ]
+
+
 def _join_titles(titles: list[str]) -> str:
     italic = [f"*{t}*" for t in titles]
     if len(italic) <= 2:
