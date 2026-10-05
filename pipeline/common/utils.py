@@ -25,3 +25,19 @@ def slug_from_url(url: str) -> str | None:
     if not segment:
         return None
     return slugify(segment)
+
+
+def host_token(url: str) -> str:
+    """Slug-safe host prefix used to disambiguate colliding source slugs.
+
+    Drops ``www.`` and the last label: ``aws.amazon.com`` gives
+    ``aws-amazon``, ``brave.com`` gives ``brave``. Returns "" when the URL
+    has no host.
+    """
+    host = (urlparse(url).hostname or "").lower()
+    if host.startswith("www."):
+        host = host[4:]
+    labels = [label for label in host.split(".") if label]
+    if len(labels) > 1:
+        labels = labels[:-1]
+    return slugify("-".join(labels))

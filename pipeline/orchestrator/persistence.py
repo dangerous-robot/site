@@ -25,7 +25,8 @@ from common.models import (
     Verdict,
 )
 from common.source_classification import classify_source_type, independence_for_source_type
-from common.utils import slugify
+from common.canonical_url import canonicalize
+from common.utils import host_token, slugify
 from ingestor.models import SourceFile
 
 logger = logging.getLogger(__name__)
@@ -130,6 +131,83 @@ def load_source_dict(source_id: str, repo_root: Path) -> dict | None:
         "kind": kind,
         "independence": independence,
     }
+
+
+def _same_resource(a: str | None, b: str | None) -> bool:
+    """True when two URLs canonicalize equal; malformed URLs never match."""
+    if not a or not b:
+        return False
+    try:
+        return canonicalize(a) == canonicalize(b)
+    except ValueError:
+        return False
+
+
+def _url_on_disk(path: Path) -> str | None:
+    try:
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+    except (ValueError, yaml.YAMLError, OSError):
+        return None
+    url = fm.get("url")
+    return str(url) if url else None
+
+
+def _slug_candidates(slug: str, url: str):
+    yield slug
+    token = host_token(url)
+    base = f"{token}-{slug}" if token and not slug.startswith(f"{token}-") else slug
+    if base != slug:
+        yield base
+    n = 2
+    while True:
+        yield f"{base}-{n}"
+        n += 1
+
+
+def _resolve_one_slug(
+    sf: SourceFile, repo_root: Path, assigned: dict[str, str]
+) -> str:
+    """Pick the first candidate slug that is free or already names this URL.
+
+    ``assigned`` maps source ids handed out earlier in the same batch to
+    their URLs, so two new pages in one run never share an id.
+    """
+    url = sf.frontmatter.url
+    sources_dir = repo_root / "research" / "sources" / str(sf.year)
+    for candidate in _slug_candidates(sf.slug, url):
+        source_id = f"{sf.year}/{candidate}"
+        if source_id in assigned:
+            if _same_resource(assigned[source_id], url):
+                return candidate
+            continue
+        path = sources_dir / f"{candidate}.md"
+        if not path.exists():
+            return candidate
+        if _same_resource(_url_on_disk(path), url):
+            return candidate
+    raise AssertionError("unreachable: candidate generator is infinite")
+
+
+def resolve_source_slugs(
+    items: list[tuple[str, SourceFile]], repo_root: Path
+) -> None:
+    """Set each ``sf.slug`` so its source id names a file for that URL.
+
+    Per item, against files on disk and ids already assigned in this batch:
+    a free slug is kept; a slug whose file has the same canonical URL is
+    reused (same page); otherwise ``<host>-<slug>`` is tried, then
+    ``<host>-<slug>-2``, ``-3`` and so on. Existing files are never touched.
+    """
+    assigned: dict[str, str] = {}
+    for _url, sf in items:
+        resolved = _resolve_one_slug(sf, repo_root, assigned)
+        if resolved != sf.slug:
+            logger.info(
+                "Source slug %s/%s is taken by a different URL; using %s for %s",
+                sf.year, sf.slug, resolved, sf.frontmatter.url,
+            )
+            sf.slug = resolved
+        assigned[f"{sf.year}/{sf.slug}"] = sf.frontmatter.url
 
 
 def _write_source_files(
