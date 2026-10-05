@@ -62,13 +62,21 @@ class IngestorDeps:
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
-# the archived page's own URL.
-_ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[^/]*/)?(https?://.+)")
+# the archived page's own URL, with or without its scheme.
+_ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[0-9*]+[a-z_]*/)?(.+)")
+_SCHEME = re.compile(r"^https?://", re.IGNORECASE)
+
+
+def _as_https(url: str) -> str:
+    return "https://" + _SCHEME.sub("", url)
 
 
 def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
+    # Scheme is ignored: Wayback often holds only the http capture, and the
+    # live fetch of an http:// URL may be upgraded to https.
     archived = _ARCHIVE_COPY.match(fetched)
-    return same_resource(archived.group(1) if archived else fetched, url)
+    page = archived.group(1) if archived else fetched
+    return same_resource(_as_https(page), _as_https(url))
 
 
 def fetch_failure_reason(deps: IngestorDeps) -> str | None:

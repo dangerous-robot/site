@@ -99,6 +99,9 @@ async def _fetch_one(requested_url: str, fetched: str) -> RunContext[IngestorDep
         "https://web.archive.org/web/20250315000000/https://brave.com/transparency/",
         "http://web.archive.org/web/20250315id_/https://www.brave.com/transparency",
         "https://web.archive.org/web/https://brave.com/transparency/",
+        "https://web.archive.org/web/20250315000000/http://brave.com/transparency/",
+        "https://web.archive.org/web/2025/brave.com/transparency",
+        "http://brave.com/transparency/",
     ],
 )
 @pytest.mark.asyncio
@@ -112,6 +115,7 @@ async def test_requested_page_or_its_archive_copy_counts(fetched: str) -> None:
     [
         "https://brave.com/privacy/",
         "https://web.archive.org/web/2025/https://brave.com/privacy/",
+        "https://web.archive.org/web/2025/brave.com/privacy/",
     ],
 )
 @pytest.mark.asyncio
