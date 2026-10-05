@@ -16,9 +16,9 @@ export const PETITION_API: string = import.meta.env.PUBLIC_PETITION_API ?? 'http
  * Reads a petition from the Worker. Resolves null on any failure (Worker down,
  * row not created yet, timeout), so a page can build and render without it.
  */
-export async function fetchPetitionState(api: string, slug: string, timeoutMs?: number): Promise<PetitionState | null> {
+export async function fetchPetitionState(slug: string): Promise<PetitionState | null> {
   try {
-    const res = await fetch(`${api}/petitions/${slug}`, timeoutMs ? { signal: AbortSignal.timeout(timeoutMs) } : undefined);
+    const res = await fetch(`${PETITION_API}/petitions/${slug}`, { signal: AbortSignal.timeout(3000) });
     return res.ok ? await res.json() : null;
   } catch {
     return null;
@@ -26,8 +26,13 @@ export async function fetchPetitionState(api: string, slug: string, timeoutMs?: 
 }
 
 /** Same format as formatPostDate in src/lib/writing.ts. */
-export function formatClosedDate(iso: string): string {
+function formatClosedDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+}
+
+/** "on March 3, 2027" beside the Closed chip; empty while open or undated. */
+export function closedText(s: PetitionState): string {
+  return s.status === 'closed' && s.closed_at ? `on ${formatClosedDate(s.closed_at)}` : '';
 }
 
 /** Thousands separators so a large tally reads at a glance. */

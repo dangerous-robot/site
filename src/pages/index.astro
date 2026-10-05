@@ -5,7 +5,7 @@ import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
 import { navLabel } from '../lib/nav';
-import { PETITION_API, fetchPetitionState, petitionSummary } from '../lib/petition';
+import { fetchPetitionState, petitionSummary } from '../lib/petition';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -132,7 +132,7 @@ const writing = await getCollection('writing');
 async function petitionTally(href: string): Promise<{ slug: string; text: string } | undefined> {
   const slug = writing.find((p) => `/writing/${p.id}` === href)?.data.petition;
   if (!slug) return undefined;
-  const state = await fetchPetitionState(PETITION_API, slug, 3000);
+  const state = await fetchPetitionState(slug);
   return state ? { slug, text: petitionSummary(state) } : undefined;
 }
 
@@ -382,10 +382,10 @@ const websiteSchema = {
   // The tally chip is a build-time snapshot that ages between deploys; refresh
   // it in place. A failed fetch leaves the snapshot. No chip is added when the
   // build had none, so the menu never shifts after load.
-  import { PETITION_API, fetchPetitionState, petitionSummary } from '../lib/petition';
+  import { fetchPetitionState, petitionSummary } from '../lib/petition';
 
   for (const chip of document.querySelectorAll<HTMLElement>('[data-petition-tally]')) {
-    fetchPetitionState(PETITION_API, chip.dataset.petitionTally!).then((s) => {
+    fetchPetitionState(chip.dataset.petitionTally!).then((s) => {
       if (s) chip.textContent = petitionSummary(s);
     });
   }

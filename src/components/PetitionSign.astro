@@ -6,8 +6,8 @@
 // names from it.
 import {
   PETITION_API,
+  closedText,
   fetchPetitionState,
-  formatClosedDate,
   formatCount,
   signatureWord,
   statusLabel,
@@ -22,11 +22,12 @@ const { slug, statement } = Astro.props;
 
 // Build-time snapshot for readers without JS. The Worker may be down or the
 // petition row not created yet; the build must not fail on that.
-const state = await fetchPetitionState(PETITION_API, slug, 3000);
+const state = await fetchPetitionState(slug);
 const closed = state?.status === 'closed';
+const closedLine = state ? closedText(state) : '';
 const names = state?.names ?? [];
 ---
-<section id="sign" class="petition" data-api={PETITION_API} data-slug={slug}>
+<section id="sign" class="petition" data-slug={slug}>
   <h2>Add your signature</h2>
   {statement && <p class="petition-statement">{statement}</p>}
 
@@ -43,8 +44,8 @@ const names = state?.names ?? [];
       </p>
       <p class="petition-tally__status" hidden={!state}>
         <span class="chip petition-tally__chip" data-status={state?.status} data-status-label>{state && statusLabel(state)}</span>
-        <time class="petition-tally__closed" data-closed-at datetime={state?.closed_at ?? undefined} hidden={!(closed && state?.closed_at)}>
-          {closed && state?.closed_at && `on ${formatClosedDate(state.closed_at)}`}
+        <time class="petition-tally__closed" data-closed-at datetime={state?.closed_at ?? undefined} hidden={!closedLine}>
+          {closedLine}
         </time>
       </p>
     </div>
@@ -86,16 +87,14 @@ const names = state?.names ?? [];
       <ul class="petition-roll" id="petition-roll" data-names>{names.map((name) => <li>{name}</li>)}</ul>
     </div>
     {/* Shown by the script only when the roll overflows its cap; without JS the whole roll is visible. */}
-    <button type="button" class="petition-roll__toggle" data-roll-toggle aria-expanded="false" aria-controls="petition-roll" hidden>
-      Show all {formatCount(names.length)} names
-    </button>
+    <button type="button" class="petition-roll__toggle" data-roll-toggle aria-expanded="false" aria-controls="petition-roll" hidden></button>
   </div>
 </section>
 
 <script>
   import {
+    closedText,
     fetchPetitionState,
-    formatClosedDate,
     formatCount,
     signatureWord,
     statusLabel,
@@ -104,7 +103,7 @@ const names = state?.names ?? [];
 
   const section = document.querySelector<HTMLElement>('section.petition');
   if (section) {
-    const { api, slug } = section.dataset;
+    const { slug } = section.dataset;
     const form = section.querySelector<HTMLFormElement>('.petition-form')!;
     const status = section.querySelector<HTMLElement>('.petition-status')!;
     const countEl = section.querySelector<HTMLElement>('[data-count]')!;
@@ -123,9 +122,6 @@ const names = state?.names ?? [];
     const loadedAt = performance.now();
     const elapsedInput = form.querySelector<HTMLInputElement>('input[name="elapsed"]')!;
 
-    let rollSize = namesList.children.length;
-    const showAllText = () => `Show all ${formatCount(rollSize)} names`;
-
     // Clip a long roll and offer the rest behind a button. Measured, not
     // counted: whether ~150 names overflow depends on name length and width.
     // A roll the reader has opened stays open.
@@ -136,14 +132,13 @@ const names = state?.names ?? [];
       namesBox.classList.toggle('is-capped', overflows && !expanded);
       toggle.hidden = !overflows;
       if (!overflows) toggle.setAttribute('aria-expanded', 'false');
-      toggle.textContent = overflows && expanded ? 'Show fewer names' : showAllText();
+      toggle.textContent =
+        overflows && expanded ? 'Show fewer names' : `Show all ${formatCount(namesList.children.length)} names`;
     }
 
     toggle.addEventListener('click', () => {
-      const expanded = toggle.getAttribute('aria-expanded') === 'true';
-      namesBox.classList.toggle('is-capped', expanded);
-      toggle.setAttribute('aria-expanded', String(!expanded));
-      toggle.textContent = expanded ? showAllText() : 'Show fewer names';
+      toggle.setAttribute('aria-expanded', String(toggle.getAttribute('aria-expanded') !== 'true'));
+      capRoll();
     });
 
     // Re-measure when the roll's width changes (phone rotation, font-size
@@ -165,16 +160,13 @@ const names = state?.names ?? [];
       unitEl.textContent = signatureWord(s.count);
       unitEl.removeAttribute('aria-hidden');
 
-      const closed = s.status === 'closed';
       chip.textContent = statusLabel(s);
       chip.dataset.status = s.status;
-      if (closed && s.closed_at) {
-        closedAt.dateTime = s.closed_at;
-        closedAt.textContent = `on ${formatClosedDate(s.closed_at)}`;
-      }
-      closedAt.hidden = !(closed && s.closed_at);
+      closedAt.textContent = closedText(s);
+      closedAt.dateTime = s.closed_at ?? '';
+      closedAt.hidden = !closedAt.textContent;
       statusRow.hidden = false;
-      form.hidden = closed;
+      form.hidden = s.status === 'closed';
 
       namesList.replaceChildren(
         ...s.names.map((name) => {
@@ -183,13 +175,12 @@ const names = state?.names ?? [];
           return li;
         }),
       );
-      rollSize = s.names.length;
-      hiddenSigners.hidden = !(s.count > rollSize);
-      namesBox.hidden = rollSize === 0;
+      hiddenSigners.hidden = !(s.count > s.names.length);
+      namesBox.hidden = s.names.length === 0;
       capRoll();
     }
 
-    fetchPetitionState(api!, slug!).then((s) => s && render(s));
+    fetchPetitionState(slug!).then((s) => s && render(s));
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -325,7 +316,7 @@ const names = state?.names ?? [];
      color. */
   .petition-form :where(input[type='text'], input[type='email'], button) {
     padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border);
+    border: 1px solid;
     border-radius: var(--radius-md);
     color: var(--color-text);
     font-size: var(--font-size-sm);
