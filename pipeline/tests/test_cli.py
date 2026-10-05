@@ -967,3 +967,48 @@ class TestOnboardCLIPhaseB:
         assert result.exit_code == 0, f"unexpected exit: {result.output}"
         # Status accepted; templates_applied non-zero (templates.yaml references this subject).
         assert "accepted" in result.output.lower() or "rejected" not in result.output.lower()
+
+
+def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tmp_path) -> None:
+    from unittest.mock import patch as _patch
+
+    from click.testing import CliRunner
+
+    from analyst.citations import clean_citations
+    from orchestrator.cli import main
+
+    research = tmp_path / "research"
+    (research / "entities" / "companies").mkdir(parents=True)
+    (research / "entities" / "companies" / "acme.md").write_text(
+        "---\nname: Acme\ntype: company\n---\n", encoding="utf-8"
+    )
+    (research / "claims" / "acme").mkdir(parents=True)
+    (research / "claims" / "acme" / "green.md").write_text(
+        "---\ntitle: Acme is green\nentity: companies/acme\nsources:\n- 2026/foo\n---\nBody.\n",
+        encoding="utf-8",
+    )
+    (research / "sources" / "2026").mkdir(parents=True)
+    (research / "sources" / "2026" / "foo.md").write_text(
+        "---\nurl: https://acme.com/foo\ntitle: Foo Report\npublisher: Acme\n"
+        "kind: report\nsummary: About foo.\n---\nFoo body.\n",
+        encoding="utf-8",
+    )
+
+    captured: list[list[dict]] = []
+
+    async def _fake_analyse(entity_name, claim_text, source_dicts, cfg):
+        captured.append(source_dicts)
+        return None, None
+
+    with _patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
+        CliRunner().invoke(
+            main,
+            ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],
+        )
+
+    [sources] = captured
+    assert sources[0]["source_id"] == "2026/foo"
+    assert sources[0]["independence"]
+    cleaned, unresolved = clean_citations("Acme says so 【2026/foo】.", sources)
+    assert unresolved == []
+    assert "*Foo Report*" in cleaned

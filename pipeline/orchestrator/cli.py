@@ -453,11 +453,11 @@ def step_analyze(
     analyst_model = ctx.obj.get("analyst_model") or ctx.obj["model"]
     _check_provider_api_keys(analyst_model)
 
-    from common.content_loader import load_entity, load_source, resolve_repo_root
+    from common.content_loader import load_entity, resolve_repo_root
     from common.frontmatter import parse_frontmatter
     from common.templates import get_template, load_templates, render_claim_text
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
-    from orchestrator.persistence import _write_claim_file, verdict_write_kwargs
+    from orchestrator.persistence import _write_claim_file, load_source_dict, verdict_write_kwargs
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -488,21 +488,15 @@ def step_analyze(
         claim_text = fm["title"]
 
     # Load sources
+    # Same shape the main pipeline gives the analyst: ``source_id`` lets
+    # year/slug citation tokens resolve, ``independence`` feeds the prompt.
     source_dicts: list[dict] = []
     for sid in fm.get("sources") or []:
-        try:
-            src_fm, src_body = load_source(sid, root)
-            source_dicts.append({
-                "title": src_fm["title"],
-                "publisher": src_fm["publisher"],
-                "summary": src_fm["summary"],
-                "key_quotes": src_fm.get("key_quotes") or [],
-                "body": src_body,
-                "slug": sid.split("/")[-1],
-                "url": src_fm.get("url", ""),
-            })
-        except FileNotFoundError:
+        sd = load_source_dict(sid, root)
+        if sd is None:
             click.echo(f"Warning: source '{sid}' not found, skipping", err=True)
+            continue
+        source_dicts.append(sd)
 
     cfg = VerifyConfig(model=ctx.obj["model"], **_ctx_per_agent_kwargs(ctx))
 
