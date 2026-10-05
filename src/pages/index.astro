@@ -286,11 +286,11 @@ const websiteSchema = {
       </div>
     </section>
 
-    <!-- The visible menu: all eight destinations in one list, above the fold at 1440x900. -->
+    <!-- The visible menu: every destination in one list, above the fold at 1440x900. -->
     <nav class="start" id="start" aria-labelledby="start-title" tabindex="-1">
       <div class="start__inner">
         <h2 class="start__title" id="start-title">Where to start</h2>
-        <ul class="menu" role="list">
+        <ul class="menu" role="list" style={`--menu-rows: ${Math.ceil(menu.length / 2)}`}>
           {menu.map((m) => (
             <li class="menu__item">
               <a class="menu__link" href={m.href}>
@@ -567,12 +567,14 @@ const websiteSchema = {
     border-radius: var(--radius-sm);
   }
 
-  /* Two columns, filled column-first (1–4 left, 5–7 right), so the list reads
-     top to bottom like a contents page rather than across rows. */
+  /* Two columns, filled column-first (first half left, the rest right), so the
+     list reads top to bottom like a contents page rather than across rows.
+     --menu-rows is set from the entry count, so adding an entry cannot open a
+     third column. */
   @media (min-width: 761px) {
     .menu {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      grid-template-rows: repeat(4, auto);
+      grid-template-rows: repeat(var(--menu-rows), auto);
       grid-auto-flow: column;
       column-gap: clamp(var(--space-xl), 5vw, 5rem);
     }

@@ -1,7 +1,7 @@
 # The refocus: foundation (1.0.0-beta.3) and pull-forwards (1.0.0-beta.4)
 
 **Status**: `in progress` (beta.3 deployed and tagged 2026-10-04; beta.4 implemented, verified except item 24; see both Status checklists)
-**Last updated**: 2026-10-04
+**Last updated**: 2026-10-05
 **Source of truth**: the discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (Decisions Log; "07 — Early Roadmap"). Every copy string those records decided is reproduced here verbatim, so this plan can be implemented without reading them.
 
 The foundation (`1.0.0-beta.3`) is the first release of the refocus, the first that reflects the 2026-10-01 to 2026-10-03 discovery decisions. It is copy and trust work on the repo as it stands: no new content type, no schema change beyond two optional fields, no URL change, no redirect. It ships quietly (no announcement). The chatbot guide and the soft public launch are a later beta, planned separately when it opens.

@@ -15,7 +15,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [x] Needs from Brandon: copy, policy and naming items 5 to 9
 - [x] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers (`workers/api/`, 25 tests in `workers/api/test/`)
 - [x] S1 to S3: `petition` field, Sveltia mirror, sign block on the post (`src/components/PetitionSign.astro`, shared text in `src/lib/petition.ts`)
-- [x] S4: pledge post wired up (`petition: prohibit-ai-self-improvement`, published 2026-10-05; Brandon dropped the "at ..." ending instead of linking `#sign`)
+- [x] S4: pledge post wired up (`petition: prohibit-ai-self-improvement`, published 2026-10-05; the editor's note links the sign form at `#sign`, added under `refocus-foundation.md` G1)
 - [x] O1: runbook section "Petitions: open, close, export, remove"; architecture doc `docs/architecture/petitions.md`
 - [x] Testing table run against a deployed Worker, 2026-10-05, except Export and No-JS path (deferred to `docs/UNSCHEDULED.md`, Petition Worker follow-ups). Fixes found on the way: hourly email cap, review fixes W1 to W4, self-hosted fonts, Cloudflare analytics and email obfuscation turned off
 - [x] `refocus-foundation.md` G1 unblocked (pledge post live with the sign block, `draft: false`)
@@ -180,7 +180,7 @@ Oracles are a `wrangler d1 execute dr-api --command "..."` query or a `curl` aga
 | Spam: honeypot | POST with the hidden field filled | 200 (no signal to bots) and no row inserted | query count unchanged |
 | Spam: too fast | POST with timestamp under 3 seconds old | 200, no row | same |
 | Spam: rate limit | POSTs from one IP over a single connection (`curl --next`) | 429 within a few posts past five (Needs item 8); counts are per machine, so separate connections may all get 200 | curl output |
-| Spam: hourly email cap | Seed 30 rows created in the last hour, then sign | 429, no email sent (Needs item 10); a unit test covers it, so no production run needed | test output |
+| Spam: hourly email cap | Seed 30 `email_sends` rows in the last hour, then sign | 429, no email sent (Needs item 10); a unit test covers it, so no production run needed | test output |
 | Spam: unconfirmed never counts | Sign, do not confirm | Count unchanged; row has null `confirmed_at`; gone after the 7-day purge (run the cron handler with `wrangler dev --test-scheduled`) | query before and after |
 | Close | Set `status = closed`, POST a signature | Worker refuses with a clear message; page shows "Closed on [date], N signatories" | curl plus screenshot |
 | No-JS path | Submit the form with scripts disabled | Plain POST works and redirects to a "check your email" page | screenshot |
@@ -274,3 +274,4 @@ Prices and features checked 2026-10-04 unless marked.
 | 2026-10-04 | agent (claude-fable-5-1, research subagent) | basic | Self-review by the drafting agent. Draft written locally (gitignored drafts folder). Checked every price and feature line against the fetched page; marked vendor claims and secondary sources; cut the Google Forms and Netlify rows to one line each. |
 | 2026-10-04 | agent (claude-opus-5-5, workflow subagent) | implementation, iterated | Promoted from the draft after Brandon's 2026-10-04 answers: Tally interim recorded as not chosen and its migration path dropped; open questions turned into Decisions; added Scope tables (W, S, O) and "Needs from Brandon". Verified in the repo: `workers/` absent, `<Content />` at `src/pages/writing/[...slug].astro` line 32, `writing` collection at `src/content.config.ts` line 426 and `public/admin/config.yml` line 26, the pledge note's "at ..." ending. Not yet reviewed by Brandon. |
 | 2026-10-04 | agent (claude-opus-5-5, workflow subagent) | review fixes | Named the no-JS sign result and the confirm/remove result pages (Worker-served, linking back via a new `post_url` column) so R2's "signatory N" has a source; cited `public-feedback.md` decisions by name and list; attributed the subdomain to that plan; stated the 5-per-minute rate limit as a placeholder; made the D1 database name a `<db>` placeholder in Needs item 9. |
+| 2026-10-05 | agent (claude-opus-5-5, Claude Code with Brandon) | code review fixes | The hourly cap now counts sends in `email_sends` (migration 0003, applied and deployed 2026-10-05), so re-sends count; `show_name` must be "on" to count as consent. Decision 10, the cap testing row and S4 (the `#sign` link exists) updated. |
