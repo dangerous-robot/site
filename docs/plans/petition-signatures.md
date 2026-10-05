@@ -13,7 +13,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [x] Design questions answered by Brandon, 2026-10-04 (see Decisions)
 - [ ] Needs from Brandon: account steps 1 to 4
 - [x] Needs from Brandon: copy, policy and naming items 5 to 9
-- [ ] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers
+- [x] W1 to W6: Worker, D1 schema, routes, email, cron, spam layers (`workers/api/`, 25 tests in `workers/api/test/`)
 - [ ] S1 to S4: `petition` field, Sveltia mirror, sign block on the post, pledge post wired up
 - [ ] O1: runbook section "Petitions: open, close, export, remove"
 - [ ] Testing table run against a deployed Worker
@@ -53,7 +53,7 @@ Checked in the repo on 2026-10-04.
 | Where signatures live | Cloudflare D1 (SQLite) behind a Worker at `api.dangerousrobot.org` |
 | Fields collected | Name, email, "show my name publicly" checkbox (default off), timestamp. No IP stored, no address, no phone |
 | Verification | Email confirmation link (double opt-in). Unconfirmed rows are purged after 7 days and never counted |
-| Spam protection | Honeypot field, minimum fill time, per-IP rate limit (IP hashed, not stored), and the confirmation email itself. No CAPTCHA at launch; add self-hosted ALTCHA first if spam appears, Turnstile second |
+| Spam protection | Honeypot field, minimum fill time, per-IP rate limit (Cloudflare's rate-limiting binding; no IP is written to the database), and the confirmation email itself. No CAPTCHA at launch; add self-hosted ALTCHA first if spam appears, Turnstile second |
 | Confirmation and removal email | Resend free plan ($0, 100 emails/day, 3,000/month) sending from `dangerousrobot.org`. Each email carries a "remove my signature" link |
 | Display on the site | A `petition:` frontmatter field renders a sign block and count under the post body. Count and public names come from a client-side fetch to the Worker (the site's own subdomain, no third party), with a build-time number as the no-JS fallback |
 | Export | `wrangler d1 export` or a `wrangler d1 execute ... --json` query from Brandon's machine; no admin web UI |
@@ -64,14 +64,16 @@ Checked in the repo on 2026-10-04.
 
 ### Worker and data
 
-- D1 tables: `petitions` (`slug`, `title`, `post_url`, `status`, `opened_at`, `closed_at`) and `signatures` (`id`, `petition_slug`, `name`, `email`, `display_consent`, `display_name`, `created_at`, `confirmed_at`, `token_hash`).
+- D1 tables: `petitions` (`slug`, `title`, `post_url`, `status`, `opened_at`, `closed_at`) and `signatures` (`id`, `petition_slug`, `name`, `email`, `display_consent`, `created_at`, `confirmed_at`, `token_hash`).
 - Routes:
   - `POST /petitions/{slug}/sign`: honeypot, time check, rate limit, insert unconfirmed, send email. A `fetch` from the component gets JSON and the component shows "check your email" in place; a plain form POST (no JS) gets a Worker-served "check your email" page that links back to `post_url`.
   - `GET /petitions/{slug}/confirm?t=` and `GET /petitions/{slug}/remove?t=`: each shows a landing page with one button; nothing changes on GET.
   - `POST` to the same two paths: sets `confirmed_at`, or hard-deletes, then returns a Worker-served result page ("Thank you, you are signatory N", N being the confirmed count after this row; or "Your signature is removed") that links back to `post_url#sign`. Worker pages are plain HTML with inline styles and load nothing from outside `api.dangerousrobot.org`.
-  - `GET /petitions/{slug}`: public JSON with `status`, `count`, and `names[]` for consenting confirmed signers; cached 60 seconds.
+  - `GET /petitions/{slug}`: public JSON with `status`, `count`, and `names[]` for consenting confirmed signers; browser-cached 60 seconds (Cloudflare does not edge-cache Worker responses by header).
 - Why the extra click on confirm and remove: email link scanners (Outlook Safe Links, Gmail prefetch, corporate proxies) fetch every URL in a message. A one-click GET would let a scanner confirm a signature or silently delete one.
-- Rate-limit key is a salted hash of the IP kept in Workers KV or a D1 row with a short TTL; the hash is never joined to a signature.
+- Rate limit: the Workers rate-limiting binding (`[[ratelimits]]` in `wrangler.toml`, 5 per 60 seconds per IP). Counts are approximate and per Cloudflare location. No rate-limit table, so no IP or IP hash ever reaches D1.
+- One signature per address per petition (unique index on `petition_slug`, lowercased `email`). Re-signing while unconfirmed rotates the token and resends; re-signing a confirmed address sends nothing and gets the same "check your email" reply, so the form never reveals who has signed.
+- Minimum fill time is weak by design: the page sets the start timestamp in JS at load, and a missing timestamp (the no-JS form) is accepted.
 - A scheduled Worker trigger (cron) deletes unconfirmed rows older than 7 days and, for closed petitions past the retention window, nulls the email column.
 - D1 queries use bound parameters only, as `public-feedback.md` requires for its Worker.
 
@@ -79,7 +81,7 @@ Checked in the repo on 2026-10-04.
 
 Client-side fetch of `GET /petitions/{slug}` (recommended): live, one small module script in the same pattern as the site's other vanilla scripts. No-JS readers see the build-time number and a form that still posts as a plain HTML form. Considered and not chosen: a build-time fetch plus a daily GitHub Actions rebuild (up to 24 hours stale), and a link-out to a page served by the Worker (leaves the site's design and its no-tracker promise behind).
 
-Open for the build step: the no-JS number means `astro build` fetches the Worker during the GitHub Actions build. Decide what the build does when the Worker is down or the petition row does not exist yet (fail, or render no number).
+Build step (decided 2026-10-04): `astro build` fetches the Worker with a 3-second timeout and renders no number on any error or missing petition, so a Worker outage never fails the site deploy.
 
 ### Privacy blurb (approved by Brandon 2026-10-04)
 
@@ -125,7 +127,7 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 | W3 | Routes: sign (JSON for the component, "check your email" page for a no-JS POST), confirm (GET landing, POST action returning the "signatory N" page), remove (GET landing, POST action returning the removed page), public JSON with 60-second cache; CORS limited to `https://dangerousrobot.org`. Result pages link back to `post_url#sign` | `workers/api/src/` |
 | W4 | Confirmation email through Resend with confirm and remove links; tokens stored as hashes | `workers/api/src/` |
 | W5 | Cron trigger: purge unconfirmed rows older than 7 days; null emails on closed petitions past retention | `workers/api/src/`, `wrangler.toml` |
-| W6 | Spam layers: honeypot, minimum fill time (3 seconds), per-IP rate limit on a salted hash (5 sign POSTs per IP hash per minute, placeholder in Needs item 6); closed petitions refuse signatures | `workers/api/src/` |
+| W6 | Spam layers: honeypot, minimum fill time (3 seconds), per-IP rate limit through the rate-limiting binding (5 sign POSTs per IP per minute); closed petitions refuse signatures | `workers/api/src/` |
 
 ### S. Site
 
@@ -147,14 +149,14 @@ Privacy and fit with the site's stance (`src/pages/values.astro`, TreadLightlyAI
 Account steps (about an hour):
 
 1. Done 2026-10-04: D1 database `dr-api` created in region WNAM (`database_id` `8594b5ae-cfeb-470c-b0cd-8509df1fe108`, for W1's `wrangler.toml`). No manual `api` DNS record: declare `api.dangerousrobot.org` as a Worker custom domain in `wrangler.toml` and the deploy creates the record and certificate.
-2. Cloudflare: set the Worker secrets `RESEND_API_KEY` and `TOKEN_SALT`, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
+2. Cloudflare: set the Worker secret `RESEND_API_KEY`, apply the migration, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
 3. Done 2026-10-04: Resend account created and `dangerousrobot.org` verified.
 4. Resend: choose the sender address (`pledge@` or `no-reply@dangerousrobot.org`).
 
 Copy and policy:
 
 5. Decided 2026-10-04: privacy blurb approved as written above, naming Cloudflare and Resend.
-6. Decided 2026-10-04: unconfirmed rows purged after 7 days; emails deleted when a petition closes; 5 sign POSTs per IP hash per minute.
+6. Decided 2026-10-04: unconfirmed rows purged after 7 days; emails deleted when a petition closes; 5 sign POSTs per IP per minute.
 7. Decided 2026-10-04: public name shown exactly as typed, only with the box checked.
 8. Decided 2026-10-04: the sixth POST in a minute gets 429 with a plain "try again in a minute" message.
 9. Decided 2026-10-04: Worker directory `workers/api/`, D1 database `dr-api` (one Worker serves petitions and, later, feedback). Recorded in `public-feedback.md` Decisions table, Worker location.

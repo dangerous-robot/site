@@ -47,3 +47,7 @@ seo-runs/
 # Source-report PDFs are kept locally only; transcribe to a committed .md sibling
 # (image-based, large, not diff-able). See docs/reports/*.md.
 docs/reports/*.pdf
+
+# Cloudflare Worker local state and secrets
+.wrangler/
+.dev.vars
