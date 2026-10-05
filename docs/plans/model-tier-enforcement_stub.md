@@ -12,7 +12,7 @@
 
 | Piece | Reality |
 |---|---|
-| Default | `DEFAULT_MODEL = "infomaniak:openai/gpt-oss-120b"` (`pipeline/common/models.py:187`) — already small/mid. |
+| Default | `DEFAULT_MODEL = "greenpt:gpt-oss-120b"` (`pipeline/common/models.py:187`) — already small/mid. |
 | Per-agent overrides | `VerifyConfig.{researcher,analyst,auditor,ingestor}_model` with `model_for()` fallback (`pipeline/orchestrator/pipeline.py:212`). Landed in multi-provider Part 2. |
 | Enforcement | **None.** Any `--{agent}-model <big-model>` is accepted with no ceiling. |
 | Visibility | The `.audit.yaml` sidecar records `models_used` per agent (`cli.py:971`) — escalation is auditable after the fact, not prevented. |

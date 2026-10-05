@@ -76,7 +76,7 @@ def _required_env_for_model(model: str) -> tuple[str, ...]:
     known = ", ".join(sorted(_PROVIDER_ENV))
     raise click.UsageError(
         f"Model spec {model!r} has no recognized provider prefix. "
-        f"Use one of: {known} (e.g. 'infomaniak:openai/gpt-oss-120b')."
+        f"Use one of: {known} (e.g. 'greenpt:gpt-oss-120b')."
     )
 
 

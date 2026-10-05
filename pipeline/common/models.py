@@ -184,7 +184,7 @@ class VerdictSeverity(str, Enum):
     OPPOSITE = "opposite"
 
 
-DEFAULT_MODEL = "infomaniak:openai/gpt-oss-120b"
+DEFAULT_MODEL = "greenpt:gpt-oss-120b"
 
 
 FailureStep = Literal["research", "ingest", "analyst", "auditor"]
