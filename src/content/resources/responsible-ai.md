@@ -37,8 +37,7 @@ data:
       summary:
         ai_ethics: "Open-weight models (US, EU, CN)."
         financial_transparency: "Infomaniak is a Swiss B Corp; no published financials."
-        environmental: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy.
-        [Receipts](https://www.infomaniak.com/en/ecology/certificates-rewards)"
+        environmental: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy. [Receipts](https://www.infomaniak.com/en/ecology/certificates-rewards)"
         notes: "Bold [environmental committments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org."
     - key: ecosia
       name: Ecosia AI
