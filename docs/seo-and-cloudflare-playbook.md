@@ -116,8 +116,8 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 
 ### Deferred
 
-- **Content-Security-Policy:** non-trivial because of inline scripts and
-  Google Fonts. Worth doing carefully later, not as a one-line edit.
+- **Content-Security-Policy:** non-trivial because of inline scripts. Worth
+  doing carefully later, not as a one-line edit.
 - **OG image at 1200×630:** the current `dr-logo.png` is square. Generate a
   proper social-card image and pass it via the `ogImage` prop in `Base.astro`
   for top-level pages.

@@ -19,6 +19,8 @@
   "dependencies": {
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
+    "@fontsource/orbitron": "^5.3.0",
+    "@fontsource/space-grotesk": "^5.3.0",
     "astro": "^6.4.8",
     "js-yaml": "^4.1.1",
     "lucide-astro": "^0.556.0"

@@ -1,6 +1,11 @@
 ---
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+// Self-hosted so pages make no third-party requests (the petition privacy copy depends on it).
+import "@fontsource/orbitron/600.css";
+import "@fontsource/orbitron/700.css";
+import "@fontsource/orbitron/800.css";
+import "@fontsource/space-grotesk/600.css";
 import "../styles/tokens.css";
 import "../styles/global.css";
 import A11yControl from "../components/A11yControl.astro";
@@ -12,8 +17,6 @@ const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
 const releaseStage = siteVersion.match(/-(alpha|beta|rc)\b/)?.[1];
 const releaseLabel = releaseStage === 'rc' ? 'RELEASE CANDIDATE' : releaseStage ? `${releaseStage.toUpperCase()} RELEASE` : null;
-const googleFontsUrl = "https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800&family=Space+Grotesk:wght@600&display=swap";
-
 interface Props {
   title: string;
   /** When true, `title` is the whole <title> and the " - Dangerous Robot" suffix is not appended. Default false. */
@@ -96,14 +99,6 @@ const orgSchema = {
     <meta name="twitter:image" content={ogImageAbsolute} />
     <!-- Organization structured data -->
     <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style"
-      href={googleFontsUrl}
-      onload="this.onload=null;this.rel='stylesheet'" />
-    <noscript>
-      <link rel="stylesheet" href={googleFontsUrl} />
-    </noscript>
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
          Storage keys and font-size values mirror A11yControl.astro. -->
