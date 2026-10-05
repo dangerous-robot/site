@@ -67,17 +67,45 @@ async def test_web_fetch_records_success_and_failure() -> None:
 
     assert ok_ctx.deps.fetched_text[ok_url]
     assert ok_ctx.deps.fetch_errors == []
-    assert fetch_failure_reason(ok_ctx.deps) is None
+    assert fetch_failure_reason(ok_ctx.deps, ok_url) is None
 
     # The tool still returns an error dict so the model can try wayback.
     assert "error" in result
     assert dns_ctx.deps.fetched_text == {}
     assert len(dns_ctx.deps.fetch_errors) == 1
     assert "nodename" in dns_ctx.deps.fetch_errors[0]
-    assert fetch_failure_reason(dns_ctx.deps) == dns_ctx.deps.fetch_errors[0]
+    assert fetch_failure_reason(dns_ctx.deps, dns_url) == dns_ctx.deps.fetch_errors[0]
 
     assert pre_ctx.deps.fetched_text[pre_url] == "Body from Tavily."
-    assert fetch_failure_reason(pre_ctx.deps) is None
+    assert fetch_failure_reason(pre_ctx.deps, pre_url) is None
+
+
+@pytest.mark.parametrize(
+    "fetched",
+    [
+        "https://www.brave.com/transparency",
+        "https://web.archive.org/web/20250315000000/https://brave.com/transparency/",
+        "http://web.archive.org/web/20250315id_/https://www.brave.com/transparency",
+        "https://web.archive.org/web/https://brave.com/transparency/",
+    ],
+)
+def test_requested_page_or_its_archive_copy_counts(fetched: str) -> None:
+    deps = IngestorDeps(http_client=None, repo_root="/tmp", fetched_text={fetched: "text"})
+    assert fetch_failure_reason(deps, "https://brave.com/transparency/") is None
+
+
+@pytest.mark.parametrize(
+    "fetched",
+    [
+        "https://brave.com/privacy/",
+        "https://web.archive.org/web/2025/https://brave.com/privacy/",
+    ],
+)
+def test_other_page_text_does_not_count(fetched: str) -> None:
+    deps = IngestorDeps(http_client=None, repo_root="/tmp", fetched_text={fetched: "text"})
+    reason = fetch_failure_reason(deps, "https://brave.com/transparency/")
+    assert reason is not None
+    assert "https://brave.com/transparency/" in reason
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +201,22 @@ async def test_wayback_recovery_still_ingests(tmp_path) -> None:
         )
     assert isinstance(outcome, tuple)
     assert outcome[0] == url
+
+
+@pytest.mark.asyncio
+async def test_unrelated_page_fetched_returns_fetch_failed(tmp_path) -> None:
+    url = "https://builder.aws.amazon.com/renewable"
+    unrelated = "https://brave.com/transparency/"
+    with respx.mock:
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        respx.get(unrelated).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url, _scripted_model([url, unrelated], _source_args(url)), tmp_path
+        )
+    assert not isinstance(outcome, tuple)
+    assert outcome.error_type == "fetch_failed"
+    # The requested page's own error, not the unrelated page's success.
+    assert "nodename" in outcome.message
 
 
 @pytest.mark.asyncio

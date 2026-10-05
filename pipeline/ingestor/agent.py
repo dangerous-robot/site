@@ -5,12 +5,14 @@ from __future__ import annotations
 import asyncio
 import datetime
 import logging
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
 from pydantic_ai import Agent, RunContext
 
+from common.canonical_url import canonicalize
 from common.instructions import load_instructions
 from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
@@ -53,10 +55,42 @@ class IngestorDeps:
     fetch_errors: list[str] = field(default_factory=list)
 
 
-def fetch_failure_reason(deps: IngestorDeps) -> str | None:
-    """Why no page text was fetched, or None when a ``web_fetch`` call returned text."""
-    if deps.fetched_text:
+# Any timestamp segment (including suffixes like "id_") or none at all, then
+# the archived page's own URL.
+_ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[^/]*/)?(https?://.+)")
+
+
+def _same_page(a: str, b: str) -> bool:
+    try:
+        return canonicalize(a) == canonicalize(b)
+    except ValueError:
+        return False
+
+
+def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
+    archived = _ARCHIVE_COPY.match(fetched)
+    return _same_page(archived.group(1) if archived else fetched, url)
+
+
+def fetch_failure_reason(deps: IngestorDeps, url: str) -> str | None:
+    """Why no text was fetched for ``url``, or None when it (or its archive.org copy) was.
+
+    Text from any other page does not count: the model can fetch an unrelated
+    page after the requested one fails and summarize that instead.
+    """
+    if any(_is_page_or_archive_copy(fetched, url) for fetched in deps.fetched_text):
         return None
+    # Errors are recorded as "<url>: <message>"; prefer the requested page's own.
+    own_errors = [
+        e for e in deps.fetch_errors
+        if _is_page_or_archive_copy(e.split(": ", 1)[0], url)
+    ]
+    if own_errors:
+        return own_errors[-1]
+    if deps.fetched_text:
+        return f"no text fetched for {url}; only other pages were fetched: " + ", ".join(
+            deps.fetched_text
+        )
     if deps.fetch_errors:
         return deps.fetch_errors[-1]
     return "model returned a source without fetching the page"

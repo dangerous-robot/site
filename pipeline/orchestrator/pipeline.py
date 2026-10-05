@@ -709,12 +709,12 @@ def _trace_acquisition_sink(research_trace: object) -> dict | None:
 def _check_ingested_source(
     url: str, sf: SourceFile, deps: IngestorDeps, repo_root: Path
 ) -> tuple[str, SourceFile] | StepError:
-    """Accept the ingest model's SourceFile only if a page was fetched and it validates.
+    """Accept the ingest model's SourceFile only if ``url`` was fetched and it validates.
 
     The model can return a SourceFile after every fetch failed, or without
     calling ``web_fetch`` at all; its summary is then invented.
     """
-    message = fetch_failure_reason(deps)
+    message = fetch_failure_reason(deps, url)
     if message is not None:
         logger.warning("Rejected ingest (no page text fetched): %s: %s", url, message)
         return StepError(step="ingest", url=url, error_type="fetch_failed", message=message)

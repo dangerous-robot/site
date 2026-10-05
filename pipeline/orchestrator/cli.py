@@ -375,7 +375,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
 
             sf = res.output
-            reason = fetch_failure_reason(deps)
+            reason = fetch_failure_reason(deps, url)
             if reason is not None:
                 click.echo(f"Error: fetch failed, no page text for {url}: {reason}", err=True)
                 return 1
