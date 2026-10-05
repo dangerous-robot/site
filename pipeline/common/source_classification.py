@@ -6,6 +6,11 @@ and `onboard_entity`) and the standalone `dr ingest` write path.
 
 from __future__ import annotations
 
+import re
+from collections.abc import Iterable
+from dataclasses import dataclass
+from urllib.parse import urlsplit
+
 # Publisher substrings (lowercase) that identify primary sources.
 # Matched against publisher.lower(), order doesn't matter here.
 _PRIMARY_PUBLISHERS: frozenset[str] = frozenset(
@@ -106,3 +111,61 @@ def independence_for_source_type(source_type: str) -> str:
     See docs/architecture/source-quality.md § The `independence` field.
     """
     return _INDEPENDENCE_BY_SOURCE_TYPE.get(source_type, "unknown")
+
+
+# --- Entity match: the claim entity's own pages are first-party -------------
+
+_COMPANY_SUFFIXES: frozenset[str] = frozenset({"inc", "llc", "ltd"})
+
+
+def _normalize_name(name: str) -> str:
+    """Lowercase, drop punctuation, and strip trailing inc/llc/ltd tokens."""
+    words = re.sub(r"[^\w\s]", " ", name.lower()).split()
+    while words and words[-1] in _COMPANY_SUFFIXES:
+        words.pop()
+    return " ".join(words)
+
+
+def _url_host(url: str | None) -> str:
+    if not url:
+        return ""
+    try:
+        host = (urlsplit(url).hostname or "").lower()
+    except ValueError:
+        return ""
+    return host[4:] if host.startswith("www.") else host
+
+
+@dataclass(frozen=True)
+class EntityIdentity:
+    """Normalized names and website hosts of a claim's entity and its parent."""
+
+    names: frozenset[str]
+    hosts: frozenset[str]
+
+    @classmethod
+    def from_parts(
+        cls, names: Iterable[str | None], websites: Iterable[str | None]
+    ) -> "EntityIdentity":
+        return cls(
+            names=frozenset(n for n in (_normalize_name(x or "") for x in names) if n),
+            hosts=frozenset(h for h in (_url_host(w) for w in websites) if h),
+        )
+
+
+def entity_first_party_reason(
+    publisher: str, url: str, identity: EntityIdentity
+) -> str | None:
+    """Return why a source is first-party for the entity, or None.
+
+    Host: the URL host equals or is a subdomain of an entity website host.
+    Publisher: the normalized publisher equals an entity name, legal name or
+    alias. Equality, not substring: "meta" must not match "Metacritic".
+    """
+    host = _url_host(url)
+    for entity_host in sorted(identity.hosts):
+        if host == entity_host or host.endswith("." + entity_host):
+            return f"URL host {host} is the entity's website ({entity_host})"
+    if _normalize_name(publisher or "") in identity.names:
+        return f"Publisher {publisher!r} is the entity or its parent company"
+    return None

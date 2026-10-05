@@ -11,6 +11,7 @@ from pathlib import Path
 
 from common.content_loader import load_entity
 from common.models import EntityType
+from common.source_classification import EntityIdentity
 
 _DIR_ENTITY_TYPE: dict[str, EntityType] = {
     "companies": EntityType.COMPANY,
@@ -57,6 +58,21 @@ def resolve_parent_name(raw: str | None) -> str | None:
         return None
     slug = raw.split("/")[-1]
     return slug.replace("-", " ").title()
+
+
+def entity_identity_for(resolved: ResolvedEntity, repo_root: Path) -> EntityIdentity:
+    """Names and website hosts of the entity and its parent company, for source matching."""
+    names: list[str | None] = [resolved.entity_name, resolved.legal_name, *resolved.aliases]
+    websites: list[str | None] = [resolved.website]
+    if resolved.parent_company:
+        try:
+            parent = parse_entity_ref(resolved.parent_company, repo_root)
+        except ValueError:
+            names.append(resolve_parent_name(resolved.parent_company))
+        else:
+            names.extend([parent.entity_name, parent.legal_name, *parent.aliases])
+            websites.append(parent.website)
+    return EntityIdentity.from_parts(names, websites)
 
 
 def build_entity_context(resolved_entity: ResolvedEntity | None, fallback_name: str = "") -> str:
