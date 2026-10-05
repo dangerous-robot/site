@@ -50,12 +50,12 @@ from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_v
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
 from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
-from common.utils import slug_from_url, slugify
+from common.utils import host_matches, slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
-from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent
+from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.validation import validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -279,6 +279,10 @@ class VerifyConfig:
         return getattr(self, f"{agent}_model") or self.model
 
 
+def _cfg_repo_root(cfg: VerifyConfig) -> Path:
+    return Path(cfg.repo_root) if cfg.repo_root else resolve_repo_root()
+
+
 async def verify_claim(
     entity_name: str,
     claim_text: str,
@@ -354,7 +358,7 @@ async def verify_claim(
             # Step 2: Ingest
             say("  › Ingesting")
             logger.info("Step 2/4: Ingesting %d candidate URLs...", len(urls))
-            repo_root = Path(cfg.repo_root or str(resolve_repo_root()))
+            repo_root = _cfg_repo_root(cfg)
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
@@ -382,8 +386,6 @@ async def verify_claim(
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
-
-            entity_overrides = _apply_entity_match(result.sources, resolved_entity, repo_root)
 
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
@@ -441,6 +443,7 @@ async def verify_claim(
                 entity_name, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
+                repo_root=repo_root,
             )
             result.analyst_output = analyst_out
 
@@ -451,7 +454,6 @@ async def verify_claim(
                 if cfg.show_progress:
                     progress("  ! analyst failed to produce an assessment")
                 return result
-            _merge_entity_overrides(analyst_out.verdict, entity_overrides)
 
             # Step 4: Auditor
             say("  › Auditing")
@@ -476,9 +478,7 @@ async def verify_claim(
 
 
 def _apply_entity_match(
-    sources: list[dict],
-    resolved_entity: ResolvedEntity | None,
-    repo_root: Path,
+    sources: list[dict], resolved_entity: ResolvedEntity, repo_root: Path
 ) -> list[SourceOverride]:
     """Relabel the claim entity's own sources ``first-party`` in place.
 
@@ -488,8 +488,6 @@ def _apply_entity_match(
     overrides are recorded on the claim's ``source_overrides`` so the site's
     source counts agree with the level. Only ever moves toward first-party.
     """
-    if resolved_entity is None:
-        return []
     identity = entity_identity_for(resolved_entity, repo_root)
     overrides: list[SourceOverride] = []
     for sd in sources:
@@ -499,13 +497,12 @@ def _apply_entity_match(
         if reason is None:
             continue
         sd["independence"] = Independence.FIRST_PARTY.value
-        logger.info("Entity match: %s is first-party (%s)", sd.get("source_id"), reason)
-        if sd.get("source_id"):
-            overrides.append(SourceOverride(
-                source=sd["source_id"],
-                independence=Independence.FIRST_PARTY,
-                reason=f"Entity match: {reason}.",
-            ))
+        logger.info("Entity match: %s is first-party (%s)", sd["source_id"], reason)
+        overrides.append(SourceOverride(
+            source=sd["source_id"],
+            independence=Independence.FIRST_PARTY,
+            reason=f"Entity match: {reason}.",
+        ))
     return overrides
 
 
@@ -709,19 +706,15 @@ def _trace_acquisition_sink(research_trace: object) -> dict | None:
 
 
 def _check_ingested_source(
-    url: str, sf: SourceFile, deps: IngestorDeps, cfg: VerifyConfig
+    url: str, sf: SourceFile, deps: IngestorDeps, repo_root: Path
 ) -> tuple[str, SourceFile] | StepError:
     """Accept the ingest model's SourceFile only if a page was fetched and it validates.
 
     The model can return a SourceFile after every fetch failed, or without
     calling ``web_fetch`` at all; its summary is then invented.
     """
-    if not fetch_succeeded(deps):
-        message = (
-            deps.fetch_errors[-1]
-            if deps.fetch_errors
-            else "model returned a source without fetching the page"
-        )
+    message = fetch_failure_reason(deps)
+    if message is not None:
         logger.warning("Rejected ingest (no page text fetched): %s: %s", url, message)
         return StepError(step="ingest", url=url, error_type="fetch_failed", message=message)
 
@@ -733,7 +726,7 @@ def _check_ingested_source(
             sf.frontmatter.url, url,
         )
         sf.frontmatter.url = url
-    validation = validate_source_file(sf, url, cfg.repo_root or "")
+    validation = validate_source_file(sf, url, str(repo_root))
     for warning in validation.warnings:
         logger.warning("Ingest validation warning for %s: %s", url, warning)
     if not validation.ok:
@@ -754,6 +747,7 @@ async def _ingest_one(
     prefetched_body: str | None = None,
     acquisition_out: dict[str, dict] | None = None,
     failures_out: list[dict] | None = None,
+    repo_root: Path | None = None,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError.
 
@@ -770,9 +764,10 @@ async def _ingest_one(
       promote these to ``StepError`` (see ``_ingest_urls`` — only for
       URLs whose ingest itself failed terminally).
     """
+    repo_root = repo_root or _cfg_repo_root(cfg)
     deps = IngestorDeps(
         http_client=client,
-        repo_root=cfg.repo_root,
+        repo_root=str(repo_root),
         skip_wayback=cfg.skip_wayback,
         today=today,
         prefetched_bodies={url: prefetched_body} if prefetched_body else {},
@@ -793,7 +788,7 @@ async def _ingest_one(
         if derived:
             sf.slug = derived
         outcome: tuple[str, SourceFile] | StepError = _check_ingested_source(
-            url, sf, deps, cfg
+            url, sf, deps, repo_root
         )
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
@@ -854,6 +849,7 @@ async def _ingest_urls(
     transient archive blip stay quiet.
     """
     today = datetime.date.today()
+    repo_root = _cfg_repo_root(cfg)
     target = target if target is not None else cfg.max_sources
     pool = urls[: cfg.candidate_pool_size]
     dispatch_sem = asyncio.Semaphore(2)
@@ -877,6 +873,7 @@ async def _ingest_urls(
                 prefetched_body=bodies.get(url),
                 acquisition_out=acquisition_out,
                 failures_out=url_failures,
+                repo_root=repo_root,
             )
 
             if isinstance(outcome, tuple):
@@ -904,7 +901,7 @@ async def _ingest_urls(
     kept = results[:target]
     # Source ids (year/slug) reach the analyst, coverage map and sidecar
     # before any file is written, so collisions are settled here.
-    resolve_source_slugs(kept, Path(cfg.repo_root or str(resolve_repo_root())))
+    resolve_source_slugs([sf for _url, sf in kept], repo_root)
     return kept, errors
 
 
@@ -987,10 +984,21 @@ async def _analyse_claim(
     cfg: VerifyConfig,
     resolved_entity: ResolvedEntity | None = None,
     sub_questions: list[SubQuestion] | None = None,
+    repo_root: Path | None = None,
 ) -> tuple[AnalystOutput | None, FailureInfo | None]:
     """Run the analyst agent. Returns (output, failure) — failure is set
     only when output is None, so callers can persist structured failure
-    detail into the audit sidecar and progress line."""
+    detail into the audit sidecar and progress line.
+
+    With a ``resolved_entity``, the entity's own sources are relabelled
+    ``first-party`` in ``sources`` (in place, so the auditor and sidecar see
+    the same labels) and recorded on the verdict's ``source_overrides``.
+    """
+    entity_overrides: list[SourceOverride] = []
+    if resolved_entity is not None:
+        entity_overrides = _apply_entity_match(
+            sources, resolved_entity, repo_root or _cfg_repo_root(cfg)
+        )
     prompt = build_analyst_prompt(
         entity_name,
         claim_text,
@@ -1015,6 +1023,7 @@ async def _analyse_claim(
             )
         if verdict_assessment is None:
             return None, _analyst_failure(exc)
+        _merge_entity_overrides(verdict_assessment, entity_overrides)
         entity_resolution = EntityResolution(
             entity_name=resolved_entity.entity_name,
             entity_type=resolved_entity.entity_type,
@@ -1160,8 +1169,6 @@ async def research_claim(
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
 
-            entity_overrides = _apply_entity_match(result.sources, resolved_entity, repo_root)
-
             ingested_set = set(result.urls_ingested)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
@@ -1209,6 +1216,7 @@ async def research_claim(
                 None, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
+                repo_root=repo_root,
             )
             result.analyst_output = analyst_out
 
@@ -1217,7 +1225,6 @@ async def research_claim(
                 if analyst_failure is not None and result.failure is None:
                     result.failure = analyst_failure
                 return result
-            _merge_entity_overrides(analyst_out.verdict, entity_overrides)
 
             result.entity = analyst_out.entity.entity_name
 
@@ -1488,7 +1495,7 @@ async def _probe_collision_suggestions(
         host = normalised_host(r.get("url", "") or "")
         if not host:
             continue
-        if host == canon or host.endswith("." + canon):
+        if host_matches(host, canon):
             continue
         counts[host] += 1
     suggestions = [host for host, _ in counts.most_common(3)]

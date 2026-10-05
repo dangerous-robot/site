@@ -1,12 +1,13 @@
 """Pre-ingest publisher quality classification based on URL hostname."""
 from __future__ import annotations
 
-from common.blocklist import _host_matches, normalised_host
+from common.blocklist import normalised_host
 from common.source_classification import (
     _PRIMARY_PUBLISHERS,
     _SECONDARY_PUBLISHERS,
     _TERTIARY_PUBLISHERS,
 )
+from common.utils import host_matches
 
 _FORUM_DOMAINS: frozenset[str] = frozenset({
     "reddit.com",
@@ -27,7 +28,7 @@ def classify_url_publisher_quality(url: str) -> str:
     if not hostname:
         return "secondary"
 
-    if any(_host_matches(hostname, domain) for domain in _FORUM_DOMAINS):
+    if any(host_matches(hostname, domain) for domain in _FORUM_DOMAINS):
         return "forum"
 
     if any(term in hostname for term in _PRIMARY_PUBLISHERS):

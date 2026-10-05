@@ -22,7 +22,7 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
-from ingestor.agent import IngestorDeps, fetch_succeeded, ingestor_agent, web_fetch
+from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent, web_fetch
 from orchestrator.pipeline import VerifyConfig, _ingest_one
 
 _TODAY = datetime.date(2026, 10, 4)
@@ -67,17 +67,17 @@ async def test_web_fetch_records_success_and_failure() -> None:
 
     assert ok_ctx.deps.fetched_text[ok_url]
     assert ok_ctx.deps.fetch_errors == []
-    assert fetch_succeeded(ok_ctx.deps)
+    assert fetch_failure_reason(ok_ctx.deps) is None
 
     # The tool still returns an error dict so the model can try wayback.
     assert "error" in result
     assert dns_ctx.deps.fetched_text == {}
     assert len(dns_ctx.deps.fetch_errors) == 1
     assert "nodename" in dns_ctx.deps.fetch_errors[0]
-    assert not fetch_succeeded(dns_ctx.deps)
+    assert fetch_failure_reason(dns_ctx.deps) == dns_ctx.deps.fetch_errors[0]
 
     assert pre_ctx.deps.fetched_text[pre_url] == "Body from Tavily."
-    assert fetch_succeeded(pre_ctx.deps)
+    assert fetch_failure_reason(pre_ctx.deps) is None
 
 
 # ---------------------------------------------------------------------------

@@ -188,9 +188,7 @@ def _resolve_one_slug(
     raise AssertionError("unreachable: candidate generator is infinite")
 
 
-def resolve_source_slugs(
-    items: list[tuple[str, SourceFile]], repo_root: Path
-) -> None:
+def resolve_source_slugs(source_files: list[SourceFile], repo_root: Path) -> None:
     """Set each ``sf.slug`` so its source id names a file for that URL.
 
     Per item, against files on disk and ids already assigned in this batch:
@@ -199,7 +197,7 @@ def resolve_source_slugs(
     ``<host>-<slug>-2``, ``-3`` and so on. Existing files are never touched.
     """
     assigned: dict[str, str] = {}
-    for _url, sf in items:
+    for sf in source_files:
         resolved = _resolve_one_slug(sf, repo_root, assigned)
         if resolved != sf.slug:
             logger.info(

@@ -14,9 +14,10 @@ import logging
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from urllib.parse import urlparse
 
 import yaml
+
+from common.utils import host_matches, url_host
 
 logger = logging.getLogger(__name__)
 
@@ -65,14 +66,7 @@ def load_blocklist(repo_root: Path) -> list[BlocklistEntry]:
 
 
 def normalised_host(url: str) -> str | None:
-    host = (urlparse(url).hostname or "").lower()
-    if not host:
-        return None
-    return host[4:] if host.startswith("www.") else host
-
-
-def _host_matches(url_host: str, blocked_host: str) -> bool:
-    return url_host == blocked_host or url_host.endswith("." + blocked_host)
+    return url_host(url) or None
 
 
 def filter_urls(
@@ -89,7 +83,7 @@ def filter_urls(
         if not host:
             kept.append(url)
             continue
-        match = next((e for e in entries if _host_matches(host, e.host)), None)
+        match = next((e for e in entries if host_matches(host, e.host)), None)
         if match:
             dropped.append(FilterDecision(url=url, host=match.host, reason=match.reason))
             logger.info(

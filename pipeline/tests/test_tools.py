@@ -444,7 +444,7 @@ class TestIngestUrlsAcquisitionDrain:
         async def _fake(
             client, u, cfg, today, sem,
             prefetched_body=None,
-            acquisition_out=None, failures_out=None,
+            acquisition_out=None, failures_out=None, **_,
         ):
             if acquisition_out is not None:
                 acquisition_out[u] = {
@@ -496,7 +496,7 @@ class TestIngestUrlsAcquisitionDrain:
         async def _fake(
             client, u, cfg, today, sem,
             prefetched_body=None,
-            acquisition_out=None, failures_out=None,
+            acquisition_out=None, failures_out=None, **_,
         ):
             failure = {
                 "stage": "ingest",

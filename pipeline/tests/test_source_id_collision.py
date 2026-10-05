@@ -79,7 +79,7 @@ def test_cross_run_collision_gets_host_prefixed_id(tmp_path: Path) -> None:
     ms_path = _write_existing(tmp_path, "2026/sustainability", MS_URL)
     before = ms_path.read_bytes()
     sf = _sf(AWS_URL)
-    resolve_source_slugs([(AWS_URL, sf)], tmp_path)
+    resolve_source_slugs([sf], tmp_path)
     assert sf.slug == "aws-amazon-sustainability"
     assert ms_path.read_bytes() == before
 
@@ -88,13 +88,13 @@ def test_same_canonical_url_reuses_id(tmp_path: Path) -> None:
     _write_existing(tmp_path, "2026/sustainability", AWS_URL)
     new_url = "https://www.aws.amazon.com/sustainability#top"
     sf = _sf(new_url)
-    resolve_source_slugs([(new_url, sf)], tmp_path)
+    resolve_source_slugs([sf], tmp_path)
     assert sf.slug == "sustainability"
 
 
 def test_same_run_duplicates_get_distinct_ids(tmp_path: Path) -> None:
     a, b = _sf(AWS_URL), _sf(AWS_UTIL_URL)
-    resolve_source_slugs([(AWS_URL, a), (AWS_UTIL_URL, b)], tmp_path)
+    resolve_source_slugs([a, b], tmp_path)
     assert a.slug == "sustainability"
     assert b.slug == "aws-amazon-sustainability"
 
@@ -103,7 +103,7 @@ def test_numeric_suffix_when_host_prefix_taken(tmp_path: Path) -> None:
     _write_existing(tmp_path, "2026/sustainability", MS_URL)
     _write_existing(tmp_path, "2026/aws-amazon-sustainability", AWS_UTIL_URL)
     sf = _sf(AWS_URL)
-    resolve_source_slugs([(AWS_URL, sf)], tmp_path)
+    resolve_source_slugs([sf], tmp_path)
     assert sf.slug == "aws-amazon-sustainability-2"
 
 
@@ -111,7 +111,7 @@ def test_existing_files_never_renamed(tmp_path: Path) -> None:
     _write_existing(tmp_path, "2026/sustainability", MS_URL)
     _write_existing(tmp_path, "2026/aws-amazon-sustainability", AWS_UTIL_URL)
     before = _listing(tmp_path)
-    resolve_source_slugs([(AWS_URL, _sf(AWS_URL)), (MS_URL, _sf(MS_URL))], tmp_path)
+    resolve_source_slugs([_sf(AWS_URL), _sf(MS_URL)], tmp_path)
     after = _listing(tmp_path)
     assert before <= after
 
@@ -119,7 +119,7 @@ def test_existing_files_never_renamed(tmp_path: Path) -> None:
 def test_unparseable_existing_url_counts_as_different(tmp_path: Path) -> None:
     _write_existing(tmp_path, "2026/sustainability", "not a url")
     sf = _sf(AWS_URL)
-    resolve_source_slugs([(AWS_URL, sf)], tmp_path)
+    resolve_source_slugs([sf], tmp_path)
     assert sf.slug == "aws-amazon-sustainability"
 
 

@@ -9,7 +9,8 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable
 from dataclasses import dataclass
-from urllib.parse import urlsplit
+
+from common.utils import host_matches, url_host
 
 # Publisher substrings (lowercase) that identify primary sources.
 # Matched against publisher.lower(), order doesn't matter here.
@@ -126,16 +127,6 @@ def _normalize_name(name: str) -> str:
     return " ".join(words)
 
 
-def _url_host(url: str | None) -> str:
-    if not url:
-        return ""
-    try:
-        host = (urlsplit(url).hostname or "").lower()
-    except ValueError:
-        return ""
-    return host[4:] if host.startswith("www.") else host
-
-
 @dataclass(frozen=True)
 class EntityIdentity:
     """Normalized names and website hosts of a claim's entity and its parent."""
@@ -149,7 +140,7 @@ class EntityIdentity:
     ) -> "EntityIdentity":
         return cls(
             names=frozenset(n for n in (_normalize_name(x or "") for x in names) if n),
-            hosts=frozenset(h for h in (_url_host(w) for w in websites) if h),
+            hosts=frozenset(h for h in (url_host(w) for w in websites) if h),
         )
 
 
@@ -162,10 +153,10 @@ def entity_first_party_reason(
     Publisher: the normalized publisher equals an entity name, legal name or
     alias. Equality, not substring: "meta" must not match "Metacritic".
     """
-    host = _url_host(url)
+    host = url_host(url)
     for entity_host in sorted(identity.hosts):
-        if host == entity_host or host.endswith("." + entity_host):
+        if host_matches(host, entity_host):
             return f"URL host {host} is the entity's website ({entity_host})"
-    if _normalize_name(publisher or "") in identity.names:
+    if _normalize_name(publisher) in identity.names:
         return f"Publisher {publisher!r} is the entity or its parent company"
     return None

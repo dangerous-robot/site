@@ -53,9 +53,13 @@ class IngestorDeps:
     fetch_errors: list[str] = field(default_factory=list)
 
 
-def fetch_succeeded(deps: IngestorDeps) -> bool:
-    """True when at least one ``web_fetch`` call in the run returned page text."""
-    return bool(deps.fetched_text)
+def fetch_failure_reason(deps: IngestorDeps) -> str | None:
+    """Why no page text was fetched, or None when a ``web_fetch`` call returned text."""
+    if deps.fetched_text:
+        return None
+    if deps.fetch_errors:
+        return deps.fetch_errors[-1]
+    return "model returned a source without fetching the page"
 
 
 ingestor_agent = Agent(

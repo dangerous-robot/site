@@ -11,7 +11,13 @@ from pathlib import Path
 
 import pytest
 
-from analyst.agent import AnalystOutput, EntityResolution, SourceOverride, VerdictAssessment
+from analyst.agent import (
+    AnalystOutput,
+    EntityResolution,
+    SourceOverride,
+    VerdictAssessment,
+    verdict_only_agent,
+)
 from common.frontmatter import parse_frontmatter
 from common.models import EntityType, Independence
 from common.source_classification import EntityIdentity, entity_first_party_reason
@@ -231,16 +237,23 @@ def _patch_pipeline(monkeypatch, analyst_overrides=None) -> dict:
         ]
         return [f for f in files if f[0] in urls_in], []
 
-    async def _fake_analyse(entity_name, claim_text, sources, cfg, **kwargs):
+    # The entity match runs inside _analyse_claim, so the analyst is faked one
+    # layer down: capture what the prompt is built from, stub the model run.
+    def _fake_prompt(entity_name, claim_text, sources, **kwargs):
         captured["sources"] = [dict(s) for s in sources]
-        return _verdict(analyst_overrides), None
+        return "prompt"
+
+    async def _fake_run(agent, prompt, timeout_s, **kwargs):
+        out = _verdict(analyst_overrides)
+        return (out.verdict if agent is verdict_only_agent else out), [], None
 
     async def _fake_audit(*args, **kwargs):
         return None
 
     monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
     monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
-    monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+    monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", _fake_prompt)
+    monkeypatch.setattr("orchestrator.pipeline._run_with_null_retry", _fake_run)
     monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
     return captured
 

@@ -27,6 +27,25 @@ def slug_from_url(url: str) -> str | None:
     return slugify(segment)
 
 
+def url_host(url: str | None) -> str:
+    """Lowercase URL host without a leading ``www.``.
+
+    Returns "" when the URL is empty, has no host, or does not parse.
+    """
+    if not url:
+        return ""
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+    return host.removeprefix("www.")
+
+
+def host_matches(host: str, domain: str) -> bool:
+    """True when ``host`` is ``domain`` or a subdomain of it (dot boundary)."""
+    return host == domain or host.endswith("." + domain)
+
+
 def host_token(url: str) -> str:
     """Slug-safe host prefix used to disambiguate colliding source slugs.
 
@@ -34,10 +53,7 @@ def host_token(url: str) -> str:
     ``aws-amazon``, ``brave.com`` gives ``brave``. Returns "" when the URL
     has no host.
     """
-    host = (urlparse(url).hostname or "").lower()
-    if host.startswith("www."):
-        host = host[4:]
-    labels = [label for label in host.split(".") if label]
+    labels = [label for label in url_host(url).split(".") if label]
     if len(labels) > 1:
         labels = labels[:-1]
     return slugify("-".join(labels))
