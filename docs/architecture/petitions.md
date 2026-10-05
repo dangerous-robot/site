@@ -26,12 +26,12 @@ The site stays static. The sign block fetches the Worker at build time (3-second
 
 The browser fetch sends a URL-encoded body with only an `Accept` header, so it is a CORS "simple" request with no preflight. `ALLOWED_ORIGINS` (a `wrangler.toml` var) controls which origins get CORS headers and may POST to `/sign`. A missing Origin (non-browser clients) is accepted; `Origin: null` is refused, because sandboxed iframes on any site send it. The site's `strict-origin-when-cross-origin` referrer policy means real browsers send the true origin.
 
-Known limit: the rate limit is per IP, so one script can still send up to 5 confirmation emails a minute to different addresses. That could use up Resend's free 100 emails a day and draw bounces from fake addresses. The plan's response if it happens is ALTCHA.
+Known limit: the per-IP rate limit counts per Cloudflare machine, so a script opening fresh connections gets past it (seen in production on 2026-10-04). The real ceiling is the site-wide cap of 30 confirmation emails per hour. That still allows a script to use up Resend's free 100 emails a day in a few hours and draw bounces from fake addresses. The plan's response if it happens is ALTCHA.
 
 ## Privacy rules the code enforces
 
 - `signatures` has no IP, user agent or free-text column; a test asserts the exact column list.
-- Rate limiting uses the Workers rate-limiting binding (`SIGN_LIMITER`, 5 per 60 seconds per IP, approximate and per Cloudflare location), so no IP or IP hash reaches D1.
+- Rate limiting uses the Workers rate-limiting binding (`SIGN_LIMITER`, 5 per 60 seconds per IP, approximate and per Cloudflare machine), so no IP or IP hash reaches D1. The hourly email cap counts `signatures.created_at`, which needs no extra data.
 - Tokens are 32 random bytes; only their SHA-256 hash is stored.
 - One signature per lowercased email per petition. A repeat from a confirmed address sends nothing, and an unconfirmed address gets at most one email per 10 minutes. Every case gets the same reply, so the form does not reveal who has signed and cannot flood someone's inbox.
 - The email is plain text only, so no tracking pixel. Links stay unrewritten only while open and click tracking are off for the domain in Resend's settings.
@@ -39,7 +39,7 @@ Known limit: the rate limit is per IP, so one script can still send up to 5 conf
 
 ## Spam layers
 
-Honeypot field, a 3-second minimum fill time (the page script sends how long the page was open, measured with `performance.now()` so a wrong system clock cannot drop a signer; a missing value is accepted for the no-JS form, so this check is weak), the rate limit, and the email confirmation itself (unconfirmed signatures never count). No CAPTCHA. If spam appears, the plan's order is self-hosted ALTCHA first, Turnstile second.
+Honeypot field, a 3-second minimum fill time (the page script sends how long the page was open, measured with `performance.now()` so a wrong system clock cannot drop a signer; a missing value is accepted for the no-JS form, so this check is weak), the per-IP rate limit, the site-wide cap of 30 confirmation emails an hour, and the email confirmation itself (unconfirmed signatures never count). No CAPTCHA. If spam appears, the plan's order is self-hosted ALTCHA first, Turnstile second.
 
 ## Email modes
 

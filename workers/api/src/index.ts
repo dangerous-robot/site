@@ -6,6 +6,10 @@ const MIN_FILL_MS = 3000;
 // An unconfirmed address gets at most one confirmation email per window, so the
 // form cannot be used to flood someone else's inbox.
 const RESEND_WINDOW_MS = 10 * 60_000;
+// Site-wide ceiling on confirmation emails. The per-IP limiter counts per
+// Cloudflare machine, so a script opening fresh connections slips past it; this
+// cap is what actually bounds mail sent to strangers from our domain.
+const HOURLY_EMAIL_CAP = 30;
 const UNCONFIRMED_TTL_DAYS = 7;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
@@ -110,6 +114,15 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     return reply(request, env, 400, 'Please enter a valid email address.', petition.post_url);
   }
   const consent = form.get('show_name') ? 1 : 0;
+
+  // Every email sent sets its row's created_at, so recent rows count recent emails.
+  // Concurrent requests can overshoot by a few; close enough for a ceiling.
+  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM signatures WHERE created_at > ?')
+    .bind(new Date(Date.now() - 3_600_000).toISOString())
+    .first<{ n: number }>();
+  if (recent!.n >= HOURLY_EMAIL_CAP) {
+    return reply(request, env, 429, 'A lot of people are signing right now. Please try again in an hour.', petition.post_url);
+  }
 
   const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
   // A repeat signature from an unconfirmed address gets a fresh token and email,

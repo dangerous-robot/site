@@ -274,6 +274,25 @@ describe('spam layers', () => {
     expect(statuses).toEqual([200, 200, 200, 200, 200, 429]);
   });
 
+  it('stops sending confirmation emails once the hourly cap is reached', async () => {
+    const seed = (n: number, ageMs: number) =>
+      env.DB.batch(
+        Array.from({ length: n }, (_, i) =>
+          env.DB.prepare(
+            'INSERT INTO signatures (petition_slug, name, email, created_at, token_hash) VALUES (?, ?, ?, ?, ?)',
+          ).bind(SLUG, 'Seed', `seed${ageMs}-${i}@example.org`, new Date(Date.now() - ageMs).toISOString(), `seed${ageMs}-${i}`),
+        ),
+      );
+    await seed(30, 61 * 60_000);
+    await seed(29, 60_000);
+    expect((await sign()).status).toBe(200);
+    expect(sentEmails).toHaveLength(1);
+    const res = await sign();
+    expect(res.status).toBe(429);
+    expect(sentEmails).toHaveLength(1);
+    expect(await rowCount()).toBe(60);
+  });
+
   it('refuses a browser POST from another origin', async () => {
     expect((await sign({ origin: 'https://evil.example' })).status).toBe(403);
     // Sandboxed iframes send "null"; accepting it would void this check.

@@ -153,7 +153,7 @@ Account steps (about an hour):
 1. Done 2026-10-04: D1 database `dr-api` created in region WNAM (`database_id` `8594b5ae-cfeb-470c-b0cd-8509df1fe108`, for W1's `wrangler.toml`). No manual `api` DNS record: declare `api.dangerousrobot.org` as a Worker custom domain in `wrangler.toml` and the deploy creates the record and certificate.
 2. Cloudflare: set the Worker secret `RESEND_API_KEY`, apply the migration, then deploy with `wrangler` (or hand the deploy to an agent once secrets exist). Waits on W1, since secrets attach to an existing Worker.
 3. Done 2026-10-04: Resend account created and `dangerousrobot.org` verified.
-4. Resend: choose the sender address (`pledge@` or `no-reply@dangerousrobot.org`).
+4. Decided 2026-10-04: sender `no-reply@dangerousrobot.org` (`MAIL_FROM` in `workers/api/wrangler.toml`).
 
 Copy and policy:
 
@@ -161,6 +161,7 @@ Copy and policy:
 6. Decided 2026-10-04: unconfirmed rows purged after 7 days; emails deleted when a petition closes; 5 sign POSTs per IP per minute.
 7. Decided 2026-10-04: public name shown exactly as typed, only with the box checked.
 8. Decided 2026-10-04: the sixth POST in a minute gets 429 with a plain "try again in a minute" message.
+10. Decided 2026-10-04 (after the deployed test): a site-wide cap of 30 confirmation emails per hour; over it, `/sign` returns 429 "try again in an hour". The per-IP limiter counts per Cloudflare machine, so fresh connections slipped past it in production (15 spaced POSTs, all 200; over one connection, 429 from the 7th).
 9. Decided 2026-10-04: Worker directory `workers/api/`, D1 database `dr-api` (one Worker serves petitions and, later, feedback). Recorded in `public-feedback.md` Decisions table, Worker location.
 
 ## Testing
@@ -178,7 +179,8 @@ Oracles are a `wrangler d1 execute dr-api --command "..."` query or a `curl` aga
 | Schema holds no tracking data | `PRAGMA table_info(signatures)` | No IP or user agent column | query output |
 | Spam: honeypot | POST with the hidden field filled | 200 (no signal to bots) and no row inserted | query count unchanged |
 | Spam: too fast | POST with timestamp under 3 seconds old | 200, no row | same |
-| Spam: rate limit | Six POSTs from one IP in a minute | Sixth gets the response chosen in Needs item 8 | curl loop output |
+| Spam: rate limit | POSTs from one IP over a single connection (`curl --next`) | 429 within a few posts past five (Needs item 8); counts are per machine, so separate connections may all get 200 | curl output |
+| Spam: hourly email cap | Seed 30 rows created in the last hour, then sign | 429, no email sent (Needs item 10); a unit test covers it, so no production run needed | test output |
 | Spam: unconfirmed never counts | Sign, do not confirm | Count unchanged; row has null `confirmed_at`; gone after the 7-day purge (run the cron handler with `wrangler dev --test-scheduled`) | query before and after |
 | Close | Set `status = closed`, POST a signature | Worker refuses with a clear message; page shows "Closed on [date], N signatories" | curl plus screenshot |
 | No-JS path | Submit the form with scripts disabled | Plain POST works and redirects to a "check your email" page | screenshot |
