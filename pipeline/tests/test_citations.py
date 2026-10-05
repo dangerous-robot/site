@@ -9,11 +9,11 @@ from unittest.mock import patch
 import pytest
 from pydantic_ai.models.test import TestModel
 
-from analyst.agent import verdict_only_agent
+from analyst.agent import VerdictAssessment, verdict_only_agent
 from analyst.citations import clean_citations
 from common.models import EntityType
 from orchestrator.entity_resolution import ResolvedEntity
-from orchestrator.pipeline import VerifyConfig, _analyse_claim
+from orchestrator.pipeline import VerifyConfig, _analyse_claim, _clean_verdict_citations
 
 NBSP = " "
 
@@ -84,6 +84,88 @@ def test_open_source_3d_untouched() -> None:
     assert unresolved == []
 
 
+def test_singular_source_takes_one_number() -> None:
+    text, unresolved = clean_citations(
+        "Per Source 1, 3 data centers run on coal.", _sources(3)
+    )
+    assert text == "Per *Title 1*, 3 data centers run on coal."
+    assert unresolved == []
+
+
+def test_singular_source_followed_by_year() -> None:
+    text, unresolved = clean_citations("Per Source 2, 2024 emissions rose.", _sources(3))
+    assert text == "Per *Title 2*, 2024 emissions rose."
+    assert unresolved == []
+
+
+@pytest.mark.parametrize("title", ["Open Source 1 Report", "Source 1 Report"])
+def test_inserted_title_not_rescanned(title: str) -> None:
+    sources = [{"title": title, "source_id": "2026/report"}, {"title": "Other"}]
+    text, unresolved = clean_citations("A finding【2026/report】.", sources)
+    assert text == f"A finding (*{title}*)."
+    assert unresolved == []
+
+
+def test_lowercase_sources_list() -> None:
+    text, unresolved = clean_citations("as sources 2 and 4 show", _sources())
+    assert text == "as *Title 2* and *Title 4* show"
+    assert unresolved == []
+
+
+def test_resources_not_matched() -> None:
+    text, unresolved = clean_citations("water resources 2 and 3 are scarce", _sources())
+    assert text == "water resources 2 and 3 are scarce"
+    assert unresolved == []
+
+
+def test_strip_mode_removes_without_titles() -> None:
+    text, unresolved = clean_citations(
+        "Renewable (Sources 2, 4) per the report【2026/source-1】 .", _sources(), strip=True
+    )
+    assert text == "Renewable per the report."
+    assert unresolved == []
+
+
+def test_strip_mode_leaves_out_of_range() -> None:
+    text, unresolved = clean_citations("see Source 9.", _sources(6), strip=True)
+    assert text == "see Source 9."
+    assert unresolved == ["Source 9"]
+
+
+def _verdict(**overrides) -> VerdictAssessment:
+    args = {
+        "title": "Brave hosts on renewable energy",
+        "verdict": "unverified",
+        "confidence": "low",
+        "narrative": "A narrative.",
+        "topics": ["environmental-impact"],
+        "verification_level": "claimed",
+        "seo_title": "Brave renewable hosting claim",
+    }
+    args.update(overrides)
+    return VerdictAssessment(**args)
+
+
+def test_takeaway_stays_within_limit_after_cleaning() -> None:
+    token = "【2026/long】"
+    body = ("w " * 100)[: 185 - len(token) - 1]
+    takeaway = f"{body}{token}."
+    assert len(takeaway) == 185
+    verdict = _verdict(takeaway=takeaway)
+    # A 40-char title inserted here would push the takeaway past 200.
+    _clean_verdict_citations(verdict, [{"title": "A" * 40, "source_id": "2026/long"}])
+    assert len(verdict.takeaway) <= 200
+    assert verdict.takeaway == f"{body}."
+
+
+def test_cap_rationale_cleaned() -> None:
+    verdict = _verdict(
+        cap_rationale="Only the company's own pages address the claim【2026/source-1】."
+    )
+    _clean_verdict_citations(verdict, _sources())
+    assert verdict.cap_rationale == "Only the company's own pages address the claim."
+
+
 # --- T5: _analyse_claim returns cleaned narrative and takeaway --------------
 
 
@@ -106,7 +188,7 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
             "narrative": f"Brave says so【2026/source-1】 and Source{NBSP}1 agrees.",
             "topics": ["environmental-impact"],
             "verification_level": "claimed",
-            "cap_rationale": "Only the company's own pages address the claim.",
+            "cap_rationale": "Only the company's own pages address the claim【2026/source-2】.",
             "seo_title": "Brave renewable hosting claim",
             "takeaway": "See Source 1.",
         }
@@ -133,8 +215,11 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
     assert failure is None
     narrative = out.verdict.narrative
     takeaway = out.verdict.takeaway
-    for text in (narrative, takeaway):
+    cap_rationale = out.verdict.cap_rationale
+    for text in (narrative, takeaway, cap_rationale):
         assert "【" not in text
         assert not re.search(r"Source\s+1", text)
     assert narrative == "Brave says so (*Title 1*) and *Title 1* agrees."
-    assert takeaway == "See *Title 1*."
+    # Short fields drop references rather than grow past their length limits.
+    assert takeaway == "See."
+    assert cap_rationale == "Only the company's own pages address the claim."
