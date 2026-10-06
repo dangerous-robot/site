@@ -1,8 +1,9 @@
 ---
 /*
  * The long-form article frame shared by writing posts and petitions: breadcrumb,
- * title, byline, body, and a footer link back to the list. Anything placed in
- * the "after" slot sits between the body and the footer (the petition sign block).
+ * title, byline, body, and a footer link back to the list. The "before" slot
+ * sits between the byline and the body (the petition sign block); the "after"
+ * slot sits between the body and the footer.
  */
 import Breadcrumb from './Breadcrumb.astro';
 import { formatPostDate, isoDate } from '../lib/writing';
@@ -28,6 +29,8 @@ const { title, author, ai_assisted, pubDate, updatedDate, draft, crumbs, back } 
     Written by {author}{ai_assisted && ', with AI assistance'} · <time datetime={isoDate(pubDate)}>{formatPostDate(pubDate)}</time>
     {updatedDate && <> · Updated <time datetime={isoDate(updatedDate)}>{formatPostDate(updatedDate)}</time></>}
   </p>
+
+  <slot name="before" />
 
   <div class="post-body">
     <slot />

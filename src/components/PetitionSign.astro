@@ -73,7 +73,7 @@ const names = state?.names ?? [];
       <p class="petition-status" role="status" aria-live="polite"></p>
 
       <p class="petition-privacy">
-        We keep your name, your email, and whether you want your name shown. Your email is used only to confirm your signature. We never show it, share it, or send you anything else. Only Dangerous Robot can read the list; Cloudflare stores it and Resend delivers the confirmation email. To remove your signature, use the link in your confirmation email or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
+        We use your email only to confirm your signature. We never show it, share it, or send you anything else. <a href="/privacy#petitions">How we handle signatures</a>
       </p>
     </div>
   </div>
@@ -212,15 +212,15 @@ const names = state?.names ?? [];
 
 <style>
   /* Spans the full reading column, unlike the 36rem post text: the board is a
-     two-column data panel, not prose. The statement keeps the prose measure. */
+     two-column data panel, not prose. The statement keeps the prose measure.
+     Sits above the post body, so the rule separates it from the article below. */
   .petition {
-    margin-top: var(--space-2xl);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
+    margin-bottom: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--color-border);
   }
 
-  /* Upright, not italic: the editor's note above is already an italic
-     blockquote, and the statement is a declaration, not a quotation. */
+  /* Upright, not italic: the statement is a declaration, not a quotation. */
   .petition-statement {
     margin: var(--space-md) 0 0;
     max-width: 36rem;

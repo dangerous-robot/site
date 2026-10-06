@@ -21,7 +21,7 @@ const { Content } = await render(action);
     crumbs={[{ label: 'Home', href: '/' }]}
     back={{ href: '/', label: 'Home' }}
   >
+    <PetitionSign slot="before" slug={petition} statement={petition_statement} />
     <Content />
-    <PetitionSign slot="after" slug={petition} statement={petition_statement} />
   </PostArticle>
 </Base>

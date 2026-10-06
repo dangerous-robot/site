@@ -1,0 +1,68 @@
+---
+import Base from '../layouts/Base.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+---
+<Base title="Privacy" description="What Dangerous Robot keeps about you, who can read it, and how to remove it." layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'Privacy' },
+    ]} />
+    <h1>Privacy</h1>
+
+    <p class="lede">
+      What we keep about you, who can read it, and how to remove it.
+    </p>
+
+    <h2>Reading the site</h2>
+    <p>
+      The site runs no analytics or tracking scripts. Display settings, such as theme and text size, are saved only in your browser.
+    </p>
+
+    <h2 id="petitions">Petitions</h2>
+    <p>
+      We use your email only to confirm your signature. We never show it, share it, or send you anything else.
+    </p>
+
+    <h3>What we keep when you sign</h3>
+    <ul>
+      <li>Your name.</li>
+      <li>Your email address.</li>
+      <li>Whether you want your name shown on the public list of signers.</li>
+    </ul>
+    <p>
+      Your IP address is used for a moment to slow down repeat attempts. It is not saved with your signature.
+    </p>
+
+    <h3>Who can read it</h3>
+    <p>
+      Only Dangerous Robot. Cloudflare stores the list, and Resend delivers the confirmation email. The public list shows only the names of signers who chose to be listed.
+    </p>
+
+    <h3>How long we keep it</h3>
+    <ul>
+      <li>A signature that is never confirmed is deleted after 7 days.</li>
+      <li>When a petition closes, we delete its signers' email addresses. Names and the count stay.</li>
+    </ul>
+
+    <h3>Removing your signature</h3>
+    <p>
+      Use the removal link in your confirmation email, or write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>.
+    </p>
+  </article>
+</Base>
+
+<style>
+  .lede {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  article h2 {
+    margin-top: var(--space-2xl);
+  }
+
+  article h3 {
+    margin-top: var(--space-xl);
+  }
+</style>

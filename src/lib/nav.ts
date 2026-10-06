@@ -38,6 +38,7 @@ export const FOOTER_LINKS: NavLink[] = [
   { href: '/about',                label: 'About' },
   { href: '/values',               label: 'Values' },
   { href: '/research#methodology', label: 'Methodology' },
+  { href: '/privacy',              label: 'Privacy' },
   { href: 'https://creativecommons.org/licenses/by/4.0/', label: 'CC-BY-4.0', external: true },
 ];
 
