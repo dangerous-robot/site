@@ -194,6 +194,7 @@ From architectural review (2026-04-18) and TODO.md:
 - **Research hub wording after the About rewrite (2026-10-04)** -- beta.4 H2 rewrote only the first FAQ answer and the Limits line. The methodology steps, "Rechecks", the FAQ JSON-LD summary and the conflicts answer still say "an operator" / "the operator"; `src/pages/research/index.astro:121` still says the site "tracks claims about AI companies and products" though subject claims exist.
 - **`ai-model-producers` index mismatch (2026-10-04)** -- the entity names the seven companies FLI graded in its Summer 2025 index; `/resources/ai-safety` covers the Winter 2025 index (eight, adding Alibaba Cloud, with Zhipu shown as Z.ai). Pick one index for the subject definition.
 - **Sub-question coverage in claim bodies (2026-10-04)** -- the analyst can write a "Sub-question coverage" block with internal ids (`sq1` to `sq3`) into published bodies; one was removed by hand from `ai-producers-existential-score`. Stop it in the analyst prompt or cleaner, and consider a `dr lint` rule.
+- **`spotlight` field is mostly a flag (2026-10-05)** -- the homepage spotlight now quotes `petition_statement` and shows the `spotlight` line only when a petition has no statement, so the line's text rarely appears. Consider a boolean (`featured: true`) and making `petition_statement` required for featured actions. Touches `src/content.config.ts`, `src/lib/actions.ts`, `src/pages/index.astro`, `public/admin/config.yml`, `docs/architecture/content-model.md`. Worth doing once a second petition exists.
 
 ### Opportunities
 
