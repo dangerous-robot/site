@@ -1,13 +1,25 @@
 ---
 title: Prohibit AI Self-Improvement Pledge
-description: Support laws that stop AI systems from improving their own capabilities without human control.
+description: Pledge to prohibit A.I. self-improvement without human control
 pubDate: 2026-10-05
 author: Wade Hudson
 ai_assisted: true
 draft: false
 petition: prohibit-ai-self-improvement
-petition_statement: I pledge to support legislation, in the United States and through international agreement, that prohibits A.I. systems from improving their own capabilities without human control.
-featured: false
+petition_statement: I pledge to support legislation, in the United States and through international agreement, that prohibits anyone from allowing A.I. systems to improve their own capabilities unless subject to human control, independent scientific review, and individual accountability.
+featured: true
 ---
 
-**Editor's note:** Researchers study a hypothesis known as "Fast Ramp" where an AI system could rapidly increase its own capabilities. Recursive self improvement could compound risks from AI and limit our ability to adapt. Please consider adding yourself as a signatory to the pledge [at the end of this post](#sign).
+### **Terms**
+
+**Recursive self-improvement.** An A.I. system modifying its own code, weights, training, or successors so that each gain speeds the next. Humans using A.I. to build better A.I. is engineering; the line is crossed when the system directs the loop.
+
+**Fast takeoff.** Capability gains arriving faster than humans can evaluate them — the next improvement begins before the last has been reviewed.
+
+**Human control.** The ability to inspect, pause, and halt at each step. Pressing "go" is not control.
+
+**Independent scientific review.** Review by qualified people outside the developer, whose findings cannot be suppressed. Where publishing a method is itself dangerous, the findings are published, not the method. Secrecy yields to scrutiny.
+
+**Individual accountability.** A named person, not a corporation, answers for each decision to proceed.
+
+Please consider adding yourself as a signatory.
