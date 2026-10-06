@@ -6,7 +6,7 @@ import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
 import { navLabel } from '../lib/nav';
 import { fetchPetitionState, petitionSummary } from '../lib/petition';
-import { getSpotlight, petitionHref } from '../lib/actions';
+import { getSpotlight } from '../lib/spotlight';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -116,19 +116,14 @@ const menu = menuEntries.map((m: { href: string; label: string; note: string; sh
 });
 
 /*
- * The spotlight: the newest action with a `spotlight` line, with its signature
- * tally. It quotes the petition statement, falling back to the spotlight line
- * when a petition has none. This file never names one; no spotlight line means
- * no band, and the fetch never fails the build (see fetchPetitionState).
+ * The spotlight: the newest entry marked `featured` (see getSpotlight), with
+ * its description under the title. A petition quotes its statement instead,
+ * when it has one, and adds its signature tally and a sign link. This file
+ * never names an entry; nothing featured means no band, and the fetch never
+ * fails the build (see fetchPetitionState).
  */
-const spotlightAction = await getSpotlight();
-const spotlight = spotlightAction && {
-  href: petitionHref(spotlightAction),
-  title: spotlightAction.data.title,
-  statement: spotlightAction.data.petition_statement ?? spotlightAction.data.spotlight!,
-  slug: spotlightAction.data.petition,
-  state: await fetchPetitionState(spotlightAction.data.petition),
-};
+const spotlight = await getSpotlight();
+const petitionState = spotlight?.petition ? await fetchPetitionState(spotlight.petition.slug) : null;
 
 /*
  * One exhibit per danger: a published claim whose verdict backs the column's
@@ -282,17 +277,19 @@ const websiteSchema = {
       </div>
     </section>
 
-    <!-- Spotlight: one action, between the hero and the menu. -->
+    <!-- Spotlight: one featured entry, between the hero and the menu. -->
     {spotlight && (
       <section class="spotlight" aria-labelledby="spotlight-title">
         <div class="spotlight__inner">
-          <p class="spotlight__eyebrow">Petition</p>
+          <p class="spotlight__eyebrow">{spotlight.label}</p>
           <div class="spotlight__head">
             <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
-            {spotlight.state && <span class="chip spotlight__tally" data-petition-tally={spotlight.slug}>{petitionSummary(spotlight.state)}</span>}
+            {spotlight.petition && petitionState && <span class="chip spotlight__tally" data-petition-tally={spotlight.petition.slug}>{petitionSummary(petitionState)}</span>}
           </div>
-          <blockquote class="spotlight__statement"><p>{spotlight.statement}</p></blockquote>
-          {spotlight.state?.status !== 'closed' && (
+          {spotlight.petition?.statement
+            ? <blockquote class="spotlight__statement"><p>{spotlight.petition.statement}</p></blockquote>
+            : <p class="spotlight__description">{spotlight.description}</p>}
+          {spotlight.petition && petitionState?.status !== 'closed' && (
             <a class="spotlight__sign" href={`${spotlight.href}#sign`}>Add your signature</a>
           )}
         </div>
@@ -533,8 +530,8 @@ const websiteSchema = {
   .hero-line__row + .hero-line__row { margin-top: 0.12em; }
 
   /* =========================================================
-     Spotlight: one action, the pledge's own words in a narrow column on the
-     page's left edge. Sized so "Where to start" still starts on screen at
+     Spotlight: one featured entry in a narrow column on the page's left edge;
+     a petition shows its pledge's own words. Sized so "Where to start" still starts on screen at
      1440x900.
      ========================================================= */
   .spotlight {
@@ -595,6 +592,12 @@ const websiteSchema = {
     color: var(--color-text);
   }
   .spotlight__statement p { margin: 0; }
+  .spotlight__description {
+    margin: 0;
+    font-size: var(--font-size-base);
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
   /* Solid and neutral, in the headline's color: teal stays the link color, so
      the one call to act on the page doesn't read as another link. */
   .spotlight__sign {

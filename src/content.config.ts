@@ -413,6 +413,8 @@ const resources = defineCollection({
     /** Layout-specific structured payload. Validated per-layout at render time. */
     data: z.unknown().optional(),
     noindex: z.boolean().default(false),
+    /** Feature on the homepage; the newest featured entry across writing, petitions and resources is shown. */
+    featured: z.boolean().default(false),
     /** External resources to surface with the entry on the hub page. */
     further_reading: z.array(z.object({
       title: z.string(),
@@ -434,6 +436,8 @@ const writing = defineCollection({
     ai_assisted: z.boolean().default(false),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
+    /** Feature on the homepage; the newest featured entry across writing, petitions and resources is shown. */
+    featured: z.boolean().default(false),
   }),
 });
 
@@ -453,8 +457,8 @@ const actions = defineCollection({
     petition: z.string(),
     /** The text signers put their name to; the sign block sets it large above the count. */
     petition_statement: z.string().optional(),
-    /** One line for the homepage spotlight; the newest featured action is shown there. */
-    spotlight: z.string().max(140).optional(),
+    /** Feature on the homepage; the newest featured entry across writing, petitions and resources is shown. */
+    featured: z.boolean().default(false),
   }),
 });
 

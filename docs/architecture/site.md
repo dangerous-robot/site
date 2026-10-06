@@ -28,7 +28,7 @@ Seven collections are defined:
 | `criteria`  | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 | `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
 | `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, ai_assisted, draft, tags |
-| `actions`   | `glob()` from `src/content/actions` (flat, `*.md`) | the writing fields minus tags, plus petition, petition_statement, spotlight |
+| `actions`   | `glob()` from `src/content/actions` (flat, `*.md`) | the writing fields minus tags, plus petition, petition_statement |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -81,7 +81,7 @@ All routes are statically generated at build time via `getStaticPaths()`.
 
 The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/values`, `/credits`):
 
-- `/` -- the homepage: the site's thesis in excerpts, a petition spotlight, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
+- `/` -- the homepage: the site's thesis in excerpts, a spotlight on one featured entry, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
 - `/petitions/{slug}` -- one page per `actions` entry, with the sign block (see [`petitions.md`](petitions.md)). There is no `/petitions` index.
 - `/writing/*` -- blog posts, plus an RSS feed.
 - `/research/*` -- the research tool: claims, entities, sources, criteria, taxonomy indexes, plus a `/research/` hub that explains how the tool works (FAQ + explainer).
@@ -181,7 +181,7 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 `src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
 
 1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("Convenience runs on reliance and pays out in compliance."), and the two-sentence headline "The algorithm got your attention. The robot wants the wheel.", one sentence per line
-2. **Spotlight** -- the newest action with a `spotlight` line: title, its `petition_statement` (that line when it has none), a signature count chip and an "Add your signature" link to the petition's `#sign`. No such action, no band.
+2. **Spotlight** -- the newest entry with `featured: true` ("Feature on homepage" in the admin) across writing, petitions and resources, picked by `getSpotlight` in `src/lib/spotlight.ts`: a label (Writing, Petition or Resource), the title, and the entry's `description`. A petition quotes its `petition_statement` instead, when it has one, and adds a signature count chip and an "Add your signature" link to its `#sign`. Nothing featured, no band.
 3. **Where to start** -- a visible `<nav>` list of four deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
 4. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
 5. **Trust** -- closing lines from the thesis, the north star as the closing quote, and a link to the full statement at `/writing/why-dangerous-robot-exists`.
@@ -215,7 +215,7 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 ### Cross-linking
 
-- The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, two `/resources/*` entries, and `/values`. The spotlight links to `/petitions/{id}` and that page's `#sign`.
+- The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, two `/resources/*` entries, and `/values`. The spotlight links to the featured entry (for a petition, `/petitions/{id}` and that page's `#sign`).
 - The homepage's closing section links the first post, `/writing/why-dangerous-robot-exists`.
 - Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`). The verdict badge links to `/research#methodology`, and the reviewer line links to `/about#who-runs-this`. The reviewer's name comes from `src/lib/reviewers.ts`, which maps the raw reviewer value in the audit sidecar; an unmapped value prints no name.
 - Entity detail pages query published claims and display those whose `entity` field matches.

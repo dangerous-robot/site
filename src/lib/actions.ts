@@ -8,9 +8,4 @@ export async function getActions(): Promise<Action[]> {
   return actions.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 }
 
-/** The newest action with a spotlight line, for the homepage band; undefined hides the band. */
-export async function getSpotlight(): Promise<Action | undefined> {
-  return (await getActions()).find((a) => a.data.spotlight);
-}
-
 export const petitionHref = (action: Action) => `/petitions/${action.id}`;

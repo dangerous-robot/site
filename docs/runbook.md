@@ -82,7 +82,7 @@ inv worker-deploy
 
 It runs `npm ci`, the type check and tests in `workers/api/`, then `wrangler d1 migrations apply dr-api --remote` (which lists pending migrations and asks before applying them) and `wrangler deploy`. It stops at the first failure. First deploy only, before it: `npx wrangler secret put RESEND_API_KEY` from `workers/api/` (paste the Resend sending key).
 
-**Open a petition.** Add the row, then add `src/content/actions/<slug>.md` with `petition: <slug>` (CMS collection "Petitions"). The page is `/petitions/<slug>`, with the sign block under the body. Add a `spotlight` line to feature it on the homepage.
+**Open a petition.** Add the row, then add `src/content/actions/<slug>.md` with `petition: <slug>` (CMS collection "Petitions"). The page is `/petitions/<slug>`, with the sign block under the body. Switch on "Feature on homepage" (`featured: true`) to put it in the homepage spotlight; any writing post or resource can be featured the same way, and the newest featured entry wins.
 
 ```bash
 npx wrangler d1 execute dr-api --remote --command "INSERT INTO petitions (slug, title, post_url, status, opened_at) VALUES ('<slug>', '<title>', 'https://dangerousrobot.org/petitions/<slug>', 'open', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"

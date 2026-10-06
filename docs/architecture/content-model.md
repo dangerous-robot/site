@@ -245,6 +245,7 @@ Blog posts for `/writing`. One Markdown file per post at `src/content/writing/{s
 | `ai_assisted` | boolean | no | Default `false`; adds "with AI assistance" to the byline |
 | `draft` | boolean | no | Default `false` |
 | `tags` | string[] | no | Default `[]`; free-form (no enum). Emitted as RSS categories |
+| `featured` | boolean | no | Default `false`. "Feature on homepage": the newest featured entry across writing, actions and resources fills the homepage spotlight, with its `description` under the title. Resources carry the same field |
 
 **Draft behaviour.** Pages read posts through `getPosts()` in `src/lib/writing.ts`: in dev (`astro dev`) drafts are listed and rendered with a "Draft" tag so authors can preview them; in production builds they are filtered out, so no page is generated. The RSS feed (`/writing/rss.xml`) excludes drafts in both dev and production.
 
@@ -257,7 +258,7 @@ Things a reader can do. Every action is a petition today, served at `/petitions/
 | `title`, `description`, `pubDate`, `updatedDate`, `author`, `ai_assisted`, `draft` | | | As for writing posts |
 | `petition` | string | yes | Slug of the petition row in the dr-api Worker |
 | `petition_statement` | string | no | The sentence signers put their name to; set large in the sign block |
-| `spotlight` | string | no | Max 140 characters. The newest action with this line is featured below the homepage hero, quoting `petition_statement`; the line shows only when that is empty |
+| `featured` | boolean | no | As for writing posts. A featured petition quotes `petition_statement` (its description when empty) and adds the count and sign button |
 
 **Draft behaviour.** `getActions()` in `src/lib/actions.ts` applies the same rule as writing: drafts render in dev and are dropped from production builds, including the homepage spotlight.
 

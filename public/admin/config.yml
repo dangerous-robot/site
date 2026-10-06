@@ -57,6 +57,7 @@ collections:
       - { name: ai_assisted, label: AI assisted, widget: boolean, default: false, hint: On when AI drafted the text }
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
+      - { name: featured, label: Feature on homepage, widget: boolean, default: false, hint: "Shows this below the homepage hero. If several are on, the newest by publish date wins." }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `actions` collection schema in src/content.config.ts. Every
@@ -97,12 +98,7 @@ collections:
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: petition, label: Petition slug, widget: string, hint: Slug of the petition row in the dr-api Worker; adds the sign block }
       - { name: petition_statement, label: Petition statement, widget: text, required: false, hint: The sentence signers put their name to; the sign block sets it large above the count }
-      - name: spotlight
-        label: Homepage spotlight line
-        widget: string
-        required: false
-        maxlength: 140
-        hint: One plain sentence. When set, the newest petition with a line is featured below the homepage hero, quoting the petition statement; this line shows only when the statement is empty.
+      - { name: featured, label: Feature on homepage, widget: boolean, default: false, hint: "Shows this below the homepage hero. If several are on, the newest by publish date wins." }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for
@@ -148,6 +144,7 @@ collections:
         max: 3
         options: [ai-literacy, ai-safety, consumer-guide, responsible-ai]
       - { name: noindex, label: Hide from search engines, widget: boolean, default: false }
+      - { name: featured, label: Feature on homepage, widget: boolean, default: false, hint: "Shows this below the homepage hero. If several are on, the newest by publish date wins." }
       - name: further_reading
         label: Further reading
         widget: list
