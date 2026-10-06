@@ -1,7 +1,7 @@
 # The refocus: foundation (1.0.0-beta.3) and pull-forwards (1.0.0-beta.4)
 
-**Status**: `in progress` (beta.3 deployed and tagged 2026-10-04; beta.4 implemented, verified except item 24; see both Status checklists)
-**Last updated**: 2026-10-05
+**Status**: `done` (beta.3 deployed and tagged 2026-10-04; beta.4 deployed and tagged 2026-10-06; see both Status checklists)
+**Last updated**: 2026-10-06
 **Source of truth**: the discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (Decisions Log; "07 — Early Roadmap"). Every copy string those records decided is reproduced here verbatim, so this plan can be implemented without reading them.
 
 The foundation (`1.0.0-beta.3`) is the first release of the refocus, the first that reflects the 2026-10-01 to 2026-10-03 discovery decisions. It is copy and trust work on the repo as it stands: no new content type, no schema change beyond two optional fields, no URL change, no redirect. It ships quietly (no announcement). The chatbot guide and the soft public launch are a later beta, planned separately when it opens.
@@ -188,7 +188,7 @@ beta.3 ships as checked above; the deploy gate does not move. The pull-forwards 
 - [x] I3: claimless entities (option A: hidden from the Companies and Products lists)
 - [x] J1: indexing trigger rewritten
 - [x] K1: `resources` collection in the CMS (articles only)
-- [ ] Verification checklist, beta.4: items 15 to 23 and 25 pass (2026-10-04, `inv check` and built `dist/`; 16 on 2026-10-05); 24 waits on Brandon (the admin needs the local repository folder picker)
+- [x] Verification checklist, beta.4: items 15 to 23 and 25 pass (2026-10-04, `inv check` and built `dist/`; 16 on 2026-10-05); 24 passed by Brandon in the admin (2026-10-06)
 - [x] Needs from Brandon, beta.4: all five items answered 2026-10-04
 
 ### G. Pledge on the homepage
@@ -276,3 +276,4 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 | 2026-10-04 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | verification | Ran the beta.4 verification checklist: `inv check` passes; items 17 to 23 and 25 pass with positive controls (item 20 checks for markdown links only, as noted at the item). Item 16 waits on G1, item 24 on Brandon. |
 | 2026-10-05 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | implementation | G1: the published editor's note had no signatory sentence; added one, linking `#sign`. G2: menu entry "Sign the pledge" (short "Pledge") added after Values; the list is now two columns of four. Item 16 passes on a production build (post not a draft, note links `#sign`, list label and hamburger short label present). |
 | 2026-10-05 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | follow-up | Brandon changed the tagline and hero line, pulled the actions type forward (the pledge now lives at `/petitions/prohibit-ai-self-improvement`, old URL redirects), added a homepage spotlight band in place of the pledge's menu entry, and took Research, Turn off AI and Should I use AI out of the primary nav and the homepage menu. Rows A1, A3, G2, the out-of-scope list, the beta.4 note on the pledge URL, and verification items 2 and 16 are marked superseded; the decisions are in `docs/decisions.md` (2026-10-05). |
+| 2026-10-06 | agent (claude-opus-5-5, Claude Code session with Brandon) | release | Brandon passed verification item 24 in the admin; beta.4 checklist complete. Roadmap §9 records the later homepage and footer commits (spotlight for any featured entry, "Two kinds of AI danger", footer cut, `inv worker-deploy`). `VERSION.md` bumped to `1.0.0-beta.4`, deployed and tagged `v1.0.0-beta.4`. |
