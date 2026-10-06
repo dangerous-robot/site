@@ -290,7 +290,7 @@ const websiteSchema = {
             ? <blockquote class="spotlight__statement"><p>{spotlight.petition.statement}</p></blockquote>
             : <p class="spotlight__description">{spotlight.description}</p>}
           {spotlight.petition && petitionState?.status !== 'closed' && (
-            <a class="spotlight__sign" href={`${spotlight.href}#sign`}>Add your signature</a>
+            <a class="spotlight__sign" href={spotlight.href}>Add your signature</a>
           )}
         </div>
       </section>

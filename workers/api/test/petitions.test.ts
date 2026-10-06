@@ -358,7 +358,7 @@ describe('no-JS path', () => {
     expect(res.headers.get('Content-Type')).toContain('text/html');
     const html = await res.text();
     expect(html).toContain('Check your email');
-    expect(html).toContain(`${SITE}/writing/pledge#sign`);
+    expect(html).toContain(`href="${SITE}/writing/pledge"`);
   });
 });
 

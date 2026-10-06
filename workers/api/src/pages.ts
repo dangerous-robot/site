@@ -37,7 +37,7 @@ function page(title: string, bodyHtml: string, status = 200): Response {
 }
 
 function backLink(postUrl: string): string {
-  return `<p><a href="${escapeHtml(postUrl)}#sign">Back to the petition</a></p>`;
+  return `<p><a href="${escapeHtml(postUrl)}">Back to the petition</a></p>`;
 }
 
 /** One-button landing page: GET never changes data, because email link scanners fetch every URL. */

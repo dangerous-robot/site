@@ -27,7 +27,7 @@ const closed = state?.status === 'closed';
 const closedLine = state ? closedText(state) : '';
 const names = state?.names ?? [];
 ---
-<section id="sign" class="petition" data-slug={slug}>
+<section class="petition" data-slug={slug}>
   <h2>Add your signature</h2>
   {statement && <p class="petition-statement">{statement}</p>}
 
