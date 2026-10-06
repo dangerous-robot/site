@@ -319,9 +319,10 @@ const websiteSchema = {
     <!-- The two dangers: the argument, with one checked claim at the base of each column. -->
     <section class="dangers" aria-labelledby="dangers-title">
       <div class="dangers__inner">
-        <h2 class="dangers__title" id="dangers-title">
-          AI is a dangerous tool, but we keep using it because it is useful.
-        </h2>
+        <h2 class="dangers__title" id="dangers-title">Two kinds of AI danger</h2>
+        <p class="dangers__lede">
+          One you can learn to handle. The other, its makers say they can’t yet control. We hand it our lives anyway: it grants wishes.
+        </p>
 
         <div class="dangers__grid">
           {dangers.map((d, i) => (
@@ -358,7 +359,6 @@ const websiteSchema = {
         <div class="trust__body">
           <h2 class="trust__title" id="trust-title">Both kinds of danger come down to trust.</h2>
           <p class="trust__quote">The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours.</p>
-          <p class="trust__text">Choices add up to market pressure. Voices add up to policy.</p>
         </div>
 
         <div class="trust__aside">
@@ -704,12 +704,21 @@ const websiteSchema = {
     max-width: var(--page-max);
     margin: 0 auto;
   }
+  /* Labelled like "Where to start", so the big line under it reads as the
+     section's opening sentence rather than its name. */
   .dangers__title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: 1.15rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
+  }
+  .dangers__lede {
     margin: 0 0 clamp(var(--space-xl), 5vh, var(--space-2xl));
-    max-width: 24ch;
+    max-width: 30ch;
     font-family: var(--font-heading);
     font-weight: 400;
-    font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+    font-size: clamp(1.5rem, 3vw, 2.4rem);
     line-height: 1.2;
     color: var(--color-text-heading);
     text-wrap: balance;
@@ -928,11 +937,6 @@ const websiteSchema = {
     font-size: clamp(1.2rem, 1.8vw, 1.5rem);
     line-height: 1.35;
     color: var(--color-text);
-  }
-  .trust__text {
-    margin: 0;
-    max-width: var(--measure);
-    color: var(--color-text-muted);
   }
   .trust__aside {
     display: flex;
