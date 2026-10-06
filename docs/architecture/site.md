@@ -18,7 +18,7 @@ Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `@
 
 The site mixes pipeline-managed research content (under `research/`, outside `src/`) with hand-authored editorial content (under `src/content/resources/` and `src/content/writing/`). Astro's content layer loads both via loaders defined in `src/content.config.ts`.
 
-Six collections are defined:
+Seven collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
@@ -28,6 +28,7 @@ Six collections are defined:
 | `criteria`  | `file()` from `research/templates.yaml` (single file) | slug, text, entity_type, topics, core, notes |
 | `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
 | `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, ai_assisted, draft, tags |
+| `actions`   | `glob()` from `src/content/actions` (flat, `*.md`) | the writing fields minus tags, plus petition, petition_statement, spotlight |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -67,6 +68,9 @@ src/content/resources/
 
 src/content/writing/
   why-dangerous-robot-exists.md
+
+src/content/actions/
+  prohibit-ai-self-improvement.md
 ```
 
 Subdirectory structure within each `glob`-loaded collection is flexible -- the loader picks up all `**/*.md` files under the base path. The full relative path (minus extension) becomes the entry's `id`, which drives URL slugs.
@@ -77,17 +81,19 @@ All routes are statically generated at build time via `getStaticPaths()`.
 
 The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/values`, `/credits`):
 
-- `/` -- the homepage: the site's thesis in excerpts, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
+- `/` -- the homepage: the site's thesis in excerpts, a petition spotlight, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
+- `/petitions/{slug}` -- one page per `actions` entry, with the sign block (see [`petitions.md`](petitions.md)). There is no `/petitions` index.
 - `/writing/*` -- blog posts, plus an RSS feed.
 - `/research/*` -- the research tool: claims, entities, sources, criteria, taxonomy indexes, plus a `/research/` hub that explains how the tool works (FAQ + explainer).
 - `/resources/*` -- the editorial section: hand-authored articles, comparison matrices, decision tools, and how-to guides.
 
 | Route pattern                  | File                                              | Data source                                 |
 |--------------------------------|---------------------------------------------------|---------------------------------------------|
-| `/`                            | `src/pages/index.astro`                           | `claims`, `entities`, `criteria` collections |
+| `/`                            | `src/pages/index.astro`                           | `claims`, `entities`, `criteria`, `actions` collections |
 | `/writing`                     | `src/pages/writing/index.astro`                   | `writing` collection (newest first)         |
 | `/writing/[...slug]`           | `src/pages/writing/[...slug].astro`               | `writing` collection                        |
 | `/writing/rss.xml`             | `src/pages/writing/rss.xml.ts`                    | `writing` collection (drafts excluded)      |
+| `/petitions/[slug]`            | `src/pages/petitions/[slug].astro`                | `actions` collection                        |
 | `/research`                    | `src/pages/research/index.astro`                  | Static explainer + FAQ content              |
 | `/research/claims`             | `src/pages/research/claims/index.astro`           | `claims` collection                         |
 | `/research/claims/[...slug]`   | `src/pages/research/claims/[...slug].astro`       | `claims` collection                         |
@@ -175,11 +181,12 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 `src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
 
 1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("Convenience runs on reliance and pays out in compliance."), and the two-sentence headline "The algorithm got your attention. The robot wants the wheel.", one sentence per line
-2. **Where to start** -- a visible `<nav>` list of seven deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
-3. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
-4. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).
+2. **Spotlight** -- the newest action with a `spotlight` line: title, that line, a signature count chip and an "Add your signature" link to the petition's `#sign`. No such action, no band.
+3. **Where to start** -- a visible `<nav>` list of four deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
+4. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
+5. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).
 
-**The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/turn-off-ai`, `/resources/should-i`, `/resources/ai-safety`, `/resources/responsible-ai`, `/research`, `/values`. Labels and notes are editorial. Each `short` label comes from `navLabel(href)` in `src/lib/nav.ts`; an entry sets its own `short` only when `nav.ts` does not list its `href`. The build fails if an entry sets `short` for an `href` that `nav.ts` lists, or if neither supplies one.
+**The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/ai-safety`, `/resources/responsible-ai`, `/values`. Research, Turn off AI and Should I use AI are left out until they are reworked (`docs/decisions.md`, 2026-10-05). Labels and notes are editorial. Each `short` label comes from `navLabel(href)` in `src/lib/nav.ts`; an entry sets its own `short` only when `nav.ts` does not list its `href`. The build fails if an entry sets `short` for an `href` that `nav.ts` lists, or if neither supplies one.
 
 **The two placed claim cards.** Each column picks a published claim in this order: claims tagged `home-familiar` or `home-second` (by id), then the default in `PREFERRED_EXHIBITS` (`subjects/generative-ai/using-generative-ai-harms-cognitive-ability` and `subjects/ai-model-producers/ai-producers-existential-score`), then the next unused claim tagged `highlight` (subject claims first, then by id). Tagging a FALSE or MIXED claim for one column lets the homepage show that checking can come out either way. With no candidate the column renders without a card. Claim titles are bolded with entity names and criteria vocabulary, which is why the page loads the `entities` and `criteria` collections alongside published `claims`.
 
@@ -189,7 +196,7 @@ The thesis text on the page is in the `dangers` array and the markup; it is exce
 
 `/writing` lists posts newest first; `/writing/[...slug]` renders one post with a byline ("Written by {author}", or "Written by {author}, with AI assistance" when the post's `ai_assisted` flag is on; publish date; optional updated date). Both read posts through `getPosts()` in `src/lib/writing.ts`, which keeps drafts in dev (shown with a "Draft" tag) and drops them from production builds. `/writing/rss.xml` uses `@astrojs/rss` and never includes drafts, even in dev. `Base.astro` advertises the feed with a `<link rel="alternate" type="application/rss+xml">` in `<head>` on every page.
 
-**Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines two collections mirroring the Zod schemas: `writing` (media in `public/images/writing`) and `resources`, which lists only `layout: article` entries (media in `public/images/resources`); the matrix, guide and tool entries are edited by hand. `robots.txt` disallows `/admin/`.
+**Sveltia CMS admin.** `/admin` is not an Astro route: it is two static files in `public/admin/`. `index.html` loads Sveltia CMS from unpkg (marked `noindex`), and `config.yml` defines three collections mirroring the Zod schemas: `writing` (media in `public/images/writing`), `actions` (labelled Petitions; same media folder) and `resources`, which lists only `layout: article` entries (media in `public/images/resources`); the matrix, guide and tool entries are edited by hand. `robots.txt` disallows `/admin/`.
 
 - **Local-repository workflow (works now).** With the dev server running, open `http://localhost:4321/admin/index.html` in Chrome (the bare `/admin/` path 404s under Astro dev), choose "Work with Local Repository", and pick the repo root. Edits are written to `src/content/writing/` or `src/content/resources/` (images under `public/images/`) on disk; nothing is committed.
 - **Production login (not set up).** The `github` backend needs the sveltia-cms-auth OAuth worker deployed on Cloudflare Workers and `backend.base_url` set in `config.yml`.
@@ -208,7 +215,7 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 ### Cross-linking
 
-- The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, four `/resources/*` entries, `/research`, and `/values`.
+- The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, two `/resources/*` entries, and `/values`. The spotlight links to `/petitions/{id}` and that page's `#sign`.
 - The homepage's closing section links the first post, `/writing/why-dangerous-robot-exists`.
 - Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`). The verdict badge links to `/research#methodology`, and the reviewer line links to `/about#who-runs-this`. The reviewer's name comes from `src/lib/reviewers.ts`, which maps the raw reviewer value in the audit sidecar; an unmapped value prints no name.
 - Entity detail pages query published claims and display those whose `entity` field matches.
@@ -241,7 +248,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
     <footer>   -- method line, maker line (TreadLightlyAI linked), footer links, version
 ```
 
-**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). `TOP_LINKS` is derived from `SECTIONS`, and the collapsed (hamburger) menu renders `SECTIONS`. `FOOTER_LINKS` holds the footer links: About, Values, Methodology and Credits on one row, then GitHub and CC-BY-4.0 (marked `external`) with the version on the next. `navLabel(href)` gives the homepage menu its short labels.
+**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer links: About, Values, Methodology and Credits on one row, then GitHub and CC-BY-4.0 (marked `external`) with the version on the next. `navLabel(href)` gives the homepage menu its short labels.
 
 ### Styling approach
 

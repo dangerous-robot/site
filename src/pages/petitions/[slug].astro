@@ -1,0 +1,27 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import PostArticle from '../../components/PostArticle.astro';
+import PetitionSign from '../../components/PetitionSign.astro';
+import { getActions, type Action } from '../../lib/actions';
+
+export async function getStaticPaths() {
+  const actions = await getActions();
+  return actions.map((action) => ({ params: { slug: action.id }, props: { action } }));
+}
+
+interface Props { action: Action }
+const { action } = Astro.props;
+const { title, description, petition, petition_statement } = action.data;
+const { Content } = await render(action);
+---
+<Base title={title} description={description} layout="reading">
+  <PostArticle
+    {...action.data}
+    crumbs={[{ label: 'Home', href: '/' }]}
+    back={{ href: '/', label: 'Home' }}
+  >
+    <Content />
+    <PetitionSign slot="after" slug={petition} statement={petition_statement} />
+  </PostArticle>
+</Base>

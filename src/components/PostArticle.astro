@@ -1,0 +1,76 @@
+---
+/*
+ * The long-form article frame shared by writing posts and petitions: breadcrumb,
+ * title, byline, body, and a footer link back to the list. Anything placed in
+ * the "after" slot sits between the body and the footer (the petition sign block).
+ */
+import Breadcrumb from './Breadcrumb.astro';
+import { formatPostDate, isoDate } from '../lib/writing';
+
+interface Props {
+  title: string;
+  author: string;
+  ai_assisted: boolean;
+  pubDate: Date;
+  updatedDate?: Date;
+  draft: boolean;
+  crumbs: { label: string; href?: string }[];
+  back: { href: string; label: string };
+}
+
+const { title, author, ai_assisted, pubDate, updatedDate, draft, crumbs, back } = Astro.props;
+---
+<article class="reading">
+  <Breadcrumb crumbs={[...crumbs, { label: title }]} />
+  <h1>{title}</h1>
+  <p class="byline">
+    {draft && <span class="draft-tag">Draft</span>}
+    Written by {author}{ai_assisted && ', with AI assistance'} · <time datetime={isoDate(pubDate)}>{formatPostDate(pubDate)}</time>
+    {updatedDate && <> · Updated <time datetime={isoDate(updatedDate)}>{formatPostDate(updatedDate)}</time></>}
+  </p>
+
+  <div class="post-body">
+    <slot />
+  </div>
+
+  <slot name="after" />
+
+  <footer class="post-footer">
+    <a href={back.href}>← {back.label}</a>
+  </footer>
+</article>
+
+<style>
+  .byline {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+    margin-bottom: var(--space-xl);
+  }
+
+  .draft-tag {
+    margin-right: var(--space-sm);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0 0.35em;
+  }
+
+  /* Long-form measure: the shared reading column runs ~90 characters a line
+     at desktop widths; cap post text near 70. */
+  .post-body {
+    max-width: 36rem;
+  }
+
+  .post-body :global(h2) {
+    margin-top: var(--space-2xl);
+  }
+
+  .post-footer {
+    margin-top: var(--space-2xl);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--font-size-sm);
+  }
+</style>

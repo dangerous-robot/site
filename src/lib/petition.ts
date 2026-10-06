@@ -48,7 +48,7 @@ export function statusLabel(s: PetitionState): string {
   return s.status === 'closed' ? 'Closed' : 'Open';
 }
 
-/** The homepage menu's one-line tally: "152 signed", or "Closed, 152 signed". */
+/** The homepage spotlight's one-line tally: "152 signed", or "Closed, 152 signed". */
 export function petitionSummary(s: PetitionState): string {
   const signed = `${formatCount(s.count)} signed`;
   return s.status === 'closed' ? `Closed, ${signed}` : signed;

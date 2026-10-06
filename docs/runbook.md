@@ -83,10 +83,16 @@ npx wrangler d1 migrations apply dr-api --remote
 npx wrangler deploy
 ```
 
-**Open a petition.** Add the row, then set `petition: <slug>` in the post's frontmatter (CMS field "Petition slug"). The sign block appears under the post body.
+**Open a petition.** Add the row, then add `src/content/actions/<slug>.md` with `petition: <slug>` (CMS collection "Petitions"). The page is `/petitions/<slug>`, with the sign block under the body. Add a `spotlight` line to feature it on the homepage.
 
 ```bash
-npx wrangler d1 execute dr-api --remote --command "INSERT INTO petitions (slug, title, post_url, status, opened_at) VALUES ('<slug>', '<title>', 'https://dangerousrobot.org/writing/<post-slug>', 'open', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+npx wrangler d1 execute dr-api --remote --command "INSERT INTO petitions (slug, title, post_url, status, opened_at) VALUES ('<slug>', '<title>', 'https://dangerousrobot.org/petitions/<slug>', 'open', strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+```
+
+**Move a petition's page.** The Worker's message pages link back to `post_url`; update it after the new page is deployed.
+
+```bash
+npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET post_url = 'https://dangerousrobot.org/petitions/<slug>' WHERE slug = '<slug>'"
 ```
 
 **Close a petition.** Export first if you need the emails: the daily cleanup deletes the email column for closed petitions (names, consent and dates stay).

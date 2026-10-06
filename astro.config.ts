@@ -19,6 +19,7 @@ export default defineConfig({
     "/sources/[...slug]": "/research/sources/[...slug]",
     "/criteria": "/research/criteria",
     "/criteria/[slug]": "/research/criteria/[slug]",
+    "/writing/pledge-prohibit-ai-self-improvement-pledge": "/petitions/prohibit-ai-self-improvement",
   },
   integrations: [
     sitemap({

@@ -434,11 +434,28 @@ const writing = defineCollection({
     ai_assisted: z.boolean().default(false),
     draft: z.boolean().default(false),
     tags: z.array(z.string()).default([]),
-    /** Slug of a petition row in the dr-api Worker; renders a sign block under the post. */
-    petition: z.string().optional(),
-    /** The text signers put their name to; the sign block sets it large above the count. */
-    petition_statement: z.string().optional(),
   }),
 });
 
-export const collections = { sources, claims, entities, criteria, resources, writing };
+/** Things a reader can do. Today every action is a petition, served at /petitions/{id}. */
+const actions = defineCollection({
+  // Flat folder: the route is /petitions/[slug], so an id may not contain a slash.
+  loader: glob({ pattern: '*.md', base: 'src/content/actions' }),
+  schema: z.object({
+    title: z.string(),
+    description: z.string().max(200),
+    pubDate: z.coerce.date(),
+    updatedDate: z.coerce.date().optional(),
+    author: z.string().default('Brandon Faloona'),
+    ai_assisted: z.boolean().default(false),
+    draft: z.boolean().default(false),
+    /** Slug of a petition row in the dr-api Worker; renders a sign block under the text. */
+    petition: z.string(),
+    /** The text signers put their name to; the sign block sets it large above the count. */
+    petition_statement: z.string().optional(),
+    /** One line for the homepage spotlight; the newest featured action is shown there. */
+    spotlight: z.string().max(140).optional(),
+  }),
+});
+
+export const collections = { sources, claims, entities, criteria, resources, writing, actions };

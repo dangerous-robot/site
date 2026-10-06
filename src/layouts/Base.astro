@@ -53,6 +53,8 @@ const currentSection = SECTIONS.find(
   (s) => pathname === s.href || pathname.startsWith(s.href + '/') || s.links.some(l => pathname === l.href),
 ) ?? null;
 const navLinks: NavLink[] = currentSection?.links ?? [];
+// Collapsed, the dropdown is the only nav, so a non-primary section still lists itself on its own pages.
+const dropdownSections = SECTIONS.filter((s) => s.primary !== false || s === currentSection);
 const footerInternal = FOOTER_LINKS.filter((l) => !l.external);
 const footerExternal = FOOTER_LINKS.filter((l) => l.external);
 const footerSeparator = " \u00a0·\u00a0 ";
@@ -176,7 +178,7 @@ const orgSchema = {
                 >
                   Home
                 </a>
-                {SECTIONS.map((s) => (
+                {dropdownSections.map((s) => (
                   <div class="dropdown-section">
                     <a
                       class="dropdown-section-label"

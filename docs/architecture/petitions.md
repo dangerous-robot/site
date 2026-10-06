@@ -1,6 +1,6 @@
 # Petitions
 
-How readers sign a petition on a writing post, and where the signatures live. Plan and decisions: `docs/plans/petition-signatures.md`. Operations (open, close, export, remove, deploy): `docs/runbook.md`, "Petitions".
+How readers sign a petition on its page at `/petitions/{slug}`, and where the signatures live. Plan and decisions: `docs/plans/petition-signatures.md`. Operations (open, close, export, remove, deploy): `docs/runbook.md`, "Petitions".
 
 ## Pieces
 
@@ -8,10 +8,10 @@ How readers sign a petition on a writing post, and where the signatures live. Pl
 |---|---|---|
 | `dr-api` Worker | `workers/api/` (own `package.json`, deployed by hand with `wrangler deploy`) | Routes under `api.dangerousrobot.org/petitions/{slug}` |
 | `dr-api` D1 database | Cloudflare, region WNAM; schema in `workers/api/migrations/` | `petitions` and `signatures` tables |
-| Sign block | `src/components/PetitionSign.astro`, rendered by `src/pages/writing/[...slug].astro` | Form, count, public names, privacy notice |
-| `petition` frontmatter field | `writing` collection in `src/content.config.ts`, mirrored in `public/admin/config.yml` | Links a post to a petition row by slug |
+| Sign block | `src/components/PetitionSign.astro`, rendered by `src/pages/petitions/[slug].astro` | Form, count, public names, privacy notice |
+| `petition` frontmatter field | `actions` collection in `src/content.config.ts`, mirrored in `public/admin/config.yml` | Links an action to a petition row by slug; the file name is the page slug |
 | `petition_statement` frontmatter field | Same two files, optional | The sentence signers put their name to; the sign block sets it above the count |
-| Homepage tally | `src/pages/index.astro`, menu entry for a post with `petition` set | Count beside the menu label, from the same build-time fetch, refreshed in the browser |
+| Homepage spotlight | `src/pages/index.astro`, the newest action with a `spotlight` line (`getSpotlight` in `src/lib/actions.ts`) | Title, line, count chip and sign link, from the same build-time fetch, refreshed in the browser; the sign link is dropped when the petition is closed |
 | Resend | External, called over HTTPS from the Worker | Delivers the one confirmation email |
 
 The site stays static. The sign block and the homepage fetch the Worker at build time through `fetchPetitionState` in `src/lib/petition.ts` (3-second timeout; any error renders no count, so a Worker outage never fails the site build); both fetch again in the browser on load for a live count, and keep the snapshot if that fails.

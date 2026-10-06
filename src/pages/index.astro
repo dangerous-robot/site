@@ -6,6 +6,7 @@ import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
 import { navLabel } from '../lib/nav';
 import { fetchPetitionState, petitionSummary } from '../lib/petition';
+import { getSpotlight, petitionHref } from '../lib/actions';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -86,16 +87,6 @@ const menuEntries = [
     note: WRITING_LEDE,
   },
   {
-    href: '/resources/turn-off-ai',
-    label: 'Turn off the AI you didn’t ask for',
-    note: 'Meta AI, Google AI Overviews, Copilot: what can be switched off, and what to try when it can’t.',
-  },
-  {
-    href: '/resources/should-i',
-    label: 'Should I use AI for this?',
-    note: 'A few questions worth asking before you hand a task over.',
-  },
-  {
     href: '/resources/ai-safety',
     label: 'How AI companies score on safety',
     note: 'The Future of Life Institute’s index: the best grade is a C+.',
@@ -106,37 +97,13 @@ const menuEntries = [
     note: 'GreenPT, Ecosia AI, Euria and others compared on privacy, environment and transparency.',
   },
   {
-    href: '/research',
-    label: 'Company claims, checked',
-    note: 'Verdicts on what AI companies say about safety and the environment, each with its sources.',
-  },
-  {
     href: '/values',
     label: 'What this site stands for',
     note: 'Where this site stands, in plain words.',
   },
-  {
-    href: '/writing/pledge-prohibit-ai-self-improvement-pledge',
-    label: 'Sign the pledge',
-    short: 'Pledge',
-    note: 'Support laws that stop AI systems from improving their own capabilities without human control.',
-  },
 ];
 
-/*
- * An entry for a petition post carries its signature tally. The petition is
- * read from the post's frontmatter, so this file never names one; the fetch
- * never fails the build (see fetchPetitionState).
- */
-const writing = await getCollection('writing');
-async function petitionTally(href: string): Promise<{ slug: string; text: string } | undefined> {
-  const slug = writing.find((p) => `/writing/${p.id}` === href)?.data.petition;
-  if (!slug) return undefined;
-  const state = await fetchPetitionState(slug);
-  return state ? { slug, text: petitionSummary(state) } : undefined;
-}
-
-const menu = await Promise.all(menuEntries.map(async (m: { href: string; label: string; note: string; short?: string }) => {
+const menu = menuEntries.map((m: { href: string; label: string; note: string; short?: string }) => {
   const fromNav = navLabel(m.href);
   if (fromNav && m.short) {
     throw new Error(`Homepage menu: ${m.href} is in src/lib/nav.ts; drop its own short label.`);
@@ -145,8 +112,22 @@ const menu = await Promise.all(menuEntries.map(async (m: { href: string; label: 
   if (!short) {
     throw new Error(`Homepage menu: ${m.href} needs a short label, in src/lib/nav.ts or on the entry.`);
   }
-  return { ...m, short, tally: await petitionTally(m.href) };
-}));
+  return { ...m, short };
+});
+
+/*
+ * The spotlight: the newest action with a `spotlight` line, with its signature
+ * tally. This file never names one; no spotlight line means no band, and the
+ * fetch never fails the build (see fetchPetitionState).
+ */
+const spotlightAction = await getSpotlight();
+const spotlight = spotlightAction && {
+  href: petitionHref(spotlightAction),
+  title: spotlightAction.data.title,
+  note: spotlightAction.data.spotlight!,
+  slug: spotlightAction.data.petition,
+  state: await fetchPetitionState(spotlightAction.data.petition),
+};
 
 /*
  * One exhibit per danger: a published claim whose verdict backs the column's
@@ -300,6 +281,25 @@ const websiteSchema = {
       </div>
     </section>
 
+    <!-- Spotlight: one action, between the hero and the menu. -->
+    {spotlight && (
+      <section class="spotlight" aria-labelledby="spotlight-title">
+        <div class="spotlight__inner">
+          <p class="spotlight__eyebrow">Petition</p>
+          <div class="spotlight__body">
+            <div class="spotlight__head">
+              <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
+              {spotlight.state && <span class="chip spotlight__tally" data-petition-tally={spotlight.slug}>{petitionSummary(spotlight.state)}</span>}
+            </div>
+            <p class="spotlight__note">{spotlight.note}</p>
+          </div>
+          {spotlight.state?.status !== 'closed' && (
+            <a class="spotlight__sign" href={`${spotlight.href}#sign`}>Add your signature</a>
+          )}
+        </div>
+      </section>
+    )}
+
     <!-- The visible menu: every destination in one list, above the fold at 1440x900. -->
     <nav class="start" id="start" aria-labelledby="start-title" tabindex="-1">
       <div class="start__inner">
@@ -308,10 +308,7 @@ const websiteSchema = {
           {menu.map((m) => (
             <li class="menu__item">
               <a class="menu__link" href={m.href}>
-                <span class="menu__label">
-                  {m.label}
-                  {m.tally && <span class="chip menu__tally" data-petition-tally={m.tally.slug}>{m.tally.text}</span>}
-                </span>
+                <span class="menu__label">{m.label}</span>
                 <span class="menu__note">{m.note}</span>
               </a>
             </li>
@@ -379,14 +376,17 @@ const websiteSchema = {
 </Base>
 
 <script>
-  // The tally chip is a build-time snapshot that ages between deploys; refresh
-  // it in place. A failed fetch leaves the snapshot. No chip is added when the
-  // build had none, so the menu never shifts after load.
+  // The spotlight's tally is a build-time snapshot that ages between deploys;
+  // refresh it in place, and drop the sign link if the petition has closed. A
+  // failed fetch leaves the snapshot. No chip is added when the build had none,
+  // so the page never shifts after load.
   import { fetchPetitionState, petitionSummary } from '../lib/petition';
 
   for (const chip of document.querySelectorAll<HTMLElement>('[data-petition-tally]')) {
     fetchPetitionState(chip.dataset.petitionTally!).then((s) => {
-      if (s) chip.textContent = petitionSummary(s);
+      if (!s) return;
+      chip.textContent = petitionSummary(s);
+      if (s.status === 'closed') chip.closest('.spotlight')?.querySelector('.spotlight__sign')?.remove();
     });
   }
 </script>
@@ -534,6 +534,84 @@ const websiteSchema = {
   .hero-line__row + .hero-line__row { margin-top: 0.12em; }
 
   /* =========================================================
+     Spotlight: one action, kept to a single row on wide screens so the
+     menu still starts on screen at 1440x900.
+     ========================================================= */
+  .spotlight {
+    padding: var(--space-md) var(--gutter);
+    border-top: 2px solid var(--color-accent);
+    background: var(--color-surface);
+  }
+  .spotlight__inner {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm) var(--space-lg);
+    align-items: center;
+  }
+  .spotlight__eyebrow {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+  }
+  /* The chip sits outside the h2 so the section's name stays the title alone. */
+  .spotlight__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-xs) var(--space-sm);
+  }
+  .spotlight__title {
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 1.15rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .spotlight__title a { color: var(--color-accent); }
+  .spotlight__tally {
+    --chip-color: var(--color-text-muted);
+    padding: 0.1em 0.45em;
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    line-height: 1.4;
+  }
+  .spotlight__note {
+    margin: 0.2em 0 0;
+    max-width: 64ch;
+    font-size: var(--font-size-sm);
+    line-height: 1.45;
+    color: var(--color-text-muted);
+  }
+  /* Same outline treatment as the petition form's submit button. */
+  .spotlight__sign {
+    justify-self: start;
+    padding: var(--space-sm) var(--space-lg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-accent);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .spotlight__sign:hover {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    text-decoration: none;
+  }
+  @media (min-width: 761px) {
+    .spotlight__inner { grid-template-columns: auto minmax(0, 1fr) auto; }
+  }
+
+  /* =========================================================
      Where to start: the visible menu
      ========================================================= */
   .start {
@@ -577,20 +655,6 @@ const websiteSchema = {
     font-weight: 600;
     line-height: 1.3;
     color: var(--color-accent);
-  }
-  /* The petition's tally, as a small chip after its label. Inline-block, so the
-     label's hover underline stops at the label text. */
-  .menu__tally {
-    --chip-color: var(--color-text-muted);
-    display: inline-block;
-    margin-left: var(--space-sm);
-    padding: 0.1em 0.45em;
-    vertical-align: 0.15em;
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    line-height: 1.4;
   }
   .menu__note {
     display: block;

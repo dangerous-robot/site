@@ -1,11 +1,14 @@
 export type NavLink = { href: string; label: string; external?: boolean };
-export type Section = { href: string; label: string; links: NavLink[] };
+/** `primary: false` keeps a section's sub-nav on its own pages but leaves it out of the top row and the dropdown. */
+export type Section = { href: string; label: string; links: NavLink[]; primary?: false };
 
 /** The site nav. Base.astro renders it on every standard-chrome page; the homepage menu takes its short labels from here. */
 export const SECTIONS: Section[] = [
   {
     href: '/research',
     label: 'Research',
+    // Out of the primary nav until the research pages are reworked.
+    primary: false,
     links: [
       { href: '/research/topics',      label: 'Topics' },
       { href: '/research/claims',      label: 'Claims' },
@@ -17,9 +20,7 @@ export const SECTIONS: Section[] = [
     href: '/resources',
     label: 'Resources',
     links: [
-      { href: '/resources/should-i',       label: 'Should I Use AI?' },
       { href: '/resources/ai-safety',      label: 'AI Safety Index' },
-      { href: '/resources/turn-off-ai',    label: 'Turn Off AI' },
       { href: '/resources/responsible-ai', label: 'Responsible AI' },
     ],
   },
@@ -27,8 +28,10 @@ export const SECTIONS: Section[] = [
   { href: '/about',   label: 'About',   links: [] },
 ];
 
-/** Derived from SECTIONS: the collapsed dropdown renders SECTIONS, so the two must list the same pages. */
-export const TOP_LINKS: NavLink[] = SECTIONS.map(({ href, label }) => ({ href, label }));
+/** The sections the top row and the collapsed dropdown list. Both derive from this, so they list the same pages. */
+export const PRIMARY_SECTIONS: Section[] = SECTIONS.filter((s) => s.primary !== false);
+
+export const TOP_LINKS: NavLink[] = PRIMARY_SECTIONS.map(({ href, label }) => ({ href, label }));
 
 /** Footer links. Internal links share the first row; external ones share the second, with the version. */
 export const FOOTER_LINKS: NavLink[] = [

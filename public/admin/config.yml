@@ -57,8 +57,52 @@ collections:
       - { name: ai_assisted, label: AI assisted, widget: boolean, default: false, hint: On when AI drafted the text }
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
-      - { name: petition, label: Petition slug, widget: string, required: false, hint: Slug of the petition row in the dr-api Worker; adds a sign block under the post }
+      - { name: body, label: Body, widget: markdown }
+
+  # Mirrors the `actions` collection schema in src/content.config.ts. Every
+  # action is a petition today, served at /petitions/{filename}. The petition
+  # row must exist in the dr-api Worker first (docs/runbook.md, "Petitions").
+  - name: actions
+    label: Petitions
+    label_singular: Petition
+    folder: src/content/actions
+    create: true
+    slug: "{{slug}}"
+    extension: md
+    format: frontmatter
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: description
+        label: Description
+        widget: string
+        hint: One sentence, 200 characters max (longer fails the site build).
+        maxlength: 200
+      - name: pubDate
+        label: Publish date
+        widget: datetime
+        type: date
+        format: YYYY-MM-DD
+        # UTC keeps a date picked in Seattle from saving as the previous day.
+        input_timezone: utc
+      - name: updatedDate
+        label: Updated date
+        widget: datetime
+        type: date
+        format: YYYY-MM-DD
+        # UTC keeps a date picked in Seattle from saving as the previous day.
+        input_timezone: utc
+        required: false
+      - { name: author, label: Author, widget: string, default: Brandon Faloona }
+      - { name: ai_assisted, label: AI assisted, widget: boolean, default: false, hint: On when AI drafted the text }
+      - { name: draft, label: Draft, widget: boolean, default: false }
+      - { name: petition, label: Petition slug, widget: string, hint: Slug of the petition row in the dr-api Worker; adds the sign block }
       - { name: petition_statement, label: Petition statement, widget: text, required: false, hint: The sentence signers put their name to; the sign block sets it large above the count }
+      - name: spotlight
+        label: Homepage spotlight line
+        widget: string
+        required: false
+        maxlength: 140
+        hint: One plain sentence. When set, the newest petition with a line is featured below the homepage hero.
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for
