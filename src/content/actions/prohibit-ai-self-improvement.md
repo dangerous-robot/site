@@ -6,7 +6,7 @@ author: Wade Hudson
 ai_assisted: true
 draft: false
 petition: prohibit-ai-self-improvement
-petition_statement: I pledge to support legislation, in the United States and through international agreement, that prohibits anyone from allowing A.I. systems to improve their own capabilities unless subject to human control, independent scientific review, and individual accountability.
+petition_statement: I pledge to support legislation, in the United States and through international agreement, that prohibits A.I. developers from enabling their systems to improve their own capabilities without human control, independent scientific review, and individual accountability.
 featured: true
 ---
 
