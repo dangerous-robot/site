@@ -2,7 +2,7 @@
 
 What Dangerous Robot is for, how the site works on that, and how to write for it. For anyone writing copy, guides, posts or claims for the site, coding agents included.
 
-The decided wording lives in `docs/decisions.md` and in the "Decided copy" table of `docs/plans/refocus-foundation.md`. This document explains the thinking behind that wording and quotes it. Where the two disagree, those files win.
+The decided wording lives in `docs/decisions.md` (the "Decided copy" entry, 2026-10-06, and later entries). This document explains the thinking behind that wording and quotes it. Where the two disagree, `docs/decisions.md` wins.
 
 ## Why the site exists
 
@@ -139,7 +139,7 @@ Off voice: "No one checks his work before it is published." (announces a travest
 
 ## Settled copy
 
-Quoted from `docs/decisions.md` and the "Decided copy" table in `docs/plans/refocus-foundation.md`. Those files are the record. If this list drifts from them, they win.
+Quoted from `docs/decisions.md` (the "Decided copy" entry and later entries). That file is the record. If this list drifts from it, it wins.
 
 | Slot | Text |
 |---|---|

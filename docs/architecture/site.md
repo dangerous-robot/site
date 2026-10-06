@@ -79,7 +79,7 @@ Subdirectory structure within each `glob`-loaded collection is flexible -- the l
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/values`, `/credits`):
+The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/privacy`, `/values`, `/credits`):
 
 - `/` -- the homepage: the site's thesis in excerpts, a spotlight on one featured entry, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
 - `/petitions/{slug}` -- one page per `actions` entry, with the sign block (see [`petitions.md`](petitions.md)). There is no `/petitions` index.
@@ -109,8 +109,9 @@ The site has four top-level URL spaces, plus a few single static pages (`/about`
 | `/research/criteria/[slug]`    | `src/pages/research/criteria/[slug].astro`        | `criteria` collection                       |
 | `/resources`                   | `src/pages/resources/index.astro`                 | `resources` collection (hub list)           |
 | `/resources/[...slug]`         | `src/pages/resources/[...slug].astro`             | `resources` collection (layout dispatch)    |
-| `/about`                       | `src/pages/about.astro`                           | Static content (who runs the site, what it does and does not do, contact) |
+| `/about`                       | `src/pages/about.astro`                           | Static content (what the site is, how it is made, who runs it, contact) |
 | `/corrections`                 | `src/pages/corrections.astro`                     | Static content (links the GitHub correction issue form) |
+| `/privacy`                     | `src/pages/privacy.astro`                         | Static content (what petition signing keeps, who can read it, retention, removal; linked from the footer and the sign form) |
 | `/values`                      | `src/pages/values.astro`                          | Static content                              |
 | `/credits`                     | `src/pages/credits.astro`                         | Static content                              |
 | `/404`                         | `src/pages/404.astro`                             | Static content (noindex, GitHub Pages error page) |
@@ -248,7 +249,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
     <footer>   -- maker line (TreadLightlyAI linked) and one row of footer links
 ```
 
-**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer's one row of links: About, Values, Methodology and CC-BY-4.0 (marked `external`). Credits, GitHub and the version are on the About page ("The project"); `src/lib/version.ts` reads the version from `VERSION.md` for the About page and the beta banner. `navLabel(href)` gives the homepage menu its short labels.
+**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer's one row of links: About, Values, Methodology, Privacy and CC-BY-4.0 (marked `external`). Credits, GitHub and the version are on the About page ("The project"); `src/lib/version.ts` reads the version from `VERSION.md` for the About page and the beta banner. `navLabel(href)` gives the homepage menu its short labels.
 
 ### Styling approach
 

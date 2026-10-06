@@ -10,7 +10,7 @@ Goal: Reduce onboarding wall time and wasted API calls.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Parallelize onboard templates | [onboard-parallelize-templates.md](plans/onboard-parallelize-templates.md) | `asyncio.Semaphore(3)`-guarded gather; interactive mode clamps to 1. Plan predates the researcher decomposition: re-verify line refs and reconcile its `concurrency` knob with the shipped `llm_concurrency` before implementing |
+| Onboard: skip light research when the entity file exists | (none) | `dr onboard` runs light research, verifier and enricher on every call (`pipeline/orchestrator/pipeline.py`, `onboard_entity` Phase A) even for an existing entity; `dr entity-enrich` and `dr onboard --force` already cover the explicit refresh case. |
 
 The other four items in this group shipped and moved to `plans/completed/`: onboard-reuse-verify-sources, ingestor-fail-fast-403, researcher-host-blocklist, ingestor-tighten-timeouts.
 
@@ -22,7 +22,7 @@ Goal: Make per-object model spend visible so we can see which claims, sources, a
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Token usage log + `inv tokens.summary` | [token-usage-log.md](plans/token-usage-log.md) | Append-only JSONL at `logs/token-log.jsonl` written by a thin wrapper around every `agent.run(...)`; `inv tokens.summary --by object\|time` reader; no DB, no UI |
+| Token usage log + `inv tokens.summary` | [token-usage-log.md](plans/deferred/token-usage-log.md) | Append-only JSONL at `logs/token-log.jsonl` written by a thin wrapper around every `agent.run(...)`; `inv tokens.summary --by object\|time` reader; no DB, no UI Deferred 2026-10-06 (no reader-facing use yet). |
 
 ---
 
@@ -32,30 +32,22 @@ Goal: Split the Analyst's frontier-model call into smaller sub-decisions so chea
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Full 4-step decomposition (entity resolver, per-source stance, verdict synthesizer, narrative+title writer) | [analyst-decomposition_stub.md](plans/drafts/analyst-decomposition_stub.md) | Stub draft; needs token-usage baseline before committing. Keeps verdict+confidence on frontier; pushes the rest to Haiku-class. Biggest win is feeding frontier structured stances instead of raw source bodies (~10x smaller prompt). Source-trust Phase 2 (COI/independence weighting in analyst reasoning) is a forcing function: adding conditional source weighting further complicates analyst instructions and makes decomposition more urgent. |
+| Full 4-step decomposition (entity resolver, per-source stance, verdict synthesizer, narrative+title writer) | `analyst-decomposition_stub.md` (local draft) | Stub draft; needs token-usage baseline before committing. Keeps verdict+confidence on frontier; pushes the rest to Haiku-class. Biggest win is feeding frontier structured stances instead of raw source bodies (~10x smaller prompt). Source-trust Phase 2 (COI/independence weighting in analyst reasoning) is a forcing function: adding conditional source weighting further complicates analyst instructions and makes decomposition more urgent. |
 | Narrative + title writer extraction (smallest slice) | (to be drafted from the stub) | Once verdict is fixed, this is structured writing with a mechanical title-polarity rule. Most defensibly Haiku-class sub-decision; could be promoted out of the broader plan as a single-step extraction. |
-
----
-
-## Model-tier enforcement (was Q4)
-
-Goal: Enforce "small-by-default" model selection instead of relying on the default value alone. Today nothing caps escalation — any agent can be pointed at a large model. Chosen approach is option (b): per-agent tier caps in config.
-
-| Work Item | Plan | Notes |
-|-----------|------|-------|
-| Per-agent tier ceiling in `VerifyConfig` | [model-tier-enforcement_stub.md](plans/model-tier-enforcement_stub.md) | Stub carried over from the retired `pre-launch-questions.md` Q4. Add a `MODEL_TIER` map + `max_tier` ceiling checked in `resolve_model`; most machinery (per-agent fields, `model_for`) already exists from multi-provider Part 2. Cost-ceiling successor (option c) waits on `token-usage-log.md`. |
 
 ---
 
 ## Dedup detection on URL ingest and claim creation
 
-Goal: Stop creating duplicate claims when the pipeline encounters a claim that already exists. URL-level source dedup shipped 2026-05-03 ([source-url-dedup_completed.md](plans/completed/source-url-dedup_completed.md), including a `--force` bypass); the remaining gap is claim-level match-and-return plus richer URL canonicalization.
+Goal: Stop one source from being stored, and counted, twice. URL-level dedup shipped: canonical-URL matching and reuse of existing source files ([source-url-dedup_completed.md](plans/completed/source-url-dedup_completed.md), `pipeline/common/canonical_url.py`, `_apply_url_dedup`, `904c376`). What remains matters to the chatbot guide (roadmap §10): the same paper or page counted as two independent sources inflates `verification_level`.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Match-and-return-existing for URL ingest and claim creation | [pipeline-dedup-detection_stub.md](plans/drafts/pipeline-dedup-detection_stub.md) | URL match: canonicalize (lowercase scheme/host, strip default ports, drop fragment + `utm_*`/`fbclid`/etc, strip trailing slash) and look up existing source by `canonical_url` frontmatter. Claim match: `(entity_slug, criteria_slug)` from frontmatter (already present today). On hit: `dr ingest` prints existing id, exits 0; onboard skips analyst+auditor and logs the dedup hit in the sidecar. `--force` bypasses dedup. Composes with onboard-reuse-verify-sources.md. |
+| arXiv abs/html/pdf as one source | (no plan) | See "Canonicalize arXiv URLs at ingest" below; no arXiv rule in `canonical_url.py` yet. §10 prerequisite. |
+| Stored redirect target (RF23 remainder) | (no plan) | An existing file that stored a redirect target is treated as a different page, so a duplicate is written. See RF23 below. §10 prerequisite. |
+| Claim-level match on onboard | (no plan) | Before running a template, look up an existing claim by `(entity, criteria_slug)` and skip analyst + auditor on a hit. Operator time only; low priority. The design sketch was the local draft `pipeline-dedup-detection_stub.md`, now archived. |
 
-Related (2026-10-04): URL dedup misses a different URL that lands on an existing slug; the pipeline then cites the existing, unrelated file (RF1 in [claim-refresh review findings](#claim-refresh-review-findings-2026-10-04)).
+Related (2026-10-04): URL dedup missed a different URL that landed on an existing slug, and the pipeline then cited the existing, unrelated file (RF1, fixed by [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md)).
 
 ---
 
@@ -65,7 +57,7 @@ Goal: Stop the two arXiv-specific failure modes surfaced while auditing recent d
 
 | Work Item | Notes |
 |-----------|-------|
-| Canonicalize arXiv URLs at ingest | Treat `arxiv.org/abs/{id}`, `arxiv.org/html/{id}v{n}`, and `arxiv.org/pdf/{id}` as one source. Today both `arxiv:2508.15734` and `arxiv:2502.18505` exist as two separate source files (e.g., `2025/250815734.md` from `abs/` and `2025/250815734v1.md` from `html/v1`) with conflicting frontmatter. The `chatgpt/excludes-frontier-models` audit cites both variants of 2502.18505 as if they were independent evidence. Composes with the existing URL-dedup work in [pipeline-dedup-detection_stub.md](plans/drafts/pipeline-dedup-detection_stub.md) — arXiv canonicalization is one specific rule in the broader canonicalizer. |
+| Canonicalize arXiv URLs at ingest | Treat `arxiv.org/abs/{id}`, `arxiv.org/html/{id}v{n}`, and `arxiv.org/pdf/{id}` as one source. Today both `arxiv:2508.15734` and `arxiv:2502.18505` exist as two separate source files (e.g., `2025/250815734.md` from `abs/` and `2025/250815734v1.md` from `html/v1`) with conflicting frontmatter. The `chatgpt/excludes-frontier-models` audit cites both variants of 2502.18505 as if they were independent evidence. Add it as one rule in `pipeline/common/canonical_url.py` (see Dedup detection above). §10 prerequisite. |
 | Detect corporate authorship on arXiv abstracts | When an arXiv abstract names a corporate AI lab (Google/DeepMind, Anthropic, OpenAI, Meta, Microsoft Research, etc.) as an author affiliation, force `independence: first-party` and `source_type: primary` against that entity in the ingestor's frontmatter pass. Today the `abs/` ingestion of `2508.15734` (Google's own Gemini environmental-impact paper) was written as `publisher: arXiv / independence: independent / source_type: secondary`; the `html/v1` ingestion of the same paper was correctly written as `publisher: Google / independence: first-party / source_type: primary`. The wrongly-labeled variant is what flowed through to the published Gemini verdict. |
 
 ---
@@ -76,8 +68,8 @@ Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/45
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| PDF attachment core (ingestion + model) | [source-pdf-attachment.md](plans/source-pdf-attachment.md) | `pdfs:` frontmatter block, `_attachments.yaml` manifest, `pdf_read` tool, `dr attach-pdf` CLI, sha256 integrity lint |
-| PDF attachment publish surface | [source-quality-followups.md § PDF publish surface](plans/source-quality-followups.md#pdf-publish-surface-drafted-post-attachment) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing |
+| PDF attachment core (ingestion + model) | [source-pdf-attachment.md](plans/deferred/source-pdf-attachment.md) | `pdfs:` frontmatter block, `_attachments.yaml` manifest, `pdf_read` tool, `dr attach-pdf` CLI, sha256 integrity lint |
+| PDF attachment publish surface | [source-quality-followups.md § PDF publish surface](plans/deferred/source-quality-followups.md#pdf-publish-surface-drafted-post-attachment) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing |
 
 ---
 
@@ -90,9 +82,21 @@ Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline afte
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | ~~Sidecar format + pipeline write + Astro loader + UI (Stage 1)~~ | [audit-trail.md](plans/completed/audit-trail.md) | **Done** (2026-04-25, moved to `completed/`). `_write_audit_sidecar` in persistence.py; `dr review --claim` CLI; collapsible UI; 11 sidecars committed. |
-| Extended audit fields + staleness check + orphan CI gate (Stage 2) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Requires: no stale sidecars, orphan check CI, backfill script |
-| Append-only history (Stage 3) | [audit-trail-extensions.md](plans/audit-trail-extensions.md) | Full recheck history per claim |
+| Reader-facing slice: refresh trail, evaluator reasoning, verdict/sidecar lint | [published-claim-refresh-trail.md](plans/published-claim-refresh-trail.md) | §10 prerequisite (RF8, RF9) |
+| ~~Extended fields, backfill, orphan CI (Stage 2); append-only history (Stage 3)~~ | [audit-trail-extensions.md](plans/deferred/audit-trail-extensions.md) | **Deferred** 2026-10-06; see Deferred plans |
 
+
+---
+
+## Security follow-ups (from roadmap §1, 2026-10-06)
+
+Deferred when the high and critical fixes landed in `3f69aed`.
+
+| Work Item | Notes |
+|-----------|-------|
+| `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. |
+| `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. |
+| Medium-severity Python advisories | `pydantic-ai` / `pydantic-ai-slim`, `idna`, `pydantic-settings`. The 2026-10-02 pass applied high and critical fixes only. |
 
 ---
 
@@ -102,6 +106,7 @@ Goal: One reference doc covering the dev loop, pipeline operations, deploy proce
 
 | Work Item | Notes |
 |-----------|-------|
+| Production CMS login | From roadmap §3 (2026-10-06). Register a GitHub OAuth app, deploy [sveltia-cms-auth](https://github.com/sveltia/sveltia-cms-auth) on Cloudflare Workers with its credentials, and set `backend.base_url` in `public/admin/config.yml` (commented out today) to the Worker URL. Local-repository mode works meanwhile. |
 | Expand runbook.md | `dr` CLI reference, deploy steps, schema change checklist; also document the newer `inv audit`, `inv audit.prune`, `inv check` tasks |
 | Expand source `kind` enum | Add `statement` (social posts, press releases, direct submissions) and `filing` (company invoices, certificates, contracts). Schema change touches `content.config.ts`, pipeline `SourceFrontmatter`, and `_classify_source_type`. |
 
@@ -113,28 +118,37 @@ Goal: Recurring audits, queue-based intake. Trigger: enough content exists that 
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Scheduled citation audits | [source-quality-followups.md § Scheduled citation audits](plans/source-quality-followups.md#scheduled-citation-audits-drafted) | Scheduled workflows, QUEUE.md intake |
+| Scheduled citation audits | [source-quality-followups.md § Scheduled citation audits](plans/deferred/source-quality-followups.md#scheduled-citation-audits-drafted) | Scheduled workflows, QUEUE.md intake |
 
-Downstream sync to parallax-ai: [downstream-sync.md](plans/drafts/downstream-sync.md) (local draft) -- good idea, not needed now.
+Downstream sync to parallax-ai: dropped 2026-10-06 (it ties the research repo to another codebase, and research may move to its own repo). The local draft is archived in `plans/drafts/archive/downstream-sync.md`.
 
 ---
 
-## Public Feedback & Contribution Gating
+## Deferred plans (2026-10-06)
 
-Goal: Members of the public can submit feedback on content without a GitHub account. GitHub issue/PR process is gated via templates that redirect content feedback to the site.
+Plans set aside because their remaining work does not serve the site's current focus (AGENTS.md, Plans & Backlog rule 8). Each file in `plans/deferred/` opens with the reason. Revive one by moving it back to `plans/` and scheduling it.
 
-| Work Item | Plan | Notes |
-|-----------|------|-------|
-| GitHub config + feedback form + Cloudflare backend | [public-feedback.md](plans/public-feedback.md) | Issue templates, CODEOWNERS, Astro form, Worker + D1 + Turnstile, `api.dangerousrobot.org` |
-| Admin CLI + GitHub issue promotion | [public-feedback.md](plans/public-feedback.md) | `scripts/feedback-admin.ts`, accept/reject/inquire, Resend email |
-| Admin dashboard (optional) | [public-feedback.md](plans/public-feedback.md) | Web UI for reviewing submissions. Defer unless CLI proves insufficient. |
-| Claim challenge form | [public-participation-forms.md](plans/public-participation-forms.md) | Per-claim refutation form; extends feedback D1 schema + Worker |
-| Request a claim form | [public-participation-forms.md](plans/public-participation-forms.md) | Sitewide research request form |
-| Propose a standard form | [public-participation-forms.md](plans/public-participation-forms.md) | `/standards` form for new claim templates |
-
-Done when: Public can submit feedback at `dangerousrobot.org/feedback`, admin can review via CLI, approved feedback becomes a GitHub issue.
-
-Scheduling note: challenge/request/propose forms (last three items) require the feedback backend (first three). Decision needed: bundle or treat as later add-on?
+| Plan | Reason | Shipped already |
+|---|---|---|
+| [`public-feedback.md`](plans/deferred/public-feedback.md) | Pre-refocus `/feedback` form, admin CLI and GitHub promotion; roadmap §4's mailto path covers the reader need. Revisit if that inbox outgrows email | Its Worker, D1 and Resend stack shipped for petitions (`workers/api/`) |
+| [`public-participation-forms.md`](plans/deferred/public-participation-forms.md) | Claim challenge, claim request and propose-a-criterion forms serve the archive's intake; depends on the feedback queue | nothing |
+| External reviewer identity (from roadmap §6; no plan, local research in `plans/drafts/human-signoff-identity-research.md`) | ORCID OAuth, IndieAuth, Mastodon/Bluesky for co-signing claims assume more than one reviewer. Revisit only if a decision adds reviewers beyond Brandon | nothing |
+| [`sec-edgar-path3_stub.md`](plans/deferred/sec-edgar-path3_stub.md) | Investor filings serve partnership and investment claims, not the chatbot guide; no entity carries `sec_cik` | Prerequisites only (schema, throttle, enum slots: `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`) |
+| [`wayback-archive-job.md`](plans/deferred/wayback-archive-job.md) | Operator throughput; the reader-facing gap is RF11 (roadmap §10) | In-pipeline lookup on (`6409918`), TimeGate recovery (`a8e5dd5`) |
+| [`source-quality-followups.md`](plans/deferred/source-quality-followups.md) | Backlog of pipeline source-quality ideas (Tier 2 and 3, trust schema, PDF publish, citation audits) | Its on-focus items have their own rows in this file |
+| [`source-pdf-attachment.md`](plans/deferred/source-pdf-attachment.md) | Operator ingest path; would commit PDFs into `research/` | nothing |
+| [`parent-company-inference.md`](plans/deferred/parent-company-inference.md) | Operator convenience during onboarding | nothing |
+| [`research-outputs-improvement-plan.md`](plans/deferred/research-outputs-improvement-plan.md) | Standards and operator-side work; its two on-focus items are in "Site gaps and deferred content", Opportunities | Inline ClaimReview (`1b9f3b7`), `verification_level` field |
+| [`token-usage-log.md`](plans/deferred/token-usage-log.md) | Operator spend tracking, no reader use yet | nothing |
+| [`audit-trail-extensions.md`](plans/deferred/audit-trail-extensions.md) | Sidecar infrastructure (backfill, orphan CI, v3 transition log, ClaimReview fields); its reader-facing slice moved to [`published-claim-refresh-trail.md`](plans/published-claim-refresh-trail.md) | Nothing from its checklist; its open question 2 (`reviewed_at` gate in CI) is done via `published-without-review` (`3ebc094`) |
+| [`onboard-parallelize-templates.md`](plans/deferred/onboard-parallelize-templates.md) | Operator wall time only | nothing |
+| [`acceptance-test-fixture_stub.md`](plans/deferred/acceptance-test-fixture_stub.md) | Test scaffolding as written; revive by retargeting it to a chatbot-guide claim (verdict drift, RF6) | Related: `pipeline/tests/test_acceptance.py` (`72dcae8`), skipped without an Anthropic key |
+| [`criterion-resolution-workflow_stub.md`](plans/deferred/criterion-resolution-workflow_stub.md) | `c` action in `dr review-queue` is operator ergonomics; template claims carry `criteria_slug` | Vocabulary-unresolvable claims are blocked (`26bd518`) |
+| [`data-lifecycle-policy_stub.md`](plans/deferred/data-lifecycle-policy_stub.md) | Draft-time reprocessing policy; the published-claim case moved to the refresh-trail plan | nothing |
+| [`model-tier-enforcement_stub.md`](plans/deferred/model-tier-enforcement_stub.md) | Cost discipline; revisit with `token-usage-log.md` | nothing |
+| [`operator-queue-batch-workflow_stub.md`](plans/deferred/operator-queue-batch-workflow_stub.md) | Batch tooling; absorbs dr-lint Phase 3 (`ONBOARD_QUEUE.md` loop) and dr-review-queue Phase 3 (queue types) | nothing |
+| dr-lint Phase 4: scheduled agent triage ([`dr-lint.md`](plans/completed/dr-lint.md)) | Scheduled agents opening fix PRs; pairs with the deferred background-job work | Phases 1-2 (`pipeline/linter/`, CI `lint-content` job) |
+| dr-review-queue Phase 2 remainder: reject note, back, filters ([`dr-review-queue.md`](plans/completed/dr-review-queue.md)) | Operator polish | Phase 1 (`f64adc3`, `3abd112`) and the `e` action |
 
 ---
 
@@ -184,13 +198,12 @@ From architectural review (2026-04-18) and TODO.md:
 
 ### Site gaps
 
-- **`/about` page** -- still missing. (The list/index pages this bullet originally asked for shipped under `/research/*`.)
 - ~~**`parent_company` not rendered**~~ -- Rendered as of [`plans/completed/entity-metadata-surface_completed.md`](plans/completed/entity-metadata-surface_completed.md) (2026-05-09). All five product entity pages and any claim whose subject is a product render "Made by [Parent]" linking back to the company entity page. Inference automation for `parent_company` itself remains in `plans/parent-company-inference.md` (post-v1).
 - **Entity reference validation** -- Claims reference entities by path string with no build-time validation. Use Astro's `reference('entities')` helper or add entity-ref checking to `scripts/check-citations.ts`.
 - **Source reference upgrade** -- Replace `z.array(z.string())` with `z.array(z.string().min(1)).min(1)` for claims `sources` field. Current schema permits empty arrays.
 - **`recheck_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
 - **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`). Pin by full SHA for supply chain security.
-- **SEO basics** -- ~~No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.~~ Done (2026-04-29): robots.txt, sitemap, canonical, OG tags, per-page descriptions, Organization/ClaimReview/FAQPage/BreadcrumbList/WebSite JSON-LD. Remaining: (1) `og:image` asset -- code accepts an `ogImage` prop but `/dr-logo.png` is a narrow logo; a proper 1200×630 `og-default.png` is needed for social sharing previews. (2) `SearchAction` wiring -- the WebSite JSON-LD declares a `SearchAction` at `/claims?q={search_term_string}` but `FilterBar.astro` doesn't read `?q=` from the URL on load; a small JS change is needed to make the schema functional.
+- **SEO basics** -- ~~No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.~~ Done (2026-04-29): robots.txt, sitemap, canonical, OG tags, per-page descriptions, Organization/ClaimReview/FAQPage/BreadcrumbList/WebSite JSON-LD. Remaining: (1) `og:image` asset: see SEO post-restructure follow-ups, "OG image at 1200×630". (2) `SearchAction` wiring -- the WebSite JSON-LD declares a `SearchAction` at `/claims?q={search_term_string}` but `FilterBar.astro` doesn't read `?q=` from the URL on load; a small JS change is needed to make the schema functional.
 - **Research hub wording after the About rewrite (2026-10-04)** -- beta.4 H2 rewrote only the first FAQ answer and the Limits line. The methodology steps, "Rechecks", the FAQ JSON-LD summary and the conflicts answer still say "an operator" / "the operator"; `src/pages/research/index.astro:121` still says the site "tracks claims about AI companies and products" though subject claims exist.
 - **`ai-model-producers` index mismatch (2026-10-04)** -- the entity names the seven companies FLI graded in its Summer 2025 index; `/resources/ai-safety` covers the Winter 2025 index (eight, adding Alibaba Cloud, with Zhipu shown as Z.ai). Pick one index for the subject definition.
 - **Sub-question coverage in claim bodies (2026-10-04)** -- the analyst can write a "Sub-question coverage" block with internal ids (`sq1` to `sq3`) into published bodies; one was removed by hand from `ai-producers-existential-score`. Stop it in the analyst prompt or cleaner, and consider a `dr lint` rule.
@@ -198,7 +211,8 @@ From architectural review (2026-04-18) and TODO.md:
 ### Opportunities
 
 - **Validation gaps** -- CI validates schema structure and citation integrity but not reasoning quality. Potential additions: confidence-to-verdict alignment, staleness detection, source URL liveness checks, archived URL population nudges, a check framework (Vitest) for scripted validators.
-- **Confidence rubric** -- Define what `high`/`medium`/`low` confidence concretely means. Use an LLM to check each claim against the rubric.
+- **Confidence rubric** -- Define what `high`/`medium`/`low` confidence concretely means, in one place: extend the "Confidence levels" section of the methodology page (`src/pages/research/index.astro`). Use an LLM to check each claim against the rubric. Also proposed in [`research-outputs-improvement-plan.md`](plans/deferred/research-outputs-improvement-plan.md) (move 2).
+- **ClaimReview validity check** -- claim pages already emit inline ClaimReview JSON-LD (`src/pages/research/claims/[...slug].astro`). Add a build or lint check that every published claim emits a valid ClaimReview (verdict maps to a rating, date and reviewer present). Matters once claim pages are indexed for the chatbot guide (roadmap §10). From [`research-outputs-improvement-plan.md`](plans/deferred/research-outputs-improvement-plan.md) (move 3).
 - **Claim Updater instruction quality** -- Consider adversarial review, inter-rater consistency validation, and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs).
 - **Source freshness** -- confirm the ingestor reliably populates the optional `published_date` source field (`src/content.config.ts`); wire it if not. (Folded in from a scratch note, 2026-07-03.)
 - **Least invasive anonymous analytics (2026-10-06)** -- consider adding page-view counts from the least invasive anonymous option available (no cookies, no personal data, no cross-site tracking). Today the site has none. Two promises would need updating: `src/pages/privacy.astro` ("Reading the site") says the site runs no analytics or tracking scripts, and `src/layouts/Base.astro:2` keeps pages free of third-party requests. A self-hosted or server-side counter keeps the second promise; a hosted script breaks it.
@@ -211,8 +225,6 @@ Goal: Move from one-CLI-call-at-a-time to a queue + batch + error-file flow, and
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Operator queue + batch + error-file workflow | [operator-queue-batch-workflow_stub.md](plans/operator-queue-batch-workflow_stub.md) | v2; aligns operator-facing intake files with the six-input taxonomy |
-| Data lifecycle policy (skip-existing, overwrite, partial-fix) | [data-lifecycle-policy_stub.md](plans/data-lifecycle-policy_stub.md) | v2; design pre-launch is cheap. Pairs with audit-trail-extensions.md Phase 3 |
 | Source-triggered reassessment | (no plan yet) | v2; add a source, related claims re-evaluate. Operator confirmed v2. |
 
 ---
@@ -227,7 +239,7 @@ Goal: Treat the combined Analyst + Auditor output as the single trustworthy verd
 | Update canonical paragraphs once carrier decision lands | Generalized + v1 paragraphs in `AGENTS.md` and `docs/architecture/glossary.md` need to reflect the new artifact name and ownership. |
 | Schema migration | Whichever carrier wins, `src/content.config.ts` enum/shape needs updating; backfill all existing claims and `.audit.yaml` files. |
 
-Scheduling note: blocked on operator decision; not v0.1.0. Touches audit-trail Stage 2/3 and the data-lifecycle-policy stub.
+Scheduling note: blocked on operator decision; not v0.1.0. Touches the deferred audit-trail-extensions.md (Stage 2/3) and data-lifecycle-policy_stub.md (both in plans/deferred/).
 
 ---
 
@@ -235,7 +247,7 @@ Scheduling note: blocked on operator decision; not v0.1.0. Touches audit-trail S
 
 Carried from the retired 2026-04-22 follow-up doc. Everything else in that doc shipped, was folded into the research-page accordion, or referenced content removed in the 2026-05-11 launch-set prune.
 
-- **SEC EDGAR filings** -- classified as `primary`; verify this is correct.
+- **SEC EDGAR filings** -- classified as `primary`; verify this is correct when [SEC EDGAR as a research origin](plans/deferred/sec-edgar-path3_stub.md) is picked up (its filer-vs-subject rule covers this).
 - **B Lab / B Corp profiles** -- classified as `secondary`; confirm.
 - **UNESCO, NTIA, UNFCCC** -- classified as `secondary`; confirm.
 - **IBM, Deloitte reports** -- classified as `secondary`; some may lean tertiary. Spot-check.
@@ -308,28 +320,28 @@ Run: `dr claim-refresh brave-browser/renewable-energy-hosting`, run_id `e1cbe5eb
 
 | ID | Sev | Issue | Status | Likely cause | Repro | Related |
 |----|-----|-------|--------|--------------|-------|---------|
-| RF1 | Critical | Source id collision. `aws.amazon.com/sustainability` got slug `sustainability`; an existing `2026/sustainability.md` (Microsoft datacenter page) blocked the write, but the id was still returned and cited. Claim body, sidecar ("AWS Sustainability") and file on disk (Microsoft) disagree; the claim page links the AWS title to the Microsoft page. Same-run duplicates (`aws.amazon.com/energy-utilities/sustainability` also slugs to `sustainability`) collapse silently. The "net-zero by 2040" text the claim cites was in the AWS key quotes the analyst saw, so it is lost only because of this collision. | Reproduced | `orchestrator/persistence.py:157-163` logs `FileExistsError` at INFO and still appends the id, no url comparison. Slug is the last URL path segment (`common/utils.py:17-27`, forced at `orchestrator/pipeline.py:691-693`). `orchestrator/cli.py:1087` `dict.fromkeys` merges same-run duplicate ids. `scripts/check-citations.ts` only checks the file exists. | Temp-dir call to `_write_source_files`: existing Microsoft file plus two AWS urls returns `['2026/sustainability', '2026/sustainability']`, disk url stays Microsoft. | [Improve source slug generation](#improve-source-slug-generation), [Dedup detection](#dedup-detection-on-url-ingest-and-claim-creation), [claim-refresh-integrity-fixes.md](plans/claim-refresh-integrity-fixes.md) |
-| RF2 | Critical | A failed fetch became a cited source. `builder.aws.amazon.com/...` failed DNS (Errno 8); the ingest model replied "this source is marked as skipped" plus garbled text, then still returned a SourceFile with an invented summary, `independence: independent`. Logged as `Ingested:`, written, cited, counted as fetched. | Isolated | `ingestor/agent.py:113-115` turns `httpx.HTTPError` into an error dict instead of raising; only 401/402/403/404/451/429 raise `TerminalFetchError`. `output_type=SourceFile` (`ingestor/agent.py:50`) gives the model no abort output. `_ingest_one` (`orchestrator/pipeline.py:684-694`) accepts any output; no fetch-success or `validate_source_file` check. | Run log: ERROR `Failed to fetch` (line 90), model "skipped" text (93), `Ingested:` (96). Host still fails DNS here while `aws.amazon.com` resolves. | [ingestor-decomposition_stub.md](plans/drafts/ingestor-decomposition_stub.md), [claim-refresh-integrity-fixes.md](plans/claim-refresh-integrity-fixes.md) |
-| RF3 | High | Wrong independence labels raised `verification_level` to `independently-verified` while the narrative says no third party links Brave to renewables. brave.com transparency report and the failed builder.aws file got `independent` from the fallback classifier; the Brave forum thread got it from the ingest model. `cap_rationale` dropped as a result. | Reproduced | Main path: `common/source_classification.py:66-93` has no notion of the claim's entity; "Brave Software"/"AWS" with kind report/article/index fall to `secondary`, mapped to `independent` (`orchestrator/persistence.py:153`). Second path: the ingest model fills `independence` freely (only 1 of 8 outputs set it). Analyst applies `analyst/instructions.md:159-171` correctly to bad labels. | `classify_source_type('Brave Software','report')` and `('AWS','index')` both return `secondary`. Analyst replay with refresh-path source dicts: as labeled gives `independently-verified`; the two Brave pages set to first-party and the failed source removed gives `claimed` with a cap_rationale (one run each). | [Source type classification](#source-type-classification--edge-cases-to-revisit), [source-quality-followups.md](plans/source-quality-followups.md) (entity-match independence classifier), [claim-refresh-integrity-fixes.md](plans/claim-refresh-integrity-fixes.md) |
-| RF4 | High | Raw `【2026/631793】` citation tokens and "Source 1" references render on the site. The Sources list is an unordered list of ids, so "Source N" points at nothing. Also present in the local build of the published `subjects/ai-model-producers/ai-producers-existential-score` (deployed page not checked). | Reproduced | No post-processing or lint rule for narrative citations (`linter/checks.py`). The analyst prompt layout (`### Source N` plus `Source id:`, `analyst/agent.py:285-287`) likely nudges gpt-oss toward its native bracket format, against `analyst/instructions.md:110` ("cite by title"). "Source N" predates this run (in the committed Brave body) and the model writes it with a non-breaking space (U+00A0), so a lint regex must allow that. | Astro markdown render of the claim body keeps `【2026/631793】`; `dist/research/claims/subjects/ai-model-producers/ai-producers-existential-score/index.html` contains raw `【...】`. | [Pipeline markdown emitter bugs](#pipeline-markdown-emitter-bugs-2026-05-08), [claim-refresh-integrity-fixes.md](plans/claim-refresh-integrity-fixes.md) |
+| RF1 | Critical | Source id collision. `aws.amazon.com/sustainability` got slug `sustainability`; an existing `2026/sustainability.md` (Microsoft datacenter page) blocked the write, but the id was still returned and cited. Claim body, sidecar ("AWS Sustainability") and file on disk (Microsoft) disagree; the claim page links the AWS title to the Microsoft page. Same-run duplicates (`aws.amazon.com/energy-utilities/sustainability` also slugs to `sustainability`) collapse silently. The "net-zero by 2040" text the claim cites was in the AWS key quotes the analyst saw, so it is lost only because of this collision. | Reproduced | `orchestrator/persistence.py:157-163` logs `FileExistsError` at INFO and still appends the id, no url comparison. Slug is the last URL path segment (`common/utils.py:17-27`, forced at `orchestrator/pipeline.py:691-693`). `orchestrator/cli.py:1087` `dict.fromkeys` merges same-run duplicate ids. `scripts/check-citations.ts` only checks the file exists. | Temp-dir call to `_write_source_files`: existing Microsoft file plus two AWS urls returns `['2026/sustainability', '2026/sustainability']`, disk url stays Microsoft. | [Improve source slug generation](#improve-source-slug-generation), [Dedup detection](#dedup-detection-on-url-ingest-and-claim-creation), [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md) |
+| RF2 | Critical | A failed fetch became a cited source. `builder.aws.amazon.com/...` failed DNS (Errno 8); the ingest model replied "this source is marked as skipped" plus garbled text, then still returned a SourceFile with an invented summary, `independence: independent`. Logged as `Ingested:`, written, cited, counted as fetched. | Isolated | `ingestor/agent.py:113-115` turns `httpx.HTTPError` into an error dict instead of raising; only 401/402/403/404/451/429 raise `TerminalFetchError`. `output_type=SourceFile` (`ingestor/agent.py:50`) gives the model no abort output. `_ingest_one` (`orchestrator/pipeline.py:684-694`) accepts any output; no fetch-success or `validate_source_file` check. | Run log: ERROR `Failed to fetch` (line 90), model "skipped" text (93), `Ingested:` (96). Host still fails DNS here while `aws.amazon.com` resolves. | `ingestor-decomposition_stub.md` (local draft), [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md) |
+| RF3 | High | Wrong independence labels raised `verification_level` to `independently-verified` while the narrative says no third party links Brave to renewables. brave.com transparency report and the failed builder.aws file got `independent` from the fallback classifier; the Brave forum thread got it from the ingest model. `cap_rationale` dropped as a result. | Reproduced | Main path: `common/source_classification.py:66-93` has no notion of the claim's entity; "Brave Software"/"AWS" with kind report/article/index fall to `secondary`, mapped to `independent` (`orchestrator/persistence.py:153`). Second path: the ingest model fills `independence` freely (only 1 of 8 outputs set it). Analyst applies `analyst/instructions.md:159-171` correctly to bad labels. | `classify_source_type('Brave Software','report')` and `('AWS','index')` both return `secondary`. Analyst replay with refresh-path source dicts: as labeled gives `independently-verified`; the two Brave pages set to first-party and the failed source removed gives `claimed` with a cap_rationale (one run each). | [Source type classification](#source-type-classification--edge-cases-to-revisit), [source-quality-followups.md](plans/deferred/source-quality-followups.md) (entity-match independence classifier), [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md) |
+| RF4 | High | Raw `【2026/631793】` citation tokens and "Source 1" references render on the site. The Sources list is an unordered list of ids, so "Source N" points at nothing. Also present in the local build of the published `subjects/ai-model-producers/ai-producers-existential-score` (deployed page not checked). | Reproduced | No post-processing or lint rule for narrative citations (`linter/checks.py`). The analyst prompt layout (`### Source N` plus `Source id:`, `analyst/agent.py:285-287`) likely nudges gpt-oss toward its native bracket format, against `analyst/instructions.md:110` ("cite by title"). "Source N" predates this run (in the committed Brave body) and the model writes it with a non-breaking space (U+00A0), so a lint regex must allow that. | Astro markdown render of the claim body keeps `【2026/631793】`; `dist/research/claims/subjects/ai-model-producers/ai-producers-existential-score/index.html` contains raw `【...】`. | [Pipeline markdown emitter bugs](#pipeline-markdown-emitter-bugs-2026-05-08), [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md) |
 | RF5 | High | Research drifted to generic AWS and Google pages; the two Brave-specific URLs the scorer kept (`brave.com/blog/ecosia`, `community.brave.app/.../ecological-footprint/404963`) were never attempted. Google pages were ingested and listed though no source says Brave uses Google. 3 of 8 frontmatter sources are uncited in the body. | Isolated | Ingest stops at 8 successes in the scorer's list order (`orchestrator/pipeline.py:782-786`); `ScoredCandidate` has no score field (`researcher/scorer.py:22-30`) though the docstring at `orchestrator/pipeline.py:733` says "score order". Planner sub-question 2 names AWS/Google before any evidence and queries drop the entity anchor (`researcher/planner.py`). Every ingested source goes into `sources:` (`orchestrator/cli.py:1086-1087`). | Run log: scorer kept list (line 32) puts the Brave URLs last; `Reached target 8 successes` (185). Not re-run: `step-research` output varies run to run. | |
 | RF6 | High | Verdict is unstable on near-identical evidence: run `unverified`/medium; `dr step-analyze` `mostly-true`/low; analyst replay `true`/high; replay with corrected labels `unverified`/low. Prior committed verdict was `false`. Body also calls AWS's 2025 renewable matching a future "ambition". | Reproduced | Likely model variance plus prompt: the scope question (sync servers on AWS vs all Brave hosting) is left to the model each run and not stated in the body. Inputs differed slightly (step-analyze sees no labels; replays saw the Microsoft file under the colliding id). | Four analyst calls listed in Status; same claim, same source ids. | [Analyst decomposition](#analyst-decomposition-cost-lever) |
 | RF7 | Medium | Refresh overwrote the operator's `seo_title` with "Brave Browser hosted on renewable energy" (reads as an affirmation of an unverified claim) and dropped the hand-written `cap_rationale`. | Isolated | `seo_title` is required (min length 1) on the analyst output, so the keep-existing branch at `orchestrator/persistence.py:315` never runs on refresh; `cap_rationale` has no keep path (`orchestrator/persistence.py:313`). | `VerdictAssessment.model_fields['seo_title'].is_required()` returns True. | |
-| RF8 | Medium | Refresh of a published claim leaves no trail: verdict `false` to `unverified` with no `corrections` entry, `human_review` (2026-05-11) wiped, prior research trace replaced, the 6 old sources dropped with no reason and now orphaned (next prune deletes them). | Isolated | No code writes `previous_verdict`/corrections (no match in `orchestrator/` or `common/`); `reset_review=True` at `orchestrator/cli.py:1128` with `orchestrator/persistence.py:413-431`; refresh never reads prior `sources:`. Status reset to draft is by design. | Compare `git show HEAD:research/claims/brave-browser/renewable-energy-hosting.md` with the refreshed file. | [audit-trail-extensions.md](plans/audit-trail-extensions.md) Phase 3, [Claim detail page](#claim-detail-page--deferred-improvements) (verdict change history) |
-| RF9 | Medium | Terminal says "auditor flagged this claim for review (verdict disagreement)" when verdicts agree; the real reason (2+ evidence gaps) is not saved anywhere. | Reproduced | Hardcoded message `orchestrator/cli.py:1133`; flag set by `len(evidence_gaps) > 1` (`auditor/compare.py:62-65`); `audit_block` omits reasoning and gaps (`orchestrator/persistence.py:401-409`); GreenPT responses are not body-logged (`common/models.py:271-281`). | `dr step-audit --claim brave-browser/renewable-energy-hosting --format json`: `verdict_agrees: true`, `needs_review: true`, 2 `evidence_gaps`. | [audit-trail-extensions.md](plans/audit-trail-extensions.md) Phase 2 (already plans saving `evidence_gaps`) |
+| RF8 | Medium | Refresh of a published claim leaves no trail: verdict `false` to `unverified` with no `corrections` entry, `human_review` (2026-05-11) wiped, prior research trace replaced, the 6 old sources dropped with no reason and now orphaned (next prune deletes them). | Isolated | No code writes `previous_verdict`/corrections (no match in `orchestrator/` or `common/`); `reset_review=True` at `orchestrator/cli.py:1128` with `orchestrator/persistence.py:413-431`; refresh never reads prior `sources:`. Status reset to draft is by design. | Compare `git show HEAD:research/claims/brave-browser/renewable-energy-hosting.md` with the refreshed file. | [published-claim-refresh-trail.md](plans/published-claim-refresh-trail.md) (P1 to P4), [Claim detail page](#claim-detail-page--deferred-improvements) (verdict change history) |
+| RF9 | Medium | Terminal says "auditor flagged this claim for review (verdict disagreement)" when verdicts agree; the real reason (2+ evidence gaps) is not saved anywhere. | Reproduced | Hardcoded message `orchestrator/cli.py:1133`; flag set by `len(evidence_gaps) > 1` (`auditor/compare.py:62-65`); `audit_block` omits reasoning and gaps (`orchestrator/persistence.py:401-409`); GreenPT responses are not body-logged (`common/models.py:271-281`). | `dr step-audit --claim brave-browser/renewable-energy-hosting --format json`: `verdict_agrees: true`, `needs_review: true`, 2 `evidence_gaps`. | [published-claim-refresh-trail.md](plans/published-claim-refresh-trail.md) (A1, A2) |
 | RF10 | Medium | Source checks never run in claim-refresh; key quotes are not verbatim. AWS blog quote "AWS aims for 100% renewable energy by 2025..." is a paraphrase; the page says "AWS has a goal of operating all operations at 100% renewable energy by 2025...". | Reproduced | `validate_source_file` is called only from `dr step-ingest` (`orchestrator/cli.py:377`) and never with `page_text`, so `_check_key_quotes` (`ingestor/validation.py:81`) never runs. | Substring check of the quote against the fetched page text in the run log: no match; the "has a goal of" sentence matches. | |
-| RF11 | Medium | No `archived_url` on any of the 7 new sources. Archive lookups that get HTTP 429 are treated as "no snapshot" with no error recorded. | Reproduced | `check_archive_org_timegate` returns a silent miss for any non-redirect, non-5xx status (`ingestor/tools/wayback.py:93`); `save_to_wayback` has no retry or throttle. | `curl -I` to web.archive.org returns 429 (also for an example.com control); `check_archive_org_timegate(client, 'https://brave.com/transparency')` returns `{'available': False, 'archived_url': None}` with no `error`. | [wayback-archive-job.md](plans/wayback-archive-job.md) |
+| RF11 | Medium | No `archived_url` on any of the 7 new sources. Archive lookups that get HTTP 429 are treated as "no snapshot" with no error recorded. | Reproduced | `check_archive_org_timegate` returns a silent miss for any non-redirect, non-5xx status (`ingestor/tools/wayback.py:93`); `save_to_wayback` has no retry or throttle. | `curl -I` to web.archive.org returns 429 (also for an example.com control); `check_archive_org_timegate(client, 'https://brave.com/transparency')` returns `{'available': False, 'archived_url': None}` with no `error`. | [wayback-archive-job.md](plans/deferred/wayback-archive-job.md) (deferred; the RF11 fix itself is a chatbot guide release prerequisite, roadmap §10) |
 | RF12 | Medium | One stalled LLM call held an ingest slot for the full ~112 s budget and delayed the run about 39 s after the 8-source target was met, then printed `! ingest: Ingest timed out` though nothing was missing. | Isolated | `stop.set()` does not cancel in-flight tasks and `gather` waits for all (`orchestrator/pipeline.py:786`, `:801`); the Infomaniak client sets no per-request timeout (`common/models.py:301`). | Run log: target reached 01:19:25, timeout logged 01:20:03. | [Pipeline performance & hardening](#pipeline-performance--hardening) |
 | ~~RF13~~ | Medium | **Done** (07c34ac, 2026-10-04): step-analyze now uses `load_source_dict`. `dr step-analyze` is not a faithful replay of the refresh analyst: its source dicts omit `source_id`, `kind` and `independence`, and it never prints `verification_level`. With `--write` it would save a level the model chose without any independence labels. | Isolated | `orchestrator/cli.py:488-496` builds dicts by hand instead of using `load_source_dict` (`orchestrator/persistence.py:104`). | `dr step-analyze --claim brave-browser/renewable-energy-hosting` output has no level line and no source ids. | |
 | RF14 | Low | Poor slugs: `renewable20energy20and20data20centers20at20aws` (`%20` not decoded), `631793` (forum thread number), generic one-word tails (`transparency`, `sustainability`). | Reproduced | `common/utils.py:23-27`: no `unquote`, last segment only, no fallback for numeric or generic segments; overrides the LLM slug. | `slug_from_url` on the builder.aws and forum urls prints the two slugs above. | [Improve source slug generation](#improve-source-slug-generation) |
 | RF15 | Low | Progress line `failed=3` is 1 timeout plus 2 URLs never tried; the DNS failure (RF2) counts as fetched. | Isolated | `orchestrator/pipeline.py:382` counts every not-ingested URL as failed; no "skipped" category. | Run log line `ingested 8/11 (cached=0, fetched=8, failed=3)` with one timeout warning. | |
-| RF16 | Low | Sidecar `pipeline_run.model` and the terminal line name `DR_MODEL`, which ran no agent; analyst and auditor ran the same model (weak auditor independence); 2 `sources_consulted` entries lack `acquisition`; `tool_outcomes: []`. | Isolated | `orchestrator/cli.py:911`, `:1117`; `orchestrator/persistence.py:475`. | Compare sidecar `models_used` with `pipeline_run.model`. | [Model-tier enforcement](#model-tier-enforcement-was-q4) |
+| RF16 | Low | Sidecar `pipeline_run.model` and the terminal line name `DR_MODEL`, which ran no agent; analyst and auditor ran the same model (weak auditor independence); 2 `sources_consulted` entries lack `acquisition`; `tool_outcomes: []`. | Isolated | `orchestrator/cli.py:911`, `:1117`; `orchestrator/persistence.py:475`. | Compare sidecar `models_used` with `pipeline_run.model`. | [model-tier-enforcement_stub.md](plans/deferred/model-tier-enforcement_stub.md) (deferred) |
 | RF17 | Low | URL scorer silently omitted 4 of 113 candidates (11 kept + 98 dropped). | Isolated | No kept + dropped = input check in `researcher/decomposed.py:469-485`. | Run log lines 26 and 32. | |
 | RF18 | Low | arXiv searched 7 queries for a single-product claim; all dropped. | Isolated | `environmental-impact` is in `ACADEMIC_TOPICS` (`common/models.py:126-130`). | Run log lines 19-25. | |
 | RF19 | Low | `2024/new-approach-to-data-center-and-clean-energy-growth` body is wrapped in `---`, so its summary renders as an H2 heading on the source page. | Reproduced | Ingest model output; no body normalization before write. | Astro markdown processor on the file body outputs `<hr>` then `<h2 ...>`. | [Pipeline markdown emitter bugs](#pipeline-markdown-emitter-bugs-2026-05-08) |
 | RF20 | Low | The analyst sees only the ingest model's 1-3 sentence body, labeled "Full text", never page text, so ingest-model errors (RF2, RF10) flow straight into the verdict. Also: `as_of` uses local date while `ran_at` is UTC, model text carries U+2011/U+00A0/U+202F characters, frontmatter style churn. | Isolated | `analyst/agent.py:302`; `orchestrator/persistence.py:319`. | Analyst request in the run log shows each source as summary, quotes and a short "Full text" paragraph. | [Analyst decomposition](#analyst-decomposition-cost-lever) |
 
-Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plans/claim-refresh-integrity-fixes.md)):
+Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plans/completed/claim-refresh-integrity-fixes.md)):
 
 | ID | Sev | Issue | Likely cause | Related |
 |----|-----|-------|--------------|---------|
@@ -385,7 +397,7 @@ Goal: Decide whether the researcher should search the local source corpus *befor
 
 Goal: Maintain a hand-curated allowlist (or "trusted set") of sources and sites known to be high-signal, primary, or otherwise exceptional — usable by researcher prompts as preferred starting points, by the auditor as a quality signal, and by readers as a transparency artifact.
 
-Related: [`source-quality-followups.md`](plans/source-quality-followups.md) tracks the same idea from the source-quality side ("Curated allowlist of independent AI research orgs"); reconcile when picked up.
+Related: [`source-quality-followups.md`](plans/deferred/source-quality-followups.md) (deferred) tracks the same idea from the source-quality side ("Curated allowlist of independent AI research orgs"); reconcile when picked up.
 
 | Work Item | Notes |
 |-----------|-------|
@@ -408,7 +420,7 @@ Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-
 | §5.4 Weekly coverage screenshots | For ~4 weeks after the 301s shipped: navigate to the GSC Pages report and capture the four count buckets (Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed) to `seo-runs/coverage-YYYY-MM-DD.json`. Expectations and re-investigation triggers are in §5.4 of the completed plan. |
 | Single-hop redirect for deep claim URLs | Today `/claims/{x}/{y}` → `/research/claims/{x}/{y}` → `/research/claims/{x}/{y}/` (CF 301 + GH-Pages canonical-slash 301). Only fixable by changing Astro's `trailingSlash` mode and rebuilding URL handling site-wide. Low priority — Google handles 2-hop chains, but worth revisiting if other Astro work touches routing. |
 | OG image at 1200×630 | Carried over from the completed plan's §6 backlog. `dr-logo.png` is square; Twitter/FB want 1200×630. All new `/research/` and `/resources/*` URLs inherit the same default, so share-card quality is uniformly low. One properly-sized image passed via `ogImage` from `Base.astro` (or per-section) fixes it. |
-| End the pre-release noindex policy at GA | Flip trigger decided: **GA (1.0.0)**. `INDEX_ALPHA_DETAIL_PAGES = false` in `src/lib/seo.ts` keeps detail pages noindexed until then; at the 1.0.0 release, flip to `true`, rebuild + redeploy, and follow the checklist in `docs/seo-and-cloudflare-playbook.md` § "When the pre-release noindex period ends." |
+| End the pre-release noindex policy when the first guide ships | Flip trigger decided 2026-10-03: the first guide ("Before you trust an AI chatbot") is live and its claims are published, by a decision recorded in [the chatbot guide release plan](plans/chatbot-guide-release_stub.md) (roadmap §10). `INDEX_ALPHA_DETAIL_PAGES = false` in `src/lib/seo.ts` keeps detail pages noindexed until then; at that point flip to `true`, rebuild + redeploy, and follow the checklist in `docs/seo-and-cloudflare-playbook.md` § "When the pre-release noindex period ends." |
 
 ---
 
@@ -428,7 +440,7 @@ Initial tracking doc: [`reader-glossary.md`](reader-glossary.md) (working draft;
 
 ## Petition Worker follow-ups
 
-Deferred from the 2026-10-04 build review of `workers/api/` ([petition-signatures.md](plans/petition-signatures.md), [architecture/petitions.md](architecture/petitions.md)). None block launch.
+Deferred from the 2026-10-04 build review of `workers/api/` ([petition-signatures.md](plans/completed/petition-signatures.md), [architecture/petitions.md](architecture/petitions.md)). None block launch.
 
 | Work Item | Notes |
 |-----------|-------|

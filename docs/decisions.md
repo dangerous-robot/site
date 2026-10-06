@@ -4,6 +4,30 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-06
+
+- **Footer adds Privacy.** The footer's row of links is About, Values, Methodology, Privacy, CC-BY-4.0. `/privacy` says what the site keeps from petition signers, who can read it, how long it is kept, and how to be removed; the sign form's note links to it. This amends the 2026-10-05 shorter footer. *(Final)*
+- **Decided copy.** The copy strings below are the record; plans and `docs/mission-and-voice.md` quote them. Most were decided in the Drive discovery records (2026-10-01 to 2026-10-03) and first written down in [`plans/completed/refocus-foundation.md`](plans/completed/refocus-foundation.md); rows changed since then say so. Do not reword them without a new entry here. *(Final)*
+
+| Key | Text |
+|---|---|
+| Tagline | Convenience runs on reliance and pays out in compliance. (2026-10-05; was "Act while the choice is still yours.") |
+| Hero line | The algorithm got your attention. The robot wants the wheel. (2026-10-05; one sentence per line) |
+| North star (closes the homepage trust section) | The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours. |
+| Homepage title tag | Dangerous Robot - A guide to AI's dangers, with evidence you can check |
+| Homepage social title | Dangerous Robot: Convenience runs on reliance and pays out in compliance. (follows the tagline) |
+| Meta description (homepage, and the default for pages without their own) | A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it. |
+| Project description (GitHub repository "About", README intro) | A guide to AI's dangers for people deciding whether to trust AI with something that matters. Evidence you can check, a named person behind every claim, and what you can do about it. |
+| Footer maker line | A community project from the maker of TreadLightlyAI. ("TreadLightlyAI" links to https://treadlightly.ai) |
+| Positioning statement (source copy; not quoted on About since 2026-10-04) | For people deciding whether to trust AI with something that matters, Dangerous Robot is a guide to the danger, with evidence you can check. It shows the source and the person behind every claim, and says what you can do about it. |
+| Disclosure sentence (above any list or comparison that includes TreadLightlyAI) | TreadLightlyAI is made by the same person who makes Dangerous Robot. It is listed under the same criteria and sources as every other product, and we publish no verdict on claims about it. |
+| Verdict statement (first paragraph of the methodology section) | A verdict is our reading of the public record as of the date shown. AI agents draft it; the person named on the claim approves it. Every source is listed, and you can check them. One person reviews everything today. If we are wrong, tell us here. ("tell us here" links to `/corrections`) |
+| Reviewer line (claim pages) | Reviewed and approved by Brandon Faloona (the name links to `/about#who-runs-this`) |
+| Byline (posts, AI drafted the text) | Written by Brandon Faloona, with AI assistance |
+| Byline (posts, no AI drafting) | Written by Brandon Faloona |
+
+Retired: the footer method line "Built with the help of AI. Every claim has a source, and a person who stands behind it." (left the footer 2026-10-05). Copy rules: plain words, no em dashes, not alarmist; "TreadLightlyAI" is one word; "general superintelligence", never "GSI"; incidents are "unauthorized access", never "felony".
+
 ## 2026-10-05
 
 - **Homepage copy.** Tagline: "Convenience runs on reliance and pays out in compliance." Hero line: "The algorithm got your attention. The robot wants the wheel." (one sentence per line). The north star in the trust section is unchanged. *(Final)*
@@ -15,5 +39,5 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 ## 2026-10-04
 
 - **Planning lives in the repo.** New product decisions are recorded here; plans and the roadmap stay in `docs/`. The Drive discovery records and Decisions Log are frozen as history and no longer edited. The discovery handoff in the claude.ai project is retired. *(Final)*
-- **Pledge signatures are collected on the site.** A Cloudflare Worker and D1 database (the stack `docs/plans/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. Plan: [`docs/plans/petition-signatures.md`](plans/petition-signatures.md). *(Final)*
-- **beta.4 scope.** Companies and Products list only entities with at least one published claim (detail pages stay); Values stays in the footer and homepage menu, not the top nav; `research/v1-launch-set.md` is deleted. Details in `docs/plans/refocus-foundation.md`. *(Final)*
+- **Pledge signatures are collected on the site.** A Cloudflare Worker and D1 database (the stack `docs/plans/deferred/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. Plan: [`docs/plans/completed/petition-signatures.md`](plans/completed/petition-signatures.md). *(Final)*
+- **beta.4 scope.** Companies and Products list only entities with at least one published claim (detail pages stay); Values stays in the footer and homepage menu, not the top nav; `research/v1-launch-set.md` is deleted. Details in `docs/plans/completed/refocus-foundation.md`. *(Final)*

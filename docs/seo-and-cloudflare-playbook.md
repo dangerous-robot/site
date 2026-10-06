@@ -128,7 +128,7 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 
 Detail pages under `/research/claims/{entity}/{claim}`,
 `/research/sources/{yyyy}/{slug}`, and `/research/entities/{type}/{slug}` are
-generated from AI agent research. While the site is pre-release (alpha/beta; currently 1.0.0-beta.2) they are:
+generated from AI agent research. Until the indexing flip below they are:
 
 1. Served with `<meta name="robots" content="noindex,nofollow">`.
 2. Excluded from `sitemap-index.xml` / `sitemap-0.xml`.
@@ -144,7 +144,7 @@ remain indexable.
 
 ### When the pre-release noindex period ends
 
-The flip trigger is **GA (the 1.0.0 release)**. Detail pages stay noindexed through all remaining beta and rc stages; flip at 1.0.0. Tracked in `docs/UNSCHEDULED.md` § SEO post-restructure follow-ups. The flag name keeps its historical `ALPHA` spelling until then.
+The flip trigger (decided 2026-10-03, roadmap §9 J) is the first guide: when "Before you trust an AI chatbot" (the chatbot guide release) is live and its claims are published, by a decision recorded in that release's plan, [`plans/chatbot-guide-release_stub.md`](plans/chatbot-guide-release_stub.md). This replaced the earlier "GA (1.0.0)" trigger; the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
 
 To re-enable indexing of detail pages:
 
