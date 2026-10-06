@@ -23,8 +23,11 @@ dist/
 # Draft plans (kept local, not committed)
 docs/plans/drafts/
 
-# Claude Code local settings and worktrees
-.claude/
+# Claude Code: local settings, worktrees, and the active work item stay local;
+# shared settings and skills are committed (AGENTS.md § Agent workflow tooling).
+.claude/*
+!.claude/settings.json
+!.claude/skills/
 
 # graphify knowledge-graph output (regenerated; not tracked)
 graphify-out/

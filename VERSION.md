@@ -13,5 +13,9 @@ Version semantics (post-1.0):
 - Minor: new entity type, new criterion, new feature shipped
 - Patch: content corrections, verdict updates, bug fixes, source additions
 
+Before 1.0.0 the same three kinds classify each change for release triage (AGENTS.md § Agent workflow tooling), but none of them changes the version number; only a deploy does (bumps N). A patch goes to the active roadmap. A minor either rides the beta line or waits for after 1.0.0 (ask). A major is a question for Brandon, not an automatic new release line.
+
+The first line of this file and the "Active release:" line are read by `scripts/release-gate/`. Keep both formats as they are.
+
 Active release: docs/v1.0.0-roadmap.md
 Future release plans live at docs/v{semver}-roadmap.md.

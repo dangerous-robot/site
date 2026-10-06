@@ -2,6 +2,8 @@
 
 Work known but not yet assigned to a release. Items here are candidates for the next release or future releases.
 
+Items here can be planned but not coded. Before code starts, the `release-triage` skill moves an item into a release roadmap and removes it from this file (`AGENTS.md` § Release planning). An item held for a specific future release carries a `Target: vX.Y.Z` note.
+
 ---
 
 ## Pipeline performance & hardening

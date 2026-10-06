@@ -288,6 +288,8 @@ Three mutually exclusive work states:
 | Scheduled | A release roadmap (`docs/v*.*.*.md`) | Committed to a specific release. When an item enters a release roadmap, remove it from UNSCHEDULED.md. |
 | Plan-only | `docs/plans/drafts/` (draft) or `docs/plans/` (reviewed) | A sub-plan exists for exploratory/future work not yet prioritized into a release or unscheduled. |
 
+**Only Scheduled work may be coded.** Unscheduled and Plan-only items can be planned freely (docs are never gated), but before any code edit the item must be in a release roadmap and registered as the active work item (the `release-triage` skill does both; see [Agent workflow tooling](#agent-workflow-tooling)). The one exception is a hotfix: an urgent `patch` registered without triage, which expires after 4 hours and must be added to the active roadmap or `UNSCHEDULED.md` before it is finished.
+
 A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its number and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
 
 **Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
@@ -301,7 +303,7 @@ A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferr
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
 - When assigned to a release: add to the release roadmap, remove from UNSCHEDULED.md
-- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`
+- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap. The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
 
 **Plan filename suffix convention** — append to base name when it adds signal:
 
@@ -316,6 +318,24 @@ No suffix = plan is complete and reviewable. Keep the set small.
 
 **Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
 
+## Agent workflow tooling
+
+The release rules above are enforced, not just described. Three pieces, all committed: the hook scripts in `scripts/release-gate/` (kept outside `.claude/` so remote agent sessions can maintain them), the hook wiring in `.claude/settings.json`, and the skill in `.claude/skills/`. `.claude/settings.local.json` and `.claude/active-work.json` stay local.
+
+| Piece | What it does |
+|---|---|
+| `release-triage` skill (`.claude/skills/release-triage/`) | The judgment step. Classifies a change as `patch` / `minor` / `major` using the `VERSION.md` semantics, decides the target release (in-flight line, next minor, next major, or Unscheduled), updates the roadmap or `UNSCHEDULED.md`, then registers the active work item. Invoke it before any code change that is not already the active item, and whenever the gate denies an edit. |
+| Release gate (`scripts/release-gate/release_gate.py`, `PreToolUse` on `Edit`/`Write`/`MultiEdit`) | Denies edits under `src/`, `pipeline/`, `workers/`, `scripts/`, `public/`, `.github/` and root build config unless `.claude/active-work.json` names a valid item: a `kind`, a `release` whose roadmap file exists, and a `plan` file or roadmap `section`. `docs/`, `research/`, `src/content/`, `.claude/` and `*.md` are never gated, so planning is always possible. The deny holds in every permission mode. |
+| Release context (`scripts/release-gate/release_context.py`, `UserPromptSubmit`) | Injects two lines per turn: working version, active roadmap, roadmaps on disk, the active work item, and the rule to triage first when none is active. |
+
+Helper: `python3 scripts/release-gate/work_item.py status | start | hotfix | finish` (see the skill for arguments). `start` validates against the same rules as the gate.
+
+**Superpowers** (`superpowers@claude-plugins-official`, enabled at project scope in `.claude/settings.json`; each collaborator installs it once with `/plugin install superpowers@claude-plugins-official`) supplies the design and planning discipline: `brainstorming` before new work, `writing-plans` for anything larger than a few files, `executing-plans`, `test-driven-development`, `finishing-a-development-branch`. Two repo-specific overrides:
+
+- Superpowers writes design specs and plans to **`docs/plans/drafts/`** in this repo (specs as `<topic>-design.md`, plans as `<topic>.md`), never to `docs/superpowers/`. Promotion and review-history rules above apply unchanged.
+- Order for new work: `release-triage` → `brainstorming` → `writing-plans` → `work_item.py start` → implement. Triage comes first because the release decision shapes the plan's scope.
+
+**Bending the gate** is a human act, by design: `RELEASE_GATE=off claude` disables it for one session; the gated and exempt path lists live at the top of `scripts/release-gate/release_common.py`; `HOTFIX_TTL_HOURS` sets the hotfix window. Agents do not route around it with shell writes (`sed -i`, `cat >`); the gate intercepts tool edits only, and that gap is a known limitation, not a loophole to use.
 
 ## Architecture Docs
 
