@@ -1,6 +1,4 @@
 ---
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 // Self-hosted so pages make no third-party requests (the petition privacy copy depends on it).
 import "@fontsource/orbitron/600.css";
 import "@fontsource/orbitron/700.css";
@@ -12,10 +10,10 @@ import A11yControl from "../components/A11yControl.astro";
 import { SITE_DESCRIPTION } from "../lib/seo";
 import { WRITING_FEED_TITLE } from "../lib/writing";
 import { TOP_LINKS, SECTIONS, FOOTER_LINKS, type NavLink } from "../lib/nav";
+import { SITE_VERSION } from "../lib/version";
 
-const siteVersion = readFileSync(resolve('VERSION.md'), 'utf-8').split('\n')[0].trim();
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
-const releaseStage = siteVersion.match(/-(alpha|beta|rc)\b/)?.[1];
+const releaseStage = SITE_VERSION.match(/-(alpha|beta|rc)\b/)?.[1];
 const releaseLabel = releaseStage === 'rc' ? 'RELEASE CANDIDATE' : releaseStage ? `${releaseStage.toUpperCase()} RELEASE` : null;
 interface Props {
   title: string;
@@ -55,8 +53,6 @@ const currentSection = SECTIONS.find(
 const navLinks: NavLink[] = currentSection?.links ?? [];
 // Collapsed, the dropdown is the only nav, so a non-primary section still lists itself on its own pages.
 const dropdownSections = SECTIONS.filter((s) => s.primary !== false || s === currentSection);
-const footerInternal = FOOTER_LINKS.filter((l) => !l.external);
-const footerExternal = FOOTER_LINKS.filter((l) => l.external);
 const footerSeparator = " \u00a0·\u00a0 ";
 
 const orgSchema = {
@@ -323,18 +319,13 @@ const orgSchema = {
     </main>
 
     <footer class="site-footer">
-      <p>Built with the help of AI. Every claim has a source, and a person who stands behind it.</p>
       <p>A community project from the maker of <a href="https://treadlightly.ai">TreadLightlyAI</a>.</p>
       <p>
-        {footerInternal.map((l, i) => (
-          <Fragment>{i > 0 && footerSeparator}<a href={l.href}>{l.label}</a></Fragment>
+        {FOOTER_LINKS.map((l, i) => (
+          <Fragment>{i > 0 && footerSeparator}{l.external
+            ? <a href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>
+            : <a href={l.href}>{l.label}</a>}</Fragment>
         ))}
-      </p>
-      <p>
-        {footerExternal.map((l) => (
-          <Fragment><a href={l.href} target="_blank" rel="noopener noreferrer">{l.label}</a>{footerSeparator}</Fragment>
-        ))}
-        v{siteVersion}
       </p>
     </footer>
 

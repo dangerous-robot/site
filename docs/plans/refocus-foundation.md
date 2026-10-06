@@ -53,7 +53,7 @@ After this plan lands, the site says what the discovery records decided it says 
 | Homepage title tag | Dangerous Robot - A guide to AI's dangers, with evidence you can check |
 | Meta description (homepage, and the `Base.astro` default) | A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it. |
 | Project description (GitHub repo "About", README intro) | A guide to AI's dangers for people deciding whether to trust AI with something that matters. Evidence you can check, a named person behind every claim, and what you can do about it. |
-| Footer method line | Built with the help of AI. Every claim has a source, and a person who stands behind it. |
+| Footer method line | Built with the help of AI. Every claim has a source, and a person who stands behind it. (Removed from the footer 2026-10-05; see `docs/decisions.md`.) |
 | Footer maker line | A community project from the maker of TreadLightlyAI. |
 | Positioning statement (source for H2; About no longer quotes it as of 2026-10-04) | For people deciding whether to trust AI with something that matters, Dangerous Robot is a guide to the danger, with evidence you can check. It shows the source and the person behind every claim, and says what you can do about it. |
 | Disclosure sentence (above any list or comparison that includes TreadLightlyAI) | TreadLightlyAI is made by the same person who makes Dangerous Robot. It is listed under the same criteria and sources as every other product, and we publish no verdict on claims about it. |

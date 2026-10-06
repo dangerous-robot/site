@@ -33,14 +33,12 @@ export const PRIMARY_SECTIONS: Section[] = SECTIONS.filter((s) => s.primary !== 
 
 export const TOP_LINKS: NavLink[] = PRIMARY_SECTIONS.map(({ href, label }) => ({ href, label }));
 
-/** Footer links. Internal links share the first row; external ones share the second, with the version. */
+/** Footer links, one row. Credits, GitHub and the version live on the About page. */
 export const FOOTER_LINKS: NavLink[] = [
   { href: '/about',                label: 'About' },
   { href: '/values',               label: 'Values' },
   { href: '/research#methodology', label: 'Methodology' },
-  { href: '/credits',              label: 'Credits' },
-  { href: 'https://github.com/dangerous-robot/site',         label: 'GitHub',    external: true },
-  { href: 'https://creativecommons.org/licenses/by/4.0/',    label: 'CC-BY-4.0', external: true },
+  { href: 'https://creativecommons.org/licenses/by/4.0/', label: 'CC-BY-4.0', external: true },
 ];
 
 /** The nav label for an href, searching the top row, section links, then the footer. */

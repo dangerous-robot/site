@@ -184,7 +184,7 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 2. **Spotlight** -- the newest action with a `spotlight` line: title, its `petition_statement` (that line when it has none), a signature count chip and an "Add your signature" link to the petition's `#sign`. No such action, no band.
 3. **Where to start** -- a visible `<nav>` list of four deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
 4. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
-5. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).
+5. **Trust** -- closing lines from the thesis, the north star as the closing quote, and a link to the full statement at `/writing/why-dangerous-robot-exists`.
 
 **The `menu` array.** One array in the frontmatter drives both the visible "Where to start" list (`label` + `note`) and the hamburger dropdown (`short`). Destinations are fixed: `/writing`, `/resources/ai-safety`, `/resources/responsible-ai`, `/values`. Research, Turn off AI and Should I use AI are left out until they are reworked (`docs/decisions.md`, 2026-10-05). Labels and notes are editorial. Each `short` label comes from `navLabel(href)` in `src/lib/nav.ts`; an entry sets its own `short` only when `nav.ts` does not list its `href`. The build fails if an entry sets `short` for an `href` that `nav.ts` lists, or if neither supplies one.
 
@@ -245,10 +245,10 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
   <body>
     <nav>      -- site name, top row, current section's sub-row (standard chrome only)
     <main>     -- <slot /> receives page content
-    <footer>   -- method line, maker line (TreadLightlyAI linked), footer links, version
+    <footer>   -- maker line (TreadLightlyAI linked) and one row of footer links
 ```
 
-**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer links: About, Values, Methodology and Credits on one row, then GitHub and CC-BY-4.0 (marked `external`) with the version on the next. `navLabel(href)` gives the homepage menu its short labels.
+**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer's one row of links: About, Values, Methodology and CC-BY-4.0 (marked `external`). Credits, GitHub and the version are on the About page ("The project"); `src/lib/version.ts` reads the version from `VERSION.md` for the About page and the beta banner. `navLabel(href)` gives the homepage menu its short labels.
 
 ### Styling approach
 

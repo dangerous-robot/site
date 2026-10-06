@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import { SITE_VERSION } from '../lib/version';
 ---
 <Base title="About" description="What Dangerous Robot is, where it stands, how it is made, and who runs it." layout="reading">
   <article class="reading">
@@ -58,6 +59,13 @@ import Breadcrumb from '../components/Breadcrumb.astro';
       <h2>Contact</h2>
       <p>
         For legal and safety matters, write to <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a>. To report an error on a page or claim, use <a href="/corrections">corrections</a> instead.
+      </p>
+    </section>
+
+    <section id="project">
+      <h2>The project</h2>
+      <p>
+        The site's code is on <a href="https://github.com/dangerous-robot/site">GitHub</a> under the MIT license, and the research is published under <a href="https://creativecommons.org/licenses/by/4.0/">CC-BY-4.0</a>. Artwork and other assets are attributed on the <a href="/credits">credits page</a>. This is version {SITE_VERSION}.
       </p>
     </section>
   </article>
