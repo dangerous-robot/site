@@ -257,7 +257,7 @@ Things a reader can do. Every action is a petition today, served at `/petitions/
 | `title`, `description`, `pubDate`, `updatedDate`, `author`, `ai_assisted`, `draft` | | | As for writing posts |
 | `petition` | string | yes | Slug of the petition row in the dr-api Worker |
 | `petition_statement` | string | no | The sentence signers put their name to; set large in the sign block |
-| `spotlight` | string | no | Max 140 characters. The newest action with this line is featured below the homepage hero |
+| `spotlight` | string | no | Max 140 characters. The newest action with this line is featured below the homepage hero, quoting `petition_statement`; the line shows only when that is empty |
 
 **Draft behaviour.** `getActions()` in `src/lib/actions.ts` applies the same rule as writing: drafts render in dev and are dropped from production builds, including the homepage spotlight.
 

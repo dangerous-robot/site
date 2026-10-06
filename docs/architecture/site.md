@@ -181,7 +181,7 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 `src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
 
 1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("Convenience runs on reliance and pays out in compliance."), and the two-sentence headline "The algorithm got your attention. The robot wants the wheel.", one sentence per line
-2. **Spotlight** -- the newest action with a `spotlight` line: title, that line, a signature count chip and an "Add your signature" link to the petition's `#sign`. No such action, no band.
+2. **Spotlight** -- the newest action with a `spotlight` line: title, its `petition_statement` (that line when it has none), a signature count chip and an "Add your signature" link to the petition's `#sign`. No such action, no band.
 3. **Where to start** -- a visible `<nav>` list of four deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
 4. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
 5. **Trust** -- closing lines from the thesis, the north star as the closing quote, a link to the full statement at `/writing/why-dangerous-robot-exists`, and the colophon (the same method line the footer carries).

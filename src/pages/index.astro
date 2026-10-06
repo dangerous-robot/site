@@ -117,14 +117,15 @@ const menu = menuEntries.map((m: { href: string; label: string; note: string; sh
 
 /*
  * The spotlight: the newest action with a `spotlight` line, with its signature
- * tally. This file never names one; no spotlight line means no band, and the
- * fetch never fails the build (see fetchPetitionState).
+ * tally. It quotes the petition statement, falling back to the spotlight line
+ * when a petition has none. This file never names one; no spotlight line means
+ * no band, and the fetch never fails the build (see fetchPetitionState).
  */
 const spotlightAction = await getSpotlight();
 const spotlight = spotlightAction && {
   href: petitionHref(spotlightAction),
   title: spotlightAction.data.title,
-  note: spotlightAction.data.spotlight!,
+  statement: spotlightAction.data.petition_statement ?? spotlightAction.data.spotlight!,
   slug: spotlightAction.data.petition,
   state: await fetchPetitionState(spotlightAction.data.petition),
 };
@@ -286,13 +287,11 @@ const websiteSchema = {
       <section class="spotlight" aria-labelledby="spotlight-title">
         <div class="spotlight__inner">
           <p class="spotlight__eyebrow">Petition</p>
-          <div class="spotlight__body">
-            <div class="spotlight__head">
-              <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
-              {spotlight.state && <span class="chip spotlight__tally" data-petition-tally={spotlight.slug}>{petitionSummary(spotlight.state)}</span>}
-            </div>
-            <p class="spotlight__note">{spotlight.note}</p>
+          <div class="spotlight__head">
+            <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
+            {spotlight.state && <span class="chip spotlight__tally" data-petition-tally={spotlight.slug}>{petitionSummary(spotlight.state)}</span>}
           </div>
+          <blockquote class="spotlight__statement"><p>{spotlight.statement}</p></blockquote>
           {spotlight.state?.status !== 'closed' && (
             <a class="spotlight__sign" href={`${spotlight.href}#sign`}>Add your signature</a>
           )}
@@ -534,22 +533,24 @@ const websiteSchema = {
   .hero-line__row + .hero-line__row { margin-top: 0.12em; }
 
   /* =========================================================
-     Spotlight: one action, kept to a single row on wide screens so the
-     menu still starts on screen at 1440x900.
+     Spotlight: one action, the pledge's own words in a narrow column on the
+     page's left edge. Sized so "Where to start" still starts on screen at
+     1440x900.
      ========================================================= */
   .spotlight {
-    padding: var(--space-md) var(--gutter);
+    padding: clamp(var(--space-xl), 5vh, var(--space-2xl) * 1.5) var(--gutter);
     border-top: 2px solid var(--color-accent);
     background: var(--color-surface);
   }
   .spotlight__inner {
     max-width: var(--page-max);
     margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-sm) var(--space-lg);
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-md);
   }
+  .spotlight__inner > * { max-width: 38rem; }
   .spotlight__eyebrow {
     margin: 0;
     font-family: var(--font-mono);
@@ -583,32 +584,35 @@ const websiteSchema = {
     letter-spacing: 0.06em;
     line-height: 1.4;
   }
-  .spotlight__note {
-    margin: 0.2em 0 0;
-    max-width: 64ch;
-    font-size: var(--font-size-sm);
+  .spotlight__statement {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-family: var(--font-heading);
+    font-style: italic;
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
     line-height: 1.45;
-    color: var(--color-text-muted);
+    color: var(--color-text);
   }
-  /* Same outline treatment as the petition form's submit button. */
+  .spotlight__statement p { margin: 0; }
+  /* Solid and neutral, in the headline's color: teal stays the link color, so
+     the one call to act on the page doesn't read as another link. */
   .spotlight__sign {
-    justify-self: start;
+    margin-top: var(--space-sm);
     padding: var(--space-sm) var(--space-lg);
-    border: 1px solid var(--color-accent);
+    border: 1px solid var(--color-text-heading);
     border-radius: var(--radius-md);
+    background: var(--color-text-heading);
     font-size: var(--font-size-sm);
     font-weight: 600;
-    color: var(--color-accent);
+    color: var(--color-bg);
     text-decoration: none;
     white-space: nowrap;
   }
   .spotlight__sign:hover {
-    background: var(--color-accent);
-    color: var(--color-bg);
+    background: transparent;
+    color: var(--color-text-heading);
     text-decoration: none;
-  }
-  @media (min-width: 761px) {
-    .spotlight__inner { grid-template-columns: auto minmax(0, 1fr) auto; }
   }
 
   /* =========================================================

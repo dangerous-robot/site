@@ -102,7 +102,7 @@ collections:
         widget: string
         required: false
         maxlength: 140
-        hint: One plain sentence. When set, the newest petition with a line is featured below the homepage hero.
+        hint: One plain sentence. When set, the newest petition with a line is featured below the homepage hero, quoting the petition statement; this line shows only when the statement is empty.
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for
