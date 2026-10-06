@@ -2298,7 +2298,7 @@ def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None
     """Aggregate read-only counters from claims and audit sidecars; no LLM, no network.
 
     Reports four aggregates that back the success-criteria table in
-    docs/plans/source-pool-expansion-tier1.md:
+    docs/plans/completed/source-pool-expansion-tier1.md:
 
     \b
       - wayback_recovery: Path 1 archive_org recovery rate

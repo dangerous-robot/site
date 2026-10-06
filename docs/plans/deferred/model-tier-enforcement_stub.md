@@ -1,8 +1,11 @@
 # Plan (stub): Enforce small-by-default model tiers
 
+**Deferred**: 2026-10-06, cost discipline with no reader-facing value; revisit with `token-usage-log.md` (also deferred).
+
+
 **Status**: Stub — scaffolded from Q4 of the retired `pre-launch-questions.md` (2026-07-09). Not implementation-ready; flesh out before building.
 
-**Suffix**: `_stub` — placeholder. Committed at `docs/plans/` top level (not `drafts/`) because committed docs link to it (`docs/plans/completed/v1.0.0-roadmap_superseded.md`, `docs/architecture/glossary.md`).
+**Suffix**: `_stub` — placeholder. Committed (now in `docs/plans/deferred/`, not `drafts/`) because committed docs link to it (`docs/plans/completed/v1.0.0-roadmap_superseded.md`, `docs/architecture/glossary.md`).
 
 ## Problem
 
@@ -23,7 +26,7 @@ So the repo is effectively at "option (a) by omission": principle documented, de
 
 Rejected alternatives (from the Q4 writeup):
 - **(a) instructions only** — soft convention, no guarantee. This is the status quo; the point of the plan is to move past it.
-- **(c) cost-per-claim ceilings + escalation gates** — the "real" cost control, but depends on the token-usage log (unbuilt; see `docs/plans/token-usage-log.md`). Deferred to v1.x+.
+- **(c) cost-per-claim ceilings + escalation gates** — the "real" cost control, but depends on the token-usage log (unbuilt; see `docs/plans/deferred/token-usage-log.md`). Deferred to v1.x+.
 
 ### Design sketch (to be verified during implementation)
 
@@ -41,10 +44,11 @@ Rejected alternatives (from the Q4 writeup):
 ## Downstream / related
 
 - Feeds the audit sidecar `models_used` display and multi-provider Part 2 machinery (`docs/plans/completed/multi-provider.md`).
-- Cost-ceiling successor work depends on `docs/plans/token-usage-log.md`.
+- Cost-ceiling successor work depends on `docs/plans/deferred/token-usage-log.md`.
 
 ## Review history
 
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-07-09 | agent (claude-opus-4-8) | stub scaffold | Created from Q4 of the retired `pre-launch-questions.md`. Current-state table verified against `models.py`/`pipeline.py`/`cli.py`. Not yet fleshed to an implementation-ready plan. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred with a one-line reason; corrected stale facts; relative links adjusted for `deferred/`. |

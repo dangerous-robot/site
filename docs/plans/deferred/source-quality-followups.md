@@ -1,6 +1,8 @@
 # Source quality follow-ups
 
-> Companion to [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md). Collects ideas, drafted follow-ups, and full plans deferred until Tier 1 ships. Anything here that crystallizes into active work gets promoted to its own plan file.
+**Deferred**: 2026-10-06, backlog of pipeline source-quality ideas, mostly off-focus for the chatbot guide. Its on-focus items (source freshness, arXiv corporate authorship, curated allowlist) have their own rows in `docs/UNSCHEDULED.md`.
+
+> Companion to [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md). Collects ideas, drafted follow-ups, and full plans deferred until Tier 1 ships. Anything here that crystallizes into active work gets promoted to its own plan file.
 
 **Status**: Backlog (active collector — entries are added, promoted, or dropped over time)
 **Created**: 2026-05-08
@@ -82,7 +84,7 @@ The researcher generates candidate URLs from web search. If a URL already exists
 Some publishers are structurally weak for research: content farms, vendor-sponsored analysis, PR wire services, and community discussion forums. Today these pass the scorer unless the title/snippet is obviously irrelevant.
 
 **Ideas**:
-- Extend the researcher host blocklist (see [`researcher-host-blocklist.md`](completed/researcher-host-blocklist.md)) to cover not just paywalled sites but low-trust source categories.
+- Extend the researcher host blocklist (see [`researcher-host-blocklist.md`](../completed/researcher-host-blocklist.md)) to cover not just paywalled sites but low-trust source categories.
 - The scorer prompt could note known-problematic source patterns (press release wires, vendor white papers presented as independent research, community forum posts).
 - Community forums (Reddit, Quora, HN) are a specific failure case: a topically on-point thread title scores ≥4 for relevance even when the post is from a deleted user with 21 upvotes. The social-quality signals (author standing, vote count, thread age) are invisible to the scorer.
 - `pipeline/common/source_classification.py` already classifies sources as primary/secondary/tertiary from domain/publisher patterns, but this runs post-hoc (after ingestion). Its domain patterns could be used earlier: either as a pre-scorer filter (drop `tertiary` candidates before scoring) or as a signal injected into the scorer prompt so it can discount low-credibility domains before spending an ingest slot on them.
@@ -112,7 +114,7 @@ Company entities today carry minimal structured data. Adding structured fields w
 - `official_website` (used as a signal for primary-source classification)
 - `parent_company` (holding companies, acquisition history)
 - `subsidiaries` (cross-link to related entities)
-- `sec_cik` — landing first, via [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Schema prerequisites (used by § Path 3)
+- `sec_cik` — landing first, via [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md) § Schema prerequisites (used by § Path 3)
 
 **Research impact**: Medium. Most valuable when combined with COI detection and entity-context scoring.
 **Cost**: Low for schema addition; medium for backfill and any agent-side use.
@@ -132,7 +134,7 @@ Several sectors (financial analysis, technology press, energy reporting) have do
 
 #### Entity onboarding research (verification gate + enrichment)
 
-Promoted to drafted-plan stub: [`completed/entity-onboarding-research_completed.md`](completed/entity-onboarding-research_completed.md) (2026-05-09). Single onboarding-research agent across `company` / `product` / `subject` entities — same workflow, per-type prompt section. Verifier halts on typo / collision / sparse-evidence cases (`goooogle`, `greenpt`, `treadlightlyai` examples). Enricher populates structured + narrative fields on verified entities. Schema seat (`verification_status`) lands separately in [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md). See stub for the full design space.
+Promoted to drafted-plan stub: [`completed/entity-onboarding-research_completed.md`](../completed/entity-onboarding-research_completed.md) (2026-05-09). Single onboarding-research agent across `company` / `product` / `subject` entities — same workflow, per-type prompt section. Verifier halts on typo / collision / sparse-evidence cases (`goooogle`, `greenpt`, `treadlightlyai` examples). Enricher populates structured + narrative fields on verified entities. Schema seat (`verification_status`) lands separately in [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md). See stub for the full design space.
 
 #### Subject entity type support
 
@@ -152,13 +154,13 @@ Outlined plans that are post-Tier-1 by design. Each subsection has enough scope 
 
 ### Source pool — Tier 2 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
+**Depends on**: [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](../completed/source-pool-expansion-tier1-search-backend.md).
 
 Tier 2 builds on the foundations laid by Tier 1: once new acquisition paths exist, these items improve their hit rate, surface area, or fallback options. None are blockers for v1.
 
 #### Semantic Scholar + OpenAlex + affiliation override (deferred from Tier 1 Path 2)
 
-Tier 1 ships arXiv-only as the academic API (see [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Path 2 → Why arXiv-only). Tier 2 reintroduces the broader scope that the original Path 2 design carried:
+Tier 1 ships arXiv-only as the academic API (see [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md) § Path 2 → Why arXiv-only). Tier 2 reintroduces the broader scope that the original Path 2 design carried:
 
 - **Semantic Scholar tool** — `pipeline/researcher/tools/semantic_scholar.py`. Graph v1 endpoint with optional `SEMANTIC_SCHOLAR_API_KEY` (1/s anon, 10/s with key). Activates the `s2` value of the `acquisition.origin` enum (already shipped as a reserved value in Tier 1's schema commit; no schema change needed).
 - **OpenAlex tool** — `pipeline/researcher/tools/openalex.py`. Polite-pool endpoint with optional `OPENALEX_MAILTO` (1/s anon, 10/s polite). Returns structured `institutions[]` per author, which feeds the affiliation override below. Activates the `openalex` enum value (already shipped, reserved).
@@ -221,7 +223,7 @@ Not in scope (yet): building a new MCP server (only evaluating existing ones); n
 
 ### Source pool — Tier 3 (drafted)
 
-**Depends on**: [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md), Tier 2 above.
+**Depends on**: [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md) and its companion [`source-pool-expansion-tier1-search-backend.md`](../completed/source-pool-expansion-tier1-search-backend.md), Tier 2 above.
 
 Tier 3 covers ideas that are real but lower priority. They either have narrower applicability, depend on relationships that take time to build, or address gaps Tier 1 and Tier 2 already mostly cover.
 
@@ -373,11 +375,11 @@ Pass parent company metadata to scorer to improve COI detection and source relev
 
 ### Cross-references for v1.x trust schema
 
-- v1 shipped scope: [`completed/source-quality-robust-roadmap_completed.md`](completed/source-quality-robust-roadmap_completed.md).
-- Full original design (with all 8 phases): [`completed/source-trust-metadata_superseded.md`](completed/source-trust-metadata_superseded.md).
-- Architecture contract for source classification: [`docs/architecture/source-quality.md`](../architecture/source-quality.md).
+- v1 shipped scope: [`completed/source-quality-robust-roadmap_completed.md`](../completed/source-quality-robust-roadmap_completed.md).
+- Full original design (with all 8 phases): [`completed/source-trust-metadata_superseded.md`](../completed/source-trust-metadata_superseded.md).
+- Architecture contract for source classification: [`docs/architecture/source-quality.md`](../../architecture/source-quality.md).
 - Schema mirror locations: `pipeline/ingestor/models.py` (Pydantic) and `src/content.config.ts` (Zod).
-- Analyst-decomposition interaction: if [`drafts/analyst-decomposition_stub.md`](drafts/analyst-decomposition_stub.md) lands before Phase 6, COI/independence weighting moves into the per-source stance classifier rather than the monolithic analyst instructions.
+- Analyst-decomposition interaction: if the analyst-decomposition stub (local draft, `docs/plans/drafts/analyst-decomposition_stub.md`) lands before Phase 6, COI/independence weighting moves into the per-source stance classifier rather than the monolithic analyst instructions.
 
 ---
 
@@ -385,19 +387,19 @@ Pass parent company metadata to scorer to improve COI detection and source relev
 
 Historical and superseded source-quality documents, retained for context.
 
-- **Signal landscape survey** → [`completed/source-quality_survey_completed.md`](completed/source-quality_survey_completed.md). Maps the source-quality problem across the full pipeline; identifies signals that are implemented, planned, or absent at each stage. The taxonomy and "scope breakdown" (no architectural change vs. requires state machine vs. requires larger refactor) inform any future plan in this area.
-- **2026-04 strategic critique** → [`completed/source-quality-agent-review_completed.md`](completed/source-quality-agent-review_completed.md). Three-agent independent critique that drove the rewrite of the original v1 roadmap. Surfaced the verification-scale-measures-diversity-not-corroboration limitation, the cap-as-blunt-rule limitation, and the display-layer-underdeveloped problem.
-- **v1 roadmap (superseded)** → [`completed/source-quality-roadmap_superseded.md`](completed/source-quality-roadmap_superseded.md). Original 13-item roadmap. Superseded by the robust roadmap after the agent critique.
-- **v1 trust metadata (superseded)** → [`completed/source-trust-metadata_superseded.md`](completed/source-trust-metadata_superseded.md). Full 8-phase trust-block design. Phases 1–5 absorbed into v1; phases 6–8 are digested in Section 3 above.
+- **Signal landscape survey** → [`completed/source-quality_survey_completed.md`](../completed/source-quality_survey_completed.md). Maps the source-quality problem across the full pipeline; identifies signals that are implemented, planned, or absent at each stage. The taxonomy and "scope breakdown" (no architectural change vs. requires state machine vs. requires larger refactor) inform any future plan in this area.
+- **2026-04 strategic critique** → [`completed/source-quality-agent-review_completed.md`](../completed/source-quality-agent-review_completed.md). Three-agent independent critique that drove the rewrite of the original v1 roadmap. Surfaced the verification-scale-measures-diversity-not-corroboration limitation, the cap-as-blunt-rule limitation, and the display-layer-underdeveloped problem.
+- **v1 roadmap (superseded)** → [`completed/source-quality-roadmap_superseded.md`](../completed/source-quality-roadmap_superseded.md). Original 13-item roadmap. Superseded by the robust roadmap after the agent critique.
+- **v1 trust metadata (superseded)** → [`completed/source-trust-metadata_superseded.md`](../completed/source-trust-metadata_superseded.md). Full 8-phase trust-block design. Phases 1–5 absorbed into v1; phases 6–8 are digested in Section 3 above.
 
 ### Related independent peer plans
 
 These are not source-quality plans per se, but they affect source pool quality enough to cross-reference:
 
-- [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, arXiv (academic API), SEC EDGAR, Wayback gap-filling. Semantic Scholar / OpenAlex / affiliation override deferred to § Source pool — Tier 2 above.
-- [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
+- [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md) — Tier 1 do-now: shared infrastructure, arXiv (academic API), SEC EDGAR, Wayback gap-filling. Semantic Scholar / OpenAlex / affiliation override deferred to § Source pool — Tier 2 above.
+- [`source-pool-expansion-tier1-search-backend.md`](../completed/source-pool-expansion-tier1-search-backend.md) — Tier 1 companion: search backend swap (Tavily-only; Exa deferred).
 - [`source-pdf-attachment.md`](source-pdf-attachment.md) — PDF attachment as an alternate ingestion surface for paywalled / 403-locked documents.
-- [`researcher-host-blocklist.md`](completed/researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
+- [`researcher-host-blocklist.md`](../completed/researcher-host-blocklist.md) — pre-ingest URL filter for known-paywall and known-noise hosts.
 - [`wayback-archive-job.md`](wayback-archive-job.md) — background-job framework, with wayback archival as the first concrete job.
 
 ---
@@ -428,8 +430,8 @@ Scale: cost and benefit each 1–10 (1 = trivial / marginal, 10 = months / trans
 | Curated allowlist of independent AI research orgs (HAI, Epoch, METR, FLI…) biasing scorer + publisher_quality | High-trust watchdog content rises in candidate ranking | C:2 / B:3 = **0.67** — small static list; FLI/Epoch COI flag is the open question |
 | Source freshness: wire ingestor `published_date` extraction + analyst instruction to weight age (schema field already exists) | Catches stale sources on fast-changing claims (regulatory, energy metrics) | C:3 / B:4 = **0.75** — half-shipped (schema only); ingestor parser + instruction remain |
 | Path 3: SEC EDGAR tool + subject-relevance classifier + filer-vs-subject independence override + `source-quality.md` amendment | Regulator-authority sources for OpenAI (via Microsoft) and Anthropic (via Amazon/Alphabet); resolves "regulator filings about not by entity" gap | C:6 / B:6 = **1.00** — 5–7 days; gated on `'edgar'` in `research_origins` and `SEC_EDGAR_USER_AGENT` |
-| ~~Render `parent_company` on product entity pages~~ | Promoted to [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) (2026-05-09). Bundled with company entity fields into one plan. | — |
-| ~~Company entity fields + `legal_name` + render surfaces~~ | Promoted to [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) (2026-05-09). `subsidiaries` punted from the bucket; remains in § Section 1 (Schema quality) as a candidate field. `official_website` not added — existing `website` field already plays that role. | — |
+| ~~Render `parent_company` on product entity pages~~ | Promoted to [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md) (2026-05-09). Bundled with company entity fields into one plan. | — |
+| ~~Company entity fields + `legal_name` + render surfaces~~ | Promoted to [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md) (2026-05-09). `subsidiaries` punted from the bucket; remains in § Section 1 (Schema quality) as a candidate field. `official_website` not added — existing `website` field already plays that role. | — |
 | News API integration (GDELT or NewsAPI) as additional Researcher backend | Systematic news coverage with cleaner metadata vs. ad-hoc Tavily/Brave | C:5 / B:4 = **1.25** — open: third backend vs. event-stream abstraction |
 | PDF publish surface: build-time copy of `republish: true` PDFs to `dist/sources/<year>/<slug>.pdf` + `_headers` `noindex` | Readers can audit grounding documents when origin URL dies | C:4 / B:3 = **1.33** — depends on `source-pdf-attachment.md` landing first |
 | Phase 7 / §1 white-label: `research/publisher-groups.yaml` + `publisher_group` field on sources + analyst warning on same-group corroboration | Defeats syndication-as-independence false-positive (3 "independent" Hearst sites = 1) | C:7 / B:5 = **1.40** — manual curation + ongoing maintenance |
@@ -450,7 +452,7 @@ The six lowest-ratio items cluster naturally by shared file surface and shared r
 
 *Why together*: both touch `pipeline/researcher/scorer.py` (prompt) and `pipeline/common/source_classification.py` / `publisher_quality.py`. Single eval pass tests both. (3) is subtractive (drop noise) and (1) is additive (boost trusted) — opposing levers on the same rank list, so co-tuning catches over-correction. Ship as one PR; revert is one revert.
 
-**Bucket 2 — Entity metadata surface** — Promoted to [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) (2026-05-09); shipped 2026-05-09 in a single commit covering schema, ResolvedEntity passthrough, writer + linter mirrors, render across product / company / claim pages (incl. verification badge), pipeline reads (scorer + analyst prompts and instructions), one-time `parent_company` backfill on all five product files (`claude`, `chatgpt`, `gemini`, `greenpt`, `treadlightlyai`), `verification_status: unverified-startup` on `products/treadlightlyai.md`, drive-by linter fixes for `sec_cik` and `status`, and the `## Entity metadata` amendment in [`docs/architecture/source-quality.md`](../architecture/source-quality.md).
+**Bucket 2 — Entity metadata surface** — Promoted to [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md) (2026-05-09); shipped 2026-05-09 in a single commit covering schema, ResolvedEntity passthrough, writer + linter mirrors, render across product / company / claim pages (incl. verification badge), pipeline reads (scorer + analyst prompts and instructions), one-time `parent_company` backfill on all five product files (`claude`, `chatgpt`, `gemini`, `greenpt`, `treadlightlyai`), `verification_status: unverified-startup` on `products/treadlightlyai.md`, drive-by linter fixes for `sec_cik` and `status`, and the `## Entity metadata` amendment in [`docs/architecture/source-quality.md`](../../architecture/source-quality.md).
 
 **Bucket 3 — Source provenance (3–5 days total, mostly Path 2)**
 - Source freshness wiring (ingestor `published_date` extraction + analyst instruction)
@@ -482,5 +484,5 @@ These are open questions for the *collector*, not items inside specific entries.
 |------|----------|-------|---------|
 | 2026-05-08 | agent (opus-4-7) | iterated | Initial creation. Subsumes `research-quality-ideas.md` (Section 1), `drafts/source-pool-expansion-tier{2,3}.md` (Section 2), `drafts/source-pdf-publish.md` (Section 2), `drafts/scheduled-citation-audits.md` (Section 2). Phases 6–8 of `source-trust-metadata.md` digested into Section 3 (full text retained in `completed/source-trust-metadata_superseded.md`). `source-quality_survey.md`, `source-quality-agent-review.md`, `source-quality-roadmap.md`, and `source-trust-metadata.md` moved to `completed/` with `_completed` / `_superseded` suffixes per AGENTS.md naming table. Tightened only obvious internal redundancy in the absorbed material; substance preserved. |
 | 2026-05-09 | agent (opus-4-7) | added | Section 5 — Cost/benefit triage. Triaged backlog after a `completed/` re-review: dropped three already-shipped ideas (source reuse, parent_company-in-scorer / Phase 8, first-party analyst weighting); restored Path 2 leftover (S2 + OpenAlex + affiliation override) and source-freshness wiring as partials. Sorted-by-ratio table + 3-bucket sequencing recommendation (Scoring quality → Entity metadata → Source provenance) for the six lowest-ratio items. |
-| 2026-05-09 | agent (opus-4-7) | promoted | Promoted Bucket 2 (Entity metadata surface) to [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md). Triage table rows for the company-entity-fields and parent_company-render items collapsed into the single new plan stub. `subsidiaries` field explicitly dropped from the bucket; remains in § Section 1 as a candidate field for future COI work. `official_website` decision resolved: not adding it — existing `website` field already plays that role. Bucket 1 (Scoring quality) and Bucket 3 (Source provenance) untouched. |
-| 2026-05-09 | operator | added | Two new ideas surfaced during entity-metadata-surface planning ("Pipeline-driven company entity enrichment" + "Onboarding verification gate / entity verification status"). Operator chose a single shared onboarding-research agent across all three entity types (same workflow, per-type prompt section). Both ideas collapsed into a Section 1 pointer at [`completed/entity-onboarding-research_completed.md`](completed/entity-onboarding-research_completed.md), which holds the full design space. The lightweight `verification_status` schema seat + render badge folded into [`completed/entity-metadata-surface_completed.md`](completed/entity-metadata-surface_completed.md) so the agent has a place to plug in. |
+| 2026-05-09 | agent (opus-4-7) | promoted | Promoted Bucket 2 (Entity metadata surface) to [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md). Triage table rows for the company-entity-fields and parent_company-render items collapsed into the single new plan stub. `subsidiaries` field explicitly dropped from the bucket; remains in § Section 1 as a candidate field for future COI work. `official_website` decision resolved: not adding it — existing `website` field already plays that role. Bucket 1 (Scoring quality) and Bucket 3 (Source provenance) untouched. |
+| 2026-05-09 | operator | added | Two new ideas surfaced during entity-metadata-surface planning ("Pipeline-driven company entity enrichment" + "Onboarding verification gate / entity verification status"). Operator chose a single shared onboarding-research agent across all three entity types (same workflow, per-type prompt section). Both ideas collapsed into a Section 1 pointer at [`completed/entity-onboarding-research_completed.md`](../completed/entity-onboarding-research_completed.md), which holds the full design space. The lightweight `verification_status` schema seat + render badge folded into [`completed/entity-metadata-surface_completed.md`](../completed/entity-metadata-surface_completed.md) so the agent has a place to plug in. |

@@ -1,5 +1,8 @@
 # Criterion-resolution workflow
 
+**Deferred**: 2026-10-06, operator ergonomics; claims made from templates already carry `criteria_slug`. Shipped part: the "unresolvable vocabulary claim becomes blocked" section (commit 26bd518). Open: the `c` action and showing blocked claims in `dr review-queue`.
+
+
 **Status**: Stub
 **Priority**: Follow-on to the publish-time criterion gate
 **Last updated**: 2026-04-30
@@ -50,7 +53,7 @@ Some claims genuinely don't generalize (one-off observations like "Anthropic pub
 
 Some criteria use a vocabulary placeholder in the claim text: "one of (A, B, C ...)". The analyst is expected to resolve the placeholder to whichever option the evidence supports and write the title accordingly. When no option can be supported, the current instructions have no defined behavior -- the analyst either invents a vacuous title ("has an undetermined X") or outputs the raw template form. Both are wrong.
 
-**Decision needed:** an unresolvable vocabulary claim should become `status: blocked`, not a drafted claim with a bad title.
+**Done (commit 26bd518):** an unresolvable vocabulary claim becomes `status: blocked`, not a drafted claim with a bad title. It shipped as prefix detection rather than the flag proposed below: a title still carrying `VOCABULARY_HINT_PREFIX` (`pipeline/common/templates.py`) is blocked before write, and blocked titles use `render_blocked_title`. Piece 3 (showing these in `dr review-queue`) is still open; the queue excludes blocked claims.
 
 ### Required pieces
 
@@ -77,5 +80,11 @@ This is distinct from `verdict: unverified`. `unverified` means sources were fou
 ## Cross-references
 
 - Built on top of: gate landed in this conversation (lint check `published-without-criterion`, `approve_claim` preflight, `dr publish` skip).
-- Phase 2 of [`dr-review-queue.md`](dr-review-queue.md) lists the `c` action; this stub is the design.
+- Phase 2 of [`dr-review-queue.md`](../completed/dr-review-queue.md) lists the `c` action; this stub is the design.
 - Adjacent: slug evolution/migration after criteria exist is unplanned work (the old criteria-rename stub was deleted when the display rename shipped).
+
+## Review history
+
+| Date | Reviewer | Scope | Changes |
+|---|---|---|---|
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred. Marked the vocabulary-blocked section done (26bd518). Added this section. |

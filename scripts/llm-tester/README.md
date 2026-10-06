@@ -1,6 +1,6 @@
 # llm-tester
 
-Ad-hoc, gitignored, throwaway tester for probing LLM providers and models against the T1-T5 capability matrix used by the `dr` pipeline. See [`docs/plans/multi-provider.md`](../../docs/plans/multi-provider.md) and [`docs/reports/API-PROVIDER-FINAL-REPORT.md`](../../docs/reports/API-PROVIDER-FINAL-REPORT.md) for background.
+Ad-hoc, gitignored, throwaway tester for probing LLM providers and models against the T1-T5 capability matrix used by the `dr` pipeline. See [`docs/plans/multi-provider.md`](../../docs/plans/completed/multi-provider.md) and [`docs/reports/API-PROVIDER-FINAL-REPORT.md`](../../docs/reports/API-PROVIDER-FINAL-REPORT.md) for background.
 
 ## Quickstart
 

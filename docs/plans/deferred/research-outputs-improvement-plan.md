@@ -1,5 +1,7 @@
 # Research Outputs Improvement Plan
 
+**Deferred**: 2026-10-06, mostly operator-side and standards work off the chatbot guide's path. Already in place: inline ClaimReview JSON-LD on claim pages (`src/pages/research/claims/[...slug].astro`, `1b9f3b7`), the `verification_level` field (listed below as deferred, but shipped), and a confidence-levels section on the methodology page (`src/pages/research/index.astro`). The two on-focus items, a build check that every published claim emits valid ClaimReview and one confidence rubric, moved to `docs/UNSCHEDULED.md`.
+
 ## Goals
 
 Three goals, restated tightly:
@@ -38,7 +40,7 @@ For a claim plus sidecar to be a citeable starting point for outside readers, th
 
 New inputs (a fresh source, a counter-claim, a corrected fact) should improve claims without erasing the prior state. Each of these is a named transition over the substrate the vision describes; the mechanics here are how those transitions surface to readers:
 
-- **Recheck as a transition.** A recheck is a named transition (`recheck`) that appends to the per-claim transition log with cause, inputs read, outputs written, and resulting state. "Append-only recheck history" is the reader-facing view of that log, filtered to recheck transitions. The log itself is Phase 2/3 of `docs/plans/audit-trail-extensions.md` and is the load-bearing piece.
+- **Recheck as a transition.** A recheck is a named transition (`recheck`) that appends to the per-claim transition log with cause, inputs read, outputs written, and resulting state. "Append-only recheck history" is the reader-facing view of that log, filtered to recheck transitions. The log itself is Phase 2/3 of `docs/plans/deferred/audit-trail-extensions.md` and is the load-bearing piece.
 - **Supersession as a named transition.** A verdict change is the `supersede` transition, reserved for operator approval (one of the vision's open-loop decision points). Pre-condition: a prior published verdict exists. Post-condition: the new verdict is recorded with prior verdict, new verdict, trigger, and approving operator; the claim ID is unchanged. The published page shows the current verdict; the transition log shows the chain.
 - **Schema migration log.** Schema changes are themselves transitions, recorded in a migration log with date, rationale, and affected fields. Claims persisted under earlier schemas continue to validate or are explicitly migrated; readers can see which schema version produced which fields.
 - **Agent and inputs recorded per transition.** Every transition records the agent (model or human) and the inputs it consumed. This is the vision's transition record; this plan does not re-specify it. PROV-O is the discipline behind the field set, not a vocabulary we adopt.
@@ -47,7 +49,7 @@ New inputs (a fresh source, a counter-claim, a corrected fact) should improve cl
 
 Ordered by dependency. The vision recommends building the transition substrate before surface work that reads against it; substrate items lead.
 
-1. **Audit Trail Phase 2 and 3** (`docs/plans/audit-trail-extensions.md`): extended sidecar fields and the append-only transition log. This is the substrate everything below reads.
+1. **Audit Trail Phase 2 and 3** (`docs/plans/deferred/audit-trail-extensions.md`): extended sidecar fields and the append-only transition log. This is the substrate everything below reads.
 2. **Confidence and verdict rubric document**, consolidating today's implicit rules into one citeable page. Locks the verdict vocabulary and rating scale that the ClaimReview export needs.
 3. **ClaimReview JSON-LD export**, per-claim files generated from frontmatter at build time, plus a sitemap listing them. Build fails if any published claim does not produce a valid `ClaimReview` document; this is the export's build-time invariant in the vision's principle 4 sense. Aggregated feed deferred until a consumer asks.
 4. **Schema migration log** as a root `CHANGELOG.md`, started with the v1 audit schema as its first entry. Each entry records a schema-level transition.

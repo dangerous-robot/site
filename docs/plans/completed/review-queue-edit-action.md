@@ -2,7 +2,7 @@
 
 **Status**: Done — implemented in `pipeline/orchestrator/review_queue.py` (`_edit_fields`, dispatched from action `e`). Moved to completed/ 2026-07-03.
 
-This is the Phase 2 polish item flagged in [`dr-review-queue.md`](../dr-review-queue.md) ("quick edit-frontmatter-only mode"). Scope is intentionally narrower than the parent: a single new action, no new commands, no schema changes.
+This is the Phase 2 polish item flagged in [`dr-review-queue.md`](dr-review-queue.md) ("quick edit-frontmatter-only mode"). Scope is intentionally narrower than the parent: a single new action, no new commands, no schema changes.
 
 ## Context
 

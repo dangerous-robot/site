@@ -1,5 +1,8 @@
 # Operator queue + batch workflow
 
+**Deferred**: 2026-10-06, batch tooling; manual operation is fine at the guide's claim volume. Absorbs Phase 3 of [`dr-lint.md`](../completed/dr-lint.md) (the `ONBOARD_QUEUE.md` re-onboard loop) and Phase 3 of [`dr-review-queue.md`](../completed/dr-review-queue.md) (pluggable queue types: publication, disagreement, stale).
+
+
 **Status**: Stub
 **Priority**: v2 (manual operation is fine through v1 launch at ~20 claims)
 **Last updated**: 2026-04-24
@@ -50,10 +53,11 @@ Operator-facing intake files (one per work type), aligned with the six-input tax
 ## Cross-references
 
 - Pairs with [`data-lifecycle-policy_stub.md`](data-lifecycle-policy_stub.md) (lifecycle policy controls reprocessing inside this batch flow).
-- Six-input taxonomy is also surfaced briefly on FAQ in v1 (see [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) S7).
+- Six-input taxonomy is also surfaced briefly on FAQ in v1 (see [`pre-launch-quick-fixes.md`](../completed/pre-launch-quick-fixes.md) S7).
 
 ## Review history
 
 | Date | Reviewer | Scope | Changes |
 |---|---|---|---|
 | 2026-04-24 | agent (claude-opus-4-7) | initial stub from triage | Scaffolded |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred with a one-line reason; corrected stale facts; relative links adjusted for `deferred/`. |

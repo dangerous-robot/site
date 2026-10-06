@@ -1,7 +1,12 @@
 # Acceptance test fixture: Anthropic / Claude
 
-**Status**: Stub
-**Priority**: v1 (prerequisite for vocab rename pass and for confidence in pipeline-touching work)
+**Deferred**: 2026-10-06, test scaffolding with no reader-facing value as written; revive by retargeting it to a chatbot-guide claim to catch verdict drift (RF6).
+
+Related work that exists: `pipeline/tests/test_acceptance.py` (an `acceptance` pytest marker, three stage tests and one end-to-end smoke test on a false claim; commit 72dcae8), run with `inv test.all`. Its stage tests skip unless `ANTHROPIC_API_KEY` is set, while the default model is GreenPT, so they likely do not run in a normal setup. A revived fixture should extend that file.
+
+
+**Status**: Stub (deferred)
+**Priority**: none (deferred). Originally v1, as a prerequisite for the vocab rename pass, which has since shipped.
 **Last updated**: 2026-04-24
 
 A real-LLM, real-entity end-to-end test that verifies the `dr` pipeline produces stable, expected outputs for a known case. Operator selection (Q8): Anthropic / Claude.
@@ -9,8 +14,8 @@ A real-LLM, real-entity end-to-end test that verifies the `dr` pipeline produces
 ## Why now
 
 - The pipeline is approaching maturity but has no known-good regression case.
-- The vocab rename pass ([`completed/v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md), which absorbed the old vocab-rename-pass stub) shipped without this safety net; future sweeping renames still want it.
-- Multi-provider plan ([`multi-provider.md`](completed/multi-provider.md)) needs a baseline to compare drift against.
+- The vocab rename pass ([`completed/v0.1.0-vocab-workflow-landing.md`](../completed/v0.1.0-vocab-workflow-landing.md), which absorbed the old vocab-rename-pass stub) shipped without this safety net; future sweeping renames still want it.
+- Multi-provider plan ([`multi-provider.md`](../completed/multi-provider.md)) needs a baseline to compare drift against.
 
 ## Goal
 
@@ -21,7 +26,7 @@ A repeatable test that: (1) takes a fixed claim text + Anthropic-or-Claude entit
 - **Which claim?** Candidates: `anthropic/publishes-sustainability-report`, `anthropic/existential-safety-score`, `claude/discloses-models-used`. Pick one with stable sources and a clear verdict.
 - **Determinism vs tolerance**: LLMs are non-deterministic. What does "passing" mean — exact verdict match, verdict ∈ {true, mostly-true}, or audit-sidecar disagreement-rate within a band? Strictest version is brittle; loosest version doesn't catch much.
 - **When does the test break?** Sources update upstream (Anthropic publishes a new sustainability report; the verdict legitimately changes). Is that a test failure or a test refresh? Suggest: failure flags a manual review, not a CI block.
-- **Which models?** Test runs against current default (Claude Haiku 4.5). Should it also run against Infomaniak Mistral-Small per multi-provider POC? Probably yes once POC passes.
+- **Which models?** Test runs against the current default (`greenpt:gpt-oss-120b` in `pipeline/common/models.py` as of 2026-10-06; this stub originally said Claude Haiku 4.5). Should it also run against an Infomaniak model?
 - **Where in CI?** Manual `inv test.acceptance`? Nightly? Operator-triggered before vocab-rename-pass execution?
 - **Cost ceiling?** Each full pipeline run hits real APIs. Cap monthly runs?
 
@@ -54,3 +59,4 @@ A repeatable test that: (1) takes a fixed claim text + Anthropic-or-Claude entit
 | Date | Reviewer | Scope | Changes |
 |---|---|---|---|
 | 2026-04-24 | agent (claude-opus-4-7) | initial stub from triage | Scaffolded; entity choice (Anthropic/Claude) per operator answer to Q8 |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred with a one-line reason; corrected stale facts; relative links adjusted for `deferred/`. |

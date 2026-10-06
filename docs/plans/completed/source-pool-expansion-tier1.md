@@ -1,7 +1,7 @@
 # Source Pool Expansion — Tier 1
 
-**Status**: In progress — § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Path 1 shipped 2026-05-08 (commit `a8e5dd5`). Path 2 shipped 2026-05-08 (commit `6fcb0ed`) and was enabled in the default `research_origins` 2026-05-09 (commit `74c1512`). Path 3 remains open; companion search-backend plan moved to `completed/`.
-**Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
+**Status**: done (2026-05-09) except Path 3, which is deferred to [`sec-edgar-path3_stub.md`](../deferred/sec-edgar-path3_stub.md) (2026-10-06). § Schema prerequisites and § Shared infrastructure landed on `main` 2026-05-08 (commits `a40a09f`, `9a26ba8`, `0e5b1ff`, `98d094c`, `eb200f2`, `11aef7e`, `ee63cae`, `cfc8900`). Path 1 shipped 2026-05-08 (commit `a8e5dd5`). Path 2 shipped 2026-05-08 (commit `6fcb0ed`) and was enabled in the default `research_origins` 2026-05-09 (commit `74c1512`). The per-path success targets (§ Per-path success criteria) were not recorded as measured.
+**Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — search-backend swap (Tavily) split out for independent shipping.
 **Created**: 2026-05-08
 **Last revised**: 2026-05-09
 
@@ -20,7 +20,7 @@ Add three never-paywalled, mostly-independent acquisition surfaces (Wayback gap-
 
 Tier 1 fills one documented v1 imprecision in `source-quality.md` (regulator filings) and lays the shared infrastructure (throttle, dedup, audit-trail slots, lightweight `dr stats`) that Tier 2, Tier 3, and the companion search-backend plan all reuse. The other documented imprecision (academic affiliation) is deferred to Tier 2 along with Semantic Scholar and OpenAlex; see § Out of scope.
 
-The search-backend swap (originally Path 4) is now a separate companion plan; see [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
+The search-backend swap (originally Path 4) is now a separate companion plan; see [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
 
 ## Codebase touchpoints
 
@@ -139,7 +139,7 @@ The original implementation block below is retained for traceability of the desi
 The original draft proposed building this. It already exists:
 
 - `wayback_check` is a registered ingestor tool (`pipeline/ingestor/agent.py:115-127`) that calls `check_wayback` (archive.org availability API) and `save_to_wayback` (`pipeline/ingestor/tools/wayback.py:18-77`) when the LLM is reasoning over a terminal fetch failure.
-- `VerifyConfig.skip_wayback = False` is the interim default (commit `6409918`, per `docs/plans/wayback-archive-job.md` § Interim status). The wayback-archive-job plan owns the steady-state design (out-of-band scheduled archival).
+- `VerifyConfig.skip_wayback = False` is the interim default (commit `6409918`, per `docs/plans/deferred/wayback-archive-job.md` § Interim status). The wayback-archive-job plan owns the steady-state design (out-of-band scheduled archival).
 
 What Tier 1 adds is gap-filling, not rebuild:
 
@@ -302,40 +302,7 @@ Gates on § Schema prerequisites + § Shared infrastructure (throttle).
 
 ## Path 3 — SEC EDGAR
 
-**Where**: Researcher, conditional on the entity (or its `parent_company`) carrying a `sec_cik` field. Activation is decided by the selector function described in § Codebase touchpoints, not by branching inside `execute_searches`.
-
-**Schema dependency**: `sec_cik` on the company entity (per § Schema prerequisites). This is the first concrete field on the broader Company-metadata-enrichment idea collected in `source-quality-followups.md` § Company metadata enrichment; the other candidate fields there stay deferred.
-
-**Endpoints**:
-- Filing index: `https://data.sec.gov/submissions/CIK{cik}.json`
-- Full-text search: `https://efts.sec.gov/LATEST/search-index?q={keywords}&ciks={cik}`
-- Filings: `https://www.sec.gov/Archives/edgar/data/...`
-
-**Compliance**: SEC requires a specific `User-Agent` header (`<Org> <contact-email>`) and rate-limits hard at 10 req/sec. Both wire through § Shared infrastructure's throttle and a `SEC_EDGAR_USER_AGENT` env var (no default — Path 3 is skipped if unset, with `edgar_ua_missing` emitted).
-
-**False-positive handling (small-model disambiguation)**: full-text search returns filings *containing* the keywords, not *about* them. Inside `tools/edgar.py`, before merging into the candidate list, run a small classifier per match: `(entity_name, surrounding_paragraph) → SubjectRelevance(label: 'about' | 'mentioned' | 'unclear', rationale)`. Drop `mentioned` (or downweight before the URL scorer sees it); keep `about` and `unclear`. The classifier is a Haiku-class call, deterministic prompt, no tools — same shape as the existing planner/scorer agents. The label and rationale ride on the per-URL `acquisition` audit entry. This keeps subject-vs-keyword disambiguation out of the URL scorer (which works from title + snippet) and out of the analyst's hands.
-
-**Investor-corroboration use case**: Anthropic and OpenAI are private companies and don't file with the SEC themselves. Their commercial-partnership and investment claims **are** corroborated through public-investor filings:
-
-- Anthropic via **Amazon** (CIK 0001018724) and **Alphabet/Google** (CIK 0001652044).
-- OpenAI via **Microsoft** (CIK 0000789019).
-
-Path 3's value for these claims is the regulator-authority distinction: a 10-K that quantifies a partnership commitment is a stronger source than a press release announcing it.
-
-### Architecture amendment (regulator-authority)
-
-`source-quality.md` documents this failure mode: *"Regulator filings about (not by) the entity are `primary` by publisher rule (sec.gov, ftc.gov) and proxied to `first-party`. The document originates outside the entity but speaks with regulator authority — neither label fits cleanly."*
-
-Tier 1's resolution: keep the existing two-field model (`source_type` + `independence`) and route the distinction through `independence`:
-
-- Filing **by** the subject entity (the entity is the filer, CIK matches): `source_type: primary`, `independence: first-party` — unchanged.
-- Filing **about** the subject entity by another filer (subject mentioned but not the filer): `source_type: primary`, `independence: independent`. The override is recorded as a per-source classification at ingest time.
-
-No new `source_type` enum value. The override is a publisher-rule extension in `pipeline/common/source_classification.py`, gated on the EDGAR-ingest path knowing the subject CIK vs the filer CIK. The CIK comparison is a string equality check on structured data — correctly deterministic, not a model call.
-
-Record the amendment in the same commit as the Path 3 implementation, in `docs/architecture/source-quality.md` § Independence override rules.
-
-**Effort**: 5–7 days (entity-loader plumbing for `sec_cik`, UA/throttle, filing parser, subject-relevance classifier, classification override, tests). Gates on § Schema prerequisites + § Shared infrastructure.
+**Deferred 2026-10-06.** The full spec moved to [`sec-edgar-path3_stub.md`](../deferred/sec-edgar-path3_stub.md). Investor filings serve partnership and investment claims, not the chatbot guide. Mentions of Path 3 elsewhere in this plan (commit sequence, rollout, success criteria, file touches) are kept as the original design record.
 
 ## Commit sequence
 
@@ -358,11 +325,11 @@ Paths 1–3 are parallel-able after step 2. Path 1 is small enough to ride along
    - **`dr stats` (lightweight)** — ~0.5–1 day. Read-only; no flag.
    - **Path 2 (arXiv academic-topic dispatch)** — ~2 days. Activated via `VerifyConfig.research_origins`. S2 / OpenAlex / affiliation override deferred to Tier 2.
    - **Path 3 (SEC EDGAR + subject-relevance classifier + classification override)** — 5–7 days. Activated via `VerifyConfig.research_origins`.
-   - **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md) — ~4 days. Behind `RESEARCH_SEARCH_BACKEND` (the companion plan owns its own gating).
+   - **Companion plan**: [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md) — ~4 days. Behind `RESEARCH_SEARCH_BACKEND` (the companion plan owns its own gating).
 
 None of these blocks depend on each other; only on step 1. Default activations happen after one operator-validated cycle on the audit-trail data (now readable via `dr stats`).
 
-**Why one `research_origins` list instead of per-path booleans.** Three booleans (`ENABLE_ACADEMIC_RESEARCH`, `ENABLE_EDGAR_RESEARCH`, …) encode "is this path enabled" as global config; the long-term direction is a state-machine workspace where each claim's record lists which sources to attempt. A single `research_origins: list[str]` field (default `['tavily']` after the companion search-backend swap landed; grows as paths activate) ports cleanly to that future per-claim listing without an enum-to-list migration. The field name uses "origins" because the values are per-URL source categories (`'brave'`, `'tavily'`, `'arxiv'`, `'edgar'`, …) — the same vocabulary as the schema's `acquisition.origin` enum. Section-level "Path 1/2/3" remains the organizing concept for this plan.
+**Why one `research_origins` list instead of per-path booleans.** Three booleans (`ENABLE_ACADEMIC_RESEARCH`, `ENABLE_EDGAR_RESEARCH`, …) encode "is this path enabled" as global config; the long-term direction is a state-machine workspace where each claim's record lists which sources to attempt. A single `research_origins: list[str]` field (default `['tavily', 'arxiv']` since 2026-05-09; was `['tavily']` after the companion search-backend swap; grows as paths activate) ports cleanly to that future per-claim listing without an enum-to-list migration. The field name uses "origins" because the values are per-URL source categories (`'brave'`, `'tavily'`, `'arxiv'`, `'edgar'`, …) — the same vocabulary as the schema's `acquisition.origin` enum. Section-level "Path 1/2/3" remains the organizing concept for this plan.
 
 **Total effort estimate**: ~10.5–14 days for Tier 1 (Paths 1–3 + shared infra + `dr stats`), plus ~4 days for the companion search-backend plan. (Path 2 simplified to arXiv-only and re-baselined from 5–7 days to ~2 days; S2/OpenAlex + affiliation override deferred to Tier 2. See § Path 2 → Why arXiv-only.)
 
@@ -379,7 +346,7 @@ Measured via `dr stats --format json` (lands between Path 1 and Path 2, per § O
 
 ## Out of scope
 
-- **Search-backend swap (Tavily).** Owned by [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md).
+- **Search-backend swap (Tavily).** Owned by [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md).
 - **Flipping `skip_wayback` back to `True`.** Owned by `wayback-archive-job.md` (background-job ship).
 - **Semantic Scholar and OpenAlex tools.** Deferred to Tier 2. Each is ~0.5–1 day of API integration on its own; the cost is the OpenAlex affiliation work that depends on it.
 - **Affiliation-derived `independence` override + `IndependenceCall` classifier.** Deferred to Tier 2 alongside OpenAlex. The "entity employees publishing on arXiv tagged as `independent`" failure mode in `source-quality.md` stays as documented architectural debt until Tier 2 ships. The Tier 2 work also adds the `acquisition.affiliation_decision` Zod sub-field, the `IngestorDeps.acquisition_in` cross-stage side-channel, the `apply_affiliation_override` helper in `source_classification.py`, and the `source-quality.md` § Independence override rules academic-affiliation amendment.
@@ -402,7 +369,7 @@ Measured via `dr stats --format json` (lands between Path 1 and Path 2, per § O
 | `pipeline/orchestrator/persistence.py` | `_write_audit_sidecar` threads `acquisition` entries through the existing `research_trace` dict; new `tool_outcomes` array for "tool fired, found nothing" runtime trace. |
 | `pipeline/common/source_classification.py` | EDGAR filer-vs-subject CIK rule; preprint/journal publisher tags. (Tier 2 adds the affiliation-derived `independence` override.) |
 | `pipeline/common/publisher_quality.py` | Tag SEC publishers (Path 3). arXiv is already tagged via `_SECONDARY_PUBLISHERS`; no change in Tier 1. (Tier 2 adds OpenAlex / Semantic Scholar.) |
-| `pipeline/orchestrator/pipeline.py` | New `VerifyConfig.research_origins: list[str]` (default `['tavily']` since the companion search-backend swap; was originally `['brave']`); throttle plumbing. Path 2 adds `topics: list[str] = []` parameter to `verify_claim` / `_research`, threaded from existing `template.topics` at orchestrator call sites (`pipeline.py:1530`, `cli.py:889`). The `IngestorDeps.acquisition_in` cross-stage side-channel is **not** added in Tier 1 — Tier 2 introduces it alongside the affiliation override. |
+| `pipeline/orchestrator/pipeline.py` | New `VerifyConfig.research_origins: list[str]` (default `['tavily', 'arxiv']` since 2026-05-09 (`74c1512`); `['tavily']` after the companion search-backend swap; originally `['brave']`); throttle plumbing. Path 2 adds `topics: list[str] = []` parameter to `verify_claim` / `_research`, threaded from existing `template.topics` at orchestrator call sites (`pipeline.py:1530`, `cli.py:889`). The `IngestorDeps.acquisition_in` cross-stage side-channel is **not** added in Tier 1 — Tier 2 introduces it alongside the affiliation override. |
 | `pipeline/orchestrator/cli.py` | New `dr stats` subcommand (read-only; `--format text\|json`) reading `research:` + per-URL `acquisition` aggregates from sidecars. Sits in the "Read-only" `_COMMAND_GROUPS` bucket. |
 | `pipeline/orchestrator/stats.py` | Path 2 adds `academic_topic_coverage` aggregate (per-claim filter on tagged topics, count of claims with ≥1 source whose `acquisition.origin == 'arxiv'`) for the § Per-path success criteria measurement. The aggregate's origin filter is set-shaped so Tier 2 extends it (to also count `s2` / `openalex`) without changing the aggregate's shape. Existing `ACQUISITION_ORIGINS` (`stats.py:34-41`) already lists arxiv/s2/openalex; no edit there. |
 | `pipeline/orchestrator/checkpoints.py` | Document the full `StepError.error_type` vocabulary in the docstring; no enum migration. |
@@ -425,17 +392,17 @@ Deferred (Tier 2):
 
 ## Cross-references
 
-- Companion search-backend plan (Tavily): [`source-pool-expansion-tier1-search-backend.md`](completed/source-pool-expansion-tier1-search-backend.md)
-- Follow-on to the Tavily search-backend plan (`raw_content` passthrough to skip httpx fetch on Cloudflare-shielded URLs): [`ingestor-tavily-prefetch.md`](completed/ingestor-tavily-prefetch.md). Inherits Tier 1's `acquisition` schema unchanged — no new enum values or keys.
-- Independence accounting and amendments: [`docs/architecture/source-quality.md`](../architecture/source-quality.md)
-- Researcher internals (parallel tool dispatch): [`docs/architecture/research-flow.md`](../architecture/research-flow.md) § 6
-- `VerifyConfig` knobs: [`docs/architecture/research-workflow.md`](../architecture/research-workflow.md) § Pipeline configuration knobs
-- Wayback steady-state design: [`docs/plans/wayback-archive-job.md`](wayback-archive-job.md)
-- Search vs fetch backend distinction: [`docs/plans/multi-provider.md`](completed/multi-provider.md) § Part 3
-- Company metadata enrichment (Tier 1 lands `sec_cik` first): [`docs/plans/source-quality-followups.md`](source-quality-followups.md) § Company metadata enrichment
-- Host blocklist interaction: [`docs/plans/completed/researcher-host-blocklist.md`](completed/researcher-host-blocklist.md)
-- Recently-completed CLI cleanup that unblocked the in-Tier-1 `dr stats` subcommand: [`docs/plans/completed/dr-cli-output-cleanup_phase2_completed.md`](completed/dr-cli-output-cleanup_phase2_completed.md)
-- Tier 2 / Tier 3 follow-up scope: [`docs/plans/source-quality-followups.md`](source-quality-followups.md) § Source pool — Tier 2 and § Source pool — Tier 3
+- Companion search-backend plan (Tavily): [`source-pool-expansion-tier1-search-backend.md`](source-pool-expansion-tier1-search-backend.md)
+- Follow-on to the Tavily search-backend plan (`raw_content` passthrough to skip httpx fetch on Cloudflare-shielded URLs): [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md). Inherits Tier 1's `acquisition` schema unchanged — no new enum values or keys.
+- Independence accounting and amendments: [`docs/architecture/source-quality.md`](../../architecture/source-quality.md)
+- Researcher internals (parallel tool dispatch): [`docs/architecture/research-flow.md`](../../architecture/research-flow.md) § 6
+- `VerifyConfig` knobs: [`docs/architecture/research-workflow.md`](../../architecture/research-workflow.md) § Pipeline configuration knobs
+- Wayback steady-state design: [`docs/plans/deferred/wayback-archive-job.md`](../deferred/wayback-archive-job.md)
+- Search vs fetch backend distinction: [`docs/plans/multi-provider.md`](multi-provider.md) § Part 3
+- Company metadata enrichment (Tier 1 lands `sec_cik` first): [`docs/plans/deferred/source-quality-followups.md`](../deferred/source-quality-followups.md) § Company metadata enrichment
+- Host blocklist interaction: [`docs/plans/completed/researcher-host-blocklist.md`](researcher-host-blocklist.md)
+- Recently-completed CLI cleanup that unblocked the in-Tier-1 `dr stats` subcommand: [`docs/plans/completed/dr-cli-output-cleanup_phase2_completed.md`](dr-cli-output-cleanup_phase2_completed.md)
+- Tier 2 / Tier 3 follow-up scope: [`docs/plans/deferred/source-quality-followups.md`](../deferred/source-quality-followups.md) § Source pool — Tier 2 and § Source pool — Tier 3
 
 ## Review history
 
@@ -451,3 +418,4 @@ Deferred (Tier 2):
 | 2026-05-08 | agent (opus-4-7) | Path 2 concretization | Path 2 rewritten to match Path 1's level of implementation-readiness. Decisions concretized: **(1)** **Topics plumbing** — surfaced the hard gap that `decomposed_research` does not currently receive criterion topics (`template.topics` exists at the orchestrator caller in `pipeline.py:1530` and `cli.py:889` but isn't threaded through `verify_claim`). Path 2 adds a `topics: list[str] = []` parameter through three signatures; `claim-probe` (no criterion) passes `[]` and Path 2 stays off. Selector function shape sketched as `_select_research_origins(cfg, topics)` in `decomposed.py`. **(2)** **Concrete endpoints** — arXiv Atom XML, S2 graph v1 with `x-api-key`, OpenAlex polite pool with `mailto=`. Throttle constants per API guidelines (1/3s, 1/s anon vs 10/s with key, 10/s polite). **(3)** **Throttle registration** — module-import `_ensure_throttle_registered()` per tool, mirroring `tavily.py:50-66`. **(4)** **Timeout** — reuse Tavily's per-call 15s `httpx` default; no new constant in `common/timeouts.py`. **(5)** **`IndependenceCall` classifier** — concrete Pydantic shape, lives at `pipeline/researcher/independence_classifier.py` (top-level, mirroring `planner.py`/`scorer.py` since `pipeline/researcher/agents/` does not exist today; flagged as a discrepancy with the File touches table line 298). Triggers only on deterministic-fallback OpenAlex with mixed authorship. Timeout/error behaviour mirrors planner. **(6)** **Affiliation override mechanics** — extends `acquisition` with an optional `affiliation_decision` sub-field at Researcher write time; new `IngestorDeps.acquisition_in` side-channel surfaces it at Ingest time; new `apply_affiliation_override` helper in `source_classification.py` lands the decision. Substring matching with same-parent subsidiary alias resolution. **(7)** **Audit-trail writes** — per-URL `acquisition` shape table (`stage`, `origin`, `query`, `paper_id`, `affiliation_decision`); per-tool no-results goes to `research_trace["tool_outcomes"]`. **(8)** **Test surface** — 14-row table covering per-API success/failure, selector logic, classifier branches, cross-stage override. **(9)** **`StepError`** — Path 2 emits no new vocabulary (uses existing `http_error`/`timeout`); smoke test does not need updating. **(10)** **Success metric** — flagged that current `dr stats` does **not** segment per-origin counts by claim topic; spec'd a new `academic_topic_coverage` aggregate in `stats.py` with `dr stats --format json | jq '.academic_topic_coverage.rate'` as the measurement command. **(11)** **Coordination** — host blocklist verified clean for arxiv.org/openalex.org/semanticscholar.org; publisher-quality tags land in same commit (arxiv already in `_SECONDARY_PUBLISHERS`; semanticscholar/openalex added). Land Path 2 amendment first if Path 3 ships same week (Path 3's amendment references the existing § Independence override rules subsection). **(12)** **Effort breakdown** — 5–7 days, broken down into 10 components each ~0.25–1 day. Re-baselined upward from 4–6 days because of the topic-plumbing prerequisite and cross-stage `IngestorDeps.acquisition_in` plumbing that the prior estimate didn't account for. Also reframed the resolved "negative-cache" open-question item: there is no run-cache layer in the pipeline today (the only cache is the URL dedup index); Path 2's selector is itself the gate. |
 | 2026-05-08 | agent (opus-4-7) | Path 2 simplification | User asked whether dropping to a single academic source could materially reduce effort. Path 2 trimmed to **arXiv-only**: removed Semantic Scholar, OpenAlex, the cross-stage affiliation override (`IngestorDeps.acquisition_in`, `apply_affiliation_override`, `acquisition.affiliation_decision` sub-field), the `IndependenceCall` classifier, and the academic-affiliation amendment to `source-quality.md`. Effort dropped from 5–7 days to ~2 days. Tier 1 total re-baselined to ~10.5–14 days. Topic plumbing (`topics: list[str]` through three signatures), `_select_research_origins`, `dr stats` `academic_topic_coverage` aggregate, and the per-URL `acquisition` write all kept. Success metric reduced from ≥60% (three-source) to ≥40% (single-source) on tagged topics. The reserved `s2` / `openalex` enum values in the already-shipped `acquisition.origin` Zod enum are left in place so Tier 2 needs no schema change. The "entity employees publishing on arXiv tagged as `independent`" failure mode in `source-quality.md` stays as documented architectural debt; Tier 2 will resolve it alongside OpenAlex + the affiliation override. The earlier-resolved "affiliation threshold" question moved from "Resolved" to a new "Deferred (Tier 2)" section under § Open questions. |
 | 2026-05-08 | agent (opus-4-7) | Path 1 shipped + pivoted | Path 1 marked shipped (commit `a8e5dd5`). Implementation pivoted twice from the design block: (1) Memento Time Travel (commit `2404420`) — LANL-operated `timetravel.mementoweb.org` was decommissioned end of 2025 (verified offline at the DNS level: no A record from any resolver including authoritative). (2) archive.today TimeMap (same-day refactor) — Memento-protocol-compliant TimeMap on a live host; field-tested as flaky on misses (15s timeouts, anonymously operated, no SLA). Every miss in a live OpenAI run was rescued by `save_to_wayback`, making archive.today's marginal value ~zero against ~45s wall-clock cost per run. (3) archive.org TimeGate (`a8e5dd5`) — single retrieval leg using the CDX index that backs the Wayback UI. Faster (<0.5s typical), more reliable than the legacy `/wayback/available` API (which has indexing lag — observed returning `archived_snapshots: {}` for URLs with thousands of CDX entries). Side effects: `recovered_via` enum narrowed to `{archive_org}` only; `archive_today_unavailable` StepError literal removed; transport-error logs now include `type(exc).__name__` so empty-message timeouts (`ConnectError`, `ReadTimeout`) stay diagnosable; `http://web.archive.org/...` Locations are normalized to `https://` to satisfy the validator at `validation.py:75`. **Also fixed**: latent acquisition-merge bug surfaced by TimeGate's higher hit rate. Ingest-stage writes (`stage`/`recovered_via`/`outcome`) were overwriting research-stage entries (`origin`/`query`) via `dict.update`, producing schema-invalid sidecars whenever the same URL was both discovered and recovered. Extracted `_merge_acquisition_writes` helper (`pipeline/orchestrator/pipeline.py`) with two regression tests; mirrored in the persistence-layer graft. Net: -454/+243 lines; 683/686 tests passing (5 pre-existing skips, 1 pre-existing flaky LLM acceptance test). |
+| 2026-10-06 | agent (claude-opus-5-5, Claude Code plan review with Brandon) | status | Marked done except Path 3; Path 3 spec moved to `deferred/sec-edgar-path3_stub.md` (off-focus for the chatbot guide). Fixed the `research_origins` default (`['tavily', 'arxiv']`). Moved to `completed/`. |

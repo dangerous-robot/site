@@ -1,9 +1,11 @@
 # Plan: Audit trail extensions (Phase 2 + Phase 3)
 
-**Status**: Ready
-**Last updated**: 2026-05-16
-**Depends on**: Phase 1 (shipped; see [`completed/audit-trail.md`](completed/audit-trail.md))
-**Reads against**: [`docs/architecture/vision-state-machine.md`](../architecture/vision-state-machine.md) (substrate); [`docs/plans/research-outputs-improvement-plan.md`](research-outputs-improvement-plan.md) (reader-facing surface).
+**Deferred**: 2026-10-06, sidecar infrastructure (backfill, orphan CI, v3 transition log, ClaimReview fields) with no reader-facing payoff before the chatbot guide; the reader-facing slice (RF8, RF9, verdict/sidecar check) moved to [`published-claim-refresh-trail.md`](../published-claim-refresh-trail.md).
+
+**Status**: Deferred (not started; 0 of 16 acceptance items). Open question 2 is answered: done in HEAD (see below).
+**Last updated**: 2026-10-06
+**Depends on**: Phase 1 (shipped; see [`completed/audit-trail.md`](../completed/audit-trail.md))
+**Reads against**: [`docs/architecture/vision-state-machine.md`](../../architecture/vision-state-machine.md) (substrate); [`docs/plans/deferred/research-outputs-improvement-plan.md`](research-outputs-improvement-plan.md) (reader-facing surface).
 
 Phase 2 (extended data + CI gates) and Phase 3 (append-only transition log) of the AI Research Audit Trail. Phase 1 (sidecar infrastructure, `_write_audit_sidecar`, `dr review` CLI, custom Astro loader, UI) shipped and is recorded in `completed/audit-trail.md`. This plan tracks the remaining work.
 
@@ -40,7 +42,7 @@ audit:
 
 `auditor_reasoning` and `evidence_gaps` come from `ComparisonResult.reasoning` and `ComparisonResult.evidence_gaps`, both already available at the `_write_audit_sidecar` call site. Thread them through the function signature.
 
-**Backfill script** at `pipeline/scripts/backfill_audit_sidecars.py`: iterates `research/claims/**/*.md`, skips any claim that already has a `.audit.yaml`, writes a partial sidecar with `schema_version: 1`, `pipeline_run.ran_at: null`, and `backfill: true` flag. The UI renders "Partial audit record" when `backfill: true` rather than showing fabricated data.
+**Backfill script** (not needed as of 2026-10-06: all 3 committed claims have sidecars) at `pipeline/scripts/backfill_audit_sidecars.py`: iterates `research/claims/**/*.md`, skips any claim that already has a `.audit.yaml`, writes a partial sidecar with `schema_version: 1`, `pipeline_run.ran_at: null`, and `backfill: true` flag. The UI renders "Partial audit record" when `backfill: true` rather than showing fabricated data.
 
 **UI addition**: an "Evaluator reasoning" sub-section in the expanded `<details>` block, rendered only when `audit.audit.auditor_reasoning` is defined. (Field name `auditor_reasoning` retained for v1 schema stability; prose uses "Evaluator" per AGENTS.md.)
 
@@ -190,16 +192,16 @@ The audit trail is the substrate for the Phase 2/3 outputs to be FAIR-aligned pe
 
 1. **Loader path configurability for research repo split**: a possible future research repo split is a standing constraint (see the repo-separation note in AGENTS.md § Editorial content). When that happens, the loader's `research/claims` base path must become configurable rather than hardcoded. Defer until the split is actively planned, but note the coupling point.
 
-2. **`reviewed_at` non-null CI enforcement**: Decision (2026-04-22): use a CI check, not branch protection. A CI step (or `scripts/check-audit-pairs.ts` extension) must verify that every `status: published` claim with a sidecar has `human_review.reviewed_at` set. Branch protection alone is not sufficient; it depends on operator discipline. **This gate was a v0.1.0 blocker per the original Phase 1 plan; verify whether it actually shipped with Phase 1, and if not, treat it as a Phase 2 prerequisite.**
+2. **`reviewed_at` non-null CI enforcement**: Decision (2026-04-22): use a CI check, not branch protection. A CI step (or `scripts/check-audit-pairs.ts` extension) must verify that every `status: published` claim with a sidecar has `human_review.reviewed_at` set. Branch protection alone is not sufficient; it depends on operator discipline. **Done (verified 2026-10-06):** `published-without-review` in `pipeline/linter/checks.py` is an error for any published claim with no sidecar or a null `reviewed_at`, and CI runs `dr lint --severity error` (`.github/workflows/ci.yml`).
 
 ---
 
 ## Cross-references
 
-- Phase 1 (shipped): [`completed/audit-trail.md`](completed/audit-trail.md)
-- State-machine vision (substrate): [`docs/architecture/vision-state-machine.md`](../architecture/vision-state-machine.md)
-- Reader-facing surface: [`docs/plans/research-outputs-improvement-plan.md`](research-outputs-improvement-plan.md). The ClaimReview JSON-LD export (move 3) is the canonical machine-readable verdict artifact; it reads frontmatter primary and the Phase 2 sidecar secondary. This supersedes the earlier "canonical verdict artifact" note in `docs/UNSCHEDULED.md`.
-- Vocabulary alignment: [`v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md)
+- Phase 1 (shipped): [`completed/audit-trail.md`](../completed/audit-trail.md)
+- State-machine vision (substrate): [`docs/architecture/vision-state-machine.md`](../../architecture/vision-state-machine.md)
+- Reader-facing surface: [`docs/plans/deferred/research-outputs-improvement-plan.md`](research-outputs-improvement-plan.md). The ClaimReview JSON-LD export (move 3) is the canonical machine-readable verdict artifact; it reads frontmatter primary and the Phase 2 sidecar secondary. This supersedes the earlier "canonical verdict artifact" note in `docs/UNSCHEDULED.md`.
+- Vocabulary alignment: [`v0.1.0-vocab-workflow-landing.md`](../completed/v0.1.0-vocab-workflow-landing.md)
 
 ---
 
@@ -209,3 +211,4 @@ The audit trail is the substrate for the Phase 2/3 outputs to be FAIR-aligned pe
 |---|---|---|---|
 | 2026-04-25 | agent (split from `audit-trail.md`) | initial | Extracted Phase 2 + Phase 3 from `completed/audit-trail.md` after Phase 1 shipped. Phase 1 record stays in `completed/`. |
 | 2026-05-16 | parallel review agents (ClaimReview lens + FAIR lens) | alignment with vision-state-machine.md and research-outputs-improvement-plan.md | Added "Role in the state-machine substrate" intro and "Reads against" header. Reframed Phase 3 as the append-only transition log with named transitions (`recheck`, `supersede`, `initial`); added `transition` discriminator and `transition_id` per entry; added supersession sub-section, acceptance criteria, and YAML example. Added ClaimReview export data-requirements table to Phase 2 with a sufficiency acceptance criterion. Added FAIR alignment notes section. Tightened Vocabulary alignment (Evaluator rename is settled in prose; field/path names retained for v1 stability). Replaced the UNSCHEDULED "canonical verdict artifact" cross-reference with a pointer to ClaimReview JSON-LD export in research-outputs-improvement-plan.md. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred. Split RF8/RF9 and the verdict/sidecar check into `published-claim-refresh-trail.md`. Recorded open question 2 as done and the backfill as not needed. Moved to `deferred/`. |

@@ -1,5 +1,10 @@
 # Plan: Parallelize per-template loop in `onboard_entity`
 
+**Deferred**: 2026-10-06, operator wall time only; no reader-facing value before the chatbot guide.
+
+**Status**: Deferred (not started). Line references below are from 2026-04 and stale: the per-template loop in `onboard_entity` is now near `pipeline/orchestrator/pipeline.py:2044`, and its `concurrency` knob must be reconciled with the shipped `VerifyConfig.llm_concurrency`.
+
+
 ## Problem
 
 `pipeline/orchestrator/pipeline.py:563` iterates applicable claim templates sequentially. Each iteration calls `verify_claim` (research + ingest + analyst + auditor) plus a second `_research` + `_ingest_urls` to persist sources. For 6 core company templates wall time is ~6x one template. We want bounded concurrency with a semaphore.
@@ -49,7 +54,7 @@ Alternative (if needed later): add an `asyncio.Lock` attribute on `CLICheckpoint
 
 - Anthropic: at concurrency=3, peak concurrent Anthropic calls per template ≈ (1 research + max_sources ingest + 1 analyst + 1 auditor) ≈ 7, times 3 = ~21. Well within Tier 1+ RPM; TPM is the risk vector on large source bodies. Rely on pydantic_ai retry.
 - Brave Search: at concurrency=3 we issue up to ~3 concurrent `web_search` tool calls. Brave free tier is 1 req/s; paid is 20 req/s. Document 3 as safe for paid; users on free tier should set `--concurrency 1`.
-- Note: the duplicate `_research` + `_ingest_urls` at pipeline.py:587-590 roughly halves Brave/LLM load if eliminated (see companion plan `onboard-reuse-verify-sources.md`).
+- Note: the duplicate `_research` + `_ingest_urls` at pipeline.py:587-590 roughly halves Brave/LLM load if eliminated (see companion plan `onboard-reuse-verify-sources.md`, since shipped and in `completed/`).
 
 ### 6. Tests (`pipeline/tests/test_onboard.py`)
 
@@ -85,3 +90,4 @@ Alternative (if needed later): add an `asyncio.Lock` attribute on `CLICheckpoint
 | Date | Reviewer | Scope | Changes |
 |---|---|---|---|
 | 2026-04-22 | agent (active review) | status + stub + duplicate check | No explicit status label present; content reads as ready to implement. Not a stub. Related plan: `onboard-reuse-verify-sources.md` also modifies the per-template loop and should land first (it eliminates the duplicate `_research`+`_ingest_urls` call referenced in section 5 of this plan). The plan already cross-references `onboard-reuse-verify-sources.md` at the rate-limits section. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus triage | Deferred with a one-line reason; corrected stale facts; relative links adjusted for `deferred/`. |

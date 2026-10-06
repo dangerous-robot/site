@@ -521,7 +521,7 @@ class TestSearchBackendDispatch:
     """`execute_searches(..., backend=...)` routes to Brave or Tavily.
 
     Mirrors the contract laid out in
-    ``docs/plans/source-pool-expansion-tier1-search-backend.md``.
+    ``docs/plans/completed/source-pool-expansion-tier1-search-backend.md``.
     """
 
     @pytest.mark.asyncio

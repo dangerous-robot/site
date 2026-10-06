@@ -6,7 +6,7 @@ the existing claim files and their paired ``.audit.yaml`` sidecars via
 
 Four aggregates land here so Tier 1 source-pool expansion can measure
 its target metrics as Paths 1-3 ship (see
-``docs/plans/source-pool-expansion-tier1.md``):
+``docs/plans/completed/source-pool-expansion-tier1.md``):
 
 * ``wayback_recovery`` — Path 1 recovery rate (archive.org TimeGate hits).
 * ``acquisition_origins`` — Path 2/3 per-origin distribution.

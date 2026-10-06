@@ -6,7 +6,7 @@ pulled from a :class:`contextvars.ContextVar`, so a single pipeline
 invocation can be reconstructed by grepping by id across both files.
 
 The ``run_id`` field is shared with the planned token-usage log
-(``docs/plans/token-usage-log.md``); call sites that build a
+(``docs/plans/deferred/token-usage-log.md``); call sites that build a
 ``VerifyConfig`` use ``cfg.run_id`` and call sites that don't (e.g.
 ``dr ingest``) use ``bind_run_id(new_run_id())``.
 """

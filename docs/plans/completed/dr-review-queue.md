@@ -1,6 +1,6 @@
 # Plan: `dr review-queue`
 
-**Status**: Phase 1 done (2026-04-27, commits f64adc3 + 3abd112). Phases 2–3 post-v1.
+**Status**: Done; moved to `completed/` 2026-10-06. Phase 1 shipped (2026-04-27, commits f64adc3 + 3abd112). From Phase 2, the `e` action shipped ([`review-queue-edit-action.md`](review-queue-edit-action.md)), and a `d` delete action was added outside this plan. The `c` action is tracked in [`criterion-resolution-workflow_stub.md`](../deferred/criterion-resolution-workflow_stub.md). Phase 3 is merged into [`operator-queue-batch-workflow_stub.md`](../deferred/operator-queue-batch-workflow_stub.md). The rest of Phase 2 is listed under "Deferred plans" in `docs/UNSCHEDULED.md`. Line references to `cli.py` below are from 2026-04; `approve_claim` now lives in `pipeline/orchestrator/review.py`.
 
 ## Context
 
@@ -8,7 +8,7 @@ Today, the only path for an operator to discover claims awaiting human sign-off 
 
 The existing `dr review` command (`pipeline/orchestrator/cli.py:580-763`) records sign-off for a single claim by slug. It assumes the operator already knows what to review. `review-queue` fills the gap above it: discover the work, walk through it, hand each item to `dr review --approve` (or skip it) without leaving the terminal.
 
-Relationship to [`operator-queue-batch-workflow_stub.md`](operator-queue-batch-workflow_stub.md): that v2 stub describes a broader queue-driven batch flow with multiple operator-facing intake files (`REVIEW_QUEUE.md`, `ONBOARD_QUEUE.md`, etc.). This plan is a narrower v1 slice — no new intake files, no batch dispatcher; just a CLI surface over claim files that already exist on disk. The two are compatible: the queue-discovery logic here can later become the `REVIEW_QUEUE.md` source for the v2 batch flow.
+Relationship to [`operator-queue-batch-workflow_stub.md`](../deferred/operator-queue-batch-workflow_stub.md): that v2 stub describes a broader queue-driven batch flow with multiple operator-facing intake files (`REVIEW_QUEUE.md`, `ONBOARD_QUEUE.md`, etc.). This plan is a narrower v1 slice — no new intake files, no batch dispatcher; just a CLI surface over claim files that already exist on disk. The two are compatible: the queue-discovery logic here can later become the `REVIEW_QUEUE.md` source for the v2 batch flow.
 
 Per Brandon's requirements, the command must:
 - Be useful non-interactively (CI consumption, scripting) via `--format text|json`
@@ -101,10 +101,10 @@ Single-key prompts via `click.prompt(..., type=click.Choice([...]))`. "Next" is 
 
 ### Phase 2 — operator polish (only if Phase 1 is felt to be lacking)
 
-- `c` set-criterion action. Background: `approve_claim` and the `published-without-criterion` lint now reject any draft -> published flip when `criteria_slug` is missing. Today's Phase 1 `a` action surfaces that error and re-prompts; the operator must drop out and either edit the claim frontmatter or the templates catalog by hand. A `c` action would prompt for an existing slug (or "create new" -> drop into `$EDITOR` on `research/templates.yaml`), write the chosen value into the claim frontmatter, then re-display so the operator can press `a`. See [`criterion-resolution-workflow_stub.md`](criterion-resolution-workflow_stub.md) for the full design space (manual edit, normalizer agent, singleton escape).
+- `c` set-criterion action. Background: `approve_claim` and the `published-without-criterion` lint now reject any draft -> published flip when `criteria_slug` is missing. Today's Phase 1 `a` action surfaces that error and re-prompts; the operator must drop out and either edit the claim frontmatter or the templates catalog by hand. A `c` action would prompt for an existing slug (or "create new" -> drop into `$EDITOR` on `research/templates.yaml`), write the chosen value into the claim frontmatter, then re-display so the operator can press `a`. See [`criterion-resolution-workflow_stub.md`](../deferred/criterion-resolution-workflow_stub.md) for the full design space (manual edit, normalizer agent, singleton escape).
 - `r` reject action with a concrete semantic. Proposed: write `human_review.notes` on the sidecar with operator-supplied text and leave `status: draft` — the item stays in the queue but carries a visible note for next pass. (Resists the urge to introduce a new status value.)
 - `b` back / prev (requires keeping a history list)
-- `e` quick edit-frontmatter-only mode (open file at the line of a specific field)
+- [x] `e` quick edit-frontmatter-only mode (open file at the line of a specific field). Done: [`review-queue-edit-action.md`](review-queue-edit-action.md)
 - `--filter-topic=<slug>`, `--filter-entity-type=<type>`
 - Count and ETA in the prompt header
 - Color (Click's `style()`)
@@ -181,3 +181,4 @@ These are non-blocking — Phase 1 can ship with the recommendations as written.
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; status verified accurate against code (Phase 1 shipped in review_queue.py, Phases 2-3 open). |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | status close-out | Phase 1 and the Phase 2 `e` action verified in HEAD (`orchestrator/review_queue.py`, `orchestrator/review.py`, `common/sidecar.py`). Pointed `c` and Phase 3 at the deferred stubs; remaining Phase 2 polish deferred. Moved to `completed/`. |

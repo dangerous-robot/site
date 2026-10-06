@@ -3,7 +3,7 @@
 **Status**: `done` (2026-10-04)
 **Last updated**: 2026-10-04
 **Reviewed by:** self-review, 2026-10-04 (see Review history)
-**Findings**: RF1 to RF4 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
+**Findings**: RF1 to RF4 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
 
 Fix the four bugs that let one `dr claim-refresh` cite the wrong file (RF1), keep a failed fetch as evidence (RF2), label the entity's own pages `independent` (RF3), and publish raw citation tokens (RF4). Every fix is test-first: write the failing test, confirm it fails for the stated reason, change the code, confirm it passes.
 
@@ -115,8 +115,8 @@ Host prefix first because it is readable and the same URL gets the same id on ev
 
 **Scope against existing backlog sections**:
 
-- [Improve source slug generation](../UNSCHEDULED.md#improve-source-slug-generation): in scope here is only the collision rule above. Title-based slugs, `%20` decoding and numeric or generic path tails (RF14), PDF re-segmentation and the backfill rename stay there.
-- [Dedup detection](../UNSCHEDULED.md#dedup-detection-on-url-ingest-and-claim-creation): canonical-URL lookup before ingest (`_apply_url_dedup`, `orchestrator/pipeline.py:554-575`, still exact-match) and claim-level match-and-return stay there. This plan uses `canonicalize` only to decide rule 2 at slug time, so a near-duplicate URL that lands on the same slug reuses the existing id; one that lands on a different slug is still a duplicate file (Dedup's job).
+- [Improve source slug generation](../../UNSCHEDULED.md#improve-source-slug-generation): in scope here is only the collision rule above. Title-based slugs, `%20` decoding and numeric or generic path tails (RF14), PDF re-segmentation and the backfill rename stay there.
+- [Dedup detection](../../UNSCHEDULED.md#dedup-detection-on-url-ingest-and-claim-creation): canonical-URL lookup before ingest (`_apply_url_dedup`, `orchestrator/pipeline.py:554-575`, still exact-match) and claim-level match-and-return stay there. This plan uses `canonicalize` only to decide rule 2 at slug time, so a near-duplicate URL that lands on the same slug reuses the existing id; one that lands on a different slug is still a duplicate file (Dedup's job).
 
 ### C1: source id resolver
 

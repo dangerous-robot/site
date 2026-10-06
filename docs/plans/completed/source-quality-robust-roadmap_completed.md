@@ -7,7 +7,7 @@
 **Survey**: [`../source-quality_survey.md`](source-quality_survey_completed.md) — full signal inventory
 **Architecture doc**: [`../../architecture/source-quality.md`](../../architecture/source-quality.md) — single reference for the v1 design
 
-All 8 v1 implementation items shipped. The 23 v1 launch claims that were eligible for re-run (status `published` with `criteria_slug`) were processed; smaller-surface re-review preserved sign-off on the 6 claims whose verdict + confidence were unchanged. 15 claims changed verdict and/or confidence and reverted to `status: draft` for operator triage; 1 claim (`chatgpt/excludes-image-generation`) regressed to `blocked` (`terminal_fetch_error`). Per-claim deltas captured in [`source-quality-rerun-log.jsonl`](../source-quality-rerun-log.jsonl).
+All 8 v1 implementation items shipped. The 23 v1 launch claims that were eligible for re-run (status `published` with `criteria_slug`) were processed; smaller-surface re-review preserved sign-off on the 6 claims whose verdict + confidence were unchanged. 15 claims changed verdict and/or confidence and reverted to `status: draft` for operator triage; 1 claim (`chatgpt/excludes-image-generation`) regressed to `blocked` (`terminal_fetch_error`). Per-claim deltas captured in [`source-quality-rerun-log.jsonl`](source-quality-rerun-log.jsonl).
 
 This plan defines the minimum, highest-leverage v1 changes that produce verdicts users can trust and understand. The central goal is not metadata coverage — it is verdict quality, reader trust, and honest communication of what the evidence shows. Every item that does not directly serve a reader's ability to evaluate a verdict is a candidate for demotion.
 

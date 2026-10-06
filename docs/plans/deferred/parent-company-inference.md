@@ -1,5 +1,7 @@
 # Plan: infer `parent_company` during product onboarding
 
+**Deferred**: 2026-10-06, operator convenience during onboarding; existing products already carry `parent_company` by hand. If revived, a `parent_company` field on `EnrichmentDraft` (`pipeline/researcher/entity_enricher.py`) is simpler than a new agent, and `pipeline/orchestrator/onboard.py` no longer exists (onboarding lives in `pipeline/orchestrator/pipeline.py`).
+
 **Status**: ready
 **Last updated**: 2026-04-27
 **Depends on**: `parent_company` schema field on entities (landed 2026-04-27 in `src/content.config.ts`).
@@ -8,7 +10,7 @@
 
 Product entities now carry an optional `parent_company` slug pointing at a company entity (e.g., `claude.md` → `parent_company: anthropic`). Today the operator fills this in by hand. This plan adds an inference step during `dr onboard` for products so the field is pre-populated before the operator hits the `review_onboard` checkpoint.
 
-The question this plan answers: is parent-company inference a fit for the small-model tier in the cascade policy described in [`docs/architecture/glossary.md` § Model-tier discipline](../architecture/glossary.md), or does it need a frontier model?
+The question this plan answers: is parent-company inference a fit for the small-model tier in the cascade policy described in [`docs/architecture/glossary.md` § Model-tier discipline](../../architecture/glossary.md), or does it need a frontier model?
 
 **Short answer**: yes, it fits. The task is single-step classification with a constrained output (one slug or null), the input is short (entity name + website + first paragraph of description), and the most common cases (well-known products) are within a small model's training data.
 
@@ -122,7 +124,7 @@ When the operator picks `[n]onew company`, the pipeline runs `dr onboard <name> 
 
 ## Model selection
 
-For Phase 1, target the same cascade tier the Router uses (per [`v0.1.0-vocab-workflow-landing.md`](completed/v0.1.0-vocab-workflow-landing.md) and the model-tier discipline subsection in `glossary.md`). On Anthropic this is Haiku 4.5; on Infomaniak the smallest available `gpt-oss-120b` works. The exact model name is configured via `--model` and recorded in `models_used` on the audit sidecar (per [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) S6).
+For Phase 1, target the same cascade tier the Router uses (per [`v0.1.0-vocab-workflow-landing.md`](../completed/v0.1.0-vocab-workflow-landing.md) and the model-tier discipline subsection in `glossary.md`). On Anthropic this is Haiku 4.5; on Infomaniak the smallest available `gpt-oss-120b` works. The exact model name is configured via `--model` and recorded in `models_used` on the audit sidecar (per [`pre-launch-quick-fixes.md`](../completed/pre-launch-quick-fixes.md) S6).
 
 ## Open questions
 

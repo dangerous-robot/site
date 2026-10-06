@@ -50,7 +50,7 @@ class StepError:
 
     Reserved (tier1 source-pool expansion, not yet wired)
     -----------------------------------------------------
-    See ``docs/plans/source-pool-expansion-tier1.md`` and the companion
+    See ``docs/plans/completed/source-pool-expansion-tier1.md`` and the companion
     search-backend plan. These literals are documented up-front so paths
     can be implemented in any order without doc churn:
 

@@ -1,8 +1,9 @@
 # Petition signatures
 
-**Status**: `in progress` (launched 2026-10-05: Worker deployed, pledge post live with the sign block; two production tests deferred to `docs/UNSCHEDULED.md`)
-**Last updated**: 2026-10-05
-**Decision** (`docs/decisions.md`, 2026-10-04, quoted): "Pledge signatures are collected on the site. A Cloudflare Worker and D1 database (the stack `docs/plans/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. ..."
+**Status**: `done` (launched 2026-10-05, commit `6181101`: Worker deployed, pledge live with the sign block; the Export and No-JS production tests and other follow-ups are in `docs/UNSCHEDULED.md`, Petition Worker follow-ups)
+**Last updated**: 2026-10-06
+**Since this plan**: the pledge moved to the `actions` collection at `/petitions/prohibit-ai-self-improvement` (decisions 2026-10-05). The `petition` field now lives on `actions` (`src/content.config.ts`), not on `writing` as S1 below describes. Current design: `docs/architecture/petitions.md`.
+**Decision** (`docs/decisions.md`, 2026-10-04, quoted): "Pledge signatures are collected on the site. A Cloudflare Worker and D1 database (the stack `docs/plans/deferred/public-feedback.md` chose) take name and email, confirm by email, and show a signer's name publicly only if they opt in. Only Brandon receives the signer list. No hosted form in the meantime: the pledge post and its homepage menu entry wait for the Worker, and beta.4 waits with them. ..."
 
 Very basic petition management for dangerousrobot.org: open a petition, collect signatures on the post itself, show a count and (with consent) a public signatory list, export, close, and remove a signer on request. The first petition is the pledge post; more pledges may follow.
 
@@ -22,7 +23,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 
 ## Goal
 
-`src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` ends its editor's note "You can add yourself as a signatory to the pledge at ..." with no destination. `docs/plans/refocus-foundation.md` G1 (finish the pledge post) and "Needs from Brandon, beta.4" item 1 wait on this plan. When it lands, a reader can sign on the post, confirm by email, see the count and the names of signers who opted in, and remove their own signature; Brandon can export, close and delete from his machine; and the next pledge needs a database row and a frontmatter field, not new code.
+`src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` ends its editor's note "You can add yourself as a signatory to the pledge at ..." with no destination. `docs/plans/completed/refocus-foundation.md` G1 (finish the pledge post) and "Needs from Brandon, beta.4" item 1 wait on this plan. When it lands, a reader can sign on the post, confirm by email, see the count and the names of signers who opted in, and remove their own signature; Brandon can export, close and delete from his machine; and the next pledge needs a database row and a frontmatter field, not new code.
 
 ## Decisions
 
@@ -39,7 +40,7 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 
 Checked in the repo on 2026-10-04.
 
-- `workers/` does not exist. `docs/plans/public-feedback.md` chose, in its Decisions table, Cloudflare Workers + D1 (Skip Formspree prototype), `api.dangerousrobot.org` (API subdomain), Turnstile, and `workers/feedback/` in this repo (Worker location); its Resolved Decisions list adds Resend for email (item 2, Email provider), but none of it is built. This plan builds the Worker and the D1 database first; the feedback forms add their tables and routes later.
+- `workers/` does not exist. `docs/plans/deferred/public-feedback.md` chose, in its Decisions table, Cloudflare Workers + D1 (Skip Formspree prototype), `api.dangerousrobot.org` (API subdomain), Turnstile, and `workers/feedback/` in this repo (Worker location); its Resolved Decisions list adds Resend for email (item 2, Email provider), but none of it is built. This plan builds the Worker and the D1 database first; the feedback forms add their tables and routes later.
 - `src/pages/writing/[...slug].astro` renders the post body with `<Content />` (line 32). Posts are plain Markdown through a glob loader (`src/content.config.ts`, `writing` collection at line 426), so a frontmatter field is the only way to add a block under one post without MDX.
 - `public/admin/config.yml` defines the Sveltia `writing` collection (line 26), which mirrors the schema.
 - The Cloudflare account already holds the site's DNS and 301 redirects (`scripts/seo/apply-cloudflare-redirects.sh`).
@@ -263,9 +264,9 @@ Prices and features checked 2026-10-04 unless marked.
 ## Cross-references
 
 - `docs/decisions.md`, 2026-10-04: "Pledge signatures are collected on the site."
-- `docs/plans/refocus-foundation.md`: G1 (finish the pledge post) waits on this plan; G2 (homepage menu entry links to the post); "Needs from Brandon, beta.4" item 1.
-- `docs/plans/public-feedback.md`: the Worker + D1 stack (Decisions table: Worker location, API subdomain, Skip Formspree prototype) and Resend (Resolved Decisions list, item 2, Email provider) this plan builds first; its Turnstile decision (Decisions table) is deliberately not followed here (P4). Overlap is intentional: one Worker and one D1 database, separate tables and routes.
-- `docs/plans/public-participation-forms.md`: spam layers and later forms on the same backend.
+- `docs/plans/completed/refocus-foundation.md`: G1 (finish the pledge post) waits on this plan; G2 (homepage menu entry links to the post); "Needs from Brandon, beta.4" item 1.
+- `docs/plans/deferred/public-feedback.md`: the Worker + D1 stack (Decisions table: Worker location, API subdomain, Skip Formspree prototype) and Resend (Resolved Decisions list, item 2, Email provider) this plan builds first; its Turnstile decision (Decisions table) is deliberately not followed here (P4). Overlap is intentional: one Worker and one D1 database, separate tables and routes.
+- `docs/plans/deferred/public-participation-forms.md`: spam layers and later forms on the same backend.
 
 ## Review history
 

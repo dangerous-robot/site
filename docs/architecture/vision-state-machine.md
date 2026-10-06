@@ -24,7 +24,7 @@ What is missing is a unified statement that these are facets of one model, and a
 
 **1. Small atomic transitions.** Every agent action is one minimal state change with explicit pre-conditions (what must be true to start) and post-conditions (what must be true on success). A Researcher does not "investigate a claim"; it advances `phase: researching` to `phase: ingesting` after writing a sources-consulted list. An Analyst does not "produce a verdict and audit"; it writes a verdict given inputs that already satisfy a pre-condition. Small transitions match small models: each step is sized for the smallest model that can perform it correctly.
 
-**2. Transitions are first-class records.** State changes today are implicit in commit diffs and the audit sidecar's latest run. The vision is an append-only transition log per claim, recording cause (agent or operator), inputs read, outputs written, and resulting state. This is the substrate the improvement plan calls on for recheck history and supersession (see `docs/plans/research-outputs-improvement-plan.md`).
+**2. Transitions are first-class records.** State changes today are implicit in commit diffs and the audit sidecar's latest run. The vision is an append-only transition log per claim, recording cause (agent or operator), inputs read, outputs written, and resulting state. This is the substrate the improvement plan calls on for recheck history and supersession (see `docs/plans/deferred/research-outputs-improvement-plan.md`).
 
 **3. Open-loop at decision points.** Certain transitions are reserved for the operator: Analyst/Evaluator disagreement, novel blocked reasons, supersession of a published verdict. The pipeline halts and surfaces the question; it never auto-resolves. This is already the project's stance; the state-machine framing makes the halt points enumerable rather than ad-hoc.
 
@@ -54,7 +54,7 @@ This is not BPMN, not a workflow engine, not event sourcing in the database sens
 
 ## Near-term direction
 
-- **Audit Trail Phase 2 and Phase 3** (`docs/plans/audit-trail-extensions.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
+- **Audit Trail Phase 2 and Phase 3** (`docs/plans/deferred/audit-trail-extensions.md`, deferred 2026-10-06; the refresh-trail slice is `docs/plans/published-claim-refresh-trail.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
 - **Build-time staleness gate**, the first CI invariant in the state-machine spirit.
 - **Verification-level taxonomy** (`multiply-verified | independently-verified | partially-verified | self-reported | claimed`) — shipped since this doc was written: `verification_level` is live in the schema, scorer, and lint checks (see `source-quality.md`).
 - **Schema migration log**, required for transitions of the schema itself.

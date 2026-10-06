@@ -1,11 +1,13 @@
 # Plan: `dr lint` — static content auditor
 
+**Status**: Done for Phases 1 and 2; moved to `completed/` 2026-10-06. Phase 3 merged into [`operator-queue-batch-workflow_stub.md`](../deferred/operator-queue-batch-workflow_stub.md); Phase 4 is listed under "Deferred plans" in `docs/UNSCHEDULED.md`.
+
 | Phase | Status |
 |-------|--------|
 | Phase 1: static lint command | `[x] done` (shipped as `pipeline/linter/` + `dr lint`) |
 | Phase 2: CI integration | `[x] done` (shipped as the `lint-content` job in `.github/workflows/ci.yml`) |
-| Phase 3: QUEUE.md re-onboard loop | `[ ] future` |
-| Phase 4: scheduled agent triage | `[ ] future / long-term` |
+| Phase 3: QUEUE.md re-onboard loop | `deferred` (merged into the operator-queue stub) |
+| Phase 4: scheduled agent triage | `deferred` (UNSCHEDULED "Deferred plans") |
 
 ---
 
@@ -33,6 +35,8 @@ Runs fast, file-level checks on research content — no LLM, no network. Reads Y
 
 ### Checks
 
+This table is the Phase 1 design. The current check list is in `pipeline/linter/checks.py`, which differs from it: the Standards to Criteria rename shipped, so `broken-standard-slug` and `missing-standard-slug` are now `broken-criteria-slug` and `missing-criteria-slug`, and `legacy-field-name` flags `standard_slug`. Checks added later include `published-without-criterion`, `missing-seo-title`, `missing-independence`, `confidence-cap-violation`, `missing-cap-rationale`, `unreferenced-source`, `unreferenced-entity`, the citation-token checks, and `verification-level-pool-mismatch`.
+
 | ID | Severity | Description |
 |----|----------|-------------|
 | `orphaned-claim` | error | Claim's `entity:` path (e.g., `companies/ecosia`) has no matching file in `research/entities/` |
@@ -48,7 +52,7 @@ Runs fast, file-level checks on research content — no LLM, no network. Reads Y
 | `stale-recheck` | info | `next_recheck_due` is in the past |
 | `future-as-of` | info | Claim `as_of` date is in the future — likely a paste error |
 | `entity-type-dir-mismatch` | warning | Entity file `type:` field does not match its directory (e.g., `type: company` in `research/entities/products/`) |
-| `published-without-review` | warning (escalates to error at v1 GA) | A claim with `status: published` either has no `.audit.yaml` sidecar next to it, or its sidecar's `human_review.reviewed_at` is null. Operator runs `dr review --approve <claim>` to record sign-off. The check is only active for `published` claims; `draft`, `archived`, and `blocked` are not gated. **Severity is `warning` while `VERSION.md` carries an `-alpha`/`-beta`/`-rc` suffix** so the launch claim set can publish before every claim has been hand-reviewed; flip to `error` in `pipeline/linter/checks.py` when the suffix drops for `1.0.0` final. |
+| `published-without-review` | error (since commit `3ebc094`; the beta-time warning described here was not kept) | A claim with `status: published` either has no `.audit.yaml` sidecar next to it, or its sidecar's `human_review.reviewed_at` is null. Operator runs `dr review --approve <claim>` to record sign-off. The check is only active for `published` claims; `draft`, `archived`, and `blocked` are not gated. **Severity is `warning` while `VERSION.md` carries an `-alpha`/`-beta`/`-rc` suffix** so the launch claim set can publish before every claim has been hand-reviewed; flip to `error` in `pipeline/linter/checks.py` when the suffix drops for `1.0.0` final. |
 
 `standard_slug` is the canonical name today (per `content.config.ts`). The roadmap plans to rename it to `criteria_slug` as part of the Standards→Criteria rename before v0.1.0. Until that rename ships, `standard_slug` is valid and `criteria_slug` is unknown; after the rename, the polarity of `legacy-field-name` flips. The linter treats absence of `standard_slug` as `info`, not `error`. A present-but-broken value (not matched in `templates.yaml`) is `error`.
 
@@ -228,7 +232,7 @@ GitHub's `core.error()` renders inline annotations on the PR diff when `file:` m
 
 ## Phase 3: QUEUE.md re-onboard loop
 
-**Status:** `[ ] future`
+**Status:** `deferred` (merged into `operator-queue-batch-workflow_stub.md`, 2026-10-06)
 
 ### What it does
 
@@ -255,13 +259,13 @@ The bash runner skips `#`-prefixed lines, so commented-out entries (manual revie
 
 ## Phase 4: scheduled agent triage
 
-**Status:** `[ ] future / long-term`
+**Status:** `deferred` (2026-10-06)
 
 ### Vision
 
 A multi-agent loop running on a GitHub Actions cron schedule:
 
-1. **Surface agent** — runs `dr lint` + `dr reassess` (LLM verdicts), collects issues, produces a structured triage report
+1. **Surface agent** — runs `dr lint` + `dr step-audit` (LLM verdicts; was `dr reassess`), collects issues, produces a structured triage report
 2. **Triage agent** — classifies issues by severity, assigns to appropriate action (re-onboard, human review, auto-fix)
 3. **Fix agent** — for high-confidence fixable issues (orphaned entity with a known homepage, stale entity with a `website` to re-scrape), opens a draft PR with the proposed fix
 4. **Human approval** — PR review gates any write action to `research/`
@@ -281,3 +285,4 @@ A multi-agent loop running on a GitHub Actions cron schedule:
 |------|----------|-------|---------|
 | 2026-04-22 | agent (claude-sonnet-4-6) | deep — CLI patterns, schema accuracy, CI workflow, check completeness | Fixed inverted `standard_slug`/`criteria_slug` direction throughout; corrected Phase 3 queue file from `QUEUE.md` to `ONBOARD_QUEUE.md`; rewrote Phase 2 CI snippet to match Node-only existing workflow and proposed parallel job; documented year-prefix source ID format for `broken-source-ref`; added `entity-type-dir-mismatch` and `future-as-of` checks; expanded `unknown-frontmatter-key` with canonical field lists (including `aliases`); added `LintIssue` line-number deferral note |
 | 2026-04-22 | agent (active review) | status + stub + duplicate check | Status accurate (per-phase table present). Not a stub. No duplicates with other active plans. Suggested rename: `dr-lint.md` is clear. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | status close-out | Phases 1-2 verified in HEAD (`pipeline/linter/`, `ci.yml` `lint-content`). Phase 3 merged into the operator-queue stub, Phase 4 deferred. Noted check renames and later checks; `published-without-review` is an error (3ebc094). Moved to `completed/`. |

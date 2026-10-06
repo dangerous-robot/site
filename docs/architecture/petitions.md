@@ -1,6 +1,6 @@
 # Petitions
 
-How readers sign a petition on its page at `/petitions/{slug}`, and where the signatures live. Plan and decisions: `docs/plans/petition-signatures.md`. Operations (open, close, export, remove, deploy): `docs/runbook.md`, "Petitions".
+How readers sign a petition on its page at `/petitions/{slug}`, and where the signatures live. Plan and decisions: `docs/plans/completed/petition-signatures.md`. Operations (open, close, export, remove, deploy): `docs/runbook.md`, "Petitions".
 
 ## Pieces
 

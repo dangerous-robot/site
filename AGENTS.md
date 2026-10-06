@@ -206,7 +206,7 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 | `RESEARCH_SEARCH_BACKEND` | No (default `tavily`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
 | `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
 
-**arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; off by default. Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
+**arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; on by default since 2026-05-09 (commit `74c1512`; default `["tavily", "arxiv"]` in `pipeline/orchestrator/pipeline.py`). Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
 
 **Tavily data-handling note.** With Tavily as the default backend (flipped 2026-05-08), claim text and entity names are sent to Tavily on each query. The published research is already public; the evaluation that gated the default flip is recorded in `docs/plans/completed/source-pool-expansion-tier1-search-backend.md`.
 
@@ -230,6 +230,7 @@ All plans live under `docs/plans/`. Lifecycle determines subdirectory:
 | `docs/plans/drafts/` | Work-in-progress plans | Gitignored -- never commit |
 | `docs/plans/` | Active, final plans | Committed |
 | `docs/plans/completed/` | Fully done plans | Committed |
+| `docs/plans/deferred/` | Plans set aside because their remaining work does not serve the site's current focus | Committed |
 
 Release roadmaps are a separate object: they live at the top level of `docs/` (`docs/v{semver}.md`) and are governed by the [Release planning](#release-planning) section. The lifecycle rules below apply equally to release docs and sub-plans; the only difference is the active-state location.
 
@@ -248,6 +249,7 @@ Rules:
 5. **At commit time, ask whether touched plans are complete.** When Claude is asked to commit on the user's behalf and the change touched any file under `docs/plans/` or any release roadmap (`docs/v*.*.*.md`): for each touched plan, ask the operator whether the plan is now fully implemented. If yes, `git mv` it to `docs/plans/completed/` (preserving the filename; do not add a `_completed` suffix -- the directory conveys the state, per the naming convention below) in the same commit. Phrase the question concretely (name the plan files); do not ask in the abstract.
 6. **Keep the backlog current.** Update `docs/UNSCHEDULED.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
 7. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in UNSCHEDULED.md but do not duplicate issue content.
+8. **Deferred plans move.** A committed plan whose remaining work does not serve the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`) moves to `docs/plans/deferred/`, filename unchanged. The first line under the title is `**Deferred**: YYYY-MM-DD, <one-line reason>.`; a partly done plan also records what shipped (commit ids). Add an entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` that links it. In the same change, fix the plan's own relative links (one more `../`) and every inbound link. To revive a plan, move it back to `docs/plans/`, delete the Deferred line, re-check it against the code (add a Review history row), and schedule it. A gitignored draft that fails the focus test is not moved here: it stays in `drafts/` with a one-line note, or moves to `drafts/archive/` (also gitignored).
 
 ### Plan review records
 
@@ -286,12 +288,15 @@ Three mutually exclusive work states:
 | Scheduled | A release roadmap (`docs/v*.*.*.md`) | Committed to a specific release. When an item enters a release roadmap, remove it from UNSCHEDULED.md. |
 | Plan-only | `docs/plans/drafts/` (draft) or `docs/plans/` (reviewed) | A sub-plan exists for exploratory/future work not yet prioritized into a release or unscheduled. |
 
+A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its number and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
+
 **Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
 
 **Plan lifecycle** (within plan-only state):
 1. New/speculative plan → `docs/plans/drafts/` (gitignored, WIP)
 2. Design reviewed → `docs/plans/` (committed)
 3. Fully implemented → `docs/plans/completed/`
+4. Set aside (remaining work off-focus) → `docs/plans/deferred/` (see Plans & Backlog rule 8)
 
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md

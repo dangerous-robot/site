@@ -157,7 +157,7 @@ When the analyst recognizes that the entire pool is restatement, the right move 
 - Plan that introduced this v1 scope: [`docs/plans/completed/source-quality-robust-roadmap_completed.md`](../plans/completed/source-quality-robust-roadmap_completed.md).
 - Strategic critique that drove the rewrite: [`docs/plans/completed/source-quality-agent-review_completed.md`](../plans/completed/source-quality-agent-review_completed.md).
 - Survey of all source-quality signals considered: [`docs/plans/completed/source-quality_survey_completed.md`](../plans/completed/source-quality_survey_completed.md).
-- Active follow-up backlog (ideas, drafted plans, v1.x trust schema digest): [`docs/plans/source-quality-followups.md`](../plans/source-quality-followups.md).
+- Active follow-up backlog (ideas, drafted plans, v1.x trust schema digest): [`docs/plans/deferred/source-quality-followups.md`](../plans/deferred/source-quality-followups.md).
 - Canonical schema: `src/content.config.ts` (sources, claims).
 - Analyst behavior: `pipeline/analyst/instructions.md`.
 - Lint rules: `pipeline/linter/checks.py`.

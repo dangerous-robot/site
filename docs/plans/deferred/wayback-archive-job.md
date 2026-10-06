@@ -1,5 +1,7 @@
 # Plan: Background jobs framework — wayback archival is the first job
 
+**Deferred**: 2026-10-06, operator throughput, not reader value: source pages already show `archived_url` from the in-pipeline lookup. The reader-facing gap is RF11 in `docs/UNSCHEDULED.md` (HTTP 429 archive lookups fail silently), scheduled with the chatbot guide release. Shipped: the interim in-pipeline default `skip_wayback=False` (`6409918`); archive.org TimeGate recovery (`a8e5dd5`, Tier 1 Path 1). Not built: `dr archive`, the scheduled workflow, the jobs conventions. Lines below that say the in-pipeline default "stays `True`" describe the plan's intended end state, not current code.
+
 **Status**: Interim flip done (skip_wayback=False in pipeline, commit 6409918). Full background-job framework is post-v1.
 
 Introduce a lightweight convention for scheduled background jobs that produce content changes via PR. Each job is a flat `dr <verb>` Click subcommand plus a per-job GitHub Actions workflow that runs on cron and opens a PR with the resulting diff. **Wayback archival is the first job built on this convention.** The convention is whatever survives implementing the first job — no framework code beyond what wayback genuinely shares with later jobs.

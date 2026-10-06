@@ -18,11 +18,11 @@ Ticked as items land (AGENTS.md rule 4). Item ids are the Scope table ids below.
 - [x] B3 labels: `correction` and `source-submission` labels created
 - [x] C1 to C5: reviewer display, verdict badge link, verdict statement, `<details>` auto-open, signed Values page
 - [x] D1, D2: `ai_assisted` field and byline wording
-- [x] D3: set on `why-dangerous-robot-exists`; pledge post settled by Brandon 2026-10-03 (no `ai_assisted` field; the post is untracked and `draft: true`)
+- [x] D3: set on `why-dangerous-robot-exists`; pledge post settled by Brandon 2026-10-03 (no `ai_assisted` field; the post was then untracked and `draft: true`; it has since moved to `src/content/actions/prohibit-ai-self-improvement.md`, published, 2026-10-05)
 - [x] E1 to E3: disclosure sentence, corrections link, product note kept
 - [x] F1, F2: roadmap section 9, `architecture/site.md`, `runbook.md`
 - [x] F3: `docs/discovery/` deleted (Brandon, 2026-10-03); AGENTS.md "Discovery records" points to the Drive folder
-- [x] `src/lib/seo.ts`: no change needed, the alpha-noindex patterns do not match `/about` or `/corrections` (checked in code; `dist/` check pending)
+- [x] `src/lib/seo.ts`: no change needed, the alpha-noindex patterns do not match `/about` or `/corrections` (checked in code and in `dist/`, verification item 12)
 - [x] Verification checklist: items 2 to 12 verified against `dist/` (2026-10-04); 13 and 14 verified live after the deploy (2026-10-04)
 - [x] Needs from Brandon, item 1: `contact@dangerousrobot.org` alias created (Brandon, 2026-10-03)
 - [x] Needs from Brandon, items 4 and 5: About reviewed and rewritten by Brandon (2026-10-04); `main` pushed, deployed and tagged `v1.0.0-beta.3` (2026-10-04)
@@ -45,6 +45,8 @@ After this plan lands, the site says what the discovery records decided it says 
 - The live site on 2026-10-03 still showed the pre-redesign homepage, so `main` either is not pushed or has not deployed. beta.3 ships with the redesign.
 
 ## Decided copy (verbatim; do not reword)
+
+The current decided copy is recorded in [`docs/decisions.md`](../../decisions.md) ("Decided copy", 2026-10-06). This table is the record as of the plan, with later changes noted.
 
 | Key | Text |
 |---|---|
@@ -191,6 +193,18 @@ beta.3 ships as checked above; the deploy gate does not move. The pull-forwards 
 - [x] Verification checklist, beta.4: items 15 to 23 and 25 pass (2026-10-04, `inv check` and built `dist/`; 16 on 2026-10-05); 24 passed by Brandon in the admin (2026-10-06)
 - [x] Needs from Brandon, beta.4: all five items answered 2026-10-04
 
+### Shipped in beta.4 beyond this plan's scope (2026-10-05 and 2026-10-06)
+
+Decisions behind these are in `docs/decisions.md` (2026-10-05 and 2026-10-06). Recorded here so this plan holds the full beta.4 record.
+
+- Tagline "Convenience runs on reliance and pays out in compliance." (`bfc5d1e`); hero line "The algorithm got your attention. The robot wants the wheel." (`8412db0`, `5a86ca0`)
+- Petitions served at `/petitions/{slug}` with a redirect from the old `/writing/` URL, a Petitions collection in the admin, the homepage spotlight band, and Research, Turn off AI and Should I use AI out of the primary nav and homepage menu (`8d90255`, likely the one commit for all four)
+- The petition's `post_url` in D1 points at the new page (`53de98e`)
+- Spotlight takes any writing post, petition or resource marked `featured`, newest first (`75d0322`); it features the FLI AI Safety Index resource (`47fd54e`)
+- Danger columns headed "Two kinds of AI danger"; the market-pressure line dropped (`674d856`)
+- Footer cut to the maker line and one row of links; Credits, GitHub and the version moved to About (`b91ee20`)
+- `inv worker-deploy` for the signatures Worker (`5e1bbca`)
+
 ### G. Pledge on the homepage
 
 The content record (05) puts the pledge on the homepage after the lead guide; the early roadmap record (07) says the pledge "joins as it exists". The post exists at `src/content/writing/pledge-prohibit-ai-self-improvement-pledge.md` (`draft: true`, author Wade Hudson, no `ai_assisted` field by Brandon's decision). Its URL stays `/writing/pledge-prohibit-ai-self-improvement-pledge`; the move to an actions URL, with a redirect, is in the chatbot guide release. *(Superseded 2026-10-05: see `docs/decisions.md`.)*
@@ -263,7 +277,7 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 
 - Discovery records (Drive): "07 — Early Roadmap" (foundation decisions and the chatbot guide proposals; older copies say "phase 0" and "phase 1"), "06 — Messaging" (copy), "04 — Trust & Transparency Model" (reviewer, corrections, disclosure placement), "05 — Content Model & Structure" (homepage order, amended for phase 0 by 07), Decisions Log (newest first).
 - `docs/v1.0.0-roadmap.md` §2 (homepage redesign) and §3 (writing section) for what this plan builds on.
-- `docs/plans/public-participation-forms.md` for the later submission form (out of scope here).
+- `docs/plans/deferred/public-participation-forms.md` for the later submission form (out of scope here).
 
 ## Review history
 
@@ -277,3 +291,4 @@ Three lists disagree today: `Base.astro` (`TOP_LINKS`: Research, Resources, Writ
 | 2026-10-05 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | implementation | G1: the published editor's note had no signatory sentence; added one, linking `#sign`. G2: menu entry "Sign the pledge" (short "Pledge") added after Values; the list is now two columns of four. Item 16 passes on a production build (post not a draft, note links `#sign`, list label and hamburger short label present). |
 | 2026-10-05 | agent (claude-opus-5-5, Claude Code workflow with Brandon) | follow-up | Brandon changed the tagline and hero line, pulled the actions type forward (the pledge now lives at `/petitions/prohibit-ai-self-improvement`, old URL redirects), added a homepage spotlight band in place of the pledge's menu entry, and took Research, Turn off AI and Should I use AI out of the primary nav and the homepage menu. Rows A1, A3, G2, the out-of-scope list, the beta.4 note on the pledge URL, and verification items 2 and 16 are marked superseded; the decisions are in `docs/decisions.md` (2026-10-05). |
 | 2026-10-06 | agent (claude-opus-5-5, Claude Code session with Brandon) | release | Brandon passed verification item 24 in the admin; beta.4 checklist complete. Roadmap §9 records the later homepage and footer commits (spotlight for any featured entry, "Two kinds of AI danger", footer cut, `inv worker-deploy`). `VERSION.md` bumped to `1.0.0-beta.4`, deployed and tagged `v1.0.0-beta.4`. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review with Brandon) | implementation | Verified every box in both checklists against HEAD 081ec37 (operator settings via `gh`). Fixed two stale notes (D3, the `seo.ts` line), added the "Shipped in beta.4 beyond this plan's scope" list with commit ids, pointed the decided copy at `docs/decisions.md`. Moved to `docs/plans/completed/`. |

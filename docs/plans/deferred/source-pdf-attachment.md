@@ -1,9 +1,11 @@
 # Plan: PDF attachment as alternate source content surface (core)
 
+**Deferred**: 2026-10-06, an operator ingest path, not needed for the chatbot guide; it would also commit PDFs into `research/` and replace the sources loader, tying the site more tightly to research content that may move to its own repo.
+
 **Status**: ready
 **Date**: 2026-04-23
 **Scope**: ingestion + content model only. The site-publish half is drafted under `source-quality-followups.md` § PDF publish surface.
-**Related plans**: `completed/ingestor-fail-fast-403.md`, `completed/audit-trail.md`, `completed/researcher-host-blocklist.md`, `dr-lint.md`
+**Related plans**: `completed/ingestor-fail-fast-403.md`, `completed/audit-trail.md`, `completed/researcher-host-blocklist.md`, `completed/dr-lint.md`
 
 ## Problem
 
@@ -47,7 +49,7 @@ Considered and rejected:
 
 ### Size policy
 
-GitHub soft-caps blobs at 100 MB and warns at 50 MB. Most source PDFs (policies, papers, reports) are 200 KB – 10 MB. We treat >25 MB as an exception that requires a reviewer note. Git LFS is **out of scope**; revisit if and when >25 MB attachments become routine. The pre-commit lint (see `dr-lint.md`) rejects uncommitted PDFs over the threshold.
+GitHub soft-caps blobs at 100 MB and warns at 50 MB. Most source PDFs (policies, papers, reports) are 200 KB – 10 MB. We treat >25 MB as an exception that requires a reviewer note. Git LFS is **out of scope**; revisit if and when >25 MB attachments become routine. The pre-commit lint (see `completed/dr-lint.md`) rejects uncommitted PDFs over the threshold.
 
 ### Attachment manifest (`_attachments.yaml`)
 
@@ -384,7 +386,7 @@ This is the load-bearing line for verifier trust: a reader can see a claim was g
 
 sha256 mismatch has two enforcement points:
 
-1. **`dr lint` (per `dr-lint.md`) walks every source with `pdfs:` and recomputes the hash.** Mismatch exits nonzero; the pre-commit hook blocks the commit. This is the primary gate — a researcher swapping a PDF on disk after attach cannot land the swap silently.
+1. **`dr lint` (per `completed/dr-lint.md`) walks every source with `pdfs:` and recomputes the hash.** Mismatch exits nonzero; the pre-commit hook blocks the commit. This is the primary gate — a researcher swapping a PDF on disk after attach cannot land the swap silently.
 2. **The Astro build's custom loader re-verifies.** Mismatch fails the build. Deploy does not proceed.
 
 This is stricter than the `audit-trail.md` precedent ("malformed sidecar → console.warn"). That precedent applies to *rendering* concerns, where a bad sidecar shouldn't block the rest of the site. This is an *integrity* concern where a bad hash invalidates the trust claim on the claim it supports. Different failure modes, different teeth.
@@ -447,7 +449,7 @@ No path requires hand-editing frontmatter or the manifest. Hand-editing remains 
    - Extend `auditSchema.sources_consulted[]` with `surface` + `pdf_sha256` and the conditional refine; drop any stray `'wayback'` enum value.
    - Replace the sources collection's `glob()` loader with the custom `sources-with-pdf` loader above. Import `createHash` from `node:crypto`.
 
-9. **Integrity lint.** In `dr lint` (per `dr-lint.md`), walk all source `.md` files; for each `pdfs[].sha256`, recompute from the on-disk file; any mismatch or missing file exits nonzero. Also verify that every manifest entry points at an extant PDF and vice versa (manifest and frontmatter are consistent). Wire the lint into the pre-commit hook.
+9. **Integrity lint.** In `dr lint` (per `completed/dr-lint.md`), walk all source `.md` files; for each `pdfs[].sha256`, recompute from the on-disk file; any mismatch or missing file exits nonzero. Also verify that every manifest entry points at an extant PDF and vice versa (manifest and frontmatter are consistent). Wire the lint into the pre-commit hook.
 
 10. **Fixtures.** Add `pipeline/tests/fixtures/pdfs/`:
     - `minimal.pdf` — 1 page, synthetic, text "Hello world, this is a test PDF."

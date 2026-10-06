@@ -1,7 +1,7 @@
 """Tests for the arXiv academic-API search wrapper.
 
 Mirrors the Tavily/Brave test layout. Coverage targets the contract laid
-out in ``docs/plans/source-pool-expansion-tier1.md`` § Path 2:
+out in ``docs/plans/completed/source-pool-expansion-tier1.md`` § Path 2:
 
 * Atom XML success path with version-stripped ``paper_id``.
 * Empty Atom feed yields an empty list (``no_results`` clean miss is

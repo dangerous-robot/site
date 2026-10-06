@@ -1,19 +1,19 @@
 # Source Pool Expansion — Tier 1 — Search Backend (Tavily)
 
 **Status**: Done. Tavily backend landed 2026-05-08 in commit `ac2dfac` behind `RESEARCH_SEARCH_BACKEND=tavily`; default flipped to `tavily` in `653f5b6` after one operator-validated cycle. The frozen-replay harness was deferred — Brave-vs-Tavily decision was made operationally on the first validation run rather than via the rubric (the candidate-pool quality and 0-rate-limit-error result was unambiguous). Follow-on prefetch passthrough at [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md) lands the `raw_content` short-circuit. Brave remains available behind the flag.
-**Family**: `source-pool-expansion-tier1` — companion to [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md).
+**Family**: `source-pool-expansion-tier1` — companion to [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md).
 **Created**: 2026-05-08
 **Last revised**: 2026-05-08
 
 ## Context
 
-Originally Path 4 of [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md). Split into its own plan because:
+Originally Path 4 of [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md). Split into its own plan because:
 
 1. The evaluation methodology (frozen-replay harness, decision rubric) is search-backend-specific and not reusable by Tier 1's Paths 1–3.
 2. Tavily is now the only candidate (Exa deferred per operator decision 2026-05-08), simplifying a 2-way bake-off into a Tavily-vs-Brave comparison.
 3. Bundling held Paths 1–3 hostage to evaluation work they don't need.
 
-The shared infrastructure this work originally forced (throttle layer, URL canonicalizer, audit-trail `acquisition` slot, error-type vocabulary) lives in [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md) § Shared infrastructure as the prerequisite for all paths.
+The shared infrastructure this work originally forced (throttle layer, URL canonicalizer, audit-trail `acquisition` slot, error-type vocabulary) lives in [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md) § Shared infrastructure as the prerequisite for all paths.
 
 ## Problem
 
@@ -118,7 +118,7 @@ Does **not** touch `pipeline/orchestrator/cli.py` — `dr stats` is a separate f
 
 ## Cross-references
 
-- Main Tier 1 plan (Paths 1–3 + shared infrastructure prerequisites): [`source-pool-expansion-tier1.md`](../source-pool-expansion-tier1.md)
+- Main Tier 1 plan (Paths 1–3 + shared infrastructure prerequisites): [`source-pool-expansion-tier1.md`](source-pool-expansion-tier1.md)
 - Follow-on prefetch passthrough: [`ingestor-tavily-prefetch.md`](ingestor-tavily-prefetch.md)
 - Recently-completed CLI cleanup (cleared the way for a future `dr stats`): [`dr-cli-output-cleanup_phase2_completed.md`](dr-cli-output-cleanup_phase2_completed.md)
 - Fetch-backend distinction: [`multi-provider.md`](multi-provider.md) § Part 3

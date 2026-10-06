@@ -1,12 +1,14 @@
 # Plan: SEO copy and content standards
 
+**Completed**: 2026-10-06. Titles and descriptions shipped in the 2026-04-29 SEO pass (`1b9f3b7`, `b2565d9`). The rest was abandoned by the 2026-10 refocus: this plan writes for "journalists, researchers, and policy people" and AI-company sustainability keywords, while the first reader is now a concerned person at a decision point (`docs/mission-and-voice.md`, Audience). Its proposed homepage description is the copy the homepage redesign removed. The 1200×630 og:image asset is tracked in `docs/UNSCHEDULED.md` (SEO post-restructure follow-ups, OG image row). The "Current state" sections below are 2026-04 history; the OG and Twitter tags now exist in `src/layouts/Base.astro`.
+
 | Milestone | Status |
 |-----------|--------|
 | Title strategy | `[x] done` |
 | Meta description templates | `[x] done` |
-| og:image strategy | `[ ] planned` |
-| Content depth guidance | `[ ] editorial / ongoing` |
-| Keyword targeting guidance | `[ ] editorial / ongoing` |
+| og:image strategy | tags done; 1200×630 asset in `docs/UNSCHEDULED.md` |
+| Content depth guidance | abandoned (refocus) |
+| Keyword targeting guidance | abandoned (refocus) |
 
 ---
 

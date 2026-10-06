@@ -1,5 +1,7 @@
 # Plan: Public Participation Forms
 
+**Deferred**: 2026-10-06, depends on the deferred [`public-feedback.md`](public-feedback.md) queue; roadmap §4 covers claim requests with an issue template plus a mailto path. Nothing built. If revived: "Phase 6" means `public-feedback.md`, and the "propose a standard" form's `/standards` target is now `/research/criteria`.
+
 Three participation forms that extend the Phase 6 Cloudflare backend: a per-claim challenge form, a "request a claim" form, and a "propose a standard" form. All share the same Worker, D1 database, and spam-prevention stack already designed in Phase 6.
 
 ## Goal

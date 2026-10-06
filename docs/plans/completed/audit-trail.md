@@ -1,7 +1,7 @@
 # Plan: AI Research Audit Trail (Phase 1)
 
 **Status**: Completed (Phase 1 shipped 2026-04-25; moved to `completed/`)
-**Successor**: Phase 2 + Phase 3 work continues in [`../audit-trail-extensions.md`](../audit-trail-extensions.md)
+**Successor**: Phase 2 + Phase 3 work continues in [`../deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md) (deferred 2026-10-06; the refresh-trail slice is in [`../published-claim-refresh-trail.md`](../published-claim-refresh-trail.md))
 **Originally depended on**: Phase 4.7 (entity-views IA)
 
 This file records the **Phase 1** plan (sidecar infrastructure, `_write_audit_sidecar`, `dr review` CLI, custom Astro loader, UI) as it shipped. Phases 2 and 3 were extracted to `audit-trail-extensions.md` (active) on 2026-04-25 because Phase 1 shipped while Phase 2 and Phase 3 had not started.
@@ -310,7 +310,7 @@ Style using existing CSS variables and the `.confidence-details` pattern already
 
 ## Phase 2 + Phase 3 (extracted)
 
-The original plan defined three phases. Phase 1 is what shipped and is recorded in this file. Phase 2 (extended data + CI gates) and Phase 3 (append-only recheck history) were extracted to [`../audit-trail-extensions.md`](../audit-trail-extensions.md) on 2026-04-25 and continue as active work.
+The original plan defined three phases. Phase 1 is what shipped and is recorded in this file. Phase 2 (extended data + CI gates) and Phase 3 (append-only recheck history) were extracted to [`../deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md) on 2026-04-25 (deferred 2026-10-06).
 
 ---
 
