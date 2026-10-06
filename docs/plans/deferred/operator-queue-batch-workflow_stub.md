@@ -1,6 +1,6 @@
 # Operator queue + batch workflow
 
-**Deferred**: 2026-10-06, batch tooling; manual operation is fine at the guide's claim volume. Absorbs Phase 3 of [`dr-lint.md`](../completed/dr-lint.md) (the `ONBOARD_QUEUE.md` re-onboard loop) and Phase 3 of [`dr-review-queue.md`](../completed/dr-review-queue.md) (pluggable queue types: publication, disagreement, stale).
+**Deferred**: 2026-10-06, batch tooling; manual operation is fine at the claim volume of the Responsible AI chatbots effort. Absorbs Phase 3 of [`dr-lint.md`](../completed/dr-lint.md) (the `ONBOARD_QUEUE.md` re-onboard loop) and Phase 3 of [`dr-review-queue.md`](../completed/dr-review-queue.md) (pluggable queue types: publication, disagreement, stale).
 
 
 **Status**: Stub

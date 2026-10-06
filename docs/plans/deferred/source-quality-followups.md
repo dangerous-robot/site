@@ -1,6 +1,6 @@
 # Source quality follow-ups
 
-**Deferred**: 2026-10-06, backlog of pipeline source-quality ideas, mostly off-focus for the chatbot guide. Its on-focus items (source freshness, arXiv corporate authorship, curated allowlist) have their own rows in `docs/UNSCHEDULED.md`.
+**Deferred**: 2026-10-06, backlog of pipeline source-quality ideas, mostly off-focus for the Responsible AI chatbots effort. Its on-focus items (source freshness, arXiv corporate authorship, curated allowlist) have their own rows in `docs/UNSCHEDULED.md`.
 
 > Companion to [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md). Collects ideas, drafted follow-ups, and full plans deferred until Tier 1 ships. Anything here that crystallizes into active work gets promoted to its own plan file.
 

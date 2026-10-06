@@ -6,6 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-06
 
+- **Next large effort: Responsible AI chatbots, backed by claims.** Enhance the Responsible AI Chatbots page so its comparisons are supported by claims and sources where possible (roadmap §10; no plan yet). This replaces the chatbot guide ("Before you trust an AI chatbot") as the next release; the guide and its Drive proposals become an undecided proposal (a local draft). The noindex flip trigger, which was the first guide, is decided in the §10 plan. *(Final)*
 - **Footer adds Privacy.** The footer's row of links is About, Values, Methodology, Privacy, CC-BY-4.0. `/privacy` says what the site keeps from petition signers, who can read it, how long it is kept, and how to be removed; the sign form's note links to it. This amends the 2026-10-05 shorter footer. *(Final)*
 - **Decided copy.** The copy strings below are the record; plans and `docs/mission-and-voice.md` quote them. Most were decided in the Drive discovery records (2026-10-01 to 2026-10-03) and first written down in [`plans/completed/refocus-foundation.md`](plans/completed/refocus-foundation.md); rows changed since then say so. Do not reword them without a new entry here. *(Final)*
 

@@ -1,6 +1,6 @@
 # Plan: PDF attachment as alternate source content surface (core)
 
-**Deferred**: 2026-10-06, an operator ingest path, not needed for the chatbot guide; it would also commit PDFs into `research/` and replace the sources loader, tying the site more tightly to research content that may move to its own repo.
+**Deferred**: 2026-10-06, an operator ingest path, not needed for the Responsible AI chatbots effort; it would also commit PDFs into `research/` and replace the sources loader, tying the site more tightly to research content that may move to its own repo.
 
 **Status**: ready
 **Date**: 2026-04-23

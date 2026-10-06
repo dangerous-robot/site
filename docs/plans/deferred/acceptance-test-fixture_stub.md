@@ -1,6 +1,6 @@
 # Acceptance test fixture: Anthropic / Claude
 
-**Deferred**: 2026-10-06, test scaffolding with no reader-facing value as written; revive by retargeting it to a chatbot-guide claim to catch verdict drift (RF6).
+**Deferred**: 2026-10-06, test scaffolding with no reader-facing value as written; revive by retargeting it to a Responsible AI chatbots claim to catch verdict drift (RF6).
 
 Related work that exists: `pipeline/tests/test_acceptance.py` (an `acceptance` pytest marker, three stage tests and one end-to-end smoke test on a false claim; commit 72dcae8), run with `inv test.all`. Its stage tests skip unless `ANTHROPIC_API_KEY` is set, while the default model is GreenPT, so they likely do not run in a normal setup. A revived fixture should extend that file.
 

@@ -1,6 +1,6 @@
 # SEC EDGAR as a research origin (Tier 1 Path 3)
 
-**Deferred**: 2026-10-06, investor filings serve partnership and investment claims, not the chatbot guide's claims; no committed entity carries `sec_cik`, so the path would fire on nothing today.
+**Deferred**: 2026-10-06, investor filings serve partnership and investment claims, not the Responsible AI chatbots claims; no committed entity carries `sec_cik`, so the path would fire on nothing today.
 
 **Status**: stub. Path 3 of [`source-pool-expansion-tier1.md`](../completed/source-pool-expansion-tier1.md), split out when the rest of that plan was marked done. The spec below is moved from it unchanged.
 

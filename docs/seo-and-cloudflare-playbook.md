@@ -144,7 +144,7 @@ remain indexable.
 
 ### When the pre-release noindex period ends
 
-The flip trigger (decided 2026-10-03, roadmap §9 J) is the first guide: when "Before you trust an AI chatbot" (the chatbot guide release) is live and its claims are published, by a decision recorded in that release's plan, [`plans/chatbot-guide-release_stub.md`](plans/chatbot-guide-release_stub.md). This replaced the earlier "GA (1.0.0)" trigger; the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
+The flip trigger is decided in the plan for roadmap §10 (Responsible AI chatbots, backed by claims). The 2026-10-03 trigger, the first guide ("Before you trust an AI chatbot"), was set aside 2026-10-06. That trigger replaced the earlier "GA (1.0.0)" trigger; the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
 
 To re-enable indexing of detail pages:
 

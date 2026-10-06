@@ -1,6 +1,6 @@
 # Plan: Parallelize per-template loop in `onboard_entity`
 
-**Deferred**: 2026-10-06, operator wall time only; no reader-facing value before the chatbot guide.
+**Deferred**: 2026-10-06, operator wall time only; no reader-facing value before the Responsible AI chatbots effort.
 
 **Status**: Deferred (not started). Line references below are from 2026-04 and stale: the per-template loop in `onboard_entity` is now near `pipeline/orchestrator/pipeline.py:2044`, and its `concurrency` knob must be reconciled with the shipped `VerifyConfig.llm_concurrency`.
 

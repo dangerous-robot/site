@@ -1,6 +1,6 @@
 # Plan: Audit trail extensions (Phase 2 + Phase 3)
 
-**Deferred**: 2026-10-06, sidecar infrastructure (backfill, orphan CI, v3 transition log, ClaimReview fields) with no reader-facing payoff before the chatbot guide; the reader-facing slice (RF8, RF9, verdict/sidecar check) moved to [`published-claim-refresh-trail.md`](../published-claim-refresh-trail.md).
+**Deferred**: 2026-10-06, sidecar infrastructure (backfill, orphan CI, v3 transition log, ClaimReview fields) with no reader-facing payoff before the Responsible AI chatbots effort (roadmap §10); the reader-facing slice (RF8, RF9, verdict/sidecar check) moved to [`published-claim-refresh-trail.md`](../published-claim-refresh-trail.md).
 
 **Status**: Deferred (not started; 0 of 16 acceptance items). Open question 2 is answered: done in HEAD (see below).
 **Last updated**: 2026-10-06

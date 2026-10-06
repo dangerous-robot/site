@@ -9,9 +9,8 @@ export const SITE_DESCRIPTION =
  * from AI agent research and may be incomplete or wrong. We do not
  * want them in the search index until the content stabilizes.
  *
- * Flip trigger: the flag flips when the first guide ("Before you trust an
- * AI chatbot", the chatbot guide release) is live and its claims are
- * published, by a decision recorded in docs/decisions.md. Until then
+ * Flip trigger: decided in the plan for roadmap §10 (the Responsible AI
+ * chatbots page backed by claims); see docs/decisions.md. Until then
  * these pages stay noindexed. To flip, set the flag below to true (and
  * rebuild + redeploy) to make these pages indexable and re-include them
  * in the sitemap. The flag name keeps its historical

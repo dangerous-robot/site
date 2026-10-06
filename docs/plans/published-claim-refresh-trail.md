@@ -3,7 +3,7 @@
 **Status**: `ready` (not started)
 **Last updated**: 2026-10-06
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
-**Serves**: the chatbot guide release (roadmap §10). This must ship before guide claims are published and then refreshed.
+**Serves**: Responsible AI chatbots, backed by claims (roadmap §10). This must ship before that page's claims are published and then refreshed.
 **Findings**: RF8 and RF9 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
 **Split from**: [`deferred/audit-trail-extensions.md`](deferred/audit-trail-extensions.md) (this plan takes its reader-facing slice: saving the evaluator's reasoning and gaps, and the verdict/sidecar check)
 
@@ -204,7 +204,7 @@ human_review:
 ## Questions for Brandon
 
 - **Q1:** `brave-browser/renewable-energy-hosting` changed from `false` to `unverified` in the 2026-10-04 refresh, was re-approved, and has no correction. Should a `corrections` entry be added by hand (operator-owned, kept by refresh per K3), with a summary you write? This plan does not add it.
-- **Q2:** Should L2 be an error instead of a warning? An error would make CI refuse a pushed refresh that hasn't been approved, but the local pre-commit hook would also block every unrelated commit while a refresh sits uncommitted (K13). This plan defaults to a warning.
+- **Q2 (decided 2026-10-06, Brandon):** L2 stays a warning.
 
 ## Review history
 
