@@ -43,14 +43,14 @@ collections:
         widget: datetime
         type: date
         format: YYYY-MM-DD
-        # UTC keeps a date picked in Seattle from saving as the previous day.
+        # UTC keeps a date picked in Pacific time from saving as the previous day.
         input_timezone: utc
       - name: updatedDate
         label: Updated date
         widget: datetime
         type: date
         format: YYYY-MM-DD
-        # UTC keeps a date picked in Seattle from saving as the previous day.
+        # UTC keeps a date picked in Pacific time from saving as the previous day.
         input_timezone: utc
         required: false
       - { name: author, label: Author, widget: string, default: Brandon Faloona }
@@ -83,14 +83,14 @@ collections:
         widget: datetime
         type: date
         format: YYYY-MM-DD
-        # UTC keeps a date picked in Seattle from saving as the previous day.
+        # UTC keeps a date picked in Pacific time from saving as the previous day.
         input_timezone: utc
       - name: updatedDate
         label: Updated date
         widget: datetime
         type: date
         format: YYYY-MM-DD
-        # UTC keeps a date picked in Seattle from saving as the previous day.
+        # UTC keeps a date picked in Pacific time from saving as the previous day.
         input_timezone: utc
         required: false
       - { name: author, label: Author, widget: string, default: Brandon Faloona }
@@ -128,7 +128,7 @@ collections:
         widget: datetime
         type: date
         format: YYYY-MM-DD
-        # UTC keeps a date picked in Seattle from saving as the previous day.
+        # UTC keeps a date picked in Pacific time from saving as the previous day.
         input_timezone: utc
       - { name: layout, label: Layout, widget: hidden, default: article }
       - name: wallpaper
@@ -158,7 +158,7 @@ collections:
             widget: datetime
             type: date
             format: YYYY-MM-DD
-            # UTC keeps a date picked in Seattle from saving as the previous day.
+            # UTC keeps a date picked in Pacific time from saving as the previous day.
             input_timezone: utc
             required: false
       - { name: body, label: Body, widget: markdown }

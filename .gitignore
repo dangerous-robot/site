@@ -51,3 +51,9 @@ docs/reports/*.pdf
 # Cloudflare Worker local state and secrets
 .wrangler/
 .dev.vars
+
+# Personal data and local-only notes that must never reach the public repo:
+# petition signer exports (names and emails) and the Drive-record folders (AGENTS.md).
+signatures-*.csv
+/exports/
+Claude outputs/

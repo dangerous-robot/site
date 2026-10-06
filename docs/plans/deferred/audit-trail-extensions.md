@@ -104,7 +104,7 @@ audit_entries:
     verdict_changed_from_previous: false
     human_review:
       reviewed_at: "2026-04-23"
-      reviewer: "brandon@faloona.net"
+      reviewer: "reviewer@example.org"
   - transition_id: "01HZJ5T2N1A8VKD9F3MGCQR7H4"
     transition: "supersede"
     ran_at: "2026-07-01T09:15:00Z"
@@ -114,11 +114,11 @@ audit_entries:
     analyst_verdict: "mixed"
     auditor_verdict: "mostly-true"
     trigger: "new primary source contradicts prior finding"
-    approving_operator: "brandon@faloona.net"
+    approving_operator: "reviewer@example.org"
     verdict_changed_from_previous: true
     human_review:
       reviewed_at: "2026-07-01"
-      reviewer: "brandon@faloona.net"
+      reviewer: "reviewer@example.org"
 ```
 
 The claim frontmatter `verdict` is always the current (latest) value. The sidecar provides the history. `_write_audit_sidecar` becomes a read-modify-append operation: read existing sidecar, append new entry, write. Migration from `schema_version: 1` to `schema_version: 3` is handled by a one-time migration script (which writes the historical entry with `transition: initial`).

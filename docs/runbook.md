@@ -100,11 +100,12 @@ npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET post_url
 npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET status = 'closed', closed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE slug = '<slug>'"
 ```
 
-**Export confirmed signatures to CSV.** The file holds emails: keep it on your machine and delete it when done.
+**Export confirmed signatures to CSV.** The file holds emails: write it outside the repo (never into the checkout), keep it on your machine, and delete it when done.
 
 ```bash
+mkdir -p ~/dr-exports
 npx wrangler d1 execute dr-api --remote --json --command "SELECT name, email, display_consent, created_at, confirmed_at, petition_slug FROM signatures WHERE petition_slug = '<slug>' AND confirmed_at IS NOT NULL ORDER BY confirmed_at" \
-  | jq -r '["name","email","display_consent","created_at","confirmed_at","petition_slug"] as $k | ($k | @csv), (.[0].results[] | [.[$k[]]] | @csv)' > signatures-<slug>.csv
+  | jq -r '["name","email","display_consent","created_at","confirmed_at","petition_slug"] as $k | ($k | @csv), (.[0].results[] | [.[$k[]]] | @csv)' > ~/dr-exports/signatures-<slug>.csv
 ```
 
 **Remove a signer on request** (a message to `contact@dangerousrobot.org`). Emails are stored lowercased. This is a hard delete; check the row count in the output.
