@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # The CMS admin page is for local editing only; keep it off the live site.
+      - run: rm -rf dist/admin && test ! -e dist/admin
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist/
