@@ -46,6 +46,21 @@ def check(ctx):
 
 
 @task
+def worker_deploy(ctx):
+    """Type-check, test, migrate and deploy the dr-api petition Worker.
+
+    Wrangler lists pending D1 migrations and asks before applying them; they
+    change the live signature database and cannot be undone.
+    """
+    with ctx.cd("workers/api"):
+        ctx.run("npm ci", pty=True)
+        ctx.run("npm run check:types", pty=True)
+        ctx.run("npm test", pty=True)
+        ctx.run("npx wrangler d1 migrations apply dr-api --remote", pty=True)
+        ctx.run("npx wrangler deploy", pty=True)
+
+
+@task
 def clean(ctx):
     """Remove build artifacts and caches."""
     ctx.run("rm -rf dist .astro", warn=True)
@@ -177,5 +192,6 @@ ns.add_task(build)
 ns.add_task(lint)
 ns.add_task(check)
 ns.add_task(clean)
+ns.add_task(worker_deploy)
 ns.add_collection(test_ns)
 ns.add_collection(audit_ns)

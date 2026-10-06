@@ -74,14 +74,13 @@ The same setting is in the repo's Moderation settings. A limit expires (anywhere
 
 Signatures live in the `dr-api` D1 database behind the `dr-api` Worker (`workers/api/`, served at `api.dangerousrobot.org`). Design and privacy rules: `docs/architecture/petitions.md`. Run every command below from `workers/api/` (`cd workers/api` first, as its own command). Drop `--remote` to run against the local database that `wrangler dev` uses.
 
-**Deploy (first time, or after a Worker change).** The Worker is not deployed by GitHub Actions.
+**Deploy (after a Worker change).** The Worker is not deployed by GitHub Actions. From the repo root:
 
 ```bash
-npm ci
-npx wrangler secret put RESEND_API_KEY      # first time only; paste the Resend sending key
-npx wrangler d1 migrations apply dr-api --remote
-npx wrangler deploy
+inv worker-deploy
 ```
+
+It runs `npm ci`, the type check and tests in `workers/api/`, then `wrangler d1 migrations apply dr-api --remote` (which lists pending migrations and asks before applying them) and `wrangler deploy`. It stops at the first failure. First deploy only, before it: `npx wrangler secret put RESEND_API_KEY` from `workers/api/` (paste the Resend sending key).
 
 **Open a petition.** Add the row, then add `src/content/actions/<slug>.md` with `petition: <slug>` (CMS collection "Petitions"). The page is `/petitions/<slug>`, with the sign block under the body. Add a `spotlight` line to feature it on the homepage.
 
