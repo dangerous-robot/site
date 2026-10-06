@@ -296,7 +296,7 @@ const websiteSchema = {
 
         <p class="hero-tagline">Convenience runs on reliance and pays out in compliance.</p>
 
-        <p class="hero-line">The tools arrived before the lessons.</p>
+        <p class="hero-line"><span class="hero-line__row">The algorithm got your attention.</span> <span class="hero-line__row">The robot wants your judgment.</span></p>
       </div>
     </section>
 
@@ -517,21 +517,21 @@ const websiteSchema = {
     color: var(--color-text-muted);
   }
 
-  /* The one bold spend on the page. Two lines on a wide screen:
-     "The tools arrived / before the lessons." Floor checked at 390px with a
-     20px root (42px): "arrived before" still fits one line. The cap keeps the
-     hero short enough for the menu to start on screen at 1440x900. */
+  /* The one bold spend on the page: one sentence per line on a wide screen.
+     The cap keeps the hero short enough for the menu to start on screen at
+     1440x900. */
   .hero-line {
     margin: 0;
-    max-width: 20ch;
     font-family: var(--font-heading);
     font-weight: 700;
-    font-size: clamp(2.1rem, 7vw, 5.5rem);
+    font-size: clamp(1.7rem, 5vw, 4.4rem);
     line-height: 0.98;
     letter-spacing: -0.02em;
     color: var(--color-text-heading);
     text-wrap: balance;
   }
+  .hero-line__row { display: block; }
+  .hero-line__row + .hero-line__row { margin-top: 0.12em; }
 
   /* =========================================================
      Where to start: the visible menu
