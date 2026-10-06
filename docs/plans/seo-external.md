@@ -3,10 +3,12 @@
 | Milestone | Status |
 |-----------|--------|
 | Search console setup | `[~] partially done — GSC verified, sitemap submitted, inspection baseline captured 2026-05-11 (seo-post-restructure); monitoring cadence remains |
-| Google Fact Check program | `[ ] gated — prereqs not met` |
-| Validation and testing | `[ ] gated — code plan must land first` |
+| Google Fact Check program | `[ ] gated — prereqs not met, including the indexing flip` |
+| Validation and testing | `[ ] ready — gate met (ClaimReview, OG tags and sitemap are deployed)` |
 | Link building and citation outreach | `[ ] ongoing — start at launch` |
 | Monitoring and maintenance | `[ ] ongoing — start after indexing` |
+
+**Indexing gate (2026-10-06):** claim, source and entity pages stay `noindex` until the first guide ("Before you trust an AI chatbot", the chatbot guide release) is live and its claims are published; the flip is decided in that release's plan (`src/lib/seo.ts`, roadmap §9 J). Milestones below that need claim pages in Google's index wait for that flip. Since the refocus, the first reader is a concerned person at a decision point, not a fact-checking audience (`docs/mission-and-voice.md`); the Fact Check program and journalist outreach are lower priority than getting the guide and its claims found.
 
 ---
 
@@ -43,7 +45,7 @@ DNS TXT is preferred because it survives `public/` directory changes.
 
 1. Set the canonical domain. GSC treats `dangerousrobot.org` and `www.dangerousrobot.org` as separate properties unless a domain property is used. Use a **Domain property** (not URL-prefix property) at setup — it covers all subdomains and both HTTP/HTTPS automatically.
 2. Submit the sitemap (see dependency note below).
-3. After public launch, use the URL Inspection tool to request indexing of key pages: `/`, `/claims`, `/companies`, `/criteria`, `/faq`.
+3. Use the URL Inspection tool to request indexing of key indexable pages: `/`, `/writing`, `/about`, `/research`, `/research/criteria`. Claim, source and entity pages wait for the indexing flip (see Indexing gate above).
 
 **Dependency:** Sitemap submission requires `@astrojs/sitemap` to be implemented and deployed. Do not submit a sitemap until `sitemap.xml` exists at `https://dangerousrobot.org/sitemap-index.xml` and lists expected URLs.
 
@@ -65,10 +67,10 @@ Bing Webmaster Tools covers Bing search (and, by extension, DuckDuckGo and other
 
 **Gating conditions (all must be true before applying):**
 
-1. Alpha banner is removed from the site (pre-launch banner signals the site is not ready for editorial review).
+1. The pre-release banner is removed from the site (it signals the site is not ready for editorial review). It shows while the version has an alpha, beta or rc label (`src/layouts/Base.astro`).
 2. A minimum set of published claims exists. Google does not publish a hard threshold for Fact Check program inclusion. The IFCN application process (the path Google uses) reviews editorial standards and methodology rather than claim count. In practice, apply only after the site has a meaningful corpus of published, sourced claims that demonstrates consistent methodology — not a handful. Operator judgment on readiness; revisit this gate when v1 content is published.
 3. `ClaimReview` JSON-LD schema is implemented on claim pages (code plan dependency).
-4. The site is indexed by Google (confirm via GSC URL Inspection).
+4. Claim pages are indexed by Google, which needs the indexing flip first (confirm via GSC URL Inspection).
 
 ### What the program is
 
@@ -93,7 +95,7 @@ The path to Google's Fact Check program runs through the Duke Reporters' Lab, wh
 
 ## Milestone: Validation and testing
 
-**Status:** `[ ] gated — code plan must land first`
+**Status:** `[ ] ready — gate met` (ClaimReview JSON-LD on claim pages, OG and Twitter tags in `Base.astro`, sitemap all deployed)
 
 **Gating condition:** The code-side SEO changes (ClaimReview schema, FAQPage schema, BreadcrumbList schema, OG tags, twitter:card tags, sitemap, font loading changes) must be deployed to production before running these tools.
 
@@ -188,12 +190,12 @@ For a research site, domain authority grows through citations from credible exte
 
 ### 1. TreadLightly AI cross-linking
 
-TreadLightly AI (treadlightly.ai) is the primary sponsor and a natural citation partner. Any claim made on the TreadLightly site that is backed by dangerousrobot.org research should link to the specific claim page, not just the homepage.
+TreadLightly AI (treadlightly.ai) is made by the same person who runs Dangerous Robot (see `/about`); it is not a sponsor, and links from it carry that conflict of interest. Any claim made on the TreadLightly site that is backed by dangerousrobot.org research should link to the specific claim page, not just the homepage.
 
 Most link-worthy pages at launch:
 - Individual claim pages with published verdicts (deepest, most citable)
-- Company entity pages (e.g., `/companies/microsoft`) as a source hub for all claims about that company
-- `/criteria` pages explaining the evaluation framework
+- Company entity pages (e.g., `/research/companies/microsoft`) as a source hub for all claims about that company
+- `/research/criteria` pages explaining the evaluation framework
 
 Action: audit which TreadLightly AI pages make assertions about AI company environmental claims and add or update source links to point at dangerousrobot.org claim pages rather than primary sources directly.
 
@@ -224,7 +226,7 @@ After the Google Fact Check program application is approved (see that milestone)
 
 **Status:** `[ ] ongoing — start after indexing`
 
-**Gating condition:** GSC is verified and the site is indexed (at minimum the homepage returns a "URL is on Google" result in GSC URL Inspection).
+**Gating condition:** GSC is verified and the site is indexed (at minimum the homepage returns a "URL is on Google" result in GSC URL Inspection). Claim-level rows (ClaimReview errors) start after the indexing flip.
 
 ### Monitoring cadence
 
@@ -256,18 +258,20 @@ After the Google Fact Check program application is approved (see that milestone)
 | This milestone | Depends on |
 |----------------|-----------|
 | Search console setup → sitemap submission | `@astrojs/sitemap` implemented and deployed |
-| Google Fact Check program | Alpha banner removed; meaningful corpus of published claims; ClaimReview schema deployed; site indexed |
-| Validation and testing | All code-side SEO changes deployed to production |
+| Google Fact Check program | Pre-release banner removed; meaningful corpus of published claims; ClaimReview schema deployed (done); indexing flip; claim pages indexed |
+| Validation and testing | All code-side SEO changes deployed to production (done) |
 | Monitoring and maintenance | GSC verified; site indexed |
 
 ## Cross-references
 
-- Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading) — see the technical SEO plan (not yet filed)
-- Alpha banner removal — tracked in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1, currently live; removal is post-launch)
-- ClaimReview schema — required by the Google Fact Check milestone; tracked in technical SEO plan
+- Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading): [`completed/seo-technical.md`](completed/seo-technical.md)
+- Pre-release banner: added in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1); removal is post-launch
+- ClaimReview schema: shipped (`src/pages/research/claims/[...slug].astro`)
+- Indexing flip: `src/lib/seo.ts`, `docs/seo-and-cloudflare-playbook.md` ("When the pre-release noindex period ends")
 
 ## Review history
 
 | Date | Reviewer | Scope | Changes |
 |------|----------|-------|---------|
 | 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; search-console milestone updated to reflect the 2026-05-11 GSC/baseline work; one link repointed to completed/. |
+| 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus alignment | Added the indexing gate (first guide, roadmap §9 J); validation gate marked met; TreadLightly described as made by the same person, not a sponsor; URLs moved to `/research/...`; cross-references point at shipped work. |
