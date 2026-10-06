@@ -48,7 +48,7 @@ After this plan lands, the site says what the discovery records decided it says 
 
 | Key | Text |
 |---|---|
-| Tagline | Act while the choice is still yours. |
+| Tagline | Convenience runs on reliance and pays out in compliance. (Was "Act while the choice is still yours." until 2026-10-05.) |
 | North star | The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours. |
 | Homepage title tag | Dangerous Robot - A guide to AI's dangers, with evidence you can check |
 | Meta description (homepage, and the `Base.astro` default) | A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it. |
