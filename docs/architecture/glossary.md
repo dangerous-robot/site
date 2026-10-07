@@ -98,7 +98,7 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | Term | Meaning |
 |---|---|
 | **Audit sidecar** / `.audit.yaml` | Paired YAML file at the same path as a claim `.md`. Records the pipeline run (model, agents), sources consulted, analyst/evaluator verdicts, and human review state. Merged into the claim's `audit` field by the `claims-with-audit` content loader. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
-| **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
+| **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the Analyst's. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
 | **Threshold gate** | Post-ingest check in the orchestrator: if fewer than four usable sources are available, the claim is halted with `status: blocked` and a `blocked_reason`, and the Analyst is not invoked. (`pipeline/orchestrator/pipeline.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
 | **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`, `review_entity_enrichment`, `review_entity_disambiguation`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
