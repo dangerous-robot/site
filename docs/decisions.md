@@ -8,6 +8,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 - **Indexing after 1.0.0.** Claim, source and entity pages stay noindexed until after 1.0.0; Brandon decides the trigger then. This replaces the 2026-10-06 line that left the trigger to the SITE-J plan. *(Final)*
 - **No ClaimReview markup.** Claim pages stop emitting ClaimReview JSON-LD: Google dropped its fact-check rich results in 2025. Verdicts stay in the claim files, so it can return. *(Final)*
+- **Archive links in code.** The pipeline looks up each new source's archive.org link in code after ingest, not through the ingest model, and a `dr` command backfills existing sources. *(Final)*
 - **Priorities ranked.** The order in [`priorities.md`](priorities.md) is confirmed. Each later change to the order gets one line here. *(Final)*
 
 ## 2026-10-06

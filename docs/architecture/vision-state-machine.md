@@ -54,7 +54,7 @@ This is not BPMN, not a workflow engine, not event sourcing in the database sens
 
 ## Near-term direction
 
-- **Audit Trail Phase 2 and Phase 3** (`docs/plans/deferred/audit-trail-extensions.md`, deferred 2026-10-06; the refresh-trail slice is `docs/plans/published-claim-refresh-trail.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
+- **Audit Trail Phase 2 and Phase 3** (`docs/plans/deferred/audit-trail-extensions.md`, deferred 2026-10-06; the refresh-trail slice is `docs/plans/completed/published-claim-refresh-trail.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
 - **Build-time staleness gate**, the first CI invariant in the state-machine spirit.
 - **Verification-level taxonomy** (`multiply-verified | independently-verified | partially-verified | self-reported | claimed`) — shipped since this doc was written: `verification_level` is live in the schema, scorer, and lint checks (see `source-quality.md`).
 - **Schema migration log**, required for transitions of the schema itself.

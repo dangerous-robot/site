@@ -4,8 +4,8 @@
 **Last updated**: 2026-10-07
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
 **Serves**: Responsible AI chatbots, backed by claims (roadmap item SITE-J). This must ship before that page's claims are published and then refreshed.
-**Findings**: RF8 and RF9 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
-**Split from**: [`deferred/audit-trail-extensions.md`](deferred/audit-trail-extensions.md) (this plan takes its reader-facing slice: saving the evaluator's reasoning and gaps, and the verdict/sidecar check)
+**Findings**: RF8 and RF9 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
+**Split from**: [`deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md) (this plan takes its reader-facing slice: saving the evaluator's reasoning and gaps, and the verdict/sidecar check)
 
 When `dr claim-refresh` re-runs a published claim, three things should hold:
 - The public record keeps its history: the prior verdict and reviewer are saved.
@@ -197,7 +197,7 @@ human_review:
 ## Out of scope
 
 - **RF7** (refresh overwrites `seo_title` and drops `cap_rationale`): the reviewer can fix both with `e` before approval, and it is tracked in UNSCHEDULED.
-- The append-only transition log, ULIDs, backfill, orphan sidecar CI, and ClaimReview JSON-LD fields: [`deferred/audit-trail-extensions.md`](deferred/audit-trail-extensions.md).
+- The append-only transition log, ULIDs, backfill, orphan sidecar CI, and ClaimReview JSON-LD fields: [`deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md).
 - Keeping the published version live at its URL while a refresh awaits review (writing the refresh to a side file instead of in place). The runbook rule (approve before commit) plus L2 covers it at today's scale. Revisit if more than one person runs refreshes.
 - Keeping dropped sources from `inv audit.prune`.
 

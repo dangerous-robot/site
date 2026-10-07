@@ -1,6 +1,6 @@
 # Data lifecycle policy
 
-**Deferred**: 2026-10-06, draft-time reprocessing policy with no reader-facing value yet; the published-claim case (refreshing a claim readers can see) moved to [`published-claim-refresh-trail.md`](../published-claim-refresh-trail.md).
+**Deferred**: 2026-10-06, draft-time reprocessing policy with no reader-facing value yet; the published-claim case (refreshing a claim readers can see) moved to [`published-claim-refresh-trail.md`](../completed/published-claim-refresh-trail.md).
 
 
 **Status**: Stub
