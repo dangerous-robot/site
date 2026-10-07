@@ -114,15 +114,16 @@ def _verdict_override(fm: dict, sidecar: dict) -> dict | None:
 
 
 def _add_correction(claim_path: Path, fm: dict, previous_verdict: str, summary: str) -> None:
-    """Prepend a correction (newest first), skipping it if a retry already wrote it."""
+    """Prepend a correction (newest first), skipping it if a retry already wrote it.
+
+    Only the newest entry can be this refresh's correction. Once one is approved
+    the published verdict moves away from its ``previous_verdict``, so a later
+    cycle never matches it; the summary is ignored so a reworded retry still dedupes.
+    """
     existing = list(fm.get("corrections") or [])
-    for entry in existing:
-        if (
-            isinstance(entry, dict)
-            and str(entry.get("previous_verdict")) == previous_verdict
-            and entry.get("summary") == summary
-        ):
-            return
+    newest = existing[0] if existing else None
+    if isinstance(newest, dict) and str(newest.get("previous_verdict")) == previous_verdict:
+        return
     entry = {
         "date": datetime.date.today(),
         "summary": summary,
@@ -146,9 +147,9 @@ def approve_claim(
     ``mode="approve"`` additionally flips status ``draft`` → ``published``.
     ``mode="archive"`` additionally flips status ``published|blocked`` → ``archived``.
 
-    Approving a refreshed claim closes its sidecar ``refresh`` block. If the
-    refresh changed the published verdict, ``correction_summary`` is required
-    and becomes a public ``corrections`` entry.
+    Approving or archiving a refreshed claim closes its sidecar ``refresh``
+    block. If an approved refresh changed the published verdict,
+    ``correction_summary`` is required and becomes a public ``corrections`` entry.
 
     The audit sidecar at ``<claim>.audit.yaml`` must already exist. If
     ``reviewer`` is None, falls back to ``git config user.email``. Raises
@@ -188,7 +189,8 @@ def approve_claim(
     review["notes"] = notes or ("archived" if mode == "archive" else None)
     review["pr_url"] = pr_url
     review["verdict_override"] = _verdict_override(fm, sidecar_data)
-    if mode == "approve":
+    # Approving or archiving ends the refresh; a sign-off alone leaves it pending.
+    if mode in ("approve", "archive"):
         sidecar_data.pop("refresh", None)
 
     sidecar_path.write_text(

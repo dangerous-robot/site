@@ -1627,6 +1627,65 @@ class TestApproveRefreshedClaim:
         assert len(fm["corrections"]) == 1
         assert "refresh" not in yaml.safe_load(sidecar.read_text(encoding="utf-8"))
 
+    def test_retry_with_reworded_summary_adds_no_duplicate(self, tmp_path, monkeypatch):
+        import orchestrator.review as review_mod
+
+        claim_md, _ = _setup_refreshed_claim(tmp_path)
+        real_dump = review_mod.yaml.safe_dump
+        calls = {"n": 0}
+
+        def _fail_once(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError("simulated sidecar write failure")
+            return real_dump(*args, **kwargs)
+
+        monkeypatch.setattr(review_mod.yaml, "safe_dump", _fail_once)
+
+        with pytest.raises(OSError):
+            self._approve(claim_md, correction_summary="Re-checked.")
+        self._approve(claim_md, correction_summary="Re-checked; the hosting page is gone.")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert [c["summary"] for c in fm["corrections"]] == ["Re-checked."]
+
+    def test_each_refresh_cycle_gets_its_own_correction(self, tmp_path):
+        # false -> unverified -> false -> unverified, each approved with the same summary.
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path, verdict="unverified", previous_verdict="false")
+        self._approve(claim_md, correction_summary="Re-checked.")
+        for verdict, previous in (("false", "unverified"), ("unverified", "false")):
+            fm, body = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+            claim_md.write_text(
+                serialize_frontmatter({**fm, "status": "draft", "verdict": verdict}, body),
+                encoding="utf-8",
+            )
+            data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+            data["audit"]["analyst_verdict"] = verdict
+            data["refresh"] = {
+                "refreshed_at": "2026-10-05T18:22:00+00:00",
+                "previous": {"status": "published", "verdict": previous, "sources": []},
+                "dropped_sources": [],
+            }
+            sidecar.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+            self._approve(claim_md, correction_summary="Re-checked.")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert [c["previous_verdict"] for c in fm["corrections"]] == ["false", "unverified", "false"]
+
+    def test_archiving_a_blocked_refresh_closes_it(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path)
+        set_claim_status(claim_md, "blocked", "draft")
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="archive")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "archived"
+        assert "corrections" not in fm
+        assert "refresh" not in yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+
     def test_claim_without_refresh_needs_no_correction(self, tmp_path):
         claim_md, _ = _setup_refreshed_claim(tmp_path, previous_verdict=None)
 
