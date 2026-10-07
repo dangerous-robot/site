@@ -66,7 +66,7 @@ Claude outputs/
 
 # Image candidate drop folder (.claude/skills/image-candidate): downloads land here, the skill files them under media/candidates/.
 /image-inbox/
-# Image originals stay on Brandon's laptop: the repo is public, and stock licences (Pixabay,
+# Image originals stay on the maintainer's machine: the repo is public, and stock licences (Pixabay,
 # Unsplash, Pexels) forbid redistributing the files as-is. Candidates commit only their
 # .yml record and a 480px .thumb.webp preview (.claude/skills/image-candidate).
 /media/originals/

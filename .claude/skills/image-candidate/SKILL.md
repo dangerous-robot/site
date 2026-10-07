@@ -5,7 +5,7 @@ description: "Track a downloaded image as a candidate for a post or the stock li
 
 # Image candidate
 
-Brandon downloads an image and passes its page URL. This skill finds the file,
+The user downloads an image and passes its page URL. This skill finds the file,
 records where it came from and how it may be used, and files both under
 `media/candidates/`. A candidate is not published: nothing under `media/` ships
 with the site. Choosing a candidate for a post or the stock library is a later,
@@ -21,7 +21,7 @@ media/candidates/
 ```
 
 The repo is public, and stock licences forbid redistributing files as they
-are. So originals stay out of git; they live on Brandon's laptop. Git holds a
+are. So originals stay out of git; they stay on the user's machine. Git holds a
 small re-encoded preview and the record. The record keeps the page URL and
 the original's sha256, so the original can be fetched again and checked. A
 web-sized copy enters git only once the image is used on the site, under
@@ -30,8 +30,8 @@ web-sized copy enters git only once the image is used on the site, under
 ## Modes
 
 - `<page-url> [file] [for <post-slug>] [notes]`: add a candidate, or update one if the URL or file hash is already recorded.
-- `<file> own [credit] [licence]`: Brandon's own work, with no page URL. Use `site: own`, an empty `page_url`, and the creator and licence he states (`verified: true`). Give it a short descriptive id.
-- `fetch <id>`: put a working copy of the original in `media/originals/`, for example in a cloud session where the laptop's files aren't available. For Pixabay, download the API's `largeImageURL` (1280px on the long side; the free API has nothing larger). Other sites: use the page's download link where the licence allows it, otherwise ask Brandon. Save it as `<id>.<ext>`, unless the laptop original is already there. A fetched copy's hash won't match `file.sha256`; don't overwrite the record.
+- `<file> own [credit] [licence]`: the user's own work, with no page URL. Use `site: own`, an empty `page_url`, and the creator and licence they state (`verified: true`). Give it a short descriptive id.
+- `fetch <id>`: put a working copy of the original in `media/originals/`, for example in a cloud session where the laptop's files aren't available. For Pixabay, download the API's `largeImageURL` (1280px on the long side; the free API has nothing larger). Other sites: use the page's download link where the licence allows it, otherwise ask the user. Save it as `<id>.<ext>`, unless the laptop original is already there. A fetched copy's hash won't match `file.sha256`; don't overwrite the record.
 - `list`: print a table of every candidate: id, status, site, licence, size, intended post. Read the `*.yml` files; no other steps.
 - `approve <id>` / `reject <id> <reason>` / `used <id> <post-slug>`: set `status` (and `status_note` or `used_by`), then stop.
 
@@ -61,7 +61,7 @@ Look in this order and use the first match:
 3. The only image in `image-inbox/` newer than every recorded candidate.
 
 If several files could match, ask which one. If none matches, record the
-candidate anyway with `status: needs-file`, and tell Brandon to drop the file in
+candidate anyway with `status: needs-file`, and tell the user to drop the file in
 `image-inbox/` and run the skill again with the same URL.
 
 Run `mkdir -p image-inbox` first so the folder exists on a fresh clone.
@@ -96,7 +96,7 @@ Fetch the page (WebFetch, or `curl` for an API) and read: title, creator name an
   - `imageWidth` and `imageHeight`: the original's size;
   - `tags`, `name` and `pageURL`.
   
-  A record checked this way gets `verified: true`. The full-size image (`largeImageURL`) is on `cdn.pixabay.com`, which needs its own network allowance; without it, use the file Brandon downloaded.
+  A record checked this way gets `verified: true`. The full-size image (`largeImageURL`) is on `cdn.pixabay.com`, which needs its own network allowance; without it, use the file the user downloaded.
 - **Openverse:** `https://api.openverse.org/v1/images/<uuid>/` has `creator`, `license`, `license_version`, `license_url` and `attribution`.
 
 Platform defaults, as of 2026-10. Re-check them against the page; the page wins.
@@ -110,9 +110,9 @@ Platform defaults, as of 2026-10. Re-check them against the page; the page wins.
 
 **Never invent a creator or a licence.** If the page can't be fetched (blocked,
 login wall, error), fill in what the URL proves (site, id, the platform's
-default licence, marked unverified). Set `status: needs-info`, and ask Brandon
-for the creator name and whether the page shows an AI-generated label. If he
-replies in the same session, finish the record.
+default licence, marked unverified). Set `status: needs-info`, and ask the user
+for the creator name and whether the page shows an AI-generated label. If they
+reply in the same session, finish the record.
 
 ### 5. Licence check
 
@@ -184,7 +184,7 @@ Keep the reply to five lines or fewer:
 - the credit line;
 - the licence result;
 - the flags, if any;
-- what's missing (for `needs-info` or `needs-file`, exactly what Brandon has to supply).
+- what's missing (for `needs-info` or `needs-file`, exactly what the user has to supply).
 
 Don't commit unless asked. If asked, commit the `.yml` record and the `.thumb.webp`
 for each image (originals are git-ignored), one commit per batch:
@@ -195,4 +195,4 @@ for each image (originals are git-ignored), one commit per batch:
 The image guidelines (`docs/image-guidelines.md` once it exists; until then the
 "Image guidelines" section of the post-images plan) say what makes a good image
 and the minimum sizes. This skill records fit through `flags` and `look`. It
-doesn't reject an image on style; Brandon decides at `approve` / `reject`.
+doesn't reject an image on style; the user decides at `approve` / `reject`.
