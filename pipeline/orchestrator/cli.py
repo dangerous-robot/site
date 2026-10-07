@@ -1815,6 +1815,10 @@ def entity_enrich(
 @click.option("--pr-url", default=None, help="Optional GitHub PR URL")
 @click.option("--approve", is_flag=True, default=False, help="Flip status from draft to published after sidecar write")
 @click.option("--archive", is_flag=True, default=False, help="Flip status from published to archived after sidecar write")
+@click.option(
+    "--correction", "correction", default=None,
+    help="One-line public correction, required with --approve when a refresh changed the published verdict.",
+)
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
 def review(
@@ -1825,6 +1829,7 @@ def review(
     pr_url: str | None,
     approve: bool,
     archive: bool,
+    correction: str | None,
     repo_root: str | None,
 ) -> None:
     """Record human sign-off in one claim's audit sidecar; --approve also flips status draft->published, --archive flips published->archived.
@@ -1897,6 +1902,7 @@ def review(
         notes=notes,
         pr_url=pr_url,
         mode=mode,
+        correction_summary=correction,
     )
 
     if approve:
@@ -2071,7 +2077,8 @@ def publish(
     import yaml
     from common.content_loader import list_claims, resolve_repo_root
     from common.frontmatter import has_criterion, parse_frontmatter
-    from common.sidecar import sidecar_path_for
+    from common.sidecar import read_sidecar, sidecar_path_for
+    from orchestrator.review import refresh_verdict_change
 
     # Mode selection: exactly one of {--claim, --entity, --all}.
     selectors = sum(1 for s in (claim, entity, all_) if s)
@@ -2113,6 +2120,7 @@ def publish(
     skipped_blocked: list[tuple[Path, str]] = []  # (path, blocked_reason)
     skipped_missing_sidecar: list[Path] = []
     skipped_missing_criterion: list[Path] = []
+    skipped_verdict_changed: list[tuple[Path, str, str]] = []  # (path, previous, current)
     classify_errors: list[tuple[Path, str]] = []
 
     for claim_path in candidate_paths:
@@ -2152,6 +2160,13 @@ def publish(
             skipped_missing_criterion.append(claim_path)
             continue
 
+        # A changed published verdict needs a person-written correction,
+        # which only `dr review --approve --correction` collects.
+        change = refresh_verdict_change(fm, read_sidecar(claim_path))
+        if change is not None:
+            skipped_verdict_changed.append((claim_path, *change))
+            continue
+
         to_publish.append((claim_path, current_status))
 
     # Print the classification summary.
@@ -2186,6 +2201,15 @@ def publish(
         click.echo(f"Skipped (no criteria_slug): {len(skipped_missing_criterion)}")
         for path in skipped_missing_criterion:
             click.echo(f"  ! missing criteria_slug: {_rel(path)}", err=True)
+    if skipped_verdict_changed:
+        click.echo(f"Skipped (verdict changed since publication): {len(skipped_verdict_changed)}")
+        for path, previous, current in skipped_verdict_changed:
+            slug = path.relative_to(claims_dir).with_suffix("").as_posix()
+            click.echo(
+                f"  ! verdict {previous} -> {current}: run "
+                f"`dr review --approve --correction TEXT --claim {slug}`",
+                err=True,
+            )
     if classify_errors:
         click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
         for path, msg in classify_errors:
@@ -2225,6 +2249,9 @@ def publish(
             sidecar_data["human_review"]["reviewer"] = None
             sidecar_data["human_review"]["notes"] = note_text
             sidecar_data["human_review"]["pr_url"] = None
+            # Classification only lets through refreshes whose verdict did not
+            # change, so publishing closes the refresh with no correction.
+            sidecar_data.pop("refresh", None)
             sidecar_path.write_text(
                 yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
                 encoding="utf-8",

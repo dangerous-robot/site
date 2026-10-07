@@ -77,8 +77,13 @@ def _write_sidecar(
     auditor_verdict: str = "true",
     needs_review: bool = False,
     sources: list[dict] | None = None,
+    previous_verdict: str | None = None,
 ) -> Path:
-    """Write a `.audit.yaml` sidecar next to the claim. Returns its Path."""
+    """Write a `.audit.yaml` sidecar next to the claim. Returns its Path.
+
+    ``previous_verdict`` adds a `refresh` block, as `dr claim-refresh` writes
+    for a claim that was published before the refresh.
+    """
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
     data = {
         "schema_version": 1,
@@ -104,6 +109,18 @@ def _write_sidecar(
             "pr_url": None,
         },
     }
+    if previous_verdict is not None:
+        data["refresh"] = {
+            "refreshed_at": "2026-10-04T18:22:00+00:00",
+            "previous": {
+                "status": "published",
+                "verdict": previous_verdict,
+                "reviewed_at": "2026-05-11",
+                "reviewer": "reviewer@example.com",
+                "sources": [],
+            },
+            "dropped_sources": [],
+        }
     sidecar_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
     return sidecar_path
 
@@ -383,6 +400,38 @@ class TestReviewQueueInteractive:
         sidecar = c.with_name(c.stem + ".audit.yaml")
         data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
         assert data["human_review"]["reviewed_at"] is None
+
+    def test_approve_changed_verdict_prompts_for_correction(self, tmp_path, monkeypatch):
+        _patch_git_email(monkeypatch)
+        c = _write_claim(tmp_path, entity="ent-a", slug="refreshed", verdict="unverified")
+        _write_sidecar(c, analyst_verdict="unverified", previous_verdict="false")
+
+        result = CliRunner().invoke(
+            main,
+            ["review-queue", "--repo-root", str(tmp_path)],
+            input="a\nRe-checked: no hosting disclosure.\nq\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Correction" in result.output
+        from common.frontmatter import parse_frontmatter
+        fm, _ = parse_frontmatter(c.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert fm["corrections"][0]["summary"] == "Re-checked: no hosting disclosure."
+        assert fm["corrections"][0]["previous_verdict"] == "false"
+
+    def test_approve_unchanged_verdict_does_not_prompt(self, tmp_path, monkeypatch):
+        _patch_git_email(monkeypatch)
+        c = _write_claim(tmp_path, entity="ent-a", slug="refreshed", verdict="false")
+        _write_sidecar(c, analyst_verdict="false", previous_verdict="false")
+
+        result = CliRunner().invoke(
+            main, ["review-queue", "--repo-root", str(tmp_path)], input="a\n",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Correction" not in result.output
+        assert "status: published" in c.read_text(encoding="utf-8")
 
     def test_preview_emits_claim_text_then_reprompts(self, tmp_path):
         c = _write_claim(tmp_path, entity="ent-a", slug="quebec", title="Distinctive Title XYZ")

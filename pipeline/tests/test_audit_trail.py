@@ -1475,6 +1475,220 @@ class TestApproveClaimCallable:
 
 
 # ---------------------------------------------------------------------------
+# approve_claim on a refreshed claim: corrections and verdict overrides
+# ---------------------------------------------------------------------------
+
+def _setup_refreshed_claim(
+    tmp_path: Path,
+    *,
+    verdict: str = "unverified",
+    previous_verdict: str | None = "false",
+    analyst_verdict: str | None = None,
+    corrections: list[dict] | None = None,
+) -> tuple[Path, Path]:
+    """A draft claim whose sidecar carries a `refresh` block (previous_verdict=None: no block)."""
+    entity_dir = tmp_path / "research" / "claims" / "test-entity"
+    entity_dir.mkdir(parents=True)
+    claim_md = entity_dir / "test-claim.md"
+    fm = {
+        "title": "Test",
+        "verdict": verdict,
+        "status": "draft",
+        "criteria_slug": "test-criterion",
+        "sources": ["2026/b"],
+    }
+    if corrections is not None:
+        fm["corrections"] = corrections
+    claim_md.write_text(serialize_frontmatter(fm, "Body.\n"), encoding="utf-8")
+    sidecar = entity_dir / "test-claim.audit.yaml"
+    _write_minimal_sidecar(sidecar)
+    data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+    data["audit"]["analyst_verdict"] = analyst_verdict or verdict
+    if previous_verdict is not None:
+        data["refresh"] = {
+            "refreshed_at": "2026-10-04T18:22:00+00:00",
+            "previous": {"status": "published", "verdict": previous_verdict, "sources": ["2026/a"]},
+            "dropped_sources": ["2026/a"],
+        }
+    sidecar.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    return claim_md, sidecar
+
+
+class TestApproveRefreshedClaim:
+    def _approve(self, claim_md: Path, **kwargs) -> None:
+        from orchestrator.review import approve_claim
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="approve", **kwargs)
+
+    def test_changed_verdict_with_summary_adds_correction(self, tmp_path):
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path)
+
+        self._approve(claim_md, correction_summary="Re-checked: no hosting disclosure.")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert fm["corrections"] == [{
+            "date": datetime.date.today().isoformat(),
+            "summary": "Re-checked: no hosting disclosure.",
+            "previous_verdict": "false",
+        }]
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert "refresh" not in data
+
+    def test_changed_verdict_without_summary_raises_and_writes_nothing(self, tmp_path):
+        import click
+
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path)
+        md_before, sidecar_before = claim_md.read_bytes(), sidecar.read_bytes()
+
+        with pytest.raises(click.ClickException, match="--correction"):
+            self._approve(claim_md)
+
+        assert claim_md.read_bytes() == md_before
+        assert sidecar.read_bytes() == sidecar_before
+
+    def test_blank_summary_counts_as_missing(self, tmp_path):
+        import click
+
+        claim_md, _ = _setup_refreshed_claim(tmp_path)
+
+        with pytest.raises(click.ClickException, match="--correction"):
+            self._approve(claim_md, correction_summary="   ")
+
+    def test_unchanged_verdict_adds_no_correction_and_closes_refresh(self, tmp_path):
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path, verdict="false", previous_verdict="false")
+
+        self._approve(claim_md)
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert "corrections" not in fm
+        assert "refresh" not in yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+
+    def test_new_correction_goes_first_and_keeps_existing(self, tmp_path):
+        # Corrections render newest first (src/content.config.ts).
+        older = {"date": datetime.date(2026, 1, 2), "summary": "Older fix.", "previous_verdict": "mixed"}
+        claim_md, _ = _setup_refreshed_claim(tmp_path, corrections=[older])
+
+        self._approve(claim_md, correction_summary="Newer fix.")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert [c["summary"] for c in fm["corrections"]] == ["Newer fix.", "Older fix."]
+        assert fm["corrections"][1] == {**older, "date": "2026-01-02"}
+
+    def test_retry_after_failed_sidecar_write_adds_no_duplicate(self, tmp_path, monkeypatch):
+        import orchestrator.review as review_mod
+
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path)
+        real_dump = review_mod.yaml.safe_dump
+        calls = {"n": 0}
+
+        def _fail_once(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError("simulated sidecar write failure")
+            return real_dump(*args, **kwargs)
+
+        monkeypatch.setattr(review_mod.yaml, "safe_dump", _fail_once)
+
+        with pytest.raises(OSError):
+            self._approve(claim_md, correction_summary="Re-checked.")
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "draft"
+        assert len(fm["corrections"]) == 1
+
+        self._approve(claim_md, correction_summary="Re-checked.")
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert len(fm["corrections"]) == 1
+        assert "refresh" not in yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+
+    def test_claim_without_refresh_needs_no_correction(self, tmp_path):
+        claim_md, _ = _setup_refreshed_claim(tmp_path, previous_verdict=None)
+
+        self._approve(claim_md)
+
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["status"] == "published"
+        assert "corrections" not in fm
+
+    def test_dr_review_passes_correction_through(self, tmp_path):
+        claim_md, _ = _setup_refreshed_claim(tmp_path)
+
+        result = CliRunner().invoke(main, [
+            "review",
+            "--claim", "test-entity/test-claim",
+            "--reviewer", "test@example.com",
+            "--approve",
+            "--correction", "Re-checked: no hosting disclosure.",
+            "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
+        assert fm["corrections"][0]["summary"] == "Re-checked: no hosting disclosure."
+
+
+class TestApproveRecordsVerdictOverride:
+    def test_edited_verdict_records_override(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = _setup_refreshed_claim(
+            tmp_path, verdict="mostly-false", analyst_verdict="unverified", previous_verdict=None,
+        )
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["verdict_override"] == {"from": "unverified", "to": "mostly-false"}
+
+    def test_matching_verdict_records_null_override(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = _setup_refreshed_claim(tmp_path, previous_verdict=None)
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="approve")
+
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["verdict_override"] is None
+
+    def test_sign_off_without_approve_records_override(self, tmp_path):
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = _setup_refreshed_claim(
+            tmp_path, verdict="mostly-false", analyst_verdict="unverified", previous_verdict=None,
+        )
+
+        approve_claim(claim_md, reviewer="test@example.com", mode="review")
+
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["verdict_override"] == {"from": "unverified", "to": "mostly-false"}
+
+    def test_override_survives_a_pipeline_rewrite_that_keeps_review(self, tmp_path):
+        # `dr step-audit --write` rewrites the sidecar without resetting sign-off;
+        # dropping the override there would make a valid published claim fail lint.
+        from orchestrator.review import approve_claim
+
+        claim_md, sidecar = _setup_refreshed_claim(
+            tmp_path, verdict="mostly-false", analyst_verdict="unverified", previous_verdict=None,
+        )
+        approve_claim(claim_md, reviewer="test@example.com", mode="review")
+
+        _write_audit_sidecar(
+            claim_path=claim_md,
+            comparison=_make_comparison(),
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["auditor"],
+        )
+
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        assert data["human_review"]["verdict_override"] == {"from": "unverified", "to": "mostly-false"}
+
+
+# ---------------------------------------------------------------------------
 # set_claim_status — phase / blocked_reason kwargs (PR 2)
 # ---------------------------------------------------------------------------
 

@@ -584,7 +584,9 @@ def _write_audit_sidecar(
     if not reset_review:
         existing_review = existing.get("human_review")
         if isinstance(existing_review, dict):
-            for key in human_review:
+            # verdict_override is written only at approval, so it is kept
+            # only where present rather than added as null to every sidecar.
+            for key in (*human_review, "verdict_override"):
                 if key in existing_review:
                     human_review[key] = existing_review[key]
 
@@ -711,6 +713,13 @@ def set_claim_status(
         fm["phase"] = phase
     if blocked_reason is not _UNSET:
         fm["blocked_reason"] = blocked_reason
+    claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+
+
+def set_claim_corrections(claim_path: Path, entries: list[dict]) -> None:
+    """Replace the ``corrections`` list in a claim's frontmatter, keeping everything else."""
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    fm["corrections"] = entries or None
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 

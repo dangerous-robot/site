@@ -22,9 +22,9 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 
 - [x] P1: snapshot the published state before a refresh overwrites it (RF8)
 - [x] P2: record dropped sources in the snapshot (RF8)
-- [ ] P3: approval turns a verdict change into a `corrections` entry (RF8)
-- [ ] P4: `dr publish` skips refreshed claims whose verdict changed
-- [ ] P5: approval records a reviewer verdict override
+- [x] P3: approval turns a verdict change into a `corrections` entry (RF8)
+- [x] P4: `dr publish` skips refreshed claims whose verdict changed
+- [x] P5: approval records a reviewer verdict override
 - [ ] A1: save the evaluator's reasoning, gaps and flag reasons in the sidecar (RF9)
 - [ ] A2: say the real flag reason in the terminal (RF9)
 - [ ] L1: lint `verdict-sidecar-mismatch` (error)

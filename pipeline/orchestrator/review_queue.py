@@ -419,7 +419,7 @@ def run_interactive(
 ) -> None:
     """Walk the operator through the queue. Returns when they quit or the queue empties."""
     from common.sidecar import sidecar_path_for
-    from orchestrator.review import approve_claim
+    from orchestrator.review import approve_claim, refresh_verdict_change
 
     if not items:
         click.echo("Queue is empty: no draft claims awaiting review.")
@@ -457,8 +457,22 @@ def run_interactive(
                 click.echo(f"Saved edits to {item.claim_slug}")
             continue
         if action == "a":
+            correction = None
+            # Read from disk, not the item: `o` can change the verdict in an
+            # external editor without updating the queue item.
+            change = refresh_verdict_change(
+                parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0],
+                read_sidecar(claim_path),
+            )
+            if change is not None:
+                correction = click.prompt(
+                    f"Verdict changed from {change[0]} to {change[1]} since publication. "
+                    "Correction (one line for readers)",
+                    default="",
+                    show_default=False,
+                )
             try:
-                approve_claim(claim_path, mode="approve")
+                approve_claim(claim_path, mode="approve", correction_summary=correction)
             except click.ClickException as exc:
                 click.echo(f"Could not approve: {exc.message}", err=True)
                 continue  # re-prompt the same item

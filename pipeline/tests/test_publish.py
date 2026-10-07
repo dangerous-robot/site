@@ -528,3 +528,56 @@ class TestPublishConfirmation:
         # The dr review path overwrites notes with whatever the reviewer
         # passed (acceptable: by reviewing, the operator takes ownership).
         assert data["human_review"]["notes"] == "post-hoc review"
+
+
+# ---------------------------------------------------------------------------
+# Refreshed claims: a changed verdict needs a person-written correction
+# ---------------------------------------------------------------------------
+
+
+def _setup_refreshed(tmp_path: Path, slug: str, *, verdict: str, previous_verdict: str) -> tuple[Path, Path]:
+    claim_md, sidecar = _setup_claim(tmp_path, slug=slug)
+    text = claim_md.read_text(encoding="utf-8")
+    claim_md.write_text(text.replace("title: Test\n", f"title: Test\nverdict: '{verdict}'\n", 1), encoding="utf-8")
+    data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+    data["audit"]["analyst_verdict"] = verdict
+    data["refresh"] = {
+        "refreshed_at": "2026-10-04T18:22:00+00:00",
+        "previous": {"status": "published", "verdict": previous_verdict, "sources": []},
+        "dropped_sources": [],
+    }
+    sidecar.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    return claim_md, sidecar
+
+
+class TestPublishRefreshedClaims:
+    def test_changed_verdict_skipped_unchanged_published(self, tmp_path):
+        changed, changed_sidecar = _setup_refreshed(
+            tmp_path, "changed", verdict="unverified", previous_verdict="false",
+        )
+        same, same_sidecar = _setup_refreshed(
+            tmp_path, "same", verdict="false", previous_verdict="false",
+        )
+        changed_sidecar_before = changed_sidecar.read_bytes()
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--yes", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "status: draft" in changed.read_text(encoding="utf-8")
+        assert changed_sidecar.read_bytes() == changed_sidecar_before
+        assert "dr review --approve" in result.output
+        assert "--correction" in result.output
+        assert "status: published" in same.read_text(encoding="utf-8")
+        assert "refresh" not in yaml.safe_load(same_sidecar.read_text(encoding="utf-8"))
+
+    def test_dry_run_lists_changed_verdict_skip(self, tmp_path):
+        _setup_refreshed(tmp_path, "changed", verdict="unverified", previous_verdict="false")
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--dry-run", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Skipped (verdict changed since publication): 1" in result.output
