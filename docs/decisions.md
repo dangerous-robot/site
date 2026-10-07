@@ -6,6 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-07
 
+- **Reviewer named by handle.** Pages that name the claim reviewer show the reviewer's handle (`brandon-f`), linked to `/people/<handle>`, which carries the full name, bio and reviewed claims. The Values signature keeps the full name. *(Final)*
 - **Indexing after 1.0.0.** Claim, source and entity pages stay noindexed until after 1.0.0; Brandon decides the trigger then. This replaces the 2026-10-06 line that left the trigger to the SITE-J plan. *(Final)*
 - **No ClaimReview markup.** Claim pages stop emitting ClaimReview JSON-LD: Google dropped its fact-check rich results in 2025. Verdicts stay in the claim files, so it can return. *(Final)*
 - **Archive links in code.** The pipeline looks up each new source's archive.org link in code after ingest, not through the ingest model, and a `dr` command backfills existing sources. *(Final)*
@@ -30,7 +31,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 | Positioning statement (source copy; not quoted on About since 2026-10-04) | For people deciding whether to trust AI with something that matters, Dangerous Robot is a guide to the danger, with evidence you can check. It shows the source and the person behind every claim, and says what you can do about it. |
 | Disclosure sentence (above any list or comparison that includes TreadLightlyAI) | TreadLightlyAI is made by the same person who makes Dangerous Robot. It is listed under the same criteria and sources as every other product, and we publish no verdict on claims about it. |
 | Verdict statement (first paragraph of the methodology section) | A verdict is our reading of the public record as of the date shown. AI agents draft it; the person named on the claim approves it. Every source is listed, and you can check them. One person reviews everything today. If we are wrong, tell us here. ("tell us here" links to `/corrections`) |
-| Reviewer line (claim pages) | Reviewed and approved by Brandon Faloona (the name links to `/about#who-runs-this`) |
+| Reviewer line (claim pages) | Reviewed and approved by brandon-f (the handle links to `/people/brandon-f`) (2026-10-07; was "Reviewed and approved by Brandon Faloona") |
 | Byline (posts, AI drafted the text) | Written by Brandon Faloona, with AI assistance |
 | Byline (posts, no AI drafting) | Written by Brandon Faloona |
 

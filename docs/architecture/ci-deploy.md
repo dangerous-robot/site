@@ -41,13 +41,13 @@ Key settings:
 
 ## Quality Checks (`npm run check`)
 
-The `check` script chains three stages in order:
+The `check` script chains five stages in order:
 
 ```
-npm run build && npm run lint:md && npm run check:citations
+npm run check:types && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers
 ```
 
-This is the same sequence the CI `check` job runs. You can run it locally before pushing. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
+Run it locally before pushing. The CI `check` job runs a subset: build, lint:md and check:citations. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
 
 ### Stage 1: Build
 
@@ -62,6 +62,10 @@ Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-lin
 ### Stage 3: Citation Integrity
 
 `tsx scripts/check-citations.ts` -- see [Citation Integrity](#citation-integrity) below.
+
+### Other stages
+
+`astro check` (`check:types`) runs first and type-checks the site. `tsx scripts/check-reviewer-display.ts` (`check:reviewers`) runs last and checks reviewer mentions in `dist/`: the handle and profile link, never the full name; see [`site.md`](site.md#cross-linking).
 
 ## Citation Integrity
 
@@ -112,4 +116,6 @@ All other `markdownlint` defaults are enforced.
 | `astro`            | `astro`                                              | Run Astro CLI directly                           |
 | `lint:md`          | `markdownlint-cli2 'research/**/*.md'`                       | Lint research Markdown files             |
 | `check:citations`  | `tsx scripts/check-citations.ts`                     | Validate claim-to-source references              |
-| `check`            | `npm run build && npm run lint:md && npm run check:citations` | Run full quality gate (same as CI `check` job) |
+| `check:reviewers`  | `tsx scripts/check-reviewer-display.ts`              | Check reviewer mentions in `dist/`               |
+| `check:types`      | `astro check`                                        | Type-check the site                              |
+| `check`            | `npm run check:types && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers` | Run the full local quality gate (CI's `check` job runs a subset) |

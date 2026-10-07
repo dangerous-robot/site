@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Status**: in progress (roadmap item SITE-N (Reviewer profile page), later beta)
+**Status**: done (roadmap item SITE-N (Reviewer profile page), later beta)
 
 **Goal:** Every page that names the claim reviewer shows the reviewer's handle, linked to a new profile page at `/people/<handle>` that carries the full name, bio, disclosure and the list of claims they reviewed.
 
@@ -66,7 +66,7 @@ Out of scope: post and action bylines ("Written by Brandon Faloona", `src/conten
   - `reviewerHandle(raw): string | null` (for the profile claim list; never throws, returns null for empty or unmapped)
   - `npm run check:reviewers`
 
-- [ ] **Step 1: Write the check**
+- [x] **Step 1: Write the check**
 
 `scripts/check-reviewer-display.ts`:
 
@@ -147,9 +147,9 @@ The `reviewed === 0` guard is the known-positive control: three committed claims
 
 In `package.json` add `"check:reviewers": "tsx scripts/check-reviewer-display.ts"`. Do not add it to `check` yet.
 
-- [ ] **Step 2: Run it, expect FAIL.** `npm run build`, then `npm run check:reviewers`. Expected: fails to import `reviewerHandle` and `PEOPLE` (not exported yet).
+- [x] **Step 2: Run it, expect FAIL.** `npm run build`, then `npm run check:reviewers`. Expected: fails to import `reviewerHandle` and `PEOPLE` (not exported yet).
 
-- [ ] **Step 3: Rewrite `reviewers.ts`**
+- [x] **Step 3: Rewrite `reviewers.ts`**
 
 ```ts
 export interface Person {
@@ -206,14 +206,14 @@ export function resolveReviewer(raw: string | null | undefined, context: string)
 }
 ```
 
-- [ ] **Step 4: Claim page.** The header line (`:127-129`) already renders `reviewer.name` and `reviewer.href`; no markup change. Change the audit line (`:244`) to link the handle:
+- [x] **Step 4: Claim page.** The header line (`:127-129`) already renders `reviewer.name` and `reviewer.href`; no markup change. Change the audit line (`:244`) to link the handle:
 
 ```astro
 <p>Reviewed {reviewedAt}{reviewer && <> by <a href={reviewer.href}>{reviewer.name}</a></>}</p>
 ```
 
-- [ ] **Step 5: Run.** `npm run check:types`, then `npm run build && npm run check:reviewers`. Expected: types pass; the check fails only on `missing profile page for brandon-f` and on full-name hits in research index, corrections and about. No claim page errors.
-- [ ] **Step 6: Commit** `scripts/check-reviewer-display.ts`, `package.json`, `src/lib/reviewers.ts`, `src/pages/research/claims/[...slug].astro`: `feat(site): show the reviewer's handle on claim pages`.
+- [x] **Step 5: Run.** `npm run check:types`, then `npm run build && npm run check:reviewers`. Expected: types pass; the check fails only on `missing profile page for brandon-f` and on full-name hits in research index, corrections and about. No claim page errors.
+- [x] **Step 6: Commit** `scripts/check-reviewer-display.ts`, `package.json`, `src/lib/reviewers.ts`, `src/pages/research/claims/[...slug].astro`: `feat(site): show the reviewer's handle on claim pages`.
 
 ### Task 2: Profile page
 
@@ -223,7 +223,7 @@ export function resolveReviewer(raw: string | null | undefined, context: string)
 **Interfaces:**
 - Consumes: `PEOPLE`, `reviewerHandle` (Task 1); `ClaimRow` (`src/components/ClaimRow.astro`).
 
-- [ ] **Step 1: Write the page**
+- [x] **Step 1: Write the page**
 
 ```astro
 ---
@@ -272,9 +272,9 @@ const reviewed = (await getCollection('claims', ({ data }) =>
 
 The bio is the current About "Who runs this" text, moved, with the handle added so a reader who followed a `brandon-f` link knows they are on the right page. It is about this one person, so it keeps the full name and "he".
 
-- [ ] **Step 2: Check `.claims-list` styling.** It is defined for the claims index; if it is scoped to that page, move the rule to a shared stylesheet rather than copying it. Screenshot `/people/brandon-f` at 375px and 1280px, light and dark (`inv dev`, port 4321; don't start a second server if one is running).
-- [ ] **Step 3: Run.** `npm run build && npm run check:reviewers`. Expected: fails only on full-name hits in research index, corrections and about.
-- [ ] **Step 4: Commit** `feat(site): add the reviewer profile page`.
+- [x] **Step 2: Check `.claims-list` styling.** It is defined for the claims index; if it is scoped to that page, move the rule to a shared stylesheet rather than copying it. Screenshot `/people/brandon-f` at 375px and 1280px, light and dark (`inv dev`, port 4321; don't start a second server if one is running).
+- [x] **Step 3: Run.** `npm run build && npm run check:reviewers`. Expected: fails only on full-name hits in research index, corrections and about.
+- [x] **Step 4: Commit** `feat(site): add the reviewer profile page`.
 
 ### Task 3: Other reviewer mentions
 
@@ -285,7 +285,7 @@ The bio is the current About "Who runs this" text, moved, with the handle added 
 - Modify: `src/pages/values.astro:68`
 - Modify: `package.json` (`check` script)
 
-- [ ] **Step 1: Edit copy** per the § Design table. Import `operator` and `profileHref` from `src/lib/reviewers.ts` where a link or name is rendered; the JSON-LD strings use the plain handle via `operator().handle`. About "Who runs this" becomes:
+- [x] **Step 1: Edit copy** per the § Design table. Import `operator` and `profileHref` from `src/lib/reviewers.ts` where a link or name is rendered; the JSON-LD strings use the plain handle via `operator().handle`. About "Who runs this" becomes:
 
 ```astro
 <p>
@@ -295,9 +295,9 @@ The bio is the current About "Who runs this" text, moved, with the handle added 
 
 where `const op = operator();`. Keep the `id="who-runs-this"` anchor so existing links still land. The Values signature keeps "Brandon Faloona" as text (`{op.fullName}`) and links `profileHref(op)`.
 
-- [ ] **Step 2: Wire the check in.** Append `&& npm run check:reviewers` to `check` in `package.json`, after `npm run build`.
-- [ ] **Step 3: Run.** `npm run check` (types, build, markdown lint, citations, reviewers). Expected: PASS. Also confirm a negative: temporarily change one claim page's `reviewer.name` to `person.fullName`, rebuild, and see the check fail; revert.
-- [ ] **Step 4: Commit** `feat(site): show the reviewer's handle across the site`.
+- [x] **Step 2: Wire the check in.** Append `&& npm run check:reviewers` to `check` in `package.json`, after `npm run build`.
+- [x] **Step 3: Run.** `npm run check` (types, build, markdown lint, citations, reviewers). Expected: PASS. Also confirm a negative: temporarily change one claim page's `reviewer.name` to `person.fullName`, rebuild, and see the check fail; revert.
+- [x] **Step 4: Commit** `feat(site): show the reviewer's handle across the site`.
 
 ### Task 4: Docs
 
@@ -307,10 +307,10 @@ where `const op = operator();`. Keep the `id="who-runs-this"` anchor so existing
 - Modify: `docs/architecture/site.md:221` (also fix its stale "an unmapped value prints no name"; the build fails instead)
 - Modify: `docs/v1.0.0-roadmap.md` (SITE-N status, commit refs)
 
-- [ ] **Step 1:** Add a dated entry: "**Reviewer named by handle.** Pages that name the claim reviewer show the reviewer's handle (`brandon-f`), linked to `/people/<handle>`, which carries the full name, bio and reviewed claims. The Values signature keeps the full name. *(Final)*". Update the copy table row to "Reviewed and approved by brandon-f (the handle links to `/people/brandon-f`)".
-- [ ] **Step 2:** Update the other three docs to match; describe `PEOPLE`, `REVIEWER_HANDLES`, `operator()` and the build check in `site.md`.
-- [ ] **Step 3:** Tick this plan, mark SITE-N `done` with commit refs.
-- [ ] **Step 4: Commit** `docs: record the handle reviewer line and profile page`.
+- [x] **Step 1:** Add a dated entry: "**Reviewer named by handle.** Pages that name the claim reviewer show the reviewer's handle (`brandon-f`), linked to `/people/<handle>`, which carries the full name, bio and reviewed claims. The Values signature keeps the full name. *(Final)*". Update the copy table row to "Reviewed and approved by brandon-f (the handle links to `/people/brandon-f`)".
+- [x] **Step 2:** Update the other three docs to match; describe `PEOPLE`, `REVIEWER_HANDLES`, `operator()` and the build check in `site.md`.
+- [x] **Step 3:** Tick this plan, mark SITE-N `done` with commit refs.
+- [x] **Step 4: Commit** `docs: record the handle reviewer line and profile page`.
 
 ## Review history
 

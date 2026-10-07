@@ -79,7 +79,7 @@ Subdirectory structure within each `glob`-loaded collection is flexible -- the l
 
 All routes are statically generated at build time via `getStaticPaths()`.
 
-The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/privacy`, `/values`, `/credits`):
+The site has four top-level URL spaces, plus a few single static pages (`/about`, `/corrections`, `/privacy`, `/values`, `/credits`) and one profile page per reviewer (`/people/{handle}`):
 
 - `/` -- the homepage: the site's thesis in excerpts, a spotlight on one featured entry, a "Where to start" menu, and two research claims (see [Homepage](#homepage)).
 - `/petitions/{slug}` -- one page per `actions` entry, with the sign block (see [`petitions.md`](petitions.md)). There is no `/petitions` index.
@@ -114,6 +114,7 @@ The site has four top-level URL spaces, plus a few single static pages (`/about`
 | `/privacy`                     | `src/pages/privacy.astro`                         | Static content (what petition signing keeps, who can read it, retention, removal; linked from the footer and the sign form) |
 | `/values`                      | `src/pages/values.astro`                          | Static content                              |
 | `/credits`                     | `src/pages/credits.astro`                         | Static content                              |
+| `/people/brandon-f`            | `src/pages/people/brandon-f.astro`                | Static bio + `claims` collection (published claims this person reviewed) |
 | `/404`                         | `src/pages/404.astro`                             | Static content (noindex, GitHub Pages error page) |
 
 The `[...slug]` rest parameter supports nested IDs (e.g., `anthropic/existential-safety-score` maps to `/research/claims/anthropic/existential-safety-score`).
@@ -218,7 +219,10 @@ The page component receives the entry via `Astro.props`, calls `render()` to get
 
 - The homepage links its two placed claim cards to `/research/claims/{id}` and its "Where to start" menu to `/writing`, two `/resources/*` entries, and `/values`. The spotlight links to the featured entry (for a petition, `/petitions/{id}` and that page's `#sign`).
 - The homepage's closing section links the first post, `/writing/why-dangerous-robot-exists`.
-- Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`). The verdict badge links to `/research#methodology`, and the reviewer line links to `/about#who-runs-this`. The reviewer's name comes from `src/lib/reviewers.ts`, which maps the raw reviewer value in the audit sidecar; an unmapped value prints no name.
+- Claim detail pages link back to their entity (`/research/entities/{entity}`) and to each source (`/research/sources/{sourceRef}`). The verdict badge links to `/research#methodology`. The reviewer line and the audit trail's "Reviewed {date} by" line show the reviewer's handle, linked to their profile at `/people/{handle}`; an unreviewed claim shows "Unreviewed" and no link.
+- Reviewer identity lives in `src/lib/reviewers.ts`. `PEOPLE` lists each person's handle and full name; `REVIEWER_HANDLES` (not exported) maps the raw reviewer value in the audit sidecar, an email, matched trimmed and lowercase, to a handle; `operator()` returns the person who runs the site; `profileHref()` builds the profile link. `resolveReviewer()` gives pages the handle and link, and throws on an unmapped value, so the build fails rather than a reviewed claim showing no one. The raw value never reaches rendered HTML.
+- The research index, corrections and About also name the operator by handle, linked to the profile. The Values signature keeps the full name and links the profile. The profile page (`src/pages/people/{handle}.astro`) carries the full name, bio, the TreadLightlyAI disclosure, and the published claims that person reviewed, newest first.
+- `scripts/check-reviewer-display.ts` (`npm run check:reviewers`, run after a build) checks `dist/`: it fails if a claim page, the research index, corrections or About prints a reviewer's full name; if a reviewed claim page lacks the handle or profile link; if an unreviewed claim links a profile; if a person in `PEOPLE` has no profile page or the page lacks the full name; if a profile's claim count differs from the reviewed claim pages; or if no claim page is reviewed (so it cannot pass with nothing to check).
 - Entity detail pages query published claims and display those whose `entity` field matches.
 
 ## Layout
@@ -276,7 +280,8 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 | `npm run preview`   | `astro preview`                                           | Preview the built site                   |
 | `npm run lint:md`   | `markdownlint-cli2 'research/**/*.md'`                   | Lint research Markdown files             |
 | `npm run check:citations` | `tsx scripts/check-citations.ts`                   | Validate source references in claims     |
-| `npm run check`     | `build + lint:md + check:citations`                       | Quality gate (CI `check` job)            |
+| `npm run check:reviewers` | `tsx scripts/check-reviewer-display.ts`            | Check reviewer mentions in `dist/` (handle, profile links) |
+| `npm run check`     | `check:types + build + lint:md + check:citations + check:reviewers` | Local quality gate (CI's `check` job runs build, lint:md and check:citations) |
 
 ## Deployment
 
