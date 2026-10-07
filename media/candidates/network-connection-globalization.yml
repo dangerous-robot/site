@@ -1,7 +1,7 @@
 id: network-connection-globalization
 status: candidate
-status_note: "Creator from Brandon, 2026-10-07. File from a chat attachment (2000x1333); it may be re-encoded, so replace it with the Pixabay download."
-title: Network Connection Globalization
+status_note: "File from a chat attachment (2000x1333); the Pixabay original is 6000x4000."
+title: Network, connection, globalization
 source:
   site: pixabay
   site_id: "9947397"
@@ -9,8 +9,8 @@ source:
   creator: Gerd Altmann (geralt)
   creator_url: https://pixabay.com/users/geralt-9301/
   uploaded: ""
-  ai_generated: unknown
-  verified: false
+  ai_generated: false
+  verified: true           # Pixabay API, 2026-10-07
 license:
   name: Pixabay Content License
   url: https://pixabay.com/service/license-summary/
@@ -36,6 +36,5 @@ alt_draft: "A dense tangle of black curved lines and rings over a glowing blue b
 intended_for: []
 used_by: []
 flags:
-  - "AI-generated label not checked: confirm on the Pixabay page"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
-notes: "creator_url confirmed by Brandon, 2026-10-07."
+notes: "Creator, profile URL and AI label confirmed via the Pixabay API (user geralt, id 9301), 2026-10-07. Original size 6000x4000."

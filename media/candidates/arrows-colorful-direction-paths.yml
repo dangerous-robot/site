@@ -1,7 +1,7 @@
 id: arrows-colorful-direction-paths
 status: candidate
-status_note: "Creator from Brandon, 2026-10-07. The file came from a chat attachment and may be re-encoded; replace it with the Pixabay download."
-title: Arrows Colorful Direction Paths
+status_note: "File from a chat attachment (1604x2000); the Pixabay original is 4096x5108. Pixabay flags it isLowQuality."
+title: Arrows, colorful, direction
 source:
   site: pixabay
   site_id: "10142347"
@@ -9,8 +9,8 @@ source:
   creator: Gerd Altmann (geralt)
   creator_url: https://pixabay.com/users/geralt-9301/
   uploaded: ""
-  ai_generated: unknown
-  verified: false
+  ai_generated: false
+  verified: true           # Pixabay API, 2026-10-07
 license:
   name: Pixabay Content License
   url: https://pixabay.com/service/license-summary/
@@ -36,7 +36,7 @@ alt_draft: "Dozens of overlapping colored arrows pointing in every direction, ta
 intended_for: []
 used_by: []
 flags:
-  - "AI-generated label not checked: confirm on the Pixabay page"
+  - "Pixabay marks it isLowQuality"
   - "portrait: shows small in the landscape spotlight, post and social boxes"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
-notes: "creator_url confirmed by Brandon, 2026-10-07."
+notes: "Creator, profile URL and AI label confirmed via the Pixabay API (user geralt, id 9301), 2026-10-07. Original size 4096x5108."

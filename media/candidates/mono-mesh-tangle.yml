@@ -1,0 +1,42 @@
+id: mono-mesh-tangle
+status: needs-info
+status_note: "No page URL yet: send the Pixabay link to confirm the id, licence and AI label, then rename the id to the page slug."
+title: ""
+source:
+  site: pixabay
+  site_id: ""
+  page_url: ""
+  creator: Gerd Altmann (geralt)
+  creator_url: https://pixabay.com/users/geralt-9301/
+  uploaded: ""
+  ai_generated: unknown
+  verified: false
+license:
+  name: Pixabay Content License
+  url: https://pixabay.com/service/license-summary/
+  attribution_required: false
+  restrictions: No selling unaltered copies; no redistribution as stock.
+  permission: ""
+credit_line: "Image by Gerd Altmann from Pixabay"
+file:
+  name: mono-mesh-tangle.jpg
+  original_name: 4.jpg
+  format: jpeg
+  width: 2000
+  height: 1333
+  bytes: 366312
+  sha256: 23fceed11b789622d2ccff09949c4efccf027c299ea184b64ae4077a1bdd5cf5
+  downloaded: 2026-10-07
+look:
+  kind: art
+  palette: mono
+  orientation: landscape
+  has_text: false
+alt_draft: "A dense, translucent tangle of fine black mesh surfaces, darkest at the center, on white."
+intended_for: []
+used_by: []
+flags:
+  - "AI-generated label not checked: needs the page URL"
+  - "mid-grey tones: check how it looks inverted in dark mode"
+  - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
+notes: "Creator from Brandon, 2026-10-07. Mono, so it is the closest fit to the draft's house style so far."

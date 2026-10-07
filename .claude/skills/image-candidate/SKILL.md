@@ -85,7 +85,14 @@ Then look at the image (Read it) and fill in:
 Fetch the page (WebFetch, or `curl` for an API) and read: title, creator name and profile URL, licence name and URL, upload date, and whether the site labels the image AI-generated. Useful endpoints:
 
 - **Wikimedia Commons:** `https://commons.wikimedia.org/w/api.php?action=query&titles=File:<name>&prop=imageinfo&iiprop=extmetadata|url&format=json`. `extmetadata` has `Artist`, `LicenseShortName`, `LicenseUrl` and `Credit`.
-- **Pixabay:** the pages sit behind a Cloudflare bot check that blocks WebFetch, curl and headless browsers; don't try to get around it. If `PIXABAY_API_KEY` is set, call `curl -s "https://pixabay.com/api/?key=$PIXABAY_API_KEY&id=<site_id>"` in Bash. Never use WebFetch for this call, and never print or record the URL with the key filled in. Its `hits[0]` has `user`, `user_id`, `pageURL`, `tags` and the image sizes. The creator URL is `https://pixabay.com/users/<user>-<user_id>/`. The API may not report the AI-generated label; if it doesn't, ask Brandon.
+- **Pixabay:** the pages sit behind a Cloudflare bot check that blocks WebFetch, curl and headless browsers; don't try to get around it. Use the API with `PIXABAY_API_KEY`: `curl -s "https://pixabay.com/api/?key=$PIXABAY_API_KEY&id=<site_id>"` in Bash. Never use WebFetch for this call, and never print or record the URL with the key filled in. Clients other than curl need their own User-Agent header (Python's default gets a 403). `hits[0]` has:
+  - `user` and `user_id`: the creator URL is `https://pixabay.com/users/<user>-<user_id>/`;
+  - `isAiGenerated`: goes into `ai_generated`;
+  - `noAiTraining` and `isLowQuality`: flag these when true;
+  - `imageWidth` and `imageHeight`: the original's size;
+  - `tags`, `name` and `pageURL`.
+  
+  A record checked this way gets `verified: true`. The full-size image (`largeImageURL`) is on `cdn.pixabay.com`, which needs its own network allowance; without it, use the file Brandon downloaded.
 - **Openverse:** `https://api.openverse.org/v1/images/<uuid>/` has `creator`, `license`, `license_version`, `license_url` and `attribution`.
 
 Platform defaults, as of 2026-10. Re-check them against the page; the page wins.
