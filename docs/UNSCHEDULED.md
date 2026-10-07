@@ -13,6 +13,19 @@ Items here can be planned but not coded. Before code starts, the `release-triage
 
 ---
 
+## Refocus foundation completion
+
+Goal: finish what SITE-I (The refocus) started ([`plans/completed/refocus-foundation.md`](plans/completed/refocus-foundation.md)), so the site reads as one consistent whole.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Required refocus updates | (none) | First in this section. Anything the refocus requires that is not done yet: check the site against [`plans/completed/refocus-foundation.md`](plans/completed/refocus-foundation.md) and the decided copy in `docs/decisions.md`, then list what is missing here. Triage: Refocus foundation; keep; 2026-10-07 |
+| Contradiction scan | (none) | Scan site copy, research pages and docs for statements that contradict each other or the decided copy in `docs/decisions.md`. Known cases: "Research hub wording after the About rewrite" and "`ai-model-producers` index mismatch" (Site gaps). Triage: Refocus foundation; keep; 2026-10-07 |
+| Clean up sparse research areas | (none) | Research areas that are largely empty: tidy them, perhaps adding one object to each to show the work in progress. Triage: Refocus foundation; keep; 2026-10-07 |
+| SEO updates | (none) | Remaining SEO work: "SEO post-restructure follow-ups" below and the "SEO basics" remainder (Site gaps). Triage: Refocus foundation; keep; 2026-10-07 |
+
+---
+
 ## Pipeline performance & hardening
 
 Goal: Reduce onboarding wall time and wasted API calls.
@@ -100,10 +113,11 @@ Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline afte
 
 ## Security follow-ups
 
-Deferred when the high and critical fixes landed in `3f69aed`.
+The dependency advisories below were deferred when the high and critical fixes landed in `3f69aed`.
 
 | Work Item | Notes |
 |-----------|-------|
+| Deeper security analysis | A full security review of the site, Workers, pipeline and agent tooling, beyond dependency advisories. Findings stay out of this public file until fixed; each known issue it finds goes first in the next release (`priorities.md`). Triage: Security; keep; 2026-10-07 |
 | `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Triage: Security; keep; 2026-10-07 |
 | `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. Triage: Security; keep; 2026-10-07 |
 | Medium-severity Python advisories | `pydantic-ai` / `pydantic-ai-slim`, `idna`, `pydantic-settings`. The 2026-10-02 pass applied high and critical fixes only. Triage: Security; keep; 2026-10-07 |
