@@ -1,0 +1,42 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Breadcrumb from '../../components/Breadcrumb.astro';
+import ClaimRow from '../../components/ClaimRow.astro';
+import { PEOPLE, reviewerHandle } from '../../lib/reviewers';
+
+const person = PEOPLE.find((p) => p.handle === 'brandon-f')!;
+const isoDay = (d: unknown) => (d instanceof Date ? d.toISOString().split('T')[0] : String(d));
+const reviewed = (await getCollection('claims', ({ data }) =>
+  data.status === 'published' && reviewerHandle(data.audit?.human_review.reviewer) === person.handle,
+)).sort((a, b) => isoDay(b.data.as_of).localeCompare(isoDay(a.data.as_of)));
+---
+<Base title={person.fullName} description={`${person.fullName} runs Dangerous Robot and reviews every claim on it.`} layout="reading">
+  <article class="reading">
+    <Breadcrumb crumbs={[
+      { label: 'Home', href: '/' },
+      { label: 'About', href: '/about' },
+      { label: person.fullName },
+    ]} />
+    <h1>{person.fullName}</h1>
+    <p>
+      Brandon Faloona ({person.handle} on this site) runs Dangerous Robot and reviews every claim on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
+    </p>
+    <h2>Claims reviewed</h2>
+    {reviewed.length === 0 ? <p>None published yet.</p> : (
+      <div class="claims-list">
+        {reviewed.map((claim) => (
+          <ClaimRow
+            id={claim.id}
+            title={claim.data.title}
+            verdict={claim.data.verdict}
+            entity={claim.data.entity}
+            topics={claim.data.topics}
+            asOf={isoDay(claim.data.as_of)}
+            confidence={claim.data.confidence}
+          />
+        ))}
+      </div>
+    )}
+  </article>
+</Base>
