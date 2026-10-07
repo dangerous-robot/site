@@ -70,6 +70,17 @@ gh api -X PUT repos/dangerous-robot/site/interaction-limits -f limit=existing_us
 
 The same setting is in the repo's Moderation settings. A limit expires (anywhere from one day to six months) and then lapses on its own, so renew it before the expiry date. Nothing in the repo records that date; put it in your own calendar.
 
+## Refreshing a published claim
+
+A refresh rewrites the claim as a draft and resets its sign-off. The pipeline keeps the published verdict and reviewer in the sidecar's `refresh` block until you approve again. A committed draft drops off the live site, so approve before you commit.
+
+1. Run `uv run dr claim-refresh <entity>/<claim-slug>`.
+2. Run `uv run dr review-queue`. A refreshed claim shows "Was published: {verdict} (reviewed {date})".
+3. If the verdict changed, the header says so, and pressing `a` asks for a correction: write one line for readers saying what changed and why. It becomes a dated entry under the verdict, with the previous verdict shown. Outside the queue, use `uv run dr review --claim <entity>/<claim-slug> --approve --correction "..."`. `dr publish` skips a changed-verdict refresh for this reason.
+4. Commit the claim, its sidecar and any new sources only after approval. Until then `dr lint` warns `refresh-pending-review`.
+
+If you change the verdict with `e` before approving, approval records the change as `human_review.verdict_override`. A published verdict that matches neither the pipeline's nor a recorded override fails lint (`verdict-sidecar-mismatch`).
+
 ## Petitions: open, close, export, remove
 
 Signatures live in the `dr-api` D1 database behind the `dr-api` Worker (`workers/api/`, served at `api.dangerousrobot.org`). Design and privacy rules: `docs/architecture/petitions.md`. Run every command below from `workers/api/` (`cd workers/api` first, as its own command). Drop `--remote` to run against the local database that `wrangler dev` uses.

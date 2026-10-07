@@ -131,10 +131,22 @@ The `audit` object has the shape:
 | `audit.verdict_agrees` | boolean | Whether the analyst and evaluator verdicts agreed |
 | `audit.confidence_agrees` | boolean | Whether the analyst and evaluator confidence levels agreed |
 | `audit.needs_review` | boolean | Whether human review is flagged |
+| `audit.auditor_reasoning` | string | Optional. The Evaluator's reasoning, shown on the claim page |
+| `audit.evidence_gaps` | string[] | Optional. Gaps the Evaluator found in the evidence, shown on the claim page |
+| `audit.needs_review_reasons` | string[] | Optional. Why the claim was flagged: `verdict disagreement`, `confidence gap`, `2+ evidence gaps`; empty when `needs_review` is false |
 | `human_review.reviewed_at` | date or null | When a human reviewed |
 | `human_review.reviewer` | string or null | Reviewer identity |
 | `human_review.notes` | string or null | Human review notes |
 | `human_review.pr_url` | URL or null | PR where the review happened |
+| `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.analyst_verdict`; written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the analyst's only when this matches |
+
+`dr claim-refresh` on a published claim also writes a top-level `refresh` block, which the site does not read. It is present only while the refresh awaits re-approval; approval (or `dr publish` when the verdict is unchanged) removes it. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `refresh.refreshed_at` | timestamp | When the refresh that took the snapshot ran |
+| `refresh.previous` | object | The last published state, read before the overwrite: `status`, `verdict`, `confidence`, `title`, `as_of`, `sources`, `reviewed_at`, `reviewer`, `ran_at`. A second refresh before re-approval keeps it unchanged |
+| `refresh.dropped_sources` | string[] | Source ids in `refresh.previous.sources` that the latest run no longer cites |
 
 Sidecar files are optional. Claims without a sidecar have no `audit` field.
 

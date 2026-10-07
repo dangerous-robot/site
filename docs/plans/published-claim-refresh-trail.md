@@ -1,6 +1,6 @@
 # Plan: published-claim refresh trail (RF8, RF9)
 
-**Status**: `in progress`
+**Status**: `done` (commits e6c96a5, 016b378, 78ee844, 929afe9, fcb6920, 80f3f0f, plus the docs commit)
 **Last updated**: 2026-10-07
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
 **Serves**: Responsible AI chatbots, backed by claims (roadmap item SITE-J). This must ship before that page's claims are published and then refreshed.
@@ -31,12 +31,12 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 - [x] L2: lint `refresh-pending-review` (warning)
 - [x] U1: site schema and claim page show the evaluator's reasoning and flag reasons
 - [x] U2: `dr review-queue` header shows the published state for refreshed claims
-- [ ] D1: docs (`docs/architecture/content-model.md` sidecar table, `docs/runbook.md` "Refreshing a published claim", UNSCHEDULED RF8 and RF9 rows)
-- [ ] V1: verification section passes
+- [x] D1: docs (`docs/architecture/content-model.md` sidecar table, `docs/runbook.md` "Refreshing a published claim", UNSCHEDULED RF8 and RF9 rows)
+- [x] V1: verification section passes
 
 ## Facts the plan relies on
 
-Checked against HEAD `081ec37` on 2026-10-06.
+Checked against HEAD `081ec37` on 2026-10-06; K10 and K13 re-checked against `4fa679b` on 2026-10-07.
 
 | Id | Fact | Where |
 |----|------|-------|
@@ -49,10 +49,10 @@ Checked against HEAD `081ec37` on 2026-10-06.
 | K7 | `ComparisonResult` carries `reasoning` and `evidence_gaps`, but `audit_block` writes neither. `needs_review` is true for a major or opposite verdict gap, an adjacent verdict gap with confidence 2+ steps apart, or more than one evidence gap. | `auditor/models.py:63-77`; `auditor/compare.py:61-65`; `orchestrator/persistence.py:482-493` |
 | K8 | The refresh terminal line always says "verdict disagreement", whatever set the flag. | `orchestrator/cli.py:1129-1130` |
 | K9 | The site's `auditSchema.audit` is a non-strict `z.object`. New optional keys pass through only if they are declared, and undeclared keys are stripped without error. | `src/content.config.ts:60-68` |
-| K10 | Detail pages are built for every claim, drafts included: a draft shows a notice but renders. A committed, refreshed, unapproved claim therefore replaces the reviewed verdict at the same URL. Lists show published claims only. Unlike `actions` (`src/lib/actions.ts:7`), neither the claims loader nor the page drops drafts from production builds, so `completed/refocus-foundation.md` ("Drafts do not render in production") holds for lists only. | `src/pages/research/claims/[...slug].astro:20-26`, `:64-66`; `src/pages/research/claims/index.astro:11`; no draft filter in the `claims-with-audit` loader (`src/content.config.ts`) |
+| K10 | Detail pages for drafts are built only in dev; production builds skip them. A committed, refreshed, unapproved claim therefore drops off the live site until it is approved again. | `src/pages/research/claims/[...slug].astro` `getStaticPaths` (`import.meta.env.DEV \|\| data.status !== "draft"`) |
 | K11 | The `e` action in `dr review-queue` can change `verdict` before approval, so a published verdict can legitimately differ from `audit.analyst_verdict`. | `orchestrator/review_queue.py:136` (`_EDITABLE_FIELDS` includes `verdict`) |
 | K12 | All 3 committed claims are published, and each frontmatter verdict equals its sidecar `analyst_verdict`, so L1 lands without failing CI. `brave-browser/renewable-energy-hosting` went from `false` to `unverified` in the 2026-10-04 refresh and has no `corrections` entry (see Q1). | `research/claims/**` at HEAD |
-| K13 | The local pre-commit hook runs `dr lint` over the whole working tree and exits 1 on any error, so an `error` lint on uncommitted research output blocks unrelated commits. The hook is not tracked, and `docs/runbook.md` lists "Linting and pre-commit hooks" as a section still to write. CI runs `dr lint --severity error` on the committed tree. | `.git/hooks/pre-commit` (local); `.github/workflows/ci.yml:41` |
+| K13 | The local pre-commit hook runs `dr lint` over the whole working tree and exits 1 on any error, then `inv check` (type check, build, lint, unit tests). An `error` lint on uncommitted research output therefore blocks unrelated commits. The hook is not tracked. CI runs `dr lint --severity error` on the committed tree. | `.git/hooks/pre-commit` (local); `.github/workflows/ci.yml:41` |
 
 ## Design
 
@@ -86,9 +86,9 @@ human_review:
 
 ### Rules
 
-1. **Snapshot once per published state.** If the claim on disk has `status: published`, the refresh writes `refresh.previous` from the current claim and sidecar. If the claim is not published but its sidecar already has a `refresh` block and `human_review.reviewed_at` is null (a second refresh before re-approval), the block carries forward unchanged and only `dropped_sources` is recomputed against `previous.sources`. Otherwise, no `refresh` block.
+1. **Snapshot once per published state.** If the claim on disk has `status: published`, the refresh writes `refresh.previous` from the current claim and sidecar. If the claim is not published but its sidecar already has a `refresh` block (a second refresh before re-approval), the block carries forward unchanged and only `dropped_sources` is recomputed against `previous.sources`. Otherwise, no `refresh` block.
 2. **Approval closes the refresh.** `approve_claim(mode="approve")` on a claim with a `refresh` block works as follows:
-   - **Verdict changed** (current frontmatter `verdict` differs from `refresh.previous.verdict`): it requires a correction summary and appends `{date: today, summary, previous_verdict: refresh.previous.verdict}` to frontmatter `corrections`.
+   - **Verdict changed** (current frontmatter `verdict` differs from `refresh.previous.verdict`): it requires a correction summary and adds `{date: today, summary, previous_verdict: refresh.previous.verdict}` as the first frontmatter `corrections` entry (the site renders corrections newest first).
    - **Verdict unchanged:** it writes no correction.
    - **Either way**, it then deletes the `refresh` block. The `corrections` entry is the lasting public record; git history holds the rest.
 3. **The correction summary is written by a person.** There is no generated default text on a reader-facing record. The CLI asks for it, and the review queue prompts for it.
@@ -114,9 +114,9 @@ human_review:
   - (a) verdict changed, summary given: `corrections` gains one entry with today's date, the summary and `previous_verdict`; the `refresh` block is gone; status is `published`.
   - (b) verdict changed, no summary: raises `ClickException` naming `--correction`; nothing is written.
   - (c) verdict unchanged: no entry; the `refresh` block is gone.
-  - (d) existing `corrections` entries are kept and the new one is appended.
+  - (d) existing `corrections` entries are kept and the new one goes first.
   - (e) the review-queue `a` action on a changed-verdict item prompts for a summary (stdin `"a\nRe-checked: ...\nq\n"`) and passes it through.
-  - (f) retry after a failed sidecar write (simulate one by making the sidecar write raise once): the second `--approve` adds no duplicate correction (same date and `previous_verdict` already present) and completes the approval.
+  - (f) retry after a failed sidecar write (simulate one by making the sidecar write raise once): the second `--approve` adds no duplicate correction (same `previous_verdict` and summary already present) and completes the approval.
 - **Code:**
   - `approve_claim` gains `correction_summary: str | None = None`.
   - Add `set_claim_corrections(claim_path, entries)` next to `set_claim_status` in `orchestrator/persistence.py`.
@@ -211,3 +211,4 @@ human_review:
 | Date | Reviewer | Scope | Changes |
 |---|---|---|---|
 | 2026-10-06 | agent (claude-opus-5-5, plan review) | initial plan + self-review | Written from RF8 and RF9 (`docs/UNSCHEDULED.md`) and the reader-facing slice of `audit-trail-extensions.md`. Facts K1 to K13 checked against HEAD `081ec37`. Self-review changes:<br>- Added P5 and the `verdict_override` field after finding that the `e` action can legitimately change the verdict (K11), which would otherwise make L1 fail on valid claims.<br>- Made L2 a warning because pre-commit checks the whole tree (K13).<br>- Required a person-written correction summary rather than generated text.<br>- Added the P3 idempotency test for a sidecar write that fails after the frontmatter write.<br><br>Second pass (advisor):<br>- Confirmed K10 (no production draft filter for claims).<br>- Re-sourced K13 to the local hook.<br>- Spelled out the P3 write order.<br>- Added Q2. |
+| 2026-10-07 | agent (claude-opus-5-5, implementation) | implementation, iterated | Implemented P1 to V1. Changes from the plan:<br>- K10 changed: production builds skip draft detail pages, so an unapproved refresh drops off the live site instead of replacing the verdict; K10, K13 and the runbook wording match.<br>- Corrections go first, not appended, to match "newest first" in `src/content.config.ts`. The retry check keys on previous verdict plus summary, not the date, so a retry on a later day still dedupes; a retry must pass the same summary.<br>- A pending `refresh` block carries forward whether or not `reviewed_at` is set; a sign-off-only `dr review` would otherwise let a second refresh drop the snapshot.<br>- `verdict_override` is kept on sidecar rewrites that keep sign-off (`dr step-audit --write`), or L1 would fail valid claims.<br>- A2 also fixed the "analyst/auditor disagree" error in `orchestrator/pipeline.py`; `needs_review` and its reasons now share one rule.<br>- U1 renders reasoning and gaps as their own `audit-section` blocks after "Verdict check", like the other sections.<br>- V1.3 used a scratch copy with `verify_claim` stubbed (no model calls). |
