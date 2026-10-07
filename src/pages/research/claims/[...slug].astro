@@ -18,8 +18,13 @@ import {
 } from "../../../lib/sourceQuality";
 
 export async function getStaticPaths() {
-  // Drafts are unreviewed verdicts: build them for local review only, never for the live site.
-  const claims = await getCollection("claims", ({ data }) => import.meta.env.DEV || data.status !== "draft");
+  // Only reviewed claims go live. Drafts are unreviewed, and a blocked claim carries a
+  // placeholder verdict that would replace the published one at the same URL; the dev
+  // server still builds both for local review.
+  const claims = await getCollection(
+    "claims",
+    ({ data }) => import.meta.env.DEV || data.status === "published" || data.status === "archived",
+  );
   return claims.map((claim) => ({
     params: { slug: claim.id },
     props: { claim },

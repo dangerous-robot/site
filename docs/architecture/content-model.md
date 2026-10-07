@@ -71,7 +71,7 @@ The Markdown body provides extended context about the entity.
 | `source_overrides` | object[] | no | Per-claim overrides of source-level fields, used when a source classified `independent` is actually restating a primary disclosure for this claim. Each entry: `source`, `reason`, optional `independence`. See [source-quality.md § Source overrides on claims](source-quality.md#source-overrides-on-claims) |
 | `takeaway` | string | no | Optional reader-facing one-liner; max 200 chars; rendered under the verdict badge |
 | `criteria_slug` | string | no | Optional back-reference to the criterion template this claim was generated from |
-| `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived`, `blocked` |
+| `status` | enum | yes (default: `draft`) | Publication status: `draft`, `published`, `archived`, `blocked`. Production builds a claim page only for `published` and `archived`; the dev server builds all four |
 | `phase` | enum | no | Pipeline progress while in flight; absent on terminal states. One of `researching`, `ingesting`, `analyzing`, `evaluating` |
 | `blocked_reason` | enum | no | Set together with `status: blocked`; one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error` |
 | `as_of` | date | yes | Date the verdict was last evaluated |

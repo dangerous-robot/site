@@ -208,7 +208,7 @@ Step-by-step authoring instructions, by CMS or by hand, are in [`docs/runbook.md
 
 Each dynamic route file exports `getStaticPaths()`, which:
 
-1. Fetches the full collection with `getCollection("claims")` (or equivalent).
+1. Fetches the collection with `getCollection("claims")` (or equivalent). The claim route filters it: production builds only `published` and `archived` claims, while the dev server builds every status.
 2. Maps each entry to `{ params: { slug: entry.id }, props: { entry } }`.
 3. Astro generates one HTML file per entry at build time.
 
