@@ -1,6 +1,6 @@
 # Priorities
 
-**Status**: Confirmed by Brandon, 2026-10-07  
+**Status**: Confirmed by the operator, 2026-10-07  
 **Last updated**: 2026-10-07
 
 The project's themes, highest first. Each names the work that serves it and the source that sets it. Status stays in the active roadmap ([`v1.0.0-roadmap.md`](v1.0.0-roadmap.md)) and [`UNSCHEDULED.md`](UNSCHEDULED.md). Who changes this file, and when: `AGENTS.md` § Priorities.
@@ -11,7 +11,7 @@ How to read it:
 - When two pieces of work compete, the one serving the higher-ranked theme goes first.
 - A roadmap item takes the rank of the theme whose `Work:` line names it; work listed under that item shares its rank. A backlog item takes the rank of the theme in its triage marker. A roadmap item no `Work:` line names takes the rank of the theme it fits; propose adding it to that line.
 - Work that fits no theme ranks below every theme. It still has to pass the focus test (`AGENTS.md` Plans & Backlog rule 8) before it is scheduled.
-- An entry marked "(Proposed, Brandon to confirm)" keeps its listed place; any answer that depends on it says so.
+- An entry marked "(Proposed, operator to confirm)" keeps its listed place; any answer that depends on it says so.
 
 ## Ranked
 
@@ -32,7 +32,7 @@ A known security issue is a weakness someone could use today, in something this 
 
 Counts, when present now:
 
-- Petition signer data (D1, exports) or reader data readable, changeable or kept in a way `/privacy` does not say, by anyone but Brandon.
+- Petition signer data (D1, exports) or reader data readable, changeable or kept in a way `/privacy` does not say, by anyone but the operator.
 - A secret, API key, token or private email in the repo, build output, logs or a place an agent or the public can read.
 - A way for an outsider to change what dangerousrobot.org serves or runs: the deploy workflow, third-party GitHub Actions, Cloudflare settings, the Workers code or its endpoints.
 - A Workers endpoint that allows something it should not, or that cannot stop abuse.

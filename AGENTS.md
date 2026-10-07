@@ -19,14 +19,14 @@ For the generalized vision, see `docs/architecture/glossary.md` § How the syste
 ## Writing conventions
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
-- Refer to developers, operators, contributors, maintainers and users by role ("the user", "a contributor"), with they/them pronouns. Name a specific person only when something is uniquely about them, such as a photo credit or a decision they own.
+- Refer to developers, operators, contributors, maintainers and users by role ("the user", "a contributor"), with they/them pronouns. Name a specific person only when something is uniquely about them, such as a photo credit.
 
 ## UI & Design Standards
 
 - Before implementing any ad hoc UX change, check whether it would deviate from established site patterns (typography, spacing, color, component conventions, layout structure).
 - Before accepting any UI plan, evaluate it for contradictions with the site's overall theme, existing styles, or established component patterns.
 - If drift or contradiction is detected, name it specifically: what standard would be violated and how. Propose a standards-consistent alternative if one exists.
-- Push back even when the request comes from Brandon -- the point is to catch drift before it lands.
+- Push back even when the request comes from the operator -- the point is to catch drift before it lands.
 
 ## Research Content Structure
 
@@ -231,7 +231,7 @@ The discovery records in the Google Drive folder "Dangerous Robot — Vision & D
 
 Changing `priorities.md`:
 
-- Brandon sets the order. An entry an agent adds or changes ends with "(Proposed, Brandon to confirm)"; agents never reorder. Each confirmed change to the order gets one line in `docs/decisions.md` that points at `priorities.md` and does not restate it.
+- The operator sets the order. An entry an agent adds or changes ends with "(Proposed, operator to confirm)"; agents never reorder. Each confirmed change to the order gets one line in `docs/decisions.md` that points at `priorities.md` and does not restate it.
 - Keep its `Work:` lines current: fix one in the same change that renames, moves, finishes or defers the work it names. When a theme's work is all done or deferred, propose removing the theme.
 
 When files disagree or look stale, nothing comes from session memory:
