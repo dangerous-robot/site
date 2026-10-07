@@ -224,3 +224,55 @@ async def test_no_capture_when_saves_are_off(
     assert timegate.call_count == 2
     assert save.called is False
     assert result.archive[_PAGE_URL]["status"] == "failed"
+
+
+@pytest.mark.asyncio
+async def test_an_unexpected_lookup_error_keeps_the_source(
+    tmp_path, stubbed_pipeline, monkeypatch
+) -> None:
+    """An error the wayback helpers do not catch (httpx.InvalidURL) must not drop a good ingest."""
+    from orchestrator.pipeline import verify_claim
+
+    async def _raise(client, url, *, allow_save=True):
+        raise httpx.InvalidURL("Invalid non-printable ASCII character in URL")
+
+    monkeypatch.setattr("ingestor.agent.archive_with_time_limit", _raise)
+    stubbed_pipeline["archived_url"] = _SNAPSHOT
+    _write_cached_sources(tmp_path)
+    cfg = VerifyConfig(model="test", max_sources=8, repo_root=str(tmp_path))
+    with respx.mock as mock:
+        mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
+        result = await verify_claim("Example", "claim text", cfg)
+
+    assert [url for url, _sf in result.source_files] == [_PAGE_URL]
+    assert result.source_files[0][1].frontmatter.archived_url is None
+    archive = result.archive[_PAGE_URL]
+    assert archive["status"] == "failed"
+    assert "InvalidURL" in archive["error"]
+
+
+@pytest.mark.asyncio
+async def test_a_model_written_non_archive_link_does_not_reject_the_ingest(
+    tmp_path, stubbed_pipeline
+) -> None:
+    """The model's own archived_url is dropped before validation, then the lookup sets it."""
+    stubbed_pipeline["archived_url"] = "https://archive.ph/abc123"
+    with respx.mock as mock:
+        mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
+        mock.get(_TIMEGATE).mock(
+            return_value=httpx.Response(302, headers={"location": _SNAPSHOT})
+        )
+        source_fm, sidecar = await _run(tmp_path)
+
+    assert source_fm["archived_url"] == _SNAPSHOT
+    assert _entries(sidecar)["2026/page"]["archive"] == {"status": "found"}
+
+
+@pytest.mark.asyncio
+async def test_skip_wayback_drops_a_model_written_link(tmp_path, stubbed_pipeline) -> None:
+    stubbed_pipeline["archived_url"] = _SNAPSHOT
+    with respx.mock as mock:
+        mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
+        source_fm, _sidecar = await _run(tmp_path, skip_wayback=True)
+
+    assert "archived_url" not in source_fm

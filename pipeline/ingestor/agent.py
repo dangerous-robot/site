@@ -248,10 +248,11 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
 async def archive_after_ingest(sf: SourceFile, deps: IngestorDeps) -> dict:
     """Set ``sf``'s ``archived_url`` in code and return the sidecar ``archive`` record.
 
-    The model's own ``archived_url`` is not trusted: it is replaced by the
-    lookup's link, or cleared when the lookup fails. A link ``wayback_check``
-    returned during this ingest is reused, so the lookup is not repeated.
-    With ``skip_wayback`` nothing is looked up or changed. With
+    The model's own ``archived_url`` is not trusted (``_check_ingested_source``
+    already dropped any link ``wayback_check`` did not return): it is replaced
+    by the lookup's link, or cleared when the lookup fails or raises. A link
+    ``wayback_check`` returned during this ingest is reused, so the lookup is
+    not repeated. With ``skip_wayback`` nothing is looked up. With
     ``deps.allow_save`` False the lookup checks TimeGate only.
     """
     if deps.skip_wayback:
@@ -259,9 +260,17 @@ async def archive_after_ingest(sf: SourceFile, deps: IngestorDeps) -> dict:
     if deps.wayback_link:
         sf.frontmatter.archived_url = deps.wayback_link
         return {"status": "found"}
-    lookup = await archive_with_time_limit(
-        deps.http_client, sf.frontmatter.url, allow_save=deps.allow_save
-    )
+    try:
+        lookup = await archive_with_time_limit(
+            deps.http_client, sf.frontmatter.url, allow_save=deps.allow_save
+        )
+    except Exception as exc:
+        # The helpers catch only httpx.HTTPError; anything else (e.g.
+        # httpx.InvalidURL) would escape the ingest and silently drop a good
+        # source, so a lookup error is recorded like any failed lookup.
+        logger.warning("archive.org lookup raised for %s: %r", sf.frontmatter.url, exc)
+        sf.frontmatter.archived_url = None
+        return {"status": "failed", "error": f"archive.org lookup failed ({type(exc).__name__}): {exc}"}
     sf.frontmatter.archived_url = lookup.archived_url
     if lookup.archived_url:
         return {"status": "found"}

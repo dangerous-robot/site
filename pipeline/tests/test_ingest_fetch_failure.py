@@ -243,7 +243,21 @@ async def test_unrelated_page_fetched_returns_fetch_failed(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_invalid_archived_url_returns_invalid_source(tmp_path) -> None:
+async def test_invalid_source_returns_invalid_source(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    source = _source_args(url)
+    source["year"] = 1990
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(url, _scripted_model([url], source), tmp_path)
+    assert not isinstance(outcome, tuple)
+    assert outcome.error_type == "invalid_source"
+    assert "1990" in outcome.message
+
+
+@pytest.mark.asyncio
+async def test_model_written_archived_url_is_dropped_not_rejected(tmp_path) -> None:
+    # Only a link from wayback_check is trusted; the lookup in code sets the rest.
     url = "https://brave.com/transparency/"
     with respx.mock:
         respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
@@ -252,9 +266,8 @@ async def test_invalid_archived_url_returns_invalid_source(tmp_path) -> None:
             _scripted_model([url], _source_args(url, archived_url="https://archive.ph/abc")),
             tmp_path,
         )
-    assert not isinstance(outcome, tuple)
-    assert outcome.error_type == "invalid_source"
-    assert "archived_url" in outcome.message
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.archived_url is None
 
 
 @pytest.mark.asyncio

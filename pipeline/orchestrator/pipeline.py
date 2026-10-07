@@ -853,6 +853,14 @@ def _check_ingested_source(
             sf.frontmatter.url, url,
         )
         sf.frontmatter.url = url
+    # Only a link ``wayback_check`` returned is trusted; the lookup in code
+    # sets the rest after this check, so a link the model made up must not
+    # fail validation first.
+    if sf.frontmatter.archived_url and sf.frontmatter.archived_url != deps.wayback_link:
+        logger.info(
+            "Dropping model-written archived_url %s for %s", sf.frontmatter.archived_url, url
+        )
+        sf.frontmatter.archived_url = None
     validation = validate_source_file(sf, url, str(repo_root))
     for warning in validation.warnings:
         logger.warning("Ingest validation warning for %s: %s", url, warning)
