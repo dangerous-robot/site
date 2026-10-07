@@ -27,6 +27,7 @@ once it is used on the site, under `src/assets/`.
 ## Modes
 
 - `<page-url> [file] [for <post-slug>] [notes]`: add a candidate, or update one if the URL or file hash is already recorded.
+- `<file> own [credit] [licence]`: Brandon's own work, with no page URL. Use `site: own`, an empty `page_url`, and the creator and licence he states (`verified: true`). Give it a short descriptive id.
 - `list`: print a table of every candidate: id, status, site, licence, size, intended post. Read the `*.yml` files; no other steps.
 - `approve <id>` / `reject <id> <reason>` / `used <id> <post-slug>`: set `status` (and `status_note` or `used_by`), then stop.
 
@@ -70,6 +71,8 @@ python3 .claude/skills/image-candidate/inspect_image.py <file>
 This prints the format, width, height, orientation, bytes, sha256 and
 guideline flags (too small, portrait, HEIC, over 5 MB). If the sha256 matches an
 existing record, update that record instead of adding a new one.
+
+For a photo, also check the EXIF for GPS (Pillow: `Image.open(f).getexif().get_ifd(0x8825)`). Flag any location data, so it is stripped before the photo is used on the site.
 
 Then look at the image (Read it) and fill in:
 - `kind`: `art` (drawn, flat or graphic) or `photo`.
