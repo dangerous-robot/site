@@ -1819,7 +1819,7 @@ def entity_enrich(
 @click.option("--approve", is_flag=True, default=False, help="Flip status from draft to published after sidecar write")
 @click.option("--archive", is_flag=True, default=False, help="Flip status from published to archived after sidecar write")
 @click.option(
-    "--correction", "correction", default=None,
+    "--correction", default=None,
     help="One-line public correction, required with --approve when a refresh changed the published verdict.",
 )
 @click.option("--repo-root", default=None, type=click.Path(exists=True))

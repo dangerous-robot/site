@@ -473,11 +473,13 @@ def run_interactive(
         if action == "a":
             correction = None
             # Read from disk, not the item: `o` can change the verdict in an
-            # external editor without updating the queue item.
-            change = refresh_verdict_change(
-                parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0],
-                read_sidecar(claim_path),
-            )
+            # external editor without updating the queue item. A file that no
+            # longer parses skips the prompt; approve_claim reports the error.
+            try:
+                fm_now = parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]
+            except (OSError, ValueError):
+                fm_now = {}
+            change = refresh_verdict_change(fm_now, read_sidecar(claim_path))
             if change is not None:
                 correction = click.prompt(
                     f"Verdict changed from {change[0]} to {change[1]} since publication. "

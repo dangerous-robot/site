@@ -13,6 +13,7 @@ import yaml
 from auditor.compare import needs_review_reasons
 from auditor.models import ComparisonResult
 from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
+from common.sidecar import read_sidecar
 
 if TYPE_CHECKING:
     from analyst.agent import VerdictAssessment
@@ -478,13 +479,7 @@ def _read_published_snapshot(claim_path: Path) -> dict | None:
         return None
     if fm.get("status") != "published":
         return None
-    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
-    sidecar: dict = {}
-    if sidecar_path.exists():
-        try:
-            sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
-        except yaml.YAMLError as exc:
-            logger.warning("Could not parse sidecar %s: %s", sidecar_path, exc)
+    sidecar = read_sidecar(claim_path) or {}
     review = sidecar.get("human_review") or {}
     run = sidecar.get("pipeline_run") or {}
     return {
