@@ -6,6 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-07
 
+- **Review copy names no one.** Sentences about who reviews claims or correction reports say a person reviews, without naming one, so they hold when a second reviewer joins. The handle and profile link stay on each claim's reviewer line. *(Final)*
 - **Reviewer named by handle.** Pages that name the claim reviewer show the reviewer's handle (`brandon-f`), linked to `/people/<handle>`, which carries the full name, bio and reviewed claims. The Values signature keeps the full name. *(Final)*
 - **Indexing after 1.0.0.** Claim, source and entity pages stay noindexed until after 1.0.0; Brandon decides the trigger then. This replaces the 2026-10-06 line that left the trigger to the SITE-J plan. *(Final)*
 - **No ClaimReview markup.** Claim pages stop emitting ClaimReview JSON-LD: Google dropped its fact-check rich results in 2025. Verdicts stay in the claim files, so it can return. *(Final)*

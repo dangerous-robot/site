@@ -69,7 +69,7 @@ Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-lin
 
 ### Stage 5: Reviewer Display
 
-`tsx scripts/check-reviewer-display.ts` -- checks reviewer mentions in `dist/`: the handle and profile link, never the full name. See [`site.md`](site.md#cross-linking).
+`tsx scripts/check-reviewer-display.ts` -- checks reviewed claim pages in `dist/` for the reviewer's handle and profile link, and that each profile lists exactly the reviewed published claims. See [`site.md`](site.md#cross-linking).
 
 ## Citation Integrity
 

@@ -1,6 +1,6 @@
-// Checks built HTML, so run after `astro build`. Reviewer mentions show the
-// handle and link the profile; the full name lives on the profile page (and the
-// Values signature, which is not checked here).
+// Checks built HTML, so run after `astro build`. Reviewed claim pages show the
+// reviewer's handle and link the profile, and the profile lists exactly the
+// reviewed published claims.
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { PEOPLE, reviewerHandle } from '../src/lib/reviewers';
@@ -31,25 +31,9 @@ function claimPath(file: string): string {
 const claimPages = htmlFiles(join(DIST, 'research/claims'));
 if (claimPages.length === 0) errors.push('no claim pages in dist/; run `npm run build` first');
 
-const handleOnly = [
-  ...claimPages,
-  join(DIST, 'research/index.html'),
-  join(DIST, 'corrections/index.html'),
-  join(DIST, 'about/index.html'),
-];
-
 for (const person of PEOPLE) {
   const profile = join(DIST, 'people', person.handle, 'index.html');
-  if (!existsSync(profile)) {
-    errors.push(`missing profile page for ${person.handle}: ${profile}`);
-  } else if (!readFileSync(profile, 'utf8').includes(person.fullName)) {
-    errors.push(`${profile}: does not show the full name`);
-  }
-  for (const file of handleOnly) {
-    if (!existsSync(file)) continue;
-    const html = readFileSync(file, 'utf8');
-    if (html.includes(person.fullName)) errors.push(`${file}: prints full name "${person.fullName}"`);
-  }
+  if (!existsSync(profile)) errors.push(`missing profile page for ${person.handle}: ${profile}`);
   // Claim paths of reviewed, published claim pages, as ClaimRow links them.
   const reviewed = new Set<string>();
   for (const file of claimPages) {

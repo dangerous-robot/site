@@ -1,10 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
-import { operator, profileHref } from '../lib/reviewers';
-
-const op = operator();
-
 const formUrl = 'https://github.com/dangerous-robot/site/issues/new?template=correction.yml';
 ---
 <Base title="Corrections" description="How to report an error on Dangerous Robot, and what happens to a claim when it is corrected." layout="reading">
@@ -28,7 +24,7 @@ const formUrl = 'https://github.com/dangerous-robot/site/issues/new?template=cor
 
     <h2>What happens next</h2>
     <p>
-      <a href={profileHref(op)}>{op.handle}</a> reviews every report. When a claim changes, the claim page shows "Corrected [date]: what changed" and keeps the prior verdict visible. The full history is in the <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">public repository</a>.
+      A person reviews every report. When a claim changes, the claim page shows "Corrected [date]: what changed" and keeps the prior verdict visible. The full history is in the <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">public repository</a>.
     </p>
   </article>
 </Base>
