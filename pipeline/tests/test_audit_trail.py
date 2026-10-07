@@ -247,6 +247,29 @@ class TestWriteAuditSidecar:
         assert data["human_review"]["notes"] is None
         assert data["human_review"]["pr_url"] is None
 
+    def test_audit_block_keeps_evaluator_reasoning_and_flag_reasons(self, tmp_path):
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        comparison = _make_comparison().model_copy(update={
+            "reasoning": "No source gives a share.",
+            "evidence_gaps": ["no inventory", "no third-party audit"],
+            "needs_review": True,
+        })
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=comparison,
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["auditor"],
+        )
+
+        audit = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["audit"]
+        assert audit["auditor_reasoning"] == "No source gives a share."
+        assert audit["evidence_gaps"] == ["no inventory", "no third-party audit"]
+        assert audit["needs_review_reasons"] == ["2+ evidence gaps"]
+
     def test_models_used_defaults_to_single_model(self, tmp_path):
         claim_path = tmp_path / "test-claim.md"
         claim_path.touch()

@@ -1154,3 +1154,17 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
     cleaned, unresolved = clean_citations("Acme says so 【2026/foo】.", sources)
     assert unresolved == []
     assert "*Foo Report*" in cleaned
+
+
+class TestClaimRefreshFlagReason:
+    def test_note_names_the_real_flag_reason(self, monkeypatch, tmp_path) -> None:
+        _write_published_refresh_fixture(tmp_path)
+
+        result = _run_refresh(
+            monkeypatch, tmp_path, success=True,
+            consistency=_comparison(agrees=True, gaps=["no inventory", "no audit"], needs_review=True),
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Note: flagged for human review (2+ evidence gaps)." in result.output
+        assert "verdict disagreement" not in result.output

@@ -1140,7 +1140,10 @@ def claim_refresh(
 
     click.echo(f"Refreshed: {claim_path_written}")
     if vr.consistency and vr.consistency.needs_review:
-        click.echo("Note: auditor flagged this claim for review (verdict disagreement).")
+        from auditor.compare import needs_review_reasons
+
+        reasons = ", ".join(needs_review_reasons(vr.consistency))
+        click.echo(f"Note: flagged for human review ({reasons}).")
 
 
 # --------------------------------------------------------------------------- #

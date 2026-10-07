@@ -54,7 +54,7 @@ from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import host_matches, slug_from_url, slugify
 from auditor.bundle import build_bundle
-from auditor.compare import compare
+from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
 from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent
@@ -486,9 +486,10 @@ async def verify_claim(
             if comparison and comparison.needs_review:
                 accept = await gate.review_disagreement(comparison)
                 if not accept:
-                    result.errors.append("Flagged for human review: analyst/auditor disagree")
+                    reasons = ", ".join(needs_review_reasons(comparison))
+                    result.errors.append(f"Flagged for human review: {reasons}")
                     if cfg.show_progress:
-                        progress("  ! analyst/auditor disagree: flagged for review")
+                        progress("  ! flagged for review: %s", reasons)
 
             if cfg.show_progress:
                 progress("Pipeline complete.")

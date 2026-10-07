@@ -769,3 +769,65 @@ class TestResearchClaimWithResolvedEntity:
         )
 
         assert write_entity_called == [], "_write_entity_file must not be called when entity is pre-resolved"
+
+
+@pytest.mark.asyncio
+async def test_rejected_review_names_the_real_flag_reason(monkeypatch) -> None:
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+    from auditor.models import ComparisonResult
+    from common.models import (
+        Category, Confidence, EntityType, Verdict, VerdictSeverity, VerificationLevel,
+    )
+    from orchestrator.checkpoints import AutoApproveCheckpointHandler
+
+    sf = SourceFile(
+        frontmatter=SourceFrontmatter(
+            url="https://example.com/a", title="Src", publisher="Pub",
+            accessed_date=datetime.date(2026, 1, 1), kind="article", summary="Summary.",
+        ),
+        body="", slug="src", year=2026,
+    )
+
+    async def _fake_research(*args, **kwargs):
+        return _ro(urls=["https://example.com/a"] * 4)
+
+    async def _fake_ingest(*args, **kwargs):
+        return [("https://example.com/a", sf)] * 4, []
+
+    async def _fake_analyse(*args, **kwargs):
+        return AnalystOutput(
+            entity=EntityResolution(entity_name="X", entity_type=EntityType.PRODUCT, entity_description="d"),
+            verdict=VerdictAssessment(
+                title="X claim", verdict=Verdict.TRUE, confidence=Confidence.HIGH,
+                narrative="n", topics=[Category("data-privacy")],
+                verification_level=VerificationLevel.PARTIALLY_VERIFIED, seo_title="X claim",
+            ),
+        ), None
+
+    async def _fake_audit(*args, **kwargs):
+        return ComparisonResult(
+            claim_id="x/claim", claim_file="research/claims/x/claim.md",
+            primary_verdict=Verdict.TRUE, assessed_verdict=Verdict.TRUE,
+            primary_confidence=Confidence.HIGH, assessed_confidence=Confidence.HIGH,
+            reasoning="r", evidence_gaps=["g1", "g2"],
+            verdict_agrees=True, confidence_agrees=True,
+            verdict_severity=VerdictSeverity.MATCH, needs_review=True,
+        )
+
+    class _Reject(AutoApproveCheckpointHandler):
+        async def review_disagreement(self, comparison):
+            return False
+
+    monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+    monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+    monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+    monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+
+    result = await verify_claim(
+        entity_name="X", claim_text="X claim",
+        config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True),
+        checkpoint=_Reject(),
+    )
+
+    assert "Flagged for human review: 2+ evidence gaps" in result.errors
+    assert not any("disagree" in e for e in result.errors)

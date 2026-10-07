@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 import yaml
 
+from auditor.compare import needs_review_reasons
 from auditor.models import ComparisonResult
 from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
 
@@ -568,6 +569,9 @@ def _write_audit_sidecar(
             "verdict_agrees": comparison.verdict_agrees,
             "confidence_agrees": comparison.confidence_agrees,
             "needs_review": comparison.needs_review,
+            "auditor_reasoning": comparison.reasoning,
+            "evidence_gaps": list(comparison.evidence_gaps),
+            "needs_review_reasons": needs_review_reasons(comparison),
         }
     else:
         audit_block = None

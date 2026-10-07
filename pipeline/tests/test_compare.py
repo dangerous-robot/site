@@ -183,3 +183,50 @@ class TestEvidenceGapsTriggerReview:
             "test/no-gaps", "research/claims/test/no-gaps.md",
         )
         assert result.needs_review is False
+
+
+class TestNeedsReviewReasons:
+    def _reasons(self, primary: Verdict, p_conf: Confidence, assessed: Verdict, a_conf: Confidence, gaps: int = 0):
+        from auditor.compare import needs_review_reasons
+
+        result = compare(
+            primary, p_conf,
+            _make_assessment(assessed, a_conf, [f"gap {i}" for i in range(gaps)]),
+            "test/x", "research/claims/test/x.md",
+        )
+        return needs_review_reasons(result)
+
+    def test_major_gap_is_verdict_disagreement(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.MIXED, Confidence.HIGH) == ["verdict disagreement"]
+
+    def test_opposite_gap_is_verdict_disagreement(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.FALSE, Confidence.HIGH) == ["verdict disagreement"]
+
+    def test_adjacent_with_wide_confidence_gap(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.MOSTLY_TRUE, Confidence.LOW) == ["confidence gap"]
+
+    def test_two_evidence_gaps(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.TRUE, Confidence.HIGH, gaps=2) == ["2+ evidence gaps"]
+
+    def test_reasons_combine(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.FALSE, Confidence.LOW, gaps=3) == [
+            "verdict disagreement", "2+ evidence gaps",
+        ]
+
+    def test_no_reasons_when_not_flagged(self) -> None:
+        assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.MOSTLY_TRUE, Confidence.MEDIUM, gaps=1) == []
+
+    def test_reasons_never_drift_from_needs_review(self) -> None:
+        import itertools
+
+        from auditor.compare import needs_review_reasons
+
+        for primary, assessed, p_conf, a_conf, gaps in itertools.product(
+            list(Verdict), list(Verdict), list(Confidence), list(Confidence), (0, 1, 2),
+        ):
+            result = compare(
+                primary, p_conf,
+                _make_assessment(assessed, a_conf, ["g"] * gaps),
+                "test/x", "research/claims/test/x.md",
+            )
+            assert bool(needs_review_reasons(result)) == result.needs_review, (primary, assessed, p_conf, a_conf, gaps)

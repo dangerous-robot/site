@@ -46,6 +46,26 @@ def _confidence_distance(primary: Confidence, assessed: Confidence) -> int:
     return abs(CONFIDENCE_ORDER[primary] - CONFIDENCE_ORDER[assessed])
 
 
+def _review_reasons(severity: VerdictSeverity, conf_dist: int, gap_count: int) -> list[str]:
+    reasons = []
+    if severity in (VerdictSeverity.MAJOR, VerdictSeverity.OPPOSITE):
+        reasons.append("verdict disagreement")
+    if severity == VerdictSeverity.ADJACENT and conf_dist >= 2:
+        reasons.append("confidence gap")
+    if gap_count > 1:
+        reasons.append("2+ evidence gaps")
+    return reasons
+
+
+def needs_review_reasons(result: ComparisonResult) -> list[str]:
+    """Why the evaluator flagged this claim for human review; empty when it did not."""
+    return _review_reasons(
+        result.verdict_severity,
+        _confidence_distance(result.primary_confidence, result.assessed_confidence),
+        len(result.evidence_gaps),
+    )
+
+
 def compare(
     primary_verdict: Verdict,
     primary_confidence: Confidence,
@@ -59,11 +79,7 @@ def compare(
     severity = _verdict_severity(primary_verdict, assessment.verdict)
     conf_dist = _confidence_distance(primary_confidence, assessment.confidence)
 
-    needs_review = (
-        severity in (VerdictSeverity.MAJOR, VerdictSeverity.OPPOSITE)
-        or (severity == VerdictSeverity.ADJACENT and conf_dist >= 2)
-        or len(assessment.evidence_gaps) > 1
-    )
+    needs_review = bool(_review_reasons(severity, conf_dist, len(assessment.evidence_gaps)))
 
     return ComparisonResult(
         claim_id=claim_id,
