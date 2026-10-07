@@ -75,6 +75,8 @@ const isoDate = (d: Date | string | null | undefined): string | null => {
 const audit = claim.data.audit ?? null;
 const ranAt = audit ? isoDate(audit.pipeline_run.ran_at) : null;
 const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
+const flagReasons = audit?.audit?.needs_review_reasons ?? [];
+const verdictOverride = audit?.human_review.verdict_override ?? null;
 
 const sourceMap = new Map(allSources.map(s => [s.id, s]));
 
@@ -227,11 +229,29 @@ const claimReview = {
                     {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
                   </p>
                   {audit.audit.needs_review && (
-                    <p class="audit-muted">Flagged for human review</p>
+                    <p class="audit-muted">
+                      Flagged for human review{flagReasons.length > 0 ? `: ${flagReasons.join(', ')}` : ''}
+                    </p>
                   )}
                 </div>
               )}
             </section>
+
+            {audit.audit?.auditor_reasoning && (
+              <section class="audit-section">
+                <h3>Evaluator reasoning</h3>
+                <p>{audit.audit.auditor_reasoning}</p>
+              </section>
+            )}
+
+            {audit.audit?.evidence_gaps && audit.audit.evidence_gaps.length > 0 && (
+              <section class="audit-section">
+                <h3>Evidence gaps</h3>
+                <ul>
+                  {audit.audit.evidence_gaps.map((gap) => <li>{gap}</li>)}
+                </ul>
+              </section>
+            )}
 
             <section class="audit-section">
               <h3>Human review</h3>
@@ -239,6 +259,11 @@ const claimReview = {
                 <p>Reviewed {reviewedAt}{reviewer ? ` by ${reviewer.name}` : ''}</p>
               ) : (
                 <p class="audit-muted">Pending human review</p>
+              )}
+              {verdictOverride && (
+                <p>
+                  Reviewer changed the verdict from {VERDICT_LABELS[verdictOverride.from]} to {VERDICT_LABELS[verdictOverride.to]}.
+                </p>
               )}
             </section>
           </div>

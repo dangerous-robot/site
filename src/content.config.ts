@@ -65,12 +65,20 @@ const auditSchema = z.object({
     verdict_agrees: z.boolean(),
     confidence_agrees: z.boolean(),
     needs_review: z.boolean(),
+    auditor_reasoning: z.string().optional(),
+    evidence_gaps: z.array(z.string()).optional(),
+    needs_review_reasons: z.array(z.string()).optional(),
   }).nullable(),
   human_review: z.object({
     reviewed_at: z.coerce.date().nullable(),
     reviewer: z.string().nullable(),
     notes: z.string().nullable(),
     pr_url: z.string().url().nullable(),
+    // Set at approval when the reviewer's verdict differs from the analyst's.
+    verdict_override: z.object({
+      from: z.enum(VERDICT_ORDER),
+      to: z.enum(VERDICT_ORDER),
+    }).nullable().optional(),
   }),
 });
 
