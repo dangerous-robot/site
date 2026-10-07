@@ -1,5 +1,6 @@
 ---
 url: https://futureoflife.org/wp-content/uploads/2025/11/FLI-Index-2025-Winter-Anthropic.pdf
+archived_url: https://web.archive.org/web/20251227001850/https://futureoflife.org/wp-content/uploads/2025/11/FLI-Index-2025-Winter-Anthropic.pdf
 title: FLI Index 2025 Winter - Anthropic
 publisher: Future of Life Institute (FLI)
 published_date: '2025-11-01'

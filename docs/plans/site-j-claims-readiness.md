@@ -21,7 +21,7 @@ Not in this plan: the indexing flip (ending the pre-release noindex policy). Bra
 - [x] CR1: arXiv abs/html/pdf URLs are one source
 - [x] CR2: a fetch that redirects to an existing source reuses it
 - [x] CR3: archive lookups run in code, retry HTTP 429 and are recorded
-- [ ] CR4: archive links for the sources the page cites, and the other committed sources without one
+- [ ] CR4: archive links for the sources the page cites, and the other committed sources without one. Committed gaps backfilled 2026-10-07 (5 of 6); `2025/1441254323968196` (a facebook.com video page) has none: TimeGate found no snapshot and Save Page Now answered HTTP 404. The cited-source part waits on the page plan.
 - [x] CR5: remove ClaimReview markup
 - [x] CR6: backlog cleanup (run at promotion, before CR1)
 

@@ -1,5 +1,6 @@
 ---
 url: https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
+archived_url: https://web.archive.org/web/20261003180358/https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
 title: Clean Energy Resources to Meet Data Center Electricity Demand
 publisher: U.S. Department of Energy
 accessed_date: '2026-05-14'

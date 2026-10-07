@@ -1,5 +1,6 @@
 ---
 url: https://sustainability.google/stories/announcement-100
+archived_url: https://web.archive.org/web/20261005092545/https://sustainability.google/stories/announcement-100/
 title: 100% Renewable Is Just the Beginning
 publisher: Google Sustainability
 published_date: '2016-12-01'

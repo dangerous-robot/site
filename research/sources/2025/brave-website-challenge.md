@@ -1,5 +1,6 @@
 ---
 url: https://www.brave.com/blog/brave-website-challenge/
+archived_url: https://web.archive.org/web/20260419022020/https://brave.com/blog/brave-website-challenge/
 title: The .brave Website-Building Challenge
 publisher: Brave
 published_date: '2025-12-03'

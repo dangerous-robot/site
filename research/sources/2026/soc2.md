@@ -1,5 +1,6 @@
 ---
 url: https://brave.com/blog/soc2
+archived_url: https://web.archive.org/web/20260903072627/https://brave.com/blog/soc2/
 title: Brave Earns SOC 2 Type II Attestation for Brave Search API
 publisher: Brave Software
 accessed_date: '2026-10-04'
