@@ -2,7 +2,7 @@
 
 **Status**: Stub (design spec settled; implementation steps and the format choice still open)
 **Last updated**: 2026-10-06
-**Roadmap**: `docs/v1.0.0-roadmap.md` §7
+**Roadmap**: `docs/v1.0.0-roadmap.md` RE-G (Pipeline diagram)
 
 A static diagram of the research pipeline for the methodology answer on `/research`. It gives a first-time reader a picture of how a claim gets from a question to a published verdict, and makes the human step visible. The prose steps already describe the pipeline; the diagram is a reader aid, not a blocker.
 
@@ -71,7 +71,7 @@ Facts behind each node, checked 2026-10-06:
 ## Open before this is implementation-ready
 
 - SVG by hand, or Mermaid rendered to SVG at build time.
-- Whether the diagram is worth the space while Research is out of the primary nav (decisions 2026-10-05). It could wait for the Responsible AI chatbots effort (roadmap §10), if that page links to the methodology answer.
+- Whether the diagram is worth the space while Research is out of the primary nav (decisions 2026-10-05). It could wait for the Responsible AI chatbots effort (roadmap item SITE-J), if that page links to the methodology answer.
 - Test plan: rendered-page check in light, dark and high-contrast modes at phone width; `inv check` passes.
 
 ---

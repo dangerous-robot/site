@@ -290,7 +290,7 @@ Three mutually exclusive work states:
 
 **Only Scheduled work may be coded.** Unscheduled and Plan-only items can be planned freely (docs are never gated), but before any code edit the item must be in a release roadmap and registered as the active work item (the `release-triage` skill does both; see [Agent workflow tooling](#agent-workflow-tooling)). The one exception is a hotfix: an urgent `patch` registered without triage, which expires after 4 hours and must be added to the active roadmap or `UNSCHEDULED.md` before it is finished.
 
-A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its number and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
+A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` is the record. A release roadmap section whose plan is deferred keeps its letter and takes the status `deferred` with a one-line pointer, so section references in other docs stay valid.
 
 **Release roadmaps live at the top level of `docs/`**, not under `docs/plans/`. Sub-plans (one per discrete work item or feature) live under `docs/plans/`. The first public release will be `v1.0.0`, tracked in `docs/v1.0.0-roadmap.md`. Future release roadmaps follow the same pattern: `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md` if the simpler name is preferred for that release).
 
@@ -317,6 +317,12 @@ A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferr
 No suffix = plan is complete and reviewable. Keep the set small.
 
 **Release roadmap naming:** `docs/v{semver}-roadmap.md` (or `docs/v{semver}.md`). `VERSION.md` declares the current working version and the active release roadmap path.
+
+**Release roadmap layout:** a header, then `## Releases` (one row per beta or release: shipped, tagged, or in progress on `main`), `## Plan` (remaining items by target release), and the work items grouped under `## Shipped`, `## Scheduled` and `## Deferred`. An item moves between groups as its status changes.
+
+**Work item IDs:** each release roadmap (major or minor) gives its work items IDs of the form `PREFIX-LETTER`, as in `SITE-J`. The prefix hints at the topic: `SITE` (reader-facing pages and content), `RE` (research archive and pipeline), `SEC` (security), `OPS` (repo, agent and deploy tooling); add a new prefix only when none fits. Letters run A, B, C … Z, then AA, AB … across the whole roadmap, so the letter alone is unique; a new item takes the next unused letter. IDs are never changed or reused, even if the topic shifts. Always cite an item with its name, as in "SITE-J (Responsible AI chatbots)", never a bare ID.
+
+**Roadmaps and plans state the current truth:** status, what shipped (commit refs, tag dates), and what is left. Rewrite a stale fact in place; do not narrate how an item got there ("carried over from", "since then", "this replaces"). Git history and `docs/plans/completed/` hold that.
 
 ## Agent workflow tooling
 

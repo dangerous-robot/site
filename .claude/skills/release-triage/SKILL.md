@@ -34,19 +34,19 @@ Use the version semantics in `VERSION.md`, quoted here as of 2026-10-06 (re-read
 
 Pre-1.0 rule: while the working version is `1.0.0-beta.N`, VERSION.md says content, features and schema may still change within the beta line, and each deploy bumps N. So before 1.0.0, a `major` classification is a signal to **ask**, not an automatic bump to a new line; after 1.0.0 it always targets the next major roadmap.
 
-Also classify **size**: `small` (fits in the current beta or patch without a plan file; one roadmap table row is enough) versus `planned` (needs a sub-plan under `docs/plans/`). Anything touching more than a handful of files, or any new feature, is `planned`.
+Also classify **size**: `small` (fits in the current beta or patch without a plan file; a roadmap work item or a checklist line is enough) versus `planned` (needs a sub-plan under `docs/plans/`). Anything touching more than a handful of files, or any new feature, is `planned`.
 
 ## Step 3: Decide the release
 
 Decision rules, in order:
 
-1. **patch** → the active release line (the roadmap named in `VERSION.md` "Active release:"). Add a row or a line to the relevant section. Small patches go straight to registration.
+1. **patch** → the active release line (the roadmap named in `VERSION.md` "Active release:"). Add it as a new work item (next unused letter, topic prefix) under `## Scheduled`, or as a checklist line in an existing item it belongs to. Small patches go straight to registration.
 2. **minor, and the active line is a pre-1.0 beta** → ask one question: "Ride the current beta line (next beta.N) or hold for after 1.0.0?" Default recommendation: ride the beta line if it serves the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`); otherwise hold.
 3. **minor, post-1.0, and the active line is a patch release** → the next minor roadmap. If `docs/v{next-minor}-roadmap.md` does not exist, create it from the template below.
 4. **major, post-1.0** → the next major roadmap, never the in-flight line. Create `docs/v{next-major}-roadmap.md` if absent. Say explicitly that it is parked there so it does not conflict with the in-flight release.
 5. **Does not serve the current focus** (check `docs/mission-and-voice.md` and `docs/decisions.md`) → Unscheduled. Add it to `docs/UNSCHEDULED.md` with a one-line `Target: vX.Y.Z` note and **do not register a work item**. Planning (brainstorming, a draft plan) is still allowed because `docs/` is not gated; code is not.
 
-When creating a new roadmap file, follow AGENTS.md naming (`docs/v{semver}-roadmap.md`) and this minimal header; do not pre-fill sections you have not decided:
+When creating a new roadmap file, follow AGENTS.md naming (`docs/v{semver}-roadmap.md`) and AGENTS.md roadmap layout (IDs like `SITE-J`: topic prefix plus the next unused letter; cite as "SITE-J (name)"). Use this minimal skeleton; do not pre-fill items you have not decided:
 
 ```markdown
 # v{semver} Roadmap
@@ -57,13 +57,21 @@ When creating a new roadmap file, follow AGENTS.md naming (`docs/v{semver}-roadm
 
 Status key: `done` | `in progress` | `ready` | `plan needed` | `decision needed` | `deferred`
 
+## Releases
+
 | Release | Contents | State |
 |---|---|---|
-| `{semver}` | §1 | Not started |
+| `{semver}` | {PREFIX}-A ({short name}) | Not started |
+
+## Plan
+
+- **{semver}:** {PREFIX}-A ({short name})
 
 ---
 
-## 1. {Title}
+## Scheduled
+
+### {PREFIX}-A. {Title}
 
 **Status**: `plan needed`
 
@@ -76,7 +84,7 @@ Do **not** change `VERSION.md` "Active release:" when creating a future roadmap.
 
 Write a three-to-five line proposal and ask for a yes/no:
 
-> **Triage:** "{title}" is a **{kind}** ({one-line reason, citing the VERSION.md rule}). The in-flight line is `{active release}` at `{working version}`. I propose scheduling it in **`{target roadmap}`** as §{n} {or: as a row in §{n}} so it {does not widen the beta | does not conflict with the in-flight minor | lands with the patch}. Plan: {small: none needed | planned: draft at docs/plans/drafts/{name}.md via brainstorming → writing-plans}. OK?
+> **Triage:** "{title}" is a **{kind}** ({one-line reason, citing the VERSION.md rule}). The in-flight line is `{active release}` at `{working version}`. I propose scheduling it in **`{target roadmap}`** as {ID} ({name}) {or: as a line in {ID} ({name})} so it {does not widen the beta | does not conflict with the in-flight minor | lands with the patch}. Plan: {small: none needed | planned: draft at docs/plans/drafts/{name}.md via brainstorming → writing-plans}. OK?
 
 If the user already stated the target release in their request, skip the question and state the decision instead.
 
@@ -92,7 +100,7 @@ In this order, so the gate never passes work the docs do not show:
 # planned work
 python3 scripts/release-gate/work_item.py start --title "{title}" --kind {kind} --release v{semver} --plan docs/plans/drafts/{name}.md
 # small work listed directly in the roadmap
-python3 scripts/release-gate/work_item.py start --title "{title}" --kind {kind} --release v{semver} --section "§{n}"
+python3 scripts/release-gate/work_item.py start --title "{title}" --kind {kind} --release v{semver} --section "{ID} ({name})"
 ```
 
 `start` refuses when the roadmap file or plan file does not exist. That is the point: fix the docs, not the command.

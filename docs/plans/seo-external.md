@@ -8,7 +8,7 @@
 | Link building and citation outreach | `[ ] ongoing — start at launch` |
 | Monitoring and maintenance | `[ ] ongoing — start after indexing` |
 
-**Indexing gate (2026-10-06):** claim, source and entity pages stay `noindex` until the flip decided in the plan for roadmap §10 (Responsible AI chatbots, backed by claims; the earlier first-guide trigger was set aside 2026-10-06) (`src/lib/seo.ts`). Milestones below that need claim pages in Google's index wait for that flip. Since the refocus, the first reader is a concerned person at a decision point, not a fact-checking audience (`docs/mission-and-voice.md`); the Fact Check program and journalist outreach are lower priority than getting the Responsible AI chatbots page and its claims found.
+**Indexing gate (2026-10-06):** claim, source and entity pages stay `noindex` until the flip decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims; the earlier first-guide trigger was set aside 2026-10-06) (`src/lib/seo.ts`). Milestones below that need claim pages in Google's index wait for that flip. Since the refocus, the first reader is a concerned person at a decision point, not a fact-checking audience (`docs/mission-and-voice.md`); the Fact Check program and journalist outreach are lower priority than getting the Responsible AI chatbots page and its claims found.
 
 ---
 

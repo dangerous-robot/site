@@ -3,7 +3,7 @@
 **Status**: `ready` (not started)
 **Last updated**: 2026-10-06
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
-**Serves**: Responsible AI chatbots, backed by claims (roadmap §10). This must ship before that page's claims are published and then refreshed.
+**Serves**: Responsible AI chatbots, backed by claims (roadmap item SITE-J). This must ship before that page's claims are published and then refreshed.
 **Findings**: RF8 and RF9 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
 **Split from**: [`deferred/audit-trail-extensions.md`](deferred/audit-trail-extensions.md) (this plan takes its reader-facing slice: saving the evaluator's reasoning and gaps, and the verdict/sidecar check)
 

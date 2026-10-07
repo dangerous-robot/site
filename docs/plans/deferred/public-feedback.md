@@ -1,6 +1,6 @@
 # Public Feedback System
 
-**Deferred**: 2026-10-06, a pre-refocus feedback queue (admin CLI, GitHub issue promotion); roadmap §4's mailto path to `contact@dangerousrobot.org` covers readers without GitHub. Revisit if that inbox outgrows email.
+**Deferred**: 2026-10-06, a pre-refocus feedback queue (admin CLI, GitHub issue promotion); the mailto path in roadmap RE-D (Research contribution paths) to `contact@dangerousrobot.org` covers readers without GitHub. Revisit if that inbox outgrows email.
 
 **Shipped by other plans** (this plan's own deliverables, `/feedback`, the admin CLI, CODEOWNERS, SECURITY.md, CODE_OF_CONDUCT.md and the PR template, were not built): the stack it chose, a Cloudflare Worker plus D1 at `api.dangerousrobot.org` with Resend email, in `workers/api/` for petitions (`46d4ef9`); blank issues off with a correction issue form (`5ca59c7`); a privacy page (`98d6c3d`).
 
