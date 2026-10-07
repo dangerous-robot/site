@@ -140,7 +140,7 @@ The `audit` object has the shape:
 | `human_review.pr_url` | URL or null | PR where the review happened |
 | `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.analyst_verdict`; written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the analyst's only when this matches |
 
-`dr claim-refresh` on a published claim also writes a top-level `refresh` block, which the site does not read. It is present only while the refresh awaits re-approval; approval (or `dr publish` when the verdict is unchanged) removes it. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
+`dr claim-refresh` on a published claim also writes a top-level `refresh` block, which the site does not read. It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr publish` skips the claim while it is present. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
 
 | Field | Type | Notes |
 |-------|------|-------|

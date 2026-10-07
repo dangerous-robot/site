@@ -76,7 +76,7 @@ A refresh rewrites the claim as a draft and resets its sign-off. The pipeline ke
 
 1. Run `uv run dr claim-refresh <entity>/<claim-slug>`.
 2. Run `uv run dr review-queue`. A refreshed claim shows "Was published: {verdict} (reviewed {date})".
-3. If the verdict changed, the header says so, and pressing `a` asks for a correction: write one line for readers saying what changed and why. It becomes a dated entry under the verdict, with the previous verdict shown. Outside the queue, use `uv run dr review --claim <entity>/<claim-slug> --approve --correction "..."`. `dr publish` skips a changed-verdict refresh for this reason.
+3. If the verdict changed, the header says so, and pressing `a` asks for a correction: write one line for readers saying what changed and why. It becomes a dated entry under the verdict, with the previous verdict shown. Outside the queue, use `uv run dr review --claim <entity>/<claim-slug> --approve --correction "..."`. `dr publish` skips every refreshed claim, because it records no reviewer; approve each one with `dr review --approve` (adding `--correction` when the verdict changed).
 4. Commit the claim, its sidecar and any new sources only after approval. Until then `dr lint` warns `refresh-pending-review`. A refresh that ends `blocked` cannot be approved, and a committed blocked claim still shows at its URL with a placeholder verdict: re-run the refresh, or restore the claim and sidecar with `git restore` instead of committing them.
 
 If you change the verdict with `e` before approving, approval records the change as `human_review.verdict_override`. A published verdict that matches neither the pipeline's nor a recorded override fails lint (`verdict-sidecar-mismatch`).

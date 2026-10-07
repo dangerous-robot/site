@@ -2054,7 +2054,9 @@ def publish(
     Each matched draft has its sidecar updated with reviewed_at=<today>,
     reviewer=null, notes="[auto-publish] <suffix>", and pr_url=null, then
     its `status:` flipped from draft to published. Claims with status
-    published, archived, or blocked are skipped with a warning.
+    published, archived, or blocked are skipped with a warning. Drafts whose
+    sidecar has a `refresh` block (a refreshed, previously published claim)
+    are skipped too, and the run exits 1: they need `dr review --approve`.
 
     Reversibility: a later `dr review --claim <slug> --reviewer alice` (no
     `--approve`) writes the reviewer in and flips the badge to "Reviewed".
@@ -2123,7 +2125,7 @@ def publish(
     skipped_blocked: list[tuple[Path, str]] = []  # (path, blocked_reason)
     skipped_missing_sidecar: list[Path] = []
     skipped_missing_criterion: list[Path] = []
-    skipped_verdict_changed: list[tuple[Path, str, str]] = []  # (path, previous, current)
+    skipped_refresh: list[tuple[Path, tuple[str, str] | None]] = []  # (path, verdict change)
     classify_errors: list[tuple[Path, str]] = []
 
     for claim_path in candidate_paths:
@@ -2163,11 +2165,12 @@ def publish(
             skipped_missing_criterion.append(claim_path)
             continue
 
-        # A changed published verdict needs a person-written correction,
-        # which only `dr review --approve --correction` collects.
-        change = refresh_verdict_change(fm, read_sidecar(claim_path))
-        if change is not None:
-            skipped_verdict_changed.append((claim_path, *change))
+        # A refresh of a published claim goes back through `dr review --approve`:
+        # this command records no reviewer, which would erase the prior sign-off,
+        # and a changed verdict needs a person-written correction.
+        sidecar_data = read_sidecar(claim_path) or {}
+        if isinstance(sidecar_data.get("refresh"), dict):
+            skipped_refresh.append((claim_path, refresh_verdict_change(fm, sidecar_data)))
             continue
 
         to_publish.append((claim_path, current_status))
@@ -2204,15 +2207,21 @@ def publish(
         click.echo(f"Skipped (no criteria_slug): {len(skipped_missing_criterion)}")
         for path in skipped_missing_criterion:
             click.echo(f"  ! missing criteria_slug: {_rel(path)}", err=True)
-    if skipped_verdict_changed:
-        click.echo(f"Skipped (verdict changed since publication): {len(skipped_verdict_changed)}")
-        for path, previous, current in skipped_verdict_changed:
+    if skipped_refresh:
+        click.echo(f"Skipped (refresh awaiting re-approval): {len(skipped_refresh)}")
+        for path, change in skipped_refresh:
             slug = path.relative_to(claims_dir).with_suffix("").as_posix()
-            click.echo(
-                f"  ! verdict {previous} -> {current}: run "
-                f"`dr review --approve --correction TEXT --claim {slug}`",
-                err=True,
-            )
+            if change is not None:
+                click.echo(
+                    f"  ! verdict {change[0]} -> {change[1]}: run "
+                    f"`dr review --approve --correction TEXT --claim {slug}`",
+                    err=True,
+                )
+            else:
+                click.echo(
+                    f"  ! refreshed, verdict unchanged: run `dr review --approve --claim {slug}`",
+                    err=True,
+                )
     if classify_errors:
         click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
         for path, msg in classify_errors:
@@ -2224,10 +2233,10 @@ def publish(
 
     if not to_publish:
         click.echo("Nothing to publish.")
-        # Per-claim errors during classification (e.g. unparseable frontmatter)
-        # and missing-criterion skips both count as failures: criterion is a
-        # hard publish requirement, so a partial-completion run should signal.
-        sys.exit(1 if (classify_errors or skipped_missing_criterion) else 0)
+        # Per-claim errors during classification (e.g. unparseable frontmatter),
+        # missing-criterion skips and refresh skips all count as failures: the
+        # operator asked to publish a claim we would not, so the run should signal.
+        sys.exit(1 if (classify_errors or skipped_missing_criterion or skipped_refresh) else 0)
 
     # Confirmation prompt unless --yes.
     if not yes:
@@ -2238,11 +2247,13 @@ def publish(
 
     today_iso = datetime.date.today().isoformat()
     published_count = 0
-    # Missing-criterion skips count as errors: the operator asked us to publish,
-    # we couldn't, that's a partial-completion signal that should fail loud.
-    publish_errors: list[tuple[Path, str]] = list(classify_errors) + [
-        (p, "missing criteria_slug") for p in skipped_missing_criterion
-    ]
+    # Missing-criterion and refresh skips count as errors: the operator asked us
+    # to publish, we couldn't, that's a partial-completion signal that should fail loud.
+    publish_errors: list[tuple[Path, str]] = (
+        list(classify_errors)
+        + [(p, "missing criteria_slug") for p in skipped_missing_criterion]
+        + [(p, "refresh awaiting re-approval") for p, _ in skipped_refresh]
+    )
 
     for claim_path, current_status in to_publish:
         sidecar_path = sidecar_path_for(claim_path)
@@ -2252,9 +2263,6 @@ def publish(
             sidecar_data["human_review"]["reviewer"] = None
             sidecar_data["human_review"]["notes"] = note_text
             sidecar_data["human_review"]["pr_url"] = None
-            # Classification only lets through refreshes whose verdict did not
-            # change, so publishing closes the refresh with no correction.
-            sidecar_data.pop("refresh", None)
             sidecar_path.write_text(
                 yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
                 encoding="utf-8",

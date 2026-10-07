@@ -228,7 +228,7 @@ Notes:
 
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 - A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in.
-- `dr claim-refresh` on a published claim saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page; `dr publish` skips such claims. Steps: `docs/runbook.md` § Refreshing a published claim.
+- `dr claim-refresh` on a published claim saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 

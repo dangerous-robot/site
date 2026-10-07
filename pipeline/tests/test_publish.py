@@ -551,33 +551,50 @@ def _setup_refreshed(tmp_path: Path, slug: str, *, verdict: str, previous_verdic
 
 
 class TestPublishRefreshedClaims:
-    def test_changed_verdict_skipped_unchanged_published(self, tmp_path):
+    """Every refresh awaiting re-approval is skipped: `dr publish` records no reviewer."""
+
+    def test_refreshed_claims_skipped_and_run_fails(self, tmp_path):
         changed, changed_sidecar = _setup_refreshed(
             tmp_path, "changed", verdict="unverified", previous_verdict="false",
         )
         same, same_sidecar = _setup_refreshed(
             tmp_path, "same", verdict="false", previous_verdict="false",
         )
-        changed_sidecar_before = changed_sidecar.read_bytes()
+        plain, _ = _setup_claim(tmp_path, slug="plain")
+        changed_before = changed_sidecar.read_bytes()
+        same_before = same_sidecar.read_bytes()
 
         result = CliRunner().invoke(main, [
             "publish", "--all", "--yes", "--repo-root", str(tmp_path),
         ])
 
-        assert result.exit_code == 0, result.output
+        assert result.exit_code == 1, result.output
         assert "status: draft" in changed.read_text(encoding="utf-8")
-        assert changed_sidecar.read_bytes() == changed_sidecar_before
-        assert "dr review --approve" in result.output
-        assert "--correction" in result.output
-        assert "status: published" in same.read_text(encoding="utf-8")
-        assert "refresh" not in yaml.safe_load(same_sidecar.read_text(encoding="utf-8"))
+        assert "status: draft" in same.read_text(encoding="utf-8")
+        assert changed_sidecar.read_bytes() == changed_before
+        assert same_sidecar.read_bytes() == same_before
+        assert "status: published" in plain.read_text(encoding="utf-8")
+        assert "dr review --approve --correction TEXT --claim test-entity/changed" in result.output
+        assert "dr review --approve --claim test-entity/same" in result.output
 
-    def test_dry_run_lists_changed_verdict_skip(self, tmp_path):
+    def test_only_refreshed_claims_exits_nonzero(self, tmp_path):
+        same, _ = _setup_refreshed(tmp_path, "same", verdict="false", previous_verdict="false")
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--yes", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 1, result.output
+        assert "Nothing to publish." in result.output
+        assert "status: draft" in same.read_text(encoding="utf-8")
+
+    def test_dry_run_lists_refresh_skips(self, tmp_path):
         _setup_refreshed(tmp_path, "changed", verdict="unverified", previous_verdict="false")
+        _setup_refreshed(tmp_path, "same", verdict="false", previous_verdict="false")
 
         result = CliRunner().invoke(main, [
             "publish", "--all", "--dry-run", "--repo-root", str(tmp_path),
         ])
 
         assert result.exit_code == 0, result.output
-        assert "Skipped (verdict changed since publication): 1" in result.output
+        assert "Skipped (refresh awaiting re-approval): 2" in result.output
