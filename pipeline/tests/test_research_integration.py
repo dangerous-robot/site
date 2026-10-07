@@ -64,21 +64,18 @@ def _analyst_model() -> TestModel:
     )
 
 
-def _auditor_model() -> TestModel:
+def _auditor_model(evidence_gaps: list[str] | None = None) -> TestModel:
     return TestModel(
         custom_output_args={
             "verdict": "mixed",
             "confidence": "medium",
             "reasoning": "Independent assessment agrees.",
-            "evidence_gaps": [],
+            "evidence_gaps": evidence_gaps or [],
         },
     )
 
 
-@pytest.mark.asyncio
-async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
-    """research_claim with TestModel writes source, entity, and claim files."""
-
+async def _run_research_claim(tmp_path, monkeypatch, *, auditor_model=None, checkpoint=None):
     from researcher.decomposed import ResearchOutput
 
     sub_questions = [
@@ -118,7 +115,7 @@ async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
     with (
         ingestor_agent.override(model=_ingestor_model()),
         analyst_agent.override(model=_analyst_model()),
-        auditor_agent.override(model=_auditor_model()),
+        auditor_agent.override(model=auditor_model or _auditor_model()),
         patch.object(
             Agent, "override", side_effect=lambda **kw: _noop(**kw)
         ),
@@ -129,7 +126,32 @@ async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
             skip_wayback=True,
             repo_root=str(tmp_path),
         )
-        result = await research_claim("TestCorp uses renewable energy", config)
+        return await research_claim("TestCorp uses renewable energy", config, checkpoint)
+
+
+@pytest.mark.asyncio
+async def test_research_claim_names_the_real_flag_reason(tmp_path, monkeypatch):
+    """A flag raised by evidence gaps alone is not reported as a disagreement."""
+    from orchestrator.checkpoints import AutoApproveCheckpointHandler
+
+    class _Reject(AutoApproveCheckpointHandler):
+        async def review_disagreement(self, comparison):
+            return False
+
+    result = await _run_research_claim(
+        tmp_path, monkeypatch,
+        auditor_model=_auditor_model(["no audited figures", "no third-party check"]),
+        checkpoint=_Reject(),
+    )
+
+    assert "Flagged for human review: 2+ evidence gaps" in result.errors
+    assert not any("disagree" in e for e in result.errors)
+
+
+@pytest.mark.asyncio
+async def test_research_claim_writes_artifacts(tmp_path, monkeypatch):
+    """research_claim with TestModel writes source, entity, and claim files."""
+    result = await _run_research_claim(tmp_path, monkeypatch)
 
     # -- No fatal errors --
     assert not result.errors, f"Unexpected errors: {result.errors}"

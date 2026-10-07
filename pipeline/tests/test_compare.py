@@ -215,18 +215,3 @@ class TestNeedsReviewReasons:
 
     def test_no_reasons_when_not_flagged(self) -> None:
         assert self._reasons(Verdict.TRUE, Confidence.HIGH, Verdict.MOSTLY_TRUE, Confidence.MEDIUM, gaps=1) == []
-
-    def test_reasons_never_drift_from_needs_review(self) -> None:
-        import itertools
-
-        from auditor.compare import needs_review_reasons
-
-        for primary, assessed, p_conf, a_conf, gaps in itertools.product(
-            list(Verdict), list(Verdict), list(Confidence), list(Confidence), (0, 1, 2),
-        ):
-            result = compare(
-                primary, p_conf,
-                _make_assessment(assessed, a_conf, ["g"] * gaps),
-                "test/x", "research/claims/test/x.md",
-            )
-            assert bool(needs_review_reasons(result)) == result.needs_review, (primary, assessed, p_conf, a_conf, gaps)

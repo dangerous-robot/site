@@ -1337,7 +1337,8 @@ async def research_claim(
             if comparison and comparison.needs_review:
                 accept = await gate.review_disagreement(comparison)
                 if not accept:
-                    result.errors.append("Flagged for human review: analyst/auditor disagree")
+                    reasons = ", ".join(needs_review_reasons(comparison))
+                    result.errors.append(f"Flagged for human review: {reasons}")
 
     return result
 
