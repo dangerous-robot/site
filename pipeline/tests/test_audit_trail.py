@@ -572,6 +572,20 @@ class TestRefreshSnapshot:
         assert data["refresh"]["previous"] == first["refresh"]["previous"]
         assert data["refresh"]["refreshed_at"] == first["refresh"]["refreshed_at"]
 
+    def test_pending_block_wins_over_a_new_snapshot(self, tmp_path):
+        # An interrupted refresh leaves the claim published but the sidecar
+        # reset, so a new snapshot would carry no reviewer.
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+        first = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
+
+        data = self._write(
+            claim_path,
+            previous_publication={**_SNAPSHOT, "reviewer": None, "reviewed_at": None},
+        )
+
+        assert data["refresh"]["previous"] == first["refresh"]["previous"]
+
     def test_no_refresh_key_without_snapshot_or_pending_block(self, tmp_path):
         claim_path = tmp_path / "claim.md"
         claim_path.touch()

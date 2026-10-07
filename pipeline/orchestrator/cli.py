@@ -838,6 +838,7 @@ def claim_refresh(
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.persistence import (
         _build_sources_consulted,
+        _claim_path_for,
         _write_audit_sidecar,
         _read_published_snapshot,
         _write_claim_file,
@@ -935,8 +936,12 @@ def claim_refresh(
     # directory path relative to claims_dir if frontmatter entity is absent.
     write_entity_ref = entity_ref or str(claim_path.parent.relative_to(claims_dir))
 
-    # Mirror onboard's write pattern (four branches).
+    # Mirror onboard's write pattern (four branches), except that each branch
+    # writes the sidecar before the claim. The sidecar carries the published
+    # snapshot; if the claim write then fails, the claim is still published and
+    # a rerun carries the pending snapshot forward (see _refresh_block).
     source_ids = vr.persist_sources(root)
+    target_path = _claim_path_for(write_entity_ref, entity_name, claim_slug_for_write, root)
 
     # Branch A: threshold-blocked.
     if vr.blocked_reason is not None:
@@ -950,6 +955,25 @@ def claim_refresh(
             f"Re-run once more usable sources are available, or archive this claim.\n"
         )
         blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
+        agents_run = ["researcher", "ingestor"]
+        _write_audit_sidecar(
+            claim_path=target_path,
+            comparison=None,
+            model=model,
+            ran_at=ran_at,
+            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
+            agents_run=agents_run,
+            models_used={a: cfg.model_for(a) for a in agents_run},
+            research_trace=vr.research_trace,
+            sub_questions_block=_build_sub_questions_block(
+                vr.sub_questions,
+                vr.sub_question_coverage,
+                vr.queries_by_sub_question,
+            ),
+            reset_review=True,
+            previous_publication=previous_publication,
+            current_source_ids=source_ids,
+        )
         blocked_path = _write_claim_file(
             title=blocked_title,
             entity_name=entity_name,
@@ -966,25 +990,6 @@ def claim_refresh(
             blocked_reason=vr.blocked_reason,
             criteria_slug=criteria_slug,
         )
-        agents_run = ["researcher", "ingestor"]
-        _write_audit_sidecar(
-            claim_path=blocked_path,
-            comparison=None,
-            model=model,
-            ran_at=ran_at,
-            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
-            agents_run=agents_run,
-            models_used={a: cfg.model_for(a) for a in agents_run},
-            research_trace=vr.research_trace,
-            sub_questions_block=_build_sub_questions_block(
-                vr.sub_questions,
-                vr.sub_question_coverage,
-                vr.queries_by_sub_question,
-            ),
-            reset_review=True,
-            previous_publication=previous_publication,
-            current_source_ids=source_ids,
-        )
         click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
         return
 
@@ -1000,25 +1005,9 @@ def claim_refresh(
             f"Re-run the pipeline to attempt again, or archive this claim if it consistently fails.\n"
         )
         blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
-        blocked_path = _write_claim_file(
-            title=blocked_title,
-            entity_name=entity_name,
-            entity_ref=write_entity_ref,
-            topics=inherited_topics,
-            verdict=Verdict.UNVERIFIED,
-            confidence=Confidence.LOW,
-            narrative=blocked_body,
-            claim_slug=claim_slug_for_write,
-            source_ids=source_ids,
-            repo_root=root,
-            force=True,
-            status=ClaimStatus.BLOCKED,
-            blocked_reason=BlockedReason.ANALYST_ERROR,
-            criteria_slug=criteria_slug,
-        )
         agents_run = ["researcher", "ingestor", "analyst"]
         _write_audit_sidecar(
-            claim_path=blocked_path,
+            claim_path=target_path,
             comparison=None,
             model=model,
             ran_at=ran_at,
@@ -1034,6 +1023,22 @@ def claim_refresh(
             reset_review=True,
             previous_publication=previous_publication,
             current_source_ids=source_ids,
+        )
+        blocked_path = _write_claim_file(
+            title=blocked_title,
+            entity_name=entity_name,
+            entity_ref=write_entity_ref,
+            topics=inherited_topics,
+            verdict=Verdict.UNVERIFIED,
+            confidence=Confidence.LOW,
+            narrative=blocked_body,
+            claim_slug=claim_slug_for_write,
+            source_ids=source_ids,
+            repo_root=root,
+            force=True,
+            status=ClaimStatus.BLOCKED,
+            blocked_reason=BlockedReason.ANALYST_ERROR,
+            criteria_slug=criteria_slug,
         )
         click.echo(f"Blocked (analyst_error): {blocked_path}")
         return
@@ -1054,25 +1059,9 @@ def claim_refresh(
         blocked_body, echo_label = blocked_title_message(
             template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
         )
-        blocked_path = _write_claim_file(
-            title=render_blocked_title(template, entity_name),
-            entity_name=entity_name,
-            entity_ref=write_entity_ref,
-            topics=inherited_topics,
-            verdict=Verdict.UNVERIFIED,
-            confidence=Confidence.LOW,
-            narrative=blocked_body,
-            claim_slug=claim_slug_for_write,
-            source_ids=source_ids,
-            repo_root=root,
-            force=True,
-            status=ClaimStatus.BLOCKED,
-            blocked_reason=BlockedReason.ANALYST_ERROR,
-            criteria_slug=criteria_slug,
-        )
         agents_run = ["researcher", "ingestor", "analyst"]
         _write_audit_sidecar(
-            claim_path=blocked_path,
+            claim_path=target_path,
             comparison=None,
             model=model,
             ran_at=ran_at,
@@ -1089,6 +1078,22 @@ def claim_refresh(
             previous_publication=previous_publication,
             current_source_ids=source_ids,
         )
+        blocked_path = _write_claim_file(
+            title=render_blocked_title(template, entity_name),
+            entity_name=entity_name,
+            entity_ref=write_entity_ref,
+            topics=inherited_topics,
+            verdict=Verdict.UNVERIFIED,
+            confidence=Confidence.LOW,
+            narrative=blocked_body,
+            claim_slug=claim_slug_for_write,
+            source_ids=source_ids,
+            repo_root=root,
+            force=True,
+            status=ClaimStatus.BLOCKED,
+            blocked_reason=BlockedReason.ANALYST_ERROR,
+            criteria_slug=criteria_slug,
+        )
         click.echo(f"Blocked ({echo_label}): {blocked_path}")
         return
 
@@ -1099,6 +1104,25 @@ def claim_refresh(
         logger.warning("Template %s has invalid topic; falling back to analyst topics: %s", criteria_slug, exc)
         inherited_topics = list(ao.verdict.topics)
 
+    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
+    _write_audit_sidecar(
+        claim_path=target_path,
+        comparison=vr.consistency,
+        model=model,
+        ran_at=ran_at,
+        sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
+        agents_run=agents_run,
+        models_used={a: cfg.model_for(a) for a in agents_run},
+        research_trace=vr.research_trace,
+        sub_questions_block=_build_sub_questions_block(
+            vr.sub_questions,
+            vr.sub_question_coverage,
+            vr.queries_by_sub_question,
+        ),
+        reset_review=True,
+        previous_publication=previous_publication,
+        current_source_ids=source_ids,
+    )
     claim_path_written = _write_claim_file(
         title=ao.verdict.title,
         entity_name=entity_name,
@@ -1116,26 +1140,6 @@ def claim_refresh(
         seo_title=ao.verdict.seo_title,
         takeaway=ao.verdict.takeaway,
         **verdict_write_kwargs(ao.verdict),
-    )
-
-    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
-    _write_audit_sidecar(
-        claim_path=claim_path_written,
-        comparison=vr.consistency,
-        model=model,
-        ran_at=ran_at,
-        sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
-        agents_run=agents_run,
-        models_used={a: cfg.model_for(a) for a in agents_run},
-        research_trace=vr.research_trace,
-        sub_questions_block=_build_sub_questions_block(
-            vr.sub_questions,
-            vr.sub_question_coverage,
-            vr.queries_by_sub_question,
-        ),
-        reset_review=True,
-        previous_publication=previous_publication,
-        current_source_ids=source_ids,
     )
 
     click.echo(f"Refreshed: {claim_path_written}")

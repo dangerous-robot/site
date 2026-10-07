@@ -571,6 +571,41 @@ class TestClaimRefreshKeepsPublishedState:
         # The new run's sign-off is reset; the old one lives only in the snapshot.
         assert data["human_review"]["reviewed_at"] is None
 
+    @pytest.mark.parametrize("success", [True, False], ids=["success", "analyst-error"])
+    @pytest.mark.parametrize("failing_write", ["_write_audit_sidecar", "_write_claim_file"])
+    def test_rerun_after_failed_write_keeps_snapshot(
+        self, monkeypatch, tmp_path, success, failing_write,
+    ) -> None:
+        import yaml
+
+        import orchestrator.persistence as persistence
+
+        claim_path = _write_published_refresh_fixture(tmp_path)
+        real_write = getattr(persistence, failing_write)
+        calls = {"n": 0}
+
+        def _fail_once(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise OSError(f"simulated {failing_write} failure")
+            return real_write(*args, **kwargs)
+
+        monkeypatch.setattr(persistence, failing_write, _fail_once)
+        with pytest.raises(OSError):
+            _run_refresh(monkeypatch, tmp_path, success=success)
+
+        result = _run_refresh(monkeypatch, tmp_path, success=success)
+
+        assert result.exit_code == 0, result.output
+        data = yaml.safe_load(
+            claim_path.with_name("renewable-energy-hosting.audit.yaml").read_text(encoding="utf-8")
+        )
+        previous = data["refresh"]["previous"]
+        assert previous["verdict"] == "false"
+        assert previous["reviewer"] == "reviewer@example.com"
+        assert previous["reviewed_at"] == "2026-05-11"
+        assert previous["ran_at"] == "2026-05-11T10:00:00+00:00"
+
 
 class TestRemovedCommands:
     """Explicit coverage asserting that hard-removed commands no longer exist in the CLI."""

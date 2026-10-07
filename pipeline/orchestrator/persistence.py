@@ -303,6 +303,13 @@ def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) ->
     return repo_root / "research" / "claims" / slugify(entity_name)
 
 
+def _claim_path_for(entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path) -> Path:
+    """Return the path ``_write_claim_file`` writes for these arguments, creating its directory."""
+    claim_dir = _claim_dir_for(entity_ref, entity_name, repo_root)
+    claim_dir.mkdir(parents=True, exist_ok=True)
+    return claim_dir / f"{slugify(claim_slug)}.md"
+
+
 def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
     """Pull source-quality fields off a VerdictAssessment in the shape expected
     by `_write_claim_file`. Centralizes the enum unwrap and override dump so
@@ -358,11 +365,7 @@ def _write_claim_file(
     ``narrative`` and ``verdict``/``confidence`` since the Analyst did
     not run.
     """
-    claim_slug_clean = slugify(claim_slug)
-
-    claim_dir = _claim_dir_for(entity_ref, entity_name, repo_root)
-    claim_dir.mkdir(parents=True, exist_ok=True)
-    claim_path = claim_dir / f"{claim_slug_clean}.md"
+    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
 
     if claim_path.exists() and not force:
         raise FileExistsError(
@@ -503,14 +506,17 @@ def _refresh_block(
 ) -> dict | None:
     """Build the sidecar ``refresh`` block, or None when no refresh awaits re-approval.
 
-    A fresh snapshot wins. Otherwise a pending block carries forward unchanged so
-    a second refresh before re-approval does not replace the published state
-    with the unapproved one.
+    A pending block carries forward unchanged, so a second refresh before
+    re-approval does not replace the published state with the unapproved one.
+    It also wins over a new snapshot: approval, archiving and ``dr publish``
+    never leave a block on a published claim, so a published claim with one
+    is a refresh that wrote its sidecar and then failed to write the claim,
+    and that sidecar's ``human_review`` is already reset.
     """
-    if previous_publication is not None:
-        block = {"refreshed_at": ran_at.isoformat(), "previous": previous_publication}
-    elif isinstance(existing.get("refresh"), dict):
+    if isinstance(existing.get("refresh"), dict):
         block = dict(existing["refresh"])
+    elif previous_publication is not None:
+        block = {"refreshed_at": ran_at.isoformat(), "previous": previous_publication}
     else:
         return None
     if current_source_ids is not None:
