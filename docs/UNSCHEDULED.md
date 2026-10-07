@@ -13,6 +13,7 @@ Goal: Reduce onboarding wall time and wasted API calls.
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Onboard: skip light research when the entity file exists | (none) | `dr onboard` runs light research, verifier and enricher on every call (`pipeline/orchestrator/pipeline.py`, `onboard_entity` Phase A) even for an existing entity; `dr entity-enrich` and `dr onboard --force` already cover the explicit refresh case. |
+| Ingest: retry Infomaniak null-body responses | (none) | The Infomaniak gateway occasionally returns 200 OK with a null body; PydanticAI raises `UnexpectedModelBehavior` (log: `Failed to ingest <url>: Invalid response from openai chat completions endpoint: 4 validation errors for ChatCompletion`). Non-fatal: that URL gets a `StepError(error_type="model_error")` and the run continues. `_run_with_null_retry` (`pipeline/orchestrator/pipeline.py`) already covers the analyst and auditor; `_ingest_one` still calls `ingestor_agent.run` directly. Fix: let `_run_with_null_retry` take `deps` and reset the `IngestorDeps` buffers (`acquisition_writes`, `wayback_failures`) between attempts. |
 
 The other four items in this group shipped and moved to `plans/completed/`: onboard-reuse-verify-sources, ingestor-fail-fast-403, researcher-host-blocklist, ingestor-tighten-timeouts.
 
