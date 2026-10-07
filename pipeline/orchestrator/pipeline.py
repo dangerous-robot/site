@@ -259,6 +259,9 @@ class VerifyConfig:
     # until that job lands we want primary sources behind paywalls/blocks
     # rescued via web.archive.org during the synchronous run.
     skip_wayback: bool = False
+    # False when the run writes nothing (``dr claim-probe``): archive lookups
+    # check TimeGate only and never ask Save Page Now to capture a page.
+    allow_save: bool = True
     # Per-claim list of acquisition origins to attempt during research.
     # Default ['tavily', 'arxiv']; Brave remains available via search_backend
     # for per-query fallback. arXiv only fires when the claim's topics
@@ -901,6 +904,7 @@ async def _ingest_one(
         repo_root=str(repo_root),
         requested_url=url,
         skip_wayback=cfg.skip_wayback,
+        allow_save=cfg.allow_save,
         today=today,
         prefetched_bodies={url: prefetched_body} if prefetched_body else {},
     )

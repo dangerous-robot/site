@@ -361,10 +361,15 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
         click.echo(f"Error: Cannot determine repo root: {exc}", err=True)
         sys.exit(2)
 
+    # A dry run must not make archive.org capture the page, through the
+    # model's wayback_check tool or the lookup in code.
+    capture = do_write or force
+
     async def _run():
         async with httpx.AsyncClient() as client:
             deps = IngestorDeps(
-                http_client=client, repo_root=root_str, requested_url=url, skip_wayback=skip_wayback
+                http_client=client, repo_root=root_str, requested_url=url,
+                skip_wayback=skip_wayback, allow_save=capture,
             )
             prompt = f"Ingest this URL and produce a SourceFile:\n\nURL: {url}\nToday's date: {deps.today.isoformat()}\n"
             try:
@@ -386,9 +391,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
             _url, sf = checked
 
-            # A dry run must not make archive.org capture the page.
-            capture = do_write or force
-            archive = await archive_after_ingest(sf, deps, allow_save=capture)
+            archive = await archive_after_ingest(sf, deps)
             if archive["status"] == "failed":
                 hint = "" if capture else " (Save Page Now runs only with --write)"
                 click.echo(f"Archive lookup failed for {url}: {archive['error']}{hint}", err=True)
@@ -760,6 +763,8 @@ def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | 
     config = VerifyConfig(
         model=model,
         skip_wayback=skip_wayback,
+        # Nothing is written, so archive lookups check TimeGate only.
+        allow_save=False,
         show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),

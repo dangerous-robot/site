@@ -40,6 +40,10 @@ class IngestorDeps:
     # what ``fetch_failure_reason`` requires.
     requested_url: str
     skip_wayback: bool = False
+    # False for commands that write nothing (read-only ``dr step-ingest``,
+    # ``dr claim-probe``): archive lookups then check TimeGate only and never
+    # ask Save Page Now to capture a page.
+    allow_save: bool = True
     today: datetime.date = field(default_factory=datetime.date.today)
     # url -> body string supplied by the researcher (e.g., Tavily's
     # ``raw_content``). When set, ``web_fetch`` returns the body
@@ -202,7 +206,8 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
 
     Queries archive.org's TimeGate (CDX-indexed) for the closest snapshot
     to "now"; on "no snapshot" falls through to ``save_to_wayback`` which
-    asks the Wayback Machine to capture the live URL.
+    asks the Wayback Machine to capture the live URL, unless
+    ``allow_save`` is False (the run writes nothing).
 
     Populates two side-channels on ``ctx.deps`` for the orchestrator to
     drain post-run:
@@ -221,7 +226,7 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     if deps.skip_wayback:
         return {"available": False, "archived_url": None, "skipped": True}
 
-    lookup = await find_or_save_archive(deps.http_client, url)
+    lookup = await find_or_save_archive(deps.http_client, url, allow_save=deps.allow_save)
     for message in lookup.errors:
         deps.wayback_failures.append(
             {"stage": "ingest", "error_type": "wayback_unavailable", "message": message}
@@ -240,15 +245,14 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     return {"available": True, "archived_url": lookup.archived_url}
 
 
-async def archive_after_ingest(
-    sf: SourceFile, deps: IngestorDeps, *, allow_save: bool = True
-) -> dict:
+async def archive_after_ingest(sf: SourceFile, deps: IngestorDeps) -> dict:
     """Set ``sf``'s ``archived_url`` in code and return the sidecar ``archive`` record.
 
     The model's own ``archived_url`` is not trusted: it is replaced by the
     lookup's link, or cleared when the lookup fails. A link ``wayback_check``
     returned during this ingest is reused, so the lookup is not repeated.
-    With ``skip_wayback`` nothing is looked up or changed.
+    With ``skip_wayback`` nothing is looked up or changed. With
+    ``deps.allow_save`` False the lookup checks TimeGate only.
     """
     if deps.skip_wayback:
         return {"status": "not-attempted"}
@@ -256,7 +260,7 @@ async def archive_after_ingest(
         sf.frontmatter.archived_url = deps.wayback_link
         return {"status": "found"}
     lookup = await archive_with_time_limit(
-        deps.http_client, sf.frontmatter.url, allow_save=allow_save
+        deps.http_client, sf.frontmatter.url, allow_save=deps.allow_save
     )
     sf.frontmatter.archived_url = lookup.archived_url
     if lookup.archived_url:

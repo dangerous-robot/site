@@ -59,7 +59,9 @@ def _analyst_output():
 
 
 @pytest.fixture
-def stubbed_pipeline(monkeypatch, stub_ingest_model):
+def pipeline_without_models(monkeypatch):
+    """Stub research, analyst and auditor; the ingest model is left to the test."""
+
     async def _fake_research(*args, **kwargs):
         return ResearchOutput(urls=[*_CACHED, _PAGE_URL], trace={"mode": "decomposed"})
 
@@ -77,6 +79,10 @@ def stubbed_pipeline(monkeypatch, stub_ingest_model):
     monkeypatch.setattr("orchestrator.pipeline._run_with_null_retry", _fake_run)
     monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
     monkeypatch.setattr("ingestor.tools.wayback._wait", _no_wait)
+
+
+@pytest.fixture
+def stubbed_pipeline(pipeline_without_models, stub_ingest_model):
     return stub_ingest_model
 
 
@@ -195,3 +201,26 @@ async def test_light_research_does_not_archive_the_page_it_discards(
     assert bundle.raw_description == "The stored page."
     assert timegate.called is False
     assert save.called is False
+
+
+@pytest.mark.asyncio
+async def test_no_capture_when_saves_are_off(
+    tmp_path, pipeline_without_models, stub_ingest_model_calling_wayback
+) -> None:
+    """``allow_save=False`` (dr claim-probe) keeps both the model's tool and the lookup in code to TimeGate."""
+    from orchestrator.pipeline import verify_claim
+
+    _write_cached_sources(tmp_path)
+    cfg = VerifyConfig(model="test", max_sources=8, allow_save=False, repo_root=str(tmp_path))
+    with respx.mock as mock:
+        mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
+        timegate = mock.get(_TIMEGATE).mock(return_value=httpx.Response(404))
+        save = mock.get(_SAVE).mock(
+            return_value=httpx.Response(302, headers={"location": _SNAPSHOT})
+        )
+        result = await verify_claim("Example", "claim text", cfg)
+
+    assert [url for url, _sf in result.source_files] == [_PAGE_URL]
+    assert timegate.call_count == 2
+    assert save.called is False
+    assert result.archive[_PAGE_URL]["status"] == "failed"

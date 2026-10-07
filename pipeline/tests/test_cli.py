@@ -1261,6 +1261,50 @@ class TestStepIngestArchive:
         assert f"archived_url: {_ARCHIVE_SNAPSHOT}" in result.output
         assert save.called is False
 
+    def test_read_only_model_wayback_check_makes_no_capture(
+        self, tmp_path, stub_ingest_model_calling_wayback
+    ) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            timegate = mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            save = mock.get(_save_re()).mock(
+                return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
+            )
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        # The model's tool call and the lookup in code each checked TimeGate.
+        assert timegate.call_count == 2
+        assert save.called is False
+
+    def test_deprecated_ingest_dry_run_makes_no_capture(
+        self, tmp_path, stub_ingest_model_calling_wayback
+    ) -> None:
+        import httpx
+        import respx
+
+        (tmp_path / "research" / "sources").mkdir(parents=True, exist_ok=True)
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            timegate = mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            save = mock.get(_save_re()).mock(
+                return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
+            )
+            result = CliRunner().invoke(
+                main,
+                [
+                    "--model", "test", "--ingestor-model", "test",
+                    "ingest", _ARCHIVE_PAGE_URL, "--dry-run", "--repo-root", str(tmp_path),
+                ],
+            )
+
+        assert result.exit_code == 0, result.output
+        assert timegate.call_count == 2
+        assert save.called is False
+
     def test_read_only_miss_reports_it_without_a_capture(self, tmp_path, stub_ingest_model) -> None:
         import httpx
         import respx
@@ -1320,6 +1364,27 @@ class TestStepIngestArchive:
 
         assert result.exit_code == 0, result.output
         assert timegate.called is False
+
+
+def test_claim_probe_never_captures_on_archive_org(monkeypatch) -> None:
+    """claim-probe writes nothing, so it must not ask archive.org to capture pages."""
+    from orchestrator.pipeline import VerificationResult
+
+    seen = {}
+
+    async def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+        seen["config"] = config
+        return VerificationResult(
+            entity=entity_name, claim_text=claim_text,
+            urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+        )
+
+    monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
+    result = CliRunner().invoke(main, ["--model", "test", "claim-probe", "Example", "A claim"])
+
+    assert result.exit_code == 0, result.output
+    assert seen["config"].allow_save is False
+    assert seen["config"].skip_wayback is False
 
 
 class TestWaybackBackfill:

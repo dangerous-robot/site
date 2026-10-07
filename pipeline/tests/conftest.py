@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from contextlib import nullcontext
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from unittest.mock import patch
 
@@ -59,14 +59,8 @@ def sample_frontmatter_text() -> str:
     )
 
 
-@pytest.fixture
-def stub_ingest_model():
-    """Swap in an ingest model that fetches the requested URL, then returns a source for it.
-
-    It never calls ``wayback_check``. The fixture value is a dict of extra
-    frontmatter fields the model writes (e.g. ``archived_url``); tests may
-    fill it before ingesting.
-    """
+@contextmanager
+def _stubbed_ingest_model(*, call_wayback: bool):
     from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
     from pydantic_ai.models.function import AgentInfo, FunctionModel
 
@@ -78,8 +72,11 @@ def stub_ingest_model():
         parts = [p for m in messages for p in getattr(m, "parts", [])]
         prompt = next(p.content for p in parts if isinstance(p, UserPromptPart))
         url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
-        if not any(isinstance(p, ToolCallPart) for p in parts):
+        called = [p.tool_name for p in parts if isinstance(p, ToolCallPart)]
+        if not called:
             return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        if call_wayback and "wayback_check" not in called:
+            return ModelResponse(parts=[ToolCallPart(tool_name="wayback_check", args={"url": url})])
         source = {
             "frontmatter": {
                 "url": url,
@@ -100,3 +97,22 @@ def stub_ingest_model():
         # Keep this model: callers enter their own override with the configured one.
         with patch.object(ingestor_agent, "override", side_effect=lambda **kw: nullcontext()):
             yield extra_frontmatter
+
+
+@pytest.fixture
+def stub_ingest_model():
+    """Swap in an ingest model that fetches the requested URL, then returns a source for it.
+
+    It never calls ``wayback_check``. The fixture value is a dict of extra
+    frontmatter fields the model writes (e.g. ``archived_url``); tests may
+    fill it before ingesting.
+    """
+    with _stubbed_ingest_model(call_wayback=False) as extra_frontmatter:
+        yield extra_frontmatter
+
+
+@pytest.fixture
+def stub_ingest_model_calling_wayback():
+    """Like ``stub_ingest_model``, but the model also calls ``wayback_check`` on the URL."""
+    with _stubbed_ingest_model(call_wayback=True) as extra_frontmatter:
+        yield extra_frontmatter
