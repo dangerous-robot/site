@@ -781,3 +781,39 @@ class TestDeleteFiles:
         assert not claim.exists()
         trashed = list(trash.glob("claim*.md"))
         assert len(trashed) == 2
+
+
+# --------------------------------------------------------------------------- #
+# Refreshed claims: the header shows what readers saw before the refresh       #
+# --------------------------------------------------------------------------- #
+
+class TestRefreshedHeader:
+    def _header(self, tmp_path, *, verdict: str, previous_verdict: str) -> str:
+        import click
+
+        from orchestrator.review_queue import _format_header
+
+        c = _write_claim(tmp_path, entity="ent-a", slug="refreshed", verdict=verdict)
+        _write_sidecar(c, analyst_verdict=verdict, previous_verdict=previous_verdict)
+        [item] = find_publication_queue(tmp_path)
+        return click.unstyle(_format_header(item, 1, 1))
+
+    def test_shows_previous_publication(self, tmp_path):
+        header = self._header(tmp_path, verdict="false", previous_verdict="false")
+        assert "Was published: false (reviewed 2026-05-11)" in header
+        assert "approval will ask for a correction" not in header
+
+    def test_changed_verdict_warns_about_correction(self, tmp_path):
+        header = self._header(tmp_path, verdict="unverified", previous_verdict="false")
+        assert "Was published: false (reviewed 2026-05-11)" in header
+        assert "verdict changed; approval will ask for a correction" in header
+
+    def test_no_line_for_claims_without_refresh(self, tmp_path):
+        import click
+
+        from orchestrator.review_queue import _format_header
+
+        c = _write_claim(tmp_path, entity="ent-a", slug="plain")
+        _write_sidecar(c)
+        [item] = find_publication_queue(tmp_path)
+        assert "Was published" not in click.unstyle(_format_header(item, 1, 1))

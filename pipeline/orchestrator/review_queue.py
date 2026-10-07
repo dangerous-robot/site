@@ -43,6 +43,8 @@ class QueueItem:
     tags: list[str]          # operator tags, e.g. ["highlight"]
     takeaway: str            # one-sentence reader takeaway (empty if not yet written)
     seo_title: str           # short title for SERP (empty if not yet written)
+    previous_verdict: str = ""      # published verdict before a pending refresh ("" if none)
+    previous_reviewed_at: str = ""  # sign-off date of that published version
 
 
 def _slug_for(claim_path: Path, claims_root: Path) -> str:
@@ -73,6 +75,8 @@ def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueIt
         return None
 
     audit = sidecar.get("audit") or {}
+    refresh = sidecar.get("refresh") if isinstance(sidecar.get("refresh"), dict) else {}
+    previous = refresh.get("previous") or {}
     fm_sources = fm.get("sources") or []
     sidecar_sources = sidecar.get("sources_consulted") or []
     sources_count = len(fm_sources)
@@ -104,6 +108,8 @@ def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueIt
         tags=list(fm.get("tags") or []),
         takeaway=str(fm.get("takeaway") or ""),
         seo_title=str(fm.get("seo_title") or ""),
+        previous_verdict=str(previous.get("verdict") or ""),
+        previous_reviewed_at=str(previous.get("reviewed_at") or ""),
     )
 
 
@@ -181,10 +187,18 @@ def _format_header(item: QueueItem, index: int, total: int) -> str:
     def row(label: str, value: str) -> str:
         return f"  {label:<9} {value}"
 
+    refresh_rows = []
+    if item.previous_verdict:
+        was = f"Was published: {item.previous_verdict} (reviewed {item.previous_reviewed_at or 'unknown'})"
+        if item.verdict != item.previous_verdict:
+            was += click.style("  verdict changed; approval will ask for a correction", fg="yellow")
+        refresh_rows.append(row("", was))
+
     return "\n".join([
         "",
         sep,
         row("Verdict", verdict_line),
+        *refresh_rows,
         row("Title", item.title),
         row("Takeaway", item.takeaway or _EMPTY),
         row("SEO title", item.seo_title or _EMPTY),
