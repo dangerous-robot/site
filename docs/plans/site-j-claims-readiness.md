@@ -22,7 +22,7 @@ Not in this plan: the indexing flip (ending the pre-release noindex policy). Bra
 - [x] CR2: a fetch that redirects to an existing source reuses it
 - [x] CR3: archive lookups run in code, retry HTTP 429 and are recorded
 - [ ] CR4: archive links for the sources the page cites, and the other committed sources without one
-- [ ] CR5: remove ClaimReview markup
+- [x] CR5: remove ClaimReview markup
 - [x] CR6: backlog cleanup (run at promotion, before CR1)
 
 ## Steps

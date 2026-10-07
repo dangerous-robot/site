@@ -4,7 +4,7 @@
 |-----------|--------|
 | Search console setup | `[~] partially done — GSC verified, sitemap submitted, inspection baseline captured 2026-05-11 (seo-post-restructure); monitoring cadence remains |
 | Google Fact Check program | `[ ] gated — prereqs not met, including the indexing flip` |
-| Validation and testing | `[ ] ready — gate met (ClaimReview, OG tags and sitemap are deployed)` |
+| Validation and testing | `[ ] ready — gate met (OG tags and sitemap are deployed)` |
 | Link building and citation outreach | `[ ] ongoing — start at launch` |
 | Monitoring and maintenance | `[ ] ongoing — start after indexing` |
 
@@ -65,11 +65,13 @@ Bing Webmaster Tools covers Bing search (and, by extension, DuckDuckGo and other
 
 **Status:** `[ ] gated — prereqs not met`
 
+Claim pages emit no `ClaimReview` markup: it was removed on 2026-10-07 (`docs/decisions.md`) because Google removed ClaimReview rich results from Search in 2025 and Fact Check Explorer listing is limited to approved fact-check publishers. Verdicts and ratings stay in the claim files, so it can be added back if this milestone is pursued.
+
 **Gating conditions (all must be true before applying):**
 
 1. The pre-release banner is removed from the site (it signals the site is not ready for editorial review). It shows while the version has an alpha, beta or rc label (`src/layouts/Base.astro`).
 2. A minimum set of published claims exists. Google does not publish a hard threshold for Fact Check program inclusion. The IFCN application process (the path Google uses) reviews editorial standards and methodology rather than claim count. In practice, apply only after the site has a meaningful corpus of published, sourced claims that demonstrates consistent methodology — not a handful. Operator judgment on readiness; revisit this gate when v1 content is published.
-3. `ClaimReview` JSON-LD schema is implemented on claim pages (code plan dependency).
+3. `ClaimReview` JSON-LD is added back to claim pages (code plan dependency; removed 2026-10-07).
 4. Claim pages are indexed by Google, which needs the indexing flip first (confirm via GSC URL Inspection).
 
 ### What the program is
@@ -89,15 +91,14 @@ The path to Google's Fact Check program runs through the Duke Reporters' Lab, wh
 
 - The IFCN application asks for evidence of methodological transparency, corrections policies, funding sources, and editorial independence. Prepare a short document covering each before applying.
 - dangerousrobot.org's conflict-of-interest disclosure (operator also runs TreadLightly AI) should be addressed directly in the application. The FAQ already carries the canonical disclosure; reference it.
-- Google also surfaces fact-checks without IFCN certification if `ClaimReview` schema is implemented and the site has domain authority. IFCN certification accelerates and solidifies placement but is not the only path.
 
 ---
 
 ## Milestone: Validation and testing
 
-**Status:** `[ ] ready — gate met` (ClaimReview JSON-LD on claim pages, OG and Twitter tags in `Base.astro`, sitemap all deployed)
+**Status:** `[ ] ready — gate met` (OG and Twitter tags in `Base.astro` and the sitemap are deployed)
 
-**Gating condition:** The code-side SEO changes (ClaimReview schema, FAQPage schema, BreadcrumbList schema, OG tags, twitter:card tags, sitemap, font loading changes) must be deployed to production before running these tools.
+**Gating condition:** The code-side SEO changes (FAQPage schema, BreadcrumbList schema, OG tags, twitter:card tags, sitemap, font loading changes) must be deployed to production before running these tools. Claim pages emit no `ClaimReview` markup, so it is not tested.
 
 Run each tool below once after the first SEO-complete deploy, then re-run any that returned errors after fixes land.
 
@@ -105,16 +106,15 @@ Run each tool below once after the first SEO-complete deploy, then re-run any th
 
 **URL:** https://search.google.com/test/rich-results
 
-Tests: `ClaimReview`, `FAQPage`, `BreadcrumbList` JSON-LD markup.
+Tests: `FAQPage`, `BreadcrumbList` JSON-LD markup.
 
 What to test:
-- A claim page URL (e.g., `https://dangerousrobot.org/claims/some-claim`) for `ClaimReview`
 - `/faq` for `FAQPage`
 - Any page with breadcrumbs for `BreadcrumbList`
 
-Passing result: the tool reports "Valid items detected" for each schema type tested, with no errors and no warnings. A green result for `ClaimReview` is a prerequisite for Google Fact Check program placement.
+Passing result: the tool reports "Valid items detected" for each schema type tested, with no errors and no warnings.
 
-If it fails: check the JSON-LD for syntax errors, missing required fields (`claimReviewed`, `reviewRating`, `itemReviewed`), or field type mismatches. The tool surfaces the specific field that failed.
+If it fails: check the JSON-LD for syntax errors, missing required fields, or field type mismatches. The tool surfaces the specific field that failed.
 
 ### 2. Schema.org Validator
 
@@ -122,11 +122,11 @@ If it fails: check the JSON-LD for syntax errors, missing required fields (`clai
 
 Tests: JSON-LD structure against the full Schema.org specification (broader than Google's subset).
 
-What to test: paste the JSON-LD from a claim page. The validator shows all detected types and flags any property violations.
+What to test: paste the JSON-LD from a claim page (`BreadcrumbList`, `Organization`). The validator shows all detected types and flags any property violations.
 
 Passing result: no errors. Warnings about optional properties are acceptable.
 
-If it fails: typically a missing required property or a type mismatch. Cross-reference the `ClaimReview` spec at https://schema.org/ClaimReview.
+If it fails: typically a missing required property or a type mismatch. Cross-reference the type's spec on https://schema.org.
 
 ### 3. OpenGraph tag verification
 
@@ -218,7 +218,7 @@ After the Google Fact Check program application is approved (see that milestone)
 
 - **Duke Reporters' Lab database** (submission is part of the IFCN/Google path — already covered above)
 - **ClaimBuster** (https://idir.uta.edu/claimbuster/) — an automated claim detection tool that partners with fact-checkers; worth monitoring once the site has volume
-- **GDELT Fact Check data** — GDELT ingests ClaimReview markup automatically once the site is indexed and producing structured data; no manual submission needed
+- **GDELT Fact Check data** — GDELT ingests ClaimReview markup, which claim pages do not emit; it applies only if the markup is added back
 
 ---
 
@@ -226,7 +226,7 @@ After the Google Fact Check program application is approved (see that milestone)
 
 **Status:** `[ ] ongoing — start after indexing`
 
-**Gating condition:** GSC is verified and the site is indexed (at minimum the homepage returns a "URL is on Google" result in GSC URL Inspection). Claim-level rows (ClaimReview errors) start after the indexing flip.
+**Gating condition:** GSC is verified and the site is indexed (at minimum the homepage returns a "URL is on Google" result in GSC URL Inspection). Claim-level rows start after the indexing flip.
 
 ### Monitoring cadence
 
@@ -235,14 +235,14 @@ After the Google Fact Check program application is approved (see that milestone)
 | Search performance (queries, clicks, impressions, CTR) | GSC → Performance | Monthly | Investigate pages with declining impressions over 2 consecutive months |
 | Core Web Vitals | GSC → Core Web Vitals | Monthly | Any URL entering "Poor" status → fix within 2 weeks |
 | Index coverage | GSC → Pages | Monthly | Unexpected "Not indexed" or "Excluded" URLs → investigate within 2 weeks |
-| Structured data errors | GSC → Enhancements | Monthly | Any `ClaimReview` or `FAQPage` errors → fix within 1 week (blocks Fact Check placement) |
+| Structured data errors | GSC → Enhancements | Monthly | Any `FAQPage` or `BreadcrumbList` errors → fix within 1 week |
 | Inbound links | GSC → Links | Quarterly | Log notable citations; update `research/citations.md` |
 
 ### What to watch for
 
 **Index coverage:** Pages marked "Discovered — currently not indexed" or "Crawled — currently not indexed" may indicate thin content or a crawl budget issue. A static site with < 1,000 pages should not have crawl budget problems; focus on content quality if pages are excluded.
 
-**ClaimReview errors:** GSC surfaces structured data errors in the Enhancements tab. A `ClaimReview` error on a claim page removes that claim from Fact Check program placement. Check this tab monthly; errors here are higher priority than performance regressions.
+**Structured data errors:** GSC surfaces structured data errors in the Enhancements tab. Check this tab monthly.
 
 **Core Web Vitals regressions:** LCP and CLS can regress after Astro upgrades, image changes, or new layout components. The GSC "Core Web Vitals" report uses real-user data (CrUX), which lags 28 days. If PageSpeed Insights (lab data) shows a regression, investigate immediately rather than waiting for CrUX to confirm.
 
@@ -258,7 +258,7 @@ After the Google Fact Check program application is approved (see that milestone)
 | This milestone | Depends on |
 |----------------|-----------|
 | Search console setup → sitemap submission | `@astrojs/sitemap` implemented and deployed |
-| Google Fact Check program | Pre-release banner removed; meaningful corpus of published claims; ClaimReview schema deployed (done); indexing flip; claim pages indexed |
+| Google Fact Check program | Pre-release banner removed; meaningful corpus of published claims; ClaimReview markup added back (removed 2026-10-07); indexing flip; claim pages indexed |
 | Validation and testing | All code-side SEO changes deployed to production (done) |
 | Monitoring and maintenance | GSC verified; site indexed |
 
@@ -266,7 +266,7 @@ After the Google Fact Check program application is approved (see that milestone)
 
 - Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading): [`completed/seo-technical.md`](completed/seo-technical.md)
 - Pre-release banner: added in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1); removal is post-launch
-- ClaimReview schema: shipped (`src/pages/research/claims/[...slug].astro`)
+- ClaimReview markup: removed from claim pages ([`site-j-claims-readiness.md`](site-j-claims-readiness.md) CR5, `docs/decisions.md` 2026-10-07)
 - Indexing flip: `src/lib/seo.ts`, `docs/seo-and-cloudflare-playbook.md` ("When the pre-release noindex period ends")
 
 ## Review history
@@ -275,3 +275,4 @@ After the Google Fact Check program application is approved (see that milestone)
 |------|----------|-------|---------|
 | 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; search-console milestone updated to reflect the 2026-05-11 GSC/baseline work; one link repointed to completed/. |
 | 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus alignment | Added the indexing gate (first guide, roadmap §9 J); validation gate marked met; TreadLightly described as made by the same person, not a sponsor; URLs moved to `/research/...`; cross-references point at shipped work. |
+| 2026-10-07 | agent (claude-opus-5-5) | basic, iterated | ClaimReview removed from claim pages (`site-j-claims-readiness.md` CR5): dropped from the validation gate, test lists and monitoring; the Fact Check program gate now needs it added back. |

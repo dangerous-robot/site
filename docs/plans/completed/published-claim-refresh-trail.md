@@ -198,7 +198,7 @@ human_review:
 ## Out of scope
 
 - **RF7** (refresh overwrites `seo_title` and drops `cap_rationale`): the reviewer can fix both with `e` before approval, and it is tracked in UNSCHEDULED.
-- The append-only transition log, ULIDs, backfill, orphan sidecar CI, and ClaimReview JSON-LD fields: [`deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md).
+- The append-only transition log, ULIDs, backfill, orphan sidecar CI, and ClaimReview JSON-LD fields: [`deferred/audit-trail-extensions.md`](../deferred/audit-trail-extensions.md). Claim pages now emit no ClaimReview markup ([`site-j-claims-readiness.md`](../site-j-claims-readiness.md) CR5).
 - Keeping the published version live at its URL while a refresh awaits review (writing the refresh to a side file instead of in place). The runbook rule (approve before commit) plus L2 covers it at today's scale. Revisit if more than one person runs refreshes.
 - Keeping dropped sources from `inv audit.prune`.
 

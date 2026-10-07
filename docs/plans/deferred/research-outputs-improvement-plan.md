@@ -1,6 +1,6 @@
 # Research Outputs Improvement Plan
 
-**Deferred**: 2026-10-06, mostly operator-side and standards work off the path of the Responsible AI chatbots effort. Already in place: inline ClaimReview JSON-LD on claim pages (`src/pages/research/claims/[...slug].astro`, `1b9f3b7`), the `verification_level` field (listed below as deferred, but shipped), and a confidence-levels section on the methodology page (`src/pages/research/index.astro`). The two on-focus items, a build check that every published claim emits valid ClaimReview and one confidence rubric, moved to `docs/UNSCHEDULED.md`.
+**Deferred**: 2026-10-06, mostly operator-side and standards work off the path of the Responsible AI chatbots effort. Already in place: the `verification_level` field (listed below as deferred, but shipped), and a confidence-levels section on the methodology page (`src/pages/research/index.astro`). Inline ClaimReview JSON-LD (`1b9f3b7`) was removed from claim pages (`docs/decisions.md` 2026-10-07), so the build check for it was dropped; the confidence rubric moved to `docs/UNSCHEDULED.md`.
 
 ## Goals
 
