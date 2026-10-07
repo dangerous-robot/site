@@ -172,13 +172,15 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 
 Commands:
 
-- `dr claim-probe` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes
+- `dr claim-probe` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
 - `dr claim-draft` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
 - `dr claim-refresh` -- Re-run the full pipeline on an existing template-backed claim file (must have `criteria_slug`; use `dr claim-promote` first for ad-hoc drafts)
 - `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
 - `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr reassess` and `dr ingest` remain as hidden deprecated aliases for the last two)
 - `dr onboard` -- Onboard an entity using claim templates
 - `dr wayback-backfill` -- Add an archive.org link (`archived_url`) to existing source files that lack one; exits 1 if any could not be archived
+
+Archive.org captures (Save Page Now): `dr claim-draft`, `dr claim-refresh`, `dr onboard`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered); `dr entity-enrich` and onboard's light research capture only when the ingest model recovers a failed fetch. `dr claim-probe`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link.
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar
 

@@ -88,7 +88,7 @@ The Markdown body contains the claim narrative -- the human-readable explanation
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `url` | URL string | yes | Original source URL |
-| `archived_url` | URL string | no | Wayback Machine or permanent archive link. The pipeline sets it after each ingest (archive.org TimeGate, then Save Page Now); `dr wayback-backfill` adds it to existing files |
+| `archived_url` | URL string | no | Wayback Machine or permanent archive link. The pipeline sets it after each ingest (archive.org TimeGate, then Save Page Now; a link the ingest model writes itself is dropped); `dr wayback-backfill` adds it to existing files. Commands that write nothing (`dr claim-probe`, `dr step-ingest` without `--write`) check TimeGate only and never ask archive.org to capture a page |
 | `title` | string | yes | Source title |
 | `publisher` | string | yes | Publishing organization |
 | `published_date` | date | no | Original publication date |
@@ -123,8 +123,8 @@ The `audit` object has the shape:
 | `sources_consulted[].acquisition.query` | string | Optional search query used |
 | `sources_consulted[].acquisition.paper_id` | string | Optional paper identifier |
 | `sources_consulted[].acquisition.filing_accession` | string | Optional filing accession identifier |
-| `sources_consulted[].archive` | object | Optional. Outcome of the archive.org lookup the pipeline runs after ingesting a source; absent on sources reused from disk |
-| `sources_consulted[].archive.status` | enum | `found` (the source got an `archived_url`), `failed` (rate-limited after one retry, another error, or the lookup's time limit) or `not-attempted` (run with `--skip-wayback`) |
+| `sources_consulted[].archive` | object | Optional. Outcome of the archive.org lookup the pipeline runs after ingesting a source; absent on sources reused from disk. `dr step-audit --write` carries it over |
+| `sources_consulted[].archive.status` | enum | `found` (the source got an `archived_url`), `failed` (rate-limited after one retry, Save Page Now returned no dated snapshot, another error, or the lookup's time limit) or `not-attempted` (run with `--skip-wayback`) |
 | `sources_consulted[].archive.error` | string | Optional. Why a `failed` lookup failed, e.g. `archive.org TimeGate check failed (HTTP 429)` |
 | `audit` | object or null | Analyst/Evaluator verdict comparison block; may be `null` |
 | `audit.analyst_verdict` | string | Verdict from the Analyst agent |

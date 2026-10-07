@@ -81,6 +81,14 @@ A refresh rewrites the claim as a draft and resets its sign-off. The pipeline ke
 
 If you change the verdict with `e` before approving, approval records the change as `human_review.verdict_override`. A published verdict that matches neither the pipeline's nor a recorded override fails lint (`verdict-sidecar-mismatch`).
 
+## Archive links for sources
+
+The pipeline gives each new source an `archived_url` after ingesting it: an existing archive.org snapshot if there is one, otherwise it asks archive.org to capture the page. Commands that write nothing (`dr claim-probe`, `dr step-ingest` without `--write`) only look for an existing snapshot. The `dr` command list in AGENTS.md says which commands can capture.
+
+- Add links to existing sources: `uv run dr wayback-backfill <year>/<slug> ...`. It skips a source that already has a link and exits 1 if any source got none.
+- A failed lookup is recorded in the claim sidecar as `sources_consulted[].archive` with `status: failed` and the reason (for example `archive.org TimeGate check failed (HTTP 429)`). The source is still written, without a link; rerun `dr wayback-backfill` later.
+- A link without a 14-digit timestamp (`https://web.archive.org/web/<url>`) does not name a capture. The pipeline no longer writes one.
+
 ## Petitions: open, close, export, remove
 
 Signatures live in the `dr-api` D1 database behind the `dr-api` Worker (`workers/api/`, served at `api.dangerousrobot.org`). Design and privacy rules: `docs/architecture/petitions.md`. Run every command below from `workers/api/` (`cd workers/api` first, as its own command). Drop `--remote` to run against the local database that `wrangler dev` uses.
