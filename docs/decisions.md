@@ -4,6 +4,10 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-07
+
+- **Priorities ranked.** The order in [`priorities.md`](priorities.md) is confirmed. Each later change to the order gets one line here. *(Final)*
+
 ## 2026-10-06
 
 - **Next large effort: Responsible AI chatbots, backed by claims.** Enhance the Responsible AI Chatbots page so its comparisons are supported by claims and sources where possible (roadmap §10; no plan yet). This replaces the chatbot guide ("Before you trust an AI chatbot") as the next release; the guide and its Drive proposals become an undecided proposal (a local draft). The noindex flip trigger, which was the first guide, is decided in the §10 plan. *(Final)*

@@ -221,6 +221,21 @@ Product decisions are recorded in `docs/decisions.md`, newest first. The repo is
 
 The discovery records in the Google Drive folder "Dangerous Robot — Vision & Discovery" (https://drive.google.com/drive/folders/1t0PBJVq-5ZYSZEDRwc93qdtybxoDsJ6g; private) hold decisions made through 2026-10-04 and were frozen that day. Read them for history; do not edit them or copy them into the repo.
 
+## Priorities
+
+`docs/priorities.md` ranks the project's themes. Flow: priorities → backlog triage → choose the next item → release triage → `python3 scripts/release-gate/work_item.py start` → work → update roadmap, plan and backlog (rules 4 to 6 below). The middle three steps are the `release-triage` skill.
+
+Changing `priorities.md`:
+
+- Brandon sets the order. An entry an agent adds or changes ends with "(Proposed, Brandon to confirm)"; agents never reorder. Each confirmed change to the order gets one line in `docs/decisions.md` that points at `priorities.md` and does not restate it.
+- Keep its `Work:` lines current: fix one in the same change that renames, moves, finishes or defers the work it names. When a theme's work is all done or deferred, propose removing the theme.
+
+When files disagree or look stale, nothing comes from session memory:
+
+- Status (done, in progress, ticked) comes from the roadmap and its plans; order comes from `priorities.md`. A triage marker is only a hint: if it disagrees with either, triage that item again.
+- The active work item is what `work_item.py status` reports. A handoff note says what a session did; where it disagrees with the roadmap, the roadmap wins.
+- A skipped step (a backlog item with no marker, shipped work left unticked) is fixed in the same change that finds it.
+
 ## Plans & Backlog
 
 All plans live under `docs/plans/`. Lifecycle determines subdirectory:
@@ -248,7 +263,7 @@ Rules:
 4. **Update the plan as work lands.** When you complete a work item from a plan, update the plan in the same change: tick the checkbox, set the relevant Status field, and add a commit reference (`commit XXXXXXX`) where the doc already cites commits. Do not batch plan updates across sessions; an out-of-date plan misleads the next agent. This applies to release roadmaps and sub-plans alike.
 5. **At commit time, ask whether touched plans are complete.** When Claude is asked to commit on the user's behalf and the change touched any file under `docs/plans/` or any release roadmap (`docs/v*.*.*.md`): for each touched plan, ask the operator whether the plan is now fully implemented. If yes, `git mv` it to `docs/plans/completed/` (preserving the filename; do not add a `_completed` suffix -- the directory conveys the state, per the naming convention below) in the same commit. Phrase the question concretely (name the plan files); do not ask in the abstract.
 6. **Keep the backlog current.** Update `docs/UNSCHEDULED.md` whenever you start, complete, or plan work. This is not optional -- stale backlogs mislead future agents.
-7. **Check approved issues.** When determining what to work on next, also check: `gh issue list --label approved --state open`. Reference relevant issue numbers in UNSCHEDULED.md but do not duplicate issue content.
+7. **Choose what's next with the `release-triage` skill** (§ Choosing the next item). Cite approved GitHub issues by number in UNSCHEDULED.md; do not copy their content.
 8. **Deferred plans move.** A committed plan whose remaining work does not serve the current focus (`docs/mission-and-voice.md`, `docs/decisions.md`) moves to `docs/plans/deferred/`, filename unchanged. The first line under the title is `**Deferred**: YYYY-MM-DD, <one-line reason>.`; a partly done plan also records what shipped (commit ids). Add an entry in the "Deferred plans" section of `docs/UNSCHEDULED.md` that links it. In the same change, fix the plan's own relative links (one more `../`) and every inbound link. To revive a plan, move it back to `docs/plans/`, delete the Deferred line, re-check it against the code (add a Review history row), and schedule it. A gitignored draft that fails the focus test is not moved here: it stays in `drafts/` with a one-line note, or moves to `drafts/archive/` (also gitignored).
 
 ### Plan review records
@@ -303,7 +318,7 @@ A plan in `docs/plans/deferred/` counts as Unscheduled: its entry in the "Deferr
 **Transition rules:**
 - When a plan-only item gets prioritized but not release-assigned: add to UNSCHEDULED.md
 - When assigned to a release: add to the release roadmap, remove from UNSCHEDULED.md
-- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap. The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
+- When a release ships: `git mv docs/v{semver}-roadmap.md docs/plans/completed/`, and in the same change point `VERSION.md` "Active release:" at the next roadmap; then run backlog triage (`release-triage` skill). The context hook and `release-triage` read that line to find the in-flight release. Once the roadmap moves, the gate rejects any work item still pointing at the shipped release.
 
 **Plan filename suffix convention** — append to base name when it adds signal:
 
@@ -330,7 +345,7 @@ The release rules above are enforced, not just described. Three pieces, all comm
 
 | Piece | What it does |
 |---|---|
-| `release-triage` skill (`.claude/skills/release-triage/`) | The judgment step. Classifies a change as `patch` / `minor` / `major` using the `VERSION.md` semantics, decides the target release (in-flight line, next minor, next major, or Unscheduled), updates the roadmap or `UNSCHEDULED.md`, then registers the active work item. Invoke it before any code change that is not already the active item, and whenever the gate denies an edit. |
+| `release-triage` skill (`.claude/skills/release-triage/`) | The judgment step for the [Priorities](#priorities) flow. Chooses the next item; triages the backlog against `docs/priorities.md`; classifies a change as `patch` / `minor` / `major` using the `VERSION.md` semantics, decides the target release (in-flight line, next minor, next major, or Unscheduled), updates the roadmap or `UNSCHEDULED.md`, then registers the active work item. Invoke it before any code change that is not already the active item, whenever the gate denies an edit, and to choose or triage work. |
 | Release gate (`scripts/release-gate/release_gate.py`, `PreToolUse` on `Edit`/`Write`/`MultiEdit`) | Denies edits under `src/`, `pipeline/`, `workers/`, `scripts/`, `public/`, `.github/` and root build config unless `.claude/active-work.json` names a valid item: a `kind`, a `release` whose roadmap file exists, and a `plan` file or roadmap `section`. `docs/`, `research/`, `src/content/`, `.claude/` and `*.md` are never gated, so planning is always possible. The deny holds in every permission mode. |
 | Release context (`scripts/release-gate/release_context.py`, `UserPromptSubmit`) | Injects two lines per turn: working version, active roadmap, roadmaps on disk, the active work item, and the rule to triage first when none is active. |
 
