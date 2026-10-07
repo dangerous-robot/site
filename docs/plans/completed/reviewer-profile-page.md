@@ -318,3 +318,4 @@ where `const op = operator();`. Keep the `id="who-runs-this"` anchor so existing
 |------|----------|-------|---------|
 | 2026-10-07 | agent (claude-opus-5-5, advisor pass) | implementation, iterated | Checked file paths and line refs against the code; added tests for email matching, unreviewed claims and the profile claim count; resolved the disclosure wording conflict; `OPERATOR_HANDLE` instead of list order |
 | 2026-10-07 | human (operator) | basic, iterated | Handle `brandon-f`; reviewer display text is the handle; Values signature keeps the full name and links the profile |
+| 2026-10-07 | agent (claude-opus-5-5) | implementation | Shipped; follow-ups recorded on the roadmap item: review copy says a person reviews, the full-name scan was dropped (`e70d9d9`), and the profile shows a photo when one exists (`a04756c`) |
