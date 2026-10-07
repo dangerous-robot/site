@@ -3,10 +3,13 @@ import { getCollection } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import Breadcrumb from '../../components/Breadcrumb.astro';
 import ClaimRow from '../../components/ClaimRow.astro';
+import { Image } from 'astro:assets';
 import { PEOPLE, reviewerHandle } from '../../lib/reviewers';
+import { profilePhoto } from '../../lib/people-photos';
 
 const person = PEOPLE.find((p) => p.handle === 'brandon-f');
 if (!person) throw new Error('people/brandon-f: no PEOPLE entry for brandon-f');
+const photo = profilePhoto(person.handle);
 const isoDay = (d: unknown) => (d instanceof Date ? d.toISOString().split('T')[0] : String(d));
 const reviewed = (await getCollection('claims', ({ data }) =>
   data.status === 'published' && reviewerHandle(data.audit?.human_review.reviewer) === person.handle,
@@ -19,10 +22,17 @@ const reviewed = (await getCollection('claims', ({ data }) =>
       { label: 'About', href: '/about' },
       { label: person.fullName },
     ]} />
-    <h1>{person.fullName}</h1>
-    <p>
-      Brandon Faloona ({person.handle} on this site) runs Dangerous Robot and reviews claims on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
-    </p>
+    <div class:list={['profile-head', { 'has-photo': photo }]}>
+      {photo && (
+        <Image src={photo} alt={`Photo of ${person.fullName}`} width={320} height={320} fit="cover" loading="eager" class="profile-photo" />
+      )}
+      <div>
+        <h1>{person.fullName}</h1>
+        <p>
+          Brandon Faloona ({person.handle} on this site) runs Dangerous Robot and reviews claims on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
+        </p>
+      </div>
+    </div>
     <h2>Claims reviewed</h2>
     {reviewed.length === 0 ? <p>None published yet.</p> : (
       <div class="claims-list">
@@ -41,3 +51,31 @@ const reviewed = (await getCollection('claims', ({ data }) =>
     )}
   </article>
 </Base>
+
+<style>
+  .profile-head.has-photo {
+    display: flex;
+    gap: var(--space-lg);
+    align-items: flex-start;
+    margin-top: var(--space-md);
+  }
+
+  .profile-photo {
+    flex: none;
+    width: 160px;
+    height: 160px;
+    border-radius: var(--radius-full);
+    object-fit: cover;
+  }
+
+  .profile-head.has-photo h1 {
+    margin-top: 0;
+  }
+
+  @media (max-width: 600px) {
+    .profile-head.has-photo {
+      flex-direction: column;
+      gap: var(--space-md);
+    }
+  }
+</style>
