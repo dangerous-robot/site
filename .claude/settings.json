@@ -22,6 +22,17 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "ls -t \"$CLAUDE_PROJECT_DIR\"/handoff/*.md 2>/dev/null | head -8 | while IFS= read -r f; do [ -n \"$h\" ] || { h=1; echo \"Handoff notes in handoff/ (newest first; see CLAUDE.md \\\"Session handoff notes\\\"). Read any that touch your task:\"; }; echo \"- handoff/$(basename \"$f\") ($(date -r \"$f\" +%F)) $(sed -n 1p \"$f\" | sed \"s/^# *//\") [$(sed -n 2p \"$f\")]\"; done; exit 0",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

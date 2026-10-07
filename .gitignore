@@ -60,3 +60,6 @@ docs/reports/*.pdf
 signatures-*.csv
 /exports/
 Claude outputs/
+
+# Session handoff notes (CLAUDE.md "Session handoff notes"): local working state, never committed.
+/handoff/
