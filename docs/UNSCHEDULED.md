@@ -102,6 +102,16 @@ Deferred when the high and critical fixes landed in `3f69aed`.
 
 ---
 
+## Release gate follow-ups
+
+Gaps in OPS-L (Release gate) from `docs/v1.0.0-roadmap.md`.
+
+| Work Item | Notes |
+|-----------|-------|
+| One work item per checkout, shared by every session | `.claude/active-work.json` is one file per checkout, so parallel sessions in the same checkout share whatever item is registered: one session's registration lets another edit code. Options: key the record by session, or require a worktree per session. |
+
+---
+
 ## Ops Runbook
 
 Goal: One reference doc covering the dev loop, pipeline operations, deploy process, and content schema changes. `docs/runbook.md` exists (2026-05-04) and covers the dev loop; the rest is unwritten (its own TODO lists the same sections).
