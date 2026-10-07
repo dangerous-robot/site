@@ -1,6 +1,6 @@
 # Plan: published-claim refresh trail (RF8, RF9)
 
-**Status**: `done` (commits e6c96a5, 016b378, 78ee844, 929afe9, fcb6920, 80f3f0f, plus the docs commit)
+**Status**: `done` (commits e6c96a5, 016b378, 78ee844, 929afe9, fcb6920, 80f3f0f, plus the docs commit; review fixes a6bf2cd, 93bf064, d4b340f, 204e409, bfc161a)
 **Last updated**: 2026-10-07
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
 **Serves**: Responsible AI chatbots, backed by claims (roadmap item SITE-J). This must ship before that page's claims are published and then refreshed.
@@ -23,7 +23,7 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 - [x] P1: snapshot the published state before a refresh overwrites it (RF8)
 - [x] P2: record dropped sources in the snapshot (RF8)
 - [x] P3: approval turns a verdict change into a `corrections` entry (RF8)
-- [x] P4: `dr publish` skips refreshed claims whose verdict changed
+- [x] P4: `dr publish` skips refreshed claims
 - [x] P5: approval records a reviewer verdict override
 - [x] A1: save the evaluator's reasoning, gaps and flag reasons in the sidecar (RF9)
 - [x] A2: say the real flag reason in the terminal (RF9)
@@ -40,7 +40,7 @@ Checked against HEAD `081ec37` on 2026-10-06; K10 and K13 re-checked against `4f
 
 | Id | Fact | Where |
 |----|------|-------|
-| K1 | `claim_refresh` writes the claim with `force=True` and `status=draft` in all four branches (three blocked, one success), and calls `_write_audit_sidecar(..., reset_review=True)` in each. | `orchestrator/cli.py:798`, branches at `:944-1110`, `reset_review=True` at `:979`, `:1027`, `:1079`, `:1125` |
+| K1 | `claim_refresh` writes the claim with `force=True` and `status=draft` in all four branches (three blocked, one success), and calls `_write_audit_sidecar(..., reset_review=True)` in each. Since the 2026-10-07 review fixes, each branch writes the sidecar before the claim. | `orchestrator/cli.py:798`, branches at `:944-1110`, `reset_review=True` at `:979`, `:1027`, `:1079`, `:1125` |
 | K2 | `reset_review=True` replaces `human_review` with all-null fields. Nothing else in the sidecar keeps the prior reviewer or date. | `orchestrator/persistence.py:495-512` |
 | K3 | `_write_claim_file` already keeps operator-owned `corrections` and `tags` on a forced overwrite, so a correction written at approval survives later refreshes. | `orchestrator/persistence.py:375-404` |
 | K4 | No code writes a `corrections` entry or `previous_verdict`. The site schema and claim page already support them: `{date, summary, previous_verdict}`, rendered as "Corrected {date}: {summary}" plus "Previous verdict: {label}". | `src/content.config.ts:212-216`; `src/pages/research/claims/[...slug].astro:144-150` |
@@ -49,7 +49,7 @@ Checked against HEAD `081ec37` on 2026-10-06; K10 and K13 re-checked against `4f
 | K7 | `ComparisonResult` carries `reasoning` and `evidence_gaps`, but `audit_block` writes neither. `needs_review` is true for a major or opposite verdict gap, an adjacent verdict gap with confidence 2+ steps apart, or more than one evidence gap. | `auditor/models.py:63-77`; `auditor/compare.py:61-65`; `orchestrator/persistence.py:482-493` |
 | K8 | The refresh terminal line always says "verdict disagreement", whatever set the flag. | `orchestrator/cli.py:1129-1130` |
 | K9 | The site's `auditSchema.audit` is a non-strict `z.object`. New optional keys pass through only if they are declared, and undeclared keys are stripped without error. | `src/content.config.ts:60-68` |
-| K10 | Detail pages for drafts are built only in dev; production builds skip them. A committed, refreshed, unapproved claim therefore drops off the live site until it is approved again. | `src/pages/research/claims/[...slug].astro` `getStaticPaths` (`import.meta.env.DEV \|\| data.status !== "draft"`) |
+| K10 | Production builds claim detail pages only for `published` and `archived` claims; the dev server builds every status. A committed, refreshed, unapproved claim (draft or blocked) therefore drops off the live site until it is approved again. | `src/pages/research/claims/[...slug].astro` `getStaticPaths` (`import.meta.env.DEV \|\| status is published or archived`) |
 | K11 | The `e` action in `dr review-queue` can change `verdict` before approval, so a published verdict can legitimately differ from `audit.analyst_verdict`. | `orchestrator/review_queue.py:136` (`_EDITABLE_FIELDS` includes `verdict`) |
 | K12 | All 3 committed claims are published, and each frontmatter verdict equals its sidecar `analyst_verdict`, so L1 lands without failing CI. `brave-browser/renewable-energy-hosting` went from `false` to `unverified` in the 2026-10-04 refresh and has no `corrections` entry (see Q1). | `research/claims/**` at HEAD |
 | K13 | The local pre-commit hook runs `dr lint` over the whole working tree and exits 1 on any error, then `inv check` (type check, build, lint, unit tests). An `error` lint on uncommitted research output therefore blocks unrelated commits. The hook is not tracked. CI runs `dr lint --severity error` on the committed tree. | `.git/hooks/pre-commit` (local); `.github/workflows/ci.yml:41` |
@@ -86,11 +86,12 @@ human_review:
 
 ### Rules
 
-1. **Snapshot once per published state.** If the claim on disk has `status: published`, the refresh writes `refresh.previous` from the current claim and sidecar. If the claim is not published but its sidecar already has a `refresh` block (a second refresh before re-approval), the block carries forward unchanged and only `dropped_sources` is recomputed against `previous.sources`. Otherwise, no `refresh` block.
+1. **Snapshot once per published state.** If the sidecar already has a `refresh` block, it carries forward unchanged and only `dropped_sources` is recomputed against `previous.sources`. This covers a second refresh before re-approval, and a rerun after a refresh wrote its sidecar but failed to write the claim. Otherwise, if the claim on disk has `status: published`, the refresh writes `refresh.previous` from the current claim and sidecar. Otherwise, no `refresh` block.
 2. **Approval closes the refresh.** `approve_claim(mode="approve")` on a claim with a `refresh` block works as follows:
    - **Verdict changed** (current frontmatter `verdict` differs from `refresh.previous.verdict`): it requires a correction summary and adds `{date: today, summary, previous_verdict: refresh.previous.verdict}` as the first frontmatter `corrections` entry (the site renders corrections newest first).
    - **Verdict unchanged:** it writes no correction.
    - **Either way**, it then deletes the `refresh` block. The `corrections` entry is the lasting public record; git history holds the rest.
+   - Archiving a claim (`mode="archive"`) also deletes the block, with no correction.
 3. **The correction summary is written by a person.** There is no generated default text on a reader-facing record. The CLI asks for it, and the review queue prompts for it.
 4. **Overrides are recorded, not inferred.** At approval, if the frontmatter `verdict` differs from `audit.analyst_verdict`, `human_review.verdict_override` records `{from, to}`. L1 accepts a mismatch only when this override matches.
 
@@ -116,7 +117,7 @@ human_review:
   - (c) verdict unchanged: no entry; the `refresh` block is gone.
   - (d) existing `corrections` entries are kept and the new one goes first.
   - (e) the review-queue `a` action on a changed-verdict item prompts for a summary (stdin `"a\nRe-checked: ...\nq\n"`) and passes it through.
-  - (f) retry after a failed sidecar write (simulate one by making the sidecar write raise once): the second `--approve` adds no duplicate correction (same `previous_verdict` and summary already present) and completes the approval.
+  - (f) retry after a failed sidecar write (simulate one by making the sidecar write raise once): the second `--approve` adds no duplicate correction and completes the approval. A retry is detected when the newest correction's `previous_verdict` equals `refresh.previous.verdict`, whatever its summary; a later refresh cycle never matches, because approving a correction moves the published verdict away from that value.
 - **Code:**
   - `approve_claim` gains `correction_summary: str | None = None`.
   - Add `set_claim_corrections(claim_path, entries)` next to `set_claim_status` in `orchestrator/persistence.py`.
@@ -130,10 +131,10 @@ human_review:
 
   Today's comment at `orchestrator/review.py:128` calls the sidecar the commit point, and that still holds for the status flip. The new step 2 must be idempotent so a rerun after a failure at step 3 or 4 completes cleanly; test (f) covers this.
 
-### P4: `dr publish` skips changed-verdict refreshes
+### P4: `dr publish` skips refreshed claims
 
-- **Test:** `dr publish --all --yes` over a fixture with one changed-verdict refreshed draft skips it with a warning that names `dr review --approve --correction`. An unchanged-verdict refreshed draft is published, and its `refresh` block is deleted.
-- **Code:** add a check in the `publish` command loop. Deleting the block reuses P3's helper.
+- **Test:** `dr publish --all --yes` skips every draft with a `refresh` block, leaves its files unchanged and exits 1. A changed-verdict skip names `dr review --approve --correction`; an unchanged-verdict skip names `dr review --approve`. `dr publish` records no reviewer, so publishing a refresh would erase the prior sign-off.
+- **Code:** add a check in the `publish` command loop.
 
 ### P5: record reviewer verdict overrides
 
@@ -142,7 +143,7 @@ human_review:
 
 ### A1: save the evaluator's reasoning and flag reasons (RF9)
 
-- **Test** (`tests/test_compare.py`): add `needs_review_reasons(result) -> list[str]` in `auditor/compare.py` (pure). It returns `"verdict disagreement"` for a major or opposite gap, `"confidence gap"` for an adjacent verdict gap with confidence 2+ steps apart, and `"2+ evidence gaps"` for more than one gap; otherwise `[]`. The cases mirror the `needs_review` expression at `auditor/compare.py:61-65`. A drift test asserts `bool(reasons) == result.needs_review` over a grid of inputs.
+- **Test** (`tests/test_compare.py`): add `needs_review_reasons(result) -> list[str]` in `auditor/compare.py` (pure). It returns `"verdict disagreement"` for a major or opposite gap, `"confidence gap"` for an adjacent verdict gap with confidence 2+ steps apart, and `"2+ evidence gaps"` for more than one gap; otherwise `[]`. The cases mirror the `needs_review` expression at `auditor/compare.py:61-65`. `compare` derives `needs_review` from the same rule, so the case tests cover both.
 - **Test** (`tests/test_audit_trail.py`): the sidecar `audit` block contains `auditor_reasoning`, `evidence_gaps` and `needs_review_reasons`.
 - **Code:** extend `audit_block` in `_write_audit_sidecar` (`orchestrator/persistence.py:482-493`). This touches every caller that passes a `ComparisonResult` (refresh, onboard, verify, `dr step-audit --write`); none of them needs a code change.
 
@@ -192,7 +193,7 @@ human_review:
    - `dr review-queue` shows the "Was published" line.
    - Approving with a correction adds the `corrections` entry and removes `refresh`.
    - `npm run build` renders "Corrected {date}: {summary}" and "Previous verdict: {label}" on that page.
-4. `dr publish --dry-run --all` lists the changed-verdict refresh as skipped.
+4. `dr publish --dry-run --all` lists the refreshed claim as skipped.
 
 ## Out of scope
 
@@ -212,3 +213,4 @@ human_review:
 |---|---|---|---|
 | 2026-10-06 | agent (claude-opus-5-5, plan review) | initial plan + self-review | Written from RF8 and RF9 (`docs/UNSCHEDULED.md`) and the reader-facing slice of `audit-trail-extensions.md`. Facts K1 to K13 checked against HEAD `081ec37`. Self-review changes:<br>- Added P5 and the `verdict_override` field after finding that the `e` action can legitimately change the verdict (K11), which would otherwise make L1 fail on valid claims.<br>- Made L2 a warning because pre-commit checks the whole tree (K13).<br>- Required a person-written correction summary rather than generated text.<br>- Added the P3 idempotency test for a sidecar write that fails after the frontmatter write.<br><br>Second pass (advisor):<br>- Confirmed K10 (no production draft filter for claims).<br>- Re-sourced K13 to the local hook.<br>- Spelled out the P3 write order.<br>- Added Q2. |
 | 2026-10-07 | agent (claude-opus-5-5, implementation) | implementation, iterated | Implemented P1 to V1. Changes from the plan:<br>- K10 changed: production builds skip draft detail pages, so an unapproved refresh drops off the live site instead of replacing the verdict; K10, K13 and the runbook wording match.<br>- Corrections go first, not appended, to match "newest first" in `src/content.config.ts`. The retry check keys on previous verdict plus summary, not the date, so a retry on a later day still dedupes; a retry must pass the same summary.<br>- A pending `refresh` block carries forward whether or not `reviewed_at` is set; a sign-off-only `dr review` would otherwise let a second refresh drop the snapshot.<br>- `verdict_override` is kept on sidecar rewrites that keep sign-off (`dr step-audit --write`), or L1 would fail valid claims.<br>- A2 also fixed the "analyst/auditor disagree" error in `orchestrator/pipeline.py`; `needs_review` and its reasons now share one rule.<br>- U1 renders reasoning and gaps as their own `audit-section` blocks after "Verdict check", like the other sections.<br>- V1.3 used a scratch copy with `verify_claim` stubbed (no model calls). |
+| 2026-10-07 | agent (claude-opus-5-5, independent code review, then fixes) | deep, implementation, iterated | Review of `e6c96a5..e709800`; fixed test-first:<br>- R1: a retried approval is detected by the newest correction's `previous_verdict` alone. The verdict-plus-summary match skipped a real later cycle with a repeated summary, and duplicated a reworded retry (a6bf2cd).<br>- R2: `dr publish` skips every refreshed claim. It used to publish an unchanged-verdict refresh with `reviewer: null`, erasing the prior sign-off; P4 is rewritten to match (93bf064).<br>- R3: production builds claim pages only for `published` and `archived`. A committed blocked refresh used to replace the published verdict at its URL; K10 is updated (bfc161a).<br>- R4: archiving removes the `refresh` block, so it no longer leaves a permanent L2 warning (a6bf2cd).<br>- R5: `dr publish` exits 1 when it skips a refreshed claim, like a missing `criteria_slug` (93bf064).<br>- R6: `research_claim` names the real flag reasons, and the circular drift test is removed (d4b340f).<br>- R7: `claim_refresh` writes the sidecar before the claim, and a pending `refresh` block wins over a new snapshot, so a failed write in either order keeps the snapshot on rerun; Rule 1 and K1 are updated (204e409). |
