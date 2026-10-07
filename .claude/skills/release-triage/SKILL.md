@@ -111,7 +111,7 @@ python3 scripts/release-gate/work_item.py start --title "{title}" --kind {kind} 
 
 ## Choosing the next item
 
-Answers "what should I work on next?" with one item, its first step, and what Brandon must decide. It works from the files alone (Step 1 state), so any session gets the same answer, and changes nothing until N4.
+Answers "what should I work on next?" with one item, its first step, and what the operator must decide. It works from the files alone (Step 1 state), so any session gets the same answer, and changes nothing until N4.
 
 **Rank** comes from `docs/priorities.md` ("How to read it").
 
@@ -119,14 +119,14 @@ Answers "what should I work on next?" with one item, its first step, and what Br
 
 Stop at the first step that gives an answer:
 
-- **N1. Finish what is started.** `work_item.py status` names an item, or a roadmap item is `in progress`: continue it. The record is shared by every session in the checkout (`UNSCHEDULED.md` "Release gate follow-ups"), so if another session registered the item, do not take it over: ask Brandon, or work in a worktree. Uncommitted docs edits alone are not a started item.
-- **N2. Ship a finished beta.** The next-beta line has entries and none is open: the answer is "deploy beta.N" (Brandon's call).
-- **N3. Pick one.** Candidates are the open entries on the next-beta line and, while the beta has room, open `## Scheduled` items not on it. Skip `decision needed` items and name each decision for Brandon. Take the highest-ranked; on a tie, prefer an entry on the line, then `ready` over `plan needed`, then roadmap order. Name for Brandon any `propose schedule` backlog item that ranks at or above the winner. No candidate: run § Backlog triage, then ask Brandon.
-- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, add it as the entry for that first step; ask Brandon first only if that takes the beta past the size guideline. Then register (Step 5), using that line's plan when it has one.
+- **N1. Finish what is started.** `work_item.py status` names an item, or a roadmap item is `in progress`: continue it. The record is shared by every session in the checkout (`UNSCHEDULED.md` "Release gate follow-ups"), so if another session registered the item, do not take it over: ask the operator, or work in a worktree. Uncommitted docs edits alone are not a started item.
+- **N2. Ship a finished beta.** The next-beta line has entries and none is open: the answer is "deploy beta.N" (the operator's call).
+- **N3. Pick one.** Candidates are the open entries on the next-beta line and, while the beta has room, open `## Scheduled` items not on it. Skip `decision needed` items and name each decision for the operator. Take the highest-ranked; on a tie, prefer an entry on the line, then `ready` over `plan needed`, then roadmap order. Name for the operator any `propose schedule` backlog item that ranks at or above the winner. No candidate: run § Backlog triage, then ask the operator.
+- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, add it as the entry for that first step; ask the operator first only if that takes the beta past the size guideline. Then register (Step 5), using that line's plan when it has one.
 
 Answer in this form:
 
-> **Next:** {ID (name)}, starting with {first step}. **Why:** rank {N} theme "{theme}"; beta.{M} has {n} open entries (guideline 5). **Brandon decides:** {each decision named above, or "nothing"}.
+> **Next:** {ID (name)}, starting with {first step}. **Why:** rank {N} theme "{theme}"; beta.{M} has {n} open entries (guideline 5). **Operator decides:** {each decision named above, or "nothing"}.
 
 Also say whether § Backlog triage is due; the answer does not wait for it.
 
@@ -134,7 +134,7 @@ Also say whether § Backlog triage is due; the answer does not wait for it.
 
 Gives each item in `docs/UNSCHEDULED.md` a marker: the priority theme it serves and what happens to it next (format in that file's header). Triage schedules nothing by itself, except a `patch` (rule 4 below).
 
-**Run it** when a beta or release ships, when the order in `docs/priorities.md` changes, when N3 finds no candidate, or when Brandon asks.
+**Run it** when a beta or release ships, when the order in `docs/priorities.md` changes, when N3 finds no candidate, or when the operator asks.
 
 1. Read the Step 1 state.
 2. Pick the items: those with no marker, and markers that disagree with `priorities.md` or the roadmap (the theme is gone, or the work is now a roadmap line). "Deferred plans" rows carry no marker; raise one's revival (AGENTS.md rule 8) only when a theme now covers it.
@@ -146,7 +146,7 @@ Gives each item in `docs/UNSCHEDULED.md` a marker: the priority theme it serves 
    5. Otherwise: `keep`.
 
    Leave an item you have not examined unmarked.
-4. Write the markers in one change. Then ask Brandon once, one line per `propose` marker: "item (section): proposal, reason". Apply each answer at once: schedule runs Steps 2 to 5 (the item leaves `UNSCHEDULED.md`), defer follows AGENTS.md rule 8, drop deletes the item, and no sets `keep (Brandon)`. Do not propose a `(Brandon)` item again unless its theme's rank changes.
+4. Write the markers in one change. Then ask the operator once, one line per `propose` marker: "item (section): proposal, reason". Apply each answer at once: schedule runs Steps 2 to 5 (the item leaves `UNSCHEDULED.md`), defer follows AGENTS.md rule 8, drop deletes the item, and no sets `keep (operator)`. Do not propose a `(operator)` item again unless its theme's rank changes.
 
 ## Hotfix path
 
