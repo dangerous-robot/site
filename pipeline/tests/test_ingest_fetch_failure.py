@@ -126,6 +126,16 @@ async def test_other_page_text_does_not_count(fetched: str) -> None:
     assert "https://brave.com/transparency/" in reason
 
 
+@pytest.mark.asyncio
+async def test_arxiv_abstract_does_not_count_for_its_full_text() -> None:
+    """Fetching the abstract-only abs page does not satisfy a requested html page."""
+    requested = "https://arxiv.org/html/2502.12447v1"
+    ctx = await _fetch_one(requested, "https://arxiv.org/abs/2502.12447")
+    reason = fetch_failure_reason(ctx.deps)
+    assert reason is not None
+    assert requested in reason
+
+
 # ---------------------------------------------------------------------------
 # _ingest_one: reject outputs with no fetched page text or failed validation
 # ---------------------------------------------------------------------------

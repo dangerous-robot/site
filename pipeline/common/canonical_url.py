@@ -12,10 +12,18 @@ percent-encoding is preserved as-is to avoid double-encoding.
 
 Malformed input raises ``ValueError`` -- silent fallthrough would make
 dedup unreliable.
+
+``canonical_key`` adds one rule on top for lookup keys: every form of
+one arXiv paper (abs, html or pdf page, any version, ``http`` or
+``https``, ``export.arxiv.org``) keys as ``https://arxiv.org/abs/{id}``.
+This is the one exception to keeping ``http`` and ``https`` apart.
+``canonicalize`` and ``same_resource`` stay page-exact, because the abs
+page carries only the abstract and is not the same text as the paper.
 """
 
 from __future__ import annotations
 
+import re
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 # Tracking params to drop (matched case-insensitively on the key).
@@ -154,12 +162,33 @@ def _normalize_query(query: str) -> str:
     return urlencode(kept, doseq=False)
 
 
+_ARXIV_HOSTS = frozenset({"arxiv.org", "export.arxiv.org"})
+# New-style ids (2502.12447) or old-style archive/number ids (hep-th/9901001,
+# math.AG/0601001), then an optional version, ".pdf" or trailing path.
+_ARXIV_PAPER_PATH = re.compile(
+    r"/(?:abs|html|pdf)/"
+    r"(?P<id>\d{4}\.\d{4,5}|[a-z][a-z-]*(?:\.[A-Za-z]{2})?/\d{7})"
+    r"(?:v\d+)?(?:\.pdf)?(?:/.*)?"
+)
+
+
 def canonical_key(url: str) -> str:
-    """Canonical form for use as a lookup key; malformed URLs key as themselves."""
+    """Canonical form for use as a lookup key; malformed URLs key as themselves.
+
+    Every form of one arXiv paper keys as ``https://arxiv.org/abs/{id}``
+    (no version, query or fragment), so the dedup indexes treat them as one
+    source while the stored file keeps the URL it was ingested from.
+    """
     try:
-        return canonicalize(url)
+        canonical = canonicalize(url)
     except ValueError:
         return url.strip()
+    parts = urlsplit(canonical)
+    if parts.hostname in _ARXIV_HOSTS and parts.port is None:
+        paper = _ARXIV_PAPER_PATH.fullmatch(parts.path)
+        if paper:
+            return f"https://arxiv.org/abs/{paper.group('id')}"
+    return canonical
 
 
 def same_resource(a: str | None, b: str | None) -> bool:

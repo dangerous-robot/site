@@ -1110,3 +1110,35 @@ def test_merge_kept_merges_variants_absent_from_candidates() -> None:
 
     assert urls == ["https://new.com/p"]
     assert addresses == {"https://new.com/p": ["sq1", "sq2"]}
+
+
+def test_merge_kept_merges_forms_of_one_arxiv_paper_first_kept_wins() -> None:
+    abs_url = "https://arxiv.org/abs/2502.12447"
+    html_url = "https://arxiv.org/html/2502.12447v1"
+    candidates = [
+        SearchCandidate(url=abs_url, title="A", snippet="a", from_query="q1"),
+        SearchCandidate(url=html_url, title="H", snippet="h", from_query="q1"),
+    ]
+    kept = [
+        ScoredCandidate(url=html_url, addresses=["sq1"]),
+        ScoredCandidate(url=abs_url, addresses=["sq2"]),
+    ]
+
+    urls, addresses = _merge_kept(kept, candidates)
+
+    assert urls == [html_url]
+    assert addresses == {html_url: ["sq1", "sq2"]}
+
+
+@pytest.mark.asyncio
+async def test_execute_searches_keeps_arxiv_abs_and_html_apart() -> None:
+    """Search dedup stays page-exact; the abs page holds only the abstract."""
+    results = [
+        {"url": "https://arxiv.org/abs/2502.12447", "title": "A", "snippet": "a"},
+        {"url": "https://arxiv.org/html/2502.12447v1", "title": "H", "snippet": "h"},
+    ]
+    with patch("researcher.decomposed.search_brave", new=AsyncMock(return_value=results)):
+        async with httpx.AsyncClient() as client:
+            candidates = await execute_searches(["q1"], client)
+
+    assert [c.url for c in candidates] == [r["url"] for r in results]

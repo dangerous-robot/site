@@ -489,6 +489,13 @@ async def decomposed_research(
         return _commit(*_fallback_to_candidates())
 
 
+def _page_key(url: str) -> str:
+    try:
+        return canonicalize(url)
+    except ValueError:
+        return url.strip()
+
+
 def _merge_kept(
     kept: list[ScoredCandidate], candidates: list[SearchCandidate]
 ) -> tuple[list[str], dict[str, list[str]]]:
@@ -499,11 +506,15 @@ def _merge_kept(
     prefetched body reachable, and merging stops two forms of one page from
     being ingested as separate sources with the same id.
     """
-    by_key = {canonical_key(c.url): c.url for c in candidates}
+    by_page = {_page_key(c.url): c.url for c in candidates}
+    # Forms of one arXiv paper share a key but are separate candidates; the
+    # first one kept stands for the paper.
+    by_key: dict[str, str] = {}
     urls: list[str] = []
     addresses: dict[str, list[str]] = {}
     for sc in kept:
-        url = by_key.setdefault(canonical_key(sc.url), sc.url)
+        url = by_page.get(_page_key(sc.url), sc.url)
+        url = by_key.setdefault(canonical_key(url), url)
         if url not in addresses:
             urls.append(url)
             addresses[url] = []

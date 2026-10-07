@@ -222,6 +222,21 @@ class TestApplyUrlDedup:
         assert to_ingest == []
         assert [(u, sid) for u, sid, _ in cached] == [(urls[0], "2026/a")]
 
+    def test_apply_url_dedup_matches_any_form_of_an_arxiv_paper(self, tmp_path: Path) -> None:
+        """The committed arXiv html source is reused for the search tool's abs id URL."""
+        repo_root = Path(__file__).resolve().parents[2]
+        committed = repo_root / "research" / "sources" / "2025" / "250212447v1.md"
+        dest = tmp_path / "research" / "sources" / "2025" / "250212447v1.md"
+        dest.parent.mkdir(parents=True)
+        dest.write_text(committed.read_text(encoding="utf-8"), encoding="utf-8")
+        url_index = build_source_url_index(tmp_path)
+        urls = ["http://arxiv.org/abs/2502.12447v1"]
+
+        to_ingest, cached = _apply_url_dedup(urls, url_index, tmp_path)
+
+        assert to_ingest == []
+        assert [(u, sid) for u, sid, _ in cached] == [(urls[0], "2025/250212447v1")]
+
 
 def test_invert_addresses_uses_source_addresses_over_disk_url() -> None:
     """A cached source's on-disk url can differ from the researcher's URL."""

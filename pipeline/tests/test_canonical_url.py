@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from common.canonical_url import canonicalize
+from common.canonical_url import canonical_key, canonicalize, same_resource
 
 
 class TestCanonicalize:
@@ -203,3 +203,71 @@ class TestCanonicalize:
     def test_non_string_raises(self) -> None:
         with pytest.raises(ValueError):
             canonicalize(None)  # type: ignore[arg-type]
+
+
+_ARXIV_KEY = "https://arxiv.org/abs/2502.12447"
+
+
+class TestArxivKey:
+    """``canonical_key`` folds every form of one arXiv paper into one key;
+    ``canonicalize`` and ``same_resource`` stay page-exact."""
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://arxiv.org/abs/2502.12447",
+            "https://arxiv.org/abs/2502.12447v2",
+            "http://arxiv.org/abs/2502.12447v1",
+            "https://arxiv.org/html/2502.12447v1",
+            "https://arxiv.org/html/2502.12447v1/",
+            "https://arxiv.org/pdf/2502.12447v1",
+            "https://arxiv.org/pdf/2502.12447.pdf",
+            "https://export.arxiv.org/abs/2502.12447",
+            "https://www.arxiv.org/abs/2502.12447v3?context=cs#abstract",
+        ],
+    )
+    def test_paper_forms_share_abs_key(self, url: str) -> None:
+        assert canonical_key(url) == _ARXIV_KEY
+
+    @pytest.mark.parametrize(
+        ("url", "key"),
+        [
+            ("https://arxiv.org/abs/hep-th/9901001", "https://arxiv.org/abs/hep-th/9901001"),
+            ("http://arxiv.org/abs/math.AG/0601001v1", "https://arxiv.org/abs/math.AG/0601001"),
+            ("https://arxiv.org/pdf/hep-th/9901001v2.pdf", "https://arxiv.org/abs/hep-th/9901001"),
+        ],
+    )
+    def test_old_style_ids(self, url: str, key: str) -> None:
+        assert canonical_key(url) == key
+
+    def test_key_is_idempotent(self) -> None:
+        key = canonical_key("http://arxiv.org/abs/math.AG/0601001v1")
+        assert canonical_key(key) == key
+        assert canonical_key(_ARXIV_KEY) == _ARXIV_KEY
+
+    @pytest.mark.parametrize(
+        ("url", "expected"),
+        [
+            ("https://arxiv.org/html/2502.12447v1", "https://arxiv.org/html/2502.12447v1"),
+            ("http://arxiv.org/abs/2502.12447v1", "http://arxiv.org/abs/2502.12447v1"),
+            ("https://arxiv.org/pdf/2502.12447.pdf", "https://arxiv.org/pdf/2502.12447.pdf"),
+        ],
+    )
+    def test_canonicalize_stays_page_exact(self, url: str, expected: str) -> None:
+        assert canonicalize(url) == expected
+
+    def test_abs_and_html_are_different_pages(self) -> None:
+        assert not same_resource(
+            "https://arxiv.org/abs/2502.12447", "https://arxiv.org/html/2502.12447v1"
+        )
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://arxiv.org/list/cs.AI/recent",
+            "https://arxiv.org/abs/not-an-id",
+            "https://example.org/abs/2502.12447",
+        ],
+    )
+    def test_non_paper_urls_key_as_before(self, url: str) -> None:
+        assert canonical_key(url) == canonicalize(url)
