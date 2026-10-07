@@ -735,12 +735,19 @@ async def _ingest_claim_sources(
     notes = IngestNotes()
     remaining = max(0, cfg.max_sources - len(cached_sources))
     if remaining > 0:
+        # Every indexed URL of a source the claim already has, so a fetch that
+        # redirects to one does not count toward ``remaining``.
+        cached_by_id = {sid: url for url, sid, _sd in cached_sources}
+        known_pages = {
+            key: cached_by_id[sid] for key, sid in url_index.items() if sid in cached_by_id
+        }
         source_files, ingest_errors = await _ingest_urls(
             client, urls_to_ingest, cfg, sem,
             target=remaining,
             prefetched_bodies=ro.prefetched_bodies,
             acquisition_out=_trace_acquisition_sink(result.research_trace),
             notes=notes,
+            known_pages=known_pages,
         )
     else:
         source_files, ingest_errors = [], []
@@ -982,13 +989,16 @@ async def _ingest_urls(
     acquisition_out: dict[str, dict] | None = None,
     notes: IngestNotes | None = None,
     archive: bool = True,
+    known_pages: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
     stopping once max_sources successes are collected (~2 concurrent).
 
     Two URLs that reach one page (by redirect) give one result: the later
     one is dropped, does not count toward ``target``, and is recorded in
-    ``notes.aliases``. ``notes.final_urls`` maps each requested URL to the
+    ``notes.aliases``. ``known_pages`` (canonical key -> requested URL) names
+    pages the claim already has from the dedup index; a URL that reaches one
+    is dropped the same way. ``notes.final_urls`` maps each requested URL to the
     URL its live fetch ended on. ``archive=False`` skips the archive lookup
     for callers that keep only the summary.
 
@@ -1022,7 +1032,7 @@ async def _ingest_urls(
     errors: list[StepError] = []
     stop = asyncio.Event()
     # canonical key of each kept result's requested and final URL -> requested URL
-    kept_pages: dict[str, str] = {}
+    kept_pages: dict[str, str] = dict(known_pages or {})
 
     def _same_page_as_kept(url: str) -> str | None:
         for candidate in (url, notes.final_urls.get(url)):
@@ -1080,7 +1090,7 @@ async def _ingest_urls(
     tasks = [asyncio.create_task(_worker(url)) for url in pool]
     await asyncio.gather(*tasks, return_exceptions=True)
     kept = results[:target]
-    kept_urls = {url for url, _sf in kept}
+    kept_urls = {url for url, _sf in kept} | set((known_pages or {}).values())
     for alias, kept_url in list(notes.aliases.items()):
         if kept_url not in kept_urls:
             del notes.aliases[alias]

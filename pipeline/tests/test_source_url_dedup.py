@@ -643,3 +643,63 @@ class TestSameBatchRedirects:
         (first,) = [u for u in (a, b) if u in kept]
         (dropped,) = [u for u in (a, b) if u not in kept]
         assert notes.aliases == {dropped: first}
+
+
+class TestRedirectToACachedSourceDoesNotCount:
+    """A fresh fetch that lands on a source the claim already has is an alias, not a success."""
+
+    @pytest.mark.asyncio
+    async def test_waterfall_keeps_going_past_it(self) -> None:
+        from common.canonical_url import canonical_key
+        from orchestrator.pipeline import IngestNotes
+
+        cached, a, c = "https://example.org/cached", "https://example.org/a", "https://example.org/c"
+        final = {a: _NEW, c: c}
+
+        async def _fake_ingest_one(client, url, cfg, today, sem, notes=None, **_):
+            notes.final_urls[url] = final[url]
+            return (url, _make_source_file(url, url.rsplit("/", 1)[1]))
+
+        notes = IngestNotes()
+        with patch("orchestrator.pipeline._ingest_one", side_effect=_fake_ingest_one):
+            results, _errors = await _ingest_urls(
+                None, [a, c], _make_cfg(), asyncio.Semaphore(8), target=1, notes=notes,
+                known_pages={canonical_key(_NEW): cached},
+            )
+
+        assert [u for u, _sf in results] == [c]
+        assert notes.aliases == {a: cached}
+
+    @pytest.mark.asyncio
+    async def test_claim_reaches_its_target(self, tmp_path: Path, stub_ingest_model) -> None:
+        import httpx
+        import respx
+
+        from orchestrator.pipeline import verify_claim
+        from researcher.decomposed import ResearchOutput
+
+        _write_source_md(tmp_path / "research" / "sources" / "2025" / "new.md", url=_NEW)
+        other = "https://example.org/page"
+
+        async def _fake_research(*args, **kwargs):
+            return ResearchOutput(
+                urls=[_NEW, _OLD, other],
+                url_addresses={_NEW: ["sq1"], _OLD: ["sq2"], other: ["sq3"]},
+                trace={"mode": "decomposed"},
+            )
+
+        async def _slow_page(request):
+            # Lets the redirect finish first, so it is the one that would count.
+            await asyncio.sleep(0.05)
+            return httpx.Response(200, html=_PAGE)
+
+        cfg = VerifyConfig(model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path))
+        with respx.mock as mock, patch("orchestrator.pipeline._research", side_effect=_fake_research):
+            _mock_redirect(mock)
+            mock.get(other).mock(side_effect=_slow_page)
+            result = await verify_claim("Example", "claim text", config=cfg)
+
+        assert result.cached_source_ids == ["2025/new"]
+        assert [u for u, _sf in result.source_files] == [other]
+        assert result.urls_failed == []
+        assert result.sources[0]["addresses"] == ["sq1", "sq2"]
