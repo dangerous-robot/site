@@ -7,7 +7,7 @@ wallpaper: ai-safety
 topics:
   - ai-safety
 noindex: false
-featured: true
+featured: false
 ---
 
 Research by the [Future of Life Institute](https://futureoflife.org/ai-safety-index-winter-2025/). The most comprehensive independent assessment of AI company safety practices to date. [Read the full report](https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf).
