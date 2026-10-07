@@ -63,3 +63,11 @@ Claude outputs/
 
 # Session handoff notes (CLAUDE.md "Session handoff notes"): local working state, never committed.
 /handoff/
+
+# Image candidate drop folder (.claude/skills/image-candidate): downloads land here, the skill files them under media/candidates/.
+/image-inbox/
+# Candidate image files stay local: the repo is public, and stock licences (Pixabay,
+# Unsplash, Pexels) forbid redistributing the files as-is. Only the .yml records are committed.
+/media/candidates/*
+!/media/candidates/*.yml
+!/media/candidates/README.md

@@ -1,0 +1,41 @@
+id: arrows-colorful-direction-paths
+status: needs-info
+status_note: "Creator and AI label unconfirmed: pixabay.com is blocked from the cloud session. The file came from a chat attachment, which may be re-encoded; replace it with the Pixabay download."
+title: Arrows Colorful Direction Paths
+source:
+  site: pixabay
+  site_id: "10142347"
+  page_url: https://pixabay.com/illustrations/arrows-colorful-direction-paths-10142347/
+  creator: ""
+  creator_url: ""
+  uploaded: ""
+  ai_generated: unknown
+  verified: false
+license:
+  name: Pixabay Content License
+  url: https://pixabay.com/service/license-summary/
+  attribution_required: false
+  restrictions: No selling unaltered copies; no redistribution as stock.
+  permission: ""
+credit_line: "Image by <creator> from Pixabay"
+file:
+  name: arrows-colorful-direction-paths.webp
+  original_name: 1.webp
+  format: webp
+  width: 1604
+  height: 2000
+  bytes: 349126
+  sha256: 5eae113f65d5eba62668c46000a57e4ccb64022d2583db628f514d8d7aa47fe9
+  downloaded: 2026-10-07
+look:
+  kind: art
+  palette: color
+  orientation: portrait
+  has_text: false
+alt_draft: "Dozens of overlapping colored arrows pointing in every direction, tangled at the center."
+intended_for: []
+used_by: []
+flags:
+  - "portrait: shows small in the landscape spotlight, post and social boxes"
+  - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
+notes: ""

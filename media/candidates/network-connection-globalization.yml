@@ -1,0 +1,40 @@
+id: network-connection-globalization
+status: needs-file
+status_note: "No file on disk (the chat image was not saved to this session). Creator and AI label unconfirmed: pixabay.com is blocked from the cloud session."
+title: Network Connection Globalization
+source:
+  site: pixabay
+  site_id: "9947397"
+  page_url: https://pixabay.com/illustrations/network-connection-globalization-9947397/
+  creator: ""
+  creator_url: ""
+  uploaded: ""
+  ai_generated: unknown
+  verified: false
+license:
+  name: Pixabay Content License
+  url: https://pixabay.com/service/license-summary/
+  attribution_required: false
+  restrictions: No selling unaltered copies; no redistribution as stock.
+  permission: ""
+credit_line: "Image by <creator> from Pixabay"
+file:
+  name: ""
+  original_name: ""
+  format: ""
+  width:
+  height:
+  bytes:
+  sha256: ""
+  downloaded: ""
+look:
+  kind: art
+  palette: color
+  orientation: landscape
+  has_text: false
+alt_draft: "A dense tangle of black curved lines and rings over a glowing blue background."
+intended_for: []
+used_by: []
+flags:
+  - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
+notes: "From the chat preview: landscape, about 3:2. Confirm the size once the file is in."
