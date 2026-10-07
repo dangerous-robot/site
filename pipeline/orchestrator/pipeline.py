@@ -396,23 +396,10 @@ async def verify_claim(
                 url_index = build_source_url_index(repo_root)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
-            remaining = max(0, cfg.max_sources - len(cached_sources))
-            notes = IngestNotes()
-            if remaining > 0:
-                source_files, ingest_errors = await _ingest_urls(
-                    client, urls_to_ingest, cfg, _sem,
-                    target=remaining,
-                    prefetched_bodies=ro.prefetched_bodies,
-                    acquisition_out=_trace_acquisition_sink(result.research_trace),
-                    notes=notes,
-                )
-            else:
-                source_files, ingest_errors = [], []
-            source_files = _reuse_stored_redirect_targets(
-                source_files, cached_sources, notes, url_index, repo_root
+            source_files, ingest_errors, notes = await _ingest_claim_sources(
+                client, urls_to_ingest, cached_sources, ro, result, cfg, _sem,
+                url_index, repo_root,
             )
-            result.final_urls = notes.final_urls
-            result.archive = notes.archive
 
             for url, sid, sd in cached_sources:
                 sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
@@ -726,6 +713,42 @@ def _reuse_stored_redirect_targets(
     return fresh
 
 
+async def _ingest_claim_sources(
+    client: httpx.AsyncClient,
+    urls_to_ingest: list[str],
+    cached_sources: list[tuple[str, str, dict]],
+    ro: ResearchOutput,
+    result: "VerificationResult",
+    cfg: VerifyConfig,
+    sem: asyncio.Semaphore,
+    url_index: dict[str, str],
+    repo_root: Path,
+) -> tuple[list[tuple[str, SourceFile]], list[StepError], IngestNotes]:
+    """Ingest up to the claim's remaining source count; return fresh sources, errors and notes.
+
+    Redirects to a stored page move into ``cached_sources``, and ``result``
+    gains the final URLs and archive records the sidecar and index need.
+    """
+    notes = IngestNotes()
+    remaining = max(0, cfg.max_sources - len(cached_sources))
+    if remaining > 0:
+        source_files, ingest_errors = await _ingest_urls(
+            client, urls_to_ingest, cfg, sem,
+            target=remaining,
+            prefetched_bodies=ro.prefetched_bodies,
+            acquisition_out=_trace_acquisition_sink(result.research_trace),
+            notes=notes,
+        )
+    else:
+        source_files, ingest_errors = [], []
+    source_files = _reuse_stored_redirect_targets(
+        source_files, cached_sources, notes, url_index, repo_root
+    )
+    result.final_urls = notes.final_urls
+    result.archive = notes.archive
+    return source_files, ingest_errors, notes
+
+
 def _addresses_with_aliases(
     url: str, url_addresses: dict[str, list[str]], aliases: dict[str, str]
 ) -> list[str]:
@@ -850,6 +873,7 @@ async def _ingest_one(
     failures_out: list[dict] | None = None,
     repo_root: Path | None = None,
     notes: IngestNotes | None = None,
+    archive: bool = True,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError.
 
@@ -868,7 +892,8 @@ async def _ingest_one(
     * ``notes``: gains, for a successful ingest, the URL its live fetch
       ended on and the sidecar record of the archive lookup.
 
-    A successful ingest also gets its ``archived_url`` from that lookup.
+    A successful ingest also gets its ``archived_url`` from that lookup,
+    unless ``archive`` is False (the caller discards the source).
     """
     repo_root = repo_root or _cfg_repo_root(cfg)
     deps = IngestorDeps(
@@ -917,13 +942,14 @@ async def _ingest_one(
         outcome = StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
 
     if isinstance(outcome, tuple):
-        # Outside the LLM semaphore and the ingest time limit: a slow
-        # archive.org must not turn a good ingest into a timeout.
-        archive = await archive_after_ingest(outcome[1], deps)
-        if notes is not None:
-            notes.archive[url] = archive
-            if deps.final_url:
-                notes.final_urls[url] = deps.final_url
+        if archive:
+            # Outside the LLM semaphore and the ingest time limit: a slow
+            # archive.org must not turn a good ingest into a timeout.
+            record = await archive_after_ingest(outcome[1], deps)
+            if notes is not None:
+                notes.archive[url] = record
+        if notes is not None and deps.final_url:
+            notes.final_urls[url] = deps.final_url
 
     if acquisition_out is not None:
         _merge_acquisition_writes(acquisition_out, deps.acquisition_writes)
@@ -943,6 +969,7 @@ async def _ingest_urls(
     prefetched_bodies: dict[str, str] | None = None,
     acquisition_out: dict[str, dict] | None = None,
     notes: IngestNotes | None = None,
+    archive: bool = True,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
     stopping once max_sources successes are collected (~2 concurrent).
@@ -950,7 +977,8 @@ async def _ingest_urls(
     Two URLs that reach one page (by redirect) give one result: the later
     one is dropped, does not count toward ``target``, and is recorded in
     ``notes.aliases``. ``notes.final_urls`` maps each requested URL to the
-    URL its live fetch ended on.
+    URL its live fetch ended on. ``archive=False`` skips the archive lookup
+    for callers that keep only the summary.
 
     When ``prefetched_bodies`` is supplied, each URL's body (if present)
     is threaded into ``IngestorDeps`` so ``web_fetch`` returns it without
@@ -1006,6 +1034,7 @@ async def _ingest_urls(
                 failures_out=url_failures,
                 repo_root=repo_root,
                 notes=notes,
+                archive=archive,
             )
 
             if isinstance(outcome, tuple):
@@ -1300,23 +1329,10 @@ async def research_claim(
             url_index = build_source_url_index(repo_root)
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
-            remaining = max(0, cfg.max_sources - len(cached_sources))
-            notes = IngestNotes()
-            if remaining > 0:
-                source_files, ingest_errors = await _ingest_urls(
-                    client, urls_to_ingest, cfg, _sem,
-                    target=remaining,
-                    prefetched_bodies=ro.prefetched_bodies,
-                    acquisition_out=_trace_acquisition_sink(result.research_trace),
-                    notes=notes,
-                )
-            else:
-                source_files, ingest_errors = [], []
-            source_files = _reuse_stored_redirect_targets(
-                source_files, cached_sources, notes, url_index, repo_root
+            source_files, ingest_errors, notes = await _ingest_claim_sources(
+                client, urls_to_ingest, cached_sources, ro, result, cfg, _sem,
+                url_index, repo_root,
             )
-            result.final_urls = notes.final_urls
-            result.archive = notes.archive
 
             cached_map = {url: sid for url, sid, _ in cached_sources}
 
@@ -1598,7 +1614,7 @@ async def gather_light_research(
             url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
             entity_website = url
             logger.info("Light research: ingesting seed URL %s", url)
-            source_files, _ = await _ingest_urls(client, [url], cfg, sem)
+            source_files, _ = await _ingest_urls(client, [url], cfg, sem, archive=False)
         else:
             query = f"{entity_name} official website"
             light_ro = await _research(client, entity_name, query, cfg, sem)
@@ -1609,6 +1625,7 @@ async def gather_light_research(
                 await _ingest_urls(
                     client, urls[:1], cfg, sem,
                     prefetched_bodies=light_ro.prefetched_bodies,
+                    archive=False,
                 )
                 if urls
                 else ([], [])
