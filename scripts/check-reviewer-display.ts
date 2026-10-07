@@ -2,10 +2,11 @@
 // handle and link the profile; the full name lives on the profile page (and the
 // Values signature, which is not checked here).
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, sep } from 'node:path';
 import { PEOPLE, reviewerHandle } from '../src/lib/reviewers';
 
-const DIST = 'dist';
+// Override only to run the check against a scratch copy of the build.
+const DIST = process.env.REVIEWER_CHECK_DIST ?? 'dist';
 const errors: string[] = [];
 
 // Email matching tolerates case and spaces; empty or unknown values map to no one.
@@ -18,6 +19,13 @@ function htmlFiles(dir: string): string[] {
     const p = join(dir, name);
     return statSync(p).isDirectory() ? htmlFiles(p) : name.endsWith('.html') ? [p] : [];
   });
+}
+
+const stripSlash = (path: string) => path.replace(/\/+$/, '');
+
+// dist/research/claims/<id>/index.html -> /research/claims/<id>
+function claimPath(file: string): string {
+  return stripSlash('/' + relative(DIST, file).split(sep).join('/').replace(/(^|\/)index\.html$/, ''));
 }
 
 const claimPages = htmlFiles(join(DIST, 'research/claims'));
@@ -42,7 +50,8 @@ for (const person of PEOPLE) {
     const html = readFileSync(file, 'utf8');
     if (html.includes(person.fullName)) errors.push(`${file}: prints full name "${person.fullName}"`);
   }
-  let reviewed = 0;
+  // Claim paths of reviewed, published claim pages, as ClaimRow links them.
+  const reviewed = new Set<string>();
   for (const file of claimPages) {
     const html = readFileSync(file, 'utf8');
     if (html.includes('review-state unreviewed')) {
@@ -50,16 +59,23 @@ for (const person of PEOPLE) {
       continue;
     }
     if (!html.includes('review-state reviewed')) continue;
-    reviewed++;
     if (!html.includes(`href="/people/${person.handle}"`)) errors.push(`${file}: reviewer line does not link /people/${person.handle}`);
     if (!html.includes(`>${person.handle}</a>`)) errors.push(`${file}: reviewer line does not show the handle ${person.handle}`);
+    const status = html.match(/data-claim-status="([^"]*)"/)?.[1];
+    if (status === undefined) errors.push(`${file}: reviewed claim page has no data-claim-status`);
+    // Archived and draft pages still build, but the profile lists published claims only.
+    if (status !== 'published') continue;
+    reviewed.add(claimPath(file));
   }
-  if (reviewed === 0) errors.push('no reviewed claim pages found; the check would pass vacuously');
-  // Drafts and unreviewed claims stay off the profile: its claim links must
-  // match the reviewed claim pages one for one.
+  if (reviewed.size === 0) errors.push('no reviewed published claim pages found; the check would pass vacuously');
+  // Drafts, archived and unreviewed claims stay off the profile: its claim
+  // links must match the reviewed published claim pages exactly.
   if (existsSync(profile)) {
-    const listed = new Set(readFileSync(profile, 'utf8').match(/href="\/research\/claims\/[^"]+"/g) ?? []).size;
-    if (listed !== reviewed) errors.push(`${profile}: lists ${listed} claims, but ${reviewed} claim pages are reviewed`);
+    const listed = new Set(
+      [...readFileSync(profile, 'utf8').matchAll(/href="(\/research\/claims\/[^"#?]+)"/g)].map((m) => stripSlash(m[1])),
+    );
+    for (const path of reviewed) if (!listed.has(path)) errors.push(`${profile}: missing reviewed claim ${path}`);
+    for (const path of listed) if (!reviewed.has(path)) errors.push(`${profile}: lists ${path}, which is not a reviewed published claim page`);
   }
 }
 
