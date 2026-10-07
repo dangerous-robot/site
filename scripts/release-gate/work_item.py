@@ -4,7 +4,7 @@
 Usage:
   python3 scripts/release-gate/work_item.py status
   python3 scripts/release-gate/work_item.py start --title "..." --kind patch|minor|major \
-      --release v1.0.0 [--plan docs/plans/drafts/x.md | --section "§10"]
+      --release v1.0.0 [--plan docs/plans/drafts/x.md | --section "SITE-J (Responsible AI chatbots)"]
   python3 scripts/release-gate/work_item.py hotfix --title "..." --reason "..."
   python3 scripts/release-gate/work_item.py finish
 
@@ -130,7 +130,7 @@ def main() -> int:
     s.add_argument("--kind", required=True, choices=[k for k in VALID_KINDS if k != "hotfix"])
     s.add_argument("--release", required=True, help="e.g. v1.0.0; must have docs/v1.0.0-roadmap.md")
     s.add_argument("--plan", help="plan file path, e.g. docs/plans/drafts/foo.md")
-    s.add_argument("--section", help="roadmap section reference when no plan file exists, e.g. §10")
+    s.add_argument("--section", help="roadmap work item ID and name when no plan file exists, e.g. \"SITE-J (Responsible AI chatbots)\"")
     s.add_argument("--force", action="store_true")
 
     h = sub.add_parser("hotfix")
