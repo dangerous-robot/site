@@ -7,7 +7,7 @@ Items here can be planned but not coded. Before code starts, the `release-triage
 **Triage marker.** A triaged item ends with `Triage: <theme>; <next>; YYYY-MM-DD`, at the end of its last table cell or bullet (never put `|` in it). Add one whenever you add an item. An item without one is untriaged. The process is in the `release-triage` skill, § Backlog triage.
 
 - **theme**: the [`priorities.md`](priorities.md) theme it serves, by its bold name up to the first comma or period (`Responsible AI chatbots`, `Security`), or `none`.
-- **next**: `keep` (stays here); `in <ID>` (detail for a checklist line of that roadmap item, which links here); or a proposal waiting for Brandon: `propose schedule`, `propose defer`, `propose drop`. His "no" is written `keep (Brandon)`.
+- **next**: `keep` (stays here); `in <ID>` (detail for a checklist line of that roadmap item, waiting to move into that item's plan); or a proposal waiting for Brandon: `propose schedule`, `propose defer`, `propose drop`. His "no" is written `keep (Brandon)`.
 
 "Deferred plans" rows carry no marker.
 
@@ -118,9 +118,9 @@ The dependency advisories below were deferred when the high and critical fixes l
 | Work Item | Notes |
 |-----------|-------|
 | Deeper security analysis | A full security review of the site, Workers, pipeline and agent tooling, beyond dependency advisories. Findings stay out of this public file until fixed; each known issue it finds goes first in the next release (`priorities.md`). Triage: Security; keep; 2026-10-07 |
-| `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Triage: Security; keep; 2026-10-07 |
+| `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Target: after 1.0.0 (Astro 7 upgrade deferred until then). Triage: Security; keep (Brandon); 2026-10-07 |
 | `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. Triage: Security; keep; 2026-10-07 |
-| Medium-severity Python advisories | `pydantic-ai` / `pydantic-ai-slim`, `idna`, `pydantic-settings`. The 2026-10-02 pass applied high and critical fixes only. Triage: Security; keep; 2026-10-07 |
+| Medium-severity Python advisories | `pydantic-ai` / `pydantic-ai-slim`, `idna`, `pydantic-settings`. The 2026-10-02 pass applied high and critical fixes only. A known security issue under `priorities.md` (pipeline, medium) unless a fix needs a major upgrade; check that first. Triage: Security; propose schedule; 2026-10-07 |
 
 ---
 
@@ -246,7 +246,7 @@ From architectural review (2026-04-18) and TODO.md:
 
 - **Validation gaps** -- CI validates schema structure and citation integrity but not reasoning quality. Potential additions: confidence-to-verdict alignment, staleness detection, source URL liveness checks, archived URL population nudges, a check framework (Vitest) for scripted validators.
 - **Confidence rubric** -- Define what `high`/`medium`/`low` confidence concretely means, in one place: extend the "Confidence levels" section of the methodology page (`src/pages/research/index.astro`). Use an LLM to check each claim against the rubric. Also proposed in [`research-outputs-improvement-plan.md`](plans/deferred/research-outputs-improvement-plan.md) (move 2).
-- **ClaimReview validity check** -- claim pages already emit inline ClaimReview JSON-LD (`src/pages/research/claims/[...slug].astro`). Add a build or lint check that every published claim emits a valid ClaimReview (verdict maps to a rating, date and reviewer present). Matters once claim pages are indexed for the Responsible AI chatbots effort (roadmap item SITE-J). From [`research-outputs-improvement-plan.md`](plans/deferred/research-outputs-improvement-plan.md) (move 3). Triage: Responsible AI chatbots; propose schedule; 2026-10-07
+- **ClaimReview markup** -- removal scheduled under SITE-J (Responsible AI chatbots), plan draft `site-j-claims-readiness.md` CR5. Triage: Responsible AI chatbots; in SITE-J; 2026-10-07
 - **Claim Updater instruction quality** -- Consider adversarial review, inter-rater consistency validation, and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs).
 - **Source freshness** -- confirm the ingestor reliably populates the optional `published_date` source field (`src/content.config.ts`); wire it if not. (Folded in from a scratch note, 2026-07-03.)
 - **Least invasive anonymous analytics (2026-10-06)** -- consider adding page-view counts from the least invasive anonymous option available (no cookies, no personal data, no cross-site tracking). Today the site has none. Two promises would need updating: `src/pages/privacy.astro` ("Reading the site") says the site runs no analytics or tracking scripts, and `src/layouts/Base.astro:2` keeps pages free of third-party requests. A self-hosted or server-side counter keeps the second promise; a hosted script breaks it.
@@ -454,7 +454,7 @@ Carved off [`plans/completed/seo-post-restructure.md`](plans/completed/seo-post-
 | §5.4 Weekly coverage screenshots | For ~4 weeks after the 301s shipped: navigate to the GSC Pages report and capture the four count buckets (Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed) to `seo-runs/coverage-YYYY-MM-DD.json`. Expectations and re-investigation triggers are in §5.4 of the completed plan. |
 | Single-hop redirect for deep claim URLs | Today `/claims/{x}/{y}` → `/research/claims/{x}/{y}` → `/research/claims/{x}/{y}/` (CF 301 + GH-Pages canonical-slash 301). Only fixable by changing Astro's `trailingSlash` mode and rebuilding URL handling site-wide. Low priority — Google handles 2-hop chains, but worth revisiting if other Astro work touches routing. |
 | OG image at 1200×630 | Carried over from the completed plan's §6 backlog. `dr-logo.png` is square; Twitter/FB want 1200×630. All new `/research/` and `/resources/*` URLs inherit the same default, so share-card quality is uniformly low. One properly-sized image passed via `ogImage` from `Base.astro` (or per-section) fixes it. |
-| End the pre-release noindex policy | The trigger is decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims). `INDEX_ALPHA_DETAIL_PAGES = false` in `src/lib/seo.ts` keeps detail pages noindexed until then; at that point flip to `true`, rebuild + redeploy, and follow the checklist in `docs/seo-and-cloudflare-playbook.md` § "When the pre-release noindex period ends." Triage: Responsible AI chatbots; in SITE-J; 2026-10-07 |
+| End the pre-release noindex policy | Target: after 1.0.0; Brandon decides the trigger. `INDEX_ALPHA_DETAIL_PAGES = false` in `src/lib/seo.ts` keeps detail pages noindexed until then; at that point flip to `true`, rebuild + redeploy, follow the checklist in `docs/seo-and-cloudflare-playbook.md` § "When the pre-release noindex period ends", then run the [`seo-external.md`](plans/seo-external.md) validation milestone and resubmit the sitemap. Triage: Refocus foundation; keep (Brandon); 2026-10-07 |
 
 ---
 

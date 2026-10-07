@@ -122,7 +122,7 @@ Stop at the first step that gives an answer:
 - **N1. Finish what is started.** `work_item.py status` names an item, or a roadmap item is `in progress`: continue it. The record is shared by every session in the checkout (`UNSCHEDULED.md` "Release gate follow-ups"), so if another session registered the item, do not take it over: ask Brandon, or work in a worktree. Uncommitted docs edits alone are not a started item.
 - **N2. Ship a finished beta.** The next-beta line has entries and none is open: the answer is "deploy beta.N" (Brandon's call).
 - **N3. Pick one.** Candidates are the open entries on the next-beta line and, while the beta has room, open `## Scheduled` items not on it. Skip `decision needed` items and name each decision for Brandon. Take the highest-ranked; on a tie, prefer an entry on the line, then `ready` over `plan needed`, then roadmap order. Name for Brandon any `propose schedule` backlog item that ranks at or above the winner. No candidate: run § Backlog triage, then ask Brandon.
-- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, ask Brandon once to add it, as the entry for that first step. Then register (Step 5), using that line's plan when it has one.
+- **N4. Start it.** The first step is the winner's first unticked checklist line. If that line needs the item's own plan and its Status is `plan needed`, writing the plan is the step (brainstorming, then writing-plans; docs are not gated). If the winner is not on the next-beta line, add it as the entry for that first step; ask Brandon first only if that takes the beta past the size guideline. Then register (Step 5), using that line's plan when it has one.
 
 Answer in this form:
 
@@ -132,17 +132,17 @@ Also say whether § Backlog triage is due; the answer does not wait for it.
 
 ## Backlog triage
 
-Gives each item in `docs/UNSCHEDULED.md` a marker: the priority theme it serves and what happens to it next (format in that file's header). Triage schedules nothing by itself.
+Gives each item in `docs/UNSCHEDULED.md` a marker: the priority theme it serves and what happens to it next (format in that file's header). Triage schedules nothing by itself, except a `patch` (rule 4 below).
 
 **Run it** when a beta or release ships, when the order in `docs/priorities.md` changes, when N3 finds no candidate, or when Brandon asks.
 
-1. Read the Step 1 state and approved issues: `gh issue list --label approved --state open`. If `gh label list` shows no `approved` label, report the label as missing, not "no approved issues".
-2. Pick the items: those with no marker, approved issues not yet cited, and markers that disagree with `priorities.md` or the roadmap (the theme is gone, or the work is now a roadmap line). "Deferred plans" rows carry no marker; raise one's revival (AGENTS.md rule 8) only when a theme now covers it.
+1. Read the Step 1 state.
+2. Pick the items: those with no marker, and markers that disagree with `priorities.md` or the roadmap (the theme is gone, or the work is now a roadmap line). "Deferred plans" rows carry no marker; raise one's revival (AGENTS.md rule 8) only when a theme now covers it.
 3. Set the marker's theme, then its next step, by the first rule that fits:
-   1. A roadmap checklist line covers it: `in <ID>`.
+   1. A roadmap checklist line covers it: its detail belongs in that item's plan. Move it there and remove the row; until that is done, mark it `in <ID>`.
    2. Shipped: remove it, citing the commit (AGENTS.md rule 6). Obsolete, or the same work as another item: `propose drop`, naming the other.
    3. Fails the focus test (AGENTS.md rule 8): `propose defer`.
-   4. A roadmap item needs it: `propose schedule`. Also, when no open roadmap item ranks at or above its theme: `propose schedule` for the highest-ranked such items, only as many as the beta has room for.
+   4. A roadmap item needs it: `propose schedule`; a `patch` (Step 2) you may schedule yourself through Steps 2 to 5 instead. Also, when no open roadmap item ranks at or above its theme: `propose schedule` for the highest-ranked such items, only as many as the beta has room for.
    5. Otherwise: `keep`.
 
    Leave an item you have not examined unmarked.
