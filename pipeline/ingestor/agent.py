@@ -59,6 +59,10 @@ class IngestorDeps:
     fetch_errors: list[str] = field(default_factory=list)
     requested_fetched: bool = False
     requested_errors: list[str] = field(default_factory=list)
+    # Where a live fetch of ``requested_url`` ended after redirects, so the
+    # orchestrator can match it to a source already stored under that URL.
+    # Unset for archive.org copies and prefetched bodies (no redirect info).
+    final_url: str | None = None
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
@@ -178,6 +182,8 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
         page = extract_page_data(resp.text, url)
         if page.get("text"):
             record_text(page["text"])
+            if is_requested and not _ARCHIVE_COPY.match(url):
+                deps.final_url = str(resp.url)
         else:
             record_error("page returned no text")
         return page

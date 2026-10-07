@@ -144,6 +144,8 @@ class VerificationResult(BaseModel):
     # the audit sidecar (pipeline_run.failure) so blocked runs can be triaged
     # without grepping logs.
     failure: FailureInfo | None = Field(default=None, exclude=True)
+    # Requested URL -> URL its live fetch ended on, for fresh sources.
+    final_urls: dict[str, str] = Field(default_factory=dict, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -155,10 +157,10 @@ class VerificationResult(BaseModel):
     def persist_sources(self, repo_root: Path, url_index: dict[str, str] | None = None) -> list[str]:
         """Write the fresh sources and return every source id for the claim.
 
-        A cached and a fresh source can still name the same file (a redirect
-        target stored on disk), so each id appears once. ``url_index`` gains
-        the fresh sources under both the requested and the stored URL, so
-        later claims in the same run reuse them instead of fetching again.
+        A cached and a fresh source can still name the same file, so each id
+        appears once. ``url_index`` gains the fresh sources under the
+        requested, stored and redirect-target URLs, so later claims in the
+        same run reuse them instead of fetching again.
         """
         from orchestrator.persistence import _write_source_files
 
@@ -167,6 +169,8 @@ class VerificationResult(BaseModel):
             for (url, sf), sid in zip(self.source_files, fresh_ids):
                 url_index.setdefault(canonical_key(url), sid)
                 url_index.setdefault(canonical_key(sf.frontmatter.url), sid)
+                if url in self.final_urls:
+                    url_index.setdefault(canonical_key(self.final_urls[url]), sid)
         return list(dict.fromkeys(self.cached_source_ids + fresh_ids))
 
 
@@ -383,30 +387,36 @@ async def verify_claim(
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
+            notes = IngestNotes()
             if remaining > 0:
                 source_files, ingest_errors = await _ingest_urls(
                     client, urls_to_ingest, cfg, _sem,
                     target=remaining,
                     prefetched_bodies=ro.prefetched_bodies,
                     acquisition_out=_trace_acquisition_sink(result.research_trace),
+                    notes=notes,
                 )
             else:
                 source_files, ingest_errors = [], []
+            source_files = _reuse_stored_redirect_targets(
+                source_files, cached_sources, notes, url_index, repo_root
+            )
+            result.final_urls = notes.final_urls
 
             for url, sid, sd in cached_sources:
-                sd["addresses"] = list(ro.url_addresses.get(url, []))
+                sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
                 sd = _build_source_dict(sf)
-                sd["addresses"] = list(ro.url_addresses.get(url, []))
+                sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
 
-            ingested_set = set(result.urls_ingested)
+            ingested_set = set(result.urls_ingested) | set(notes.aliases)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
 
@@ -661,6 +671,59 @@ def _apply_url_dedup(
     return to_ingest, cached
 
 
+@dataclass
+class IngestNotes:
+    """What one ``_ingest_urls`` call learned about its URLs beyond the SourceFiles."""
+
+    # Requested URL -> URL its live fetch ended on after redirects.
+    final_urls: dict[str, str] = field(default_factory=dict)
+    # Requested URL dropped because it reached a page already kept -> the kept URL.
+    aliases: dict[str, str] = field(default_factory=dict)
+
+
+def _reuse_stored_redirect_targets(
+    source_files: list[tuple[str, SourceFile]],
+    cached_sources: list[tuple[str, str, dict]],
+    notes: IngestNotes,
+    url_index: dict[str, str],
+    repo_root: Path,
+) -> list[tuple[str, SourceFile]]:
+    """Return the fresh sources to write; move redirects to a stored page into ``cached_sources``.
+
+    The dedup index only knows requested URLs before the fetch, so a request
+    that redirects to a page stored under its final URL arrives here as a
+    fresh source. A stored page already cached for this claim becomes an
+    alias of the cached URL instead of a second entry.
+    """
+    cached_by_id = {sid: url for url, sid, _sd in cached_sources}
+    fresh: list[tuple[str, SourceFile]] = []
+    for url, sf in source_files:
+        final = notes.final_urls.get(url)
+        sid = url_index.get(canonical_key(final)) if final else None
+        sd = load_source_dict(sid, repo_root) if sid else None
+        if sd is None:
+            fresh.append((url, sf))
+            continue
+        logger.info("dedup-hit (redirect): %s -> %s", url, sid)
+        if sid in cached_by_id:
+            notes.aliases[url] = cached_by_id[sid]
+        else:
+            cached_sources.append((url, sid, sd))
+            cached_by_id[sid] = url
+    return fresh
+
+
+def _addresses_with_aliases(
+    url: str, url_addresses: dict[str, list[str]], aliases: dict[str, str]
+) -> list[str]:
+    """Sub-questions ``url`` addresses, plus those of URLs that reached the same page."""
+    out = list(url_addresses.get(url, []))
+    for alias, kept in aliases.items():
+        if kept == url:
+            out.extend(sq for sq in url_addresses.get(alias, []) if sq not in out)
+    return out
+
+
 async def _research(
     client: httpx.AsyncClient,
     entity_name: str,
@@ -773,6 +836,7 @@ async def _ingest_one(
     acquisition_out: dict[str, dict] | None = None,
     failures_out: list[dict] | None = None,
     repo_root: Path | None = None,
+    notes: IngestNotes | None = None,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError.
 
@@ -788,6 +852,7 @@ async def _ingest_one(
       ``{stage, error_type, message}``. The caller decides whether to
       promote these to ``StepError`` (see ``_ingest_urls`` — only for
       URLs whose ingest itself failed terminally).
+    * ``notes``: gains the URL a successful live fetch ended on.
     """
     repo_root = repo_root or _cfg_repo_root(cfg)
     deps = IngestorDeps(
@@ -839,6 +904,8 @@ async def _ingest_one(
         _merge_acquisition_writes(acquisition_out, deps.acquisition_writes)
     if failures_out is not None:
         failures_out.extend(deps.wayback_failures)
+    if notes is not None and isinstance(outcome, tuple) and deps.final_url:
+        notes.final_urls[url] = deps.final_url
 
     return outcome
 
@@ -852,9 +919,15 @@ async def _ingest_urls(
     target: int | None = None,
     prefetched_bodies: dict[str, str] | None = None,
     acquisition_out: dict[str, dict] | None = None,
+    notes: IngestNotes | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in score order,
     stopping once max_sources successes are collected (~2 concurrent).
+
+    Two URLs that reach one page (by redirect) give one result: the later
+    one is dropped, does not count toward ``target``, and is recorded in
+    ``notes.aliases``. ``notes.final_urls`` maps each requested URL to the
+    URL its live fetch ended on.
 
     When ``prefetched_bodies`` is supplied, each URL's body (if present)
     is threaded into ``IngestorDeps`` so ``web_fetch`` returns it without
@@ -881,9 +954,18 @@ async def _ingest_urls(
     dispatch_sem = asyncio.Semaphore(2)
     bodies = prefetched_bodies or {}
 
+    notes = notes if notes is not None else IngestNotes()
     results: list[tuple[str, SourceFile]] = []
     errors: list[StepError] = []
     stop = asyncio.Event()
+    # canonical key of each kept result's requested and final URL -> requested URL
+    kept_pages: dict[str, str] = {}
+
+    def _same_page_as_kept(url: str) -> str | None:
+        for candidate in (url, notes.final_urls.get(url)):
+            if candidate and canonical_key(candidate) in kept_pages:
+                return kept_pages[canonical_key(candidate)]
+        return None
 
     async def _worker(url: str) -> None:
         if stop.is_set():
@@ -900,9 +982,18 @@ async def _ingest_urls(
                 acquisition_out=acquisition_out,
                 failures_out=url_failures,
                 repo_root=repo_root,
+                notes=notes,
             )
 
             if isinstance(outcome, tuple):
+                kept_url = _same_page_as_kept(url)
+                if kept_url is not None:
+                    logger.info("dedup-hit (redirect): %s -> %s", url, kept_url)
+                    notes.aliases[url] = kept_url
+                    return
+                for page in (url, notes.final_urls.get(url)):
+                    if page:
+                        kept_pages.setdefault(canonical_key(page), url)
                 results.append(outcome)
                 if len(results) >= target:
                     logger.info(
@@ -925,6 +1016,10 @@ async def _ingest_urls(
     tasks = [asyncio.create_task(_worker(url)) for url in pool]
     await asyncio.gather(*tasks, return_exceptions=True)
     kept = results[:target]
+    kept_urls = {url for url, _sf in kept}
+    for alias, kept_url in list(notes.aliases.items()):
+        if kept_url not in kept_urls:
+            del notes.aliases[alias]
     # Source ids (year/slug) reach the analyst, coverage map and sidecar
     # before any file is written, so collisions are settled here.
     resolve_source_slugs([sf for _url, sf in kept], repo_root)
@@ -1184,32 +1279,38 @@ async def research_claim(
             urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
             remaining = max(0, cfg.max_sources - len(cached_sources))
+            notes = IngestNotes()
             if remaining > 0:
                 source_files, ingest_errors = await _ingest_urls(
                     client, urls_to_ingest, cfg, _sem,
                     target=remaining,
                     prefetched_bodies=ro.prefetched_bodies,
                     acquisition_out=_trace_acquisition_sink(result.research_trace),
+                    notes=notes,
                 )
             else:
                 source_files, ingest_errors = [], []
+            source_files = _reuse_stored_redirect_targets(
+                source_files, cached_sources, notes, url_index, repo_root
+            )
+            result.final_urls = notes.final_urls
 
             cached_map = {url: sid for url, sid, _ in cached_sources}
 
             for url, sid, sd in cached_sources:
-                sd["addresses"] = list(ro.url_addresses.get(url, []))
+                sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.cached_sources.append((url, sid, sd))
 
             for url, sf in source_files:
                 sd = _build_source_dict(sf)
-                sd["addresses"] = list(ro.url_addresses.get(url, []))
+                sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
                 result.urls_ingested.append(url)
                 result.sources.append(sd)
                 result.source_files.append((url, sf))
 
-            ingested_set = set(result.urls_ingested)
+            ingested_set = set(result.urls_ingested) | set(notes.aliases)
             result.urls_failed = [u for u in urls if u not in ingested_set]
             all_errors = research_errors + ingest_errors
 
@@ -1244,6 +1345,7 @@ async def research_claim(
             seen: set[str] = set()
             source_ids = []
             for url in urls:
+                url = notes.aliases.get(url, url)
                 sid = cached_map.get(url) or fresh_map.get(url)
                 if sid and sid not in seen:
                     source_ids.append(sid)

@@ -19,7 +19,7 @@ Not in this plan: the indexing flip (ending the pre-release noindex policy). Bra
 ## Status checklist
 
 - [x] CR1: arXiv abs/html/pdf URLs are one source
-- [ ] CR2: a fetch that redirects to an existing source reuses it
+- [x] CR2: a fetch that redirects to an existing source reuses it
 - [ ] CR3: archive lookups run in code, retry HTTP 429 and are recorded
 - [ ] CR4: archive links for the sources the page cites, and the other committed sources without one
 - [ ] CR5: remove ClaimReview markup

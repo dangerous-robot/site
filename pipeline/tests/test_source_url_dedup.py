@@ -442,3 +442,253 @@ class TestSlugFromUrl:
     def test_slug_from_url_slugifies_segment(self) -> None:
         result = slug_from_url("https://example.com/Annual_Report_2024.pdf")
         assert result == "annualreport2024pdf"
+
+
+# --- Redirects to a page already stored ---
+
+_OLD = "https://example.org/old"
+_NEW = "https://example.org/new"
+_PAGE = "<html><head><title>New</title></head><body><p>The stored page.</p></body></html>"
+
+
+def _scripted_ingest_model():
+    """An ingest model that fetches the requested URL, then returns a source for it."""
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import AgentInfo, FunctionModel
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        prompt = next(
+            p.content for m in messages for p in getattr(m, "parts", [])
+            if isinstance(p, UserPromptPart)
+        )
+        url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
+        fetched = any(
+            isinstance(p, ToolCallPart) for m in messages for p in getattr(m, "parts", [])
+        )
+        if not fetched:
+            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        source = {
+            "frontmatter": {
+                "url": url,
+                "title": "The stored page",
+                "publisher": "Example",
+                "accessed_date": "2026-10-07",
+                "kind": "article",
+                "summary": "The stored page.",
+            },
+            "body": "The stored page.",
+            "slug": "page",
+            "year": 2026,
+        }
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)])
+
+    return FunctionModel(_fn)
+
+
+@pytest.fixture
+def stub_ingest_model():
+    from contextlib import nullcontext
+
+    from ingestor.agent import ingestor_agent
+
+    with ingestor_agent.override(model=_scripted_ingest_model()):
+        # Keep the scripted model: neutralize the orchestrator's own override.
+        with patch(
+            "orchestrator.pipeline.ingestor_agent.override",
+            side_effect=lambda **kw: nullcontext(),
+        ):
+            yield
+
+
+def _mock_redirect(respx_mock) -> None:
+    import httpx
+
+    respx_mock.get(_OLD).mock(return_value=httpx.Response(301, headers={"Location": "/new"}))
+    respx_mock.get(_NEW).mock(return_value=httpx.Response(200, html=_PAGE))
+
+
+def _sources_on_disk(root: Path) -> list[str]:
+    return sorted(
+        str(p.relative_to(root / "research" / "sources"))
+        for p in (root / "research" / "sources").glob("*/*.md")
+    )
+
+
+class TestWebFetchRecordsFinalUrl:
+    @pytest.mark.asyncio
+    async def test_live_fetch_of_requested_url_records_where_it_ended(self) -> None:
+        import httpx
+        import respx
+
+        from ingestor.agent import IngestorDeps, web_fetch
+        from pydantic_ai import RunContext
+        from pydantic_ai.models.test import TestModel
+        from pydantic_ai.usage import RunUsage
+
+        archive = "https://web.archive.org/web/2025/https://example.org/old"
+        with respx.mock as mock:
+            _mock_redirect(mock)
+            mock.get(archive).mock(return_value=httpx.Response(200, html=_PAGE))
+            async with httpx.AsyncClient() as client:
+                def ctx(prefetched=None):
+                    deps = IngestorDeps(
+                        http_client=client, repo_root="/tmp", requested_url=_OLD,
+                        skip_wayback=True, prefetched_bodies=prefetched or {},
+                    )
+                    return RunContext(deps=deps, model=TestModel(), usage=RunUsage())
+
+                live = ctx()
+                await web_fetch(live, _OLD)
+                from_archive = ctx()
+                await web_fetch(from_archive, archive)
+                prefetched = ctx({_OLD: "Body from Tavily."})
+                await web_fetch(prefetched, _OLD)
+
+        assert live.deps.final_url == _NEW
+        assert from_archive.deps.final_url is None
+        assert prefetched.deps.final_url is None
+
+
+def _analyst_output():
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+
+    return AnalystOutput(
+        entity=EntityResolution(
+            entity_name="Example", entity_type="company", entity_description="A company."
+        ),
+        verdict=VerdictAssessment(
+            title="Example claim",
+            verdict="unverified",
+            confidence="low",
+            narrative="Not enough evidence.",
+            topics=["environmental-impact"],
+            verification_level="claimed",
+            cap_rationale="Only one kind of source.",
+            seo_title="Example claim",
+        ),
+    )
+
+
+class TestRedirectToStoredSource:
+    def _repo(self, tmp_path: Path, extra: int = 0) -> None:
+        _write_source_md(tmp_path / "research" / "sources" / "2025" / "new.md", url=_NEW)
+        for i in range(extra):
+            _write_source_md(
+                tmp_path / "research" / "sources" / "2025" / f"other-{i}.md",
+                url=f"https://example.com/other-{i}",
+            )
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_reuses_the_stored_redirect_target(
+        self, tmp_path: Path, stub_ingest_model
+    ) -> None:
+        import respx
+
+        from orchestrator.pipeline import verify_claim
+        from researcher.decomposed import ResearchOutput
+
+        self._repo(tmp_path)
+
+        async def _fake_research(*args, **kwargs):
+            return ResearchOutput(
+                urls=[_OLD], url_addresses={_OLD: ["sq1"]}, trace={"mode": "decomposed"}
+            )
+
+        cfg = VerifyConfig(model="test", max_sources=4, skip_wayback=True, repo_root=str(tmp_path))
+        with respx.mock as mock, patch("orchestrator.pipeline._research", side_effect=_fake_research):
+            _mock_redirect(mock)
+            result = await verify_claim("Example", "claim text", config=cfg)
+
+        assert result.cached_source_ids == ["2025/new"]
+        assert result.source_files == []
+        assert result.urls_failed == []
+        assert result.sources[0]["addresses"] == ["sq1"]
+        assert result.persist_sources(tmp_path) == ["2025/new"]
+        assert _sources_on_disk(tmp_path) == ["2025/new.md"]
+
+    @pytest.mark.asyncio
+    async def test_research_claim_reuses_the_stored_redirect_target(
+        self, tmp_path: Path, stub_ingest_model, monkeypatch
+    ) -> None:
+        import respx
+
+        from common.frontmatter import parse_frontmatter
+        from orchestrator.pipeline import research_claim
+        from researcher.decomposed import ResearchOutput
+
+        self._repo(tmp_path, extra=3)
+        others = [f"https://example.com/other-{i}" for i in range(3)]
+
+        async def _fake_research(*args, **kwargs):
+            return ResearchOutput(urls=[*others, _OLD], trace={"mode": "decomposed"})
+
+        async def _fake_run(agent, prompt, timeout_s, **kwargs):
+            return _analyst_output(), [], None
+
+        async def _fake_audit(*args, **kwargs):
+            return None
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", lambda *a, **k: "prompt")
+        monkeypatch.setattr("orchestrator.pipeline._run_with_null_retry", _fake_run)
+        monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+        cfg = VerifyConfig(model="test", max_sources=8, skip_wayback=True, repo_root=str(tmp_path))
+        with respx.mock as mock:
+            _mock_redirect(mock)
+            result = await research_claim("claim text", cfg)
+
+        claim_fm, _ = parse_frontmatter((tmp_path / result.claim_path).read_text())
+        assert claim_fm["sources"] == [*(f"2025/other-{i}" for i in range(3)), "2025/new"]
+        assert _sources_on_disk(tmp_path) == [
+            "2025/new.md", *(f"2025/other-{i}.md" for i in range(3))
+        ]
+
+    @pytest.mark.asyncio
+    async def test_a_url_that_does_not_redirect_still_writes_a_file(
+        self, tmp_path: Path, stub_ingest_model
+    ) -> None:
+        import httpx
+        import respx
+
+        from orchestrator.pipeline import verify_claim
+        from researcher.decomposed import ResearchOutput
+
+        self._repo(tmp_path)
+        other = "https://example.org/page"
+
+        async def _fake_research(*args, **kwargs):
+            return ResearchOutput(urls=[other], trace={"mode": "decomposed"})
+
+        cfg = VerifyConfig(model="test", max_sources=4, skip_wayback=True, repo_root=str(tmp_path))
+        with respx.mock as mock, patch("orchestrator.pipeline._research", side_effect=_fake_research):
+            mock.get(other).mock(return_value=httpx.Response(200, html=_PAGE))
+            result = await verify_claim("Example", "claim text", config=cfg)
+
+        assert result.cached_sources == []
+        assert result.persist_sources(tmp_path) == ["2026/page"]
+        assert _sources_on_disk(tmp_path) == ["2025/new.md", "2026/page.md"]
+
+
+class TestSameBatchRedirects:
+    @pytest.mark.asyncio
+    async def test_two_urls_redirecting_to_one_page_give_one_result(self) -> None:
+        from orchestrator.pipeline import IngestNotes
+
+        a, b, c = "https://example.org/a", "https://example.org/b", "https://example.org/c"
+        final = {a: _NEW, b: _NEW, c: c}
+
+        async def _fake_ingest_one(client, url, cfg, today, sem, notes=None, **_):
+            notes.final_urls[url] = final[url]
+            return (url, _make_source_file(url, url.rsplit("/", 1)[1]))
+
+        notes = IngestNotes()
+        with patch("orchestrator.pipeline._ingest_one", side_effect=_fake_ingest_one):
+            results, _errors = await _ingest_urls(
+                None, [a, b, c], _make_cfg(), asyncio.Semaphore(8), target=2, notes=notes
+            )
+
+        kept = [u for u, _sf in results]
+        assert len(kept) == 2 and c in kept
+        (first,) = [u for u in (a, b) if u in kept]
+        (dropped,) = [u for u in (a, b) if u not in kept]
+        assert notes.aliases == {dropped: first}
