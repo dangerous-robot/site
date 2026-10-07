@@ -1575,6 +1575,18 @@ def step_audit(
                                 **research_trace,
                                 "acquisition": prior_acquisition,
                             }
+                        # The archive lookup outcome lives on the entries
+                        # themselves, so it is carried over by URL directly.
+                        prior_archive = {
+                            s["url"]: s["archive"]
+                            for s in existing_sources
+                            if isinstance(s, dict)
+                            and s.get("url")
+                            and isinstance(s.get("archive"), dict)
+                        }
+                        for entry in sources_consulted:
+                            if entry["url"] in prior_archive:
+                                entry["archive"] = prior_archive[entry["url"]]
                     except _yaml.YAMLError:
                         pass
                 _write_audit_sidecar(

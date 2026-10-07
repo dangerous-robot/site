@@ -1366,6 +1366,61 @@ class TestStepIngestArchive:
         assert timegate.called is False
 
 
+def test_step_audit_write_keeps_the_archive_record(tmp_path) -> None:
+    """A re-audit rebuilds sources_consulted; the archive outcome must survive it."""
+    import yaml
+
+    from common.frontmatter import serialize_frontmatter
+
+    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
+    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
+        serialize_frontmatter(
+            {"name": "Example", "type": "company", "description": "A company."}, "Body.\n"
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "research" / "sources" / "2026").mkdir(parents=True)
+    (tmp_path / "research" / "sources" / "2026" / "page.md").write_text(
+        serialize_frontmatter(
+            {"url": _ARCHIVE_PAGE_URL, "title": "Page", "publisher": "Example",
+             "accessed_date": "2026-10-07", "kind": "article", "summary": "The page."},
+            "The page.\n",
+        ),
+        encoding="utf-8",
+    )
+    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "claim.md").write_text(
+        serialize_frontmatter(
+            {"title": "Example claim", "entity": "companies/example", "verdict": "unverified",
+             "confidence": "low", "topics": ["environmental-impact"], "sources": ["2026/page"]},
+            "Body.\n",
+        ),
+        encoding="utf-8",
+    )
+    archive = {"status": "failed", "error": "archive.org TimeGate check failed (HTTP 429)"}
+    (claim_dir / "claim.audit.yaml").write_text(
+        yaml.safe_dump({
+            "schema_version": 1,
+            "sources_consulted": [{
+                "id": "2026/page", "url": _ARCHIVE_PAGE_URL, "title": "Page",
+                "ingested": True, "archive": archive,
+            }],
+        }),
+        encoding="utf-8",
+    )
+
+    result = CliRunner().invoke(main, [
+        "--model", "test", "step-audit", "--claim", "example/claim", "--write",
+        "--repo-root", str(tmp_path),
+    ])
+
+    assert result.exit_code == 0, result.output
+    data = yaml.safe_load((claim_dir / "claim.audit.yaml").read_text(encoding="utf-8"))
+    assert data["pipeline_run"]["agents"] == ["auditor"]
+    assert data["sources_consulted"][0]["archive"] == archive
+
+
 def test_claim_probe_never_captures_on_archive_org(monkeypatch) -> None:
     """claim-probe writes nothing, so it must not ask archive.org to capture pages."""
     from orchestrator.pipeline import VerificationResult
