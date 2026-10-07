@@ -28,27 +28,36 @@ const primaryTopic = topics[0];
   data-topic={primaryTopic}
   data-confidence={confidence}
 >
-  <span class="badge-col"><VerdictBadge verdict={verdict} size="sm" /></span>
-  <span class="title-col">{title}</span>
-  <span class="meta-col">
-    <span class="entity">{entity}</span>
-    <span class="sep">·</span>
-    <span class="category">{topicLabels}</span>
-    {asOf && <><span class="sep">·</span><span class="as-of">{asOf}</span></>}
+  <span class="row-grid">
+    <span class="badge-col"><VerdictBadge verdict={verdict} size="sm" /></span>
+    <span class="title-col">{title}</span>
+    <span class="meta-col">
+      <span class="entity">{entity}</span>
+      <span class="sep">·</span>
+      <span class="category">{topicLabels}</span>
+      {asOf && <><span class="sep">·</span><span class="as-of">{asOf}</span></>}
+    </span>
   </span>
 </a>
 <style>
+/* The row is its own query container so its layout follows the width of
+   whatever list it sits in (wide index or reading column), not the viewport.
+   A container can't restyle itself, hence the inner .row-grid. */
 .claim-row {
-  display: grid;
-  grid-template-columns: 7rem 1fr auto;
-  align-items: start;
-  gap: var(--space-md);
+  display: block;
+  container-type: inline-size;
   padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--color-border);
   text-decoration: none;
   color: inherit;
 }
 .claim-row:hover { background: var(--color-surface); }
+.row-grid {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  align-items: start;
+  gap: var(--space-md);
+}
 .badge-col { padding-top: 2px; }
 .title-col { font-weight: 500; color: var(--color-text); line-height: 1.4; }
 .meta-col {
@@ -57,8 +66,20 @@ const primaryTopic = topics[0];
   white-space: nowrap;
 }
 .sep { color: var(--color-border); }
+/* The nowrap meta line sizes the auto column to its full one-line width,
+   which can squeeze the title to a few words. Badge (7rem) + gaps (2rem) +
+   the longest meta line (about 27rem) + a readable title (about 20rem) needs
+   about 56rem, so below that the meta line moves under the title. Reading
+   columns (48rem max, so at most 46rem inside the row) always take this
+   layout; the wide index at desktop widths does not. */
+@container (max-width: 56rem) {
+  .row-grid { grid-template-columns: 7rem 1fr; row-gap: var(--space-xs); }
+  .badge-col { grid-row: span 2; }
+  .meta-col { grid-column: 2; }
+}
 @media (max-width: 600px) {
-  .claim-row { grid-template-columns: 1fr; gap: var(--space-xs); }
-  .badge-col { order: -1; }
+  .row-grid { grid-template-columns: 1fr; gap: var(--space-xs); }
+  .badge-col { order: -1; grid-row: auto; }
+  .meta-col { grid-column: auto; }
 }
 </style>

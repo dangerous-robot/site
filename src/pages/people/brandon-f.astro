@@ -5,11 +5,12 @@ import Breadcrumb from '../../components/Breadcrumb.astro';
 import ClaimRow from '../../components/ClaimRow.astro';
 import { PEOPLE, reviewerHandle } from '../../lib/reviewers';
 
-const person = PEOPLE.find((p) => p.handle === 'brandon-f')!;
+const person = PEOPLE.find((p) => p.handle === 'brandon-f');
+if (!person) throw new Error('people/brandon-f: no PEOPLE entry for brandon-f');
 const isoDay = (d: unknown) => (d instanceof Date ? d.toISOString().split('T')[0] : String(d));
 const reviewed = (await getCollection('claims', ({ data }) =>
   data.status === 'published' && reviewerHandle(data.audit?.human_review.reviewer) === person.handle,
-)).sort((a, b) => isoDay(b.data.as_of).localeCompare(isoDay(a.data.as_of)));
+)).sort((a, b) => isoDay(b.data.as_of).localeCompare(isoDay(a.data.as_of)) || a.id.localeCompare(b.id));
 ---
 <Base title={person.fullName} description={`${person.fullName} runs Dangerous Robot and reviews every claim on it.`} layout="reading">
   <article class="reading">
