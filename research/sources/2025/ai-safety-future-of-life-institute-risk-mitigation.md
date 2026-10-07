@@ -1,6 +1,6 @@
 ---
 url: https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
-archived_url: https://web.archive.org/web/https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
+archived_url: https://web.archive.org/web/20251223135406/https://quantumzeitgeist.com/ai-safety-future-of-life-institute-risk-mitigation/
 title: 'AI Safety Report: Top 3 Companies Outpace Rivals In Risk'
 publisher: Quantum Zeitgeist
 published_date: '2025-12-05'

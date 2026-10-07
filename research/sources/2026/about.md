@@ -1,6 +1,6 @@
 ---
 url: https://treadlightly.ai/about/
-archived_url: https://web.archive.org/web/https://treadlightly.ai/about/
+archived_url: https://web.archive.org/web/20261007130505/https://treadlightly.ai/about/
 title: About TreadLightly AI
 publisher: TreadLightly AI
 accessed_date: '2026-05-07'

@@ -1,6 +1,6 @@
 ---
 url: https://futureoflife.org/ai-safety-index-summer-2025/
-archived_url: https://web.archive.org/web/https://futureoflife.org/ai-safety-index-summer-2025/
+archived_url: https://web.archive.org/web/20260917073556/https://futureoflife.org/ai-safety-index-summer-2025/
 title: 2025 AI Safety Index
 publisher: Future of Life Institute
 published_date: '2025-07-17'

@@ -1,6 +1,6 @@
 # Plan: SITE-J claims readiness (dedup, archive links, ClaimReview removal)
 
-**Status**: `in progress`. CR1, CR2, CR3, CR5 and CR6 are done (`abc5b16..d8017b1`; review fixes `5ef1d53..ef4ba5a`). CR4: the committed sources without a link are backfilled (5 of 6); the archive links for the sources the page cites wait on the page plan's S7 and S10.
+**Status**: `in progress`. CR1, CR2, CR3, CR5 and CR6 are done (`abc5b16..d8017b1`; review fixes `5ef1d53..ef4ba5a`). CR4: every committed source has a dated archive link; the archive links for the sources the page cites wait on the page plan's S7 and S10.
 **Last updated**: 2026-10-07
 **Serves**: SITE-J (Responsible AI chatbots, backed by claims), `docs/v1.0.0-roadmap.md` § SITE-J
 **Line numbers**: code references are as of HEAD `4fa679b`, before the refresh-trail commits (`e6c96a5..e709800`) changed `pipeline/` and `src/`; re-read each file before editing it.
@@ -21,7 +21,7 @@ Not in this plan: the indexing flip (ending the pre-release noindex policy). Bra
 - [x] CR1: arXiv abs/html/pdf URLs are one source
 - [x] CR2: a fetch that redirects to an existing source reuses it
 - [x] CR3: archive lookups run in code, retry HTTP 429 and are recorded
-- [ ] CR4: archive links for the sources the page cites, and the other committed sources without one. Committed gaps backfilled 2026-10-07 (5 of 6); `2025/1441254323968196` (a facebook.com video page) has none: TimeGate found no snapshot and Save Page Now answered HTTP 404. Five other committed sources (added 2026-05-02 to 2026-05-11) carry an undated link that names no capture, likely from the old save handling, which accepted any `Location` or `Content-Location` and fell back to an undated `/web/<url>` link (fixed in `5ef1d53`), or from the ingest model; whether each resolves is unverified: `2025/ai-safety-future-of-life-institute-risk-mitigation`, `2025/ai-safety-index-report-summer-2025`, `2025/ai-safety-index-summer-2025`, `2026/1059673956309889` (a `/save/_embed/` link) and `2026/about`. `dr wayback-backfill` skips them because they have a link; clearing each link by hand and rerunning the backfill needs Brandon (research content). The cited-source part waits on the page plan.
+- [ ] CR4: archive links for the sources the page cites, and the other committed sources without one. Committed sources done 2026-10-07: all 29 have a dated snapshot link (5 backfilled first; then, by the orchestrating session, `2025/1441254323968196` once a snapshot existed, and five undated links cleared and re-pinned with `dr wayback-backfill`: `2026/about` returned 404 and `2026/1059673956309889` was a `/save/_embed/` link that triggers a capture when opened). The cited-source part waits on the page plan.
 - [x] CR5: remove ClaimReview markup
 - [x] CR6: backlog cleanup (run at promotion, before CR1)
 

@@ -1,6 +1,6 @@
 ---
 url: https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
-archived_url: https://web.archive.org/web/https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
+archived_url: https://web.archive.org/web/20260925022403/https://futureoflife.org/wp-content/uploads/2025/07/FLI-AI-Safety-Index-Report-Summer-2025.pdf
 title: AI Safety Index Report Summer 2025
 publisher: Future of Life Institute
 published_date: '2025-07-01'
