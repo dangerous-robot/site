@@ -117,7 +117,8 @@ The dependency advisories below were deferred when the high and critical fixes l
 | Deeper security analysis | A full security review of the site, Workers, pipeline and agent tooling, beyond dependency advisories. Findings stay out of this public file until fixed; each known issue it finds goes first in the next release (`priorities.md`). Triage: Security; keep; 2026-10-07 |
 | `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Target: after 1.0.0 (Astro 7 upgrade deferred until then). Triage: Security; keep (Brandon); 2026-10-07 |
 | `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. Triage: Security; keep; 2026-10-07 |
-| ~~Medium-severity Python advisories~~ | **Scheduled** as SEC-M in the roadmap (beta.6). |
+| ~~Medium-severity Python advisories~~ | **Done** as SEC-M in the roadmap (beta.6). |
+| Python lockfile layout | The workspace root `uv.lock` is gitignored and the tracked `pipeline/uv.lock` (pydantic-ai 1.84.1) is not the one uv uses, so CI (`uv sync` in `pipeline/`) resolves every dependency fresh on each run. Before SEC-M capped it, a fresh resolve picked pydantic-ai 2.8.0, a major version local runs never tested. Commit the root lock and drop the stale one, or say why not. For the deeper security analysis (unpinned CI dependencies). Triage: Security; propose schedule; 2026-10-07 |
 
 ---
 
