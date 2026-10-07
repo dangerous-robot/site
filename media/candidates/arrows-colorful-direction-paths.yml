@@ -1,13 +1,13 @@
 id: arrows-colorful-direction-paths
-status: needs-info
-status_note: "Creator and AI label unconfirmed: pixabay.com is blocked from the cloud session. The file came from a chat attachment, which may be re-encoded; replace it with the Pixabay download."
+status: candidate
+status_note: "Creator from Brandon, 2026-10-07. The file came from a chat attachment and may be re-encoded; replace it with the Pixabay download."
 title: Arrows Colorful Direction Paths
 source:
   site: pixabay
   site_id: "10142347"
   page_url: https://pixabay.com/illustrations/arrows-colorful-direction-paths-10142347/
-  creator: ""
-  creator_url: ""
+  creator: Gerd Altmann (geralt)
+  creator_url: https://pixabay.com/users/geralt-9301/
   uploaded: ""
   ai_generated: unknown
   verified: false
@@ -17,7 +17,7 @@ license:
   attribution_required: false
   restrictions: No selling unaltered copies; no redistribution as stock.
   permission: ""
-credit_line: "Image by <creator> from Pixabay"
+credit_line: "Image by Gerd Altmann from Pixabay"
 file:
   name: arrows-colorful-direction-paths.webp
   original_name: 1.webp
@@ -36,6 +36,7 @@ alt_draft: "Dozens of overlapping colored arrows pointing in every direction, ta
 intended_for: []
 used_by: []
 flags:
+  - "AI-generated label not checked: confirm on the Pixabay page"
   - "portrait: shows small in the landscape spotlight, post and social boxes"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
-notes: ""
+notes: "creator_url written from memory, not read from the page."

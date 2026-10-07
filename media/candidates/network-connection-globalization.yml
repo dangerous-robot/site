@@ -1,13 +1,13 @@
 id: network-connection-globalization
 status: needs-file
-status_note: "No file on disk (the chat image was not saved to this session). Creator and AI label unconfirmed: pixabay.com is blocked from the cloud session."
+status_note: "Creator from Brandon, 2026-10-07. No file on disk yet: drop the Pixabay download in image-inbox/ and rerun the skill with the URL."
 title: Network Connection Globalization
 source:
   site: pixabay
   site_id: "9947397"
   page_url: https://pixabay.com/illustrations/network-connection-globalization-9947397/
-  creator: ""
-  creator_url: ""
+  creator: Gerd Altmann (geralt)
+  creator_url: https://pixabay.com/users/geralt-9301/
   uploaded: ""
   ai_generated: unknown
   verified: false
@@ -17,7 +17,7 @@ license:
   attribution_required: false
   restrictions: No selling unaltered copies; no redistribution as stock.
   permission: ""
-credit_line: "Image by <creator> from Pixabay"
+credit_line: "Image by Gerd Altmann from Pixabay"
 file:
   name: ""
   original_name: ""
@@ -36,5 +36,6 @@ alt_draft: "A dense tangle of black curved lines and rings over a glowing blue b
 intended_for: []
 used_by: []
 flags:
+  - "AI-generated label not checked: confirm on the Pixabay page"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
-notes: "From the chat preview: landscape, about 3:2. Confirm the size once the file is in."
+notes: "creator_url written from memory, not read from the page. From the chat preview: landscape, about 3:2. Confirm the size once the file is in."
