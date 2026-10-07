@@ -157,6 +157,80 @@ def check_published_review_signoff(
     return issues
 
 
+def check_verdict_sidecar_mismatch(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    claim_sidecars: dict[str, dict[str, Any] | None],
+) -> list[LintIssue]:
+    """A published verdict must be the pipeline's or a reviewer's recorded override.
+
+    Anything else means the claim was edited by hand after review, so the
+    page shows a verdict nobody signed off on.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if fm.get("status") != "published":
+            continue
+        sidecar = claim_sidecars.get(str(path))
+        audit = (sidecar or {}).get("audit")
+        if not isinstance(audit, dict) or audit.get("analyst_verdict") is None:
+            continue
+        verdict = str(fm.get("verdict"))
+        analyst = str(audit["analyst_verdict"])
+        if verdict == analyst:
+            continue
+        override = ((sidecar or {}).get("human_review") or {}).get("verdict_override") or {}
+        if str(override.get("from")) == analyst and str(override.get("to")) == verdict:
+            continue
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="verdict-sidecar-mismatch",
+            severity="error",
+            message=(
+                f'published verdict "{verdict}" differs from the pipeline verdict '
+                f'"{analyst}" and no reviewer override is recorded'
+            ),
+            hint="re-run `dr claim-refresh`, or approve with `dr review` to record the override",
+        ))
+    return issues
+
+
+def check_refresh_pending_review(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    claim_sidecars: dict[str, dict[str, Any] | None],
+) -> list[LintIssue]:
+    """Warn while a refreshed, previously published claim awaits re-approval.
+
+    A warning, not an error: pre-commit lints the whole working tree, and an
+    error here would block unrelated commits while a refresh is in review.
+    """
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        if fm.get("status") == "published":
+            continue
+        refresh = (claim_sidecars.get(str(path)) or {}).get("refresh")
+        if not isinstance(refresh, dict):
+            continue
+        previous = refresh.get("previous") or {}
+        if previous.get("status") != "published":
+            continue
+        reviewed = previous.get("reviewed_at") or "unknown date"
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="refresh-pending-review",
+            severity="warning",
+            message=(
+                f'refreshed claim was published as "{previous.get("verdict")}" '
+                f"(reviewed {reviewed}) and has not been re-approved"
+            ),
+            hint="run `dr review-queue` and approve before committing the refresh",
+        ))
+    return issues
+
+
 def check_empty_required_strings(
     claim_files: list[Path],
     claim_frontmatters: dict[str, dict[str, Any]],

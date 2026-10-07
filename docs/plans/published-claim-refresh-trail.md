@@ -27,8 +27,8 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 - [x] P5: approval records a reviewer verdict override
 - [x] A1: save the evaluator's reasoning, gaps and flag reasons in the sidecar (RF9)
 - [x] A2: say the real flag reason in the terminal (RF9)
-- [ ] L1: lint `verdict-sidecar-mismatch` (error)
-- [ ] L2: lint `refresh-pending-review` (warning)
+- [x] L1: lint `verdict-sidecar-mismatch` (error)
+- [x] L2: lint `refresh-pending-review` (warning)
 - [ ] U1: site schema and claim page show the evaluator's reasoning and flag reasons
 - [ ] U2: `dr review-queue` header shows the published state for refreshed claims
 - [ ] D1: docs (`docs/architecture/content-model.md` sidecar table, `docs/runbook.md` "Refreshing a published claim", UNSCHEDULED RF8 and RF9 rows)

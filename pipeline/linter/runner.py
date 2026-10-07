@@ -28,11 +28,13 @@ from .checks import (
     check_published_criterion,
     check_published_review_signoff,
     check_raw_citation_tokens,
+    check_refresh_pending_review,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
     check_unreferenced_entities,
     check_unreferenced_sources,
     check_verification_level_pool,
+    check_verdict_sidecar_mismatch,
 )
 from .models import LintIssue
 
@@ -97,12 +99,8 @@ def run_all_checks(
         claim_fms[str(p)], claim_bodies[str(p)] = _read_frontmatter_and_body(p)
     entity_fms = {str(p): _read_frontmatter(p) for p in entity_files}
     source_fms = {str(p): _read_frontmatter(p) for p in source_files}
-    # Sidecars are only consulted for published claims; skip the stat+parse for drafts.
-    claim_sidecars = {
-        str(p): read_sidecar(p)
-        for p in claim_files
-        if claim_fms[str(p)].get("status") == "published"
-    }
+    # Drafts and blocked claims need theirs too: a pending refresh lives there.
+    claim_sidecars = {str(p): read_sidecar(p) for p in claim_files}
 
     # Build entity index: "companies/ecosia" style refs
     entity_index: set[str] = set()
@@ -141,6 +139,8 @@ def run_all_checks(
     issues += check_entity_type_dir_mismatch(entity_files, entity_fms)
     issues += check_published_criterion(claim_files, claim_fms)
     issues += check_published_review_signoff(claim_files, claim_fms, claim_sidecars)
+    issues += check_verdict_sidecar_mismatch(claim_files, claim_fms, claim_sidecars)
+    issues += check_refresh_pending_review(claim_files, claim_fms, claim_sidecars)
     issues += check_missing_independence(source_files, source_fms)
     issues += check_confidence_cap_violation(claim_files, claim_fms)
     issues += check_missing_cap_rationale(claim_files, claim_fms)

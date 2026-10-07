@@ -26,11 +26,13 @@ from linter.checks import (
     check_published_criterion,
     check_published_review_signoff,
     check_raw_citation_tokens,
+    check_refresh_pending_review,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
     check_unreferenced_entities,
     check_unreferenced_sources,
     check_verification_level_pool,
+    check_verdict_sidecar_mismatch,
 )
 
 
@@ -540,3 +542,90 @@ class TestVerificationLevelPool:
     def test_lower_levels_not_checked(self):
         assert self._check("claimed", ["2026/brave-home"]) == []
         assert self._check("self-reported", ["2026/brave-home"]) == []
+
+
+def _sidecar(analyst_verdict: str | None = "unverified", override: dict | None = None, refresh: dict | None = None) -> dict:
+    data: dict = {
+        "audit": None if analyst_verdict is None else {"analyst_verdict": analyst_verdict},
+        "human_review": {"reviewed_at": "2026-10-04", "verdict_override": override},
+    }
+    if refresh is not None:
+        data["refresh"] = refresh
+    return data
+
+
+class TestVerdictSidecarMismatch:
+    claim = _p("research/claims/brave/renewable-energy-hosting.md")
+
+    def _issues(self, fm: dict, sidecar: dict | None):
+        return check_verdict_sidecar_mismatch([self.claim], {str(self.claim): fm}, {str(self.claim): sidecar})
+
+    def test_published_mismatch_without_override_is_error(self):
+        issues = self._issues({"status": "published", "verdict": "false"}, _sidecar("unverified"))
+        assert len(issues) == 1
+        assert issues[0].check_id == "verdict-sidecar-mismatch"
+        assert issues[0].severity == "error"
+        assert "dr claim-refresh" in issues[0].hint and "dr review" in issues[0].hint
+
+    def test_matching_override_accepted(self):
+        override = {"from": "unverified", "to": "false"}
+        assert self._issues({"status": "published", "verdict": "false"}, _sidecar("unverified", override)) == []
+
+    def test_stale_override_still_flagged(self):
+        override = {"from": "unverified", "to": "mixed"}
+        assert len(self._issues({"status": "published", "verdict": "false"}, _sidecar("unverified", override))) == 1
+
+    def test_matching_verdict_no_issue(self):
+        assert self._issues({"status": "published", "verdict": "unverified"}, _sidecar("unverified")) == []
+
+    def test_null_audit_no_issue(self):
+        assert self._issues({"status": "published", "verdict": "false"}, _sidecar(None)) == []
+
+    def test_no_sidecar_no_issue(self):
+        assert self._issues({"status": "published", "verdict": "false"}, None) == []
+
+    def test_unpublished_no_issue(self):
+        assert self._issues({"status": "draft", "verdict": "false"}, _sidecar("unverified")) == []
+
+
+class TestRefreshPendingReview:
+    claim = _p("research/claims/brave/renewable-energy-hosting.md")
+    refresh = {"previous": {"status": "published", "verdict": "false", "reviewed_at": "2026-05-11"}}
+
+    def _issues(self, fm: dict, sidecar: dict | None):
+        return check_refresh_pending_review([self.claim], {str(self.claim): fm}, {str(self.claim): sidecar})
+
+    def test_unapproved_refresh_warns_with_previous_state(self):
+        issues = self._issues({"status": "draft"}, _sidecar(refresh=self.refresh))
+        assert len(issues) == 1
+        assert issues[0].check_id == "refresh-pending-review"
+        assert issues[0].severity == "warning"
+        assert "false" in issues[0].message and "2026-05-11" in issues[0].message
+
+    def test_blocked_refresh_also_warns(self):
+        assert len(self._issues({"status": "blocked"}, _sidecar(refresh=self.refresh))) == 1
+
+    def test_published_claim_no_issue(self):
+        assert self._issues({"status": "published"}, _sidecar(refresh=self.refresh)) == []
+
+    def test_no_refresh_block_no_issue(self):
+        assert self._issues({"status": "draft"}, _sidecar()) == []
+        assert self._issues({"status": "draft"}, None) == []
+
+
+def test_runner_reads_draft_sidecars_for_refresh_check(tmp_path):
+    import yaml
+
+    from linter.runner import run_all_checks
+
+    claim_dir = tmp_path / "research" / "claims" / "brave"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "c.md").write_text("---\ntitle: T\nstatus: draft\n---\nBody.\n", encoding="utf-8")
+    (claim_dir / "c.audit.yaml").write_text(
+        yaml.safe_dump({"refresh": {"previous": {"status": "published", "verdict": "false"}}}),
+        encoding="utf-8",
+    )
+
+    issues, _ = run_all_checks(tmp_path)
+
+    assert any(i.check_id == "refresh-pending-review" for i in issues)
