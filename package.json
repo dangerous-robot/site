@@ -10,6 +10,7 @@
     "astro": "astro",
     "lint:md": "markdownlint-cli2 'research/**/*.md'",
     "check:citations": "tsx scripts/check-citations.ts",
+    "check:reviewers": "tsx scripts/check-reviewer-display.ts",
     "check:types": "astro check",
     "check": "npm run check:types && npm run build && npm run lint:md && npm run check:citations"
   },

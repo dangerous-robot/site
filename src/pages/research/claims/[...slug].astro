@@ -241,7 +241,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
             <section class="audit-section">
               <h3>Human review</h3>
               {reviewedAt ? (
-                <p>Reviewed {reviewedAt}{reviewer ? ` by ${reviewer.name}` : ''}</p>
+                <p>Reviewed {reviewedAt}{reviewer && <> by <a href={reviewer.href}>{reviewer.name}</a></>}</p>
               ) : (
                 <p class="audit-muted">Pending human review</p>
               )}
