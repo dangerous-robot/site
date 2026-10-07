@@ -1,0 +1,42 @@
+id: fractal-geometry-abstraction-circle
+status: candidate
+status_note: "File from a chat attachment (1500x1050); the Pixabay original is 8000x5600."
+title: Fractal, geometry, abstraction
+source:
+  site: pixabay
+  site_id: "10355770"
+  page_url: https://pixabay.com/illustrations/fractal-geometry-abstraction-circle-10355770/
+  creator: Gerd Altmann (geralt)
+  creator_url: https://pixabay.com/users/geralt-9301/
+  uploaded: ""
+  ai_generated: false
+  verified: true           # Pixabay API, 2026-10-07
+license:
+  name: Pixabay Content License
+  url: https://pixabay.com/service/license-summary/
+  attribution_required: false
+  restrictions: No selling unaltered copies; no redistribution as stock.
+  permission: ""
+credit_line: "Image by Gerd Altmann from Pixabay"
+file:
+  name: fractal-geometry-abstraction-circle.jpg
+  original_name: 5.jpg
+  format: jpeg
+  width: 1500
+  height: 1050
+  bytes: 402375
+  sha256: 726f1615423ab040e2644e86f3b5230647385548327dfdd9b0baebfa20d4ce08
+  downloaded: 2026-10-07
+look:
+  kind: art
+  palette: mono
+  orientation: landscape
+  has_text: false
+alt_draft: "Fine white lines loop around a black hole at the center, like a spirograph pulled into a tunnel."
+intended_for: []
+used_by: []
+flags:
+  - "long side 1500px is under 1600px (chat copy; the original is 8000x5600)"
+  - "white on black: the reverse of the house style, so it would invert in light mode rather than dark"
+  - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
+notes: "Creator, profile URL and AI label confirmed via the Pixabay API (user geralt, id 9301), 2026-10-07. Tags include optical illusion, mathematics, scientific illustration."
