@@ -1,6 +1,6 @@
 id: network-connection-globalization
-status: needs-file
-status_note: "Creator from Brandon, 2026-10-07. No file on disk yet: drop the Pixabay download in image-inbox/ and rerun the skill with the URL."
+status: candidate
+status_note: "Creator from Brandon, 2026-10-07. File from a chat attachment (2000x1333); it may be re-encoded, so replace it with the Pixabay download."
 title: Network Connection Globalization
 source:
   site: pixabay
@@ -19,14 +19,14 @@ license:
   permission: ""
 credit_line: "Image by Gerd Altmann from Pixabay"
 file:
-  name: ""
-  original_name: ""
-  format: ""
-  width:
-  height:
-  bytes:
-  sha256: ""
-  downloaded: ""
+  name: network-connection-globalization.jpg
+  original_name: 3.jpg
+  format: jpeg
+  width: 2000
+  height: 1333
+  bytes: 452969
+  sha256: 451a8ed85b6e261b71ce63cd6cd60955daf491dae1975f43c2adb1d22a5c36d2
+  downloaded: 2026-10-07
 look:
   kind: art
   palette: color
@@ -38,4 +38,4 @@ used_by: []
 flags:
   - "AI-generated label not checked: confirm on the Pixabay page"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
-notes: "creator_url confirmed by Brandon, 2026-10-07. From the chat preview: landscape, about 3:2. Confirm the size once the file is in."
+notes: "creator_url confirmed by Brandon, 2026-10-07."
