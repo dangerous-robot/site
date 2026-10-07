@@ -444,6 +444,150 @@ class TestWriteAuditSidecar:
 
 
 # ---------------------------------------------------------------------------
+# Refresh snapshot: the published state a refresh overwrites
+# ---------------------------------------------------------------------------
+
+_SNAPSHOT = {
+    "status": "published",
+    "verdict": "false",
+    "confidence": "medium",
+    "title": "Brave hosts on renewable energy",
+    "as_of": "2026-05-11",
+    "sources": ["2025/a", "2025/b", "2025/c"],
+    "reviewed_at": "2026-05-11",
+    "reviewer": "reviewer@example.com",
+    "ran_at": "2026-05-11T10:00:00+00:00",
+}
+
+
+def _write_published_claim(dir_path: Path, *, status: str = "published") -> Path:
+    claim_path = dir_path / "claim.md"
+    fm = {
+        "title": "Brave hosts on renewable energy",
+        "verdict": "false",
+        "confidence": "medium",
+        "status": status,
+        "as_of": datetime.date(2026, 5, 11),
+        "sources": ["2025/a", "2025/b", "2025/c"],
+    }
+    claim_path.write_text(serialize_frontmatter(fm, "Body.\n"), encoding="utf-8")
+    sidecar = {
+        "schema_version": 1,
+        "pipeline_run": {"ran_at": "2026-05-11T10:00:00+00:00", "model": "m", "agents": []},
+        "sources_consulted": [],
+        "audit": None,
+        "human_review": {
+            "reviewed_at": "2026-05-11",
+            "reviewer": "reviewer@example.com",
+            "notes": None,
+            "pr_url": None,
+        },
+    }
+    claim_path.with_name("claim.audit.yaml").write_text(
+        yaml.safe_dump(sidecar, sort_keys=False), encoding="utf-8"
+    )
+    return claim_path
+
+
+class TestRefreshSnapshot:
+    def _write(self, claim_path: Path, **kwargs) -> dict:
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=_make_comparison(),
+            model="claude-haiku-4-5",
+            ran_at=FIXED_TS,
+            sources_consulted=[],
+            agents_run=["auditor"],
+            reset_review=True,
+            **kwargs,
+        )
+        sidecar = claim_path.with_name(claim_path.stem + ".audit.yaml")
+        return yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+
+    def test_read_published_snapshot_returns_published_state(self, tmp_path):
+        from orchestrator.persistence import _read_published_snapshot
+
+        claim_path = _write_published_claim(tmp_path)
+        assert _read_published_snapshot(claim_path) == _SNAPSHOT
+
+    def test_read_published_snapshot_ignores_unpublished(self, tmp_path):
+        from orchestrator.persistence import _read_published_snapshot
+
+        claim_path = _write_published_claim(tmp_path, status="draft")
+        assert _read_published_snapshot(claim_path) is None
+
+    def test_snapshot_written_as_refresh_previous(self, tmp_path):
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+
+        data = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
+
+        assert data["refresh"]["previous"] == _SNAPSHOT
+        assert data["refresh"]["refreshed_at"] == FIXED_TS.isoformat()
+        keys = list(data)
+        assert keys.index("sources_consulted") < keys.index("refresh") < keys.index("audit")
+
+    def test_pending_block_carries_forward_on_second_refresh(self, tmp_path):
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+        first = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
+
+        later = FIXED_TS + datetime.timedelta(days=1)
+        _write_audit_sidecar(
+            claim_path=claim_path,
+            comparison=_make_comparison(),
+            model="claude-haiku-4-5",
+            ran_at=later,
+            sources_consulted=[],
+            agents_run=["auditor"],
+            reset_review=True,
+            previous_publication=None,
+        )
+        data = yaml.safe_load(
+            claim_path.with_name("claim.audit.yaml").read_text(encoding="utf-8")
+        )
+        assert data["refresh"]["previous"] == first["refresh"]["previous"]
+        assert data["refresh"]["refreshed_at"] == first["refresh"]["refreshed_at"]
+
+    def test_no_refresh_key_without_snapshot_or_pending_block(self, tmp_path):
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+
+        data = self._write(claim_path, previous_publication=None)
+
+        assert "refresh" not in data
+
+    def test_dropped_sources_keep_previous_order(self, tmp_path):
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+
+        data = self._write(
+            claim_path,
+            previous_publication=dict(_SNAPSHOT),
+            current_source_ids=["2025/b", "2026/d"],
+        )
+
+        assert data["refresh"]["dropped_sources"] == ["2025/a", "2025/c"]
+
+    def test_dropped_sources_recomputed_on_carried_forward_block(self, tmp_path):
+        claim_path = tmp_path / "claim.md"
+        claim_path.touch()
+        self._write(
+            claim_path,
+            previous_publication=dict(_SNAPSHOT),
+            current_source_ids=["2025/b"],
+        )
+
+        data = self._write(
+            claim_path,
+            previous_publication=None,
+            current_source_ids=["2025/a", "2025/b"],
+        )
+
+        assert data["refresh"]["dropped_sources"] == ["2025/c"]
+
+
+# ---------------------------------------------------------------------------
 # _write_audit_sidecar — acquisition + tool_outcomes plumbing (tier1)
 # ---------------------------------------------------------------------------
 

@@ -437,6 +437,141 @@ class TestClaimRefreshCLI:
         assert "ENTITY" not in received["claim_text"]
 
 
+def _write_published_refresh_fixture(tmp_path) -> "Path":
+    """A published, reviewed claim plus sidecar, ready for `dr claim-refresh`."""
+    import yaml
+
+    claim_dir = tmp_path / "research" / "claims" / "brave"
+    claim_dir.mkdir(parents=True)
+    (tmp_path / "research" / "templates.yaml").write_text("templates: []\n", encoding="utf-8")
+    claim_path = claim_dir / "renewable-energy-hosting.md"
+    fm = {
+        "title": "Brave hosts on renewable energy",
+        "entity": "products/brave",
+        "topics": ["environmental-impact"],
+        "verdict": "false",
+        "confidence": "medium",
+        "criteria_slug": "renewable-energy-hosting",
+        "status": "published",
+        "as_of": "2026-05-11",
+        "sources": ["2025/a", "2025/b", "2025/c"],
+    }
+    claim_path.write_text(
+        f"---\n{yaml.safe_dump(fm, sort_keys=False)}---\n\nNarrative.\n", encoding="utf-8"
+    )
+    sidecar = {
+        "schema_version": 1,
+        "pipeline_run": {"ran_at": "2026-05-11T10:00:00+00:00", "model": "m", "agents": []},
+        "sources_consulted": [],
+        "audit": None,
+        "human_review": {
+            "reviewed_at": "2026-05-11",
+            "reviewer": "reviewer@example.com",
+            "notes": None,
+            "pr_url": None,
+        },
+    }
+    claim_path.with_name("renewable-energy-hosting.audit.yaml").write_text(
+        yaml.safe_dump(sidecar, sort_keys=False), encoding="utf-8"
+    )
+    return claim_path
+
+
+def _comparison(*, agrees: bool = True, gaps: list[str] | None = None, needs_review: bool = False):
+    from auditor.models import ComparisonResult
+    from common.models import Confidence, Verdict, VerdictSeverity
+
+    return ComparisonResult(
+        claim_id="brave/renewable-energy-hosting",
+        claim_file="research/claims/brave/renewable-energy-hosting.md",
+        primary_verdict=Verdict.UNVERIFIED,
+        assessed_verdict=Verdict.UNVERIFIED if agrees else Verdict.TRUE,
+        primary_confidence=Confidence.LOW,
+        assessed_confidence=Confidence.LOW,
+        reasoning="Sources do not say.",
+        evidence_gaps=gaps or [],
+        verdict_agrees=agrees,
+        confidence_agrees=True,
+        verdict_severity=VerdictSeverity.MATCH if agrees else VerdictSeverity.MAJOR,
+        needs_review=needs_review,
+    )
+
+
+def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None):
+    """Invoke `dr claim-refresh` with verify_claim stubbed; success=False hits the analyst-error branch."""
+    import asyncio
+
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+    from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
+    from orchestrator.pipeline import VerificationResult
+
+    def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+        ao = None
+        if success:
+            ao = AnalystOutput(
+                entity=EntityResolution(
+                    entity_name="Brave", entity_type=EntityType.PRODUCT, entity_description="d",
+                ),
+                verdict=VerdictAssessment(
+                    title="Brave hosts on renewable energy",
+                    verdict=Verdict.UNVERIFIED,
+                    confidence=Confidence.LOW,
+                    narrative="New narrative.",
+                    topics=[Category("environmental-impact")],
+                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
+                    seo_title="Brave renewable hosting",
+                ),
+            )
+        return VerificationResult(
+            entity=entity_name, claim_text=claim_text,
+            urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+            analyst_output=ao,
+            consistency=consistency if consistency is not None else (_comparison() if success else None),
+            cached_sources=[
+                ("https://b.example", "2025/b", {"title": "B"}),
+                ("https://d.example", "2026/d", {"title": "D"}),
+            ],
+        )
+
+    monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
+    monkeypatch.setattr(
+        "asyncio.run",
+        lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+    )
+    monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+    monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+    return CliRunner().invoke(
+        main, ["claim-refresh", "brave/renewable-energy-hosting"], catch_exceptions=False
+    )
+
+
+class TestClaimRefreshKeepsPublishedState:
+    """A refresh of a published claim snapshots what readers saw before the overwrite."""
+
+    @pytest.mark.parametrize("success", [True, False], ids=["success", "analyst-error"])
+    def test_snapshot_survives_refresh(self, monkeypatch, tmp_path, success) -> None:
+        import yaml
+
+        claim_path = _write_published_refresh_fixture(tmp_path)
+
+        result = _run_refresh(monkeypatch, tmp_path, success=success)
+
+        assert result.exit_code == 0, result.output
+        data = yaml.safe_load(
+            claim_path.with_name("renewable-energy-hosting.audit.yaml").read_text(encoding="utf-8")
+        )
+        previous = data["refresh"]["previous"]
+        assert previous["status"] == "published"
+        assert previous["verdict"] == "false"
+        assert previous["reviewer"] == "reviewer@example.com"
+        assert previous["reviewed_at"] == "2026-05-11"
+        assert previous["ran_at"] == "2026-05-11T10:00:00+00:00"
+        assert data["refresh"]["dropped_sources"] == ["2025/a", "2025/c"]
+        # The new run's sign-off is reset; the old one lives only in the snapshot.
+        assert data["human_review"]["reviewed_at"] is None
+
+
 class TestRemovedCommands:
     """Explicit coverage asserting that hard-removed commands no longer exist in the CLI."""
 

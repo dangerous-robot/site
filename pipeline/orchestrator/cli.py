@@ -839,6 +839,7 @@ def claim_refresh(
     from orchestrator.persistence import (
         _build_sources_consulted,
         _write_audit_sidecar,
+        _read_published_snapshot,
         _write_claim_file,
         verdict_write_kwargs,
     )
@@ -909,6 +910,10 @@ def claim_refresh(
     )
     gate = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
+    # Read before verify_claim: every branch below overwrites the claim and
+    # resets human_review, which would erase the published verdict and sign-off.
+    previous_publication = _read_published_snapshot(claim_path)
+
     progress("Refreshing %s (model=%s)...", claim_ref, model)
 
     # Run full pipeline; writes are handled below per branch.
@@ -977,6 +982,8 @@ def claim_refresh(
                 vr.queries_by_sub_question,
             ),
             reset_review=True,
+            previous_publication=previous_publication,
+            current_source_ids=source_ids,
         )
         click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
         return
@@ -1025,6 +1032,8 @@ def claim_refresh(
                 vr.queries_by_sub_question,
             ),
             reset_review=True,
+            previous_publication=previous_publication,
+            current_source_ids=source_ids,
         )
         click.echo(f"Blocked (analyst_error): {blocked_path}")
         return
@@ -1077,6 +1086,8 @@ def claim_refresh(
                 vr.queries_by_sub_question,
             ),
             reset_review=True,
+            previous_publication=previous_publication,
+            current_source_ids=source_ids,
         )
         click.echo(f"Blocked ({echo_label}): {blocked_path}")
         return
@@ -1123,6 +1134,8 @@ def claim_refresh(
             vr.queries_by_sub_question,
         ),
         reset_review=True,
+        previous_publication=previous_publication,
+        current_source_ids=source_ids,
     )
 
     click.echo(f"Refreshed: {claim_path_written}")

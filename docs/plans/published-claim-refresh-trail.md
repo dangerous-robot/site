@@ -1,7 +1,7 @@
 # Plan: published-claim refresh trail (RF8, RF9)
 
-**Status**: `ready` (not started)
-**Last updated**: 2026-10-06
+**Status**: `in progress`
+**Last updated**: 2026-10-07
 **Reviewed by:** self-review, 2026-10-06 (see Review history)
 **Serves**: Responsible AI chatbots, backed by claims (roadmap item SITE-J). This must ship before that page's claims are published and then refreshed.
 **Findings**: RF8 and RF9 in [`docs/UNSCHEDULED.md` § claim-refresh review findings (2026-10-04)](../UNSCHEDULED.md#claim-refresh-review-findings-2026-10-04)
@@ -20,8 +20,8 @@ Every step is test-first: write the failing test, confirm it fails for the state
 
 Ticked as items land (AGENTS.md rule 4). Ids match the step headings below.
 
-- [ ] P1: snapshot the published state before a refresh overwrites it (RF8)
-- [ ] P2: record dropped sources in the snapshot (RF8)
+- [x] P1: snapshot the published state before a refresh overwrites it (RF8)
+- [x] P2: record dropped sources in the snapshot (RF8)
 - [ ] P3: approval turns a verdict change into a `corrections` entry (RF8)
 - [ ] P4: `dr publish` skips refreshed claims whose verdict changed
 - [ ] P5: approval records a reviewer verdict override

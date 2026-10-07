@@ -457,6 +457,73 @@ def _build_sources_consulted(
     return result
 
 
+def _iso(value: object) -> str | None:
+    if value is None:
+        return None
+    if isinstance(value, (datetime.date, datetime.datetime)):
+        return value.isoformat()
+    return str(value)
+
+
+def _read_published_snapshot(claim_path: Path) -> dict | None:
+    """Return the reader-visible state of a published claim, or None if it is not published.
+
+    A refresh overwrites the claim and resets ``human_review``, so this must be
+    read before the overwrite to keep the prior verdict and sign-off on record.
+    """
+    try:
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError):
+        return None
+    if fm.get("status") != "published":
+        return None
+    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+    sidecar: dict = {}
+    if sidecar_path.exists():
+        try:
+            sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError as exc:
+            logger.warning("Could not parse sidecar %s: %s", sidecar_path, exc)
+    review = sidecar.get("human_review") or {}
+    run = sidecar.get("pipeline_run") or {}
+    return {
+        "status": "published",
+        "verdict": _iso(fm.get("verdict")),
+        "confidence": _iso(fm.get("confidence")),
+        "title": fm.get("title"),
+        "as_of": _iso(fm.get("as_of")),
+        "sources": list(fm.get("sources") or []),
+        "reviewed_at": _iso(review.get("reviewed_at")),
+        "reviewer": review.get("reviewer"),
+        "ran_at": _iso(run.get("ran_at")),
+    }
+
+
+def _refresh_block(
+    existing: dict,
+    previous_publication: dict | None,
+    current_source_ids: list[str] | None,
+    ran_at: datetime.datetime,
+) -> dict | None:
+    """Build the sidecar ``refresh`` block, or None when no refresh awaits re-approval.
+
+    A fresh snapshot wins. Otherwise a pending block carries forward unchanged so
+    a second refresh before re-approval does not replace the published state
+    with the unapproved one.
+    """
+    if previous_publication is not None:
+        block = {"refreshed_at": ran_at.isoformat(), "previous": previous_publication}
+    elif isinstance(existing.get("refresh"), dict):
+        block = dict(existing["refresh"])
+    else:
+        return None
+    if current_source_ids is not None:
+        current = set(current_source_ids)
+        previous_sources = (block.get("previous") or {}).get("sources") or []
+        block["dropped_sources"] = [s for s in previous_sources if s not in current]
+    return block
+
+
 def _write_audit_sidecar(
     claim_path: Path,
     comparison: ComparisonResult | None,
@@ -469,15 +536,28 @@ def _write_audit_sidecar(
     sub_questions_block: list[dict] | None = None,
     reset_review: bool = False,
     failure: FailureInfo | None = None,
+    previous_publication: dict | None = None,
+    current_source_ids: list[str] | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
     ``ran_at`` is passed in by the caller (not computed here) so that tests can
     inject a fixed timestamp for reproducible assertions.
 
+    ``previous_publication`` (from ``_read_published_snapshot``) starts a
+    ``refresh`` block; ``current_source_ids`` recomputes its ``dropped_sources``.
+
     Returns the sidecar path.
     """
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+
+    existing: dict = {}
+    if sidecar_path.exists():
+        try:
+            loaded = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+            existing = loaded if isinstance(loaded, dict) else {}
+        except yaml.YAMLError as exc:
+            logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
 
     if comparison is not None:
         audit_block = {
@@ -501,16 +581,14 @@ def _write_audit_sidecar(
         "notes": None,
         "pr_url": None,
     }
-    if not reset_review and sidecar_path.exists():
-        try:
-            existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
-            existing_review = existing.get("human_review")
-            if isinstance(existing_review, dict):
-                for key in human_review:
-                    if key in existing_review:
-                        human_review[key] = existing_review[key]
-        except yaml.YAMLError as exc:
-            logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
+    if not reset_review:
+        existing_review = existing.get("human_review")
+        if isinstance(existing_review, dict):
+            for key in human_review:
+                if key in existing_review:
+                    human_review[key] = existing_review[key]
+
+    refresh = _refresh_block(existing, previous_publication, current_source_ids, ran_at)
 
     if models_used is None:
         models_used = {agent: model for agent in agents_run}
@@ -569,11 +647,11 @@ def _write_audit_sidecar(
     }
     if sub_questions_block is not None:
         sidecar_data["sub_questions"] = sub_questions_block
-    sidecar_data.update({
-        "sources_consulted": sources_consulted,
-        "audit": audit_block,
-        "human_review": human_review,
-    })
+    sidecar_data["sources_consulted"] = sources_consulted
+    if refresh is not None:
+        sidecar_data["refresh"] = refresh
+    sidecar_data["audit"] = audit_block
+    sidecar_data["human_review"] = human_review
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
