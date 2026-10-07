@@ -13,21 +13,25 @@ separate step.
 
 ```
 image-inbox/                 # git-ignored drop folder: download here
+media/originals/<id>.<ext>   # git-ignored: the original, byte-for-byte as downloaded
 media/candidates/
-  README.md                  # field reference
-  <id>.<ext>                 # the image, byte-for-byte as downloaded (git-ignored)
+  README.md                  # field reference and the image lifecycle
   <id>.yml                   # its record (committed)
+  <id>.thumb.webp            # 480px preview (committed)
 ```
 
-Image files stay out of git. The repo is public, and stock licences forbid
-redistributing their files as they are. The record keeps the page URL and
-sha256, so the file can be fetched again and checked. An image only enters git
-once it is used on the site, under `src/assets/`.
+The repo is public, and stock licences forbid redistributing files as they
+are. So originals stay out of git; they live on Brandon's laptop. Git holds a
+small re-encoded preview and the record. The record keeps the page URL and
+the original's sha256, so the original can be fetched again and checked. A
+web-sized copy enters git only once the image is used on the site, under
+`src/assets/`.
 
 ## Modes
 
 - `<page-url> [file] [for <post-slug>] [notes]`: add a candidate, or update one if the URL or file hash is already recorded.
 - `<file> own [credit] [licence]`: Brandon's own work, with no page URL. Use `site: own`, an empty `page_url`, and the creator and licence he states (`verified: true`). Give it a short descriptive id.
+- `fetch <id>`: put a working copy of the original in `media/originals/`, for example in a cloud session where the laptop's files aren't available. For Pixabay, download the API's `largeImageURL` (1280px on the long side; the free API has nothing larger). Other sites: use the page's download link where the licence allows it, otherwise ask Brandon. Save it as `<id>.<ext>`, unless the laptop original is already there. A fetched copy's hash won't match `file.sha256`; don't overwrite the record.
 - `list`: print a table of every candidate: id, status, site, licence, size, intended post. Read the `*.yml` files; no other steps.
 - `approve <id>` / `reject <id> <reason>` / `used <id> <post-slug>`: set `status` (and `status_note` or `used_by`), then stop.
 
@@ -125,7 +129,8 @@ that shows a real person's face, a company logo or a trademark.
 ### 6. File it
 
 - **Id:** the page slug, lower-case kebab, without the site id (`arrows-colorful-direction-paths`). Add `-<site_id>` only if the id is already taken.
-- **Image:** move the file from `image-inbox/` to `media/candidates/<id>.<ext>`. Copy it instead if it came from anywhere else. Never re-encode or resize it: the hash is the provenance.
+- **Original:** move the file from `image-inbox/` to `media/originals/<id>.<ext>`. Copy it instead if it came from anywhere else. Never re-encode or resize it: the hash is the provenance.
+- **Thumbnail:** run `uv run --with pillow python3 .claude/skills/image-candidate/make_thumb.py media/originals/<id>.<ext> <id>`. This writes `media/candidates/<id>.thumb.webp`: 480px on the long side, metadata stripped. For an SVG, skip the thumbnail and record `thumb: ""`.
 - **Record:** write `media/candidates/<id>.yml` with every field in the template below, in this order. Leave a field empty rather than guessing.
 
 ```yaml
@@ -151,6 +156,7 @@ license:
 credit_line: "Image by <creator> from Pixabay"
 file:
   name: arrows-colorful-direction-paths.webp
+  thumb: arrows-colorful-direction-paths.thumb.webp
   original_name: 1.webp
   format: webp
   width: 1604
@@ -180,8 +186,8 @@ Keep the reply to five lines or fewer:
 - the flags, if any;
 - what's missing (for `needs-info` or `needs-file`, exactly what Brandon has to supply).
 
-Don't commit unless asked. If asked, commit the `.yml` records only (the image
-files are git-ignored), one commit per batch:
+Don't commit unless asked. If asked, commit the `.yml` record and the `.thumb.webp`
+for each image (originals are git-ignored), one commit per batch:
 `chore(media): add image candidates <ids>`.
 
 ## Fit with the site
