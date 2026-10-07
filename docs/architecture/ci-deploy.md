@@ -49,23 +49,27 @@ npm run check:types && npm run build && npm run lint:md && npm run check:citatio
 
 Run it locally before pushing. The CI `check` job runs a subset: build, lint:md and check:citations. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
 
-### Stage 1: Build
+### Stage 1: Types
+
+`astro check` -- type-checks the site.
+
+### Stage 2: Build
 
 `astro build` -- compiles the site to `dist/`. Catches broken imports, invalid frontmatter, and template errors.
 
-### Stage 2: Markdown Lint
+### Stage 3: Markdown Lint
 
 `markdownlint-cli2 'research/**/*.md'`
 
 Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-linting) below.
 
-### Stage 3: Citation Integrity
+### Stage 4: Citation Integrity
 
 `tsx scripts/check-citations.ts` -- see [Citation Integrity](#citation-integrity) below.
 
-### Other stages
+### Stage 5: Reviewer Display
 
-`astro check` (`check:types`) runs first and type-checks the site. `tsx scripts/check-reviewer-display.ts` (`check:reviewers`) runs last and checks reviewer mentions in `dist/`: the handle and profile link, never the full name; see [`site.md`](site.md#cross-linking).
+`tsx scripts/check-reviewer-display.ts` -- checks reviewer mentions in `dist/`: the handle and profile link, never the full name. See [`site.md`](site.md#cross-linking).
 
 ## Citation Integrity
 
