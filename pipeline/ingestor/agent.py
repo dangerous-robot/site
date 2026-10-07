@@ -16,7 +16,7 @@ from common.canonical_url import same_resource
 from common.instructions import load_instructions
 from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
-from ingestor.tools.wayback import check_archive_org_timegate, save_to_wayback
+from ingestor.tools.wayback import archive_with_time_limit, find_or_save_archive
 from ingestor.tools.web_fetch import (
     TERMINAL_STATUS_CODES,
     TerminalFetchError,
@@ -63,6 +63,9 @@ class IngestorDeps:
     # orchestrator can match it to a source already stored under that URL.
     # Unset for archive.org copies and prefetched bodies (no redirect info).
     final_url: str | None = None
+    # The archive link ``wayback_check`` returned for ``requested_url``; the
+    # lookup run in code after the ingest reuses it instead of repeating it.
+    wayback_link: str | None = None
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
@@ -208,39 +211,53 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
       on a TimeGate hit. ``save_to_wayback`` success does *not* write
       acquisition — save creates a fresh archive of a still-reachable
       URL, not a recovery of a lost one.
-    * ``wayback_failures``: ``{stage, error_type, message}`` for the
-      TimeGate leg on transport failure. The orchestrator promotes to
+    * ``wayback_failures``: ``{stage, error_type, message}`` for each
+      failed TimeGate or save request. The orchestrator promotes to
       ``StepError`` only when the ingest itself failed terminally.
     """
     if not url.startswith(("http://", "https://")):
         return {"available": False, "archived_url": None, "error": f"Invalid URL: {url!r}"}
-    if ctx.deps.skip_wayback:
+    deps = ctx.deps
+    if deps.skip_wayback:
         return {"available": False, "archived_url": None, "skipped": True}
 
-    timegate_result = await check_archive_org_timegate(ctx.deps.http_client, url)
-    if timegate_result.get("error"):
-        ctx.deps.wayback_failures.append(
-            {
-                "stage": "ingest",
-                "error_type": "wayback_unavailable",
-                "message": timegate_result["error"],
-            }
+    lookup = await find_or_save_archive(deps.http_client, url)
+    for message in lookup.errors:
+        deps.wayback_failures.append(
+            {"stage": "ingest", "error_type": "wayback_unavailable", "message": message}
         )
+    if lookup.archived_url is None:
+        return {"available": False, "archived_url": None}
 
-    if timegate_result["available"]:
-        ctx.deps.acquisition_writes[url] = {
+    if lookup.from_timegate:
+        deps.acquisition_writes[url] = {
             "stage": "ingest",
             "recovered_via": "archive_org",
             "outcome": "recovered",
         }
-        return {
-            "available": True,
-            "archived_url": timegate_result["archived_url"],
-        }
+    if _is_page_or_archive_copy(url, deps.requested_url):
+        deps.wayback_link = lookup.archived_url
+    return {"available": True, "archived_url": lookup.archived_url}
 
-    # Save isn't a recovery (no acquisition write; see docstring).
-    archived_url = await save_to_wayback(ctx.deps.http_client, url)
-    if archived_url:
-        return {"available": True, "archived_url": archived_url}
 
-    return {"available": False, "archived_url": None}
+async def archive_after_ingest(
+    sf: SourceFile, deps: IngestorDeps, *, allow_save: bool = True
+) -> dict:
+    """Set ``sf``'s ``archived_url`` in code and return the sidecar ``archive`` record.
+
+    The model's own ``archived_url`` is not trusted: it is replaced by the
+    lookup's link, or cleared when the lookup fails. A link ``wayback_check``
+    returned during this ingest is reused, so the lookup is not repeated.
+    """
+    if deps.skip_wayback:
+        return {"status": "not-attempted"}
+    if deps.wayback_link:
+        sf.frontmatter.archived_url = deps.wayback_link
+        return {"status": "found"}
+    lookup = await archive_with_time_limit(
+        deps.http_client, sf.frontmatter.url, allow_save=allow_save
+    )
+    sf.frontmatter.archived_url = lookup.archived_url
+    if lookup.archived_url:
+        return {"status": "found"}
+    return {"status": "failed", "error": "; ".join(lookup.errors) or "no archive.org snapshot"}

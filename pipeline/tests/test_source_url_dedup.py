@@ -451,55 +451,6 @@ _NEW = "https://example.org/new"
 _PAGE = "<html><head><title>New</title></head><body><p>The stored page.</p></body></html>"
 
 
-def _scripted_ingest_model():
-    """An ingest model that fetches the requested URL, then returns a source for it."""
-    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
-    from pydantic_ai.models.function import AgentInfo, FunctionModel
-
-    async def _fn(messages, info: AgentInfo) -> ModelResponse:
-        prompt = next(
-            p.content for m in messages for p in getattr(m, "parts", [])
-            if isinstance(p, UserPromptPart)
-        )
-        url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
-        fetched = any(
-            isinstance(p, ToolCallPart) for m in messages for p in getattr(m, "parts", [])
-        )
-        if not fetched:
-            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
-        source = {
-            "frontmatter": {
-                "url": url,
-                "title": "The stored page",
-                "publisher": "Example",
-                "accessed_date": "2026-10-07",
-                "kind": "article",
-                "summary": "The stored page.",
-            },
-            "body": "The stored page.",
-            "slug": "page",
-            "year": 2026,
-        }
-        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)])
-
-    return FunctionModel(_fn)
-
-
-@pytest.fixture
-def stub_ingest_model():
-    from contextlib import nullcontext
-
-    from ingestor.agent import ingestor_agent
-
-    with ingestor_agent.override(model=_scripted_ingest_model()):
-        # Keep the scripted model: neutralize the orchestrator's own override.
-        with patch(
-            "orchestrator.pipeline.ingestor_agent.override",
-            side_effect=lambda **kw: nullcontext(),
-        ):
-            yield
-
-
 def _mock_redirect(respx_mock) -> None:
     import httpx
 

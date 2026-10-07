@@ -42,11 +42,22 @@ def ingest_budget_with_wayback_s() -> float:
     """Ingest wall-clock budget when ``skip_wayback=False``.
 
     Covers: initial fetch, the 429 retry arm (one extra connect+read plus sleep),
-    wayback availability + save, and LLM tool-dispatch turns.
+    the model's recovery ``wayback_check`` (availability + save, each with one
+    429 wait), and LLM tool-dispatch turns. The archive lookup run in code
+    after the ingest has its own limit, ``archive_lookup_budget_s``.
     """
     return (
         HTTP_CONNECT_S + HTTP_READ_S
         + RATE_LIMIT_RETRY_S + HTTP_CONNECT_S + HTTP_READ_S
-        + WAYBACK_CHECK_S + WAYBACK_SAVE_S
+        + WAYBACK_CHECK_S + WAYBACK_SAVE_S + 2 * RATE_LIMIT_RETRY_S
         + LLM_BUDGET_S
     )
+
+
+def archive_lookup_budget_s() -> float:
+    """Wall-clock limit for the archive lookup run in code after each ingest.
+
+    Covers the TimeGate check, Save Page Now, and one 429 wait for each (a 429
+    answers fast, so the retried request fits in the same allowance).
+    """
+    return WAYBACK_CHECK_S + WAYBACK_SAVE_S + 2 * RATE_LIMIT_RETRY_S

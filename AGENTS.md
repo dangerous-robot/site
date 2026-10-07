@@ -178,6 +178,7 @@ Commands:
 - `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
 - `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr reassess` and `dr ingest` remain as hidden deprecated aliases for the last two)
 - `dr onboard` -- Onboard an entity using claim templates
+- `dr wayback-backfill` -- Add an archive.org link (`archived_url`) to existing source files that lack one; exits 1 if any could not be archived
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar
 

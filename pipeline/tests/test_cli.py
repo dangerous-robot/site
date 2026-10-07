@@ -1203,3 +1203,194 @@ class TestClaimRefreshFlagReason:
         assert result.exit_code == 0, result.output
         assert "Note: flagged for human review (2+ evidence gaps)." in result.output
         assert "verdict disagreement" not in result.output
+
+
+# --------------------------------------------------------------------------- #
+# Archive links in code: dr step-ingest and dr wayback-backfill               #
+# --------------------------------------------------------------------------- #
+
+_ARCHIVE_PAGE_URL = "https://example.org/page"
+_ARCHIVE_PAGE = "<html><head><title>Page</title></head><body><p>The stored page.</p></body></html>"
+_ARCHIVE_SNAPSHOT = "https://web.archive.org/web/20260101000000/https://example.org/page"
+
+
+def _timegate_re():
+    import re
+
+    return re.compile(r"https://web\.archive\.org/web/\d{14}/.+")
+
+
+def _save_re():
+    import re
+
+    return re.compile(r"https://web\.archive\.org/save/.+")
+
+
+@pytest.fixture
+def no_archive_wait(monkeypatch):
+    async def _no_wait(seconds: float) -> None:
+        return None
+
+    monkeypatch.setattr("ingestor.tools.wayback._wait", _no_wait)
+
+
+class TestStepIngestArchive:
+    def _invoke(self, tmp_path, *flags: str):
+        (tmp_path / "research" / "sources").mkdir(parents=True, exist_ok=True)
+        return CliRunner().invoke(
+            main,
+            [
+                "--model", "test", "--ingestor-model", "test",
+                "step-ingest", _ARCHIVE_PAGE_URL, *flags, "--repo-root", str(tmp_path),
+            ],
+        )
+
+    def test_read_only_prints_the_snapshot_and_never_saves(self, tmp_path, stub_ingest_model) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            mock.get(_timegate_re()).mock(
+                return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
+            )
+            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert f"archived_url: {_ARCHIVE_SNAPSHOT}" in result.output
+        assert save.called is False
+
+    def test_read_only_miss_reports_it_without_a_capture(self, tmp_path, stub_ingest_model) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert "archived_url" not in result.output
+        assert "Archive lookup failed" in result.output
+        assert save.called is False
+
+    def test_write_records_a_rate_limit_as_an_error_line(
+        self, tmp_path, stub_ingest_model, no_archive_wait
+    ) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(429))
+            result = self._invoke(tmp_path, "--write")
+
+        assert result.exit_code == 0, result.output
+        error_lines = [ln for ln in result.output.splitlines() if "Archive lookup failed" in ln]
+        assert len(error_lines) == 1 and "429" in error_lines[0]
+        written = (tmp_path / "research" / "sources" / "2026" / "page.md").read_text()
+        assert "archived_url" not in written
+
+    def test_write_saves_on_a_miss(self, tmp_path, stub_ingest_model) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            mock.post(_save_re()).mock(
+                return_value=httpx.Response(200, headers={"content-location": _ARCHIVE_SNAPSHOT})
+            )
+            result = self._invoke(tmp_path, "--write")
+
+        assert result.exit_code == 0, result.output
+        written = (tmp_path / "research" / "sources" / "2026" / "page.md").read_text()
+        assert f"archived_url: {_ARCHIVE_SNAPSHOT}" in written
+
+    def test_skip_wayback_makes_no_archive_request(self, tmp_path, stub_ingest_model) -> None:
+        import httpx
+        import respx
+
+        with respx.mock as mock:
+            mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
+            timegate = mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            result = self._invoke(tmp_path, "--skip-wayback")
+
+        assert result.exit_code == 0, result.output
+        assert timegate.called is False
+
+
+class TestWaybackBackfill:
+    _SOURCE = (
+        "---\n"
+        "url: https://example.org/page\n"
+        "title: Page\n"
+        "publisher: Example\n"
+        "accessed_date: '2026-05-04'\n"
+        "kind: article\n"
+        "summary: A long summary that a YAML round trip could re-wrap differently from how\n"
+        "  it is stored now.\n"
+        "---\n"
+        "Body.\n"
+    )
+
+    def _repo(self, tmp_path):
+        sources = tmp_path / "research" / "sources" / "2026"
+        sources.mkdir(parents=True)
+        (sources / "page.md").write_text(self._SOURCE, encoding="utf-8")
+        (sources / "done.md").write_text(
+            self._SOURCE.replace(
+                "url: https://example.org/page\n",
+                f"url: https://example.org/done\narchived_url: {_ARCHIVE_SNAPSHOT}\n",
+            ),
+            encoding="utf-8",
+        )
+        return sources
+
+    def _invoke(self, tmp_path, *ids: str):
+        return CliRunner().invoke(
+            main, ["wayback-backfill", *ids, "--repo-root", str(tmp_path)]
+        )
+
+    def test_adds_only_the_archived_url_line(self, tmp_path) -> None:
+        import httpx
+        import respx
+
+        sources = self._repo(tmp_path)
+        with respx.mock as mock:
+            mock.get(_timegate_re()).mock(
+                return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
+            )
+            result = self._invoke(tmp_path, "2026/page", "2026/done")
+
+        assert result.exit_code == 0, result.output
+        expected = self._SOURCE.replace(
+            "url: https://example.org/page\n",
+            f"url: https://example.org/page\narchived_url: {_ARCHIVE_SNAPSHOT}\n",
+        )
+        assert (sources / "page.md").read_text() == expected
+        assert "2026/done: already has archived_url" in result.output
+
+    def test_failure_prints_the_reason_and_exits_nonzero(self, tmp_path, no_archive_wait) -> None:
+        import httpx
+        import respx
+
+        sources = self._repo(tmp_path)
+        with respx.mock as mock:
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(429))
+            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path, "2026/page")
+
+        assert result.exit_code == 1
+        assert "2026/page: archive lookup failed" in result.output
+        assert "429" in result.output
+        assert (sources / "page.md").read_text() == self._SOURCE
+        assert save.called is False
+
+    def test_unknown_source_id_fails(self, tmp_path) -> None:
+        self._repo(tmp_path)
+        result = self._invoke(tmp_path, "2026/missing")
+        assert result.exit_code == 1
+        assert "2026/missing: not found" in result.output

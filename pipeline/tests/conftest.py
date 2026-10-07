@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+from contextlib import nullcontext
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -55,3 +57,46 @@ def sample_frontmatter_text() -> str:
         "\n"
         "Body content here.\n"
     )
+
+
+@pytest.fixture
+def stub_ingest_model():
+    """Swap in an ingest model that fetches the requested URL, then returns a source for it.
+
+    It never calls ``wayback_check``. The fixture value is a dict of extra
+    frontmatter fields the model writes (e.g. ``archived_url``); tests may
+    fill it before ingesting.
+    """
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import AgentInfo, FunctionModel
+
+    from ingestor.agent import ingestor_agent
+
+    extra_frontmatter: dict = {}
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        parts = [p for m in messages for p in getattr(m, "parts", [])]
+        prompt = next(p.content for p in parts if isinstance(p, UserPromptPart))
+        url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
+        if not any(isinstance(p, ToolCallPart) for p in parts):
+            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        source = {
+            "frontmatter": {
+                "url": url,
+                "title": "The stored page",
+                "publisher": "Example",
+                "accessed_date": "2026-10-07",
+                "kind": "article",
+                "summary": "The stored page.",
+                **extra_frontmatter,
+            },
+            "body": "The stored page.",
+            "slug": "page",
+            "year": 2026,
+        }
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)])
+
+    with ingestor_agent.override(model=FunctionModel(_fn)):
+        # Keep this model: callers enter their own override with the configured one.
+        with patch.object(ingestor_agent, "override", side_effect=lambda **kw: nullcontext()):
+            yield extra_frontmatter

@@ -56,6 +56,10 @@ const auditSchema = z.object({
       paper_id: z.string().optional(),
       filing_accession: z.string().optional(),
     }).optional(),
+    archive: z.object({
+      status: z.enum(['found', 'failed', 'not-attempted']),
+      error: z.string().optional(),
+    }).optional(),
   })),
   audit: z.object({
     analyst_verdict: z.string(),

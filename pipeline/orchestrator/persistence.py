@@ -420,6 +420,7 @@ def _write_claim_file(
 def _build_sources_consulted(
     source_files: list[tuple[str, SourceFile]] | None,
     cached_sources: list[tuple[str, str, dict]] | None = None,
+    archive: dict[str, dict] | None = None,
 ) -> list[dict]:
     """Build the sources_consulted list for an audit sidecar.
 
@@ -429,6 +430,9 @@ def _build_sources_consulted(
     first to mirror the order in which the pipeline appends them to
     ``VerificationResult.sources``. If a source_id appears in both lists
     the cached entry wins. Returns ``[]`` when both inputs are empty.
+
+    ``archive`` (requested URL -> ``{status, error?}``) adds the archive
+    lookup record to fresh entries; cached entries were not looked up.
     """
     result: list[dict] = []
     seen_ids: set[str] = set()
@@ -451,14 +455,15 @@ def _build_sources_consulted(
         if source_id in seen_ids:
             continue
         seen_ids.add(source_id)
-        result.append(
-            {
-                "id": source_id,
-                "url": url,
-                "title": sf.frontmatter.title,
-                "ingested": True,
-            }
-        )
+        entry = {
+            "id": source_id,
+            "url": url,
+            "title": sf.frontmatter.title,
+            "ingested": True,
+        }
+        if archive and url in archive:
+            entry["archive"] = dict(archive[url])
+        result.append(entry)
     return result
 
 

@@ -264,3 +264,30 @@ class TestOrchestratorMapping:
         assert outcome.url == url
         assert outcome.error_type == "http_403"
         assert outcome.retryable is False
+
+
+class TestNoArchiveLookupAfterFailedIngest:
+    @pytest.mark.asyncio
+    async def test_terminal_fetch_skips_the_lookup_run_in_code(self) -> None:
+        """Only a successful ingest gets the archive lookup; a 403 makes no archive request."""
+        import re
+
+        url = "https://example.com/forbidden-archive"
+        cfg = VerifyConfig(model="test", repo_root="/tmp", skip_wayback=False)
+
+        with respx.mock:
+            respx.get(url).mock(return_value=httpx.Response(403))
+            timegate = respx.get(re.compile(r"https://web\.archive\.org/.+")).mock(
+                return_value=httpx.Response(404)
+            )
+            async with httpx.AsyncClient() as client:
+                with ingestor_agent.override(model=_make_web_fetch_caller_model(url)):
+                    with patch(
+                        "orchestrator.pipeline.ingestor_agent.override",
+                        side_effect=lambda **kw: nullcontext(),
+                    ):
+                        outcome = await _ingest_one(
+                            client, url, cfg, datetime.date(2026, 4, 19), asyncio.Semaphore(8)
+                        )
+        assert outcome.error_type == "http_403"
+        assert timegate.called is False

@@ -15,10 +15,15 @@ from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
 from ingestor.agent import IngestorDeps, wayback_check, web_fetch
-from ingestor.tools.wayback import check_archive_org_timegate, save_to_wayback
+from ingestor.tools.wayback import (
+    check_archive_org_timegate,
+    find_or_save_archive,
+    save_to_wayback,
+)
 from ingestor.tools.web_fetch import extract_page_data
 from orchestrator.checkpoints import StepError
 from orchestrator.pipeline import VerifyConfig, _ingest_urls
+from common.timeouts import RATE_LIMIT_RETRY_S
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -205,6 +210,121 @@ class TestCheckArchiveOrgTimeGate:
         assert "ConnectError" in result.get("error", "")
 
 
+@pytest.fixture
+def no_sleep(monkeypatch) -> list[float]:
+    """Record rate-limit waits instead of sleeping."""
+    waits: list[float] = []
+
+    async def _wait(seconds: float) -> None:
+        waits.append(seconds)
+
+    monkeypatch.setattr("ingestor.tools.wayback._wait", _wait)
+    return waits
+
+
+class TestTimeGateRateLimit:
+    @pytest.mark.asyncio
+    async def test_429_then_redirect_finds_the_snapshot(self, no_sleep) -> None:
+        archived = "https://web.archive.org/web/20250315000000/https://example.com/"
+        with respx.mock:
+            route = respx.get(_TIMEGATE_URL_RE).mock(
+                side_effect=[
+                    httpx.Response(429, headers={"Retry-After": "3600"}),
+                    httpx.Response(302, headers={"location": archived}),
+                ]
+            )
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result == {"available": True, "archived_url": archived}
+        assert route.call_count == 2
+        # Retry-After is honoured but capped.
+        assert no_sleep == [RATE_LIMIT_RETRY_S]
+
+    @pytest.mark.asyncio
+    async def test_429_twice_is_an_error_not_a_silent_miss(self, no_sleep) -> None:
+        with respx.mock:
+            route = respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(429))
+            async with httpx.AsyncClient() as client:
+                result = await check_archive_org_timegate(client, "https://example.com")
+        assert result["available"] is False
+        assert result["error"] == "archive.org TimeGate check failed (HTTP 429)"
+        assert route.call_count == 2
+
+    @pytest.mark.parametrize(
+        ("header", "expected"),
+        [("0", 0.0), ("1.5", 1.5), ("soon", RATE_LIMIT_RETRY_S),
+         ("Wed, 21 Oct 2015 07:28:00 GMT", 0.0)],
+    )
+    @pytest.mark.asyncio
+    async def test_retry_after_forms(self, no_sleep, header: str, expected: float) -> None:
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(
+                side_effect=[httpx.Response(429, headers={"Retry-After": header}), httpx.Response(404)]
+            )
+            async with httpx.AsyncClient() as client:
+                await check_archive_org_timegate(client, "https://example.com")
+        assert no_sleep == [expected]
+
+
+class TestFindOrSaveArchive:
+    URL = "https://example.com/article"
+    SAVE_RE = re.compile(r"https://web\.archive\.org/save/.+")
+
+    @pytest.mark.asyncio
+    async def test_no_save_after_a_timegate_429(self, no_sleep) -> None:
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(429))
+            save = respx.post(self.SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, self.URL)
+        assert lookup.archived_url is None
+        assert lookup.errors == ["archive.org TimeGate check failed (HTTP 429)"]
+        assert save.called is False
+
+    @pytest.mark.asyncio
+    async def test_miss_then_save(self) -> None:
+        archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            respx.post(self.SAVE_RE).mock(
+                return_value=httpx.Response(200, headers={"content-location": archived})
+            )
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, self.URL)
+        assert lookup.archived_url == archived
+        assert lookup.from_timegate is False
+        assert lookup.errors == []
+
+    @pytest.mark.asyncio
+    async def test_miss_without_save_sends_no_capture(self) -> None:
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            save = respx.post(self.SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, self.URL, allow_save=False)
+        assert lookup.archived_url is None
+        assert save.called is False
+
+
+class TestArchiveBudgets:
+    def test_lookup_budget_covers_check_save_and_the_retry_waits(self) -> None:
+        from common import timeouts as t
+
+        assert t.archive_lookup_budget_s() == (
+            t.WAYBACK_CHECK_S + t.WAYBACK_SAVE_S + 2 * t.RATE_LIMIT_RETRY_S
+        )
+
+    def test_ingest_budget_includes_the_recovery_retry_waits(self) -> None:
+        from common import timeouts as t
+
+        assert t.ingest_budget_with_wayback_s() == (
+            t.HTTP_CONNECT_S + t.HTTP_READ_S
+            + t.RATE_LIMIT_RETRY_S + t.HTTP_CONNECT_S + t.HTTP_READ_S
+            + t.WAYBACK_CHECK_S + t.WAYBACK_SAVE_S + 2 * t.RATE_LIMIT_RETRY_S
+            + t.LLM_BUDGET_S
+        )
+
+
 class TestSaveToWayback:
     @pytest.mark.asyncio
     async def test_save_success_with_location(self):
@@ -219,17 +339,37 @@ class TestSaveToWayback:
             )
             async with httpx.AsyncClient() as client:
                 result = await save_to_wayback(client, "https://example.com")
-            assert result == "https://web.archive.org/web/20250315/https://example.com"
+            assert result == {
+                "archived_url": "https://web.archive.org/web/20250315/https://example.com"
+            }
 
     @pytest.mark.asyncio
-    async def test_save_rate_limited(self):
+    async def test_save_rate_limited_twice_returns_the_reason(self, no_sleep):
         with respx.mock:
-            respx.post("https://web.archive.org/save/https://example.com").mock(
+            route = respx.post("https://web.archive.org/save/https://example.com").mock(
                 return_value=httpx.Response(429)
             )
             async with httpx.AsyncClient() as client:
                 result = await save_to_wayback(client, "https://example.com")
-            assert result is None
+        assert result["archived_url"] is None
+        assert "429" in result["error"]
+        assert route.call_count == 2
+        assert no_sleep == [RATE_LIMIT_RETRY_S]
+
+    @pytest.mark.asyncio
+    async def test_save_retries_once_after_429(self, no_sleep):
+        archived = "https://web.archive.org/web/20250315/https://example.com"
+        with respx.mock:
+            respx.post("https://web.archive.org/save/https://example.com").mock(
+                side_effect=[
+                    httpx.Response(429, headers={"Retry-After": "1"}),
+                    httpx.Response(200, headers={"content-location": archived}),
+                ]
+            )
+            async with httpx.AsyncClient() as client:
+                result = await save_to_wayback(client, "https://example.com")
+        assert result == {"archived_url": archived}
+        assert no_sleep == [1.0]
 
     @pytest.mark.asyncio
     async def test_save_network_error(self):
@@ -239,7 +379,8 @@ class TestSaveToWayback:
             )
             async with httpx.AsyncClient() as client:
                 result = await save_to_wayback(client, "https://example.com")
-            assert result is None
+            assert result["archived_url"] is None
+            assert "ConnectError" in result["error"]
 
 
 def _make_ingest_ctx(
@@ -369,8 +510,10 @@ class TestWaybackCheckTool:
                 ctx = _make_ingest_ctx(client, skip_wayback=False)
                 result = await wayback_check(ctx, self.URL)
         assert result["available"] is False
-        types = [f["error_type"] for f in ctx.deps.wayback_failures]
-        assert types == ["wayback_unavailable"]
+        messages = [f["message"] for f in ctx.deps.wayback_failures]
+        assert [f["error_type"] for f in ctx.deps.wayback_failures] == ["wayback_unavailable"] * 2
+        assert "TimeGate" in messages[0] and "HTTP 503" in messages[0]
+        assert "save" in messages[1] and "HTTP 404" in messages[1]
         assert ctx.deps.acquisition_writes == {}
 
 

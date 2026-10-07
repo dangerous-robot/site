@@ -7,7 +7,8 @@ You must return a SourceFile with these fields:
 
 ### frontmatter (all required unless noted):
 - url: the original URL provided by the user (do NOT change it)
-- archived_url: Wayback Machine URL if available (optional)
+- archived_url: leave empty unless `wayback_check` returned a link (optional).
+  The pipeline looks up the archive link itself after you finish.
 - title: the page's title, cleaned of site-name suffixes
 - publisher: the organization that published the content
 - published_date: date originally published (optional, omit if unknown)
@@ -28,7 +29,8 @@ You must return a SourceFile with these fields:
 
 ## Content rules (from AGENTS.md):
 1. Summaries must NOT paraphrase beyond 30 words.
-2. Every source SHOULD have an archived_url when possible.
+2. Call `wayback_check` only to recover a page `web_fetch` could not load,
+   never just to fill archived_url.
 3. Key quotes must be EXACT text from the source -- never fabricate quotes.
 
 ## What NOT to do:

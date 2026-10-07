@@ -57,7 +57,7 @@ from auditor.bundle import build_bundle
 from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
-from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent
+from ingestor.agent import IngestorDeps, archive_after_ingest, fetch_failure_reason, ingestor_agent
 from ingestor.models import SourceFile
 from ingestor.validation import validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -146,6 +146,8 @@ class VerificationResult(BaseModel):
     failure: FailureInfo | None = Field(default=None, exclude=True)
     # Requested URL -> URL its live fetch ended on, for fresh sources.
     final_urls: dict[str, str] = Field(default_factory=dict, exclude=True)
+    # Requested URL -> archive lookup record, for fresh sources.
+    archive: dict[str, dict] = Field(default_factory=dict, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -153,6 +155,14 @@ class VerificationResult(BaseModel):
     @property
     def cached_source_ids(self) -> list[str]:
         return [sid for _url, sid, _sd in self.cached_sources]
+
+    def sources_consulted(self) -> list[dict]:
+        """The audit sidecar's ``sources_consulted`` block for this run."""
+        from orchestrator.persistence import _build_sources_consulted
+
+        return _build_sources_consulted(
+            self.source_files, cached_sources=self.cached_sources, archive=self.archive
+        )
 
     def persist_sources(self, repo_root: Path, url_index: dict[str, str] | None = None) -> list[str]:
         """Write the fresh sources and return every source id for the claim.
@@ -402,6 +412,7 @@ async def verify_claim(
                 source_files, cached_sources, notes, url_index, repo_root
             )
             result.final_urls = notes.final_urls
+            result.archive = notes.archive
 
             for url, sid, sd in cached_sources:
                 sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
@@ -679,6 +690,8 @@ class IngestNotes:
     final_urls: dict[str, str] = field(default_factory=dict)
     # Requested URL dropped because it reached a page already kept -> the kept URL.
     aliases: dict[str, str] = field(default_factory=dict)
+    # Requested URL -> sidecar ``archive`` record ({status, error?}).
+    archive: dict[str, dict] = field(default_factory=dict)
 
 
 def _reuse_stored_redirect_targets(
@@ -852,7 +865,10 @@ async def _ingest_one(
       ``{stage, error_type, message}``. The caller decides whether to
       promote these to ``StepError`` (see ``_ingest_urls`` — only for
       URLs whose ingest itself failed terminally).
-    * ``notes``: gains the URL a successful live fetch ended on.
+    * ``notes``: gains, for a successful ingest, the URL its live fetch
+      ended on and the sidecar record of the archive lookup.
+
+    A successful ingest also gets its ``archived_url`` from that lookup.
     """
     repo_root = repo_root or _cfg_repo_root(cfg)
     deps = IngestorDeps(
@@ -900,12 +916,19 @@ async def _ingest_one(
         logger.warning("Failed to ingest %s: %s", url, exc)
         outcome = StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
 
+    if isinstance(outcome, tuple):
+        # Outside the LLM semaphore and the ingest time limit: a slow
+        # archive.org must not turn a good ingest into a timeout.
+        archive = await archive_after_ingest(outcome[1], deps)
+        if notes is not None:
+            notes.archive[url] = archive
+            if deps.final_url:
+                notes.final_urls[url] = deps.final_url
+
     if acquisition_out is not None:
         _merge_acquisition_writes(acquisition_out, deps.acquisition_writes)
     if failures_out is not None:
         failures_out.extend(deps.wayback_failures)
-    if notes is not None and isinstance(outcome, tuple) and deps.final_url:
-        notes.final_urls[url] = deps.final_url
 
     return outcome
 
@@ -1223,7 +1246,6 @@ async def research_claim(
     - Writes the claim file to research/claims/
     """
     from orchestrator.persistence import (
-        _build_sources_consulted,
         _write_audit_sidecar,
         _write_claim_file,
         _write_entity_file,
@@ -1294,6 +1316,7 @@ async def research_claim(
                 source_files, cached_sources, notes, url_index, repo_root
             )
             result.final_urls = notes.final_urls
+            result.archive = notes.archive
 
             cached_map = {url: sid for url, sid, _ in cached_sources}
 
@@ -1415,9 +1438,7 @@ async def research_claim(
             result.consistency = comparison
 
             # Write audit sidecar after auditor step
-            sidecar_sources = _build_sources_consulted(
-                result.source_files, cached_sources=result.cached_sources
-            )
+            sidecar_sources = result.sources_consulted()
             agents_run = ["researcher", "ingestor", "analyst", "auditor"]
             _write_audit_sidecar(
                 claim_path=claim_path,
@@ -1815,7 +1836,6 @@ async def onboard_entity(
     6. Return OnboardResult summary
     """
     from orchestrator.persistence import (
-        _build_sources_consulted,
         _claim_dir_for,
         _write_audit_sidecar,
         _write_claim_file,
@@ -2228,9 +2248,7 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(
-                                vr.source_files, cached_sources=vr.cached_sources
-                            ),
+                            sources_consulted=vr.sources_consulted(),
                             agents_run=["researcher", "ingestor"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor"]},
                             research_trace=vr.research_trace,
@@ -2286,7 +2304,7 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
+                            sources_consulted=vr.sources_consulted(),
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
@@ -2339,7 +2357,7 @@ async def onboard_entity(
                             comparison=None,
                             model=iter_cfg.model,
                             ran_at=datetime.datetime.now(datetime.timezone.utc),
-                            sources_consulted=_build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources),
+                            sources_consulted=vr.sources_consulted(),
                             agents_run=["researcher", "ingestor", "analyst"],
                             models_used={a: iter_cfg.model_for(a) for a in ["researcher", "ingestor", "analyst"]},
                             research_trace=vr.research_trace,
@@ -2393,7 +2411,7 @@ async def onboard_entity(
                     result.claims_created.append(str(claim_path.relative_to(repo_root)))
 
                     # Write audit sidecar after auditor step
-                    sidecar_sources = _build_sources_consulted(vr.source_files, cached_sources=vr.cached_sources)
+                    sidecar_sources = vr.sources_consulted()
                     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
                     _write_audit_sidecar(
                         claim_path=claim_path,
