@@ -1048,22 +1048,10 @@ def claim_refresh(
     source_ids = vr.persist_sources(root)
     target_path = _claim_path_for(write_entity_ref, entity_name, claim_slug_for_write, root)
 
-    # Branch A: threshold-blocked.
-    if vr.blocked_reason is not None:
-        try:
-            inherited_topics = [Category(t) for t in template.topics] if template else []
-        except ValueError:
-            inherited_topics = []
-        blocked_body = (
-            f"This claim is blocked: `{vr.blocked_reason.value}`. "
-            f"The pipeline halted before the Analyst could produce a verdict. "
-            f"Re-run once more usable sources are available, or archive this claim.\n"
-        )
-        blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
-        agents_run = ["researcher", "ingestor"]
+    def _write_sidecar(agents_run: list[str], comparison=None) -> None:
         _write_audit_sidecar(
             claim_path=target_path,
-            comparison=None,
+            comparison=comparison,
             model=model,
             ran_at=ran_at,
             sources_consulted=vr.sources_consulted(),
@@ -1079,6 +1067,20 @@ def claim_refresh(
             previous_publication=previous_publication,
             current_source_ids=source_ids,
         )
+
+    # Branch A: threshold-blocked.
+    if vr.blocked_reason is not None:
+        try:
+            inherited_topics = [Category(t) for t in template.topics] if template else []
+        except ValueError:
+            inherited_topics = []
+        blocked_body = (
+            f"This claim is blocked: `{vr.blocked_reason.value}`. "
+            f"The pipeline halted before the Analyst could produce a verdict. "
+            f"Re-run once more usable sources are available, or archive this claim.\n"
+        )
+        blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
+        _write_sidecar(["researcher", "ingestor"])
         blocked_path = _write_claim_file(
             title=blocked_title,
             entity_name=entity_name,
@@ -1110,25 +1112,7 @@ def claim_refresh(
             f"Re-run the pipeline to attempt again, or archive this claim if it consistently fails.\n"
         )
         blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
-        agents_run = ["researcher", "ingestor", "analyst"]
-        _write_audit_sidecar(
-            claim_path=target_path,
-            comparison=None,
-            model=model,
-            ran_at=ran_at,
-            sources_consulted=vr.sources_consulted(),
-            agents_run=agents_run,
-            models_used={a: cfg.model_for(a) for a in agents_run},
-            research_trace=vr.research_trace,
-            sub_questions_block=_build_sub_questions_block(
-                vr.sub_questions,
-                vr.sub_question_coverage,
-                vr.queries_by_sub_question,
-            ),
-            reset_review=True,
-            previous_publication=previous_publication,
-            current_source_ids=source_ids,
-        )
+        _write_sidecar(["researcher", "ingestor", "analyst"])
         blocked_path = _write_claim_file(
             title=blocked_title,
             entity_name=entity_name,
@@ -1164,25 +1148,7 @@ def claim_refresh(
         blocked_body, echo_label = blocked_title_message(
             template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
         )
-        agents_run = ["researcher", "ingestor", "analyst"]
-        _write_audit_sidecar(
-            claim_path=target_path,
-            comparison=None,
-            model=model,
-            ran_at=ran_at,
-            sources_consulted=vr.sources_consulted(),
-            agents_run=agents_run,
-            models_used={a: cfg.model_for(a) for a in agents_run},
-            research_trace=vr.research_trace,
-            sub_questions_block=_build_sub_questions_block(
-                vr.sub_questions,
-                vr.sub_question_coverage,
-                vr.queries_by_sub_question,
-            ),
-            reset_review=True,
-            previous_publication=previous_publication,
-            current_source_ids=source_ids,
-        )
+        _write_sidecar(["researcher", "ingestor", "analyst"])
         blocked_path = _write_claim_file(
             title=render_blocked_title(template, entity_name),
             entity_name=entity_name,
@@ -1209,25 +1175,7 @@ def claim_refresh(
         logger.warning("Template %s has invalid topic; falling back to analyst topics: %s", criteria_slug, exc)
         inherited_topics = list(ao.verdict.topics)
 
-    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
-    _write_audit_sidecar(
-        claim_path=target_path,
-        comparison=vr.consistency,
-        model=model,
-        ran_at=ran_at,
-        sources_consulted=vr.sources_consulted(),
-        agents_run=agents_run,
-        models_used={a: cfg.model_for(a) for a in agents_run},
-        research_trace=vr.research_trace,
-        sub_questions_block=_build_sub_questions_block(
-            vr.sub_questions,
-            vr.sub_question_coverage,
-            vr.queries_by_sub_question,
-        ),
-        reset_review=True,
-        previous_publication=previous_publication,
-        current_source_ids=source_ids,
-    )
+    _write_sidecar(["researcher", "ingestor", "analyst", "auditor"], vr.consistency)
     claim_path_written = _write_claim_file(
         title=ao.verdict.title,
         entity_name=entity_name,
