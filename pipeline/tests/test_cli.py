@@ -1254,7 +1254,7 @@ class TestStepIngestArchive:
             mock.get(_timegate_re()).mock(
                 return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
             )
-            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
             result = self._invoke(tmp_path)
 
         assert result.exit_code == 0, result.output
@@ -1268,7 +1268,7 @@ class TestStepIngestArchive:
         with respx.mock as mock:
             mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
             mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
-            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
             result = self._invoke(tmp_path)
 
         assert result.exit_code == 0, result.output
@@ -1300,7 +1300,7 @@ class TestStepIngestArchive:
         with respx.mock as mock:
             mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
             mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
-            mock.post(_save_re()).mock(
+            mock.get(_save_re()).mock(
                 return_value=httpx.Response(200, headers={"content-location": _ARCHIVE_SNAPSHOT})
             )
             result = self._invoke(tmp_path, "--write")
@@ -1380,7 +1380,7 @@ class TestWaybackBackfill:
         sources = self._repo(tmp_path)
         with respx.mock as mock:
             mock.get(_timegate_re()).mock(return_value=httpx.Response(429))
-            save = mock.post(_save_re()).mock(return_value=httpx.Response(200))
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
             result = self._invoke(tmp_path, "2026/page")
 
         assert result.exit_code == 1

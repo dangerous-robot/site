@@ -28,6 +28,7 @@ import datetime
 import email.utils
 import logging
 import math
+import re
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
@@ -49,6 +50,9 @@ TIMEGATE_RATE_LIMITED = f"{_TIMEGATE_LABEL} failed (HTTP 429)"
 
 # Statuses where the snapshot URL is in the ``Location`` header.
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
+# A capture's link carries its 14-digit timestamp; ``/web/<url>`` does not
+# name a capture.
+_DATED_SNAPSHOT = re.compile(r"https://web\.archive\.org/web/\d{14}[a-z_]*/.+")
 
 
 async def _wait(seconds: float) -> None:
@@ -147,16 +151,31 @@ async def check_archive_org_timegate(
     return {"available": False, "archived_url": None}
 
 
+def _dated_snapshot(location: str | None) -> str | None:
+    """``location`` as an absolute snapshot link, or None unless it names a dated capture."""
+    if not location:
+        return None
+    if location.startswith("/"):
+        location = f"https://web.archive.org{location}"
+    location = _normalize_archive_url(location)
+    return location if _DATED_SNAPSHOT.match(location) else None
+
+
 async def save_to_wayback(client: httpx.AsyncClient, url: str) -> dict[str, Any]:
     """Request the Wayback Machine to save a URL. Best-effort.
 
     Returns ``{archived_url}`` on success, or ``{archived_url: None, error}``
     with the reason on failure. A 429 is retried once.
+
+    Success needs a dated snapshot link in ``Location`` or
+    ``Content-Location``. An anonymous POST was seen to answer 200 with
+    neither and make no capture, while a GET answers 302 to the new snapshot;
+    the redirect is not followed, since the link is all that is needed.
     """
     label = "Wayback save"
     try:
         resp = await _send_with_429_retry(
-            lambda: client.post(f"{_SAVE_URL}{url}", timeout=WAYBACK_SAVE_S, follow_redirects=True),
+            lambda: client.get(f"{_SAVE_URL}{url}", timeout=WAYBACK_SAVE_S, follow_redirects=False),
             label,
             url,
         )
@@ -165,16 +184,16 @@ async def save_to_wayback(client: httpx.AsyncClient, url: str) -> dict[str, Any]
         logger.warning("%s failed (%s) for %s: %s", label, cls, url, exc)
         return {"archived_url": None, "error": f"{label} failed ({cls}): {exc}"}
 
-    if resp.status_code in (200, 302):
-        location = resp.headers.get("content-location") or resp.headers.get("location")
-        if location:
-            archived = (
-                location
-                if location.startswith("http")
-                else f"https://web.archive.org{location}"
-            )
-            return {"archived_url": _normalize_archive_url(archived)}
-        return {"archived_url": f"https://web.archive.org/web/{url}"}
+    if resp.status_code == 200 or resp.status_code in _REDIRECT_STATUSES:
+        for header in ("location", "content-location"):
+            snapshot = _dated_snapshot(resp.headers.get(header))
+            if snapshot:
+                return {"archived_url": snapshot}
+        logger.warning("%s returned no snapshot (HTTP %d) for %s", label, resp.status_code, url)
+        return {
+            "archived_url": None,
+            "error": f"{label} returned no snapshot (HTTP {resp.status_code})",
+        }
     logger.warning("%s returned status %d for %s", label, resp.status_code, url)
     return {"archived_url": None, "error": f"{label} failed (HTTP {resp.status_code})"}
 

@@ -274,7 +274,7 @@ class TestFindOrSaveArchive:
     async def test_no_save_after_a_timegate_429(self, no_sleep) -> None:
         with respx.mock:
             respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(429))
-            save = respx.post(self.SAVE_RE).mock(return_value=httpx.Response(200))
+            save = respx.get(self.SAVE_RE).mock(return_value=httpx.Response(200))
             async with httpx.AsyncClient() as client:
                 lookup = await find_or_save_archive(client, self.URL)
         assert lookup.archived_url is None
@@ -286,7 +286,7 @@ class TestFindOrSaveArchive:
         archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
         with respx.mock:
             respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
-            respx.post(self.SAVE_RE).mock(
+            respx.get(self.SAVE_RE).mock(
                 return_value=httpx.Response(200, headers={"content-location": archived})
             )
             async with httpx.AsyncClient() as client:
@@ -299,7 +299,7 @@ class TestFindOrSaveArchive:
     async def test_miss_without_save_sends_no_capture(self) -> None:
         with respx.mock:
             respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
-            save = respx.post(self.SAVE_RE).mock(return_value=httpx.Response(200))
+            save = respx.get(self.SAVE_RE).mock(return_value=httpx.Response(200))
             async with httpx.AsyncClient() as client:
                 lookup = await find_or_save_archive(client, self.URL, allow_save=False)
         assert lookup.archived_url is None
@@ -329,24 +329,65 @@ class TestSaveToWayback:
     @pytest.mark.asyncio
     async def test_save_success_with_location(self):
         with respx.mock:
-            respx.post("https://web.archive.org/save/https://example.com").mock(
+            respx.get("https://web.archive.org/save/https://example.com").mock(
                 return_value=httpx.Response(
                     200,
                     headers={
-                        "content-location": "/web/20250315/https://example.com"
+                        "content-location": "/web/20250315000000/https://example.com"
                     },
                 )
             )
             async with httpx.AsyncClient() as client:
                 result = await save_to_wayback(client, "https://example.com")
             assert result == {
-                "archived_url": "https://web.archive.org/web/20250315/https://example.com"
+                "archived_url": "https://web.archive.org/web/20250315000000/https://example.com"
             }
+
+    @pytest.mark.asyncio
+    async def test_save_redirect_to_a_dated_snapshot_succeeds(self):
+        # Observed live: GET /save/<url> answers 302 to the new capture.
+        snapshot = "https://web.archive.org/web/20261007123641/https://example.com/"
+        with respx.mock:
+            route = respx.get("https://web.archive.org/save/https://example.com/").mock(
+                return_value=httpx.Response(302, headers={"location": snapshot})
+            )
+            async with httpx.AsyncClient() as client:
+                result = await save_to_wayback(client, "https://example.com/")
+        assert result == {"archived_url": snapshot}
+        assert route.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_save_with_no_snapshot_location_is_an_error(self):
+        # Observed live: an anonymous POST answered 200 with no location and
+        # no capture existed afterwards; an undated link is not a snapshot.
+        with respx.mock:
+            respx.get("https://web.archive.org/save/https://example.com").mock(
+                return_value=httpx.Response(200)
+            )
+            async with httpx.AsyncClient() as client:
+                result = await save_to_wayback(client, "https://example.com")
+        assert result == {
+            "archived_url": None,
+            "error": "Wayback save returned no snapshot (HTTP 200)",
+        }
+
+    @pytest.mark.asyncio
+    async def test_save_with_an_undated_location_is_an_error(self):
+        with respx.mock:
+            respx.get("https://web.archive.org/save/https://example.com").mock(
+                return_value=httpx.Response(
+                    302, headers={"location": "https://web.archive.org/web/https://example.com"}
+                )
+            )
+            async with httpx.AsyncClient() as client:
+                result = await save_to_wayback(client, "https://example.com")
+        assert result["archived_url"] is None
+        assert result["error"] == "Wayback save returned no snapshot (HTTP 302)"
 
     @pytest.mark.asyncio
     async def test_save_rate_limited_twice_returns_the_reason(self, no_sleep):
         with respx.mock:
-            route = respx.post("https://web.archive.org/save/https://example.com").mock(
+            route = respx.get("https://web.archive.org/save/https://example.com").mock(
                 return_value=httpx.Response(429)
             )
             async with httpx.AsyncClient() as client:
@@ -358,9 +399,9 @@ class TestSaveToWayback:
 
     @pytest.mark.asyncio
     async def test_save_retries_once_after_429(self, no_sleep):
-        archived = "https://web.archive.org/web/20250315/https://example.com"
+        archived = "https://web.archive.org/web/20250315000000/https://example.com"
         with respx.mock:
-            respx.post("https://web.archive.org/save/https://example.com").mock(
+            respx.get("https://web.archive.org/save/https://example.com").mock(
                 side_effect=[
                     httpx.Response(429, headers={"Retry-After": "1"}),
                     httpx.Response(200, headers={"content-location": archived}),
@@ -374,7 +415,7 @@ class TestSaveToWayback:
     @pytest.mark.asyncio
     async def test_save_network_error(self):
         with respx.mock:
-            respx.post("https://web.archive.org/save/https://example.com").mock(
+            respx.get("https://web.archive.org/save/https://example.com").mock(
                 side_effect=httpx.ConnectError("Connection refused")
             )
             async with httpx.AsyncClient() as client:
@@ -452,7 +493,7 @@ class TestWaybackCheckTool:
     def _mock_save_silent(self) -> None:
         """Mock the save endpoint as a benign 404 so 'no rescue at all' tests
         don't trip respx's unmatched-route guard. Save returns None on 404."""
-        respx.post(re.compile(r"https://web\.archive\.org/save/.+")).mock(
+        respx.get(re.compile(r"https://web\.archive\.org/save/.+")).mock(
             return_value=httpx.Response(404)
         )
 
@@ -461,7 +502,7 @@ class TestWaybackCheckTool:
         """TimeGate 302 → acquisition=archive_org; save endpoint must not be called."""
         with respx.mock:
             self._mock_timegate_hit()
-            save_route = respx.post(
+            save_route = respx.get(
                 re.compile(r"https://web\.archive\.org/save/.+")
             ).mock(return_value=httpx.Response(404))
             async with httpx.AsyncClient() as client:
@@ -486,7 +527,7 @@ class TestWaybackCheckTool:
         save_archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
         with respx.mock:
             self._mock_timegate_miss()
-            respx.post(re.compile(r"https://web\.archive\.org/save/.+")).mock(
+            respx.get(re.compile(r"https://web\.archive\.org/save/.+")).mock(
                 return_value=httpx.Response(
                     200, headers={"content-location": save_archived}
                 )

@@ -125,7 +125,7 @@ async def test_rate_limited_lookup_records_failed_and_clears_model_link(
     with respx.mock as mock:
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         timegate = mock.get(_TIMEGATE).mock(return_value=httpx.Response(429))
-        save = mock.post(_SAVE).mock(return_value=httpx.Response(200))
+        save = mock.get(_SAVE).mock(return_value=httpx.Response(200))
         source_fm, sidecar = await _run(tmp_path)
 
     assert "archived_url" not in source_fm
@@ -185,7 +185,7 @@ async def test_light_research_does_not_archive_the_page_it_discards(
     with respx.mock as mock:
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         timegate = mock.get(_TIMEGATE).mock(return_value=httpx.Response(404))
-        save = mock.post(_SAVE).mock(return_value=httpx.Response(200))
+        save = mock.get(_SAVE).mock(return_value=httpx.Response(200))
         async with httpx.AsyncClient() as client:
             bundle = await gather_light_research(
                 "Example", EntityType.COMPANY, cfg, asyncio.Semaphore(2), client,
