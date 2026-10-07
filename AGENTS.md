@@ -19,6 +19,7 @@ For the generalized vision, see `docs/architecture/glossary.md` § How the syste
 ## Writing conventions
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
+- Refer to developers, operators, contributors, maintainers and users by role ("the user", "a contributor"), with they/them pronouns. Use Brandon's name only when something is uniquely about him, such as a photo credit or a decision he owns.
 
 ## UI & Design Standards
 
