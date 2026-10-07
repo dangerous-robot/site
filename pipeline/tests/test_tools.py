@@ -252,8 +252,8 @@ class TestTimeGateRateLimit:
 
     @pytest.mark.parametrize(
         ("header", "expected"),
-        [("0", 0.0), ("1.5", 1.5), ("soon", RATE_LIMIT_RETRY_S),
-         ("Wed, 21 Oct 2015 07:28:00 GMT", 0.0)],
+        [("0", 0.0), ("1.5", 1.5), ("soon", RATE_LIMIT_RETRY_S), ("nan", RATE_LIMIT_RETRY_S),
+         ("Wed, 21 Oct 2015 07:28:00 GMT", 0.0), ("Wed, 21 Oct 2015 07:28:00 -0000", 0.0)],
     )
     @pytest.mark.asyncio
     async def test_retry_after_forms(self, no_sleep, header: str, expected: float) -> None:

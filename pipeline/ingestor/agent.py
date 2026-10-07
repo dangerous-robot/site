@@ -248,6 +248,7 @@ async def archive_after_ingest(
     The model's own ``archived_url`` is not trusted: it is replaced by the
     lookup's link, or cleared when the lookup fails. A link ``wayback_check``
     returned during this ingest is reused, so the lookup is not repeated.
+    With ``skip_wayback`` nothing is looked up or changed.
     """
     if deps.skip_wayback:
         return {"status": "not-attempted"}

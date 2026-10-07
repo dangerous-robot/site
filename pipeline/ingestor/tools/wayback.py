@@ -27,6 +27,7 @@ import asyncio
 import datetime
 import email.utils
 import logging
+import math
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable
 
@@ -68,7 +69,11 @@ def _retry_after_s(resp: httpx.Response) -> float:
             when = email.utils.parsedate_to_datetime(header)
         except (TypeError, ValueError):
             return RATE_LIMIT_RETRY_S
+        if when.tzinfo is None:  # "-0000" parses as naive; HTTP dates are UTC
+            when = when.replace(tzinfo=datetime.timezone.utc)
         seconds = (when - datetime.datetime.now(datetime.timezone.utc)).total_seconds()
+    if not math.isfinite(seconds):
+        return RATE_LIMIT_RETRY_S
     return min(max(seconds, 0.0), RATE_LIMIT_RETRY_S)
 
 
