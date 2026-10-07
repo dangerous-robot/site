@@ -2,7 +2,7 @@
 title: Prohibit AI Self-Improvement Pledge
 description: Pledge to prohibit A.I. self-improvement without human control
 pubDate: 2026-10-05
-author: Wade Hudson
+author: Wade Lee Hudson & Brandon Faloona
 ai_assisted: true
 draft: false
 petition: prohibit-ai-self-improvement
