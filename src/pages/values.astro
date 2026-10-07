@@ -1,6 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import { operator, profileHref } from '../lib/reviewers';
+
+const op = operator();
 ---
 <Base title="Values" description="Dangerous Robot's editorial position, plainly stated." layout="reading">
   <article class="reading">
@@ -65,7 +68,7 @@ import Breadcrumb from '../components/Breadcrumb.astro';
       to warm buildings</a>.
     </p>
 
-    <p class="signed"><a href="/about#who-runs-this">Brandon Faloona</a></p>
+    <p class="signed"><a href={profileHref(op)}>{op.fullName}</a></p>
   </article>
 </Base>
 

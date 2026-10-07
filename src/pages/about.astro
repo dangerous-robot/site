@@ -2,6 +2,9 @@
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import { SITE_VERSION } from '../lib/version';
+import { operator, profileHref } from '../lib/reviewers';
+
+const op = operator();
 ---
 <Base title="About" description="What Dangerous Robot is, where it stands, how it is made, and who runs it." layout="reading">
   <article class="reading">
@@ -44,7 +47,7 @@ import { SITE_VERSION } from '../lib/version';
     <section id="who-runs-this">
       <h2>Who runs this</h2>
       <p>
-        Brandon Faloona runs Dangerous Robot and reviews every claim on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
+        <a href={profileHref(op)}>{op.handle}</a> runs Dangerous Robot and reviews every claim on it. He also makes TreadLightlyAI, an AI chatbot. When TreadLightlyAI shows up here, it is held to the same criteria and sources as every other product, and the site does not publish verdicts on claims about it.
       </p>
     </section>
 

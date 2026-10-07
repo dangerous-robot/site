@@ -1,5 +1,8 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { operator, profileHref } from '../../lib/reviewers';
+
+const op = operator();
 
 const primarySections = [
   { n: '01', label: 'Topics',    href: '/research/topics'    },
@@ -23,7 +26,7 @@ const faqSchema = {
       "name": "What is this site?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Dangerous Robot is a guide to the danger, with evidence you can check. This research record is that evidence: claims about AI, the sources behind each one, and the verdict on each. Brandon Faloona reviews and approves every published claim. The goal is to verify what AI companies and products actually do, especially around environmental impact, safety practices, and transparency.",
+        "text": `Dangerous Robot is a guide to the danger, with evidence you can check. This research record is that evidence: claims about AI, the sources behind each one, and the verdict on each. ${op.handle} reviews and approves every published claim. The goal is to verify what AI companies and products actually do, especially around environmental impact, safety practices, and transparency.`,
       },
     },
     {
@@ -79,7 +82,7 @@ const faqSchema = {
       "name": "What conflicts of interest exist?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Dangerous Robot is run by Brandon Faloona. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.",
+        "text": `Dangerous Robot is run by ${op.handle}. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.`,
       },
     },
   ],
@@ -158,7 +161,7 @@ const faqSchema = {
             Dangerous Robot is a guide to the danger, with evidence you can
             check. This research record is that evidence: claims about AI, the
             sources behind each one, and the verdict on each.
-            Brandon Faloona reviews and approves every published claim.
+            <a href={profileHref(op)}>{op.handle}</a> reviews and approves every published claim.
             <a href="/about">More about the site</a>.
           </p>
           <p>
@@ -366,7 +369,7 @@ const faqSchema = {
         <summary>What conflicts of interest exist?</summary>
         <div class="answer">
           <p>
-            Dangerous Robot is run by <a href="/about#who-runs-this">Brandon Faloona</a>.
+            Dangerous Robot is run by <a href={profileHref(op)}>{op.handle}</a>.
             He also makes <a href="https://treadlightly.ai" target="_blank" rel="noopener noreferrer">TreadLightlyAI</a>, an AI chatbot.
             TreadLightlyAI appears on this site under the same criteria and sources as every other
             product, and the site publishes no verdict on claims about it.
