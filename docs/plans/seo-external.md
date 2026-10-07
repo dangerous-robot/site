@@ -266,7 +266,7 @@ After the Google Fact Check program application is approved (see that milestone)
 
 - Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading): [`completed/seo-technical.md`](completed/seo-technical.md)
 - Pre-release banner: added in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1); removal is post-launch
-- ClaimReview markup: removed from claim pages ([`site-j-claims-readiness.md`](site-j-claims-readiness.md) CR5, `docs/decisions.md` 2026-10-07)
+- ClaimReview markup: removed from claim pages ([`completed/site-j-claims-readiness.md`](completed/site-j-claims-readiness.md) CR5, `docs/decisions.md` 2026-10-07)
 - Indexing flip: `src/lib/seo.ts`, `docs/seo-and-cloudflare-playbook.md` ("When the pre-release noindex period ends")
 
 ## Review history
