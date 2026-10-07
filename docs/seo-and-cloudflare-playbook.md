@@ -144,7 +144,7 @@ remain indexable.
 
 ### When the pre-release noindex period ends
 
-The flip trigger is decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims). The 2026-10-03 trigger, the first guide ("Before you trust an AI chatbot"), was set aside 2026-10-06. That trigger replaced the earlier "GA (1.0.0)" trigger; the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
+The flip trigger is decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims); the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
 
 To re-enable indexing of detail pages:
 
