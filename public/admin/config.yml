@@ -58,6 +58,17 @@ collections:
       - { name: draft, label: Draft, widget: boolean, default: false }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: featured, label: Feature on homepage, widget: boolean, default: false, hint: "Shows this below the homepage hero. If several are on, the newest by publish date wins." }
+      - name: image
+        label: Image
+        widget: object
+        required: false
+        collapsed: true
+        hint: "Optional. Shown under the byline and, when featured, in the homepage spotlight. Export the file with the image-candidate skill first."
+        fields:
+          - { name: src, label: Image file, widget: image, media_folder: /src/assets/posts, public_folder: ../../assets/posts }
+          - { name: alt, label: Alt text, widget: string, hint: "What the image shows, under about 125 characters" }
+          - { name: credit, label: Credit, widget: string, hint: "The creator only, e.g. Image by Gerd Altmann; /credits names the source" }
+          - { name: invert_in_dark, label: Invert in dark mode, widget: boolean, default: false, hint: On for black art on a white background }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `actions` collection schema in src/content.config.ts. Every
@@ -99,6 +110,17 @@ collections:
       - { name: petition, label: Petition slug, widget: string, hint: Slug of the petition row in the dr-api Worker; adds the sign block }
       - { name: petition_statement, label: Petition statement, widget: text, required: false, hint: The sentence signers put their name to; the sign block sets it large above the count }
       - { name: featured, label: Feature on homepage, widget: boolean, default: false, hint: "Shows this below the homepage hero. If several are on, the newest by publish date wins." }
+      - name: image
+        label: Image
+        widget: object
+        required: false
+        collapsed: true
+        hint: "Optional. Shown under the byline and, when featured, in the homepage spotlight. Export the file with the image-candidate skill first."
+        fields:
+          - { name: src, label: Image file, widget: image, media_folder: /src/assets/posts, public_folder: ../../assets/posts }
+          - { name: alt, label: Alt text, widget: string, hint: "What the image shows, under about 125 characters" }
+          - { name: credit, label: Credit, widget: string, hint: "The creator only, e.g. Image by Gerd Altmann; /credits names the source" }
+          - { name: invert_in_dark, label: Invert in dark mode, widget: boolean, default: false, hint: On for black art on a white background }
       - { name: body, label: Body, widget: markdown }
 
   # Mirrors the `resources` collection schema in src/content.config.ts, for

@@ -11,7 +11,7 @@ featured: true
 image:
   src: ../../assets/posts/neurons-brain-cells-abstract.jpg
   alt: A dense, translucent tangle of fine mesh surfaces, thickest at the center.
-  credit: Image by Gerd Altmann from Pixabay
+  credit: Image by Gerd Altmann
   invert_in_dark: true
 ---
 

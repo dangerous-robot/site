@@ -38,7 +38,7 @@ web-sized copy enters git only once the image is used on the site, under
 - `reject <id> <reason>`: from any status.
 - `used <id> <post-slug>`: only from `approved`. Export the web copy with
   `uv run --with pillow python3 .claude/skills/image-candidate/export_web.py media/originals/<id>.<ext> <id>`.
-  It writes `src/assets/posts/<id>.jpg` (`.png` with transparency): cropped to the subject when the image sits on a flat background, 2400px on the long side at most, metadata stripped. Then add `image` to the post's frontmatter (`src`, `alt`, `credit`, and `invert_in_dark: true` for black art on white) and list the image on `/credits`.
+  It writes `src/assets/posts/<id>.jpg` (`.png` with transparency): cropped to the subject when the image sits on a flat background, 2400px on the long side at most, metadata stripped. Then add `image` to the post's frontmatter (`src`, `alt`, `credit`, and `invert_in_dark: true` for black art on white) and list the image on `/credits`. `credit` is the record's `credit_line` without the source ("Image by Gerd Altmann", not "... from Pixabay"); `/credits` names the source and licence.
   The crop and size are the same for every image. Don't hand-tune a crop for one post; if the rule gives a poor result, change the rule.
 
   `approve` and `reject` set `status` (and `status_note`), then stop. `used` sets `status` and `used_by` after the steps above.
