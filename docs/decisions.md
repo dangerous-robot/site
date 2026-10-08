@@ -6,6 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-07
 
+- **Images: fair use, blocked is rare.** A rights-reserved image with no stated terms may be used when the post is about the work it comes from (a report's chart or cover, a book cover, a product screenshot), credited and linked to the source; the record says so in `license.permission`. Images are blocked only when the creator forbids reuse or requires payment, when a rights-reserved image would only decorate an unrelated post, or when the source is unknown. Rules: the `image-candidate` skill, step 5. *(Final)*
 - **Plain tagline.** The homepage tagline is a plain statement for a first-time visitor: "A guide to AI's dangers, and what you can do about it." The social title follows it. "Convenience runs on reliance and pays out in compliance." stays in `mission-and-voice.md` for use elsewhere. *(Final)*
 - **About names the operator in full.** About says "Brandon Faloona (brandon-f)", the handle linking the profile; other reviewer mentions keep the handle alone. *(Final)*
 - **Beta banner on research only.** The release-stage banner shows on `/research` pages only. *(Final)*

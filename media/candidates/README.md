@@ -56,7 +56,7 @@ The fields that matter most:
 | `source.page_url`, `source.creator` | Who made it and where it was found |
 | `source.ai_generated` | As the source site labels it: `true`, `false` or `unknown` |
 | `source.verified` | Whether the record was checked against the source (page or API) |
-| `license.*` | Licence name, URL, whether credit is required, restrictions |
+| `license.*` | Licence name, URL, whether credit is required, restrictions, and `permission`: where written permission is kept, or `fair use: <how the post uses it>` |
 | `credit_line` | The ready-to-use credit text |
 | `file.sha256` | The hash of the original as downloaded, for provenance |
 | `file.thumb` | The committed preview |

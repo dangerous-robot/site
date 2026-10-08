@@ -129,7 +129,11 @@ reply in the same session, finish the record.
 | Own work, public domain, CC0, CC-BY | ok |
 | Pixabay, Unsplash, Pexels platform licences | ok. These aren't Creative Commons licences, so the image can't be relicensed under the site's CC-BY-4.0. Record it; no further action. |
 | CC-BY-SA | ok, with a flag: anything derived from the image must stay under BY-SA. |
-| Any NC or ND, "all rights reserved", editorial-only, or unknown | `status: blocked`, unless written permission is recorded in `permission`. |
+| CC NC or ND | ok, with a flag: NC means no use on anything sold or sponsored; ND means show it unaltered (no crop, inversion or edits). |
+| "All rights reserved" or no stated terms, when the post is about the work the image comes from (a report's cover or chart, a book cover, a product screenshot), credits it and links to the source | ok as fair use. Set `permission` to `fair use: ` plus how the post uses it, e.g. `fair use: promotes the report, credited, links to it`. |
+| Blocked (rare) | Only when the creator forbids reuse or requires payment or a licence (paid or editorial-only stock agencies), when a rights-reserved image would only decorate a post that isn't about it, or when the source is unknown. Unblock once `permission` records written permission. |
+
+Ask the user only when it isn't clear which row applies.
 
 Separately, flag (don't block) an image the site labels AI-generated, or one
 that shows a real person's face, a company logo or a trademark.
@@ -160,7 +164,7 @@ license:
   url: https://pixabay.com/service/license-summary/
   attribution_required: false
   restrictions: No selling unaltered copies; no redistribution as stock.
-  permission: ""           # where written permission is kept, if any
+  permission: ""           # where written permission is kept, or "fair use: <how the post uses it>"
 credit_line: "Image by <creator> from Pixabay"
 file:
   name: arrows-colorful-direction-paths.webp

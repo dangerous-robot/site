@@ -1,0 +1,43 @@
+id: ai-safety-index-summer-2026
+status: candidate
+status_note: ""
+title: AI Safety Index, Summer 2026 scorecard
+source:
+  site: futureoflife.org
+  site_id: ""
+  page_url: https://futureoflife.org/ai-safety-index-summer-2026/
+  creator: Future of Life Institute
+  creator_url: https://futureoflife.org/
+  uploaded: 2026-07
+  ai_generated: false
+  verified: true           # page, media room and full report PDF read 2026-10-07
+license:
+  name: All rights reserved
+  url: https://futureoflife.org/ai-safety-index-summer-2026/
+  attribution_required: true
+  restrictions: "Page footer: \"© 2026 Future of Life Institute. All rights reserved.\" No licence in the full report PDF; the media room offers other materials on request."
+  permission: "fair use: promotes the report in a post about it, credited, links to FLI's page"
+credit_line: "Image by Future of Life Institute, AI Safety Index Summer 2026"
+file:
+  name: ai-safety-index-summer-2026.webp
+  thumb: ai-safety-index-summer-2026.thumb.webp
+  original_name: AI_Safety_Index_Report_Scorecard-S26.webp
+  format: webp
+  width: 2303
+  height: 1441
+  bytes: 227984
+  sha256: ffcf61c1a1633059e76bdffb198abcddbf4cd19b97fad7952323340b508fe918
+  downloaded: 2026-10-07
+look:
+  kind: art
+  palette: color
+  orientation: landscape
+  has_text: true
+alt_draft: "FLI AI Safety Index Summer 2026 scorecard: Anthropic leads at C+, OpenAI and Google DeepMind C, xAI, DeepSeek and Mistral F."
+intended_for: []
+used_by: []
+flags:
+  - "licence: all rights reserved, no reuse terms found; used as fair use (see license.permission)"
+  - "company logos and trademarks (Anthropic, OpenAI, Google DeepMind, Meta, Z.ai, Alibaba Cloud, xAI, DeepSeek, Mistral)"
+  - "text-heavy chart: the post needs the grades in text too, not only in alt text"
+notes: "Operator decision 2026-10-07: fair use, since the post promotes the report and sends readers to it. Full report: https://futureoflife.org/wp-content/uploads/2026/07/AI-Safety-Index-Summer-2026-Digital-14-Jul.pdf. Media contact: press@futureoflife.org."
