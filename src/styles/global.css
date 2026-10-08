@@ -241,3 +241,15 @@ th {
   }
 }
 :root[data-motion="reduce"] { scroll-behavior: auto; }
+
+/* Black art on a white background (a post image with invert_in_dark): blend the
+   white into whatever surface it sits on, and invert it in the dark theme, as
+   the SVG wallpapers do, so it reads against dark. */
+.art-on-white {
+  mix-blend-mode: multiply;
+}
+
+[data-theme="dark"] .art-on-white {
+  filter: invert(1);
+  mix-blend-mode: screen;
+}

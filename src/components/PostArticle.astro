@@ -36,7 +36,7 @@ const { title, author, ai_assisted, pubDate, updatedDate, draft, crumbs, back, i
 
   {image && (
     <figure class="post-image">
-      <Image src={image.src} alt={image.alt} widths={[720, 1200, 1600]} sizes="(max-width: 40rem) 100vw, 36rem" loading="eager" class:list={{ 'invert-dark': image.invert_in_dark }} />
+      <Image src={image.src} alt={image.alt} widths={[720, 1200, 1600]} sizes="(max-width: 40rem) 100vw, 36rem" loading="eager" class:list={{ 'art-on-white': image.invert_in_dark }} />
       <figcaption>{image.credit}</figcaption>
     </figure>
   )}
@@ -73,17 +73,6 @@ const { title, author, ai_assisted, pubDate, updatedDate, draft, crumbs, back, i
     display: block;
     width: 100%;
     height: auto;
-  }
-
-  /* Black-on-white art: blend the white into the page background, and invert it
-     in the dark theme (as the SVG wallpapers do) so it reads against dark. */
-  .post-image img.invert-dark {
-    mix-blend-mode: multiply;
-  }
-
-  :global([data-theme="dark"]) .post-image img.invert-dark {
-    filter: invert(1);
-    mix-blend-mode: screen;
   }
 
   .post-image figcaption {

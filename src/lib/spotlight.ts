@@ -1,3 +1,4 @@
+import type { ImageMetadata } from 'astro';
 import { getCollection } from 'astro:content';
 import { getPosts } from './writing';
 import { getActions, petitionHref } from './actions';
@@ -10,6 +11,7 @@ export interface Spotlight {
   description: string;
   pubDate: Date;
   petition?: { slug: string; statement?: string };
+  image?: { src: ImageMetadata; invert_in_dark: boolean };
 }
 
 /**
@@ -30,6 +32,7 @@ export async function getSpotlight(): Promise<Spotlight | undefined> {
       title: p.data.title,
       description: p.data.description,
       pubDate: p.data.pubDate,
+      image: p.data.image,
     })),
     ...actions.filter((a) => a.data.featured).map((a) => ({
       label: 'Petition',
@@ -38,6 +41,7 @@ export async function getSpotlight(): Promise<Spotlight | undefined> {
       description: a.data.description,
       pubDate: a.data.pubDate,
       petition: { slug: a.data.petition, statement: a.data.petition_statement },
+      image: a.data.image,
     })),
     ...resources.filter((r) => r.data.featured).map((r) => ({
       label: 'Resource',

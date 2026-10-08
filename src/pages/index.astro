@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import { getCollection } from 'astro:content';
+import { Image } from 'astro:assets';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
 import { WRITING_LEDE } from '../lib/writing';
@@ -281,16 +282,21 @@ const websiteSchema = {
     {spotlight && (
       <section class="spotlight" aria-labelledby="spotlight-title">
         <div class="spotlight__inner">
-          <p class="spotlight__eyebrow">{spotlight.label}</p>
-          <div class="spotlight__head">
-            <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
-            {spotlight.petition && petitionState && <span class="chip spotlight__tally" data-petition-tally={spotlight.petition.slug}>{petitionSummary(petitionState)}</span>}
+          <div class="spotlight__body">
+            <p class="spotlight__eyebrow">{spotlight.label}</p>
+            <div class="spotlight__head">
+              <h2 class="spotlight__title" id="spotlight-title"><a href={spotlight.href}>{spotlight.title}</a></h2>
+              {spotlight.petition && petitionState && <span class="chip spotlight__tally" data-petition-tally={spotlight.petition.slug}>{petitionSummary(petitionState)}</span>}
+            </div>
+            {spotlight.petition?.statement
+              ? <blockquote class="spotlight__statement"><p>{spotlight.petition.statement}</p></blockquote>
+              : <p class="spotlight__description">{spotlight.description}</p>}
+            {spotlight.petition && petitionState?.status !== 'closed' && (
+              <a class="spotlight__sign" href={spotlight.href}>Add your signature</a>
+            )}
           </div>
-          {spotlight.petition?.statement
-            ? <blockquote class="spotlight__statement"><p>{spotlight.petition.statement}</p></blockquote>
-            : <p class="spotlight__description">{spotlight.description}</p>}
-          {spotlight.petition && petitionState?.status !== 'closed' && (
-            <a class="spotlight__sign" href={spotlight.href}>Add your signature</a>
+          {spotlight.image && (
+            <Image src={spotlight.image.src} alt="" widths={[320, 640]} sizes="16rem" class:list={['spotlight__art', { 'art-on-white': spotlight.image.invert_in_dark }]} />
           )}
         </div>
       </section>
@@ -544,10 +550,35 @@ const websiteSchema = {
     margin: 0 auto;
     display: flex;
     flex-direction: column;
+    gap: var(--space-lg);
+  }
+  .spotlight__body {
+    display: flex;
+    flex-direction: column;
     align-items: flex-start;
     gap: var(--space-md);
   }
-  .spotlight__inner > * { max-width: 38rem; }
+  .spotlight__body > * { max-width: 38rem; }
+  /* The entry's image, smaller: above the text on phones, beside it on wider screens.
+     Decorative here (alt=""); the post page carries the alt text and credit. */
+  .spotlight__art {
+    order: -1;
+    width: min(16rem, 70%);
+    height: auto;
+  }
+  @media (min-width: 761px) {
+    .spotlight__inner {
+      flex-direction: row;
+      align-items: center;
+      gap: var(--space-2xl);
+    }
+    .spotlight__body { flex: 0 1 38rem; }
+    .spotlight__art {
+      order: 0;
+      flex: none;
+      width: 16rem;
+    }
+  }
   .spotlight__eyebrow {
     margin: 0;
     font-family: var(--font-mono);
