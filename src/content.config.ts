@@ -1,4 +1,4 @@
-import { defineCollection } from 'astro:content';
+import { defineCollection, type SchemaContext } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob, file } from 'astro/loaders';
 import yaml from 'js-yaml';
@@ -437,9 +437,18 @@ const resources = defineCollection({
   }),
 });
 
+/** One image shown under a post's byline, with its credit (see media/candidates/ for the record behind it). */
+const postImage = (image: SchemaContext['image']) => z.object({
+  src: image(),
+  alt: z.string().min(1),
+  credit: z.string().min(1),
+  /** Black art on white: invert it in the dark theme so it doesn't sit as a bright block. */
+  invert_in_dark: z.boolean().default(false),
+}).optional();
+
 const writing = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'src/content/writing' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     description: z.string().max(200),
     pubDate: z.coerce.date(),
@@ -450,6 +459,7 @@ const writing = defineCollection({
     tags: z.array(z.string()).default([]),
     /** Feature on the homepage; the newest featured entry across writing, petitions and resources is shown. */
     featured: z.boolean().default(false),
+    image: postImage(image),
   }),
 });
 
@@ -457,7 +467,7 @@ const writing = defineCollection({
 const actions = defineCollection({
   // Flat folder: the route is /petitions/[slug], so an id may not contain a slash.
   loader: glob({ pattern: '*.md', base: 'src/content/actions' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     description: z.string().max(200),
     pubDate: z.coerce.date(),
@@ -471,6 +481,7 @@ const actions = defineCollection({
     petition_statement: z.string().optional(),
     /** Feature on the homepage; the newest featured entry across writing, petitions and resources is shown. */
     featured: z.boolean().default(false),
+    image: postImage(image),
   }),
 });
 

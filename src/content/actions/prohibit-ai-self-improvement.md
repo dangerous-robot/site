@@ -8,6 +8,11 @@ draft: false
 petition: prohibit-ai-self-improvement
 petition_statement: I pledge to support legislation, in the United States and through international agreement, that prohibits A.I. developers from enabling their systems to improve their own capabilities without human control, independent scientific review, and individual accountability.
 featured: true
+image:
+  src: ../../assets/posts/neurons-brain-cells-abstract.jpg
+  alt: A dense, translucent tangle of fine mesh surfaces, thickest at the center.
+  credit: Image by Gerd Altmann from Pixabay
+  invert_in_dark: true
 ---
 
 ### **Terms**

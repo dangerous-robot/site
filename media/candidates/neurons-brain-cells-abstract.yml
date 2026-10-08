@@ -1,6 +1,6 @@
 id: neurons-brain-cells-abstract
-status: candidate
-status_note: "File from a chat attachment (2000x1333); the Pixabay original is 6000x4000."
+status: used
+status_note: "Used on the self-improvement pledge as src/assets/posts/neurons-brain-cells-abstract.jpg (2400px, from the 6000x4000 Pixabay original, metadata stripped)."
 title: Neurons, brain cells, abstract
 source:
   site: pixabay
@@ -34,8 +34,10 @@ look:
   orientation: landscape
   has_text: false
 alt_draft: "A dense, translucent tangle of fine black mesh surfaces, darkest at the center, on white."
-intended_for: []
-used_by: []
+intended_for:
+  - prohibit-ai-self-improvement
+used_by:
+  - prohibit-ai-self-improvement
 flags:
   - "mid-grey tones: check how it looks inverted in dark mode"
   - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
