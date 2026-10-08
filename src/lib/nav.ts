@@ -24,7 +24,8 @@ export const SECTIONS: Section[] = [
       { href: '/resources/responsible-ai', label: 'Responsible AI' },
     ],
   },
-  { href: '/writing', label: 'Writing', links: [] },
+  // The pledge holds Writing's place while the site is in beta (docs/decisions.md "Menus: temporary guide links during the beta").
+  { href: '/petitions/prohibit-ai-self-improvement', label: 'Pledge', links: [] },
   { href: '/about',   label: 'About',   links: [] },
 ];
 

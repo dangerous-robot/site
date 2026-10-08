@@ -4,6 +4,10 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-08
+
+- **Menus: temporary guide links during the beta.** While the site is not finished, the menus point visitors at the pages that are ready: the pledge takes Writing's place in the top nav and the homepage menu, and `/resources` lists the AI Safety Index, Responsible AI chatbots and Writing (the other resources stay at their URLs). These one-off placements stop before 1.0.0, when one clean menu order is applied across the site. *(Temporary)*
+
 ## 2026-10-07
 
 - **Images: fair use, blocked is rare.** A rights-reserved image with no stated terms may be used when the post is about the work it comes from (a report's chart or cover, a book cover, a product screenshot), credited and linked to the source; the record says so in `license.permission`. Images are blocked only when the creator forbids reuse or requires payment, when a rights-reserved image would only decorate an unrelated post, or when the source is unknown. Rules: the `image-candidate` skill, step 5. *(Final)*

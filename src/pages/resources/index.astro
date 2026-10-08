@@ -1,10 +1,20 @@
 ---
 import { getCollection } from 'astro:content';
 import ResourcePage from '../../layouts/ResourcePage.astro';
+import { WRITING_LEDE } from '../../lib/writing';
 
-const entries = (await getCollection('resources'))
-  .filter((e) => !e.data.noindex)
-  .sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
+// A hand-picked list while the site is in beta (docs/decisions.md "Menus:
+// temporary guide links during the beta"); the other resources stay at their URLs.
+const LISTED = ['ai-safety', 'responsible-ai'];
+const byId = new Map((await getCollection('resources')).map((e) => [e.id, e]));
+const OUR_RESOURCES = [
+  ...LISTED.map((id) => {
+    const entry = byId.get(id);
+    if (!entry) throw new Error(`Resources hub: no resource "${id}".`);
+    return { href: `/resources/${id}`, title: entry.data.title, description: entry.data.description };
+  }),
+  { href: '/writing', title: 'Writing', description: WRITING_LEDE },
+];
 
 const FURTHER_READING = [
   {
@@ -45,18 +55,16 @@ const FURTHER_READING = [
   <div class="hub-grid">
     <section class="hub-col">
       <h2 class="hub-col-label">Our resources</h2>
-      {entries.length === 0
-        ? <p class="empty">More guides coming soon.</p>
-        : <ul class="hub-list">
-            {entries.map((entry) => (
-              <li>
-                <a href={`/resources/${entry.id}`} class="hub-item">
-                  <span class="hub-title">{entry.data.title}</span>
-                  <span class="hub-desc">{entry.data.description}</span>
-                </a>
-              </li>
-            ))}
-          </ul>}
+      <ul class="hub-list">
+        {OUR_RESOURCES.map((item) => (
+          <li>
+            <a href={item.href} class="hub-item">
+              <span class="hub-title">{item.title}</span>
+              <span class="hub-desc">{item.description}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
 
     <section class="hub-col">
@@ -127,10 +135,5 @@ const FURTHER_READING = [
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     line-height: var(--line-height-body);
-  }
-
-  .empty {
-    color: var(--color-text-muted);
-    font-style: italic;
   }
 </style>

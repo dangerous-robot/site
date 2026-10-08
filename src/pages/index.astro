@@ -4,7 +4,6 @@ import { getCollection } from 'astro:content';
 import { Image } from 'astro:assets';
 import { VERDICT_LABELS, type Verdict } from '../lib/verdict';
 import { SITE_DESCRIPTION } from '../lib/seo';
-import { WRITING_LEDE } from '../lib/writing';
 import { navLabel } from '../lib/nav';
 import { fetchPetitionState, petitionSummary } from '../lib/petition';
 import { getSpotlight } from '../lib/spotlight';
@@ -83,9 +82,9 @@ const fmtVerdict = (v: string) =>
  */
 const menuEntries = [
   {
-    href: '/writing',
-    label: 'Writing',
-    note: WRITING_LEDE,
+    href: '/petitions/prohibit-ai-self-improvement',
+    label: 'Sign the self-improvement pledge',
+    note: 'Support a law that stops AI from improving itself without human control.',
   },
   {
     href: '/resources/ai-safety',
