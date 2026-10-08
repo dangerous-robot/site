@@ -6,7 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-08
 
-- **Menus: temporary guide links during the beta.** While the site is not finished, the menus point visitors at the pages that are ready: the pledge takes Writing's place in the top nav and the homepage menu, and `/resources` lists the AI Safety Index, Responsible AI chatbots and Writing (the other resources stay at their URLs). These one-off placements stop before 1.0.0, when one clean menu order is applied across the site. *(Temporary)*
+- **Menus: temporary guide links during the beta.** While the site is not finished, the menus point visitors at the pages that are ready: the pledge takes Writing's place in the top nav and the homepage dropdown ("Where to start" leaves it out, since the spotlight shows it, and links All resources instead), and `/resources` lists the AI Safety Index, Responsible AI chatbots and Writing (the other resources stay at their URLs). These one-off placements stop before 1.0.0, when one clean menu order is applied across the site. *(Temporary)*
 
 ## 2026-10-07
 

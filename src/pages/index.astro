@@ -78,13 +78,16 @@ const fmtVerdict = (v: string) =>
  * notes are editorial. The short label comes from nav.ts by href, so the
  * dropdown here and the site nav elsewhere cannot name the same page two
  * ways; only a page nav.ts does not list sets its own `short`. Setting
- * `short` on a listed page, or neither, fails the build.
+ * `short` on a listed page, or neither, fails the build. `inList: false`
+ * keeps an entry in the dropdown only.
  */
-const menuEntries = [
+const menuEntries: { href: string; label: string; note: string; short?: string; inList?: false }[] = [
   {
+    // Dropdown only: the spotlight already shows it above the list.
     href: '/petitions/prohibit-ai-self-improvement',
     label: 'Sign the self-improvement pledge',
     note: 'Support a law that stops AI from improving itself without human control.',
+    inList: false,
   },
   {
     href: '/resources/ai-safety',
@@ -101,9 +104,14 @@ const menuEntries = [
     label: 'What this site stands for',
     note: 'Where this site stands, in plain words.',
   },
+  {
+    href: '/resources',
+    label: 'All resources',
+    note: 'Our guides and writing, plus good material elsewhere.',
+  },
 ];
 
-const menu = menuEntries.map((m: { href: string; label: string; note: string; short?: string }) => {
+const menu = menuEntries.map((m) => {
   const fromNav = navLabel(m.href);
   if (fromNav && m.short) {
     throw new Error(`Homepage menu: ${m.href} is in src/lib/nav.ts; drop its own short label.`);
@@ -114,6 +122,7 @@ const menu = menuEntries.map((m: { href: string; label: string; note: string; sh
   }
   return { ...m, short };
 });
+const startList = menu.filter((m) => m.inList !== false);
 
 /*
  * The spotlight: the newest entry marked `featured` (see getSpotlight), with
@@ -301,12 +310,12 @@ const websiteSchema = {
       </section>
     )}
 
-    <!-- The visible menu: every destination in one list, above the fold at 1440x900. -->
+    <!-- The visible menu, above the fold at 1440x900. -->
     <nav class="start" id="start" aria-labelledby="start-title" tabindex="-1">
       <div class="start__inner">
         <h2 class="start__title" id="start-title">Where to start</h2>
-        <ul class="menu" role="list" style={`--menu-rows: ${Math.ceil(menu.length / 2)}`}>
-          {menu.map((m) => (
+        <ul class="menu" role="list" style={`--menu-rows: ${Math.ceil(startList.length / 2)}`}>
+          {startList.map((m) => (
             <li class="menu__item">
               <a class="menu__link" href={m.href}>
                 <span class="menu__label">{m.label}</span>
