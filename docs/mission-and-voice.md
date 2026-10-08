@@ -36,7 +36,7 @@ Dangerous Robot is a guide to AI's dangers, with evidence you can check. It is n
 - Conflicts are disclosed in one sentence wherever TreadLightlyAI appears in a list or comparison, and the site publishes no verdict on claims about it.
 - Corrections are public. A correction note stays on the claim, and the prior verdict stays visible.
 - Action is content. Petitions are a content type, and the first is the pledge to support laws that stop AI systems from improving their own capabilities without human control.
-- The contradictions are owned. The site runs on AI to investigate AI and burns electricity doing it. Small decisions go to small models.
+- The contradictions are owned. The site uses AI and burns electricity doing it. Small decisions go to small models; large models only when the task has value and demands it.
 
 ## Voice
 
@@ -104,7 +104,7 @@ Off voice: "AI is infiltrating every aspect of modern society."
 
 Say the single-reviewer fact plainly and stop. Do not spell out the consequence, and do not dress it as a virtue. The same goes for the contradictions.
 
-On voice: "One person reviews everything today. If we are wrong, tell us here." (verdict statement) "The contradictions are real, and we won't dress them up." (Values)
+On voice: "One person reviews everything today. If we are wrong, tell us here." (verdict statement) "Dangerous Robot uses AI. We critique tools we depend on and burn electricity doing it." (Values)
 
 Off voice: "No one checks his work before it is published." (announces a travesty) "A fiercely independent one-man newsroom." (brag) "An operator reviews the draft via the dr CLI." (`src/pages/research/index.astro`): "the operator" is pipeline vocabulary. On the site, name the person.
 
