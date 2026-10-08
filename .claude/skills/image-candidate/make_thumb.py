@@ -20,8 +20,10 @@ OUT_DIR = Path(__file__).resolve().parents[3] / "media" / "candidates"
 
 def main(src: str, image_id: str) -> None:
     with Image.open(src) as im:
+        # Palette PNGs and GIFs keep transparency in info, not an alpha band.
+        alpha = "A" in im.getbands() or "transparency" in im.info
         im = ImageOps.exif_transpose(im)
-        im = im.convert("RGBA" if "A" in im.getbands() else "RGB")
+        im = im.convert("RGBA" if alpha else "RGB")
         im.thumbnail((LONG_SIDE, LONG_SIDE), Image.LANCZOS)
         out = OUT_DIR / f"{image_id}.thumb.webp"
         im.save(out, "WEBP", quality=QUALITY, method=6)

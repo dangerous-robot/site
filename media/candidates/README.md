@@ -15,7 +15,7 @@ licences. Each image keeps the licence named in its own `.yml` record.
 | Version | Where | In git? | Why |
 |---|---|---|---|
 | Original download | `media/originals/<id>.<ext>`, on the maintainer's machine | No | The repo is public, and stock licences forbid redistributing files as they are. Originals are also large (often 6000px or more). |
-| Preview | `media/candidates/<id>.thumb.webp`, 480px | Yes | Browse candidates on GitHub, in PRs and in cloud sessions. It is re-encoded, metadata is stripped, and the record beside it gives the credit. |
+| Preview | `media/candidates/<id>.thumb.webp`, 480px | Yes, except for `blocked` images | Browse candidates on GitHub, in PRs and in cloud sessions. It is re-encoded, metadata is stripped, and the record beside it gives the credit. |
 | Record | `media/candidates/<id>.yml` | Yes | Credit, licence, AI label, size, and the sha256 of the original. |
 | Web copy, once used | `src/assets/...` (post-images plan) | Yes | The build makes responsive sizes from it. Export it at about 2400px on the long side, with metadata stripped. Never commit the full original. |
 

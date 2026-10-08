@@ -33,7 +33,11 @@ web-sized copy enters git only once the image is used on the site, under
 - `<file> own [credit] [licence]`: the user's own work, with no page URL. Use `site: own`, an empty `page_url`, and the creator and licence they state (`verified: true`). Give it a short descriptive id.
 - `fetch <id>`: put a working copy of the original in `media/originals/`, for example in a cloud session where the laptop's files aren't available. For Pixabay, download the API's `largeImageURL` (1280px on the long side; the free API has nothing larger). Other sites: use the page's download link where the licence allows it, otherwise ask the user. Save it as `<id>.<ext>`, unless the laptop original is already there. A fetched copy's hash won't match `file.sha256`; don't overwrite the record.
 - `list`: print a table of every candidate: id, status, site, licence, size, intended post. Read the `*.yml` files; no other steps.
-- `approve <id>` / `reject <id> <reason>` / `used <id> <post-slug>`: set `status` (and `status_note` or `used_by`), then stop.
+- `approve <id>`: re-run the step 5 licence check first. Approve only from `candidate`, or from `blocked` once `license.permission` says where written permission is kept. Refuse, naming what's missing, when the file or credit is incomplete: status `needs-file` or `needs-info`, `source.verified: false`, or a `credit_line` that still has a `<placeholder>`.
+- `reject <id> <reason>`: from any status.
+- `used <id> <post-slug>`: only from `approved`.
+
+  Each of these sets `status` (and `status_note` or `used_by`), then stops.
 
 ## Steps for adding
 
@@ -130,7 +134,7 @@ that shows a real person's face, a company logo or a trademark.
 
 - **Id:** the page slug, lower-case kebab, without the site id (`arrows-colorful-direction-paths`). Add `-<site_id>` only if the id is already taken.
 - **Original:** move the file from `image-inbox/` to `media/originals/<id>.<ext>`. Copy it instead if it came from anywhere else. Never re-encode or resize it: the hash is the provenance.
-- **Thumbnail:** run `uv run --with pillow python3 .claude/skills/image-candidate/make_thumb.py media/originals/<id>.<ext> <id>`. This writes `media/candidates/<id>.thumb.webp`: 480px on the long side, metadata stripped. For an SVG, skip the thumbnail and record `thumb: ""`.
+- **Thumbnail:** run `uv run --with pillow python3 .claude/skills/image-candidate/make_thumb.py media/originals/<id>.<ext> <id>`. This writes `media/candidates/<id>.thumb.webp`: 480px on the long side, metadata stripped. Skip the thumbnail and record `thumb: ""` for an SVG, and for any image whose step 5 result is `blocked`: a preview of an image the site may not use is still a copy of it.
 - **Record:** write `media/candidates/<id>.yml` with every field in the template below, in this order. Leave a field empty rather than guessing.
 
 ```yaml
@@ -186,8 +190,8 @@ Keep the reply to five lines or fewer:
 - the flags, if any;
 - what's missing (for `needs-info` or `needs-file`, exactly what the user has to supply).
 
-Don't commit unless asked. If asked, commit the `.yml` record and the `.thumb.webp`
-for each image (originals are git-ignored), one commit per batch:
+Don't commit unless asked. If asked, commit the `.yml` record for each image, and its
+`.thumb.webp` when step 6 made one (originals are git-ignored), one commit per batch:
 `chore(media): add image candidates <ids>`.
 
 ## Fit with the site

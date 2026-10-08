@@ -45,6 +45,30 @@ def jpeg(b):
     return None
 
 
+def jpeg_orientation(b):
+    """EXIF orientation (1-8) from a JPEG's APP1 segment, or 1 when absent."""
+    i = 2
+    while i + 4 < len(b) and b[i] == 0xFF:
+        marker = b[i + 1]
+        length = struct.unpack(">H", b[i + 2:i + 4])[0]
+        if marker == 0xE1 and b[i + 4:i + 10] == b"Exif\0\0":
+            tiff = b[i + 10:i + 2 + length]
+            end = {b"II": "<", b"MM": ">"}.get(tiff[:2])
+            if not end:
+                return 1
+            ifd = struct.unpack(end + "I", tiff[4:8])[0]
+            count = struct.unpack(end + "H", tiff[ifd:ifd + 2])[0]
+            for n in range(count):
+                entry = tiff[ifd + 2 + 12 * n:ifd + 14 + 12 * n]
+                if struct.unpack(end + "H", entry[:2])[0] == 0x0112:
+                    return struct.unpack(end + "H", entry[8:10])[0]
+            return 1
+        if marker == 0xDA:  # start of scan: no metadata after this
+            return 1
+        i += 2 + length
+    return 1
+
+
 def webp(b):
     if b[:4] != b"RIFF" or b[8:12] != b"WEBP":
         return None
@@ -66,11 +90,11 @@ def svg(b):
     if not tag:
         return None
     t = tag.group(0)
-    w = re.search(r'\bwidth="([\d.]+)(px)?"', t)
-    h = re.search(r'\bheight="([\d.]+)(px)?"', t)
+    w = re.search(r"""\bwidth=["']([\d.]+)(px)?["']""", t)
+    h = re.search(r"""\bheight=["']([\d.]+)(px)?["']""", t)
     if w and h:
         return round(float(w.group(1))), round(float(h.group(1)))
-    vb = re.search(r'viewBox="[\d.\-]+[ ,]+[\d.\-]+[ ,]+([\d.]+)[ ,]+([\d.]+)"', t)
+    vb = re.search(r"""viewBox=["'][\d.\-]+[ ,]+[\d.\-]+[ ,]+([\d.]+)[ ,]+([\d.]+)["']""", t)
     return (round(float(vb.group(1))), round(float(vb.group(2)))) if vb else (0, 0)
 
 
@@ -92,6 +116,11 @@ def main(path_str):
             break
     else:
         out["format"] = iso_bmff(b) or "unknown"
+
+    # Phones store portrait shots as landscape pixels plus a rotate tag (5-8);
+    # report the size as displayed, matching make_thumb.py's exif_transpose.
+    if out["format"] == "jpeg" and jpeg_orientation(b) >= 5:
+        out["width"], out["height"] = out["height"], out["width"]
 
     flags = []
     w, h = out.get("width"), out.get("height")
