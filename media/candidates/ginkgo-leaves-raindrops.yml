@@ -39,4 +39,4 @@ used_by: []
 flags:
   - "portrait: shows small in the landscape spotlight, post and social boxes"
   - "photo under the 2400x1600 guideline: this is a chat copy, so the phone original is likely larger"
-notes: "Licence version assumed to be 4.0, matching the site's content licence. No GPS in EXIF (Software: Google only)."
+notes: "Licence CC BY 4.0 stated by the creator, confirmed on PR #1 2026-10-07. No GPS in EXIF (Software: Google only)."
