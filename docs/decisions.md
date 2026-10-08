@@ -6,6 +6,9 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-07
 
+- **Plain tagline.** The homepage tagline is a plain statement for a first-time visitor: "A guide to AI's dangers, and what you can do about it." The social title follows it. "Convenience runs on reliance and pays out in compliance." stays in `mission-and-voice.md` for use elsewhere. *(Final)*
+- **About names the operator in full.** About says "Brandon Faloona (brandon-f)", the handle linking the profile; other reviewer mentions keep the handle alone. *(Final)*
+- **Beta banner on research only.** The release-stage banner shows on `/research` pages only. *(Final)*
 - **Review copy names no one.** Sentences about who reviews claims or correction reports say a person reviews, without naming one, so they hold when a second reviewer joins. The handle and profile link stay on each claim's reviewer line. *(Final)*
 - **Reviewer named by handle.** Pages that name the claim reviewer show the reviewer's handle (`brandon-f`), linked to `/people/<handle>`, which carries the full name, bio and reviewed claims. The Values signature keeps the full name. *(Final)*
 - **Indexing after 1.0.0.** Claim, source and entity pages stay noindexed until after 1.0.0; Brandon decides the trigger then. This replaces the 2026-10-06 line that left the trigger to the SITE-J plan. *(Final)*
@@ -21,11 +24,11 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 | Key | Text |
 |---|---|
-| Tagline | Convenience runs on reliance and pays out in compliance. (2026-10-05; was "Act while the choice is still yours.") |
+| Tagline | A guide to AI's dangers, and what you can do about it. (2026-10-07; was "Convenience runs on reliance and pays out in compliance.") |
 | Hero line | The algorithm got your attention. The robot wants the wheel. (2026-10-05; one sentence per line) |
 | North star (closes the homepage trust section) | The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours. |
 | Homepage title tag | Dangerous Robot - A guide to AI's dangers, with evidence you can check |
-| Homepage social title | Dangerous Robot: Convenience runs on reliance and pays out in compliance. (follows the tagline) |
+| Homepage social title | Dangerous Robot: A guide to AI's dangers, and what you can do about it. (follows the tagline) |
 | Meta description (homepage, and the default for pages without their own) | A guide to AI's dangers, with evidence you can check: what AI does to you and to everyone, what its makers say they cannot control, and what you can do about it. |
 | Project description (GitHub repository "About", README intro) | A guide to AI's dangers for people deciding whether to trust AI with something that matters. Evidence you can check, a named person behind every claim, and what you can do about it. |
 | Footer maker line | A community project from the maker of TreadLightlyAI. ("TreadLightlyAI" links to https://treadlightly.ai) |

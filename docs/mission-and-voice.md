@@ -143,7 +143,7 @@ Quoted from `docs/decisions.md` (the "Decided copy" entry and later entries). Th
 
 | Slot | Text |
 |---|---|
-| Tagline (under the wordmark) | Convenience runs on reliance and pays out in compliance. |
+| Tagline (under the wordmark) | A guide to AI's dangers, and what you can do about it. |
 | Hero (one sentence per line) | The algorithm got your attention. The robot wants the wheel. |
 | North star (closes the homepage trust section) | The biggest decisions about AI are being made by a few people, without you. Act while the choice is still yours. |
 | Homepage, two kinds of danger | One you can learn to handle. The other, its makers say they can't yet control. We hand it our lives anyway: it grants wishes. |

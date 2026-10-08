@@ -182,7 +182,7 @@ Wallpaper assets and provenance live in `public/resources/wallpapers/` (see `CRE
 
 `src/pages/index.astro` renders with `<Base chrome="minimal" layout="bare">`, so the site-wide nav from `Base.astro` is not drawn and the page supplies its own hamburger. Top to bottom:
 
-1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("Convenience runs on reliance and pays out in compliance."), and the two-sentence headline "The algorithm got your attention. The robot wants the wheel.", one sentence per line
+1. **Hero** -- the "Dangerous Robot" wordmark as a masthead, the tagline ("A guide to AI's dangers, and what you can do about it."), and the two-sentence headline "The algorithm got your attention. The robot wants the wheel.", one sentence per line
 2. **Spotlight** -- the newest entry with `featured: true` ("Feature on homepage" in the admin) across writing, petitions and resources, picked by `getSpotlight` in `src/lib/spotlight.ts`: a label (Writing, Petition or Resource), the title, and the entry's `description`. A petition quotes its `petition_statement` instead, when it has one, and adds a signature count chip and an "Add your signature" link to its `#sign`. Nothing featured, no band.
 3. **Where to start** -- a visible `<nav>` list of four deep links, each with a label and a one-line note. The skip link ("Skip to where to start") targets it.
 4. **The two dangers** -- a heading line from the thesis, then two columns ("The familiar kind", "The second kind"), each with a quote and a short line. One published claim card sits at the base of each column.
