@@ -1,6 +1,6 @@
 id: ai-safety-index-summer-2026
-status: candidate
-status_note: ""
+status: used
+status_note: "Used on /resources/ai-safety as public/resources/ai-safety-index-summer-2026.webp, the original file (no metadata), following the resource pages' lightbox pattern."
 title: AI Safety Index, Summer 2026 scorecard
 source:
   site: futureoflife.org
@@ -34,8 +34,10 @@ look:
   orientation: landscape
   has_text: true
 alt_draft: "FLI AI Safety Index Summer 2026 scorecard: Anthropic leads at C+, OpenAI and Google DeepMind C, xAI, DeepSeek and Mistral F."
-intended_for: []
-used_by: []
+intended_for:
+  - resources/ai-safety
+used_by:
+  - resources/ai-safety
 flags:
   - "licence: all rights reserved, no reuse terms found; used as fair use (see license.permission)"
   - "company logos and trademarks (Anthropic, OpenAI, Google DeepMind, Meta, Z.ai, Alibaba Cloud, xAI, DeepSeek, Mistral)"

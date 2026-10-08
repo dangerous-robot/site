@@ -1,7 +1,7 @@
 ---
-title: "The Bad News: FLI's latest AI Safety Index"
-description: An overview of the FLI AI Safety Index, Winter 2025. See how Anthropic, OpenAI, Google DeepMind, and others grade on safety, governance, and transparency.
-pubDate: 2026-03-04
+title: The new normal? The Future of Life Institute grades the AI labs
+description: FLI's Summer 2026 AI Safety Index is an excellent resource for learning about which AI companies are improving and which are falling further behind.
+pubDate: 2026-10-08
 layout: article
 wallpaper: ai-safety
 topics:
@@ -10,26 +10,32 @@ noindex: false
 featured: false
 ---
 
-Research by the [Future of Life Institute](https://futureoflife.org/ai-safety-index-winter-2025/). The most comprehensive independent assessment of AI company safety practices to date. [Read the full report](https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf).
+The Future of Life Institute dropped their fourth installment of the AI Safety Index in July and it's an amazing resource. Seriously, stop reading this and go experience the [interactive scorecard](https://futureoflife.org/ai-safety-index-summer-2026/) they've built that provides an overall grade for each lab and allows you to zoom into the details you most want to learn about.
+
+Don't expect a rosy picture. While Anthropic improved to a C+, most labs fared worse than they did in the [Winter 2025 index](/resources/ai-safety-winter-2025).
+
+Research by the [Future of Life Institute](https://futureoflife.org/ai-safety-index-summer-2026/). [Read the full report](https://futureoflife.org/wp-content/uploads/2026/07/AI-Safety-Index-Summer-2026-Digital-14-Jul.pdf).
 
 <figure class="scorecard">
   <img
-    src="/resources/fli-ai-safety-scorecard-winter-2025.png"
-    alt="AI Safety Index Winter 2025 Scorecard from the Future of Life Institute. Shows safety grades for 8 major AI companies: Anthropic (C+), OpenAI (C+), Google DeepMind (C), xAI (D), Z.ai (D), Meta (D-), DeepSeek (D-), Alibaba Cloud (D-). Grades span six domains: Risk Assessment, Current Harms, Safety Frameworks, Existential Safety, Governance and Accountability, and Information Sharing."
+    src="/resources/ai-safety-index-summer-2026.webp"
+    alt="AI Safety Index Summer 2026 Scorecard from the Future of Life Institute. Shows safety grades for 9 major AI companies: Anthropic (C+), OpenAI (C), Google DeepMind (C), Meta (D+), Z.ai (D-), Alibaba Cloud (D-), xAI (F), DeepSeek (F), Mistral (F). Grades span six domains: Risk Assessment, Current Harms, Safety Frameworks, Existential Safety, Governance and Accountability, and Information Sharing."
     class="lightbox-trigger"
-    data-lightbox-src="/resources/fli-ai-safety-scorecard-winter-2025.png"
-    data-lightbox-alt="AI Safety Index Winter 2025 Scorecard"
-    width="1828"
-    height="1120"
+    data-lightbox-src="/resources/ai-safety-index-summer-2026.webp"
+    data-lightbox-alt="AI Safety Index Summer 2026 Scorecard"
+    width="2303"
+    height="1441"
     loading="lazy"
     decoding="async"
   />
-  <figcaption>Click to enlarge. Source: Future of Life Institute, Winter 2025.</figcaption>
+  <figcaption>Click to enlarge. Source: Future of Life Institute, Summer 2026.</figcaption>
 </figure>
 
 ## The best overall grade is a C+.
 
-No company scored above **D** on existential safety. Every company scored below **C** on at least one critical domain.
+Overall grades: Anthropic **C+**, OpenAI **C**, Google DeepMind **C**, Meta **D+**, Z.ai **D-**, Alibaba Cloud **D-**, xAI **F**, DeepSeek **F**, Mistral **F**.
+
+No company scored above **D+** on existential safety. Every company scored below **C** on at least one critical domain.
 
 ## What this means for you
 
@@ -55,7 +61,7 @@ No company scored above **D** on existential safety. Every company scored below 
   <div>
     <dt>Existential Safety</dt>
     <dd class="definition">Plans for catastrophic or irreversible AI risks.</dd>
-    <dd>No company scored above a D here. The hardest problems are getting the least attention. If this concerns you, talk about it. Awareness is the first step toward accountability.</dd>
+    <dd>No company scored above a D+ here. The hardest problems are getting the least attention. If this concerns you, talk about it. Awareness is the first step toward accountability.</dd>
   </div>
 
   <div>
@@ -70,3 +76,5 @@ No company scored above **D** on existential safety. Every company scored below 
     <dd>Compare what companies publish about their safety testing. The ones sharing the least usually have the most to hide.</dd>
   </div>
 </dl>
+
+I appreciate FLI so much! If you do too, consider [supporting their work.](https://futureoflife.org/about-us/donate/)
