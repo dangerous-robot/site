@@ -18,6 +18,7 @@ media/candidates/
   README.md                  # field reference and the image lifecycle
   <id>.yml                   # its record (committed)
   <id>.thumb.webp            # 480px preview (committed)
+src/assets/posts/<id>.jpg    # web copy, once the image is used on a post (committed)
 ```
 
 The repo is public, and stock licences forbid redistributing files as they
@@ -35,9 +36,12 @@ web-sized copy enters git only once the image is used on the site, under
 - `list`: print a table of every candidate: id, status, site, licence, size, intended post. Read the `*.yml` files; no other steps.
 - `approve <id>`: re-run the step 5 licence check first. Approve only from `candidate`, or from `blocked` once `license.permission` says where written permission is kept. Refuse, naming what's missing, when the file or credit is incomplete: status `needs-file` or `needs-info`, `source.verified: false`, or a `credit_line` that still has a `<placeholder>`.
 - `reject <id> <reason>`: from any status.
-- `used <id> <post-slug>`: only from `approved`.
+- `used <id> <post-slug>`: only from `approved`. Export the web copy with
+  `uv run --with pillow python3 .claude/skills/image-candidate/export_web.py media/originals/<id>.<ext> <id>`.
+  It writes `src/assets/posts/<id>.jpg` (`.png` with transparency): cropped to the subject when the image sits on a flat background, 2400px on the long side at most, metadata stripped. Then add `image` to the post's frontmatter (`src`, `alt`, `credit`, and `invert_in_dark: true` for black art on white) and list the image on `/credits`.
+  The crop and size are the same for every image. Don't hand-tune a crop for one post; if the rule gives a poor result, change the rule.
 
-  Each of these sets `status` (and `status_note` or `used_by`), then stops.
+  `approve` and `reject` set `status` (and `status_note`), then stop. `used` sets `status` and `used_by` after the steps above.
 
 ## Steps for adding
 
