@@ -14,7 +14,9 @@ import { SITE_VERSION } from "../lib/version";
 
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
 const releaseStage = SITE_VERSION.match(/-(alpha|beta|rc)\b/)?.[1];
-const releaseLabel = releaseStage === 'rc' ? 'RELEASE CANDIDATE' : releaseStage ? `${releaseStage.toUpperCase()} RELEASE` : null;
+// The release-stage banner labels the research section only.
+const inResearch = /^\/research(\/|$)/.test(Astro.url.pathname);
+const releaseLabel = !inResearch ? null : releaseStage === 'rc' ? 'RELEASE CANDIDATE' : releaseStage ? `${releaseStage.toUpperCase()} RELEASE` : null;
 interface Props {
   title: string;
   /** When true, `title` is the whole <title> and the " - Dangerous Robot" suffix is not appended. Default false. */
