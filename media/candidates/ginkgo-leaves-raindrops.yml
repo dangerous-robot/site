@@ -1,0 +1,42 @@
+id: ginkgo-leaves-raindrops
+status: candidate
+status_note: ""
+title: Ginkgo leaves with raindrops
+source:
+  site: own
+  site_id: ""
+  page_url: ""
+  creator: Brandon Faloona
+  creator_url: ""
+  uploaded: ""
+  ai_generated: false
+  verified: true           # stated by the creator in chat, 2026-10-07
+license:
+  name: CC BY 4.0
+  url: https://creativecommons.org/licenses/by/4.0/
+  attribution_required: true
+  restrictions: Credit the creator.
+  permission: ""
+credit_line: "Photo by Brandon Faloona, CC BY 4.0"
+file:
+  name: ginkgo-leaves-raindrops.jpg
+  thumb: ginkgo-leaves-raindrops.thumb.webp
+  original_name: 2.jpg
+  format: jpeg
+  width: 1208
+  height: 1604
+  bytes: 260700
+  sha256: e39adf256641029836622b82bc7fd33bd5e2bad8cab74b27389b6d262e1dfd72
+  downloaded: 2026-10-07
+look:
+  kind: photo
+  palette: color
+  orientation: portrait
+  has_text: false
+alt_draft: "Close-up of young ginkgo leaves beaded with raindrops."
+intended_for: []
+used_by: []
+flags:
+  - "portrait: shows small in the landscape spotlight, post and social boxes"
+  - "photo under the 2400x1600 guideline: this is a chat copy, so the phone original is likely larger"
+notes: "Licence CC BY 4.0 stated by the creator, confirmed on PR #1 2026-10-07. No GPS in EXIF (Software: Google only)."

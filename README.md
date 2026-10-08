@@ -56,3 +56,4 @@ for the full disclosure.
 
 - **Code** (scripts, site source, configs) — MIT License. See [`LICENSE`](LICENSE).
 - **Research content** (`research/`) — CC-BY-4.0. See [`LICENSE-CONTENT`](LICENSE-CONTENT).
+- **Images** — not covered by either licence. Each image keeps its creator's licence: see the [credits page](https://dangerousrobot.org/credits), the `.yml` record beside each file in [`media/candidates/`](media/candidates/), and [`public/resources/wallpapers/CREDITS.md`](public/resources/wallpapers/CREDITS.md).

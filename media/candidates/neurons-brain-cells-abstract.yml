@@ -1,0 +1,42 @@
+id: neurons-brain-cells-abstract
+status: candidate
+status_note: "File from a chat attachment (2000x1333); the Pixabay original is 6000x4000."
+title: Neurons, brain cells, abstract
+source:
+  site: pixabay
+  site_id: "7420670"
+  page_url: https://pixabay.com/illustrations/neurons-brain-cells-abstract-7420670/
+  creator: Gerd Altmann (geralt)
+  creator_url: https://pixabay.com/users/geralt-9301/
+  uploaded: ""
+  ai_generated: false
+  verified: true           # Pixabay API, 2026-10-07
+license:
+  name: Pixabay Content License
+  url: https://pixabay.com/service/license-summary/
+  attribution_required: false
+  restrictions: No selling unaltered copies; no redistribution as stock.
+  permission: ""
+credit_line: "Image by Gerd Altmann from Pixabay"
+file:
+  name: neurons-brain-cells-abstract.jpg
+  thumb: neurons-brain-cells-abstract.thumb.webp
+  original_name: 4.jpg
+  format: jpeg
+  width: 2000
+  height: 1333
+  bytes: 366312
+  sha256: 23fceed11b789622d2ccff09949c4efccf027c299ea184b64ae4077a1bdd5cf5
+  downloaded: 2026-10-07
+look:
+  kind: art
+  palette: mono
+  orientation: landscape
+  has_text: false
+alt_draft: "A dense, translucent tangle of fine black mesh surfaces, darkest at the center, on white."
+intended_for: []
+used_by: []
+flags:
+  - "mid-grey tones: check how it looks inverted in dark mode"
+  - "licence: platform licence, not CC; can't be relicensed under the site's CC-BY-4.0"
+notes: "Creator, profile URL and AI label confirmed via the Pixabay API (user geralt, id 9301), 2026-10-07. Earlier id: mono-mesh-tangle. Tags: neurons, brain cells, network, entanglement, knot, meshes."
