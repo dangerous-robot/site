@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Responsible AI chatbots mockup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#19191b;color:#dcdde0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65}
+a{color:#42958b}a:hover{color:#5fb3a8}
+</style>
+</helmet>
+<div id="top" style="background:#19191b;color:#dcdde0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;min-height:100%;">
+<div style="max-width:64rem;margin:0 auto;padding:1.5rem 16px 3rem;box-sizing:border-box;">
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem 1rem;margin:0 0 0.5rem;">
+<h1 style="font-family:'Space Grotesk',system-ui,sans-serif;font-size:2rem;font-weight:600;line-height:1.25;color:#d0d7c7;margin:0;">Responsible AI Chatbots</h1>
+<span style="display:inline-block;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#b8860b;border:1px solid #b8860b;border-radius:3px;padding:2px 0.5rem;white-space:nowrap;">Mockup: sample data, not findings</span>
+</div>
+
+<p style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.1rem;color:#9a9aa8;margin:0 0 1rem;max-width:36rem;">"Green AI" gets thrown around a lot. This page lays out what each product actually offers, side-by-side, so you can compare. <span style="color:#b8860b;">[Intro copy TBD, Brandon to write:]</span> this page takes positions on what responsible means; each row's reasons and evidence are in the Evidence section.</p>
+
+<p style="font-size:0.9rem;color:#9a9aa8;margin:0 0 1.5rem;max-width:48rem;">TreadLightlyAI is made by the same person who makes Dangerous Robot. It is listed under the same criteria and sources as every other product, and we publish no verdict on claims about it.</p>
+
+<nav aria-label="Page sections" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:0 0 2rem;">
+<a href="#summary" style="display:inline-block;font-size:0.8rem;color:#9a9aa8;border:1px solid #2c2c36;border-radius:9999px;padding:0.2rem 0.75rem;text-decoration:none;">Summary</a>
+<a href="#comparison-table" style="display:inline-block;font-size:0.8rem;color:#e8e8ea;border:1px solid #444454;background:#252630;border-radius:9999px;padding:0.2rem 0.75rem;text-decoration:none;">Comparison table</a>
+<a href="#evidence" style="display:inline-block;font-size:0.8rem;color:#9a9aa8;border:1px solid #2c2c36;border-radius:9999px;padding:0.2rem 0.75rem;text-decoration:none;">Evidence</a>
+<a href="#footnotes" style="display:inline-block;font-size:0.8rem;color:#9a9aa8;border:1px solid #2c2c36;border-radius:9999px;padding:0.2rem 0.75rem;text-decoration:none;">Footnotes</a>
+</nav>
+
+<section id="comparison-table" style="margin:0 0 2rem;">
+<h2 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.5rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0 0 1rem;display:flex;align-items:baseline;gap:0.5rem;">Comparison table <span style="font-family:system-ui,sans-serif;font-size:0.8rem;color:#8a8a9a;">(slice: 3 of 7 products, 4 of 16 rows)</span></h2>
+
+<div style="overflow-x:auto;padding-bottom:0.25rem;">
+<table style="width:100%;min-width:40rem;table-layout:auto;border-collapse:separate;border-spacing:0;font-size:0.9rem;">
+<thead>
+<tr>
+<th scope="col" style="width:14rem;max-width:14rem;padding:0.6rem 0.75rem;text-align:left;vertical-align:top;border-bottom:1px solid #4e4e5a;border-right:1px solid #4e4e5a;background:#19191b;"><span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">Feature</span></th>
+<sc-for list="{{products}}" as="p" hint-placeholder-count="3">
+<th scope="col" style="min-width:7rem;padding:0.6rem 0.75rem;text-align:left;vertical-align:top;border-bottom:1px solid #4e4e5a;border-right:1px solid #2c2c36;background:#19191b;font-family:Georgia,'Times New Roman',Times,serif;font-size:1.05rem;font-weight:600;white-space:nowrap;">
+<a href="#top" style="color:#d0d7c7;text-decoration:none;display:inline-flex;align-items:center;gap:0.3em;">{{p.name}}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"></path><path d="M10 14 21 3"></path><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+</th>
+</sc-for>
+</tr>
+</thead>
+
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+<tbody>
+<tr>
+<th colspan="4" scope="rowgroup" style="padding:0;border-bottom:1px solid #4e4e5a;background:#1c2120;text-align:left;">
+<div style="display:inline-flex;align-items:center;padding:1rem 0.75rem 0.4rem;font-family:Georgia,'Times New Roman',Times,serif;font-weight:600;font-size:0.9rem;color:#d0d7c7;text-transform:uppercase;letter-spacing:0.04em;">{{row.group}}</div>
+</th>
+</tr>
+<tr>
+<th scope="row" style="width:14rem;max-width:14rem;padding:0.6rem 0.75rem;text-align:left;vertical-align:top;font-weight:400;color:#d0d7c7;border-bottom:1px solid #4e4e5a;border-right:1px solid #4e4e5a;background:#19191b;overflow-wrap:break-word;">
+<div>{{row.label}}</div>
+<sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}"><div style="font-size:0.8rem;color:#8a8a9a;line-height:1.4;margin-top:0.15rem;">We prefer: {{row.idealText}}</div></sc-if>
+</th>
+<sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="3">
+<td style="padding:0.6rem 0.75rem;vertical-align:middle;text-align:left;border-bottom:1px solid #4e4e5a;border-right:1px solid #2c2c36;max-width:12rem;position:relative;">
+<span style="display:inline-flex;align-items:center;gap:0.4rem;">
+<sc-if value="{{cell.isYes}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{cell.iconStyle}}"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+<sc-if value="{{cell.isNo}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{cell.iconStyle}}"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></sc-if>
+<sc-if value="{{cell.isPartial}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{cell.iconStyle}}"><path d="M5 12h14"></path></svg></sc-if>
+<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">{{cell.srText}}</span>
+<sc-if value="{{cell.hasDetail}}" hint-placeholder-val="{{false}}"><span style="font-size:0.9rem;color:#9a9aa8;">{{cell.detail}}</span></sc-if>
+<sc-if value="{{cell.hasMark}}" hint-placeholder-val="{{true}}">
+<span style="position:relative;display:inline-block;line-height:0;" onMouseEnter="{{cell.show}}" onMouseLeave="{{cell.hide}}">
+<button type="button" aria-label="{{cell.markLabel}}" aria-expanded="{{cell.expanded}}" aria-controls="{{cell.popId}}" onClick="{{cell.toggle}}" style="{{cell.markStyle}}">
+<sc-if value="{{cell.isClaim}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg></sc-if>
+<sc-if value="{{cell.isSource}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></sc-if>
+</button>
+<sc-if value="{{cell.open}}" hint-placeholder-val="{{false}}">
+<div id="{{cell.popId}}" role="group" aria-label="{{cell.popLabel}}" style="{{cell.popStyle}}">
+<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#8a8a9a;margin:0 0 0.35rem;">{{cell.tierName}}</div>
+<sc-if value="{{cell.isClaim}}" hint-placeholder-val="{{true}}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem 0.6rem;margin:0 0 0.4rem;">
+<span style="{{cell.badgeStyle}}">{{cell.verdictLabel}}</span>
+<span style="color:#dcdde0;">Confidence: {{cell.confidence}}</span>
+<span style="color:#9a9aa8;">As of {{cell.asOf}}</span>
+</div>
+</sc-if>
+<sc-if value="{{cell.isSource}}" hint-placeholder-val="{{false}}">
+<div style="color:#dcdde0;margin:0 0 0.4rem;">{{cell.sourceLine}}</div>
+</sc-if>
+<sc-if value="{{cell.capped}}" hint-placeholder-val="{{false}}">
+<div style="color:#9a9aa8;margin:0 0 0.4rem;">Sources only: no claims are researched for TreadLightlyAI.</div>
+</sc-if>
+<a href="{{cell.linkHref}}" onBlur="{{cell.linkBlur}}" style="font-size:0.85rem;">{{cell.linkText}}<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"> {{cell.srLink}}</span></a>
+</div>
+</sc-if>
+</span>
+</sc-if>
+</span>
+</td>
+</sc-for>
+</tr>
+</tbody>
+</sc-for>
+</table>
+</div>
+
+<div style="margin:1rem 0 0;">
+<p style="font-size:0.8rem;color:#8a8a9a;margin:0 0 0.5rem;">Data gathered from public sources and direct research. If something is wrong, let us know. Last updated: October 2026.</p>
+<div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;">
+<span style="font-size:0.9rem;color:#9a9aa8;white-space:nowrap;">Legend:</span>
+<ul aria-label="Symbol legend" style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0.25rem 1rem;">
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dcdde0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg><span>Yes</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dcdde0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg><span>No</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dcdde0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg><span>Partial</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dcdde0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg><span>Unknown</span></li>
+</ul>
+</div>
+<div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem;">
+<span style="font-size:0.9rem;color:#9a9aa8;white-space:nowrap;">Color:</span>
+<ul aria-label="Color legend" style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0.25rem 1rem;">
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg><span>What we prefer</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b22222" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg><span>Not what we prefer</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8860b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path></svg><span>Partly</span></li>
+</ul>
+</div>
+<div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem;">
+<span style="font-size:0.9rem;color:#9a9aa8;white-space:nowrap;">Evidence:</span>
+<ul aria-label="Evidence legend" style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0.25rem 1rem;">
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#42958b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg><span>Reviewed claim</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Source</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><span>No mark: not yet sourced</span></li>
+</ul>
+</div>
+<p style="font-size:0.9rem;color:#9a9aa8;margin:0.5rem 0 0;">Rows without a “We prefer” line compare facts only; we take no position on them. Hover, tap or press a mark to see the evidence behind a cell.</p>
+</div>
+</section>
+
+<section id="evidence" style="margin:0 0 2rem;">
+<h2 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.5rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0 0 0.5rem;display:flex;align-items:baseline;gap:0.5rem;">Evidence <a href="#top" aria-label="Return to top" style="display:inline-flex;color:#8a8a9a;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"></path><path d="M12 19V5"></path></svg></a></h2>
+<p style="font-size:0.9rem;color:#9a9aa8;margin:0 0 1rem;">One entry per row. Stance rows open with the page's position and its evidence, then one item per product. Entries list every product, whatever the product filter hides.</p>
+
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+<sc-if value="{{row.evOpen}}" hint-placeholder-val="{{true}}">
+<details open="open" style="border-top:1px solid #2c2c36;padding:0.6rem 0;">
+<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:0.5rem;font-family:Georgia,'Times New Roman',Times,serif;font-size:1.05rem;color:#d0d7c7;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+<span>{{row.label}}</span>
+<span style="font-family:system-ui,sans-serif;font-size:0.8rem;color:#8a8a9a;">{{row.kindLabel}}</span>
+</summary>
+<div style="padding:0.5rem 0 0.25rem 1.4rem;">
+<sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}">
+<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;">We prefer: {{row.idealText}}.</span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
+</sc-if>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.4rem;">
+<sc-for list="{{row.entries}}" as="e" hint-placeholder-count="3">
+<li id="{{e.id}}" style="scroll-margin-top:5rem;font-size:0.9rem;display:flex;flex-wrap:wrap;align-items:center;gap:0.3rem 0.6rem;">
+<span style="font-weight:600;color:#d0d7c7;min-width:8rem;">{{e.product}}</span>
+<sc-if value="{{e.isClaim}}" hint-placeholder-val="{{true}}"><span style="{{e.badgeStyle}}">{{e.verdictLabel}}</span><span style="color:#dcdde0;">Confidence: {{e.confidence}}, as of {{e.asOf}}.</span><a href="{{e.claimHref}}" style="font-size:0.85rem;">Claim page</a><span style="color:#9a9aa8;font-size:0.85rem;">Reviewed and approved by [reviewer].</span></sc-if>
+<sc-if value="{{e.isSource}}" hint-placeholder-val="{{false}}"><span style="color:#dcdde0;">{{e.sourceLine}}</span><a href="{{e.sourceHref}}" style="font-size:0.85rem;">Source page</a><span style="color:#9a9aa8;font-size:0.85rem;">Archived copy.</span></sc-if>
+<sc-if value="{{e.isNone}}" hint-placeholder-val="{{false}}"><span style="color:#9a9aa8;">{{e.noneText}}</span></sc-if>
+<sc-if value="{{e.capped}}" hint-placeholder-val="{{false}}"><span style="color:#9a9aa8;font-size:0.85rem;">Sources only; no claims are researched for TreadLightlyAI.</span></sc-if>
+</li>
+</sc-for>
+</ul>
+</div>
+</details>
+</sc-if>
+<sc-if value="{{row.evClosed}}" hint-placeholder-val="{{false}}">
+<details style="border-top:1px solid #2c2c36;padding:0.6rem 0;">
+<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:0.5rem;font-family:Georgia,'Times New Roman',Times,serif;font-size:1.05rem;color:#d0d7c7;">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8a8a9a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+<span>{{row.label}}</span>
+<span style="font-family:system-ui,sans-serif;font-size:0.8rem;color:#8a8a9a;">{{row.kindLabel}}</span>
+</summary>
+<div style="padding:0.5rem 0 0.25rem 1.4rem;">
+<sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}">
+<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;">We prefer: {{row.idealText}}.</span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
+</sc-if>
+<ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.4rem;">
+<sc-for list="{{row.entries}}" as="e" hint-placeholder-count="3">
+<li id="{{e.id}}" style="scroll-margin-top:5rem;font-size:0.9rem;display:flex;flex-wrap:wrap;align-items:center;gap:0.3rem 0.6rem;">
+<span style="font-weight:600;color:#d0d7c7;min-width:8rem;">{{e.product}}</span>
+<sc-if value="{{e.isClaim}}" hint-placeholder-val="{{true}}"><span style="{{e.badgeStyle}}">{{e.verdictLabel}}</span><span style="color:#dcdde0;">Confidence: {{e.confidence}}, as of {{e.asOf}}.</span><a href="{{e.claimHref}}" style="font-size:0.85rem;">Claim page</a><span style="color:#9a9aa8;font-size:0.85rem;">Reviewed and approved by [reviewer].</span></sc-if>
+<sc-if value="{{e.isSource}}" hint-placeholder-val="{{false}}"><span style="color:#dcdde0;">{{e.sourceLine}}</span><a href="{{e.sourceHref}}" style="font-size:0.85rem;">Source page</a><span style="color:#9a9aa8;font-size:0.85rem;">Archived copy.</span></sc-if>
+<sc-if value="{{e.isNone}}" hint-placeholder-val="{{false}}"><span style="color:#9a9aa8;">{{e.noneText}}</span></sc-if>
+<sc-if value="{{e.capped}}" hint-placeholder-val="{{false}}"><span style="color:#9a9aa8;font-size:0.85rem;">Sources only; no claims are researched for TreadLightlyAI.</span></sc-if>
+</li>
+</sc-for>
+</ul>
+</div>
+</details>
+</sc-if>
+</sc-for>
+<p style="border-top:1px solid #2c2c36;margin:0;padding:0.6rem 0 0;font-size:0.8rem;color:#8a8a9a;">Summary table entries follow in the real page (ids ev-summary-&lt;field&gt;-&lt;product&gt;); omitted from this slice.</p>
+</section>
+
+<section id="footnotes" style="margin:0;">
+<h2 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.5rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0 0 0.5rem;">Footnotes</h2>
+<p style="font-size:0.8rem;color:#8a8a9a;margin:0;">Unchanged in this mockup; each footnote gains optional sources with the same Source mark.</p>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+renderVals() {
+var self = this;
+var DEFAULT_OPEN = 'renewable-hosting:greenpt';
+// Stand-in: the mockup has no real claim pages.
+var CLAIM_PAGE = 'https://dangerousrobot.org/research/';
+function cur() {
+return Object.assign({ open: DEFAULT_OPEN, pinned: true }, self.state || {});
+}
+var st = cur();
+
+var SR = 'position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;';
+var COLOR = { good: '#2d8a4e', bad: '#b22222', mixed: '#b8860b', neutral: '#dcdde0' };
+var VERDICT_COLOR = { True: '#2d8a4e', 'Mostly true': '#4a9e6b', Mixed: '#b8860b', 'Mostly false': '#c44e3e', False: '#b22222', Unverified: '#666677' };
+function badgeStyle(verdict) {
+var c = VERDICT_COLOR[verdict] || '#666677';
+return 'display:inline-block;border-radius:3px;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;font-size:0.75rem;font-weight:700;padding:2px 0.25rem;border:1px solid ' + c + ';color:' + c + ';background:' + c + '40;';
+}
+
+var products = [
+{ key: 'ecosia', name: 'Ecosia AI', capped: false },
+{ key: 'greenpt', name: 'GreenPT', capped: false },
+{ key: 'treadlightly', name: 'TreadLightlyAI', capped: true }
+];
+
+var rows = [
+{
+key: 'renewable-hosting', label: 'Hosted on renewable energy', group: 'Environmental', stance: 'yes', idealText: 'Yes',
+stanceSentence: '[Stance sentence: TBD, Brandon to write.]',
+stanceEvidence: 'Position: AI is fueling environmental destruction (Values).',
+cells: {
+ecosia: { answer: 'no', ev: { kind: 'source', publisher: '[Ecosia blog post]', accessed: '2026-09-30', more: 0 } },
+greenpt: { answer: 'yes', ev: { kind: 'claim', verdict: 'True', confidence: 'High', asOf: '2026-09-28' } },
+treadlightly: { answer: 'partial', detail: 'All but Anthropic', ev: { kind: 'source', publisher: '[TreadLightlyAI hosting page]', accessed: '2026-10-02', more: 1 } }
+}
+},
+{
+key: 'data-used-for-training', label: 'Data used for training', group: 'Privacy & data', stance: 'no', idealText: 'No',
+stanceSentence: '[Stance sentence: TBD, Brandon to write.]',
+stanceEvidence: 'Sources: [why training on user data matters], 2 sources.',
+cells: {
+ecosia: { answer: 'no', ev: { kind: 'none', checked: '2026-10-01' } },
+greenpt: { answer: 'no', ev: { kind: 'claim', verdict: 'True', confidence: 'Medium', asOf: '2026-09-25' } },
+treadlightly: { answer: 'no', ev: { kind: 'source', publisher: '[TreadLightlyAI privacy policy]', accessed: '2026-10-02', more: 0 } }
+}
+},
+{
+key: 'image-and-document-analysis', label: 'Image and document analysis', group: 'Product Features', stance: null, idealText: '',
+cells: {
+ecosia: { answer: 'no', ev: { kind: 'source', publisher: '[Ecosia help page]', accessed: '2026-09-30', more: 0 } },
+greenpt: { answer: 'yes', ev: { kind: 'none' } },
+treadlightly: { answer: 'yes', ev: { kind: 'source', publisher: '[TreadLightlyAI features page]', accessed: '2026-10-02', more: 0 } }
+}
+},
+{
+key: 'free-tier', label: 'Free tier', group: 'Business & cost', stance: null, idealText: '',
+cells: {
+ecosia: { answer: 'yes', detail: 'Ad supported', ev: { kind: 'source', publisher: '[Ecosia pricing page]', accessed: '2026-09-30', more: 0 } },
+greenpt: { answer: 'yes', ev: { kind: 'none', checked: '2026-10-01' } },
+treadlightly: { answer: 'yes', ev: { kind: 'source', publisher: '[TreadLightlyAI pricing page]', accessed: '2026-10-02', more: 0 } }
+}
+}
+];
+
+function stanceOf(row, answer) {
+if (!row.stance) return 'neutral';
+if (answer === 'partial') return 'mixed';
+if (answer === 'unknown' || answer === 'na') return 'neutral';
+return answer === row.stance ? 'good' : 'bad';
+}
+function answerWord(a) { return a === 'yes' ? 'Yes' : a === 'no' ? 'No' : a === 'partial' ? 'Partial' : 'Unknown'; }
+function srTextFor(row, cell, stance, hasMark) {
+var base = cell.detail ? answerWord(cell.answer) + ', ' + cell.detail : answerWord(cell.answer);
+var s = base;
+if (stance === 'good') s = base + ', what we prefer.';
+else if (stance === 'bad') s = base + '. Not what we prefer.';
+else if (stance === 'mixed') s = base + '. Partly what we prefer.';
+else s = base + '.';
+if (!hasMark) s += ' Not yet sourced.';
+return s;
+}
+function show(id) { return function () { var s = cur(); if (s.open === id) return; self.setState({ open: id, pinned: false }); }; }
+function hide(id) { return function () { var s = cur(); if (s.open === id && !s.pinned) self.setState({ open: null, pinned: false }); }; }
+function toggle(id) { return function () { var s = cur(); if (s.open === id && s.pinned) self.setState({ open: null, pinned: false }); else self.setState({ open: id, pinned: true }); }; }
+function linkBlur() { self.setState({ open: null, pinned: false }); }
+
+var MARK_BASE = 'display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;margin:0;border:0;border-radius:4px;cursor:pointer;line-height:0;vertical-align:middle;';
+var POP_BASE = 'position:absolute;z-index:4;width:min(16rem, calc(100vw - 32px));box-sizing:border-box;background:#1a1b1e;border:1px solid #444454;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,0.5);padding:0.6rem 0.75rem;font-size:0.8rem;line-height:1.5;color:#dcdde0;text-align:left;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;';
+
+var outRows = rows.map(function (row, ri) {
+var cells = products.map(function (p, pi) {
+var cell = row.cells[p.key];
+var ev = cell.ev;
+var id = row.key + ':' + p.key;
+var stance = stanceOf(row, cell.answer);
+var kind = ev.kind;
+var isClaim = kind === 'claim';
+var isSource = kind === 'source';
+var hasMark = isClaim || isSource;
+var open = hasMark && st.open === id;
+var tierName = isClaim ? 'Reviewed claim' : isSource ? 'Source' : 'Not yet sourced';
+var rowLower = row.label.charAt(0).toLowerCase() + row.label.slice(1);
+var popPos = (ri < 2 ? 'top:100%;' : 'bottom:100%;') + (pi === products.length - 1 ? 'right:0;' : 'left:0;');
+var markColor = isClaim ? '#42958b' : '#9a9aa8';
+var markStyle = MARK_BASE + 'color:' + markColor + ';' + (open ? 'background:#252630;outline:1px solid #444454;' : 'background:transparent;');
+var sourceLine = isSource ? ev.publisher + ', accessed ' + ev.accessed + (ev.more ? ', and ' + ev.more + ' more' : '') : '';
+return {
+id: id,
+isYes: cell.answer === 'yes', isNo: cell.answer === 'no', isPartial: cell.answer === 'partial',
+iconStyle: 'flex-shrink:0;color:' + COLOR[stance] + ';',
+srText: srTextFor(row, cell, stance, hasMark),
+hasDetail: !!cell.detail, detail: cell.detail || '',
+hasMark: hasMark, isClaim: isClaim, isSource: isSource, capped: p.capped,
+open: open, expanded: open ? 'true' : 'false',
+popId: 'pop-' + row.key + '-' + p.key,
+markLabel: 'Evidence for ' + p.name + ', ' + rowLower + ': ' + tierName.toLowerCase(),
+popLabel: 'Evidence detail for ' + p.name + ', ' + rowLower,
+markStyle: markStyle,
+popStyle: POP_BASE + popPos,
+tierName: tierName,
+verdictLabel: isClaim ? ev.verdict : '', badgeStyle: isClaim ? badgeStyle(ev.verdict) : '',
+confidence: isClaim ? ev.confidence : '', asOf: isClaim ? ev.asOf : '',
+sourceLine: sourceLine,
+evHref: '#ev-' + row.key + '-' + p.key,
+// A claim popup opens its claim page; a source popup jumps to the Evidence entry, which lists every source for the cell.
+linkHref: isClaim ? CLAIM_PAGE : '#ev-' + row.key + '-' + p.key,
+linkText: isClaim ? 'Open claim page' : 'See sources below',
+srLink: 'for ' + p.name + ', ' + rowLower,
+show: show(id), hide: hide(id), toggle: toggle(id), linkBlur: linkBlur
+};
+});
+var entries = products.map(function (p) {
+var cell = row.cells[p.key];
+var ev = cell.ev;
+var isClaim = ev.kind === 'claim';
+var isSource = ev.kind === 'source';
+var isNone = ev.kind === 'none';
+return {
+id: 'ev-' + row.key + '-' + p.key,
+product: p.name,
+isClaim: isClaim, isSource: isSource, isNone: isNone, capped: p.capped,
+verdictLabel: isClaim ? ev.verdict : '', badgeStyle: isClaim ? badgeStyle(ev.verdict) : '',
+confidence: isClaim ? ev.confidence : '', asOf: isClaim ? ev.asOf : '',
+claimHref: CLAIM_PAGE,
+sourceLine: isSource ? ev.publisher + ', accessed ' + ev.accessed + (ev.more ? ', and ' + ev.more + ' more' : '') : '',
+sourceHref: 'https://dangerousrobot.org/research/sources/',
+noneText: ev.checked ? 'Checked by Dangerous Robot, ' + ev.checked + '. Not yet sourced.' : 'Not yet sourced.'
+};
+});
+var evOpen = ri === 0;
+return {
+key: row.key, label: row.label, group: row.group,
+isStance: !!row.stance, idealText: row.idealText,
+kindLabel: row.stance ? 'our position' : 'comparison only, no position',
+stanceSentence: row.stanceSentence || '', stanceEvidence: row.stanceEvidence || '',
+cells: cells, entries: entries,
+evOpen: evOpen, evClosed: !evOpen
+};
+});
+
+return { products: products, rows: outRows };
+}
+}
+</script>
+</body>
+</html>
