@@ -598,3 +598,69 @@ class TestPublishRefreshedClaims:
 
         assert result.exit_code == 0, result.output
         assert "Skipped (refresh awaiting re-approval): 2" in result.output
+
+
+# ---------------------------------------------------------------------------
+# Edited verdicts: an override needs a reviewer, which `dr publish` never records
+# ---------------------------------------------------------------------------
+
+
+def _setup_edited_verdict(
+    tmp_path: Path, slug: str, *, override: dict | None = None,
+) -> tuple[Path, Path]:
+    """A draft whose verdict was edited away from the pipeline's `true`."""
+    claim_md, sidecar = _setup_claim(tmp_path, slug=slug)
+    text = claim_md.read_text(encoding="utf-8")
+    claim_md.write_text(text.replace("title: Test\n", "title: Test\nverdict: 'false'\n", 1), encoding="utf-8")
+    if override is not None:
+        data = yaml.safe_load(sidecar.read_text(encoding="utf-8"))
+        data["human_review"]["verdict_override"] = override
+        sidecar.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    return claim_md, sidecar
+
+
+class TestPublishEditedVerdicts:
+    """A verdict that differs from the pipeline's goes through `dr review --approve`."""
+
+    def test_unreviewed_override_skipped_and_run_fails(self, tmp_path):
+        edited, edited_sidecar = _setup_edited_verdict(tmp_path, "edited")
+        plain, _ = _setup_claim(tmp_path, slug="plain")
+        edited_before = edited_sidecar.read_bytes()
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--yes", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 1, result.output
+        assert "status: draft" in edited.read_text(encoding="utf-8")
+        assert edited_sidecar.read_bytes() == edited_before
+        assert "status: published" in plain.read_text(encoding="utf-8")
+        assert "Skipped (verdict override awaiting review): 1" in result.output
+        assert "verdict true -> false" in result.output
+        assert "dr review --approve --claim test-entity/edited" in result.output
+
+    def test_recorded_override_publishes(self, tmp_path):
+        edited, _ = _setup_edited_verdict(
+            tmp_path, "edited", override={"from": "true", "to": "false"},
+        )
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--yes", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "status: published" in edited.read_text(encoding="utf-8")
+
+    def test_stale_override_skipped(self, tmp_path):
+        """An override for a different change does not cover the current verdict."""
+        edited, _ = _setup_edited_verdict(
+            tmp_path, "edited", override={"from": "true", "to": "unverified"},
+        )
+
+        result = CliRunner().invoke(main, [
+            "publish", "--all", "--yes", "--repo-root", str(tmp_path),
+        ])
+
+        assert result.exit_code == 1, result.output
+        assert "Nothing to publish." in result.output
+        assert "status: draft" in edited.read_text(encoding="utf-8")

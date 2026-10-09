@@ -113,6 +113,20 @@ def _verdict_override(fm: dict, sidecar: dict) -> dict | None:
     return {"from": str(analyst), "to": str(current)}
 
 
+def unreviewed_verdict_change(fm: dict, sidecar: dict | None) -> tuple[str, str] | None:
+    """Return (analyst, current) when the verdict differs from the analyst's with no matching recorded override.
+
+    Published as is, such a claim fails lint's verdict-sidecar-mismatch check.
+    """
+    change = _verdict_override(fm, sidecar or {})
+    if change is None:
+        return None
+    recorded = ((sidecar or {}).get("human_review") or {}).get("verdict_override") or {}
+    if str(recorded.get("from")) == change["from"] and str(recorded.get("to")) == change["to"]:
+        return None
+    return change["from"], change["to"]
+
+
 def _add_correction(claim_path: Path, fm: dict, previous_verdict: str, summary: str) -> None:
     """Prepend a correction (newest first), skipping it if a retry already wrote it.
 

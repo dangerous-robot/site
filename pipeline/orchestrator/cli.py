@@ -2126,6 +2126,9 @@ def publish(
     published, archived, or blocked are skipped with a warning. Drafts whose
     sidecar has a `refresh` block (a refreshed, previously published claim)
     are skipped too, and the run exits 1: they need `dr review --approve`.
+    So are drafts whose verdict differs from the sidecar's analyst verdict
+    with no matching `human_review.verdict_override`: only `dr review`
+    records an override, because it records who made it.
 
     Reversibility: a later `dr review --claim <slug> --reviewer alice` (no
     `--approve`) writes the reviewer in and flips the badge to "Reviewed".
@@ -2152,7 +2155,7 @@ def publish(
     from common.content_loader import list_claims, resolve_repo_root
     from common.frontmatter import has_criterion, parse_frontmatter
     from common.sidecar import read_sidecar, sidecar_path_for
-    from orchestrator.review import refresh_verdict_change
+    from orchestrator.review import refresh_verdict_change, unreviewed_verdict_change
 
     # Mode selection: exactly one of {--claim, --entity, --all}.
     selectors = sum(1 for s in (claim, entity, all_) if s)
@@ -2195,6 +2198,7 @@ def publish(
     skipped_missing_sidecar: list[Path] = []
     skipped_missing_criterion: list[Path] = []
     skipped_refresh: list[tuple[Path, tuple[str, str] | None]] = []  # (path, verdict change)
+    skipped_override: list[tuple[Path, tuple[str, str]]] = []  # (path, (analyst, current))
     classify_errors: list[tuple[Path, str]] = []
 
     for claim_path in candidate_paths:
@@ -2240,6 +2244,13 @@ def publish(
         sidecar_data = read_sidecar(claim_path) or {}
         if isinstance(sidecar_data.get("refresh"), dict):
             skipped_refresh.append((claim_path, refresh_verdict_change(fm, sidecar_data)))
+            continue
+
+        # A verdict edited away from the pipeline's needs a reviewer behind the
+        # override; only `dr review` records one, since this command has no reviewer.
+        override_change = unreviewed_verdict_change(fm, sidecar_data)
+        if override_change is not None:
+            skipped_override.append((claim_path, override_change))
             continue
 
         to_publish.append((claim_path, current_status))
@@ -2291,6 +2302,15 @@ def publish(
                     f"  ! refreshed, verdict unchanged: run `dr review --approve --claim {slug}`",
                     err=True,
                 )
+    if skipped_override:
+        click.echo(f"Skipped (verdict override awaiting review): {len(skipped_override)}")
+        for path, (analyst, current) in skipped_override:
+            slug = path.relative_to(claims_dir).with_suffix("").as_posix()
+            click.echo(
+                f"  ! verdict {analyst} -> {current}, no reviewer override: "
+                f"run `dr review --approve --claim {slug}`",
+                err=True,
+            )
     if classify_errors:
         click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
         for path, msg in classify_errors:
@@ -2303,9 +2323,13 @@ def publish(
     if not to_publish:
         click.echo("Nothing to publish.")
         # Per-claim errors during classification (e.g. unparseable frontmatter),
-        # missing-criterion skips and refresh skips all count as failures: the
+        # missing-criterion, refresh and override skips all count as failures: the
         # operator asked to publish a claim we would not, so the run should signal.
-        sys.exit(1 if (classify_errors or skipped_missing_criterion or skipped_refresh) else 0)
+        sys.exit(
+            1
+            if (classify_errors or skipped_missing_criterion or skipped_refresh or skipped_override)
+            else 0
+        )
 
     # Confirmation prompt unless --yes.
     if not yes:
@@ -2316,12 +2340,13 @@ def publish(
 
     today_iso = datetime.date.today().isoformat()
     published_count = 0
-    # Missing-criterion and refresh skips count as errors: the operator asked us
+    # Missing-criterion, refresh and override skips count as errors: the operator asked us
     # to publish, we couldn't, that's a partial-completion signal that should fail loud.
     publish_errors: list[tuple[Path, str]] = (
         list(classify_errors)
         + [(p, "missing criteria_slug") for p in skipped_missing_criterion]
         + [(p, "refresh awaiting re-approval") for p, _ in skipped_refresh]
+        + [(p, "verdict override awaiting review") for p, _ in skipped_override]
     )
 
     for claim_path, current_status in to_publish:
