@@ -242,3 +242,14 @@
   --color-verdict-unverified: #444444;
   --color-verdict-not-applicable: #333344;
 }
+
+/* Stance colors: the Responsible AI matrix's opinion of an answer (good, bad
+   or mixed for responsibility). Aliased to the verdict colors so the meaning
+   has its own name and can diverge from verdict chips later. Declared on
+   :root, where the theme attributes live, so each theme's verdict values
+   carry through. */
+:root {
+  --color-stance-good: var(--color-verdict-true);
+  --color-stance-bad: var(--color-verdict-false);
+  --color-stance-mixed: var(--color-verdict-mixed);
+}

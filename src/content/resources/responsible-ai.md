@@ -88,6 +88,7 @@ data:
     - key: renewable-hosting
       label: "Hosted on renewable energy"
       group: environmental
+      criterion: renewable-energy-hosting
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
@@ -100,6 +101,7 @@ data:
     - key: real-time-energy-display
       label: "Real-time energy display"
       group: environmental
+      criterion: realtime-energy-display
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
@@ -112,6 +114,7 @@ data:
     - key: no-image-generation
       label: "No image generation"
       group: environmental
+      criterion: excludes-image-generation
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
@@ -136,17 +139,27 @@ data:
     - key: models
       label: "Models"
       group: models-safety
+      ideal:
+        answer: "no large models"
+        # Seeded by sorting the models the `models` cells name under P5 and
+        # R2 (a model is large if it was its lab's most capable tier when
+        # released); each call still needs its lab's model page as a source.
+        large_models:
+          large: []
+          not_large: [Mistral Small, Ministral, GPT-OSS, Claude Haiku, Claude Sonnet]
       cells:
-        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS" }
+        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS", models: [Mistral Small, GPT-OSS] }
         ecosia: { type: "text", detail: "GPT mini" }
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3" }
-        treadlightly: { type: "text", detail: "Mistral Ministral & Small, GPT-OSS, Claude Haiku & Sonnet" }
+        treadlightly: { type: "text", detail: "Mistral Ministral & Small, GPT-OSS, Claude Haiku & Sonnet", models: [Ministral, Mistral Small, GPT-OSS, Claude Haiku, Claude Sonnet] }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
         chatgptree: { type: "text", detail: "GPT" }
         earthly-insight: { type: "text", detail: "GPT, Gemini Flash & Pro, Claude Sonnet" }
     - key: data-used-for-training
       label: "Data used for training"
       group: privacy-data
+      criterion: no-training-on-user-data
+      polarity: inverted
       ideal: { value: "no" }
       cells:
         greenpt: { type: "no" }
@@ -159,18 +172,24 @@ data:
     - key: corporate-structure
       label: "Ownership structure"
       group: business
+      criterion: corporate-structure
+      ideal:
+        answer: "non-profit or similar"
+        terms:
+          good: [non-profit, steward-ownership, cooperative, B-corp, employee-owned]
+          mixed: [privately-held]
+          bad: [publicly-traded]
       cells:
-        greenpt: { type: "text", detail: "Private" }
-        ecosia: { type: "text", detail: "Non-profit, Steward-ownership" }
-        euria: { type: "text", detail: "B Corp" }
-        treadlightly: { type: "text", detail: "Sole proprietorship" }
-        viro: { type: "text", detail: "Solo-founder LLC" }
-        chatgptree: { type: "text", detail: "Private" }
-        earthly-insight: { type: "text", detail: "Bootstrapped LLC" }
+        greenpt: { type: "text", detail: "Private", term: privately-held }
+        ecosia: { type: "text", detail: "Non-profit, Steward-ownership", term: steward-ownership }
+        euria: { type: "text", detail: "B Corp", term: B-corp }
+        treadlightly: { type: "text", detail: "Sole proprietorship", term: privately-held }
+        viro: { type: "text", detail: "Solo-founder LLC", term: privately-held }
+        chatgptree: { type: "text", detail: "Private", term: privately-held }
+        earthly-insight: { type: "text", detail: "Bootstrapped LLC", term: privately-held }
     - key: free-tier
       label: "Free tier"
       group: business
-      ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "yes", detail: "Ad supported"}
@@ -215,7 +234,6 @@ data:
     - key: agent-web-search
       label: "Agent Web search"
       group: product-access
-      ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "yes" }
@@ -227,7 +245,6 @@ data:
     - key: web-search
       label: "Normal Web search"
       group: product-access
-      ideal: { value: "yes" }
       cells:
         greenpt: { type: "no" }
         ecosia: { type: "yes" }
@@ -239,6 +256,7 @@ data:
     - key: accessibility
       label: "Accessibility"
       group: product-access
+      answers: ["yes", partial, unknown]
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes", detail: "Level A" }

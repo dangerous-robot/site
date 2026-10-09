@@ -3,6 +3,7 @@ import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 import ResponsibleAIFilters from './ResponsibleAIFilters.astro';
 import type { MatrixCell as Cell, MatrixCellType as CellType, MatrixData, MatrixFeature as Feature } from '../lib/matrixSchema';
+import { cellStance, TIER_NAMES, type Stance } from '../lib/matrixEvidence';
 
 const ICONS: Record<
   Exclude<CellType, 'text' | 'na'>,
@@ -13,6 +14,38 @@ const ICONS: Record<
   partial: { Icon: Minus, srLabel: 'Partial' },
   unknown: { Icon: HelpCircle, srLabel: 'Unknown' },
 };
+
+// Visually hidden text that says in words what the stance color shows (WCAG
+// 1.4.1): "Yes, what we prefer." / "No. Not what we prefer." / "Partly what
+// we prefer." Unknown, n/a and feature-row cells read only the answer.
+const STANCE_PHRASE: Record<Stance, string> = {
+  good: ', what we prefer.',
+  bad: '. Not what we prefer.',
+  mixed: '. Partly what we prefer.',
+  neutral: '.',
+};
+
+/** The "We prefer" line under a stance row's label; null on a feature row. */
+function preferLine(feature: Feature): { Icon?: AstroComponentFactory; word: string } | null {
+  const ideal = feature.ideal;
+  if (!ideal) return null;
+  if ('value' in ideal) return { Icon: ICONS[ideal.value].Icon, word: ICONS[ideal.value].srLabel };
+  return { word: ideal.answer };
+}
+
+const LEGEND: { label: string; aria: string; items: { stance?: Stance; Icon?: AstroComponentFactory; text: string }[] }[] = [
+  { label: 'Legend:', aria: 'Symbol legend', items: Object.values(ICONS).map(({ Icon, srLabel }) => ({ Icon, text: srLabel })) },
+  {
+    label: 'Color:',
+    aria: 'Color legend',
+    items: [
+      { stance: 'good', Icon: Check, text: 'What we prefer' },
+      { stance: 'bad', Icon: X, text: 'Not what we prefer' },
+      { stance: 'mixed', Icon: Minus, text: 'Partly' },
+    ],
+  },
+  { label: 'Evidence:', aria: 'Evidence legend', items: [{ text: `No mark: ${TIER_NAMES.none.toLowerCase()}` }] },
+];
 
 function renderDetail(s: string): string {
   const esc = s
@@ -109,27 +142,41 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                 </th>
               </tr>
               {rows.map((feature) => {
+                const prefer = preferLine(feature);
                 return (
                 <tr>
-                  <th scope="row" class="dim-label">{feature.label}</th>
+                  <th scope="row" class="dim-label">
+                    {feature.label}
+                    {prefer && (
+                      <div class="we-prefer">
+                        We prefer:
+                        {prefer.Icon && <prefer.Icon size={16} aria-hidden="true" />}
+                        <span class={prefer.Icon ? 'sr-only' : undefined}>{prefer.word}</span>
+                      </div>
+                    )}
+                  </th>
                   {activeProducts.map((p) => {
                     const cell = feature.cells[p.key] ?? { type: 'na' as CellType };
                     const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
+                    const stance = cellStance(cell, feature);
+                    // Until the evidence marks land, every cell without a citation says so in hidden text.
+                    const unsourced = !cell.claim && !cell.sources?.length;
                     return (
-                      <td class={`cell cell--${cell.type}`} data-product-key={p.key}>
+                      <td class={`cell cell--${cell.type} cell--stance-${stance}`} data-product-key={p.key}>
                         {icon && (
                           <span class="cell-inline">
                             <icon.Icon size={18} aria-hidden="true" />
                             <span class="sr-only">{icon.srLabel}</span>
-                            {cell.detail && <span class="detail" set:html={renderDetail(cell.detail)} />}
+                            {cell.detail && <span class="detail"><Fragment set:html={renderDetail(cell.detail)} /></span>}<span class="sr-only">{STANCE_PHRASE[stance]}</span>
                           </span>
                         )}
                         {cell.type === 'text' && (
-                          <span class="detail" set:html={renderDetail(cell.detail ?? '')} />
+                          <span class="detail"><Fragment set:html={renderDetail(cell.detail ?? '')} /><span class="sr-only">{STANCE_PHRASE[stance]}</span></span>
                         )}
                         {cell.type === 'na' && (
                           <span class="na" aria-label="Not applicable">&ndash;</span>
                         )}
+                        {unsourced && <span class="sr-only"> {TIER_NAMES.none}.</span>}
                       </td>
                     );
                   })}
@@ -151,26 +198,19 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
           )}
         </p>
       )}
-      <div class="legend-row">
-        <span class="legend-label">Legend:</span>
-        <ul class="legend" aria-label="Symbol legend">
-          <li class="legend-item legend-item--yes">
-            <Check size={14} aria-hidden="true" /><span>Yes</span>
-          </li>
-          <li class="legend-item legend-item--no">
-            <X size={14} aria-hidden="true" /><span>No</span>
-          </li>
-          <li class="legend-item legend-item--no-good">
-            <X size={14} aria-hidden="true" /><span>No <span class="legend-note">(preferred)</span></span>
-          </li>
-          <li class="legend-item legend-item--partial">
-            <Minus size={14} aria-hidden="true" /><span>Partial</span>
-          </li>
-          <li class="legend-item legend-item--unknown">
-            <HelpCircle size={14} aria-hidden="true" /><span>Unknown</span>
-          </li>
-        </ul>
-      </div>
+      {LEGEND.map((row) => (
+        <div class="legend-row">
+          <span class="legend-label">{row.label}</span>
+          <ul class="legend" aria-label={row.aria}>
+            {row.items.map((item) => (
+              <li class:list={['legend-item', item.stance && `legend-item--${item.stance}`]}>
+                {item.Icon && <item.Icon size={18} aria-hidden="true" />}<span>{item.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+      <p class="legend-note">Rows without a “We prefer” line compare facts only; we take no position on them.</p>
     </div>
   </section>
 </div>
@@ -404,14 +444,47 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     color: var(--color-text-muted);
   }
 
-  .cell--yes :global(svg) { color: var(--color-verdict-true); flex-shrink: 0; }
-  .cell--no :global(svg) { color: var(--color-verdict-false); flex-shrink: 0; }
-  /* no-good = "the answer is no, and that's the good outcome" (e.g. no data
-     used for training). Renders as a GREEN X — semantically positive. */
-  .cell--no-good :global(svg) { color: var(--color-verdict-true); flex-shrink: 0; }
-  .cell--partial :global(svg) { color: var(--color-verdict-mixed); flex-shrink: 0; }
-  .cell--planned :global(svg) { color: var(--color-kind-report); flex-shrink: 0; }
-  .cell--unknown :global(svg) { color: var(--color-text-faint); flex-shrink: 0; }
+  /* The icon's shape carries the answer; its color carries the page's stance
+     on that answer, so a "no" is red only where the row prefers "yes". Rows
+     with no stance (and unknown or n/a answers) stay in the text color. */
+  .cell--stance-good, .legend-item--good { --stance: var(--color-stance-good); }
+  .cell--stance-bad, .legend-item--bad { --stance: var(--color-stance-bad); }
+  .cell--stance-mixed, .legend-item--mixed { --stance: var(--color-stance-mixed); }
+  .cell :global(svg), .legend-item :global(svg) { color: var(--stance, var(--color-text)); flex-shrink: 0; }
+
+  /* A text cell (models, ownership) has no icon, and the stance colors are
+     tuned for icons, not small text (good is under 4.5:1 on the dark
+     background), so a dot in the stance color sits before the muted text. */
+  .cell--text .detail::before {
+    content: '';
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    margin-right: 0.4em;
+    border-radius: 50%;
+    background: var(--stance, transparent);
+    vertical-align: middle;
+  }
+
+  .cell--stance-neutral .detail::before { display: none; }
+
+  /* DR2: the "We prefer" line reuses the legend's former text style. */
+  .we-prefer {
+    margin-top: 0.15rem;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+    line-height: 1.4;
+    /* The global th rule uppercases row labels; this line reads as a sentence. */
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .we-prefer :global(svg) {
+    display: inline-block;
+    color: var(--color-stance-good);
+    vertical-align: text-bottom;
+    margin-left: 0.3em;
+  }
 
   .na {
     color: var(--color-text-faint);
@@ -450,9 +523,13 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     flex-wrap: wrap;
   }
 
+  .legend-row + .legend-row {
+    margin-top: var(--space-xs);
+  }
+
   .legend-label {
-    font-size: var(--font-size-xs);
-    color: var(--color-text-faint);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -470,25 +547,19 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     display: inline-flex;
     align-items: center;
     gap: 0.3em;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-faint);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
   }
 
   .legend-note {
-    color: var(--color-text-faint);
-    opacity: 0.75;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: var(--space-sm) 0 0;
   }
 
-  .legend-item--yes :global(svg) { color: var(--color-verdict-true); }
-  .legend-item--no :global(svg) { color: var(--color-verdict-false); }
-  .legend-item--no-good :global(svg) { color: var(--color-verdict-true); }
-  .legend-item--partial :global(svg) { color: var(--color-verdict-mixed); }
-  .legend-item--unknown :global(svg) { color: var(--color-text-faint); }
-
-  /* Mobile: shrink Feature col to fit the longest label word; allow the
-     table to extend past the page container so the page horizontal-scrolls
-     naturally. Ideal column hides — editorial annotation that doesn't earn
-     its width on small viewports; the editorial-pick footnote remains. */
+  /* Mobile: shrink the feature column to fit the longest label word; allow
+     the table to extend past the page container so the page
+     horizontal-scrolls naturally. */
   @media (max-width: 640px) {
     .ra-matrix {
       --ra-feature-col-width: 7rem;
