@@ -239,7 +239,8 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 | `description` | `string` | Falls back to the site's decided meta description              |
 | `layout`      | `'reading' \| 'wide' \| 'bare'` | `'reading'` (narrow column). `'bare'` removes width constraints for bespoke pages such as the homepage |
 | `chrome`      | `'standard' \| 'minimal'` | `'standard'` draws the site-wide nav; `'minimal'` leaves navigation to the page (the homepage) |
-| `ogImage`     | `string` | `/dr-logo-light-bg.png`                                        |
+| `ogImage`     | `string` | `/dr-logo-light-bg.png`; writing posts and petitions with an `image` pass a 1200px JPEG of it (`src/lib/share-image.ts`) |
+| `ogImageAlt`  | `string` | `Dangerous Robot logo`; a post image passes its `alt`          |
 | `noindex`     | `boolean` | `false`; `true` emits `noindex,nofollow`                       |
 
 ### Structure

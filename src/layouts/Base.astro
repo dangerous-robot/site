@@ -29,6 +29,7 @@ interface Props {
   /** 'standard' (default): render the top site-nav. 'minimal': page provides its own chrome. */
   chrome?: 'standard' | 'minimal';
   ogImage?: string;
+  ogImageAlt?: string;
   /** When true, emit `noindex,nofollow`. Default false (indexable). */
   noindex?: boolean;
 }
@@ -42,6 +43,7 @@ const {
   chrome = 'standard',
   // Opaque background: some share cards render a transparent PNG on black.
   ogImage = '/dr-logo-light-bg.png',
+  ogImageAlt = 'Dangerous Robot logo',
   noindex = false,
 } = Astro.props;
 
@@ -92,7 +94,7 @@ const orgSchema = {
     <meta property="og:title" content={ogTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImageAbsolute} />
-    <meta property="og:image:alt" content="Dangerous Robot logo" />
+    <meta property="og:image:alt" content={ogImageAlt} />
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={ogTitle} />

@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PostArticle from '../../components/PostArticle.astro';
 import { getPosts, type Post } from '../../lib/writing';
+import { postShareImage } from '../../lib/share-image';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -11,10 +12,11 @@ export async function getStaticPaths() {
 
 interface Props { post: Post }
 const { post } = Astro.props;
-const { title, description } = post.data;
+const { title, description, image } = post.data;
+const share = await postShareImage(image);
 const { Content } = await render(post);
 ---
-<Base title={title} description={description} layout="reading">
+<Base title={title} description={description} layout="reading" {...share}>
   <PostArticle
     {...post.data}
     crumbs={[{ label: 'Home', href: '/' }, { label: 'Writing', href: '/writing' }]}
