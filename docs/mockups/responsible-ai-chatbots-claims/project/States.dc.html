@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Marks and popups: states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#19191b;color:#dcdde0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65}
+a{color:#42958b}a:hover{color:#5fb3a8}
+</style>
+</helmet>
+<div style="background:#19191b;color:#dcdde0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.65;min-height:100%;">
+<div style="max-width:76rem;margin:0 auto;padding:1.5rem 16px 3rem;box-sizing:border-box;">
+
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.5rem 1rem;margin:0 0 0.25rem;">
+<h1 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.5rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0;">Marks and popups: states</h1>
+<span style="display:inline-block;font-size:0.75rem;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#b8860b;border:1px solid #b8860b;border-radius:3px;padding:2px 0.5rem;white-space:nowrap;">Specimen sheet: sample data, not findings</span>
+</div>
+<p style="font-size:0.9rem;color:#9a9aa8;margin:0 0 1.5rem;max-width:48rem;">Every state drawn at real size on the dark theme. Mark buttons are 32px hit areas with 18px icons; popups are at most 16rem wide and touch the mark (no gap).</p>
+
+<h2 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.2rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0 0 0.75rem;">A. Mark states</h2>
+<div style="display:flex;flex-wrap:wrap;gap:1rem;margin:0 0 2rem;">
+<sc-for list="{{markStates}}" as="m" hint-placeholder-count="8">
+<div style="flex:0 0 auto;width:280px;box-sizing:border-box;border:1px solid #2c2c36;border-radius:6px;background:#212226;padding:0.75rem;">
+<div style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 0.75rem;border:1px solid #4e4e5a;border-radius:3px;background:#19191b;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><path d="M20 6 9 17l-5-5"></path></svg>
+<span style="position:relative;display:inline-block;line-height:0;">
+<button type="button" aria-label="{{m.label}}" aria-expanded="{{m.expanded}}" style="{{m.style}}">
+<sc-if value="{{m.isClaim}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg></sc-if>
+<sc-if value="{{m.isSource}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></sc-if>
+</button>
+</span>
+</div>
+<div style="font-size:0.85rem;color:#d0d7c7;margin:0.6rem 0 0;">{{m.title}}</div>
+<div style="font-size:0.8rem;color:#8a8a9a;line-height:1.45;">{{m.caption}}</div>
+</div>
+</sc-for>
+</div>
+
+<h2 style="font-family:Georgia,'Times New Roman',Times,serif;font-size:1.2rem;font-weight:400;line-height:1.25;color:#d0d7c7;margin:0 0 0.75rem;">B. Popup specimens</h2>
+<p style="font-size:0.85rem;color:#8a8a9a;margin:0 0 0.75rem;max-width:48rem;">Each is a cell (answer icon, optional detail, mark) with its popup open beneath. Content follows the plan: tier name; for a reviewed claim the verdict badge, confidence and as-of date; for a source the first source's publisher and accessed date plus "and N more"; then one link.</p>
+<div style="display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start;">
+<sc-for list="{{popups}}" as="s" hint-placeholder-count="8">
+<div style="flex:0 0 auto;width:300px;box-sizing:border-box;border:1px solid #2c2c36;border-radius:6px;background:#212226;padding:0.75rem;">
+<div style="position:relative;min-height:{{s.minHeight}};">
+<div style="display:inline-flex;align-items:center;gap:0.4rem;padding:0.6rem 0.75rem;border:1px solid #4e4e5a;border-radius:3px;background:#19191b;">
+<sc-if value="{{s.isYes}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{s.iconStyle}}"><path d="M20 6 9 17l-5-5"></path></svg></sc-if>
+<sc-if value="{{s.isNo}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{s.iconStyle}}"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></sc-if>
+<sc-if value="{{s.isPartial}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{s.iconStyle}}"><path d="M5 12h14"></path></svg></sc-if>
+<sc-if value="{{s.isUnknown}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{s.iconStyle}}"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg></sc-if>
+<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">{{s.srText}}</span>
+<sc-if value="{{s.hasDetail}}" hint-placeholder-val="{{false}}"><span style="font-size:0.9rem;color:#9a9aa8;">{{s.detail}}</span></sc-if>
+<sc-if value="{{s.hasMark}}" hint-placeholder-val="{{true}}">
+<span style="position:relative;display:inline-block;line-height:0;">
+<button type="button" aria-label="{{s.markLabel}}" aria-expanded="true" aria-controls="{{s.popId}}" style="{{s.markStyle}}">
+<sc-if value="{{s.isClaim}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg></sc-if>
+<sc-if value="{{s.isSource}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></sc-if>
+</button>
+<div id="{{s.popId}}" role="group" aria-label="{{s.popLabel}}" style="position:absolute;left:0;top:100%;z-index:4;width:min(16rem, calc(100vw - 32px));box-sizing:border-box;background:#1a1b1e;border:1px solid #444454;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,0.5);padding:0.6rem 0.75rem;font-size:0.8rem;line-height:1.5;color:#dcdde0;text-align:left;">
+<div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:#8a8a9a;margin:0 0 0.35rem;">{{s.tierName}}</div>
+<sc-if value="{{s.isClaim}}" hint-placeholder-val="{{true}}">
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:0.35rem 0.6rem;margin:0 0 0.4rem;">
+<span style="{{s.badgeStyle}}">{{s.verdictLabel}}</span>
+<span style="color:#dcdde0;">Confidence: {{s.confidence}}</span>
+<span style="color:#9a9aa8;">As of {{s.asOf}}</span>
+</div>
+</sc-if>
+<sc-if value="{{s.isSource}}" hint-placeholder-val="{{false}}">
+<div style="color:#dcdde0;margin:0 0 0.4rem;">{{s.sourceLine}}</div>
+</sc-if>
+<sc-if value="{{s.capped}}" hint-placeholder-val="{{false}}">
+<div style="color:#9a9aa8;margin:0 0 0.4rem;">Sources only: no claims are researched for TreadLightlyAI.</div>
+</sc-if>
+<a href="#top" style="font-size:0.85rem;">{{s.linkText}}<span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;"> {{s.srLink}}</span></a>
+</div>
+</span>
+</sc-if>
+</div>
+</div>
+<div style="font-size:0.85rem;color:#d0d7c7;margin:0.6rem 0 0;">{{s.title}}</div>
+<div style="font-size:0.8rem;color:#8a8a9a;line-height:1.45;">{{s.caption}}</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() {
+var MARK_BASE = 'display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;margin:0;border:0;border-radius:4px;cursor:pointer;line-height:0;vertical-align:middle;';
+var STATE_STYLE = {
+'default': 'background:transparent;',
+hover: 'background:#252630;',
+focus: 'background:transparent;outline:2px solid #42958b;outline-offset:3px;border-radius:3px;',
+open: 'background:#252630;outline:1px solid #444454;'
+};
+var STATE_CAPTION = {
+'default': 'Resting. Claim marks use the accent teal, source marks the muted text grey, so the two differ in shape and lightness, not hue alone.',
+hover: 'Mouse over (pointer: fine only). Background lifts to the popover-selected tint; the popup opens after a short delay.',
+focus: 'Keyboard focus. The site focus ring (2px accent outline, 3px offset). Focus alone opens nothing; Enter or Space opens.',
+open: 'Open or pinned. Background tint plus a 1px border; aria-expanded is true and the popup sits directly below.'
+};
+var COLOR = { good: '#2d8a4e', bad: '#b22222', mixed: '#b8860b', neutral: '#dcdde0' };
+var VERDICT_COLOR = { True: '#2d8a4e', 'Mostly true': '#4a9e6b', Mixed: '#b8860b', 'Mostly false': '#c44e3e', False: '#b22222', Unverified: '#666677' };
+function badgeStyle(verdict) {
+var c = VERDICT_COLOR[verdict] || '#666677';
+return 'display:inline-block;border-radius:3px;letter-spacing:0.04em;text-transform:uppercase;white-space:nowrap;font-size:0.75rem;font-weight:700;padding:2px 0.25rem;border:1px solid ' + c + ';color:' + c + ';background:' + c + '40;';
+}
+
+var markStates = [];
+['claim', 'source'].forEach(function (kind) {
+['default', 'hover', 'focus', 'open'].forEach(function (state) {
+var isClaim = kind === 'claim';
+markStates.push({
+isClaim: isClaim, isSource: !isClaim,
+expanded: state === 'open' ? 'true' : 'false',
+label: 'Evidence for GreenPT, hosted on renewable energy: ' + (isClaim ? 'reviewed claim' : 'source'),
+style: MARK_BASE + 'color:' + (isClaim ? '#42958b' : '#9a9aa8') + ';' + STATE_STYLE[state],
+title: (isClaim ? 'Reviewed-claim mark' : 'Source mark') + ': ' + state,
+caption: STATE_CAPTION[state]
+});
+});
+});
+
+var specs = [
+{ answer: 'yes', stance: 'good', kind: 'claim', verdict: 'True', confidence: 'High', asOf: '2026-09-28',
+title: 'Reviewed claim: True, confidence High',
+caption: 'Answer Yes on a Yes-stance row, so the icon is green. Verdict True allows only the answer Yes.' },
+{ answer: 'no', stance: 'bad', kind: 'claim', verdict: 'Mostly false', confidence: 'Medium', asOf: '2026-09-21',
+title: 'Reviewed claim: Mostly false, confidence Medium',
+caption: 'Answer No on a Yes-stance row, so the icon is red. Mostly false allows No or Partial.' },
+{ answer: 'partial', stance: 'mixed', kind: 'claim', verdict: 'Mixed', confidence: 'Medium', asOf: '2026-09-21',
+title: 'Reviewed claim: Mixed',
+caption: 'Mixed allows only Partial, so the icon is the amber dash.' },
+{ answer: 'unknown', stance: 'neutral', kind: 'claim', verdict: 'Unverified', confidence: 'Low', asOf: '2026-09-21',
+title: 'Reviewed claim: Unverified',
+caption: 'Allowed by the plan: the tier depends on status published and a named reviewer, not on the verdict, and the verdict table maps Unverified to the answer Unknown (neutral icon).' },
+{ answer: 'no', stance: 'bad', kind: 'source', publisher: '[Ecosia blog post]', accessed: '2026-09-30', more: 0,
+title: 'Source: one source',
+caption: 'Publisher and accessed date of the only source. The link jumps to the Evidence entry, which adds the archived copy.' },
+{ answer: 'yes', stance: 'good', kind: 'source', publisher: '[GreenPT hosting page]', accessed: '2026-09-30', more: 3,
+title: 'Source: "and 3 more"',
+caption: 'Only the first source is named in the popup; the count covers the rest. All four are listed in the Evidence entry.' },
+{ answer: 'partial', stance: 'mixed', kind: 'source', detail: 'All but Anthropic', publisher: '[TreadLightlyAI hosting page]', accessed: '2026-10-02', more: 1, capped: true,
+title: 'TreadLightlyAI: capped at Source',
+caption: 'max_tier: source. Answers and stance colors show as for any product; the popup adds the cap line and never shows a claim mark.' },
+{ answer: 'yes', stance: 'neutral', kind: 'none',
+title: 'Not yet sourced: no mark, no popup',
+caption: 'Nothing is cited, so the cell has no mark and nothing to open. Hidden text adds "Not yet sourced." and the Evidence entry says so (or shows a "Checked by Dangerous Robot, date" record). Shown on a feature row, so the icon is neutral.' }
+];
+
+var popups = specs.map(function (sp, i) {
+var isClaim = sp.kind === 'claim';
+var isSource = sp.kind === 'source';
+var hasMark = isClaim || isSource;
+var tierName = isClaim ? 'Reviewed claim' : isSource ? 'Source' : 'Not yet sourced';
+var word = sp.answer === 'yes' ? 'Yes' : sp.answer === 'no' ? 'No' : sp.answer === 'partial' ? 'Partial' : 'Unknown';
+var sr = sp.detail ? word + ', ' + sp.detail : word;
+if (sp.stance === 'good') sr += ', what we prefer.';
+else if (sp.stance === 'bad') sr += '. Not what we prefer.';
+else if (sp.stance === 'mixed') sr += '. Partly what we prefer.';
+else sr += '.';
+if (!hasMark) sr += ' Not yet sourced.';
+var lines = isClaim ? 4 : 3;
+if (sp.capped) lines += 1;
+return {
+isYes: sp.answer === 'yes', isNo: sp.answer === 'no', isPartial: sp.answer === 'partial', isUnknown: sp.answer === 'unknown',
+iconStyle: 'flex-shrink:0;color:' + COLOR[sp.stance] + ';',
+srText: sr,
+hasDetail: !!sp.detail, detail: sp.detail || '',
+hasMark: hasMark, isClaim: isClaim, isSource: isSource, capped: !!sp.capped,
+popId: 'spec-pop-' + i,
+markLabel: 'Evidence for [product], [row]: ' + tierName.toLowerCase(),
+popLabel: 'Evidence detail for [product], [row]',
+markStyle: MARK_BASE + 'color:' + (isClaim ? '#42958b' : '#9a9aa8') + ';' + STATE_STYLE.open,
+tierName: tierName,
+verdictLabel: isClaim ? sp.verdict : '', badgeStyle: isClaim ? badgeStyle(sp.verdict) : '',
+confidence: isClaim ? sp.confidence : '', asOf: isClaim ? sp.asOf : '',
+sourceLine: isSource ? sp.publisher + ', accessed ' + sp.accessed + (sp.more ? ', and ' + sp.more + ' more' : '') : '',
+linkText: isClaim ? 'Open claim page' : 'See sources below',
+srLink: 'for [product], [row]',
+minHeight: hasMark ? (48 + lines * 24 + 40) + 'px' : '48px',
+title: sp.title,
+caption: sp.caption
+};
+});
+
+return { markStates: markStates, popups: popups };
+}
+}
+</script>
+</body>
+</html>

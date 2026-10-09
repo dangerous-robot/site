@@ -59,7 +59,7 @@ a{color:#42958b}a:hover{color:#5fb3a8}
 <tr>
 <th scope="row" style="width:14rem;max-width:14rem;padding:0.6rem 0.75rem;text-align:left;vertical-align:top;font-weight:400;color:#d0d7c7;border-bottom:1px solid #4e4e5a;border-right:1px solid #4e4e5a;background:#19191b;overflow-wrap:break-word;">
 <div>{{row.label}}</div>
-<sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}"><div style="font-size:0.8rem;color:#8a8a9a;line-height:1.4;margin-top:0.15rem;">We prefer: {{row.idealText}}</div></sc-if>
+<sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}"><div style="font-size:0.8rem;color:#8a8a9a;line-height:1.4;margin-top:0.15rem;display:inline-flex;align-items:center;gap:0.3em;">We prefer:<sc-if value="{{row.prefersYes}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></sc-if><sc-if value="{{row.prefersNo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></sc-if><span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">{{row.idealText}}</span></div></sc-if>
 </th>
 <sc-for list="{{row.cells}}" as="cell" hint-placeholder-count="3">
 <td style="padding:0.6rem 0.75rem;vertical-align:middle;text-align:left;border-bottom:1px solid #4e4e5a;border-right:1px solid #2c2c36;max-width:12rem;position:relative;">
@@ -72,7 +72,7 @@ a{color:#42958b}a:hover{color:#5fb3a8}
 <sc-if value="{{cell.hasMark}}" hint-placeholder-val="{{true}}">
 <span style="position:relative;display:inline-block;line-height:0;" onMouseEnter="{{cell.show}}" onMouseLeave="{{cell.hide}}">
 <button type="button" aria-label="{{cell.markLabel}}" aria-expanded="{{cell.expanded}}" aria-controls="{{cell.popId}}" onClick="{{cell.toggle}}" style="{{cell.markStyle}}">
-<sc-if value="{{cell.isClaim}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg></sc-if>
+<sc-if value="{{cell.isClaim}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg></sc-if>
 <sc-if value="{{cell.isSource}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></sc-if>
 </button>
 <sc-if value="{{cell.open}}" hint-placeholder-val="{{false}}">
@@ -127,7 +127,7 @@ a{color:#42958b}a:hover{color:#5fb3a8}
 <div style="display:flex;align-items:baseline;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem;">
 <span style="font-size:0.9rem;color:#9a9aa8;white-space:nowrap;">Evidence:</span>
 <ul aria-label="Evidence legend" style="list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0.25rem 1rem;">
-<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#42958b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg><span>Reviewed claim</span></li>
+<li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#42958b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"></path><path d="M7 21h10"></path><path d="M12 3v18"></path><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"></path></svg><span>Reviewed claim</span></li>
 <li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9a9aa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg><span>Source</span></li>
 <li style="display:inline-flex;align-items:center;gap:0.3em;font-size:0.9rem;color:#9a9aa8;"><span>No mark: not yet sourced</span></li>
 </ul>
@@ -150,7 +150,7 @@ a{color:#42958b}a:hover{color:#5fb3a8}
 </summary>
 <div style="padding:0.5rem 0 0.25rem 1.4rem;">
 <sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}">
-<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;">We prefer: {{row.idealText}}.</span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
+<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;display:inline-flex;align-items:center;gap:0.3em;vertical-align:middle;">We prefer:<sc-if value="{{row.prefersYes}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></sc-if><sc-if value="{{row.prefersNo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></sc-if><span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">{{row.idealText}}</span></span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
 </sc-if>
 <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.4rem;">
 <sc-for list="{{row.entries}}" as="e" hint-placeholder-count="3">
@@ -175,7 +175,7 @@ a{color:#42958b}a:hover{color:#5fb3a8}
 </summary>
 <div style="padding:0.5rem 0 0.25rem 1.4rem;">
 <sc-if value="{{row.isStance}}" hint-placeholder-val="{{true}}">
-<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;">We prefer: {{row.idealText}}.</span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
+<p style="margin:0 0 0.6rem;font-size:0.9rem;color:#dcdde0;"><span style="color:#8a8a9a;display:inline-flex;align-items:center;gap:0.3em;vertical-align:middle;">We prefer:<sc-if value="{{row.prefersYes}}" hint-placeholder-val="{{true}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></sc-if><sc-if value="{{row.prefersNo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2d8a4e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg></sc-if><span style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;">{{row.idealText}}</span></span> <span style="color:#b8860b;">{{row.stanceSentence}}</span> <span style="color:#9a9aa8;">{{row.stanceEvidence}}</span></p>
 </sc-if>
 <ul style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0.4rem;">
 <sc-for list="{{row.entries}}" as="e" hint-placeholder-count="3">
@@ -357,6 +357,7 @@ var evOpen = ri === 0;
 return {
 key: row.key, label: row.label, group: row.group,
 isStance: !!row.stance, idealText: row.idealText,
+prefersYes: row.stance === 'yes', prefersNo: row.stance === 'no',
 kindLabel: row.stance ? 'our position' : 'comparison only, no position',
 stanceSentence: row.stanceSentence || '', stanceEvidence: row.stanceEvidence || '',
 cells: cells, entries: entries,
