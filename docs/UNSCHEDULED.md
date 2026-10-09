@@ -131,6 +131,12 @@ Gaps in OPS-L (Release gate) from `docs/v1.0.0-roadmap.md`.
 
 ---
 
+## Design mockups
+
+Plan: `docs/plans/design-mockups.md` (reviewed). Page plans get a mockup on a claude.ai design canvas, required by the release gate and made by a `design-mockup` skill; files live in `docs/mockups/`. Schedule with `release-triage` before M2 (code under `scripts/`).
+
+---
+
 ## Ops Runbook
 
 Goal: One reference doc covering the dev loop, pipeline operations, deploy process, and content schema changes. `docs/runbook.md` exists (2026-05-04) and covers the dev loop; the rest is unwritten (its own TODO lists the same sections).
