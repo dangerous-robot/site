@@ -114,11 +114,10 @@ The dependency advisories below were deferred when the high and critical fixes l
 
 | Work Item | Notes |
 |-----------|-------|
-| Deeper security analysis | A full security review of the site, Workers, pipeline and agent tooling, beyond dependency advisories. Findings stay out of this public file until fixed; each known issue it finds goes first in the next release (`priorities.md`). Triage: Security; keep; 2026-10-07 |
+| ~~Deeper security analysis~~ | **Done** 2026-10-06 (local-only, `security/`): a full review of the site, Workers, pipeline and agent tooling. Its known security issues are SEC-X (Known security issues) in the roadmap. The remaining hardening workstreams stay out of this public file until each is fixed or written up exploit-free; the next public pass adds one line per workstream. Triage: Security; in SEC-X; 2026-10-09 |
 | `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Target: after 1.0.0 (Astro 7 upgrade deferred until then). Triage: Security; keep (operator); 2026-10-07 |
 | `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. Triage: Security; keep; 2026-10-07 |
 | ~~Medium-severity Python advisories~~ | **Done** as SEC-M in the roadmap (beta.6). |
-| Python lockfile layout | The workspace root `uv.lock` is gitignored and the tracked `pipeline/uv.lock` (pydantic-ai 1.84.1) is not the one uv uses, so CI (`uv sync` in `pipeline/`) resolves every dependency fresh on each run. Before SEC-M capped it, a fresh resolve picked pydantic-ai 2.8.0, a major version local runs never tested. Commit the root lock and drop the stale one, or say why not. For the deeper security analysis (unpinned CI dependencies). Triage: Security; propose schedule; 2026-10-07 |
 
 ---
 
@@ -234,7 +233,7 @@ From architectural review (2026-04-18) and TODO.md:
 - **Entity reference validation** -- Claims reference entities by path string with no build-time validation. Use Astro's `reference('entities')` helper or add entity-ref checking to `scripts/check-citations.ts`.
 - **Source reference upgrade** -- Replace `z.array(z.string())` with `z.array(z.string().min(1)).min(1)` for claims `sources` field. Current schema permits empty arrays.
 - **`recheck_cadence_days` constraint** -- Schema accepts 0/negative values. Add `.int().min(1)` to the Zod definition.
-- **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`). Pin by full SHA for supply chain security.
+- **GitHub Actions SHA pinning** -- All actions use mutable tags (`@v4`), all GitHub-owned. Pin by full SHA with a version comment once the first third-party action (`astral-sh/setup-uv`) arrives, and turn on `sha_pinning_required` in repo settings. Hardening, not a known issue: the CI permission split is in SEC-X (Known security issues). Triage: Security; keep; 2026-10-09
 - **SEO basics** -- ~~No favicon, robots.txt, canonical URLs, Open Graph tags. `description` prop in Base.astro is never customized per page.~~ Done (2026-04-29): robots.txt, sitemap, canonical, OG tags, per-page descriptions, Organization/FAQPage/BreadcrumbList/WebSite JSON-LD. Claim pages emit no ClaimReview markup (removed, `docs/decisions.md` 2026-10-07). Remaining, both rows in "SEO post-restructure follow-ups": (1) a wide default share image, "Wide default share image"; (2) "SearchAction does nothing" (the homepage WebSite JSON-LD points at `/research/claims?q=`, which the page ignores). This bullet now only points at those rows. Triage: Refocus foundation; propose drop; 2026-10-09
 - **Research hub wording after the About rewrite (2026-10-04)** -- beta.4 H2 rewrote only the first FAQ answer and the Limits line. The methodology steps, "Rechecks", the FAQ JSON-LD summary and the conflicts answer still say "an operator" / "the operator"; `src/pages/research/index.astro:121` still says the site "tracks claims about AI companies and products" though subject claims exist.
 - **`ai-model-producers` index mismatch (2026-10-04)** -- the entity names the seven companies FLI graded in its Summer 2025 index; `/resources/ai-safety` covers the Winter 2025 index (eight, adding Alibaba Cloud, with Zhipu shown as Z.ai). Pick one index for the subject definition.
