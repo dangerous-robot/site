@@ -1,20 +1,42 @@
-# Plan: external SEO — dangerousrobot.org
+# Plan: external SEO: dangerousrobot.org
 
 | Milestone | Status |
 |-----------|--------|
-| Search console setup | `[~] partially done — GSC verified, sitemap submitted, inspection baseline captured 2026-05-11 (seo-post-restructure); monitoring cadence remains |
-| Google Fact Check program | `[ ] gated — prereqs not met, including the indexing flip` |
-| Validation and testing | `[ ] ready — gate met (OG tags and sitemap are deployed)` |
-| Link building and citation outreach | `[ ] ongoing — start at launch` |
-| Monitoring and maintenance | `[ ] ongoing — start after indexing` |
+| Search console setup | `[~] partly done`: GSC verified, sitemap submitted, inspection baseline from 2026-05-11. Open now: inspection re-run, Request Indexing pass, Bing (unverified: check Bing) |
+| Validation and testing | `[ ] do now`: no gate; no results recorded in `seo-runs/` |
+| Monitoring and maintenance | `[ ] do now` for site-level rows (the homepage was indexed at the 2026-05-11 baseline); claim-level rows wait for the indexing flip |
+| Link building and citation outreach | `[ ] not now`: waits for the indexing flip and launch |
+| Google Fact Check program | `[ ] not now`: gated; prerequisites not met, including the indexing flip and ClaimReview markup |
 
-**Indexing gate:** claim, source and entity pages stay `noindex` (`src/lib/seo.ts`) until the flip decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims). Milestones below that need claim pages in Google's index wait for that flip. The first reader is a concerned person at a decision point, not a fact-checking audience (`docs/mission-and-voice.md`); the Fact Check program and journalist outreach are lower priority than getting the Responsible AI chatbots page and its claims found.
+**What can be done now.** Every page except claim, source and entity detail pages is indexable today: the homepage, `/resources` and its five guides, the `/research` hub and list pages, `/research/criteria/*`, `/research/topics/*`, `/writing` and its post, `/petitions/prohibit-ai-self-improvement`, `/about`, `/values`, `/corrections`, `/credits`, `/privacy`, `/people/brandon-f`. These can be validated, inspected, submitted and monitored now. `/resources/responsible-ai` matters most: it is the page SITE-J (Responsible AI chatbots, backed by claims) is building, the top priority in `docs/priorities.md`, and it is indexable before the flip.
+
+**Indexing gate.** Claim, source and entity pages stay `noindex` and out of the sitemap until after 1.0.0; Brandon decides the trigger (`docs/decisions.md:19`). The switch is `INDEX_ALPHA_DETAIL_PAGES` in `src/lib/seo.ts`. Only the milestones that need those pages in Google's index wait for the flip. The first reader is a concerned person at a decision point, not a fact-checking audience (`docs/mission-and-voice.md`), so the Fact Check program and journalist outreach rank below getting the guide pages found.
+
+**Known gap.** Subject claim pages (`/research/claims/subjects/{subject}/{claim}`) are indexable and listed in the sitemap today, against the decision above. The claim pattern in `src/lib/seo.ts:35` matches two path segments after `/research/claims/`; subject claims have three. Checked live 2026-10-09: `/research/claims/subjects/ai-model-producers/ai-producers-existential-score` serves `index,follow` and appears in `sitemap-0.xml`. A code fix is needed. Until it lands, leave subject claim pages out of every Request Indexing list.
+
+**Known gap, URL form.** Every page except `/` 301s to its trailing-slash form (`/about` → `/about/`) while the canonical tag and the sitemap use the no-slash form (`trailingSlash: "never"` in `astro.config.ts`, GitHub Pages serving `about/index.html`). Checked live 2026-10-09. Google tolerates it, but every sitemap URL is a redirect. The fix and the choice of form are a backlog row in `docs/UNSCHEDULED.md` ("SEO post-restructure follow-ups"); settle it before the indexing flip, and run N4 after it if it is close.
+
+---
+
+## Do now
+
+Each item needs no code change and no gate. `seo-runs/` is git-ignored (local only); save evidence there by date.
+
+| # | Action | Tool or script | Pages | Expected result | Save to |
+|---|--------|----------------|-------|-----------------|---------|
+| N1 | Re-run the URL inspection against the 2026-05-11 baseline | `scripts/seo/inspect-urls.sh` (needs `GSC_QUOTA_PROJECT` exported and gcloud application-default login) | The 18 URLs in the script: homepage, `/resources` and four guides, `/research` hub and list pages, `/values`, `/credits`, plus old `/claims` and `/companies` | `/resources/*` and `/research/*` have left "URL is unknown to Google"; old `/claims` and `/companies` show "Page with redirect" with a `/research/...` canonical, or have left the index. Note any sitemap URL reported as "Page with redirect" (every page 301s to its trailing-slash form) | `seo-runs/urlinspect-YYYY-MM-DD/` (the script writes it) |
+| N2 | Inspect the pages the script does not cover | GSC → URL Inspection | `/resources/ai-safety-winter-2025`, `/writing`, `/writing/why-dangerous-robot-exists`, `/petitions/prohibit-ai-self-improvement`, `/about`, `/corrections`, `/privacy`, `/people/brandon-f`, and the two subject claim pages (expected indexed today; see Known gap) | Each is "URL is on Google" or "Discovered"; none is blocked by `noindex` or robots.txt | One line per URL in `seo-runs/urlinspect-YYYY-MM-DD/manual.md` |
+| N3 | Capture index coverage once | GSC → Pages | Whole property | Counts for Indexed, Page with redirect, Crawled - not indexed, Discovered - not indexed | `seo-runs/coverage-YYYY-MM-DD.json` |
+| N4 | Request Indexing for pages N1 or N2 found not indexed | GSC → URL Inspection → Request Indexing | `/resources/responsible-ai` first, then the order in the playbook ("Force initial indexing of key pages") | Request accepted; page moves to indexed on a later inspection | Append the date and URLs to the N2 note |
+| N5 | Run the validation tools | See "Validation and testing" below | `/research`, `/resources/turn-off-ai`, `/about`, homepage, `/resources/responsible-ai`, the petition page | No errors in Rich Results or the Schema.org validator; share previews show title, description and image; PageSpeed scores recorded | Screenshots or a results note in `seo-runs/validation-YYYY-MM-DD/` |
+| N6 | Set up Bing Webmaster Tools, if not already done (unverified: check Bing) | https://www.bing.com/webmasters → Import from Google Search Console | Whole property | Site and sitemap imported | One line in the N2 note |
+| N7 | Start the monthly GSC check | Monitoring table below; playbook "Recurring checks" | Whole property | No manual actions, no 5xx, sitemap status Success | A dated line in the coverage file |
 
 ---
 
 ## Background
 
-This plan covers external platform registrations, submissions, validations, and monitoring tasks. Nothing here requires code changes to the site. The companion code-side SEO work (sitemap, JSON-LD schemas, meta tags, font loading) is tracked separately; several milestones here are gated on that work landing first.
+This plan covers external platform registrations, submissions, validations, and monitoring tasks. Nothing here requires code changes to the site. The code-side SEO work (sitemap, JSON-LD, meta tags, font loading) shipped in [`completed/seo-technical.md`](completed/seo-technical.md).
 
 Domain: `dangerousrobot.org` (bare domain, no www). Confirmed via `public/CNAME`. The GitHub README links to the live site at `https://dangerousrobot.org`.
 
@@ -22,32 +44,21 @@ Domain: `dangerousrobot.org` (bare domain, no www). Confirmed via `public/CNAME`
 
 ## Milestone: Search console setup
 
-**Status:** `[~] partially done` — GSC verification + sitemap submission + baseline landed via `completed/seo-post-restructure.md` (2026-05-11); remaining rows are monitoring cadence
+**Status:** `[~] partly done`. GSC is verified as a Domain property (`sc-domain:dangerousrobot.org`), the sitemap is submitted, and the inspection baseline is in `seo-runs/urlinspect-2026-05-11/`. Open: the inspection re-run (N1, N2), a Request Indexing pass (N4), and Bing (N6). No record exists of a Request Indexing pass or of Bing setup.
 
-**Gating condition:** Site must be publicly accessible at `dangerousrobot.org`. Alpha is fine; the site does not need to be post-launch.
+**Gating condition:** none. The site is publicly accessible.
 
 ### 1. Google Search Console (GSC)
 
 **URL:** https://search.google.com/search-console
 
-GSC is the primary channel for monitoring Google's view of the site: indexing status, structured data errors, Core Web Vitals, and search performance. Set it up before submitting a sitemap so the submission has a destination.
+GSC is the primary channel for monitoring Google's view of the site: indexing status, structured data errors, Core Web Vitals, and search performance.
 
-**Verification**
+**Verification:** DNS TXT record in Cloudflare, on a Domain property (covers apex, www, HTTP and HTTPS). Done.
 
-Preferred method for a static Astro site: DNS TXT record (no code change needed) or HTML file dropped in `public/` (deploys to `dist/` at build time, served at the root).
+**Sitemap:** `https://dangerousrobot.org/sitemap-index.xml`, submitted. `scripts/seo/submit-sitemap.sh` resubmits it through the API.
 
-- DNS TXT: add a `google-site-verification=...` TXT record to the `dangerousrobot.org` DNS zone. Requires DNS provider access. Persists through redeploys.
-- HTML file: create `public/google<token>.html` with the content GSC provides. Simpler but ties verification to the deployed file.
-
-DNS TXT is preferred because it survives `public/` directory changes.
-
-**After verification:**
-
-1. Set the canonical domain. GSC treats `dangerousrobot.org` and `www.dangerousrobot.org` as separate properties unless a domain property is used. Use a **Domain property** (not URL-prefix property) at setup — it covers all subdomains and both HTTP/HTTPS automatically.
-2. Submit the sitemap (see dependency note below).
-3. Use the URL Inspection tool to request indexing of key indexable pages: `/`, `/writing`, `/about`, `/research`, `/research/criteria`. Claim, source and entity pages wait for the indexing flip (see Indexing gate above).
-
-**Dependency:** Sitemap submission requires `@astrojs/sitemap` to be implemented and deployed. Do not submit a sitemap until `sitemap.xml` exists at `https://dangerousrobot.org/sitemap-index.xml` and lists expected URLs.
+**Request Indexing:** use the URL Inspection tool on key indexable pages, in the order the playbook lists ("Force initial indexing of key pages"), `/resources` guides first. `scripts/seo/request-indexing-queue.txt` holds the first 10. Claim, source and entity pages wait for the indexing flip.
 
 ### 2. Bing Webmaster Tools
 
@@ -55,64 +66,27 @@ DNS TXT is preferred because it survives `public/` directory changes.
 
 Bing Webmaster Tools covers Bing search (and, by extension, DuckDuckGo and other Bing-powered engines). Lower traffic volume than Google but costs little to set up.
 
-**Setup order:** Do GSC first. Bing Webmaster can import your site and sitemap directly from GSC via its "Import from Google Search Console" flow, which avoids re-doing verification.
-
-**After import:** Confirm the sitemap was imported correctly and request indexing of key pages via the URL Submission tool.
-
----
-
-## Milestone: Google Fact Check program
-
-**Status:** `[ ] gated — prereqs not met`
-
-Claim pages emit no `ClaimReview` markup: it was removed on 2026-10-07 (`docs/decisions.md`) because Google removed ClaimReview rich results from Search in 2025 and Fact Check Explorer listing is limited to approved fact-check publishers. Verdicts and ratings stay in the claim files, so it can be added back if this milestone is pursued.
-
-**Gating conditions (all must be true before applying):**
-
-1. The pre-release banner is removed from the site (it signals the site is not ready for editorial review). It shows while the version has an alpha, beta or rc label (`src/layouts/Base.astro`).
-2. A minimum set of published claims exists. Google does not publish a hard threshold for Fact Check program inclusion. The IFCN application process (the path Google uses) reviews editorial standards and methodology rather than claim count. In practice, apply only after the site has a meaningful corpus of published, sourced claims that demonstrates consistent methodology — not a handful. Operator judgment on readiness; revisit this gate when v1 content is published.
-3. `ClaimReview` JSON-LD is added back to claim pages (code plan dependency; removed 2026-10-07).
-4. Claim pages are indexed by Google, which needs the indexing flip first (confirm via GSC URL Inspection).
-
-### What the program is
-
-Google surfaces approved fact-checkers in a dedicated "Fact Check" carousel in search results and in the Fact Check Explorer tool. For a research site like dangerousrobot.org — which evaluates specific claims made by AI companies — this is the highest-value external SEO opportunity available. Approved sites get their ClaimReview markup surfaced directly in Google results for the claims they've evaluated.
-
-### How to apply
-
-The path to Google's Fact Check program runs through the Duke Reporters' Lab, which maintains the International Fact-Checking Network (IFCN) database. Google uses IFCN certification as a primary signal.
-
-1. **Review IFCN principles:** https://ifcncodeofprinciples.poynter.org — the code of principles covers non-partisanship, standards, funding transparency, and corrections policy. dangerousrobot.org's published methodology and conflict-of-interest disclosures in the FAQ are a start; review whether they meet IFCN's transparency requirements.
-2. **Apply to the Duke Reporters' Lab fact-checker index:** https://reporterslab.org/fact-checking/ — this is the submission point for new fact-checkers. The Lab reviews and adds verified fact-checkers to a public database that Google queries.
-3. **Google Fact Check Tools:** https://toolbox.google.com/factcheck/explorer — use this to search for your own domain after indexing to verify Google has picked up your `ClaimReview` markup. If claims appear here, the structured data is working.
-4. **Approval timeline:** Weeks to months. Submit only after all gating conditions above are met. A premature or rejected application can delay acceptance.
-
-### Notes
-
-- The IFCN application asks for evidence of methodological transparency, corrections policies, funding sources, and editorial independence. Prepare a short document covering each before applying.
-- dangerousrobot.org's conflict-of-interest disclosure (operator also runs TreadLightly AI) should be addressed directly in the application. The FAQ already carries the canonical disclosure; reference it.
+**Setup:** use "Import from Google Search Console", which avoids re-doing verification. Then confirm the sitemap was imported and submit key pages through the URL Submission tool. Unverified whether this was ever done: check Bing first.
 
 ---
 
 ## Milestone: Validation and testing
 
-**Status:** `[ ] ready — gate met` (OG and Twitter tags in `Base.astro` and the sitemap are deployed)
+**Status:** `[ ] do now` (no gate; the code-side SEO changes are deployed). No results are recorded in `seo-runs/`.
 
-**Gating condition:** The code-side SEO changes (FAQPage schema, BreadcrumbList schema, OG tags, twitter:card tags, sitemap, font loading changes) must be deployed to production before running these tools. Claim pages emit no `ClaimReview` markup, so it is not tested.
+Run each tool below once, save the result (N5), then re-run any that returned errors after fixes land. Claim pages emit no `ClaimReview` markup, so it is not tested.
 
-Run each tool below once after the first SEO-complete deploy, then re-run any that returned errors after fixes land.
+What the site emits today (`src/layouts/Base.astro`): canonical, `robots`, OG and Twitter tags on every page, and `Organization` JSON-LD on every page. The homepage adds `WebSite` with a `SearchAction`; `/research` and `/resources/turn-off-ai` add `FAQPage`; pages with a breadcrumb (for example `/about`, `/writing`, writing posts) add `BreadcrumbList`. The default `og:image` is `/dr-logo-light-bg.png` (512×512, square) with `twitter:card` set to `summary_large_image`. A writing post or petition with an `image` field gets a 1200px JPEG share image instead (`src/lib/share-image.ts`); today only the petition page has one.
 
 ### 1. Google Rich Results Test
 
 **URL:** https://search.google.com/test/rich-results
 
-Tests: `FAQPage`, `BreadcrumbList` JSON-LD markup.
-
 What to test:
-- `/faq` for `FAQPage`
-- Any page with breadcrumbs for `BreadcrumbList`
+- `/research` and `/resources/turn-off-ai` for `FAQPage`
+- `/about` for `BreadcrumbList`
 
-Passing result: the tool reports "Valid items detected" for each schema type tested, with no errors and no warnings.
+Passing result: "Valid items detected" for each schema type tested, with no errors.
 
 If it fails: check the JSON-LD for syntax errors, missing required fields, or field type mismatches. The tool surfaces the specific field that failed.
 
@@ -122,69 +96,82 @@ If it fails: check the JSON-LD for syntax errors, missing required fields, or fi
 
 Tests: JSON-LD structure against the full Schema.org specification (broader than Google's subset).
 
-What to test: paste the JSON-LD from a claim page (`BreadcrumbList`, `Organization`). The validator shows all detected types and flags any property violations.
+What to test: the homepage (`Organization`, `WebSite`) and `/about` (`BreadcrumbList`).
 
 Passing result: no errors. Warnings about optional properties are acceptable.
 
 If it fails: typically a missing required property or a type mismatch. Cross-reference the type's spec on https://schema.org.
 
-### 3. OpenGraph tag verification
+### 3. OpenGraph and Twitter card previews
 
-**URL:** https://www.opengraph.xyz or https://metatags.io
+**URL:** https://www.opengraph.xyz or https://metatags.io (both render OG and `twitter:card` previews; the old Twitter Card Validator is retired)
 
-Tests: `og:title`, `og:description`, `og:image`, `og:url` rendering.
+Tests: `og:title`, `og:description`, `og:image`, `og:url`, and the `twitter:*` tags.
 
-What to test: the homepage, a claim page, and a company page.
+What to test: the homepage, `/resources/responsible-ai`, and `/petitions/prohibit-ai-self-improvement` (the page with its own share image).
 
-Passing result: all four OG tags populate correctly; preview image renders and is not cropped unexpectedly; title and description are not truncated. If `og:image` is missing, social shares will render without an image.
+Passing result: tags populate; title and description are not truncated; the petition page shows its own image. Expect the square logo on the other two, which large-card previews may crop: record how it looks.
 
-If it fails: verify the `<meta property="og:...">` tags are present in the rendered HTML (view-source or DevTools), and that `og:image` points to an absolute URL (not a relative path).
+If it fails: check that the tags are in the rendered HTML (view-source) and that `og:image` is an absolute URL. Preview tools cache; append a query string to bust the cache after a fix.
 
-### 4. Twitter Card Validator
-
-**URL:** The dedicated Twitter Card Validator (`cards-dev.twitter.com/validator`) was retired by X/Twitter circa 2023.
-
-Alternatives:
-- **metatags.io** (https://metatags.io) and **opengraph.xyz** (https://www.opengraph.xyz) both render `twitter:card` previews alongside OG tags and are the practical replacements.
-- **X Post Inspector** (https://cards-dev.twitter.com/validator) may still exist for logged-in users at time of testing — check, but don't depend on it.
-
-Tests: `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image` tags.
-
-What to test: homepage and a claim page using metatags.io or opengraph.xyz.
-
-Passing result: card preview renders correctly with the expected type (`summary_large_image` or `summary`), title, description, and image.
-
-If it fails: confirm `twitter:card` is set and that `twitter:image` is an absolute URL. Twitter/X caches card metadata; after a fix, use a fresh URL in the preview tool or append a query string to bust the cache.
-
-### 5. Google PageSpeed Insights
+### 4. Google PageSpeed Insights
 
 **URL:** https://pagespeed.web.dev
 
-Tests: Core Web Vitals — Largest Contentful Paint (LCP), Cumulative Layout Shift (CLS), Interaction to Next Paint (INP) — plus overall performance score.
+Tests: Core Web Vitals (Largest Contentful Paint, Cumulative Layout Shift, Interaction to Next Paint) plus overall performance score.
 
-What to test: homepage and a claim page. Run both mobile and desktop.
+What to test: the homepage and `/resources/responsible-ai`. Run both mobile and desktop.
 
 Passing result: LCP under 2.5s, CLS under 0.1, INP under 200ms. A performance score of 90+ is a reasonable target for a static Astro site.
 
-If it fails: the most common causes on a static site are unoptimized images (use `<Image />` from `@astrojs/image`), render-blocking fonts (use `font-display: swap` or preload), and large JS bundles. Font loading changes from the code plan should reduce LCP.
+If it fails: the most common causes on a static site are unoptimized images, render-blocking fonts, and large JS bundles.
 
-### 6. Sitemap validator
+### 5. Sitemap check
 
 **URL:** https://www.xml-sitemaps.com/validate-xml-sitemap.html (or any sitemap linting tool)
 
-Tests: that `sitemap.xml` (or `sitemap-index.xml`) is well-formed XML and lists the expected URLs.
-
 What to test: `https://dangerousrobot.org/sitemap-index.xml`
 
-Passing result: no XML parse errors; all key pages (`/`, `/claims/*`, `/companies/*`, `/criteria/*`) appear in the sitemap; `<lastmod>` dates are present and plausible.
+Passing result: no XML parse errors; the indexable pages listed under "What can be done now" appear; no claim, source or entity detail pages appear (subject claim pages do today: see "Known gap").
 
-If it fails: common causes are malformed XML (usually an unescaped `&` in a URL), missing pages (check `@astrojs/sitemap` include/exclude config), or a `robots.txt` that blocks the sitemap path.
+If it fails: common causes are malformed XML, the sitemap `filter` in `astro.config.ts`, or a `robots.txt` that blocks the sitemap path.
+
+---
+
+## Milestone: Monitoring and maintenance
+
+**Status:** `[ ] do now` for site-level rows. The homepage was "Submitted and indexed" in the 2026-05-11 baseline. Claim-level rows (search queries landing on claim pages, claim page coverage) wait for the indexing flip.
+
+This table is the one source for the monitoring cadence; the playbook's "Recurring checks" section points here.
+
+### Monitoring cadence
+
+| Signal | Tool | Frequency | Action threshold |
+|--------|------|-----------|-----------------|
+| Index coverage | GSC → Pages | Monthly | Unexpected "Not indexed" or "Excluded" URLs → investigate within 2 weeks |
+| Sitemap status | GSC → Sitemaps | Monthly | Status not "Success" → investigate |
+| Manual actions and security issues | GSC → Security & Manual actions | Monthly | Anything listed → investigate immediately |
+| Structured data errors | GSC → Enhancements | Monthly | Any `FAQPage` or `BreadcrumbList` errors → fix within 1 week |
+| Core Web Vitals | GSC → Core Web Vitals | Monthly | Any URL entering "Poor" status → fix within 2 weeks |
+| Search performance (queries, clicks, impressions, CTR) | GSC → Performance | Monthly | Investigate pages with declining impressions over 2 consecutive months |
+| Inbound links | GSC → Links | Quarterly | Log notable citations; update `research/citations.md` |
+
+### What to watch for
+
+**Index coverage:** "Discovered - currently not indexed" usually needs time and external links. "Crawled - currently not indexed" may indicate thin or duplicate content. A static site with < 1,000 pages should not have crawl budget problems; focus on content quality if pages are excluded. "Server error (5xx)" or "Redirect error": investigate immediately.
+
+**Core Web Vitals regressions:** LCP and CLS can regress after Astro upgrades, image changes, or new layout components. The GSC report uses real-user data, which lags. If PageSpeed Insights (lab data) shows a regression, investigate rather than waiting for the GSC report.
+
+**Search query data:** GSC Performance shows what queries drive impressions and clicks. Useful signals:
+- Which `/resources` guides get impressions, and for which queries
+- After the flip: whether informational queries land on claim pages
+- CTR below 2% on pages with > 100 impressions suggests the title or meta description should be revised
 
 ---
 
 ## Milestone: Link building and citation outreach
 
-**Status:** `[ ] ongoing — start at launch`
+**Status:** `[ ] not now`. Waits for the indexing flip (after 1.0.0) and launch; the most link-worthy pages are claim pages, which are `noindex` until then.
 
 For a research site, domain authority grows through citations from credible external sources. This milestone is long-term and does not have a hard end date.
 
@@ -192,64 +179,66 @@ For a research site, domain authority grows through citations from credible exte
 
 TreadLightly AI (treadlightly.ai) is made by the same person who runs Dangerous Robot (see `/about`); it is not a sponsor, and links from it carry that conflict of interest. Any claim made on the TreadLightly site that is backed by dangerousrobot.org research should link to the specific claim page, not just the homepage.
 
-Most link-worthy pages at launch:
+Most link-worthy pages after the flip:
 - Individual claim pages with published verdicts (deepest, most citable)
-- Company entity pages (e.g., `/research/companies/microsoft`) as a source hub for all claims about that company
+- Entity pages (for example `/research/entities/companies/openai`) as a source hub for all claims about that company
 - `/research/criteria` pages explaining the evaluation framework
 
 Action: audit which TreadLightly AI pages make assertions about AI company environmental claims and add or update source links to point at dangerousrobot.org claim pages rather than primary sources directly.
 
 ### 2. GitHub README
 
-The README at `github.com/dangerous-robot/site` already links to the live site: `[dangerousrobot.org](https://dangerousrobot.org)`. This is confirmed present. No change needed for the homepage link. Consider whether to also add links from the README to specific published claims as examples.
+The README at `github.com/dangerous-robot/site` links to the live site. Consider whether to also add links to specific published claims as examples.
 
 ### 3. Research citation tracking
 
-Once the site is indexed, track inbound links via GSC's "Links" report (Search Console → Links → External links). When a journalist, organization, or researcher cites a dangerousrobot.org page:
+Track inbound links via GSC's "Links" report (Search Console → Links → External links). When a journalist, organization, or researcher cites a dangerousrobot.org page:
 
 - Record the citation in a simple log (a `research/citations.md` file is sufficient).
-- Note which page was cited and the citing domain — this informs which content to prioritize for updates and which topic areas have external interest.
+- Note which page was cited and the citing domain.
 
-No outreach needed for organic citations. For planned outreach (pitching research to journalists), defer until the site has substantial published content post-v1.
+No outreach needed for organic citations. Planned outreach to journalists waits until the site has substantial published content after 1.0.0.
 
 ### 4. Fact-check aggregator submission
 
-After the Google Fact Check program application is approved (see that milestone), submit to other fact-check aggregators and indexes:
+Only after the Google Fact Check program application is approved (see that milestone):
 
-- **Duke Reporters' Lab database** (submission is part of the IFCN/Google path — already covered above)
-- **ClaimBuster** (https://idir.uta.edu/claimbuster/) — an automated claim detection tool that partners with fact-checkers; worth monitoring once the site has volume
-- **GDELT Fact Check data** — GDELT ingests ClaimReview markup, which claim pages do not emit; it applies only if the markup is added back
+- **Duke Reporters' Lab database** (part of the IFCN/Google path, covered in that milestone)
+- **ClaimBuster** (https://idir.uta.edu/claimbuster/): an automated claim detection tool that partners with fact-checkers; worth monitoring once the site has volume
+- **GDELT Fact Check data**: ingests ClaimReview markup, which claim pages do not emit; applies only if the markup is added back
 
 ---
 
-## Milestone: Monitoring and maintenance
+## Milestone: Google Fact Check program
 
-**Status:** `[ ] ongoing — start after indexing`
+**Status:** `[ ] not now`. Gated on all four conditions below; none is met today.
 
-**Gating condition:** GSC is verified and the site is indexed (at minimum the homepage returns a "URL is on Google" result in GSC URL Inspection). Claim-level rows start after the indexing flip.
+Claim pages emit no `ClaimReview` markup: it was removed on 2026-10-07 (`docs/decisions.md`) because Google removed ClaimReview rich results from Search in 2025 and Fact Check Explorer listing is limited to approved fact-check publishers. Verdicts and ratings stay in the claim files, so it can be added back if this milestone is pursued.
 
-### Monitoring cadence
+**Gating conditions (all must be true before applying):**
 
-| Signal | Tool | Frequency | Action threshold |
-|--------|------|-----------|-----------------|
-| Search performance (queries, clicks, impressions, CTR) | GSC → Performance | Monthly | Investigate pages with declining impressions over 2 consecutive months |
-| Core Web Vitals | GSC → Core Web Vitals | Monthly | Any URL entering "Poor" status → fix within 2 weeks |
-| Index coverage | GSC → Pages | Monthly | Unexpected "Not indexed" or "Excluded" URLs → investigate within 2 weeks |
-| Structured data errors | GSC → Enhancements | Monthly | Any `FAQPage` or `BreadcrumbList` errors → fix within 1 week |
-| Inbound links | GSC → Links | Quarterly | Log notable citations; update `research/citations.md` |
+1. The pre-release banner is removed from the site. It shows while the version has an alpha, beta or rc label (`src/layouts/Base.astro`).
+2. A meaningful corpus of published, sourced claims exists that demonstrates consistent methodology. Google publishes no hard threshold; the IFCN application reviews editorial standards and methodology rather than claim count. Operator judgment on readiness.
+3. `ClaimReview` JSON-LD is added back to claim pages (code change).
+4. Claim pages are indexed by Google, which needs the indexing flip first (confirm via GSC URL Inspection).
 
-### What to watch for
+### What the program is
 
-**Index coverage:** Pages marked "Discovered — currently not indexed" or "Crawled — currently not indexed" may indicate thin content or a crawl budget issue. A static site with < 1,000 pages should not have crawl budget problems; focus on content quality if pages are excluded.
+Google surfaces approved fact-checkers in Fact Check Explorer. For a site that evaluates specific claims made by AI companies, it is a possible channel, ranked below getting the guide pages found (see "Indexing gate").
 
-**Structured data errors:** GSC surfaces structured data errors in the Enhancements tab. Check this tab monthly.
+### How to apply
 
-**Core Web Vitals regressions:** LCP and CLS can regress after Astro upgrades, image changes, or new layout components. The GSC "Core Web Vitals" report uses real-user data (CrUX), which lags 28 days. If PageSpeed Insights (lab data) shows a regression, investigate immediately rather than waiting for CrUX to confirm.
+The path to Google's Fact Check program runs through the Duke Reporters' Lab, which maintains a fact-checker database, and the International Fact-Checking Network (IFCN). Google uses IFCN certification as a primary signal.
 
-**Search query data:** GSC Performance shows what queries drive impressions and clicks. For dangerousrobot.org, useful signals include:
-- Which company names drive queries (indicates which entity pages are getting traction)
-- Whether informational queries ("does Microsoft buy carbon offsets") are landing on claim pages
-- CTR below 2% on pages with > 100 impressions suggests the title or meta description should be revised
+1. **Review IFCN principles:** https://ifcncodeofprinciples.poynter.org. The code covers non-partisanship, standards, funding transparency, and corrections policy. dangerousrobot.org's published methodology and conflict-of-interest disclosures are a start; review whether they meet IFCN's transparency requirements.
+2. **Apply to the Duke Reporters' Lab fact-checker index:** https://reporterslab.org/fact-checking/.
+3. **Google Fact Check Tools:** https://toolbox.google.com/factcheck/explorer. After indexing, search for the domain to check whether Google has picked up the `ClaimReview` markup.
+4. **Approval timeline:** weeks to months. Submit only after all gating conditions are met. A premature or rejected application can delay acceptance.
+
+### Notes
+
+- The IFCN application asks for evidence of methodological transparency, corrections policies, funding sources, and editorial independence. Prepare a short document covering each before applying.
+- The conflict-of-interest disclosure (the operator also runs TreadLightly AI) should be addressed directly in the application. `/about` and the `/research` FAQ carry the disclosure; reference them.
 
 ---
 
@@ -257,17 +246,20 @@ After the Google Fact Check program application is approved (see that milestone)
 
 | This milestone | Depends on |
 |----------------|-----------|
-| Search console setup → sitemap submission | `@astrojs/sitemap` implemented and deployed |
-| Google Fact Check program | Pre-release banner removed; meaningful corpus of published claims; ClaimReview markup added back (removed 2026-10-07); indexing flip; claim pages indexed |
-| Validation and testing | All code-side SEO changes deployed to production (done) |
-| Monitoring and maintenance | GSC verified; site indexed |
+| Search console setup | Nothing open (sitemap deployed and submitted) |
+| Validation and testing | Code-side SEO changes deployed (done) |
+| Monitoring and maintenance | GSC verified (done); homepage was indexed at the 2026-05-11 baseline; claim-level rows need the indexing flip |
+| Link building and citation outreach | Indexing flip (after 1.0.0); launch |
+| Google Fact Check program | Pre-release banner removed; meaningful corpus of published claims; ClaimReview markup added back; indexing flip; claim pages indexed |
 
 ## Cross-references
 
+- Operator checklist (GSC steps, Cloudflare settings, the flip procedure): [`../seo-and-cloudflare-playbook.md`](../seo-and-cloudflare-playbook.md)
 - Code-side SEO plan (sitemap, JSON-LD, meta tags, font loading): [`completed/seo-technical.md`](completed/seo-technical.md)
-- Pre-release banner: added in [`pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1); removal is post-launch
+- URL restructure, Cloudflare redirects and the 2026-05-11 baseline: [`completed/seo-post-restructure.md`](completed/seo-post-restructure.md)
+- Pre-release banner: added in [`completed/pre-launch-quick-fixes.md`](completed/pre-launch-quick-fixes.md) (S1); removal is post-launch
 - ClaimReview markup: removed from claim pages ([`completed/site-j-claims-readiness.md`](completed/site-j-claims-readiness.md) CR5, `docs/decisions.md` 2026-10-07)
-- Indexing flip: `src/lib/seo.ts`, `docs/seo-and-cloudflare-playbook.md` ("When the pre-release noindex period ends")
+- Indexing flip: `src/lib/seo.ts`; procedure in the playbook ("When the pre-release noindex period ends")
 
 ## Review history
 
@@ -276,3 +268,4 @@ After the Google Fact Check program application is approved (see that milestone)
 | 2026-07-03 | agent (claude-fable-5) | basic | Section added during docs audit; search-console milestone updated to reflect the 2026-05-11 GSC/baseline work; one link repointed to completed/. |
 | 2026-10-06 | agent (claude-opus-5-5, plan review) | refocus alignment | Added the indexing gate (first guide, roadmap §9 J); validation gate marked met; TreadLightly described as made by the same person, not a sponsor; URLs moved to `/research/...`; cross-references point at shipped work. |
 | 2026-10-07 | agent (claude-opus-5-5) | basic, iterated | ClaimReview removed from claim pages (`site-j-claims-readiness.md` CR5): dropped from the validation gate, test lists and monitoring; the Fact Check program gate now needs it added back. |
+| 2026-10-09 | agent (claude-opus-5-5) | immediate priorities | Added "Do now" (N1 to N7) and reordered milestones so ungated work comes first; indexing gate now says after 1.0.0, Brandon's call; recorded the subject-claim indexing gap (`seo.ts:35`, checked live); validation targets fixed (`/faq` redirects, FAQPage on `/research` and `/resources/turn-off-ai`, default `og:image` is the square `dr-logo-light-bg.png`); monitoring table is the single cadence source. |

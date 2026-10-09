@@ -1,71 +1,86 @@
-# SEO & Cloudflare playbook — dangerousrobot.org
+# SEO & Cloudflare playbook: dangerousrobot.org
 
 A short checklist for ongoing work in Google Search Console (GSC) and the
-Cloudflare dashboard. Companion to the audit done on 2026-04-30.
+Cloudflare dashboard. Last reviewed: 2026-10-09.
+
+What to do next, in order, is in [`plans/seo-external.md`](plans/seo-external.md)
+§ "Do now". This file holds the how-to steps.
 
 ## Google Search Console
 
-### One-time setup
+### One-time setup (done)
 
 1. Open <https://search.google.com/search-console>.
-2. If `dangerousrobot.org` isn't listed, **Add property → Domain**, enter
-   `dangerousrobot.org`, and verify via the DNS TXT record in Cloudflare.
-   (Domain verification covers apex, www, and any future subdomain — preferred
-   over URL-prefix.)
+2. Property: **Domain** `dangerousrobot.org` (`sc-domain:dangerousrobot.org`),
+   verified via the DNS TXT record in Cloudflare. Domain verification covers
+   apex, www, and any future subdomain.
 3. Settings → Users and permissions: add backup owners if relevant.
 
-### Submit sitemap
+### Submit sitemap (done; resubmit after the indexing flip)
 
-1. **Sitemaps** → enter `sitemap-index.xml` → Submit.
-   (Do NOT submit `sitemap.xml` — that path 404s. The index covers the same
+1. **Sitemaps** → enter `sitemap-index.xml` → Submit, or run
+   `scripts/seo/submit-sitemap.sh` (needs `GSC_QUOTA_PROJECT` exported and a
+   gcloud application-default login).
+   (Do NOT submit `sitemap.xml`: that path 404s. The index covers the same
    URLs.)
 2. Wait 24–72 hours for Google to fetch and report status.
 
 ### Force initial indexing of key pages
 
-For each of these URLs: **URL Inspection → Test live URL → Request Indexing**.
+For each URL Google has not indexed: **URL Inspection → Test live URL →
+Request Indexing**. Check first with `scripts/seo/inspect-urls.sh` or URL
+Inspection; skip pages already indexed. Every URL below except `/` currently
+301s to its trailing-slash form while the canonical tag and sitemap use the
+no-slash form (`docs/UNSCHEDULED.md`, "SEO post-restructure follow-ups",
+the canonical-URL row); if that fix is about to land, request indexing after
+it. In priority order:
 
-- `/` (homepage)
-- `/research` (research hub)
-- `/resources` (resources hub), `/resources/should-i`, `/resources/ai-safety`,
-  `/resources/turn-off-ai`, `/resources/responsible-ai`
-- `/research/companies`, `/research/products`, `/research/topics`,
-  `/research/claims`, `/research/sources`, `/research/criteria`
-- 2–3 representative claim pages, e.g. `/research/claims/openai/corporate-structure`
-- 2–3 entity pages, e.g. `/research/entities/companies/openai`,
-  `/research/entities/products/chatgpt`
+1. `/resources/responsible-ai` (the page SITE-J, Responsible AI chatbots, is building)
+2. `/resources`, `/resources/ai-safety`, `/resources/should-i`,
+   `/resources/turn-off-ai`, `/resources/ai-safety-winter-2025`
+3. `/` (homepage), `/writing`, `/writing/why-dangerous-robot-exists`,
+   `/petitions/prohibit-ai-self-improvement`, `/about`
+4. `/research` (research hub), `/research/criteria`, `/research/topics`,
+   `/research/claims`, `/research/companies`, `/research/products`,
+   `/research/subjects`, `/research/sources`
 
-Google rate-limits Request Indexing to ~10/day per property — pace accordingly.
+Do not request indexing for claim, source or entity pages until the indexing
+flip (see "Pre-release noindex policy"), including the subject claim pages
+that are indexable today by mistake.
 
-### Recurring checks (weekly for the first month, then monthly)
+`scripts/seo/request-indexing-queue.txt` holds an older 10-URL queue in a
+different order; use the list above.
 
-- **Pages report:** look at "Why pages aren't indexed."
-  - "Discovered – currently not indexed": needs time + external links.
-  - "Crawled – currently not indexed": Google saw it but skipped — usually
-    thin/duplicate content. Check the affected pages.
-  - "Soft 404": should drop to zero once the new `404.astro` is deployed.
-  - "Server error (5xx)" or "Redirect error": investigate immediately.
-- **Sitemaps:** confirm `sitemap-index.xml` is **Success**, with the discovered
-  URL count matching your repo's current page count.
-- **Experience → Core Web Vitals:** check both Mobile and Desktop. Aim for all
-  URLs in **Good**. The site is animation-heavy on the homepage; LCP and CLS
-  are the ones to watch.
-- **Enhancements:** confirm the structured-data items (Organization, WebSite)
-  show as **Valid** with zero errors.
-- **Manual actions / Security issues:** should be empty. Investigate
-  immediately if not.
-- **Performance:** once data accrues (~1 week), look at Queries to see what
-  Google is showing the site for. Helpful for content gaps.
+Google rate-limits Request Indexing to ~10/day per property; pace accordingly.
+
+### Recurring checks
+
+Cadence and action thresholds: [`plans/seo-external.md`](plans/seo-external.md)
+§ "Monitoring and maintenance" (monthly, inbound links quarterly). Where to
+look in GSC:
+
+- **Pages report:** "Why pages aren't indexed." What each bucket means is
+  in the plan's "What to watch for".
+- **Sitemaps:** `sitemap-index.xml` is **Success**, with the discovered URL
+  count close to the number of `<loc>` entries in the live `sitemap-0.xml`.
+- **Experience → Core Web Vitals:** Mobile and Desktop.
+- **Enhancements:** structured-data items with zero errors.
+- **Security & Manual actions:** should be empty.
+- **Performance:** Queries, to see what Google shows the site for.
+
+Save each check's evidence in `seo-runs/` (git-ignored, local only), as the
+plan's "Do now" table describes.
 
 ### Submit a change of address only if needed
 
 You don't have one. Skip.
 
-### Verifying the new 404 page after deploy
+### Verifying the 404 page after a change
 
-(Done 2026-05; keep for reference after future 404 changes.) After the next deploy, in **URL Inspection** test a URL you know doesn't
-exist (e.g. `/__not-a-real-page`). Live test should return HTTP 404 and the
-page preview should show the branded 404, not the GitHub Pages default.
+After a deploy that changes `404.astro`, in **URL Inspection** test a URL
+you know doesn't exist (e.g. `/__not-a-real-page`). Live test should return
+HTTP 404 and the page preview should show the branded 404, not the GitHub
+Pages default.
 
 ---
 
@@ -73,37 +88,46 @@ page preview should show the branded 404, not the GitHub Pages default.
 
 In `dash.cloudflare.com` → select `dangerousrobot.org`.
 
-### Safe (apply now)
+### Behavior in place (curl, 2026-10-09)
 
-1. **SSL/TLS → Edge Certificates → Always Use HTTPS:** ON.
-   (Currently `http://dangerousrobot.org` returns 200 over plain HTTP.)
-2. **SSL/TLS → Overview:** confirm encryption mode is **Full**, not
-   **Flexible**. GitHub Pages serves valid TLS, so Full is safe.
-3. **Rules → Transform Rules → Modify Response Header → Create rule
-   ("All incoming requests"):**
-   - `X-Content-Type-Options: nosniff`
-   - `Referrer-Policy: strict-origin-when-cross-origin`
-   - `Permissions-Policy: interest-cohort=(), browsing-topics=()`
-4. **DNS:** confirm a CNAME record `www → dangerousrobot.org` exists and
-   is proxied (orange cloud). The 301 from `www` to apex is already working;
-   this is just verifying how.
-5. **Speed → Optimization:** verify Brotli is on. (Cloudflare retired Auto Minify in 2024; if the dashboard no longer shows it, skip that part.)
-   for static Astro output.
-6. **Bulk Redirects:** the list `dr_redirects` and the entrypoint ruleset rule
-   `dr_redirects_rule` consolidate the eight legacy section paths under
-   `/research/...`. Maintained by `scripts/seo/apply-cloudflare-redirects.sh`.
+Which dashboard setting produces each behavior is unverified.
+
+1. **SSL/TLS → Edge Certificates → Always Use HTTPS:** on.
+   `http://dangerousrobot.org/` returns 301 to HTTPS.
+2. **Transform Rules → Modify Response Header:** responses carry
+   `X-Content-Type-Options: nosniff`,
+   `Referrer-Policy: strict-origin-when-cross-origin` and
+   `Permissions-Policy: interest-cohort=(), browsing-topics=()`.
+3. **HSTS:** responses carry
+   `Strict-Transport-Security: max-age=31536000; includeSubDomains` (no
+   preload). Do not enable preload until you're certain the apex and every
+   current and future subdomain will stay on HTTPS forever; preload is hard
+   to undo.
+4. **www → apex:** `https://www.dangerousrobot.org/` returns 301 to
+   `https://dangerousrobot.org/`.
+5. **Bulk Redirects:** the list `dr_redirects` and the entrypoint ruleset rule
+   `dr_redirects_rule` send the legacy section paths (`/faq`, `/claims`,
+   `/companies` and others) to `/research/...`. Maintained by
+   `scripts/seo/apply-cloudflare-redirects.sh` from
+   `scripts/seo/redirects.json`.
+
+### To confirm in the dashboard (unverified)
+
+1. **SSL/TLS → Overview:** encryption mode is **Full**, not **Flexible**.
+   GitHub Pages serves valid TLS, so Full is safe.
+2. **DNS:** the `www` record is a CNAME to `dangerousrobot.org` and proxied
+   (orange cloud).
+3. **Speed → Optimization:** Brotli is on. (Cloudflare retired Auto Minify
+   in 2024; if the dashboard no longer shows it, skip that part.)
 
 ### Ask before flipping
 
-1. **HSTS** (SSL/TLS → Edge Certificates → HSTS):
-   `max-age=31536000; includeSubDomains`. **Do not enable preload** until
-   you're certain the apex + every current and future subdomain will stay on
-   HTTPS forever — preload is hard to undo.
-2. **Bot Fight Mode** (Security → Bots): default is fine for a static site,
+1. **Bot Fight Mode** (Security → Bots): default is fine for a static site,
    but it can occasionally block legitimate RSS/feed readers. Enable only if
    you see actual bot abuse.
-3. **Rate Limiting Rules:** none needed today. Add only if you see abuse in
-   Analytics.
+2. **Rate Limiting Rules:** none needed for the static site today. The
+   petition Worker throttles in code (`workers/api/wrangler.toml`); an edge
+   rule for it is a security item, not an SEO one.
 
 ### Skip / not applicable
 
@@ -112,15 +136,18 @@ In `dash.cloudflare.com` → select `dangerousrobot.org`.
 - **Argo Smart Routing / Tiered Cache:** paid; static GitHub Pages origin
   doesn't benefit much.
 - **Cache Rules:** the Astro output already sets `Cache-Control` via
-  GitHub Pages defaults; revisit only if Page Speed Insights flags it.
+  GitHub Pages defaults; revisit only if PageSpeed Insights flags it.
 
 ### Deferred
 
 - **Content-Security-Policy:** non-trivial because of inline scripts. Worth
   doing carefully later, not as a one-line edit.
-- **OG image at 1200×630:** the current `dr-logo.png` is square. Generate a
-  proper social-card image and pass it via the `ogImage` prop in `Base.astro`
-  for top-level pages.
+- **OG image at 1200×630:** open, not deferred; tracked in
+  `docs/UNSCHEDULED.md` ("SEO post-restructure follow-ups", the wide default
+  share image row). The default `og:image` is `/dr-logo-light-bg.png`
+  (512×512, square) with `twitter:card` set to `summary_large_image`. Only
+  writing posts and petitions with an `image` field get a 1200px-wide share
+  image (`src/lib/share-image.ts`). Do it once a wide image exists.
 
 ---
 
@@ -133,38 +160,47 @@ generated from AI agent research. Until the indexing flip below they are:
 1. Served with `<meta name="robots" content="noindex,nofollow">`.
 2. Excluded from `sitemap-index.xml` / `sitemap-0.xml`.
 
-URLs are stable — already-published pages remain accessible at the same paths.
+**Known gap:** subject claim pages, `/research/claims/subjects/{subject}/{claim}`,
+are not covered. The claim pattern in `src/lib/seo.ts:35` matches two path
+segments after `/research/claims/`; subject claims have three. Checked live
+2026-10-09: they serve `index,follow` and are in `sitemap-0.xml`. A code fix
+is needed; until then, do not request indexing for them.
+
+URLs are stable: already-published pages remain accessible at the same paths.
 Internal navigation, deep links, and direct visits all still work; the pages
 are just hidden from search engines.
 
-List/index pages (`/`, `/research`, `/research/claims`, `/research/companies`,
-`/research/products`, `/research/sources`, `/research/topics`,
-`/research/criteria`, `/resources` and its four guides, `/values`, `/credits`)
-remain indexable.
+Every other page remains indexable: `/`, `/resources` and its five guides,
+`/research` and its list pages (`/research/claims`, `/research/companies`,
+`/research/products`, `/research/subjects`, `/research/sources`,
+`/research/topics`, `/research/criteria`), `/research/topics/*`,
+`/research/criteria/*`, `/writing` and its posts, `/petitions/*`, `/about`,
+`/values`, `/corrections`, `/credits`, `/privacy`, `/people/*`. A resource
+page can opt out with `noindex: true` in its frontmatter; none does today.
 
 ### When the pre-release noindex period ends
 
-The flip trigger is decided in the plan for roadmap SITE-J (Responsible AI chatbots, backed by claims); the flip can happen during the beta line. The flag name keeps its historical `ALPHA` spelling.
+The flip happens after 1.0.0; Brandon decides the trigger
+(`docs/decisions.md:19`). The flag name keeps its historical `ALPHA` spelling.
 
 To re-enable indexing of detail pages:
 
 1. Open `src/lib/seo.ts`.
 2. Change `INDEX_ALPHA_DETAIL_PAGES` from `false` to `true`.
 3. Commit, build, and deploy.
-4. In GSC, resubmit the sitemap (Sitemaps → Submit `sitemap-index.xml`) so
-   Google sees the newly-included URLs sooner.
+4. In GSC, resubmit the sitemap (Sitemaps → Submit `sitemap-index.xml`, or
+   `scripts/seo/submit-sitemap.sh`) so Google sees the newly-included URLs
+   sooner.
 5. Spot-check a few previously-noindexed URLs in GSC URL Inspection to confirm
    they no longer carry the noindex directive.
-
-Already-indexed pages that fall under the pre-release rules (homepage and entity
-detail pages crawled before this change) will be removed from Google's index
-within roughly 1–2 weeks as Googlebot recrawls and sees the noindex tag. No
-action needed.
+6. Run the validation milestone in [`plans/seo-external.md`](plans/seo-external.md)
+   on a claim page and an entity page.
 
 ## What was already done in the repo
 
-- `src/layouts/Base.astro`: added `meta robots`, `theme-color`, `og:site_name`,
-  `og:locale`, `og:image:alt`, full Twitter Card tags, and a `noindex` prop.
+- `src/layouts/Base.astro`: `meta robots`, `theme-color`, `og:site_name`,
+  `og:locale`, `og:image:alt`, full Twitter Card tags, `Organization` JSON-LD,
+  and a `noindex` prop.
 - `src/pages/404.astro`: branded 404 page with `noindex`, replacing the
   GitHub Pages default.
 - `src/lib/seo.ts`: pre-release indexing flag (`INDEX_ALPHA_DETAIL_PAGES`) and path classifier.
