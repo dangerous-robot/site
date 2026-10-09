@@ -147,13 +147,13 @@ data:
     - key: data-used-for-training
       label: "Data used for training"
       group: privacy-data
-      ideal: { value: "no-good" }
+      ideal: { value: "no" }
       cells:
-        greenpt: { type: "no-good" }
-        ecosia: { type: "no-good" }
-        euria: { type: "no-good" }
-        treadlightly: { type: "no-good" }
-        viro: { type: "no-good", detail: "Ads based on chat content"  }
+        greenpt: { type: "no" }
+        ecosia: { type: "no" }
+        euria: { type: "no" }
+        treadlightly: { type: "no" }
+        viro: { type: "no", detail: "Ads based on chat content"  }
         chatgptree: { type: "unknown", detail: "[probably?](https://www.chatgptree.ai/legal/privacy#how-we-use-info)" }
         earthly-insight: { type: "unknown", detail: "[probably not?](https://www.earthlyinsight.ai/privacy-policy)" }
     - key: corporate-structure

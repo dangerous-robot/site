@@ -10,7 +10,7 @@ const ORG = { '@type': 'Organization', name: 'Dangerous Robot' } as const;
  * `last_verified` or `last_checked`. Returns the max parsable date as ISO, or
  * undefined if none found.
  */
-function collectFreshestDate(value: unknown): string | undefined {
+export function collectFreshestDate(value: unknown): string | undefined {
   const dates: number[] = [];
 
   function walk(v: unknown, parentKey?: string): void {
@@ -19,7 +19,9 @@ function collectFreshestDate(value: unknown): string | undefined {
       for (const item of v) walk(item);
       return;
     }
-    if (typeof v === 'object') {
+    // An unquoted YAML date is a Date, which is an object with no own keys;
+    // check it before walking objects or it would never be counted.
+    if (typeof v === 'object' && !(v instanceof Date)) {
       for (const [k, child] of Object.entries(v as Record<string, unknown>)) {
         walk(child, k);
       }

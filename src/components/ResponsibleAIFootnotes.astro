@@ -1,14 +1,8 @@
 ---
 import { ArrowUp } from 'lucide-astro';
+import type { MatrixData } from '../lib/matrixSchema';
 
-interface Footnote {
-  subject: string;
-  text: string;
-}
-
-interface FootnotesData {
-  footnotes?: Footnote[];
-}
+type FootnotesData = Pick<MatrixData, 'footnotes'>;
 
 interface Props {
   data: FootnotesData;

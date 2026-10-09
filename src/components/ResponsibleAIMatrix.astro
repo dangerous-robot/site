@@ -2,16 +2,7 @@
 import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro';
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 import ResponsibleAIFilters from './ResponsibleAIFilters.astro';
-
-type CellType =
-  | 'yes'
-  | 'no'
-  | 'no-good'
-  | 'partial'
-  | 'planned'
-  | 'text'
-  | 'unknown'
-  | 'na';
+import type { MatrixCell as Cell, MatrixCellType as CellType, MatrixData, MatrixFeature as Feature } from '../lib/matrixSchema';
 
 const ICONS: Record<
   Exclude<CellType, 'text' | 'na'>,
@@ -19,17 +10,9 @@ const ICONS: Record<
 > = {
   yes: { Icon: Check, srLabel: 'Yes' },
   no: { Icon: X, srLabel: 'No' },
-  'no-good': { Icon: X, srLabel: 'No (negative)' },
   partial: { Icon: Minus, srLabel: 'Partial' },
-  planned: { Icon: ArrowUp, srLabel: 'Planned' },
   unknown: { Icon: HelpCircle, srLabel: 'Unknown' },
 };
-
-interface Cell {
-  type: CellType;
-  detail?: string;
-  footnote?: string;
-}
 
 function renderDetail(s: string): string {
   const esc = s
@@ -44,41 +27,6 @@ function renderDetail(s: string): string {
   );
 }
 
-interface Product {
-  key: string;
-  name: string;
-  url: string;
-  status: 'active' | 'excluded';
-  excluded_reason?: string;
-  initially_hidden?: boolean;
-}
-
-interface Group {
-  key: string;
-  label: string;
-}
-
-interface Ideal {
-  value: CellType;
-  note?: string;
-}
-
-interface Feature {
-  key: string;
-  label: string;
-  group: string;
-  ideal?: Ideal;
-  cells: Record<string, Cell>;
-}
-
-interface MatrixData {
-  lede?: string;
-  caption?: string;
-  groups: Group[];
-  products: Product[];
-  features: Feature[];
-}
-
 interface Props {
   data: MatrixData;
   lastModified?: Date;
@@ -90,9 +38,9 @@ const lastModifiedLabel = lastModified
   ? lastModified.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
   : undefined;
 const lastModifiedISO = lastModified?.toISOString();
-const groups = data.groups ?? [];
-const activeProducts = (data.products ?? []).filter((p) => p.status === 'active');
-const features = data.features ?? [];
+const groups = data.groups;
+const activeProducts = data.products.filter((p) => p.status === 'active');
+const features = data.features;
 
 const featuresByGroup = new Map<string, Feature[]>();
 for (const group of groups) featuresByGroup.set(group.key, []);
@@ -102,7 +50,7 @@ for (const feature of features) {
 }
 
 const initialHiddenProducts = activeProducts
-  .filter((p) => (p as Product & { initially_hidden?: boolean }).initially_hidden)
+  .filter((p) => p.initially_hidden)
   .map((p) => p.key);
 const initialHiddenAttr = initialHiddenProducts.join(' ');
 ---
@@ -165,7 +113,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                 <tr>
                   <th scope="row" class="dim-label">{feature.label}</th>
                   {activeProducts.map((p) => {
-                    const cell = feature.cells?.[p.key] ?? { type: 'na' as CellType };
+                    const cell = feature.cells[p.key] ?? { type: 'na' as CellType };
                     const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
                     return (
                       <td class={`cell cell--${cell.type}`} data-product-key={p.key}>

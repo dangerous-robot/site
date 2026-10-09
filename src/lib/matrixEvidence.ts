@@ -4,25 +4,30 @@
 // § Design.
 
 import { isoDate } from './dates';
+import {
+  CLAIM_PATH_PREFIX,
+  SOURCE_PATH_PREFIX,
+  type LargeModels,
+  type MatrixCell,
+  type MatrixCellType,
+  type MatrixFeature,
+  type MatrixProduct,
+  type OwnedBy,
+  type StanceTerms,
+} from './matrixSchema';
 import { findReviewer } from './reviewers';
 import { CONFIDENCE_LABELS, type Confidence, type Verdict } from './verdict';
 
-export type Answer = 'yes' | 'no' | 'partial' | 'text' | 'unknown' | 'na';
+export type Answer = MatrixCellType;
 export type Stance = 'good' | 'bad' | 'mixed' | 'neutral';
 export type Tier = 'claim' | 'source' | 'none';
-export type Polarity = 'same' | 'inverted';
+export type Polarity = MatrixFeature['polarity'];
 
 export const TIER_NAMES: Record<Tier, string> = {
   claim: 'Reviewed claim',
   source: 'Source',
   none: 'Not yet sourced',
 };
-
-export interface OwnedBy {
-  name: string;
-  kind: 'publicly-traded' | 'conglomerate';
-  sources?: string[];
-}
 
 /** What a cell, summary entry or footnote cites. Any of them fits this shape. */
 export interface Cited {
@@ -32,58 +37,11 @@ export interface Cited {
   last_checked?: string;
 }
 
-export interface MatrixCell extends Cited {
-  type: Answer;
-  detail?: string;
-  models?: string[];
-  term?: string;
-}
-
-export interface LargeModels {
-  last_checked?: string;
-  sources?: string[];
-  large: string[];
-  not_large: string[];
-}
-
-export interface StanceTerms {
-  good: string[];
-  mixed: string[];
-  bad: string[];
-}
-
-export interface Ideal {
-  value?: Answer;
-  answer?: string;
-  note?: string;
-  sources?: string[];
-  position?: string;
-  large_models?: LargeModels;
-  terms?: StanceTerms;
-}
-
 /** Who the evidence is about, for ids and link names. A feature row is one; so is a summary column. */
-export interface EvidenceSubject {
-  key: string;
-  label: string;
-}
+export type EvidenceSubject = Pick<MatrixFeature, 'key' | 'label'>;
 
-export interface MatrixFeature extends EvidenceSubject {
-  group: string;
-  criterion?: string;
-  polarity?: Polarity;
-  answers?: Answer[];
-  ideal?: Ideal;
-  cells: Record<string, MatrixCell>;
-}
-
-export interface MatrixProduct {
-  key: string;
-  name: string;
-  status: 'active' | 'excluded';
-  entity?: string;
-  max_tier?: 'source';
-}
+/** The product fields the evidence rules read. */
+export type ProductRef = Pick<MatrixProduct, 'key' | 'name' | 'status' | 'entity' | 'max_tier'>;
 
 export interface ClaimInfo {
   id: string;
@@ -111,12 +69,10 @@ export interface EvidenceLookups {
   sources: Map<string, SourceInfo>;
 }
 
-const CLAIM_PREFIX = '/research/claims/';
-const SOURCE_PREFIX = '/research/sources/';
 
 /** The collection id behind a rendered citation path, or null when the path has the wrong prefix. */
 export function citedId(path: string, kind: 'claim' | 'source'): string | null {
-  const prefix = kind === 'claim' ? CLAIM_PREFIX : SOURCE_PREFIX;
+  const prefix = kind === 'claim' ? CLAIM_PATH_PREFIX : SOURCE_PATH_PREFIX;
   if (!path.startsWith(prefix)) return null;
   const id = path.slice(prefix.length).replace(/\/$/, '');
   return id.length > 0 ? id : null;
@@ -127,7 +83,7 @@ export function isReviewedClaim(claim: ClaimInfo | undefined): claim is ClaimInf
   return claim?.status === 'published' && findReviewer(claim.reviewer) !== undefined;
 }
 
-export function isCapped(product: MatrixProduct): boolean {
+export function isCapped(product: ProductRef): boolean {
   return product.max_tier === 'source';
 }
 
@@ -145,7 +101,7 @@ export interface CellEvidence {
  * evidence and takes the lower tier: the owner's part is sources or nothing,
  * so the cell is "source" at best, and "none" if either part is bare.
  */
-export function cellEvidence<T extends Cited>(cited: T, product: MatrixProduct, lookups: EvidenceLookups): CellEvidence {
+export function cellEvidence<T extends Cited>(cited: T, product: ProductRef, lookups: EvidenceLookups): CellEvidence {
   const ownSources = cited.sources ?? [];
   const ownerSources = cited.owned_by?.sources ?? [];
   const sourcePaths = [...ownSources, ...ownerSources];
@@ -159,7 +115,7 @@ export function cellEvidence<T extends Cited>(cited: T, product: MatrixProduct, 
   return { tier, sourcePaths };
 }
 
-export function cellTier<T extends Cited>(cited: T, product: MatrixProduct, lookups: EvidenceLookups): Tier {
+export function cellTier<T extends Cited>(cited: T, product: ProductRef, lookups: EvidenceLookups): Tier {
   return cellEvidence(cited, product, lookups).tier;
 }
 
@@ -169,10 +125,8 @@ export type RowKind = 'yes-no' | 'models' | 'ownership' | 'feature';
 export function rowKind(feature: Pick<MatrixFeature, 'ideal'>): RowKind {
   const ideal = feature.ideal;
   if (!ideal) return 'feature';
-  if (ideal.value !== undefined) return 'yes-no';
-  if (ideal.large_models) return 'models';
-  if (ideal.terms) return 'ownership';
-  return 'feature';
+  if ('value' in ideal) return 'yes-no';
+  return 'large_models' in ideal ? 'models' : 'ownership';
 }
 
 function modelsStance(models: string[] | undefined, list: LargeModels): Stance {
@@ -195,19 +149,16 @@ function ownershipStance(cell: MatrixCell, terms: StanceTerms): Stance {
  * Good, bad, mixed or neutral: the page's opinion of the cell's answer.
  * Feature rows (no `ideal`) are always neutral.
  */
-export function cellStance(cell: MatrixCell, feature: MatrixFeature): Stance {
-  switch (rowKind(feature)) {
-    case 'yes-no':
-      if (cell.type === 'partial') return 'mixed';
-      if (cell.type === 'yes' || cell.type === 'no') return cell.type === feature.ideal!.value ? 'good' : 'bad';
-      return 'neutral';
-    case 'models':
-      return modelsStance(cell.models, feature.ideal!.large_models!);
-    case 'ownership':
-      return ownershipStance(cell, feature.ideal!.terms!);
-    case 'feature':
-      return 'neutral';
+export function cellStance(cell: MatrixCell, feature: Pick<MatrixFeature, 'ideal'>): Stance {
+  const ideal = feature.ideal;
+  if (!ideal) return 'neutral';
+  if ('value' in ideal) {
+    if (cell.type === 'partial') return 'mixed';
+    if (cell.type === 'yes' || cell.type === 'no') return cell.type === ideal.value ? 'good' : 'bad';
+    return 'neutral';
   }
+  if ('large_models' in ideal) return modelsStance(cell.models, ideal.large_models);
+  return ownershipStance(cell, ideal.terms);
 }
 
 const ALLOWED_ANSWERS: Record<Verdict, Answer[]> = {
@@ -267,7 +218,7 @@ export function checkRecordLine<T extends Cited>(cited: T): string {
 /** Everything a mark's popup shows, as data; the component renders it. */
 export function popupContent<T extends Cited>(
   cited: T,
-  product: MatrixProduct,
+  product: ProductRef,
   subject: EvidenceSubject,
   lookups: EvidenceLookups,
 ): PopupContent {
@@ -291,7 +242,7 @@ export function popupContent<T extends Cited>(
 }
 
 export interface MatrixDataLike {
-  products: MatrixProduct[];
+  products: ProductRef[];
   features: MatrixFeature[];
 }
 

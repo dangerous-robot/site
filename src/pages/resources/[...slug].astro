@@ -11,7 +11,7 @@ import ResponsibleAIFootnotes from '../../components/ResponsibleAIFootnotes.astr
 import Lightbox from '../../components/Lightbox.astro';
 import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 import { buildResourceSchema } from '../../lib/resourceSchema';
-import { matrixDataSchema } from '../../content.config';
+import { matrixDataSchema } from '../../lib/matrixSchema';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');

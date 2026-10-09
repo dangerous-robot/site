@@ -1,34 +1,18 @@
 ---
 import { ExternalLink, ArrowUp } from 'lucide-astro';
 import InlineMd from './InlineMd.astro';
+import { summaryText, type MatrixData, type SummaryField } from '../lib/matrixSchema';
 
-interface Summary {
-  ai_ethics: string;
-  financial_transparency: string;
-  environmental: string;
-  notes: string;
-}
-
-interface Product {
-  key: string;
-  name: string;
-  url: string;
-  status: 'active' | 'excluded';
-  summary?: Summary;
-}
-
-interface SummaryData {
-  products: Product[];
-}
+type SummaryData = Pick<MatrixData, 'products'>;
 
 interface Props {
   data: SummaryData;
 }
 
 const { data } = Astro.props;
-const activeProducts = (data.products ?? []).filter((p) => p.status === 'active');
+const activeProducts = data.products.filter((p) => p.status === 'active');
 
-const columns: { key: keyof Summary; label: string }[] = [
+const columns: { key: SummaryField; label: string }[] = [
   { key: 'ai_ethics', label: 'AI ethics' },
   { key: 'environmental', label: 'Environmental' },
   { key: 'financial_transparency', label: 'Financial transparency' },
@@ -66,7 +50,7 @@ const columns: { key: keyof Summary; label: string }[] = [
           </th>
           {columns.map((col) => (
             <td data-label={col.label}>
-              <InlineMd text={product.summary?.[col.key] ?? ''} />
+              <InlineMd text={summaryText(product.summary?.[col.key])} />
             </td>
           ))}
         </tr>

@@ -12,13 +12,12 @@ import {
   type Answer,
   type ClaimInfo,
   type EvidenceLookups,
-  type MatrixCell,
-  type MatrixFeature,
-  type MatrixProduct,
   type Polarity,
+  type ProductRef,
   type SourceInfo,
   type Stance,
 } from './matrixEvidence';
+import type { MatrixCell, MatrixFeature } from './matrixSchema';
 import { VERDICT_ORDER, type Verdict } from './verdict';
 
 const REVIEWER = 'brandon@dangerousrobot.org';
@@ -55,8 +54,8 @@ function lookups(claims: ClaimInfo[] = [], sources: SourceInfo[] = []): Evidence
   };
 }
 
-const greenpt: MatrixProduct = { key: 'greenpt', name: 'GreenPT', status: 'active', entity: 'products/greenpt' };
-const treadlightly: MatrixProduct = { key: 'treadlightly', name: 'TreadLightlyAI', status: 'active', max_tier: 'source' };
+const greenpt: ProductRef = { key: 'greenpt', name: 'GreenPT', status: 'active', entity: 'products/greenpt' };
+const treadlightly: ProductRef = { key: 'treadlightly', name: 'TreadLightlyAI', status: 'active', max_tier: 'source' };
 
 const bare: MatrixCell = { type: 'yes' };
 const CLAIM_PATH = '/research/claims/greenpt/renewable-energy-hosting';
@@ -64,7 +63,7 @@ const SRC_A = '/research/sources/2026/a';
 const SRC_B = '/research/sources/2026/b';
 
 function feature(over: Partial<MatrixFeature> = {}): MatrixFeature {
-  return { key: 'renewable-hosting', label: 'Hosted on renewable energy', group: 'environmental', cells: {}, ...over };
+  return { key: 'renewable-hosting', label: 'Hosted on renewable energy', group: 'environmental', polarity: 'same', cells: {}, ...over };
 }
 
 describe('citedId', () => {
@@ -121,7 +120,7 @@ describe('rowKind', () => {
 });
 
 describe('cellStance: yes/no rows', () => {
-  const cases: [Answer, Answer, Stance][] = [
+  const cases: ['yes' | 'no', Answer, Stance][] = [
     ['yes', 'yes', 'good'],
     ['yes', 'no', 'bad'],
     ['yes', 'partial', 'mixed'],
@@ -299,7 +298,7 @@ describe('checkRecordLine', () => {
 
 describe('tierCounts', () => {
   test('counts every active product cell by tier', () => {
-    const excluded: MatrixProduct = { key: 'gone', name: 'Gone', status: 'excluded' };
+    const excluded: ProductRef = { key: 'gone', name: 'Gone', status: 'excluded' };
     const data = {
       products: [greenpt, treadlightly, excluded],
       features: [
