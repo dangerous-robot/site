@@ -18,24 +18,8 @@ import {
   type Stance,
 } from './matrixEvidence';
 import type { MatrixCell, MatrixFeature } from './matrixSchema';
+import { claim } from './matrixTestFixtures';
 import { VERDICT_ORDER, type Verdict } from './verdict';
-
-const REVIEWER = 'brandon@dangerousrobot.org';
-
-function claim(over: Partial<ClaimInfo> = {}): ClaimInfo {
-  return {
-    id: 'greenpt/renewable-energy-hosting',
-    title: 'GreenPT is hosted on renewable energy',
-    entity: 'products/greenpt',
-    status: 'published',
-    verdict: 'true',
-    confidence: 'high',
-    as_of: new Date('2026-09-28'),
-    criteria_slug: 'renewable-energy-hosting',
-    reviewer: REVIEWER,
-    ...over,
-  };
-}
 
 function source(id: string, over: Partial<SourceInfo> = {}): SourceInfo {
   return {

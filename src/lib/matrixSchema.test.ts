@@ -1,17 +1,9 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import { matrixDataSchema, matrixCell, matrixFeature, summaryText } from './matrixSchema';
+import { pageData } from './matrixTestFixtures';
 import { collectFreshestDate } from './resourceSchema';
-
-const PAGE = new URL('../content/resources/responsible-ai.md', import.meta.url);
-
-/** A fresh copy each call: gray-matter caches parses made with no options, and one test mutates the data. */
-function pageData(): unknown {
-  return (matter(readFileSync(PAGE, 'utf-8'), {}).data as { data: unknown }).data;
-}
 
 function issues(result: { success: boolean; error?: { issues: { message: string }[] } }): string {
   return result.success ? '' : result.error!.issues.map((i) => i.message).join('\n');

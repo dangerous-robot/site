@@ -79,7 +79,7 @@ export function citedId(path: string, kind: 'claim' | 'source'): string | null {
 }
 
 /** The claim-page test: published, with a reviewer who maps to a person. `reviewed_at` alone is not enough. */
-export function isReviewedClaim(claim: ClaimInfo | undefined): claim is ClaimInfo {
+export function isReviewedClaim(claim: ClaimInfo | undefined): boolean {
   return claim?.status === 'published' && findReviewer(claim.reviewer) !== undefined;
 }
 

@@ -7,6 +7,7 @@ import { isoDate } from './dates';
 
 export const CLAIM_PATH_PREFIX = '/research/claims/';
 export const SOURCE_PATH_PREFIX = '/research/sources/';
+export const VALUES_PATH_PREFIX = '/values#';
 
 const matrixGroupKey = z.enum([
   'environmental',
@@ -110,7 +111,7 @@ const stanceCommon = {
   /** Why the attribute matters. */
   sources: sourcePaths.optional(),
   /** A Values position standing in for sources (Q11). */
-  position: z.string().regex(/^\/values#[a-z0-9-]+$/).optional(),
+  position: z.string().regex(new RegExp(`^${VALUES_PATH_PREFIX}[a-z0-9-]+$`)).optional(),
 };
 
 const largeModels = z.strictObject({

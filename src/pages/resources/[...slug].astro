@@ -12,6 +12,8 @@ import Lightbox from '../../components/Lightbox.astro';
 import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 import { buildResourceSchema } from '../../lib/resourceSchema';
 import { matrixDataSchema } from '../../lib/matrixSchema';
+import { validateMatrixEvidence } from '../../lib/matrixCheck';
+import { buildMatrixLookups } from '../../lib/matrixLookups';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -35,6 +37,19 @@ const resourceSchema = buildResourceSchema(entry);
 // layout can validate its own shape here. Fail loudly: a schema error in a
 // matrix entry should break the build, not render a degraded page.
 const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefined;
+
+// Every citation on the page must resolve and agree with what it cites; a bad
+// one fails the build the same way a schema error does. The Values position
+// ids arrive with the stance sentences (no row sets a position yet).
+if (matrixData) {
+  const [claims, sources, entities, criteria] = await Promise.all([
+    getCollection('claims'),
+    getCollection('sources'),
+    getCollection('entities'),
+    getCollection('criteria'),
+  ]);
+  validateMatrixEvidence(matrixData, buildMatrixLookups(claims, sources, entities, criteria, []));
+}
 
 // Git last-commit date for the content file, used as "last updated" in matrix captions.
 let matrixLastModified: Date | undefined;

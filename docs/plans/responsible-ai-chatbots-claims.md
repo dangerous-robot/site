@@ -18,7 +18,7 @@ Honest labels (no new research)
 - [x] S1: site-side unit tests run in `inv check` and CI
 - [x] S2: pure functions for tier, stance and verdict agreement
 - [x] S3: schema for cell evidence, row stances and product entities
-- [ ] S4: build check that fails on bad citations
+- [x] S4: build check that fails on bad citations
 - [ ] S5: cells colored by the row's stance, feature rows neutral, `no-good` retired
 - [ ] S6: evidence marks with a detail popup, and the Evidence section
 - [ ] S7: today's inline links become source files
@@ -296,7 +296,7 @@ features:
 
 Ownership: the cited claim must be True or Mostly true, and its title must contain the cell's `term`. The pipeline only accepts a title that resolves the template's vocabulary slot to one allowed word (`validate_analyst_title`, `pipeline/common/templates.py:184-203`, e.g. "Ecosia has steward-ownership corporate structure"), so the build can find the word in the title by matching the criterion's vocabulary.
 
-**The build check** (S4) lives in a pure function in `src/lib/matrixEvidence.ts`, called from `src/pages/resources/[...slug].astro` right after `matrixDataSchema.parse` (`:37`), where a schema error already fails the build. It collects every problem and throws once. Deploy runs CI (`.github/workflows/deploy.yml:18`, which includes `dr lint`) and then the build (`:30`), so both gates sit in front of a deploy. It fails when:
+**The build check** (S4) lives in a pure function in `src/lib/matrixCheck.ts` (its lookups are built from the research collections by `src/lib/matrixLookups.ts`), called from `src/pages/resources/[...slug].astro` right after `matrixDataSchema.parse` (`:37`), where a schema error already fails the build. It collects every problem and throws once. Deploy runs CI (`.github/workflows/deploy.yml:18`, which includes `dr lint`) and then the build (`:30`), so both gates sit in front of a deploy. It fails when:
 - a cited claim does not exist;
 - a cited claim is not `published` (draft, archived, blocked);
 - a cited published claim has no reviewer that `resolveReviewer` maps to a person (stricter than `dr lint` `published-without-review`, `checks.py:128-157`, which checks only `reviewed_at`; see "Evidence tiers");
@@ -355,12 +355,12 @@ Move the matrix schema (`content.config.ts:303-412`) to `src/lib/matrixSchema.ts
 Verify: `npm run build` passes; unit tests show the schema rejects `type: "no-good"`, `type: "planned"`, an unknown `polarity`, an `ideal` with both `value` and `answer`, and an unknown `owned_by.kind`, and accepts the migrated page data and a summary entry in object form; a `collectFreshestDate` test fails before the F16 fix with an unquoted YAML date and passes after.
 
 #### S4: build check that fails on bad citations
-`validateMatrixEvidence(data, { claims, sources, entities, criteria, valuesPositions })` in `matrixEvidence.ts`, called from `[...slug].astro:37`.
+`validateMatrixEvidence(data, { claims, sources, entities, criteria, valuesPositions })` in `src/lib/matrixCheck.ts`, called from `[...slug].astro:37`.
 Verify: a fixture test for each failure in "The build check", each asserting the message names the row and product; one passing fixture; today's page data passes (until S5 the models and ownership rows have no `ideal`, so they are feature rows and set none of the new fields). Then one real cell pointed at a missing source fails `npm run build`, reverted. Run once from a clean checkout (CI, or `git worktree add --detach` of HEAD), because the main checkout holds untracked research files that CI does not have.
 
 #### S5: cells colored by the row's stance, feature rows neutral, `no-good` retired
 Rendering uses `cellStance`; feature rows render in the neutral text color (fixes F5). Remove `ideal` from free tier, agent web search and normal web search (Q5). Add `ideal` to models (`answer`; `models` only on cells whose every model is named specifically, the rest unknown until S8, F14; `large_models` seeded by sorting every model those cells name, Mistral and GPT-OSS ones included, into `large` or `not_large` by P5 and R2, with no `sources` until S8) and ownership (`answer`, `terms`, a `term` per cell read from today's text: "B Corp" is `B-corp`, "Private", the LLCs and "Sole proprietorship" are `privately-held`, Ecosia's pair is either good word until F12). Add `answers: [yes, partial, unknown]` to accessibility (P4); its `yes` cells stay until S8 (F13). Add the "We prefer" line, the hidden cell text (fixes F4), the "No mark: not yet sourced" legend entry and the legend sentence "Rows without a “We prefer” line compare facts only; we take no position on them." Alias tokens per DR1. Remove the `no-good` and `planned` icons, legend entry and CSS (`ResponsibleAIMatrix.astro:22`, `:24`, `:215-217`, `:463-465`, `:536`); remove the stale mobile comment (F3).
-Verify: a Lighthouse accessibility audit of the page before the change, recorded here as the baseline; after: build; Chrome DevTools screenshots of the table in dark, light, dark high contrast and light high contrast at 1280px and 375px; the Lighthouse audit shows no failure missing from the baseline; the accessibility tree for one real cell in each stance the page has (good, bad, mixed, neutral, feature row, text good, text mixed, text unknown) reads as specified; stances with no real cell yet (likely text bad) are covered by S2's tests.
+Verify: a Lighthouse accessibility audit of the page before the change, recorded here as the baseline (2026-10-09, desktop, score 93; two failures, neither in the table: `color-contrast` on the site nav links, `link-in-text-block` on the summary table's inline links); after: build; Chrome DevTools screenshots of the table in dark, light, dark high contrast and light high contrast at 1280px and 375px; the Lighthouse audit shows no failure missing from the baseline; the accessibility tree for one real cell in each stance the page has (good, bad, mixed, neutral, feature row, text good, text mixed, text unknown) reads as specified; stances with no real cell yet (likely text bad) are covered by S2's tests.
 
 #### S6: evidence marks with a detail popup, and the Evidence section
 Per "Display (D1 plus a popup)". New `ResponsibleAIEvidence.astro`; pill nav gains "Evidence" (`[...slug].astro:80-87`); entries have ids `ev-<row>-<product>` and open on hash. Summary entries get the same marks (`ResponsibleAISummary.astro`).
