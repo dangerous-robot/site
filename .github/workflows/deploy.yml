@@ -4,10 +4,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Jobs that install packages (verify, build) hold no write rights; only the
+# deploy job can publish to Pages. A called workflow inherits the caller's
+# permissions, so verify narrows them explicitly.
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -16,12 +17,18 @@ concurrency:
 jobs:
   verify:
     uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
 
   build:
     needs: verify
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: 22
@@ -37,6 +44,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
