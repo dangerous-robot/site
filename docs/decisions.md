@@ -4,6 +4,11 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-09
+
+- **URLs end in a slash.** The canonical form of every page URL is the trailing-slash form (`/about/`), the form GitHub Pages serves; `trailingSlash: "always"` in `astro.config.ts`, and canonical tags, the sitemap, internal links and the SEO scripts follow it. Decided because every no-slash sitemap URL was a 301. *(Final)*
+- **Subject claim pages stay noindexed.** The "Indexing after 1.0.0" decision covers claim pages at any depth, including `/research/claims/subjects/{subject}/{claim}`; the path rule that missed them is a bug. *(Final)*
+
 ## 2026-10-08
 
 - **Menus: temporary guide links during the beta.** While the site is not finished, the menus point visitors at the pages that are ready: the pledge takes Writing's place in the top nav and the homepage dropdown ("Where to start" leaves it out, since the spotlight shows it, and links All resources instead), and `/resources` lists the AI Safety Index, Responsible AI chatbots and Writing (the other resources stay at their URLs). These one-off placements stop before 1.0.0, when one clean menu order is applied across the site. *(Temporary)*

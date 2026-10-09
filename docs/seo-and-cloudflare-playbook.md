@@ -31,9 +31,8 @@ For each URL Google has not indexed: **URL Inspection → Test live URL →
 Request Indexing**. Check first with `scripts/seo/inspect-urls.sh` or URL
 Inspection; skip pages already indexed. Every URL below except `/` currently
 301s to its trailing-slash form while the canonical tag and sitemap use the
-no-slash form (`docs/UNSCHEDULED.md`, "SEO post-restructure follow-ups",
-the canonical-URL row); if that fix is about to land, request indexing after
-it. In priority order:
+no-slash form; the fix is SITE-Z (Trailing-slash URLs) in the roadmap.
+Request indexing after it lands. In priority order:
 
 1. `/resources/responsible-ai` (the page SITE-J, Responsible AI chatbots, is building)
 2. `/resources`, `/resources/ai-safety`, `/resources/should-i`,
