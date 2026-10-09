@@ -77,6 +77,15 @@ const isoDate = (d: Date | string | null | undefined): string | null => {
   return String(d);
 };
 
+// Sidecars store pipeline agent keys; the `auditor` key predates the Evaluator role name.
+const AGENT_LABELS: Record<string, string> = {
+  researcher: "Researcher",
+  ingestor: "Ingestor",
+  analyst: "Analyst",
+  auditor: "Evaluator",
+};
+const agentLabel = (key: string): string => AGENT_LABELS[key] ?? key;
+
 const audit = claim.data.audit ?? null;
 const ranAt = audit ? isoDate(audit.pipeline_run.ran_at) : null;
 const reviewedAt = audit ? isoDate(audit.human_review.reviewed_at) : null;
@@ -166,7 +175,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
         <details class="audit-trail">
           <summary>
             <DisclosureIndicator />
-            <span>Research process · {ranAt} · {audit.pipeline_run.agents.join(', ')}</span>
+            <span>Research process · {ranAt} · {audit.pipeline_run.agents.map(agentLabel).join(', ')}</span>
           </summary>
 
           <div class="audit-content">
@@ -196,7 +205,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
                 <h3>Models used</h3>
                 <ul class="audit-models-list">
                   {Object.entries(audit.models_used).map(([agent, m]) => (
-                    <li><code>{agent}</code>: <code>{m}</code></li>
+                    <li>{agentLabel(agent)}: <code>{m}</code></li>
                   ))}
                 </ul>
               </section>
@@ -205,11 +214,11 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
             <section class="audit-section">
               <h3>Verdict check</h3>
               {audit.audit === null ? (
-                <p class="audit-muted">Auditor check unavailable.</p>
+                <p class="audit-muted">Evaluator check unavailable.</p>
               ) : (
                 <div>
                   <p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>
-                  <p>Auditor: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
+                  <p>Evaluator: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
                   <p class={audit.audit.verdict_agrees ? 'audit-agrees' : 'audit-disagrees'}>
                     {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
                   </p>
