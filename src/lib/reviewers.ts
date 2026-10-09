@@ -37,6 +37,12 @@ export function reviewerHandle(raw: string | null | undefined): string | null {
   return REVIEWER_HANDLES[raw.trim().toLowerCase()] ?? null;
 }
 
+/** The person behind a raw reviewer value, or undefined when it is empty or has no mapping. */
+export function findReviewer(raw: string | null | undefined): Person | undefined {
+  const handle = reviewerHandle(raw);
+  return handle ? PEOPLE.find((p) => p.handle === handle) : undefined;
+}
+
 /**
  * Display info for a raw reviewer value, or null when the value is empty.
  * Throws on a value with no mapping, failing the build: a reviewed claim must
@@ -44,7 +50,7 @@ export function reviewerHandle(raw: string | null | undefined): string | null {
  */
 export function resolveReviewer(raw: string | null | undefined, context: string): ReviewerDisplay | null {
   if (!raw) return null;
-  const person = PEOPLE.find((p) => p.handle === reviewerHandle(raw));
+  const person = findReviewer(raw);
   if (!person) {
     throw new Error(`${context}: reviewer has no entry in src/lib/reviewers.ts; add one before building`);
   }

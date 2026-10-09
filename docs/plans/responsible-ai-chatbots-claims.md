@@ -16,7 +16,7 @@ Ticked as items land (AGENTS.md rule 4). Ids match the step headings under "Step
 
 Honest labels (no new research)
 - [x] S1: site-side unit tests run in `inv check` and CI
-- [ ] S2: pure functions for tier, stance and verdict agreement
+- [x] S2: pure functions for tier, stance and verdict agreement
 - [ ] S3: schema for cell evidence, row stances and product entities
 - [ ] S4: build check that fails on bad citations
 - [ ] S5: cells colored by the row's stance, feature rows neutral, `no-good` retired

@@ -14,6 +14,14 @@ export const VERDICT_LABELS: Record<Verdict, string> = {
   'not-applicable': 'N/A',
 };
 
+export type Confidence = 'high' | 'medium' | 'low';
+
+export const CONFIDENCE_LABELS: Record<Confidence, string> = {
+  high: 'High',
+  medium: 'Medium',
+  low: 'Low',
+};
+
 export const VERDICT_TOOLTIP: Record<Verdict, string> = {
   'true': 'Claim is accurate and well-supported',
   'mostly-true': 'Claim is largely accurate with minor caveats',

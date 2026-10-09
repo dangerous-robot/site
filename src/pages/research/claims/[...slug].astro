@@ -5,7 +5,7 @@ import PageHeader from "../../../components/PageHeader.astro";
 import VerdictBadge from "../../../components/VerdictBadge.astro";
 import DisclosureIndicator from "../../../components/DisclosureIndicator.astro";
 import { buildEntityMap, getEntityParent, resolveMadeBy } from "../../../lib/entityTypes";
-import { VERDICT_LABELS } from "../../../lib/verdict";
+import { CONFIDENCE_LABELS, VERDICT_LABELS } from "../../../lib/verdict";
 import { shouldNoindex } from "../../../lib/seo";
 import { resolveReviewer } from "../../../lib/reviewers";
 import {
@@ -56,12 +56,6 @@ const claimCrumbs = [
   ...(typeParent ? [typeParent] : []),
   { label: entityLabel, href: `/research/entities/${claim.data.entity}` },
 ];
-
-const confidenceLabels: Record<string, string> = {
-  high: "High",
-  medium: "Medium",
-  low: "Low",
-};
 
 const asOfDate = claim.data.as_of instanceof Date
   ? claim.data.as_of.toISOString().split("T")[0]
@@ -130,7 +124,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
       )}
       <div class="meta">
         <VerdictBadge verdict={claim.data.verdict} href="/research#methodology" />
-        <span class="confidence">{confidenceLabels[claim.data.confidence] || claim.data.confidence} confidence</span>
+        <span class="confidence">{CONFIDENCE_LABELS[claim.data.confidence]} confidence</span>
         <span class="as-of">{asOfDate}</span>
         <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
           {reviewer
