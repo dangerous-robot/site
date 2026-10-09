@@ -50,7 +50,7 @@ const faqSchema = {
       "name": "What methodology is used for research?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Claims move through a pipeline: (1) Research, an AI agent searches for sources. (2) Analysis, an analyst agent evaluates evidence and drafts a verdict; an auditor agent checks for consistency. (3) Human review, an operator approves, rejects, or requests revision. Nothing publishes without human sign-off. (4) Schema validation, all data is validated by Zod schemas at build time.",
+        "text": "Claims move through a pipeline: (1) Research, an AI agent searches for sources. (2) Analysis, an analyst agent evaluates evidence and drafts a verdict; an evaluator agent checks for consistency. (3) Human review, an operator approves, rejects, or requests revision. Nothing publishes without human sign-off. (4) Schema validation, all data is validated by Zod schemas at build time.",
       },
     },
     {
@@ -232,7 +232,7 @@ const faqSchema = {
             </li>
             <li>
               <strong>Analysis.</strong> An analyst agent evaluates the evidence and drafts a
-              verdict with supporting reasoning. An auditor agent checks the draft for consistency
+              verdict with supporting reasoning. An evaluator agent checks the draft for consistency
               with the sources.
             </li>
             <li>
