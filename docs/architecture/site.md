@@ -253,7 +253,17 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
     <footer>   -- maker line (TreadLightlyAI linked) and one row of footer links
 ```
 
-**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Writing, About) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer's one row of links: About, Values, Methodology, Privacy and CC-BY-4.0 (marked `external`). Credits, GitHub and the version are on the About page ("The project"); `src/lib/version.ts` reads the version from `VERSION.md` for the About page and the beta banner (shown on `/research` pages only). `navLabel(href)` gives the homepage menu its short labels.
+**Navigation source.** `src/lib/nav.ts` is the one source for the site nav. `SECTIONS` lists the top-row pages (Research, Resources, Pledge, About; the pledge holds Writing's place during the beta, see `decisions.md`) with each section's sub-links; Research's sub-links are Topics, Claims, Companies and Products (Values is not among them). A section marked `primary: false` (Research, for now) keeps its sub-nav on its own pages but is left out of `PRIMARY_SECTIONS`, which `TOP_LINKS` renders; the collapsed (hamburger) menu shows the primary sections plus the current one, so Research pages keep their links on phones. Resources lists AI Safety Index and Responsible AI. `FOOTER_LINKS` holds the footer's one row of links: About, Values, Privacy and CC-BY-4.0 (marked `external`). Credits, GitHub and the version are on the About page ("The project"); `src/lib/version.ts` reads the version from `VERSION.md` for the About page and the beta banner (shown on `/research` pages only). `navLabel(href)` gives the homepage menu its short labels.
+
+### Logo files
+
+All in `public/`, 512x512 PNG:
+
+| File | Look | Use |
+|---|---|---|
+| `dr-logo.png` | Black on transparent | Nav logo, homepage hero, default `ogImage`, JSON-LD `logo`; the nav inverts it in dark mode with a CSS filter |
+| `dr-logo-light-bg.png` | Black on opaque off-white (`#f8f7f4`) | Where transparency renders badly (some social cards, email) |
+| `dr-logo-inverted.png` | White on transparent | Dark backgrounds |
 
 ### Styling approach
 
