@@ -40,7 +40,8 @@ const {
   description = SITE_DESCRIPTION,
   layout = 'reading',
   chrome = 'standard',
-  ogImage = '/dr-logo.png',
+  // Opaque background: some share cards render a transparent PNG on black.
+  ogImage = '/dr-logo-light-bg.png',
   noindex = false,
 } = Astro.props;
 

@@ -239,7 +239,7 @@ A single layout -- `src/layouts/Base.astro` -- wraps every page.
 | `description` | `string` | Falls back to the site's decided meta description              |
 | `layout`      | `'reading' \| 'wide' \| 'bare'` | `'reading'` (narrow column). `'bare'` removes width constraints for bespoke pages such as the homepage |
 | `chrome`      | `'standard' \| 'minimal'` | `'standard'` draws the site-wide nav; `'minimal'` leaves navigation to the page (the homepage) |
-| `ogImage`     | `string` | `/dr-logo.png`                                                 |
+| `ogImage`     | `string` | `/dr-logo-light-bg.png`                                        |
 | `noindex`     | `boolean` | `false`; `true` emits `noindex,nofollow`                       |
 
 ### Structure
@@ -261,8 +261,8 @@ All in `public/`, 512x512 PNG:
 
 | File | Look | Use |
 |---|---|---|
-| `dr-logo.png` | Black on transparent | Nav logo, homepage hero, default `ogImage`, JSON-LD `logo`; the nav inverts it in dark mode with a CSS filter |
-| `dr-logo-light-bg.png` | Black on opaque off-white (`#f8f7f4`) | Where transparency renders badly (some social cards, email) |
+| `dr-logo.png` | Black on transparent | Nav logo, homepage hero, JSON-LD `logo`; the nav inverts it in dark mode with a CSS filter |
+| `dr-logo-light-bg.png` | Black on opaque off-white (`#f8f7f4`) | Default `ogImage`; anywhere transparency renders badly (social cards, email) |
 | `dr-logo-inverted.png` | White on transparent | Dark backgrounds |
 
 ### Styling approach
