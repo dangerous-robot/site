@@ -40,6 +40,7 @@ def lint(ctx):
 def check(ctx):
     """Type-check, build, lint, and test -- the pre-push gate."""
     ctx.run("npm run check:types", pty=True)
+    ctx.run("npm run test:site", pty=True)
     build(ctx)
     lint(ctx)
     _test_unit(ctx)

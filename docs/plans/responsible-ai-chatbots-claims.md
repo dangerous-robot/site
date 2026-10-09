@@ -15,7 +15,7 @@ Goal, in Brandon's words: add validity to the page's assertions; show yes/no plu
 Ticked as items land (AGENTS.md rule 4). Ids match the step headings under "Steps".
 
 Honest labels (no new research)
-- [ ] S1: site-side unit tests run in `inv check` and CI
+- [x] S1: site-side unit tests run in `inv check` and CI
 - [ ] S2: pure functions for tier, stance and verdict agreement
 - [ ] S3: schema for cell evidence, row stances and product entities
 - [ ] S4: build check that fails on bad citations

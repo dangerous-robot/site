@@ -12,7 +12,8 @@
     "check:citations": "tsx scripts/check-citations.ts",
     "check:reviewers": "tsx scripts/check-reviewer-display.ts",
     "check:types": "astro check",
-    "check": "npm run check:types && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers"
+    "test:site": "tsx --test 'src/lib/**/*.test.ts'",
+    "check": "npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers"
   },
   "engines": {
     "node": ">=22"
