@@ -116,3 +116,18 @@ def stub_ingest_model_calling_wayback():
     """Like ``stub_ingest_model``, but the model also calls ``wayback_check`` on the URL."""
     with _stubbed_ingest_model(call_wayback=True) as extra_frontmatter:
         yield extra_frontmatter
+
+
+@pytest.fixture
+def human_at_terminal(monkeypatch):
+    """Stand in for the person `dr review` requires: a tty, and the right slug typed back.
+
+    `approve_claim` refuses to write unless stdin is a tty and the operator
+    types the claim slug (`orchestrator.review.confirm_person_present`).
+    Tests that sign off as a side effect use this; `test_review_gate.py`
+    exercises the gate itself.
+    """
+    import orchestrator.review as review_mod
+
+    monkeypatch.setattr(review_mod, "_stdin_is_tty", lambda: True)
+    monkeypatch.setattr(review_mod, "_prompt_slug", lambda verb, slug: slug)

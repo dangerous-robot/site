@@ -161,7 +161,7 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | **Claim-promote** | Promote an ad-hoc claim draft to a reusable template entry in `research/templates.yaml`. Edits only the templates file; does not invoke any pipeline agent. CLI: `dr claim-promote`. |
 | **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias). |
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
-| **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). |
+| **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). Every mode needs a person at a terminal: stdin must be a tty and the claim slug is typed back before the write. |
 | **Publish** | Bulk draft → published flip without recording an individual reviewer. CLI: `dr publish`. Sidecar gets `[auto-publish]` notes; resulting claims render as "Unreviewed" until a later `dr review` writes a reviewer in. |
 | **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` (manual today; no scheduler) |
 

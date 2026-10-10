@@ -1911,6 +1911,9 @@ def review(
     ``status: published`` to ``status: archived`` (sidecar written first
     in either case).
 
+    Needs a person at a terminal: stdin must be a tty, and the claim slug is
+    typed back before anything is written.
+
     Example:
         dr review --claim ecosia/renewable-energy-hosting --approve
     """

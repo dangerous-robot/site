@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime
 import subprocess
+import sys
 from pathlib import Path
 from typing import Literal
 
@@ -14,6 +15,55 @@ from common.sidecar import sidecar_path_for
 from orchestrator.persistence import set_claim_corrections, set_claim_status
 
 ReviewMode = Literal["review", "approve", "archive"]
+
+_CONFIRM_VERB: dict[str, str] = {
+    "review": "Sign off",
+    "approve": "Approve and publish",
+    "archive": "Archive",
+}
+
+
+def _stdin_is_tty() -> bool:
+    return sys.stdin.isatty()
+
+
+def _prompt_slug(verb: str, slug: str) -> str:
+    return click.prompt(
+        f"{verb} {slug}: type the claim slug to confirm", default="", show_default=False
+    )
+
+
+def claim_slug_for(claim_path: Path) -> str:
+    """``<entity>/<claim>`` (or the nested path under ``research/claims``) for a claim file."""
+    for ancestor in claim_path.parents:
+        if ancestor.name == "claims" and ancestor.parent.name == "research":
+            return claim_path.relative_to(ancestor).with_suffix("").as_posix()
+    return f"{claim_path.parent.name}/{claim_path.stem}"
+
+
+def require_terminal() -> None:
+    """Raise unless stdin is a tty. A piped command is not a person."""
+    if not _stdin_is_tty():
+        raise click.ClickException(
+            "a sign-off needs a person at a terminal (stdin is not a tty); nothing changed"
+        )
+
+
+def confirm_person_present(claim_path: Path, mode: ReviewMode) -> None:
+    """Refuse a sign-off unless a person at a terminal types the claim slug back.
+
+    The reviewer name written here is what the site shows as "Reviewed". An
+    agent session runs commands with stdin piped, so without this check one
+    could record a human review that never happened. Raises ClickException
+    before anything is written.
+    """
+    require_terminal()
+    slug = claim_slug_for(claim_path)
+    typed = _prompt_slug(_CONFIRM_VERB[mode], slug).strip()
+    if typed != slug:
+        raise click.ClickException(
+            f"the typed slug did not match {slug!r}; nothing changed"
+        )
 
 
 def _resolve_reviewer(reviewer: str | None) -> str:
@@ -169,6 +219,9 @@ def approve_claim(
     ``reviewer`` is None, falls back to ``git config user.email``. Raises
     ``click.ClickException`` on validation errors so CLI callers surface a
     clean message.
+
+    Every mode asks a person at a terminal to type the claim slug back before
+    the first write (see ``confirm_person_present``).
     """
     sidecar_path = sidecar_path_for(claim_path)
     if not claim_path.exists():
@@ -190,6 +243,22 @@ def approve_claim(
         raise click.ClickException(
             f"the verdict changed from {previous!r} to {current!r} since this claim "
             "was published; pass --correction TEXT with a one-line summary for readers"
+        )
+
+    # Last check before the first write, so a claim that fails preflight is
+    # reported without asking the operator to type anything.
+    confirm_person_present(claim_path, mode)
+
+    # The operator may have edited the files while the prompt waited (the
+    # queue's `o` action with an editor that returns at once): write from a
+    # fresh read, with the preflight repeated on it.
+    fm = _read_claim_frontmatter(claim_path)
+    expected_current, new_status = _preflight_status(claim_path, fm, mode)
+    sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    change = refresh_verdict_change(fm, sidecar_data) if mode == "approve" else None
+    if change is not None and not summary:
+        raise click.ClickException(
+            "the verdict changed while the prompt waited; rerun with --correction TEXT"
         )
 
     # Write order: correction, then sidecar, then status. The correction is

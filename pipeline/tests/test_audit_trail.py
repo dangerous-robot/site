@@ -1001,6 +1001,7 @@ class TestWriteClaimFile:
 # dr review CLI
 # ---------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestDrReviewCli:
     def test_sets_reviewed_at_to_today(self, tmp_path):
         # Set up a fake claims directory
@@ -1131,6 +1132,7 @@ class TestDrReviewCli:
 # dr review --approve / --archive (claim promotion)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestDrReviewPromotion:
     def _setup_claim(
         self,
@@ -1415,6 +1417,7 @@ class TestDrReviewPromotion:
 # approve_claim — direct callable (also exercised via dr review CLI above)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestApproveClaimCallable:
     """`approve_claim` is the shared entry point that `dr review` and
     `dr review-queue` both call. The CLI tests above exercise it via Click;
@@ -1551,6 +1554,7 @@ def _setup_refreshed_claim(
     return claim_md, sidecar
 
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestApproveRefreshedClaim:
     def _approve(self, claim_md: Path, **kwargs) -> None:
         from orchestrator.review import approve_claim
@@ -1726,6 +1730,7 @@ class TestApproveRefreshedClaim:
         assert fm["corrections"][0]["summary"] == "Re-checked: no hosting disclosure."
 
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestApproveRecordsVerdictOverride:
     def test_edited_verdict_records_override(self, tmp_path):
         from orchestrator.review import approve_claim

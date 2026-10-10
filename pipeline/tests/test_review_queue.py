@@ -319,6 +319,7 @@ class TestReviewQueueNonInteractive:
 # CLI: interactive single-key actions                                          #
 # --------------------------------------------------------------------------- #
 
+@pytest.mark.usefixtures("human_at_terminal")
 class TestReviewQueueInteractive:
     def test_quit_exits_without_changes(self, tmp_path):
         c = _write_claim(tmp_path, entity="ent-a", slug="mike")

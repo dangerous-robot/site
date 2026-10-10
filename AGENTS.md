@@ -183,7 +183,7 @@ Commands:
 
 Archive.org captures (Save Page Now): `dr claim-draft`, `dr claim-refresh`, `dr onboard`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered); `dr entity-enrich` and onboard's light research capture only when the ingest model recovers a failed fetch. `dr claim-probe`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link.
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
-- `dr review` -- Mark a claim as human-reviewed in its audit sidecar
+- `dr review` -- Mark a claim as human-reviewed in its audit sidecar. It needs a person at a terminal: stdin must be a tty and the claim slug is typed back before anything is written, so a piped command cannot sign off (`dr review-queue`'s `a` action has the same check). Agents: do not run it, and do not wrap it in a pty (`script`, `expect`, Python `pty`) or edit a sidecar's `human_review` by hand; a sign-off is Brandon's
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 

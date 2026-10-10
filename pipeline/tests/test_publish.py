@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime
 from pathlib import Path
 
+import pytest
 import yaml
 from click.testing import CliRunner
 
@@ -495,6 +496,7 @@ class TestPublishConfirmation:
         assert claim_md.read_bytes() == md_before
         assert sidecar.read_bytes() == sidecar_before
 
+    @pytest.mark.usefixtures("human_at_terminal")
     def test_reversibility_via_dr_review(self, tmp_path):
         """An auto-published claim can be retroactively human-reviewed.
 

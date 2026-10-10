@@ -433,7 +433,7 @@ def run_interactive(
 ) -> None:
     """Walk the operator through the queue. Returns when they quit or the queue empties."""
     from common.sidecar import sidecar_path_for
-    from orchestrator.review import approve_claim, refresh_verdict_change
+    from orchestrator.review import approve_claim, refresh_verdict_change, require_terminal
 
     if not items:
         click.echo("Queue is empty: no draft claims awaiting review.")
@@ -471,6 +471,9 @@ def run_interactive(
                 click.echo(f"Saved edits to {item.claim_slug}")
             continue
         if action == "a":
+            # Refuse before the correction prompt, and let the error end the
+            # queue: with piped stdin a re-prompt would loop forever.
+            require_terminal()
             correction = None
             # Read from disk, not the item: `o` can change the verdict in an
             # external editor without updating the queue item. A file that no
