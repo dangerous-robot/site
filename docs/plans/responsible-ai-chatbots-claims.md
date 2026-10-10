@@ -23,6 +23,7 @@ Honest labels (no new research)
 - [x] S6: evidence marks with a detail popup, and the Evidence section
 - [x] S7: today's inline links become source files (6 of 9; see S7 for the 3 left as links)
 - [x] S8: content fixes for the findings (F10 and the lab-page half of F14 wait on sources; see S8)
+- [ ] S8a: apply the post-S8 answers (A1 to A8 under Decisions)
 
 Sources for every stance row
 - [ ] S9: stance sentences and their evidence
@@ -64,6 +65,17 @@ Brandon's answers: Q1 to Q13 on 2026-10-08, P1 to P6 and R1 to R4 on 2026-10-09.
 - R2: a model is large if it was its lab's most capable tier when released; in a size family only the largest size is. Each call is recorded in the dated list. This amends P5's "current lineup".
 - R3: `owned_by.kind: conglomerate` only when a cited source describes the owner as one.
 - R4: the row is labeled "Open-weight models"; S12 rewords the criterion text to "PRODUCT uses only open-weight models" (slug unchanged).
+
+Post-S8 answers, Brandon 2026-10-09 (open questions from the S1 to S8 build and its review; S8a applies them):
+
+- A1 (F15): the page description stays "Side-by-side comparison of AI chatbots that call themselves green or responsible: hosting, models, data use, ownership and cost, with the evidence behind each cell." Already on main.
+- A2 (F7): the Maturity row shows each product's launch month and year ("Launched Oct 2025"), not an age; the row label drops "as of March 2026". A launch date without a source shows "Not yet sourced".
+- A3 (F13): until S10, the accessibility row shows the earlier answers again, unsourced (tier "Not yet sourced"): Ecosia AI and TreadLightlyAI Yes, "Level AA+"; Euria, Viro AI and ChatGPTree Partial.
+- A4 (F13, P4): GreenPT and Earthly Insight, earlier "Yes, Level A", are Partial with the detail "Level A", since P4 counts only Level AA as Yes.
+- A5 (R2): GPT-4o is large (OpenAI's top tier at its release), so ChatGPTree's models cell is bad; GPT-OSS is not large. Each call still needs its lab's model page as a source (S10).
+- A6 (F12): Ecosia's ownership term is steward-ownership (cell text keeps "Non-profit, Steward-ownership"). Already on main.
+- A7: the two dead summary links (ChatGPTree's Evertreen criticism, a redmonitor Substack post; Euria's "environmental commitments", an infomaniak.com page) get replacement sources, ingested as source files. Where none is found, the link and the sentence it backs come out; the Evertreen allegation does not stand unsourced.
+- A8 (review F6): in the dark theme only, `--color-stance-bad` gets its own lighter red (about #e05555, 4.7:1 on `#19191b`; WCAG 1.4.11 asks 3:1) instead of `--color-verdict-false` (#b22222, 2.6:1). Verdict colors are unchanged, so "False" stays distinct from "Mostly false".
 
 ## What the page asserts today
 
