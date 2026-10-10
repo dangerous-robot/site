@@ -1,14 +1,17 @@
 ---
 import { ArrowUp } from 'lucide-astro';
+import ResponsibleAISourceLinks from './ResponsibleAISourceLinks.astro';
+import type { EvidenceLookups } from '../lib/matrixEvidence';
 import type { MatrixData } from '../lib/matrixSchema';
 
 type FootnotesData = Pick<MatrixData, 'footnotes'>;
 
 interface Props {
   data: FootnotesData;
+  lookups: EvidenceLookups;
 }
 
-const { data } = Astro.props;
+const { data, lookups } = Astro.props;
 const footnotes = data.footnotes ?? [];
 
 const slugify = (s: string) =>
@@ -27,6 +30,7 @@ const slugify = (s: string) =>
         <li id={`fn-${slugify(note.subject)}`}>
           <strong>{note.subject}</strong>
           {note.text}
+          <span class="ra-footnotes__sources"><ResponsibleAISourceLinks paths={note.sources} lookups={lookups} /></span>
         </li>
       ))}
     </ol>
@@ -70,5 +74,9 @@ const slugify = (s: string) =>
     display: block;
     color: var(--color-text-heading);
     margin-bottom: var(--space-2xs);
+  }
+
+  .ra-footnotes__sources {
+    color: var(--color-text-faint);
   }
 </style>

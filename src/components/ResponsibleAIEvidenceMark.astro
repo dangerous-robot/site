@@ -69,7 +69,10 @@ const Icon = content.tier === 'claim' ? Scale : Link;
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
   let openWrap: HTMLElement | null = null;
   let pinned = false;
-  let hoverTimer = 0;
+  // Separate hover timers: crossing a second mark must neither cancel the
+  // first one's close nor leave it open.
+  let openTimer = 0;
+  let closeTimer = 0;
 
   const markOf = (wrap: HTMLElement) => wrap.querySelector<HTMLButtonElement>('[data-ev-mark]')!;
   const popupOf = (wrap: HTMLElement) => wrap.querySelector<HTMLElement>('.ev-popup')!;
@@ -87,6 +90,9 @@ const Icon = content.tier === 'claim' ? Scale : Link;
   }
 
   function open(wrap: HTMLElement, pin: boolean) {
+    // A pin must survive a pending hover timer in either direction.
+    window.clearTimeout(openTimer);
+    window.clearTimeout(closeTimer);
     if (openWrap && openWrap !== wrap) close();
     openWrap = wrap;
     pinned = pinned || pin;
@@ -118,16 +124,25 @@ const Icon = content.tier === 'claim' ? Scale : Link;
     const wrap = wrapOf(e.target);
     if (!wrap || wrap.contains(e.relatedTarget as Node | null)) return;
     if (!fine.matches || e.pointerType !== 'mouse') return;
-    window.clearTimeout(hoverTimer);
-    if (openWrap === wrap) return;
-    hoverTimer = window.setTimeout(() => open(wrap, false), HOVER_DELAY);
+    if (openWrap === wrap) {
+      window.clearTimeout(closeTimer);
+      return;
+    }
+    // A pinned popup stays until Esc, a click outside, focus leaving or its
+    // own mark; hovering another mark must not displace it.
+    if (openWrap && pinned) return;
+    window.clearTimeout(openTimer);
+    openTimer = window.setTimeout(() => open(wrap, false), HOVER_DELAY);
   });
 
   document.addEventListener('pointerout', (e) => {
     const wrap = wrapOf(e.target);
     if (!wrap || wrap.contains(e.relatedTarget as Node | null)) return;
-    window.clearTimeout(hoverTimer);
-    if (openWrap === wrap && !pinned) hoverTimer = window.setTimeout(() => close(), HOVER_DELAY);
+    window.clearTimeout(openTimer);
+    if (openWrap === wrap && !pinned) {
+      window.clearTimeout(closeTimer);
+      closeTimer = window.setTimeout(() => close(), HOVER_DELAY);
+    }
   });
 
   document.addEventListener('keydown', (e) => {

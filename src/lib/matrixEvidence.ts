@@ -104,7 +104,11 @@ export function isCapped(product: ProductRef): boolean {
 
 export interface CellEvidence {
   tier: Tier;
-  /** The reviewed claim behind a "claim" tier, and the person who approved it. */
+  /**
+   * The reviewed claim cited, if any, and the person who approved it. Present
+   * below the "claim" tier too when an owner lowers the cell, so branch on
+   * `tier`, not on `claim`.
+   */
   claim?: ClaimInfo;
   reviewer?: Person;
   /** Every source path cited, the owner's included. */
@@ -129,15 +133,15 @@ export function cellEvidence<T extends Cited>(cited: T, product: ProductRef, loo
 
   const claimId = cited.claim && !isCapped(product) ? citedId(cited.claim, 'claim') : null;
   const claim = claimId ? lookups.claims.get(claimId) : undefined;
-  const ownTier: Tier = isReviewedClaim(claim) ? 'claim' : ownSources.length > 0 ? 'source' : 'none';
+  const reviewed = isReviewedClaim(claim);
+  const ownTier: Tier = reviewed ? 'claim' : ownSources.length > 0 ? 'source' : 'none';
+  const claimPart = reviewed ? { claim, reviewer: findReviewer(claim!.reviewer) } : {};
 
-  if (!cited.owned_by) {
-    return ownTier === 'claim'
-      ? { tier: ownTier, claim, reviewer: findReviewer(claim!.reviewer), sourcePaths }
-      : { tier: ownTier, sourcePaths };
-  }
+  if (!cited.owned_by) return { tier: ownTier, ...claimPart, sourcePaths };
+  // The owner's part is sources or nothing, so the cell is "source" at best
+  // and "none" if either part is bare; the claim stays visible either way.
   const tier: Tier = ownTier !== 'none' && ownerSources.length > 0 ? 'source' : 'none';
-  return { tier, sourcePaths };
+  return { tier, ...claimPart, sourcePaths };
 }
 
 export function cellTier<T extends Cited>(cited: T, product: ProductRef, lookups: EvidenceLookups): Tier {
@@ -260,7 +264,7 @@ export function popupContent<T extends Cited>(
   const forWhom = `${product.name}, ${lowerLabel(subject.label)}`;
   const content: PopupContent = { tier, tierName: TIER_NAMES[tier], forWhom };
 
-  if (claim) {
+  if (tier === 'claim' && claim) {
     content.verdict = claim.verdict;
     content.confidence = CONFIDENCE_LABELS[claim.confidence];
     content.asOf = isoDate(claim.as_of);

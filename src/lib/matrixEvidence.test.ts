@@ -1,6 +1,7 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  cellEvidence,
   cellStance,
   cellTier,
   checkRecordLine,
@@ -45,6 +46,7 @@ const bare: MatrixCell = { type: 'yes' };
 const CLAIM_PATH = '/research/claims/greenpt/renewable-energy-hosting';
 const SRC_A = '/research/sources/2026/a';
 const SRC_B = '/research/sources/2026/b';
+const OWNER = { name: 'Big Co', kind: 'publicly-traded' as const };
 
 function feature(over: Partial<MatrixFeature> = {}): MatrixFeature {
   return { key: 'renewable-hosting', label: 'Hosted on renewable energy', group: 'environmental', polarity: 'same', cells: {}, ...over };
@@ -219,13 +221,17 @@ describe('cellTier', () => {
     assert.equal(cellTier({ type: 'yes', claim: CLAIM_PATH }, treadlightly, l), 'none');
     assert.equal(cellTier({ type: 'yes', claim: CLAIM_PATH, sources: [SRC_A] }, treadlightly, l), 'source');
   });
-  test('an ownership cell with an owner takes the lower of the two tiers', () => {
+  test('an ownership cell with an owner takes the lower of the two tiers and keeps its claim visible', () => {
     const l = lookups([claim()], [source('2026/a')]);
-    const owner = { name: 'Big Co', kind: 'publicly-traded' as const };
-    assert.equal(cellTier({ type: 'text', term: 'B-corp', claim: CLAIM_PATH, owned_by: owner }, greenpt, l), 'none');
-    assert.equal(cellTier({ type: 'text', term: 'B-corp', claim: CLAIM_PATH, owned_by: { ...owner, sources: [SRC_A] } }, greenpt, l), 'source');
-    assert.equal(cellTier({ type: 'text', term: 'B-corp', sources: [SRC_A], owned_by: { ...owner, sources: [SRC_A] } }, greenpt, l), 'source');
-    assert.equal(cellTier({ type: 'text', term: 'B-corp', owned_by: { ...owner, sources: [SRC_A] } }, greenpt, l), 'none');
+    const unsourcedOwner = cellEvidence({ type: 'text', term: 'B-corp', claim: CLAIM_PATH, owned_by: OWNER }, greenpt, l);
+    assert.equal(unsourcedOwner.tier, 'none');
+    assert.equal(unsourcedOwner.claim?.id, claim().id);
+    const sourcedOwner = cellEvidence({ type: 'text', term: 'B-corp', claim: CLAIM_PATH, owned_by: { ...OWNER, sources: [SRC_A] } }, greenpt, l);
+    assert.equal(sourcedOwner.tier, 'source');
+    assert.equal(sourcedOwner.claim?.id, claim().id);
+    assert.equal(sourcedOwner.reviewer?.handle, 'brandon-f');
+    assert.equal(cellTier({ type: 'text', term: 'B-corp', sources: [SRC_A], owned_by: { ...OWNER, sources: [SRC_A] } }, greenpt, l), 'source');
+    assert.equal(cellTier({ type: 'text', term: 'B-corp', owned_by: { ...OWNER, sources: [SRC_A] } }, greenpt, l), 'none');
   });
 });
 
@@ -250,9 +256,13 @@ describe('popupContent', () => {
     const l = lookups([], [source('2026/a'), source('2026/b')]);
     const c = popupContent({ type: 'no', sources: [SRC_A, SRC_B] }, greenpt, row, l);
     assert.equal(c.sourceLine, 'Publisher of 2026/a, accessed 2026-09-30, and 1 more');
-    const owner = { name: 'Big Co', kind: 'publicly-traded' as const, sources: [SRC_B] };
-    const o = popupContent({ type: 'text', term: 'B-corp', sources: [SRC_A], owned_by: owner }, greenpt, row, l);
+    const o = popupContent({ type: 'text', term: 'B-corp', sources: [SRC_A], owned_by: { ...OWNER, sources: [SRC_B] } }, greenpt, row, l);
     assert.equal(o.sourceLine, 'Publisher of 2026/a, accessed 2026-09-30, and 1 more');
+  });
+  test('follows the tier, not the claim, when an owner lowers a reviewed claim to Source', () => {
+    const c = popupContent({ term: 'B-corp', claim: CLAIM_PATH, owned_by: { ...OWNER, sources: [SRC_A] } }, greenpt, row, lookups([claim()], [source('2026/a')]));
+    assert.equal(c.tier, 'source');
+    assert.equal(c.verdict, undefined);
   });
   test('capped product with a claim and sources shows the source tier', () => {
     const c = popupContent({ type: 'yes', claim: CLAIM_PATH, sources: [SRC_A] }, treadlightly, row, lookups([claim()], [source('2026/a')]));

@@ -1,14 +1,18 @@
 ---
-// A comma-separated list of source links, each named by its publisher.
+// "Sources: <publisher>, <publisher>." for a list of source paths; nothing for an empty list.
 import { sourceInfo, type EvidenceLookups } from '../lib/matrixEvidence';
 
 interface Props {
-  paths: string[];
+  paths?: string[];
   lookups: EvidenceLookups;
 }
 
-const { paths, lookups } = Astro.props;
+const { paths = [], lookups } = Astro.props;
 ---
-{paths.map((path, i) => (
-  <>{i > 0 && ', '}<a href={path}>{sourceInfo(path, lookups)?.publisher ?? path}</a></>
-))}
+{paths.length > 0 && (
+  <>
+    {' '}Sources: {paths.map((path, i) => (
+      <>{i > 0 && ', '}<a href={path}>{sourceInfo(path, lookups)?.publisher ?? path}</a></>
+    ))}.
+  </>
+)}

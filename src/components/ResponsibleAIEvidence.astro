@@ -91,9 +91,7 @@ const entries: Entry[] = [
             {ideal.position && (
               <span class="ra-evidence__muted"> Position: <a href={ideal.position}>{ideal.position.slice(VALUES_PATH_PREFIX.length).replace(/-/g, ' ')}</a>.</span>
             )}
-            {ideal.sources && ideal.sources.length > 0 && (
-              <span class="ra-evidence__muted"> Sources: <ResponsibleAISourceLinks paths={ideal.sources} lookups={lookups} />.</span>
-            )}
+            <span class="ra-evidence__muted"><ResponsibleAISourceLinks paths={ideal.sources} lookups={lookups} /></span>
           </p>
         )}
         {ideal && 'large_models' in ideal && (
@@ -101,9 +99,7 @@ const entries: Entry[] = [
             Large models{ideal.large_models.last_checked && ` as of ${ideal.large_models.last_checked}`}:
             {' '}{ideal.large_models.large.length > 0 ? ideal.large_models.large.join(', ') : 'none named yet'}.
             Not large: {ideal.large_models.not_large.join(', ')}.
-            {ideal.large_models.sources && ideal.large_models.sources.length > 0 && (
-              <> Sources: <ResponsibleAISourceLinks paths={ideal.large_models.sources} lookups={lookups} />.</>
-            )}
+            <ResponsibleAISourceLinks paths={ideal.large_models.sources} lookups={lookups} />
           </p>
         )}
         <ul class="ra-evidence__items">
@@ -122,7 +118,7 @@ const entries: Entry[] = [
                     )}
                   </span>
                 )}
-                {ev.tier === 'source' && (
+                {(ev.sourcePaths.length > 0 || cited.owned_by) && (
                   <span class="ra-evidence__detail">
                     {ev.sourcePaths.map((path) => {
                       const info = sourceInfo(path, lookups);
@@ -162,7 +158,10 @@ const entries: Entry[] = [
     try { id = decodeURIComponent(id); } catch {}
     const el = id ? document.getElementById(id) : null;
     const details = el?.closest('details');
-    if (details) details.open = true;
+    if (!details) return;
+    details.open = true;
+    // The browser's own jump happened while the item was hidden, so scroll now.
+    el!.scrollIntoView();
   }
   openEvidenceTarget(location.hash);
   window.addEventListener('hashchange', () => openEvidenceTarget(location.hash));
