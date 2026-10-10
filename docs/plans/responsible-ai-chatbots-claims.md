@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 and S12 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 and S13 onward not started.
+**Status**: in progress. S1 to S8, S8a and S11 to S13 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10, S15 and S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -32,7 +32,7 @@ Sources for every stance row
 
 Claims, row by row
 - [x] S12: activate the inactive criteria the page needs
-- [ ] S13: entities for the page's products and companies
+- [x] S13: entities for the page's products and companies
 - [ ] S15: first row backed by published claims (renewable hosting)
 - [ ] S16: remaining claim rows, one at a time
 
@@ -87,7 +87,7 @@ The page makes three kinds of assertions. Almost none carry evidence.
 | Summary table | `responsible-ai.md:23-86` (`summary:` under each product) | 4 free-text fields x 7 products = 28 entries | 9 inline links (Euria receipts and commitments, Ecosia blog and financial reports, Evertreen substack, Global Rewilding Alliance, Terrapass Wikipedia, Viro methodology, DFPI order) |
 | Footnotes | `responsible-ai.md:274-280` | 3 | none |
 
-The 3 published claims (`research/claims/brave-browser/renewable-energy-hosting.md` and two subject claims) cover no product on the page. Only GreenPT has product and company entities (`research/entities/products/greenpt.md`, `research/entities/companies/greenpt.md`).
+The 3 published claims (`research/claims/brave-browser/renewable-energy-hosting.md` and two subject claims) cover no product on the page. Each product except TreadLightlyAI has a product entity and a company entity (S13; GreenPT's pair predates the plan).
 
 ### Rows: stance, criterion, evidence
 
@@ -336,8 +336,8 @@ Claims cover the 7 stance rows that have a criterion: renewable hosting, real-ti
 | Item | Count | Notes |
 |---|---|---|
 | Claims | 42 (7 rows x 6 products) | 30 product claims (5 rows) and 12 company claims (published financials and ownership, one company per product). Today: 3 published claims, none for these products |
-| Product entities to create | 5 | Euria, Ecosia AI, ChatGPTree, Earthly Insight, Viro AI |
-| Company entities to create | 5 | for the 2 company rows: Infomaniak, Ecosia, and the makers of ChatGPTree, Earthly Insight and Viro AI (legal names unverified). GreenPT's exists. An owner named in `owned_by` needs no entity (sources only) |
+| Product entities created | 5 | Euria, Ecosia AI, ChatGPTree, Earthly Insight, Viro AI (S13) |
+| Company entities created | 5 | for the 2 company rows: Infomaniak, Ecosia, ChatGPTree, Earthly Insight and Viro (S13; legal names from each company's own pages). GreenPT's exists. An owner named in `owned_by` needs no entity (sources only) |
 | Criteria activated | 2 | `financial-transparency`, `open-source-models-only` (S12, done). The page uses neither `excludes-frontier-models` nor `data-jurisdiction` |
 | Sources, stance-row cells | up to 63 (9 rows x 7) | fewer in practice: one privacy policy can back several rows |
 | Sources, large-model list | one per lab named in the models row | each lab's own model page (P5) |
@@ -428,6 +428,17 @@ Result (2026-10-10): activation queues no claims. The code that reads `templates
 #### S13: entities for the page's products and companies
 Create the 5 product and 5 company entity files in the research-load table, following the GreenPT pair (`research/entities/products/greenpt.md`, `companies/greenpt.md`): name, type, website, description, and `parent_company` on each product; then `dr entity-enrich <ref>` fills founded, description and history (`cli.py:1810`). Add `entity:` to each product on the page except TreadLightlyAI.
 Verify: `dr lint` reports no errors (new entities raise `unreferenced-entity` at severity info until claims cite them, `checks.py:659`); build; each entity page renders.
+Result (2026-10-10): 10 entity files, frontmatter only (no body), each description in the site's own words: products `euria`, `ecosia-ai`, `chatgptree`, `earthly-insight`, `viro-ai`, each with `parent_company`; companies `infomaniak`, `ecosia`, `chatgptree`, `earthly-insight`, `viro`, each with `legal_name`. The page's 6 products other than TreadLightlyAI carry `entity:` (GreenPT's included). Legal names, read 2026-10-10:
+
+| Company | `legal_name` | Where |
+|---|---|---|
+| Infomaniak | Infomaniak Network SA | https://www.infomaniak.com/en/legal: "Data controller : Infomaniak Network SA, Rue Eugène-Marziano 25, 1227 Les Acacias (GE), Switzerland" |
+| Ecosia | Ecosia GmbH | https://www.ecosia.org/imprint (403 to a plain fetch; read from the Wayback capture `20260730211843`): "Imprint Ecosia GmbH Gerichtstrasse 23 (courtyard 4) 13347 Berlin, Germany" |
+| ChatGPTree | ChatGPTree, Inc | https://chatgptree.ai/legal/terms: "This website is operated by ChatGPTree, Inc."; the App Store lists the seller of its app as "ChatGPTree, Inc." |
+| Earthly Insight | Earthly Insight LLC | https://www.earthlyinsight.ai/terms-and-conditions (rendered by script; the text is in the site's JavaScript): "Welcome to Earthly Insight LLC! These Terms and Conditions ..."; the home page footer reads "© 2025 Earthy Insight LLC" |
+| Viro | Viro LLC | https://www.viro.app/terms-conditions-viro-ai (last updated May 27, 2026): "owned by Viro LLC or its licensors". No "Viro Climate Action, Inc", which the page's Viro summary names, appears on viro.app ("Viro - Climate Action" is a page title); the summary is unchanged, a question for Brandon |
+
+`dr entity-enrich <ref> --no-interactive` ran on all 10 (exit 0, 3 to 12 s each); every draft was discarded and the hand-written file kept. None set `founded`. Ecosia's site returned 403 to both seed fetches; for Ecosia AI the enricher still wrote a description and two paragraphs, saying Ecosia uses renewable energy for data centers, which no input said and which the page's "Conventional cloud hosting" contradicts; for the company it wrote nothing. The other drafts mixed site marketing stated as fact (Viro AI "clean-energy-powered"), notes about their own missing inputs ("The inputs do not provide specific details ..."), guesses ("likely reflects") and garbled text (Euria "itsExistingFoundedFounded in 2003background", Earthly Insight "AUCtively"). Verify: `dr lint` 0 errors, 10 new `unreferenced-entity` infos (12 to 22); `npm run build` passes; each of the 10 pages is in `dist/research/entities/<type>/<slug>/index.html`, each product page links its company, each company page links its product and shows its legal name; each page `entity:` ref names a file on disk (the S4 check resolves `entity` only when a cell cites a claim).
 
 #### S15: first row backed by published claims
 Renewable hosting (Q12). `dr onboard products/<slug> --only renewable-energy-hosting` per product (6, not TreadLightlyAI); Brandon approves each with `dr review --approve` (never `dr publish`, which records no reviewer and leaves the claim "Unreviewed"); cite in the cells.

@@ -24,6 +24,7 @@ data:
     - key: chatgptree
       name: ChatGPTree
       url: https://www.chatgptree.ai/
+      entity: products/chatgptree
       status: active
       summary:
         ai_ethics: "Proprietary model (US), GPT-4"
@@ -35,6 +36,7 @@ data:
     - key: earthly-insight
       name: Earthly Insight
       url: https://www.earthlyinsight.com/
+      entity: products/earthly-insight
       status: active
       summary:
         ai_ethics: "Proprietary models (US)."
@@ -46,6 +48,7 @@ data:
     - key: ecosia
       name: Ecosia AI
       url: https://www.ecosia.org/ai-chat
+      entity: products/ecosia-ai
       status: active
       summary:
         ai_ethics: "Proprietary model (US), GPT-4 mini."
@@ -59,6 +62,7 @@ data:
     - key: euria
       name: Euria
       url: https://euria.infomaniak.com/
+      entity: products/euria
       status: active
       summary:
         ai_ethics: "Open-weight models (US, EU, CN)."
@@ -74,6 +78,7 @@ data:
     - key: greenpt
       name: GreenPT
       url: https://chat.greenpt.ai/
+      entity: products/greenpt
       status: active
       summary:
         ai_ethics: "Open-weight models only."
@@ -94,6 +99,7 @@ data:
     - key: viro
       name: Viro AI
       url: https://ai.viro.app/
+      entity: products/viro-ai
       status: active
       summary:
         ai_ethics: "Proprietary models (US) and open weight models (US, CN)."
