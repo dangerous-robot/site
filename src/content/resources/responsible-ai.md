@@ -130,10 +130,10 @@ data:
       criterion: realtime-energy-display
       ideal: { value: "yes" }
       cells:
-        greenpt: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/how-energy-indicator-works] }
         ecosia: { type: "no" }
         euria: { type: "no" }
-        treadlightly: { type: "yes" }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "yes" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
