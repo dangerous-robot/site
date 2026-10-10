@@ -253,3 +253,11 @@
   --color-stance-bad: var(--color-verdict-false);
   --color-stance-mixed: var(--color-verdict-mixed);
 }
+
+/* Dark theme only: the verdict red (#b22222) is 2.6:1 on #19191b, under the
+   3:1 WCAG 1.4.11 asks of an icon, so "bad" gets its own red (4.7:1). The
+   verdict red stays as is so "False" chips remain distinct from "Mostly
+   false". Dark high contrast keeps its own, brighter verdict red. */
+:root[data-theme="dark"]:not([data-contrast="high"]) {
+  --color-stance-bad: #e05555;
+}
