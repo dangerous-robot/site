@@ -131,11 +131,11 @@ data:
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
         ecosia: { type: "no" }
-        euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        euria: { type: "yes", claim: /research/claims/euria/renewable-energy-hosting, sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "partial", detail: "Most plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "no" }
-        chatgptree: { type: "no" }
-        earthly-insight: { type: "no" }
+        chatgptree: { type: "unknown", claim: /research/claims/chatgptree/renewable-energy-hosting }
+        earthly-insight: { type: "unknown", claim: /research/claims/earthly-insight/renewable-energy-hosting }
     - key: real-time-energy-display
       label: "Real-time energy display"
       group: environmental

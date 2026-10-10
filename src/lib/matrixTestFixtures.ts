@@ -1,12 +1,13 @@
 // Shared fixtures for the matrix unit tests. Not a test file itself (no
 // `.test` in the name), so the test glob skips it.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
 import yaml from 'js-yaml';
 import type { CriterionInfo } from './matrixCheck';
 import type { ClaimInfo, SourceInfo } from './matrixEvidence';
+import type { Confidence, Verdict } from './verdict';
 
 export const REVIEWER = 'brandon@dangerousrobot.org';
 
@@ -61,4 +62,43 @@ export function researchSources(): Map<string, SourceInfo> {
 export function activeCriteria(): Map<string, CriterionInfo> {
   const { templates } = yaml.load(readFileSync(TEMPLATES, 'utf-8')) as { templates: { slug: string; vocabulary?: Record<string, string[]> }[] };
   return new Map(templates.map((t) => [t.slug, { vocabulary: t.vocabulary }]));
+}
+
+const CLAIMS_DIR = fileURLToPath(new URL('../../research/claims/', import.meta.url));
+
+function claimFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (statSync(path).isDirectory()) return claimFiles(path);
+    return name.endsWith('.md') ? [path] : [];
+  });
+}
+
+/** Every claim under research/claims, keyed by id (`<entity>/<slug>`), with the sidecar's reviewer as the claims loader reads it. */
+export function researchClaims(): Map<string, ClaimInfo> {
+  const out = new Map<string, ClaimInfo>();
+  for (const path of claimFiles(CLAIMS_DIR)) {
+    const id = relative(CLAIMS_DIR, path).slice(0, -3);
+    const data = matter(readFileSync(path, 'utf-8'), {}).data as Record<string, unknown>;
+    const sidecar = path.replace(/\.md$/, '.audit.yaml');
+    let audit: { human_review?: { reviewer?: string | null } } | undefined;
+    // The claims loader skips a malformed sidecar with a warning; do the same, so a peer's half-written file cannot crash the suite.
+    try {
+      audit = existsSync(sidecar) ? (yaml.load(readFileSync(sidecar, 'utf-8')) as typeof audit) : undefined;
+    } catch {
+      audit = undefined;
+    }
+    out.set(id, {
+      id,
+      title: String(data.title),
+      entity: String(data.entity),
+      status: (data.status ?? 'draft') as ClaimInfo['status'],
+      verdict: data.verdict as Verdict,
+      confidence: data.confidence as Confidence,
+      as_of: new Date(String(data.as_of)),
+      criteria_slug: data.criteria_slug ? String(data.criteria_slug) : undefined,
+      reviewer: audit?.human_review?.reviewer ?? null,
+    });
+  }
+  return out;
 }
