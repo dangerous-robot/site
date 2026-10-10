@@ -458,6 +458,7 @@ Noticed for the rows still to do (not changed here):
 - Image and document analysis: Ecosia's AI help article describes file upload of documents and images (JPG, PNG); the cell says No.
 - Ownership: Viro AI's App Store listing names its seller "Viro Climate Action, Inc", and the 2022 Viro app privacy policy (https://www.viro.app/privacy-policy) names "Viro Climate Action, Inc" as the Company, while the Viro AI terms name Viro LLC (D8).
 - Summary: GreenPT's sustainability page gives PUE 1.25; the summary says "PUE 1.37".
+- Data jurisdiction: GreenPT's home page FAQ says "For US users that processing happens in North America; users in other regions are hosted regionally", while its privacy page (the cell's source) says "All data processing happens exclusively within the European Union" and its sustainability page says "hosted in Europe".
 
 Commits: row 1 `36db586`, row 2 `232ae9d`, row 3 `4d3da6c`, row 4 `9117dc9`, row 5 `39d31ff`.
 
