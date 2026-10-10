@@ -226,22 +226,22 @@ data:
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "yes", detail: "Ad supported"}
-        euria: { type: "yes", detail: "includes [kSuite](https://www.infomaniak.com/en/ksuite)" }
-        treadlightly: { type: "yes" }
-        viro: { type: "yes", detail: "Ad supported" }
+        euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightly-ai-pricing] }
+        viro: { type: "yes", detail: "Ad supported", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
         chatgptree: { type: "yes" }
-        earthly-insight: { type: "yes" }
+        earthly-insight: { type: "yes", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: pricing-paid-tier
       label: "Pricing"
       group: business
       cells:
-        greenpt: { type: "text", detail: "€ 4.50 | 17.50 /mo" }
+        greenpt: { type: "text", detail: "€ 4.50 | 17.50 /mo", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "text", detail: "n/a" }
         euria: { type: "text", detail: "€ 1.58 /mo includes [kSuite Pro](https://www.infomaniak.com/en/ksuite)" }
-        treadlightly: { type: "text", detail: "$ 3 | 8 | 20 /mo" }
+        treadlightly: { type: "text", detail: "$ 3 | 8 | 20 /mo", sources: [/research/sources/2026/treadlightly-ai-pricing] }
         viro: { type: "text", detail: "$ 1 | 10 /mo" }
-        chatgptree: { type: "text", detail: "$ 11 /mo" }
-        earthly-insight: { type: "text", detail: "$ 20 /mo" }
+        chatgptree: { type: "text", detail: "$ 11 /mo", sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
+        earthly-insight: { type: "text", detail: "$ 23 /mo", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: maturity
       label: "Maturity"
       group: business
@@ -259,13 +259,13 @@ data:
       label: "Image and document analysis"
       group: product-access
       cells:
-        greenpt: { type: "yes" }
-        ecosia: { type: "no" }
-        euria: { type: "yes" }
-        treadlightly: { type: "yes" }
-        viro: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
+        ecosia: { type: "yes", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
+        euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightly-ai-pricing] }
+        viro: { type: "yes", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
         chatgptree: { type: "no" }
-        earthly-insight: { type: "yes" }
+        earthly-insight: { type: "yes", detail: "Images", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: agent-web-search
       label: "Agent Web search"
       group: product-access
@@ -311,11 +311,11 @@ data:
       group: privacy-data
       cells:
         greenpt: { type: "text", detail: "EU (GDPR)", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
-        ecosia: { type: "text", detail: "German (GDPR)" }
-        euria: { type: "text", detail: "Swiss (FADP + GDPR)" }
+        ecosia: { type: "text", detail: "EU (GDPR)", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
+        euria: { type: "text", detail: "Swiss (FADP + GDPR)", sources: [/research/sources/2026/euria-sovereign-ai-assistant-infomaniak] }
         treadlightly: { type: "text", detail: "US" }
-        viro: { type: "text", detail: "US" }
-        chatgptree: { type: "text", detail: "US" }
+        viro: { type: "text", detail: "US", sources: [/research/sources/2025/viro-ai-terms-conditions] }
+        chatgptree: { type: "text", detail: "US", sources: [/research/sources/2020/terms-of-use-chatgptree] }
         earthly-insight: { type: text, detail: "US" }
     - key: open-source-models-only
       label: "Open-weight models"
