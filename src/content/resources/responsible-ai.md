@@ -288,17 +288,19 @@ data:
       group: product-access
       answers: ["yes", partial, unknown]
       ideal: { value: "yes" }
-      # The page's earlier answers, shown again unsourced until each product
-      # is checked. A stated Level A is Partial: P4 counts only Level AA as
-      # Yes.
+      # No product publishes an accessibility statement (searched
+      # 2026-10-10). Each cell is Partial because a Lighthouse 13.5.0
+      # accessibility audit of the product's public page found failures
+      # (P4, "barriers found by our check"); the pages and failures are
+      # recorded in the plan's S10 result so the check can be repeated.
       cells:
-        greenpt: { type: partial, detail: "Level A" }
-        ecosia: { type: "yes", detail: "Level AA+" }
-        euria: { type: partial }
-        treadlightly: { type: "yes", detail: "Level AA+" }
-        viro: { type: partial }
-        chatgptree: { type: partial }
-        earthly-insight: { type: partial, detail: "Level A" }
+        greenpt: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        ecosia: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        euria: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        treadlightly: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        viro: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        chatgptree: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        earthly-insight: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
     - key: data-jurisdiction
       label: "Data jurisdiction"
       group: privacy-data
