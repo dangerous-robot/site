@@ -165,7 +165,8 @@ def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
 def _audit_prune(ctx, apply=False):
     """Show orphaned source count by year (dry-run). Pass --apply to delete.
 
-    Dry-run prints a year-bucket summary of source files not cited by any claim.
+    Dry-run prints a year-bucket summary of source files not cited by any claim
+    or editorial page.
 
     Options:
       --apply    delete the files and remove any empty year directories

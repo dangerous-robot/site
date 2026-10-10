@@ -1,4 +1,4 @@
-"""Prune source files not cited by any claim.
+"""Prune source files not cited by any claim or editorial page.
 
 Usage (from repo root or pipeline/):
   uv run python -m linter.prune           # dry-run — summary by year
@@ -14,7 +14,7 @@ from .runner import run_all_checks
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Remove source files not cited by any claim.")
+    ap = argparse.ArgumentParser(description="Remove source files not cited by any claim or editorial page.")
     ap.add_argument("--apply", action="store_true", help="delete files (default: dry-run)")
     ap.add_argument(
         "--root",

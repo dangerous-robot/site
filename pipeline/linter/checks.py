@@ -615,12 +615,39 @@ def check_entity_type_dir_mismatch(
     return issues
 
 
+_PAGE_SOURCE_CITATION = re.compile(r"/research/sources/(\d{4}/[a-z0-9-]+)")
+
+
+def page_cited_source_ids(repo_root: Path) -> set[str]:
+    """Source ids cited in the frontmatter of the site's editorial pages.
+
+    Read only. Pages cite sources as rendered paths (``/research/sources/<id>``)
+    anywhere in their frontmatter. When the pages directory is absent (the
+    research archive linted on its own), nothing is cited.
+    """
+    pages_dir = repo_root / "src" / "content" / "resources"
+    if not pages_dir.is_dir():
+        return set()
+    cited: set[str] = set()
+    for page in sorted(pages_dir.glob("*.md")):
+        text = page.read_text(encoding="utf-8")
+        if not text.startswith("---"):
+            continue
+        end = text.find("\n---", 3)
+        frontmatter = text[3:end] if end != -1 else ""
+        cited.update(_PAGE_SOURCE_CITATION.findall(frontmatter))
+    return cited
+
+
 def check_unreferenced_sources(
     claim_files: list[Path],
     claim_frontmatters: dict[str, dict[str, Any]],
     source_id_to_path: dict[str, Path],
+    repo_root: Path | None = None,
 ) -> list[LintIssue]:
-    referenced: set[str] = set()
+    # A source an editorial page cites is in use even when no claim cites it;
+    # without this the hint below tells an agent to delete it.
+    referenced: set[str] = page_cited_source_ids(repo_root) if repo_root else set()
     for path in claim_files:
         fm = claim_frontmatters.get(str(path), {})
         sources = fm.get("sources") or []
@@ -635,7 +662,7 @@ def check_unreferenced_sources(
                 path=str(src_path),
                 check_id="unreferenced-source",
                 severity="warning",
-                message=f'source "{src_id}" is not cited by any claim',
+                message=f'source "{src_id}" is not cited by any claim or page',
                 hint="remove the file or add it to a claim's sources: list",
             ))
     return issues

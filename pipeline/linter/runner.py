@@ -158,7 +158,7 @@ def run_all_checks(
         source_files, source_fms, source_bodies,
     )
     issues += check_verification_level_pool(claim_files, claim_fms, source_fms_by_id)
-    issues += check_unreferenced_sources(claim_files, claim_fms, source_id_to_path)
+    issues += check_unreferenced_sources(claim_files, claim_fms, source_id_to_path, repo_root)
     issues += check_unreferenced_entities(claim_files, claim_fms, entity_id_to_path)
 
     return issues, files_checked

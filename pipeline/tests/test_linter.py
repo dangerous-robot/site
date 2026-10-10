@@ -385,6 +385,60 @@ class TestUnreferencedSources:
         assert len(issues) == 1
 
 
+class TestUnreferencedSourcesCitedByPages:
+    """A source cited only by an editorial page (src/content/resources) is in use."""
+
+    SRC = _p("research/sources/2025/foo.md")
+
+    def _page(self, root: Path, text: str) -> None:
+        pages = root / "src" / "content" / "resources"
+        pages.mkdir(parents=True, exist_ok=True)
+        (pages / "matrix.md").write_text(text, encoding="utf-8")
+
+    def test_source_cited_only_by_a_page_does_not_warn(self, tmp_path):
+        self._page(tmp_path, (
+            "---\ntitle: M\ndata:\n  products:\n    - key: a\n      summary:\n"
+            "        notes:\n          text: T\n          sources: [/research/sources/2025/foo]\n"
+            "---\nBody.\n"
+        ))
+        assert check_unreferenced_sources([], {}, {"2025/foo": self.SRC}, repo_root=tmp_path) == []
+
+    def test_uncited_source_still_warns(self, tmp_path):
+        self._page(tmp_path, "---\ntitle: M\nsources: [/research/sources/2025/foo]\n---\n")
+        orphan = _p("research/sources/2025/orphan.md")
+        issues = check_unreferenced_sources(
+            [], {}, {"2025/foo": self.SRC, "2025/orphan": orphan}, repo_root=tmp_path,
+        )
+        assert [i.check_id for i in issues] == ["unreferenced-source"]
+        assert "2025/orphan" in issues[0].message
+
+    def test_a_path_in_the_page_body_does_not_count(self, tmp_path):
+        self._page(tmp_path, "---\ntitle: M\n---\nSee /research/sources/2025/foo.\n")
+        issues = check_unreferenced_sources([], {}, {"2025/foo": self.SRC}, repo_root=tmp_path)
+        assert len(issues) == 1
+
+    def test_no_resources_directory_runs_without_error(self, tmp_path):
+        issues = check_unreferenced_sources([], {}, {"2025/foo": self.SRC}, repo_root=tmp_path)
+        assert len(issues) == 1
+
+
+def test_runner_counts_sources_cited_by_pages(tmp_path):
+    from linter.runner import run_all_checks
+
+    src_dir = tmp_path / "research" / "sources" / "2025"
+    src_dir.mkdir(parents=True)
+    for slug in ("foo", "orphan"):
+        (src_dir / f"{slug}.md").write_text("---\ntitle: T\n---\n", encoding="utf-8")
+    pages = tmp_path / "src" / "content" / "resources"
+    pages.mkdir(parents=True)
+    (pages / "m.md").write_text("---\nsources: [/research/sources/2025/foo]\n---\n", encoding="utf-8")
+
+    issues, _ = run_all_checks(tmp_path)
+
+    unreferenced = [i.message for i in issues if i.check_id == "unreferenced-source"]
+    assert len(unreferenced) == 1 and "2025/orphan" in unreferenced[0]
+
+
 class TestUnreferencedEntities:
     def test_all_entities_referenced_no_issue(self):
         claim = _p("research/claims/ecosia/some-claim.md")
