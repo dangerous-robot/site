@@ -31,6 +31,7 @@ from .checks import (
     check_refresh_pending_review,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
+    check_unsafe_markup,
     check_unreferenced_entities,
     check_unreferenced_sources,
     check_verification_level_pool,
@@ -97,8 +98,14 @@ def run_all_checks(
     claim_bodies: dict[str, str] = {}
     for p in claim_files:
         claim_fms[str(p)], claim_bodies[str(p)] = _read_frontmatter_and_body(p)
-    entity_fms = {str(p): _read_frontmatter(p) for p in entity_files}
-    source_fms = {str(p): _read_frontmatter(p) for p in source_files}
+    entity_fms: dict[str, dict[str, Any]] = {}
+    entity_bodies: dict[str, str] = {}
+    for p in entity_files:
+        entity_fms[str(p)], entity_bodies[str(p)] = _read_frontmatter_and_body(p)
+    source_fms: dict[str, dict[str, Any]] = {}
+    source_bodies: dict[str, str] = {}
+    for p in source_files:
+        source_fms[str(p)], source_bodies[str(p)] = _read_frontmatter_and_body(p)
     # Drafts and blocked claims need theirs too: a pending refresh lives there.
     claim_sidecars = {str(p): read_sidecar(p) for p in claim_files}
 
@@ -145,6 +152,11 @@ def run_all_checks(
     issues += check_confidence_cap_violation(claim_files, claim_fms)
     issues += check_missing_cap_rationale(claim_files, claim_fms)
     issues += check_raw_citation_tokens(claim_files, claim_fms, claim_bodies)
+    issues += check_unsafe_markup(
+        claim_files, claim_fms, claim_bodies, claim_sidecars,
+        entity_files, entity_fms, entity_bodies,
+        source_files, source_fms, source_bodies,
+    )
     issues += check_verification_level_pool(claim_files, claim_fms, source_fms_by_id)
     issues += check_unreferenced_sources(claim_files, claim_fms, source_id_to_path)
     issues += check_unreferenced_entities(claim_files, claim_fms, entity_id_to_path)

@@ -1,10 +1,18 @@
 import { defineConfig } from "astro/config";
 import sitemap, { ChangeFreqEnum } from "@astrojs/sitemap";
+import { unified } from "@astrojs/markdown-remark";
 import { isAlphaDetailPath, INDEX_ALPHA_DETAIL_PAGES } from "./src/lib/seo";
+import remarkResearchMarkup from "./src/lib/remarkResearchMarkup";
 
 export default defineConfig({
   site: "https://dangerousrobot.org",
   trailingSlash: "never",
+  markdown: {
+    // Research Markdown is LLM-written: no raw HTML, no script-scheme links.
+    // Set on the processor itself; a plugin passed via `remarkPlugins` is
+    // silently skipped once someone configures a processor.
+    processor: unified({ remarkPlugins: [remarkResearchMarkup] }),
+  },
   redirects: {
     "/faq": "/research",
     "/claims": "/research/claims",

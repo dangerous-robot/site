@@ -1,6 +1,7 @@
 ---
 import { ArrowUp, ExternalLink } from 'lucide-astro';
 import InlineMd, { stripMd } from './InlineMd.astro';
+import { jsonForScript } from '../lib/jsonForScript';
 
 interface SubSection {
   title: string;
@@ -63,7 +64,7 @@ function fmtDate(iso: string, label?: string): string {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
 }
 ---
-<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+<script type="application/ld+json" set:html={jsonForScript(faqSchema)} />
 
 <div class="turn-off-guide">
   <div class="intro">

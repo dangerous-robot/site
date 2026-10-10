@@ -11,6 +11,7 @@ import { SITE_DESCRIPTION } from "../lib/seo";
 import { WRITING_FEED_TITLE } from "../lib/writing";
 import { TOP_LINKS, SECTIONS, FOOTER_LINKS, type NavLink } from "../lib/nav";
 import { SITE_VERSION } from "../lib/version";
+import { jsonForScript } from "../lib/jsonForScript";
 
 // Banner label follows the pre-release stage in VERSION.md; final releases show none.
 const releaseStage = SITE_VERSION.match(/-(alpha|beta|rc)\b/)?.[1];
@@ -101,7 +102,7 @@ const orgSchema = {
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageAbsolute} />
     <!-- Organization structured data -->
-    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
+    <script type="application/ld+json" set:html={jsonForScript(orgSchema)} />
 
     <!-- Synchronous: prevents flash of wrong theme before CSS paints.
          Storage keys and font-size values mirror A11yControl.astro. -->

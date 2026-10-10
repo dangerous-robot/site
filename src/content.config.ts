@@ -4,14 +4,16 @@ import { glob, file } from 'astro/loaders';
 import yaml from 'js-yaml';
 import fs from 'node:fs/promises';
 import nodePath from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { VERDICT_ORDER } from './lib/verdict';
+import { httpUrl } from './lib/httpUrl';
 
 
 const sources = defineCollection({
   loader: glob({ pattern: '**/*.md', base: 'research/sources' }),
   schema: z.object({
-    url: z.string().url(),
-    archived_url: z.string().url().optional(),
+    url: httpUrl,
+    archived_url: httpUrl.optional(),
     title: z.string(),
     publisher: z.string(),
     published_date: z.coerce.date().optional(),
@@ -45,7 +47,7 @@ const auditSchema = z.object({
   models_used: z.record(z.string(), z.string()).optional(),
   sources_consulted: z.array(z.object({
     id: z.string(),
-    url: z.string().url(),
+    url: httpUrl,
     title: z.string(),
     ingested: z.boolean(),
     acquisition: z.object({
@@ -78,7 +80,7 @@ const auditSchema = z.object({
     reviewed_at: z.coerce.date().nullable(),
     reviewer: z.string().nullable(),
     notes: z.string().nullable(),
-    pr_url: z.string().url().nullable(),
+    pr_url: httpUrl.nullable(),
     // Set at approval when the reviewer's verdict differs from the analyst's.
     verdict_override: z.object({
       from: z.enum(VERDICT_ORDER),
@@ -157,7 +159,8 @@ const claims = defineCollection({
 
         const parsed = await parseData({ id, data: mergedData });
         const digest = generateDigest(content + (parsedAudit ? JSON.stringify(parsedAudit) : ''));
-        const rendered = await renderMarkdown(body);
+        // The file URL lets the research Markdown plugin recognize this as research content.
+        const rendered = await renderMarkdown(body, { fileURL: pathToFileURL(absPath) });
 
         store.set({ id, data: parsed, body, filePath: nodePath.join('research/claims', relPath), digest, rendered });
       }
@@ -235,7 +238,7 @@ const entities = defineCollection({
   schema: z.object({
     name: z.string(),
     type: z.enum(['company', 'product', 'subject']),
-    website: z.string().url().optional(),
+    website: httpUrl.optional(),
     legal_name: z.string().min(1).optional(),
     verification_status: z.enum([
       'verified',
@@ -320,7 +323,7 @@ const resources = defineCollection({
     /** External resources to surface with the entry on the hub page. */
     further_reading: z.array(z.object({
       title: z.string(),
-      url: z.string().url(),
+      url: httpUrl,
       publisher: z.string().optional(),
       last_checked: z.coerce.date().optional(),
     })).optional(),

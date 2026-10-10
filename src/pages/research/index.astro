@@ -1,6 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
 import { operator, profileHref } from '../../lib/reviewers';
+import { jsonForScript } from '../../lib/jsonForScript';
 
 const op = operator();
 
@@ -387,7 +388,7 @@ const faqSchema = {
         </div>
       </details>
 
-      <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+      <script type="application/ld+json" set:html={jsonForScript(faqSchema)} />
     </section>
   </article>
 </Base>

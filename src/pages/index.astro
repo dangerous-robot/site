@@ -7,6 +7,7 @@ import { SITE_DESCRIPTION } from '../lib/seo';
 import { navLabel } from '../lib/nav';
 import { fetchPetitionState, petitionSummary } from '../lib/petition';
 import { getSpotlight } from '../lib/spotlight';
+import { jsonForScript } from '../lib/jsonForScript';
 
 const entities = await getCollection('entities');
 const allClaims = await getCollection('claims', ({ data }) => data.status === 'published');
@@ -382,7 +383,7 @@ const websiteSchema = {
     </section>
   </div>
 
-  <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+  <script type="application/ld+json" set:html={jsonForScript(websiteSchema)} />
 </Base>
 
 <script>

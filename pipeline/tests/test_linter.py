@@ -29,6 +29,7 @@ from linter.checks import (
     check_refresh_pending_review,
     check_stale_recheck,
     check_unknown_frontmatter_keys,
+    check_unsafe_markup,
     check_unreferenced_entities,
     check_unreferenced_sources,
     check_verification_level_pool,
@@ -629,3 +630,72 @@ def test_runner_reads_draft_sidecars_for_refresh_check(tmp_path):
     issues, _ = run_all_checks(tmp_path)
 
     assert any(i.check_id == "refresh-pending-review" for i in issues)
+
+
+class TestUnsafeMarkup:
+    CLAIM = _p("research/claims/acme/some-claim.md")
+    ENTITY = _p("research/entities/companies/acme.md")
+    SOURCE = _p("research/sources/2026/acme-page.md")
+
+    def _check(self, *, claim_fm=None, claim_body="", sidecar=None,
+               entity_fm=None, entity_body="", source_fm=None, source_body=""):
+        return check_unsafe_markup(
+            [self.CLAIM], {str(self.CLAIM): claim_fm or {}}, {str(self.CLAIM): claim_body},
+            {str(self.CLAIM): sidecar},
+            [self.ENTITY], {str(self.ENTITY): entity_fm or {}}, {str(self.ENTITY): entity_body},
+            [self.SOURCE], {str(self.SOURCE): source_fm or {}}, {str(self.SOURCE): source_body},
+        )
+
+    @pytest.mark.parametrize("body", [
+        "Acme says <img src=x onerror=alert(1)> here.",
+        "<script>alert(1)</script>",
+        "Read [more](javascript:alert(1)) about it.",
+        "Read [more](javascript&#58;alert(1)) about it.",
+        "![logo](data:text/html,x)",
+        "[acme]: javascript:alert(1)",
+    ])
+    def test_hostile_claim_body_is_error(self, body):
+        issues = self._check(claim_body=body)
+        assert issues, body
+        assert {i.check_id for i in issues} == {"unsafe-markup"}
+        assert {i.severity for i in issues} == {"error"}
+        assert all(str(self.CLAIM) == i.path for i in issues)
+
+    def test_names_the_frontmatter_field(self):
+        issues = self._check(
+            claim_fm={"title": "Acme </script><x>"},
+            entity_fm={"name": "Acme <b>Inc</b>"},
+            source_fm={"key_quotes": ["fine", "<svg onload=alert(1)>"]},
+        )
+        fields = sorted(i.message.split(" has ")[0] for i in issues)
+        assert fields == ["key_quotes", "name", "title"]
+
+    def test_non_http_url_fields_are_errors(self):
+        issues = self._check(
+            entity_fm={"website": "javascript:alert(1)"},
+            source_fm={"url": "ftp://example.org/x", "archived_url": "https://web.archive.org/x"},
+            sidecar={"sources_consulted": [{"id": "x", "url": "data:text/html,x"}]},
+        )
+        assert sorted(i.message.split(" has ")[0] for i in issues) == [
+            "sources_consulted.url", "url", "website",
+        ]
+
+    def test_control_plain_research_passes(self):
+        issues = self._check(
+            claim_fm={"title": "Acme runs on 100% renewable power, a < b", "takeaway": "x"},
+            claim_body=(
+                "Acme *says* 1 < 2 and 3 > 2. See [the report](https://example.org/r) "
+                "and [mail](mailto:a@example.org) and [a page](/research/claims).\n\n"
+                "> quoted text\n\n[ref]: https://example.org/ref\n\n"
+                "A footnote[^1] and a query ?online=1 and one = 1.\n\n[^1]: Source: Reuters\n"
+            ),
+            sidecar={"sources_consulted": [{"id": "x", "url": "https://example.org"}]},
+            entity_fm={"name": "Acme", "website": "https://acme.example"},
+            entity_body="Founded in 2001.",
+            source_fm={"url": "https://example.org", "key_quotes": ["a <= b"]},
+            source_body="The page says x.",
+        )
+        assert issues == []
+
+    def test_no_url_field_is_fine(self):
+        assert self._check(entity_fm={"name": "Acme"}, source_fm={}) == []

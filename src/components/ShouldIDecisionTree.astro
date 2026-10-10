@@ -1,10 +1,12 @@
 ---
+import { jsonForScript } from '../lib/jsonForScript';
+
 interface Props {
   data: unknown;
 }
 
 const { data } = Astro.props;
-const payload = JSON.stringify(data ?? {});
+const payload = jsonForScript(data ?? {});
 ---
 <div class="should-i" data-should-i>
   <p class="should-i-frame" aria-hidden="true">

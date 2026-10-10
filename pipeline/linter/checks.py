@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import datetime
+import html
+import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -742,4 +744,118 @@ def check_verification_level_pool(
                     "source's `independence` / the claim's `source_overrides`"
                 ),
             ))
+    return issues
+
+
+# --- Unsafe markup in research text --------------------------------------
+#
+# Research files are LLM-written from third-party pages and render on the
+# site. The site build strips raw HTML and script-scheme links from them
+# (src/lib/remarkResearchMarkup.ts) and escapes JSON-LD; this check fails
+# earlier, at commit and in CI, with a message that names the field.
+
+_RAW_HTML_TAG = re.compile(r"</?[a-zA-Z][a-zA-Z0-9-]*(?:\s[^<>]*)?/?>")
+# Inline link or image destination, and reference-style definitions
+# (footnote definitions `[^1]: text` are not links).
+_INLINE_TARGET = re.compile(r"!?\[[^\]]*\]\(\s*<?([^)\s>]+)")
+_REF_DEFINITION = re.compile(r"^ {0,3}\[(?!\^)[^\]]+\]:\s*<?(\S+)", re.MULTILINE)
+_SCHEME = re.compile(r"^([a-zA-Z][a-zA-Z0-9+.-]*):")
+_SAFE_SCHEMES = {"http", "https", "mailto"}
+# Frontmatter text that the site renders or puts in JSON-LD.
+_TEXT_FIELDS = {
+    "claim": ("title", "seo_title", "takeaway", "cap_rationale"),
+    "entity": ("name", "description", "legal_name"),
+    "source": ("title", "summary", "publisher", "key_quotes"),
+}
+_URL_FIELDS = {
+    "entity": ("website",),
+    "source": ("url", "archived_url"),
+}
+
+
+def _is_unsafe_target(url: str) -> bool:
+    # Browsers drop ASCII controls and whitespace inside a scheme, and Markdown
+    # decodes character references, so look at the decoded, stripped form.
+    bare = "".join(c for c in html.unescape(url) if ord(c) > 0x20)
+    m = _SCHEME.match(bare)
+    return m is not None and m.group(1).lower() not in _SAFE_SCHEMES
+
+
+def _markup_problems(text: str) -> list[str]:
+    problems = []
+    if m := _RAW_HTML_TAG.search(text):
+        problems.append(f"raw HTML {m.group(0)!r}")
+    for pattern in (_INLINE_TARGET, _REF_DEFINITION):
+        for m in pattern.finditer(text):
+            if _is_unsafe_target(m.group(1)):
+                problems.append(f"link target {m.group(1)!r}")
+    return problems
+
+
+def _text_values(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        return [v for v in value if isinstance(v, str)]
+    return []
+
+
+def check_unsafe_markup(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+    claim_bodies: dict[str, str],
+    claim_sidecars: dict[str, dict[str, Any] | None],
+    entity_files: list[Path],
+    entity_frontmatters: dict[str, dict[str, Any]],
+    entity_bodies: dict[str, str],
+    source_files: list[Path],
+    source_frontmatters: dict[str, dict[str, Any]],
+    source_bodies: dict[str, str],
+) -> list[LintIssue]:
+    """Error on raw HTML or non-http(s) link targets in research text, and on
+    URL fields that are not http(s).
+
+    Nothing in research/ needs markup: the site renders Markdown, and a tag
+    or a `javascript:` link there could only have come from a scraped page
+    or a model, never from a reviewer. Regex, not a Markdown parser, so it
+    misses some spellings (backslash-escaped schemes, autolinks, nested
+    brackets); the site build neutralizes those anyway, this check is the
+    early, readable warning.
+    """
+    issues: list[LintIssue] = []
+
+    def add(path: Path, field_name: str, problem: str) -> None:
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="unsafe-markup",
+            severity="error",
+            message=f"{field_name} has {problem}",
+            hint="research text is plain Markdown: remove the tag or use an http(s) link",
+        ))
+
+    groups = (
+        ("claim", claim_files, claim_frontmatters, claim_bodies),
+        ("entity", entity_files, entity_frontmatters, entity_bodies),
+        ("source", source_files, source_frontmatters, source_bodies),
+    )
+    for kind, files, frontmatters, bodies in groups:
+        for path in files:
+            fm = frontmatters.get(str(path), {})
+            for problem in _markup_problems(bodies.get(str(path), "")):
+                add(path, "body", problem)
+            for key in _TEXT_FIELDS[kind]:
+                for text in _text_values(fm.get(key)):
+                    for problem in _markup_problems(text):
+                        add(path, key, problem)
+            for key in _URL_FIELDS.get(kind, ()):
+                url = fm.get(key)
+                if isinstance(url, str) and url and not url.lower().startswith(("http://", "https://")):
+                    add(path, key, f"non-http(s) URL {url!r}")
+
+    for path in claim_files:
+        sidecar = claim_sidecars.get(str(path)) or {}
+        for entry in sidecar.get("sources_consulted") or []:
+            url = entry.get("url") if isinstance(entry, dict) else None
+            if isinstance(url, str) and url and not url.lower().startswith(("http://", "https://")):
+                add(path, "sources_consulted.url", f"non-http(s) URL {url!r}")
     return issues

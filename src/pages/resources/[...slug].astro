@@ -15,6 +15,7 @@ import { matrixDataSchema } from '../../lib/matrixSchema';
 import { validateMatrixEvidence } from '../../lib/matrixCheck';
 import ResponsibleAIEvidence from '../../components/ResponsibleAIEvidence.astro';
 import { loadMatrixLookups } from '../../lib/matrixLookups';
+import { jsonForScript } from '../../lib/jsonForScript';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -67,7 +68,7 @@ if (layout === 'matrix') {
   hideTitle={layout === 'tool'}
   layout={layout === 'matrix' ? 'wide' : undefined}
 >
-  <script type="application/ld+json" set:html={JSON.stringify(resourceSchema)} />
+  <script type="application/ld+json" set:html={jsonForScript(resourceSchema)} />
 
   {layout === 'guide' && (
     <TurnOffGuide data={data}>

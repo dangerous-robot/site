@@ -1640,7 +1640,8 @@ async def gather_light_research(
         else:
             query = f"{entity_name} official website"
             light_ro = await _research(client, entity_name, query, cfg, sem)
-            urls = light_ro.urls
+            # Only an http(s) URL may become the entity's website link on the site.
+            urls = [u for u in light_ro.urls if u.startswith(("http://", "https://"))]
             if urls:
                 entity_website = urls[0]
             source_files, _ = (

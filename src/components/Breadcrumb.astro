@@ -1,4 +1,6 @@
 ---
+import { jsonForScript } from '../lib/jsonForScript';
+
 interface Props { crumbs: { label: string; href?: string }[] }
 const { crumbs } = Astro.props;
 
@@ -15,7 +17,7 @@ const breadcrumbList = {
   })),
 };
 ---
-<script type="application/ld+json" set:html={JSON.stringify(breadcrumbList)} />
+<script type="application/ld+json" set:html={jsonForScript(breadcrumbList)} />
 <nav aria-label="Breadcrumb" class="breadcrumb">
   <ol>
     {crumbs.map((c, i) => {
