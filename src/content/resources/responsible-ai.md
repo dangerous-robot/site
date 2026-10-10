@@ -190,13 +190,13 @@ data:
       polarity: inverted
       ideal: { value: "no" }
       cells:
-        greenpt: { type: "no" }
+        greenpt: { type: "no", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
         ecosia: { type: "no" }
-        euria: { type: "no" }
-        treadlightly: { type: "no" }
-        viro: { type: "no", detail: "Ads based on chat content"  }
-        chatgptree: { type: "unknown", detail: "[probably?](https://www.chatgptree.ai/legal/privacy#how-we-use-info)" }
-        earthly-insight: { type: "unknown", detail: "[probably not?](https://www.earthlyinsight.ai/privacy-policy)" }
+        euria: { type: "no", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "no", sources: [/research/sources/2026/treadlightly-privacy-policy] }
+        viro: { type: "no", detail: "Ads may be based on the current message", sources: [/research/sources/2025/viro-ai-privacy-policy-2025] }
+        chatgptree: { type: "unknown" }
+        earthly-insight: { type: "unknown" }
     - key: corporate-structure
       label: "Ownership structure"
       group: business
