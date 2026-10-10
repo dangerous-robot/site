@@ -135,6 +135,8 @@ npx wrangler d1 execute dr-api --remote --command "DELETE FROM signatures WHERE 
 
 After a petition closes the email is gone, so match on `name` and `petition_slug` instead.
 
+**Then rebuild the site.** The petition page carries the signer list as it stood at the last build (`src/components/PetitionSign.astro` reads it from the Worker at build time). Readers with JavaScript load the live list, so the name leaves their view at once; readers without JavaScript and search crawlers keep seeing it until the next deploy. Check the row count above first, because the build reads the live database. A deploy runs on a push to `main` or a manual run of the "Deploy to GitHub Pages" workflow (`docs/architecture/ci-deploy.md`); with nothing to push, start one from the repository's Actions tab or with `gh workflow run deploy.yml --ref main`.
+
 **Local testing.** `cp .dev.vars.example .dev.vars` (emails print to the terminal instead of sending), `npx wrangler d1 migrations apply dr-api --local`, insert a petition row without `--remote`, then `npx wrangler dev`. Start the site with `PUBLIC_PETITION_API=http://localhost:8787` so the sign block talks to the local Worker. Unit tests: `npm test`.
 
 <!-- TODO: plan additional runbook sections
