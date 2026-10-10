@@ -113,7 +113,10 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (!name || name.length > NAME_MAX || /[\u0000-\u001f]/.test(name)) {
     return reply(request, env, 400, `Please enter your name (up to ${NAME_MAX} characters).`, petition.post_url);
   }
-  if (email.length > EMAIL_MAX || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  // Plain addresses only. A looser check let `"x"<victim@...>` and `<victim@...>`
+  // through as distinct emails that a mail API could deliver to the same inbox,
+  // and let shell metacharacters reach the runbook's removal command.
+  if (email.length > EMAIL_MAX || !/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(email)) {
     return reply(request, env, 400, 'Please enter a valid email address.', petition.post_url);
   }
   // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
