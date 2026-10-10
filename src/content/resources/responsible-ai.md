@@ -213,13 +213,13 @@ data:
           mixed: [privately-held]
           bad: [publicly-traded]
       cells:
-        greenpt: { type: "text", detail: "Private", term: privately-held }
-        ecosia: { type: "text", detail: "Non-profit, Steward-ownership", term: steward-ownership }
-        euria: { type: "text", detail: "B Corp", term: B-corp }
+        greenpt: { type: "text", detail: "Private (GreenPT BV)", term: privately-held, sources: [/research/sources/2026/greenpt-terms-of-service] }
+        ecosia: { type: "text", detail: "Non-profit, Steward-ownership", term: steward-ownership, sources: [/research/sources/2018/ecosia-commits-to-trees-not-profits] }
+        euria: { type: "text", detail: "B Corp", term: B-corp, sources: [/research/sources/2025/infomaniak-becomes-a-b-corp-certified-company] }
         treadlightly: { type: "text", detail: "Sole proprietorship", term: privately-held }
         viro: { type: "text", detail: "Solo-founder LLC", term: privately-held }
         chatgptree: { type: "text", detail: "Private", term: privately-held }
-        earthly-insight: { type: "text", detail: "Bootstrapped LLC", term: privately-held }
+        earthly-insight: { type: "text", detail: "LLC (Earthly Insight LLC)", term: privately-held, sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: free-tier
       label: "Free tier"
       group: business
