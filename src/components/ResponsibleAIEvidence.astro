@@ -21,7 +21,8 @@ import {
   type EvidenceSubject,
   type ProductRef,
 } from '../lib/matrixEvidence';
-import { VALUES_PATH_PREFIX, type MatrixData, type MatrixIdeal } from '../lib/matrixSchema';
+import type { MatrixData, MatrixIdeal } from '../lib/matrixSchema';
+import { positionHeading } from '../lib/valuesPositions';
 import { profileHref } from '../lib/reviewers';
 import { CONFIDENCE_LABELS } from '../lib/verdict';
 
@@ -89,7 +90,7 @@ const entries: Entry[] = [
             <ResponsibleAIWePrefer ideal={ideal} />
             {ideal.note && <span class="ra-evidence__note"> {ideal.note}</span>}
             {ideal.position && (
-              <span class="ra-evidence__muted"> Position: <a href={ideal.position}>{ideal.position.slice(VALUES_PATH_PREFIX.length).replace(/-/g, ' ')}</a>.</span>
+              <span class="ra-evidence__muted"> Position: <a href={ideal.position}>{positionHeading(ideal.position)}</a>.</span>
             )}
             <span class="ra-evidence__muted"><ResponsibleAISourceLinks paths={ideal.sources} lookups={lookups} /></span>
           </p>

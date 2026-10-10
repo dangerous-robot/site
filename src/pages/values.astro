@@ -2,8 +2,11 @@
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
 import { operator, profileHref } from '../lib/reviewers';
+import { VALUES_POSITIONS } from '../lib/valuesPositions';
 
 const op = operator();
+// Headings and ids come from the list the Responsible AI matrix links into.
+const [safety, environment, power, human] = VALUES_POSITIONS;
 ---
 <Base title="Values" description="Dangerous Robot's editorial position, plainly stated." layout="reading">
   <article class="reading">
@@ -18,7 +21,7 @@ const op = operator();
       sources show; our writing and petitions argue from the positions below.
     </p>
 
-    <h2>AI safety is unsolved</h2>
+    <h2 id={safety.id}>{safety.heading}</h2>
     <p>
       Frontier AI is being deployed faster than the field can verify it is
       safe. Many people, including some who build these systems, consider
@@ -29,7 +32,7 @@ const op = operator();
       Dangerous Robot treats every vendor safety claim as a claim, not a fact.
     </p>
 
-    <h2>AI is fueling environmental destruction</h2>
+    <h2 id={environment.id}>{environment.heading}</h2>
     <p>
       Frontier AI models burn through water and power at an industrial scale.
       Firms are rushing to build fossil fuel-powered data centers to protect
@@ -37,7 +40,7 @@ const op = operator();
       environmental commitments. Accelerating in the wrong direction.
     </p>
 
-    <h2>AI outcomes are being decided by a small group of people</h2>
+    <h2 id={power.id}>{power.heading}</h2>
     <p>
       A handful of companies, and the people who run them, decide what gets
       built, how fast it ships, and which risks are acceptable. Most of the
@@ -45,7 +48,7 @@ const op = operator();
       exists to help more people have a say while they still can.
     </p>
 
-    <h2>Staying human and connected to each other will be essential</h2>
+    <h2 id={human.id}>{human.heading}</h2>
     <p>
       AI is likely to change almost everything about how we work, learn, and
       relate to each other. We should be intentional about where it belongs in

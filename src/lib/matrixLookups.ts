@@ -2,16 +2,17 @@
 // rules read. The only matrix module that touches the Astro runtime.
 import { getCollection, type CollectionEntry } from 'astro:content';
 import type { CheckLookups } from './matrixCheck';
+import { VALUES_POSITION_IDS } from './valuesPositions';
 
-/** The lookups for the matrix page: every claim, source, entity and criterion. */
-export async function loadMatrixLookups(valuesPositions: string[] = []): Promise<CheckLookups> {
+/** The lookups for the matrix page: every claim, source, entity and criterion, and the Values position ids. */
+export async function loadMatrixLookups(): Promise<CheckLookups> {
   const [claims, sources, entities, criteria] = await Promise.all([
     getCollection('claims'),
     getCollection('sources'),
     getCollection('entities'),
     getCollection('criteria'),
   ]);
-  return buildMatrixLookups(claims, sources, entities, criteria, valuesPositions);
+  return buildMatrixLookups(claims, sources, entities, criteria, VALUES_POSITION_IDS);
 }
 
 export function buildMatrixLookups(
