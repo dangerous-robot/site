@@ -181,13 +181,13 @@ data:
           large: [GPT-4o, Gemini Pro]
           not_large: [Mistral Small, GPT-OSS, Gemma 4, Claude Haiku, Claude Sonnet, Gemini Flash, GPT-5.6 Terra]
       cells:
-        greenpt: { type: "text", detail: "Mistral Small 3.2, GPT-OSS 120B, Gemma 4 31B", models: [Mistral Small, GPT-OSS, Gemma 4], sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
-        ecosia: { type: "text", detail: "Mistral (chat model not named)", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
+        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS, Gemma 4", models: [Mistral Small, GPT-OSS, Gemma 4], sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
+        ecosia: { type: "text", detail: "Mistral", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3" }
-        treadlightly: { type: "text", detail: "Gemma 4 31B, GPT-OSS 120B, Claude Haiku & Sonnet", models: [Gemma 4, GPT-OSS, Claude Haiku, Claude Sonnet], sources: [/research/sources/2026/about-treadlightly-ai] }
+        treadlightly: { type: "text", detail: "Gemma 4, GPT-OSS, Claude Haiku & Sonnet", models: [Gemma 4, GPT-OSS, Claude Haiku, Claude Sonnet], sources: [/research/sources/2026/about-treadlightly-ai] }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
         chatgptree: { type: "text", detail: "GPT-4o", models: [GPT-4o], sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
-        earthly-insight: { type: "text", detail: "GPT-5.6 Terra, Claude Sonnet 5, Gemini 3.1 Pro & 3.5 Flash", models: [GPT-5.6 Terra, Claude Sonnet, Gemini Pro, Gemini Flash], sources: [/research/sources/2026/earthly-insight-app-ai] }
+        earthly-insight: { type: "text", detail: "GPT-5.6 Terra, Claude Sonnet, Gemini Pro & Flash", models: [GPT-5.6 Terra, Claude Sonnet, Gemini Pro, Gemini Flash], sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: data-used-for-training
       label: "Data used for training"
       group: privacy-data
@@ -213,13 +213,13 @@ data:
           mixed: [privately-held]
           bad: [publicly-traded]
       cells:
-        greenpt: { type: "text", detail: "Private (GreenPT BV)", term: privately-held, sources: [/research/sources/2026/greenpt-terms-of-service] }
+        greenpt: { type: "text", detail: "Private", term: privately-held, sources: [/research/sources/2026/greenpt-terms-of-service] }
         ecosia: { type: "text", detail: "Non-profit, Steward-ownership", term: steward-ownership, sources: [/research/sources/2018/ecosia-commits-to-trees-not-profits] }
         euria: { type: "text", detail: "B Corp", term: B-corp, sources: [/research/sources/2025/infomaniak-becomes-a-b-corp-certified-company] }
         treadlightly: { type: "text", detail: "Sole proprietorship", term: privately-held }
         viro: { type: "text", detail: "Solo-founder LLC", term: privately-held }
         chatgptree: { type: "text", detail: "Private", term: privately-held }
-        earthly-insight: { type: "text", detail: "LLC (Earthly Insight LLC)", term: privately-held, sources: [/research/sources/2026/earthly-insight-app-ai] }
+        earthly-insight: { type: "text", detail: "LLC", term: privately-held, sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: free-tier
       label: "Free tier"
       group: business
@@ -299,13 +299,13 @@ data:
       # (P4, "barriers found by our check"); the pages and failures are
       # recorded in the plan's S10 result so the check can be repeated.
       cells:
-        greenpt: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        ecosia: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        euria: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        treadlightly: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        viro: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        chatgptree: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
-        earthly-insight: { type: partial, detail: "Barriers found by our automated check", last_checked: "2026-10-10" }
+        greenpt: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        ecosia: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        euria: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        treadlightly: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        viro: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        chatgptree: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        earthly-insight: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
     - key: data-jurisdiction
       label: "Data jurisdiction"
       group: privacy-data
@@ -325,7 +325,7 @@ data:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "no" }
         euria: { type: "yes", sources: [/research/sources/2026/euria-sovereign-ai-assistant-infomaniak] }
-        treadlightly: { type: "partial", detail: "Claude Haiku and Sonnet on the Advanced plan", sources: [/research/sources/2026/about-treadlightly-ai] }
+        treadlightly: { type: "partial", detail: "Claude on Advanced", sources: [/research/sources/2026/about-treadlightly-ai] }
         viro: { type: "partial" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
