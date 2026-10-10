@@ -51,7 +51,9 @@ data:
       entity: products/ecosia-ai
       status: active
       summary:
-        ai_ethics: "Proprietary model (US), GPT-4 mini."
+        ai_ethics:
+          text: "Chat provider: Mistral."
+          sources: [/research/sources/2026/generative-ai-on-ecosia-search]
         financial_transparency:
           text: "Non-profit steward-ownership; publishes financial reports."
           sources:
@@ -81,10 +83,18 @@ data:
       entity: products/greenpt
       status: active
       summary:
-        ai_ethics: "Open-weight models only."
+        ai_ethics:
+          text: "Open-weight models only."
+          sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon]
         financial_transparency: "GreenPT BV, Netherlands; no published financials."
-        environmental: "Hosted at Scaleway data center in France (PUE 1.37), powered by 100% renewable energy."
-        notes: "Smaller, more efficient models."
+        environmental:
+          text: "Hosted by Scaleway in Paris (PUE 1.25), powered by 100% renewable energy."
+          sources:
+            - /research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon
+            - /research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt
+        notes:
+          text: "Smaller, more efficient models."
+          sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt]
     - key: treadlightly
       name: TreadLightlyAI
       url: https://treadlightly.ai/
@@ -92,7 +102,9 @@ data:
       # Q1: sources only; no claims are researched for the operator's own product.
       max_tier: source
       summary:
-        ai_ethics: "Proprietary models (US) and open-weight models (US, FR)."
+        ai_ethics:
+          text: "Open-weight models from Google DeepMind and OpenAI; Anthropic's Claude on the Advanced plan."
+          sources: [/research/sources/2026/about-treadlightly-ai]
         financial_transparency: "Sole proprietorship; no published financials."
         environmental: "Infomaniak (PUE 1.06, waste heat to district heating) + Anthropic conventional cloud."
         notes: "Beta product from same founder as Dangerous Robot."
