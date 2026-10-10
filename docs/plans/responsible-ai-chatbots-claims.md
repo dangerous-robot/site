@@ -420,6 +420,7 @@ Result (2026-10-10), rows 1 to 5 of the stance rows; rows 6 to 9 (open-weight mo
 | Hosted on renewable energy | 3 (GreenPT, Euria, TreadLightlyAI) | 4 (ChatGPTree, Earthly Insight, Ecosia AI, Viro AI) | 0 / 11 / 101 |
 | Real-time energy display | 2 (GreenPT, TreadLightlyAI) | 5 (ChatGPTree, Earthly Insight, Ecosia AI, Euria, Viro AI) | 0 / 13 / 99 |
 | No image generation | 3 (Ecosia AI, TreadLightlyAI, Viro AI) | 4 (ChatGPTree, Earthly Insight, Euria, GreenPT) | 0 / 16 / 96 |
+| Published financials | 1 (Ecosia AI) | 6 (ChatGPTree, Earthly Insight, Euria, GreenPT, TreadLightlyAI, Viro AI) | 0 / 17 / 95 |
 
 Data used for training:
 - Sourced: GreenPT (its privacy page, already a source: "We never use your data to train our AI models"); Euria (Infomaniak's launch post, already a source: "your data is never used to train models"); TreadLightlyAI (its privacy policy, new: "never use your conversations to train AI models"); Viro AI (its Viro AI privacy policy, new: "We don't train AI models on your chats"). Viro's detail now says what the policy says, "Ads may be based on the current message" (the policy: "Ads may be based on the content of the current message or session context"), in place of "Ads based on chat content".
@@ -441,6 +442,10 @@ No image generation:
 - Ecosia AI changes from Yes to No: its help article on AI (https://support.ecosia.org/article/1006-ai-search, new source) has an "Image Generation" section ("The image generation feature allows you to create custom images directly within your AI Chat conversation"; "Feature is only available for logged-in Ecosia account users"; images come from Black Forest Labs). Detail: "Generates images for logged-in users". The Wayback capture `20260918095402` already has the section.
 - Sourced: TreadLightlyAI (its home page: "We deliberately exclude energy-intensive options like image generation"); Viro AI, "no" (its App Store listing, new, seller "Viro Climate Action, Inc": "Generate images, search the live web, and analyze photos and documents"; no page on viro.app mentions image generation).
 - ChatGPTree, Earthly Insight, Euria, GreenPT, "yes", not yet sourced: none of their pages fetched mentions image generation, and absence is not a source.
+
+Published financials:
+- Sourced: Ecosia AI (Ecosia's blog post on its financial reports, already a source: "we publish monthly reports that show exactly how much money we made, and how we use it").
+- ChatGPTree, Earthly Insight, Euria (Infomaniak), GreenPT and Viro AI, "no", not yet sourced: no page of theirs states that they do not publish financials (Infomaniak's About page and GreenPT's B Corp page, read 2026-10-10, give no figures). TreadLightlyAI, "no", not yet sourced: its transparency page (https://treadlightly.ai/transparency/) posts revenue-share payouts ("10% of all revenue to the Future of Life Institute, disbursed every six months and posted publicly"), not financial statements; whether that changes the answer is a question for Brandon (handoff note).
 
 #### S11: the research linter counts sources the page cites
 `check_unreferenced_sources` (`checks.py:616-639`) also collects the `/research/sources/...` paths cited anywhere in `src/content/resources/*.md` frontmatter, reading only, and skips that step when the directory is absent (so a research repo split off later still lints). AGENTS.md:72 limits what the pipeline writes, not what it reads. Without this, `dr lint` warns on every page-only source with the hint "remove the file" (`checks.py:637`), which an agent could follow.

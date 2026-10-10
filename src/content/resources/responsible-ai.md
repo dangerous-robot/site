@@ -156,7 +156,7 @@ data:
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "no" }
-        ecosia: { type: "yes"}
+        ecosia: { type: "yes", sources: [/research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts] }
         euria: { type: "no"}
         treadlightly: { type: "no" }
         viro: { type: "no" }
