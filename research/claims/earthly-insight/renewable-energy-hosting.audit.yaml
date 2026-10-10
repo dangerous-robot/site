@@ -1,0 +1,199 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-10T22:21:31.221630+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Earthly Insight transparency report renewable energy
+  - Earthly Insight website sustainability disclosures
+  - Earthly Insight hosting provider Green Web Foundation
+  - Earthly Insight hosting renewal energy certification
+  - Earthly Insight website hosting provider 2024
+  - Earthly Insight data center renewable energy commitment
+  - Earthly website erne cloud provider sustainability
+  planner_rationale: These sub-questions cover first-party claims, third-party verifications,
+    and the technical hosting mechanism to validate whether Earthly Insight is hosted
+    on renewable energy.
+  candidates_seen: 114
+  urls_kept: 8
+  urls_dropped: 44
+  scorer_rationale: "**Scoring Rationale:**\n- **Kept Candidates:**\n  1. **[Global\
+    \ Rewilding Champions](https://globalrewilding.earth/earthly-insight-joins-our-global-rewilding-champions)**:\
+    \ Scores **5 for sq1** (directly states Earthly Insight's commitment to renewable\
+    \ energy priority in their long-term plan).\n  2. **[LinkedIn Post](https://www.linkedin.com/posts/earthly-insight_responsibility-in-the-age-of-ai-turning-activity-7417951275817918464-H7h7)**:\
+    \ Scores **5 for sq1** (explicitly mentions generating more renewable energy than\
+    \ their AI features use from 100% clean sources like solar and wind).\n  3. **[Yahoo\
+    \ Finance Press Release](https://finance.yahoo.com/news/introducing-earthly-insight-more-conscious-143500454.html)**:\
+    \ Scores **4 for sq1** (highlights Earthly Insight’s focus on reducing energy\
+    \ intensity, tracking energy use, and committing to transparency) and **3 for\
+    \ sq3** (implies a dedication to sustainability but does not name a specific hosting\
+    \ provider).\n  4. **[Earthly Insight Official Website](https://www.earthlyinsight.com)**:\
+    \ Scores **5 for sq1** (direct commitment to high-impact environmental non-profits\
+    \ and renewable energy focus) and **4 for sq3** (implies a hosting solution aligned\
+    \ with their values but primarily focuses on donations, not specific hosting infrastructure).\n\
+    \  5. **[Green Web Foundation](https://www.thegreenwebfoundation.org)**: Scores\
+    \ **5 for sq2** (third-party verification of renewable hosting providers) and\
+    \ **4 for sq3** (lists verified providers, indirectly relevant to Earthly Insight’s\
+    \ hosting needs). Directory confirms this further.\n  6. **[Krystal Hosting -\
+    \ Green Web](https://krystalhosting.com/green)**: Scores **4 for sq3** (demonstrates\
+    \ verified green hosting with renewable commitments, useful for identifying potential\
+    \ hosting provider alignement).\n  7. **[Google Sustainability](https://sustainability.google/stories/announcement-100)**:\
+    \ Scores **4 for sq3** (Google’s renewable energy commitments and hosting infrastructure,\
+    \ relevant if Earthly Insight uses Google as a provider).\n\n- **Dropped Candidates:**\n\
+    \  - Off-topic, irrelevant, or about entirely different entities (e.g., Earthly\
+    \ Labs, Earth Insight, unrelated energy/hosting providers).\n  - Search results\
+    \ explicitly avoided due to entity disambiguation rules (e.g., `earthlyinsight.ai`\
+    \ or `apps.apple.com` links related to other projects/companies).\n  - Candidates\
+    \ providing only ESG narratives without direct, concrete evidence of renewable\
+    \ hosting for **Earthly Insight**, restoration events, or hosting provider specifics.\n\
+    \  - Low-publisher-quality sources (e.g., Yelp, advocacy sites, or community forums)\
+    \ without direct evidence of renewable hosting for Earthly Insight."
+  entity_exclude_dropped:
+  - https://www.linkedin.com/posts/earthly-insight_responsibility-in-the-age-of-ai-turning-activity-7417951275817918464-H7h7
+  urls_after_blocklist: 7
+sub_questions:
+- id: sq1
+  question: Does Earthly Insight explicitly state or commit to hosting on renewable
+    energy in its transparency reports or official communications?
+  rationale: First-party declarations are the strongest evidence of the claim about
+    renewable energy hosting.
+  queries:
+  - Earthly Insight transparency report renewable energy
+  - Earthly Insight website sustainability disclosures
+  citations:
+  - 2025/earthly-insight-joins-global-rewilding-champions
+  - 2026/earthly-insight-conscious-ai-assistant
+  - 2025/introducing-earthly-insight-more-conscious-143500454html
+- id: sq2
+  question: Are there third-party audits, certifications, or ESG databases (e.g.,
+    EcoIndex, Green Web Foundation) that document Earthly Insight’s hosting provider
+    and its renewable energy usage?
+  rationale: Third-party verification adds credibility to claims of renewable energy
+    hosting and identifies the hosting mechanism.
+  queries:
+  - Earthly Insight hosting provider Green Web Foundation
+  - Earthly Insight hosting renewal energy certification
+  citations:
+  - 2026/green-web-foundation-index
+  - 2026/directory
+- id: sq3
+  question: What hosting provider does Earthly Insight use, and does that provider
+    publicly commit to or guarantee renewable energy hosting for its services?
+  rationale: The underlying technical mechanism (hosting provider) can confirm whether
+    they offer renewable energy hosting.
+  queries:
+  - Earthly Insight website hosting provider 2024
+  - Earthly Insight data center renewable energy commitment
+  - Earthly website erne cloud provider sustainability
+  citations:
+  - 2016/announcement-100
+  - 2026/earthly-insight-conscious-ai-assistant
+  - 2026/green-web-foundation-index
+  - 2025/introducing-earthly-insight-more-conscious-143500454html
+  - 2026/directory
+  - 2026/green
+sources_consulted:
+- id: 2025/earthly-insight-joins-global-rewilding-champions
+  url: https://globalrewilding.earth/earthly-insight-joins-our-global-rewilding-champions
+  title: Earthly Insight Joins Global Rewilding Champions
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight transparency report renewable energy
+- id: 2016/announcement-100
+  url: https://sustainability.google/stories/announcement-100
+  title: 100% Renewable Is Just the Beginning
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight data center renewable energy commitment
+- id: 2026/earthly-insight-conscious-ai-assistant
+  url: https://www.earthlyinsight.com
+  title: 'Earthly Insight: A Conscious AI Assistant'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Earthly Insight website sustainability disclosures
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/green-web-foundation-index
+  url: https://www.thegreenwebfoundation.org
+  title: The Green Web Foundation
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight hosting provider Green Web Foundation
+- id: 2025/introducing-earthly-insight-more-conscious-143500454html
+  url: https://finance.yahoo.com/news/introducing-earthly-insight-more-conscious-143500454.html
+  title: Introducing 'Earthly Insight,' a More Conscious AI
+  ingested: true
+  archive:
+    status: failed
+    error: Wayback save failed (HTTP 520)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight transparency report renewable energy
+- id: 2026/directory
+  url: https://www.thegreenwebfoundation.org/tools/directory
+  title: Green Web Directory
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight hosting provider Green Web Foundation
+- id: 2026/green
+  url: https://krystalhosting.com/green
+  title: Krystal's Green Hosting Mission and Approach
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight hosting provider Green Web Foundation
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+  auditor_reasoning: The partnership announcement and Earthly Insight’s own marketing
+    (Sources 1, 3, 5) highlight eco‑conscious features but do not claim renewable‑energy
+    hosting. The Green Web Foundation’s verification service and directory (Sources
+    4, 6) do not list Earthly Insight, and no independent report confirms its hosting
+    arrangements. Because the claim is not addressed by any source, it remains unverified
+    despite a thorough search of relevant material.
+  evidence_gaps:
+  - No source explicitly states the renewable‑energy status of Earthly Insight’s hosting
+    provider, and none identifies the provider at all.
+  needs_review_reasons: []
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

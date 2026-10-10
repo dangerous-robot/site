@@ -1,0 +1,198 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-10T22:25:53.870078+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Euria Infomaniak transparency report renewable energy 2024
+  - Euria Infomaniak sustainability policy hosting providers
+  - EcoIndex renewable energy assessment Infomaniak Euria
+  - Green Web Foundation Euria Infomaniak hosting provider
+  - Infomaniak data center renewable energy commitments
+  - Euria privacy-focused infrastructure renewable energy
+  - CDP climate change report Infomaniak Euria energy hosting
+  planner_rationale: The sub-questions cover first-party claims (sq1), third-party
+    verification (sq2), and technical hosting mechanisms (sq3) to comprehensively
+    assess whether Euria is hosted on renewable energy.
+  candidates_seen: 103
+  urls_kept: 11
+  urls_dropped: 47
+  scorer_rationale: "Dropped candidates were either irrelevant to Euria/Infomaniak,\
+    \ did not address renewable energy hosting directly, or were about unrelated topics\
+    \ (e.g., forums, apps.Apple URLs, or academic papers unrelated to Euria/Infomaniak's\
+    \ sustainability claims). Kept candidates either: \n\n1. **Come from Infomaniak’s\
+    \ own sources (primary publisher quality)**, including official statements, sustainability\
+    \ reports, or direct documentation about Euria’s infrastructure (e.g., https://news.infomaniak.com/en/euria-sovereign-ai-assistant,\
+    \ https://euria.infomaniak.com) — **directly addressing sq1 and sq3**.\n\n2. **Explicitly\
+    \ mention renewable energy and waste heat recovery for Euria or Infomaniak powering\
+    \ Euria**, such as the Yahoo Finance articles (https://finance.yahoo.com/news/infomaniak-launches-euria-free-sovereign-070000051.html,\
+    \ https://finance.yahoo.com/news/innovation-infomaniak-inaugurates-data-center-153100891.html?fr=sycsrp_catchall)\
+    \ or PrivacyTools.io review (https://privacytools.io/app/euria) — **directly addressing\
+    \ sq1 and sq3**.\n\n3. **Avoid forbidden topics** (e.g., infoswitch.fr) or unrelated\
+    \ entities (e.g., forums).\n\nThe **dropped** candidates either:\n- Used **forum\
+    \ or low-quality publishers** (e.g., PrivacyGuides forum, LinkedIn posts without\
+    \ clear evidence),\n- Were about **different entities** (e.g., unrelated web hosting\
+    \ providers in Tracxn or supposed Euria competitors),\n- Focused on **green hosting\
+    \ directories** without explicit Euria/Infomaniak-specific data (e.g., GreenWeb\
+    \ Foundation), or\n- Contained **no evidence of Euria’s renewable hosting** (e.g.,\
+    \ arXiv papers, unrelated sustainability trends).\n\n### Highlighted Kept Candidates:\n\
+    - **Highest relevance for sq1**: Infomaniak’s transparency reports (e.g., **https://news.infomaniak.com/en/euria-sovereign-ai-assistant**),\
+    \ their official websites (**https://www.infomaniak.com/en/**, **https://euria.infomaniak.com**),\
+    \ and third-party reviews like **https://privacytools.io/app/euria**.\n- **Strongest\
+    \ for sq3**: Euria’s dependence on Infomaniak’s data centers powered by renewable\
+    \ energy (sq3), documented across Infomaniak sources, Yahoo Finance, and Infomaniak’s\
+    \ own communications.\n\nThis curation ensures the findings are **first-party\
+    \ (or established third-party)**, directly tied to Euria/Infomaniak’s renewable\
+    \ energy claims, and avoids avoid topics/entities."
+  urls_after_blocklist: 11
+sub_questions:
+- id: sq1
+  question: Does Euria or Infomaniak provide information about renewable energy hosting
+    in their official transparency reports or sustainability documentation?
+  rationale: Checking first-party disclosures is critical to determine if Euria explicitly
+    claims renewable energy hosting.
+  queries:
+  - Euria Infomaniak transparency report renewable energy 2024
+  - Euria Infomaniak sustainability policy hosting providers
+  - Euria privacy-focused infrastructure renewable energy
+  citations:
+  - 2025/euria-sovereign-ai-assistant-challenges-american-dominance
+  - 2026/euria-sovereign-ai-assistant-infomaniak
+  - 2026/euria
+  - 2026/euria-by-infomaniak
+  - 2023/infomaniak-launches-euria-free-sovereign-070000504html
+  - 2021/we-pollute
+  - 2026/infomaniak-about
+- id: sq2
+  question: Are there third-party sustainability ratings or ESG databases (e.g., EcoIndex,
+    GreenIT, or CDP) that assess Euria’s or Infomaniak’s infrastructure for renewable
+    energy use?
+  rationale: Third-party databases often provide objective or regulatory-backed insights
+    into energy hosting practices not always stated publicly.
+  queries:
+  - EcoIndex renewable energy assessment Infomaniak Euria
+  - CDP climate change report Infomaniak Euria energy hosting
+  citations: []
+- id: sq3
+  question: What hosting provider does Euria or Infomaniak use, and does that provider
+    offer renewable energy guarantees (e.g., Green Web Foundation, OECD Green Datacenters)?
+  rationale: The underlying technical mechanism—hosting provider—may reveal renewable
+    energy commitments if publicly disclosed.
+  queries:
+  - Green Web Foundation Euria Infomaniak hosting provider
+  - Infomaniak data center renewable energy commitments
+  citations:
+  - 2025/euria-sovereign-ai-assistant-challenges-american-dominance
+  - 2026/euria-sovereign-ai-assistant-infomaniak
+  - 2026/euria
+  - 2026/euria-by-infomaniak
+  - 2023/infomaniak-launches-euria-free-sovereign-070000504html
+sources_consulted:
+- id: 2025/euria-sovereign-ai-assistant-challenges-american-dominance
+  url: https://news.infomaniak.com/en/euria-sovereign-ai-assistant
+  title: 'Euria: the Free, Sovereign AI Assistant to Challenge American Dominance'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Euria Infomaniak sustainability policy hosting providers
+- id: 2026/euria-sovereign-ai-assistant-infomaniak
+  url: https://www.infomaniak.com/en/euria
+  title: Euria, the Sovereign AI Assistant
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Euria Infomaniak sustainability policy hosting providers
+- id: 2026/euria
+  url: https://privacytools.io/app/euria
+  title: 'Euria: A Private AI Assistant Hosted in Switzerland'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Euria Infomaniak transparency report renewable energy 2024
+- id: 2026/euria-by-infomaniak
+  url: https://euria.infomaniak.com
+  title: Euria by Infomaniak
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EcoIndex renewable energy assessment Infomaniak Euria
+- id: 2023/infomaniak-launches-euria-free-sovereign-070000504html
+  url: https://uk.finance.yahoo.com/news/infomaniak-launches-euria-free-sovereign-070000504.html
+  title: 'Infomaniak Launches Euria: Free Sovereign AI Respecting Privacy and Powered
+    by Renewables'
+  ingested: true
+  archive:
+    status: failed
+    error: Wayback save failed (HTTP 520)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Euria Infomaniak transparency report renewable energy 2024
+- id: 2021/we-pollute
+  url: https://news.infomaniak.com/en/we-pollute
+  title: We Pollute, Even Though We Offset All Our CO2 Emissions by 200%
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EcoIndex renewable energy assessment Infomaniak Euria
+- id: 2026/infomaniak-about
+  url: https://www.infomaniak.com/en/about
+  title: About Infomaniak
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Green Web Foundation Euria Infomaniak hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+  auditor_reasoning: Infomaniak’s own communications (Source 1 and Source 5) explicitly
+    say Euria runs in Swiss data centres powered by renewable energy and that the
+    AI’s energy is recycled to heat homes. An independent article (Source 3) also
+    notes the renewable‑energy claim. Additional sources confirm the Swiss localisation
+    of the hosting. No source provides a third‑party ESG rating, so the claim of a
+    coverage gap remains unverified, but it does not contradict the other statements.
+    Because the evidence relies primarily on self‑reported materials, confidence is
+    limited to low.
+  evidence_gaps:
+  - The statement that no third‑party ESG or sustainability ratings exist is not directly
+    supported by a source; it is based on the reviewer’s search and could not be independently
+    verified.
+  needs_review_reasons: []
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

@@ -1,0 +1,174 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-10T22:19:08.441914+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - ChatGPTree sustainability report hosting provider
+  - ChatGPTree renewable energy transparency data
+  - ChatGPTree ESG hosting energy source report
+  - third-party audits ChatGPTree renewable hosting
+  - ChatGPTree renewable energy certificates technical details
+  - ChatGPTree hosting infrastructure renewable claims verification
+  planner_rationale: These sub-questions cover first-party transparency (sq1), third-party
+    validation (sq2), and technical substantiation (sq3) to comprehensively assess
+    the claim of renewable hosting.
+  candidates_seen: 99
+  urls_kept: 7
+  urls_dropped: 81
+  scorer_rationale: "The selection of kept candidates is based on their relevance\
+    \ to the sub-questions decomposing the claim that 'ChatGPTree is hosted on renewable\
+    \ energy.' Candidates were evaluated as follows: \n\n- **Sub-question 1 (sq1)**:\
+    \ Evaluated whether candidates contain details about ChatGPTree’s hosting provider\
+    \ or infrastructure in transparency reports or sustainability pages. Only the\
+    \ **official ChatGPTree website** and the **GeekWire article** were considered\
+    \ relevant, scoring at least 3. They discuss sustainability and transparency efforts\
+    \ related to ChatGPTree's operations. \n\n- **Sub-question 2 (sq2)**: This sub-question\
+    \ related to third-party ESG aggregators or sustainability databases reporting\
+    \ on ChatGPTree’s hosting energy sources, but **no candidate** met this criterion.\
+    \ All candidates were either irrelevant or lacked specificity. \n\n- **Sub-question\
+    \ 3 (sq3)**: Evaluated whether candidates disclose technical mechanisms, such\
+    \ as renewable energy certificates or hosting server locations, behind renewable\
+    \ energy hosting claims. The **official GreenPT website and its comparison page**\
+    \ provided explicit details about hosting on renewable energy, including certifications\
+    \ and technical mechanisms like Scaleway’s renewable energy data centers, earning\
+    \ high relevance scores. The **ChatGPTree website** was also retained due to its\
+    \ mention of sustainable hosting, although details are less specific. \n\n**FinalKept\
+    \ Candidates**: \n- 'ChatGPTree’ official website: Addresses sq1 and sq3\n- 'GeekWire’\
+    \ article: Addresses just sq1 (discusses sustainability efforts without technical\
+    \ details)\n- 'GreenPT’ site and its comparison page: Addresses sq3 (provide renewable\
+    \ hosting details)\n\n**Why Drops Were Selected**: \nMany candidates were irrelevant\
+    \ or had low publisher quality (e.g., forum or tertiary sources), while others\
+    \ did not specifically address ChatGPTree or the sub-questions. The kept candidates\
+    \ either explicitly mention transparency, sustainability efforts, renewable energy\
+    \ hosting mechanisms, or technical validation."
+  urls_after_blocklist: 6
+sub_questions:
+- id: sq1
+  question: Does ChatGPTree publish details about its hosting provider or infrastructure
+    in its official transparency reports or sustainability pages?
+  rationale: First-party transparency is essential to uncover self-reported hosting
+    details, including whether renewable energy is used.
+  queries:
+  - ChatGPTree sustainability report hosting provider
+  - ChatGPTree renewable energy transparency data
+  citations:
+  - 2025/eco-friendly-chatgptree-sustainable-ai-chatbot
+  - 2025/rooted-in-founders-belief-that-tech-can-do-good-chatgptree-is-an-ai-tool-with-a-regenerative-focus
+- id: sq2
+  question: Are there third-party ESG aggregators or sustainability databases reporting
+    on ChatGPTree’s hosting energy sources or renewable energy usage?
+  rationale: Third-party ESG data can reveal disclosed hosting energy practices independently
+    of the entity's own statements.
+  queries:
+  - ChatGPTree ESG hosting energy source report
+  - third-party audits ChatGPTree renewable hosting
+  citations: []
+- id: sq3
+  question: Does ChatGPTree disclose the technical mechanism (e.g., renewable energy
+    certificates, hosting server locations) behind its renewable energy hosting claim?
+  rationale: Understanding the technical pipeline verifies whether the claim of renewable
+    hosting is substantiated.
+  queries:
+  - ChatGPTree renewable energy certificates technical details
+  - ChatGPTree hosting infrastructure renewable claims verification
+  citations:
+  - 2025/eco-friendly-chatgptree-sustainable-ai-chatbot
+  - 2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon
+  - 2026/greenpt-vs-chatgpt
+sources_consulted:
+- id: 2025/eco-friendly-chatgptree-sustainable-ai-chatbot
+  url: https://www.chatgptree.ai
+  title: ChatGPTree | Eco-Friendly AI Chatbot
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPTree sustainability report hosting provider
+- id: 2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon
+  url: https://greenpt.com
+  title: 'GreenPT: privacy-first AI with measured energy and carbon'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPTree sustainability report hosting provider
+- id: 2026/greenpt-vs-chatgpt
+  url: https://greenpt.com/greenpt-vs-chatgpt
+  title: GreenPT vs ChatGPT
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPTree ESG hosting energy source report
+- id: 2026/building-regenerative-ai-with-chatgptree
+  url: https://chatgptree.org
+  title: Building Regenerative AI with ChatGPTree
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: ChatGPTree sustainability report hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/rooted-in-founders-belief-that-tech-can-do-good-chatgptree-is-an-ai-tool-with-a-regenerative-focus
+  url: https://www.geekwire.com/2025/rooted-in-founders-belief-that-tech-can-do-good-chatgptree-is-an-ai-tool-with-a-regenerative-focus
+  title: An AI Tool with a Regenerative Focus
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: ChatGPTree sustainability report hosting provider
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/the-invisible-footprint-of-a-thought
+  url: https://chatgptree.org/f/the-invisible-footprint-of-a-thought
+  title: The Invisible Footprint of a Thought
+  ingested: true
+  archive:
+    status: failed
+    error: 'Wayback save failed (ReadTimeout): '
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPTree renewable energy transparency data
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+  auditor_reasoning: All six provided sources either come from ChatGPTree’s own blog
+    or an independent GeekWire profile, and none contain any statement about the hosting
+    provider, data‑center power source, or renewable‑energy certificates. The narrative
+    correctly notes that the available material does not mention renewable‑energy
+    usage, and there is no source that contradicts this observation. Therefore the
+    claim that the evidence does not support a renewable‑energy claim is well‑supported.
+  evidence_gaps: []
+  needs_review_reasons:
+  - verdict disagreement
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
