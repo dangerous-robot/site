@@ -15,6 +15,12 @@ describe('matrixDataSchema', () => {
     assert.ok(result.success, issues(result));
   });
 
+  test('products are in alphabetical order by name (Q9), so the order cannot read as a ranking', () => {
+    const names = matrixDataSchema.parse(pageData()).products.map((p) => p.name);
+    const sorted = [...names].sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+    assert.deepEqual(names, sorted);
+  });
+
   test('rejects the retired cell types', () => {
     assert.equal(matrixCell.safeParse({ type: 'no-good' }).success, false);
     assert.equal(matrixCell.safeParse({ type: 'planned' }).success, false);

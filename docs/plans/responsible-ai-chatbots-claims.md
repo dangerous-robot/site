@@ -22,7 +22,7 @@ Honest labels (no new research)
 - [x] S5: cells colored by the row's stance, feature rows neutral, `no-good` retired
 - [x] S6: evidence marks with a detail popup, and the Evidence section
 - [x] S7: today's inline links become source files (6 of 9; see S7 for the 3 left as links)
-- [ ] S8: content fixes for the findings
+- [x] S8: content fixes for the findings (F10 and the lab-page half of F14 wait on sources; see S8)
 
 Sources for every stance row
 - [ ] S9: stance sentences and their evidence
@@ -383,6 +383,7 @@ Result (2026-10-09): 6 ingested, each with `archived_url`, cited from 5 summary 
 #### S8: content fixes for the findings
 F1, F2, F7 to F15, each with a source where it changes a fact. F11: reorder `products` alphabetically by name. F12: one `term` per ownership cell. F13: under P4, "Level A" becomes partial and a WCAG level stays only where its evidence states it; with no evidence the cell becomes unknown. F14: name every model specifically enough for P5's rule, and replace the seeded `large_models` lists with the model names the cells use, each checked against its lab's own model page (ingested and cited in `large_models.sources`), with today's date in `last_checked`. F15: a description that names no subset of products (copy: Brandon to approve; max 200 characters, `content.config.ts` resources schema).
 Verify: a unit test that `products` is in alphabetical order by name (Q9), written first and watched fail on today's order, passes after F11; build; rendered-page check of each changed cell; every models cell has `models`, or its detail text says the product does not name its models.
+Result (2026-10-09): F1 fixed to "EU (GDPR)" from GreenPT's privacy page (ingested, cited). F2: both Earthly Insight domains serve the same site; no change. F7: the row is labeled "Maturity (as of March 2026)", the page's publication month, since the ages cannot be recomputed without launch dates. F8, F9, F11 (with the test), F12 (one `term`, done in S5), F13 (every accessibility cell is unknown until S10's checks) and F15 (new description, Brandon to approve) done. F10: Ecosia's page returns 403 to a plain fetch; unverified, unchanged. F14: ChatGPTree's cell names GPT-4o from its home page (ingested, cited) and GPT-4o joins `large` (OpenAI's top tier when released, R2); Euria, Viro and Earthly Insight cells still name families, their pages render client-side and show no model names to a fetch; the lab model pages behind `large_models.sources` and `last_checked` are not ingested yet. The remaining F10 and F14 work moves to S10 with the other source work.
 
 ### Sources for every stance row
 

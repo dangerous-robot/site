@@ -1,6 +1,6 @@
 ---
 title: "Responsible AI Chatbots"
-description: "Side-by-side comparison of responsible AI chatbots: GreenPT, Ecosia AI, Euria, and TreadLightlyAI on privacy, sustainability, and transparency."
+description: "Side-by-side comparison of AI chatbots that call themselves green or responsible: hosting, models, data use, ownership and cost, with the evidence behind each cell."
 pubDate: 2026-03-06
 layout: matrix
 wallpaper: none
@@ -21,48 +21,6 @@ data:
     - key: business
       label: "Business & cost"
   products:
-    - key: greenpt
-      name: GreenPT
-      url: https://chat.greenpt.ai/
-      status: active
-      summary:
-        ai_ethics: "Open-weight models only."
-        financial_transparency: "GreenPT BV, Netherlands; no published financials."
-        environmental: "Hosted at Scaleway data center in France (PUE 1.37), powered by 100% renewable energy."
-        notes: "Smaller, more efficient models."
-    - key: euria
-      name: Euria
-      url: https://euria.infomaniak.com/
-      status: active
-      summary:
-        ai_ethics: "Open-weight models (US, EU, CN)."
-        financial_transparency: "Infomaniak is a Swiss B Corp; no published financials."
-        environmental:
-          text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
-          sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
-        notes: "Bold [environmental committments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org."
-    - key: ecosia
-      name: Ecosia AI
-      url: https://www.ecosia.org/ai-chat
-      status: active
-      summary:
-        ai_ethics: "Proprietary model (US), GPT-4 mini."
-        financial_transparency:
-          text: "Non-profit steward-ownership; publishes financial reports."
-          sources:
-            - /research/sources/2025/ecosias-green-ai-alternative
-            - /research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts
-        environmental: "Conventional cloud hosting; funds tree planting projects worldwide"
-        notes: "Free, ad-supported."
-    - key: treadlightly
-      name: TreadLightlyAI
-      url: https://treadlightly.ai/
-      status: active
-      summary:
-        ai_ethics: "Proprietary models (US) and open-weight models (US, FR)."
-        financial_transparency: "Sole proprietorship; no published financials."
-        environmental: "Infomaniak (PUE 1.06, waste heat to district heating) + Anthropic conventional cloud."
-        notes: "Beta product from same founder as Dangerous Robot."
     - key: chatgptree
       name: ChatGPTree
       url: https://www.chatgptree.ai/
@@ -83,6 +41,48 @@ data:
           text: "Conventional cloud hosting. 33% of revenue to Global Rewilding Alliance."
           sources: [/research/sources/2025/earthly-insight-joins-global-rewilding-champions]
         notes: "Launched October 2025."
+    - key: ecosia
+      name: Ecosia AI
+      url: https://www.ecosia.org/ai-chat
+      status: active
+      summary:
+        ai_ethics: "Proprietary model (US), GPT-4 mini."
+        financial_transparency:
+          text: "Non-profit steward-ownership; publishes financial reports."
+          sources:
+            - /research/sources/2025/ecosias-green-ai-alternative
+            - /research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts
+        environmental: "Conventional cloud hosting; funds tree planting projects worldwide"
+        notes: "Free, ad-supported."
+    - key: euria
+      name: Euria
+      url: https://euria.infomaniak.com/
+      status: active
+      summary:
+        ai_ethics: "Open-weight models (US, EU, CN)."
+        financial_transparency: "Infomaniak is a Swiss B Corp; no published financials."
+        environmental:
+          text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
+          sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
+        notes: "Bold [environmental commitments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org."
+    - key: greenpt
+      name: GreenPT
+      url: https://chat.greenpt.ai/
+      status: active
+      summary:
+        ai_ethics: "Open-weight models only."
+        financial_transparency: "GreenPT BV, Netherlands; no published financials."
+        environmental: "Hosted at Scaleway data center in France (PUE 1.37), powered by 100% renewable energy."
+        notes: "Smaller, more efficient models."
+    - key: treadlightly
+      name: TreadLightlyAI
+      url: https://treadlightly.ai/
+      status: active
+      summary:
+        ai_ethics: "Proprietary models (US) and open-weight models (US, FR)."
+        financial_transparency: "Sole proprietorship; no published financials."
+        environmental: "Infomaniak (PUE 1.06, waste heat to district heating) + Anthropic conventional cloud."
+        notes: "Beta product from same founder as Dangerous Robot."
     - key: viro
       name: Viro AI
       url: https://ai.viro.app/
@@ -157,7 +157,7 @@ data:
         # R2 (a model is large if it was its lab's most capable tier when
         # released); each call still needs its lab's model page as a source.
         large_models:
-          large: []
+          large: [GPT-4o]
           not_large: [Mistral Small, Ministral, GPT-OSS, Claude Haiku, Claude Sonnet]
       cells:
         greenpt: { type: "text", detail: "Mistral Small, GPT-OSS", models: [Mistral Small, GPT-OSS] }
@@ -165,7 +165,7 @@ data:
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3" }
         treadlightly: { type: "text", detail: "Mistral Ministral & Small, GPT-OSS, Claude Haiku & Sonnet", models: [Ministral, Mistral Small, GPT-OSS, Claude Haiku, Claude Sonnet] }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
-        chatgptree: { type: "text", detail: "GPT" }
+        chatgptree: { type: "text", detail: "GPT-4o", models: [GPT-4o], sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
         earthly-insight: { type: "text", detail: "GPT, Gemini Flash & Pro, Claude Sonnet" }
     - key: data-used-for-training
       label: "Data used for training"
@@ -222,7 +222,7 @@ data:
         chatgptree: { type: "text", detail: "$ 11 /mo" }
         earthly-insight: { type: "text", detail: "$ 20 /mo" }
     - key: maturity
-      label: "Maturity"
+      label: "Maturity (as of March 2026)"
       group: business
       cells:
         greenpt: { type: "text", detail: "2 years" }
@@ -271,18 +271,18 @@ data:
       answers: ["yes", partial, unknown]
       ideal: { value: "yes" }
       cells:
-        greenpt: { type: "yes", detail: "Level A" }
-        ecosia: { type: "yes", detail: "Level AA+" }
-        euria: { type: "partial" }
-        treadlightly: { type: "yes", detail: "Level AA+" }
-        viro: { type: "partial" }
-        chatgptree: { type: "partial" }
-        earthly-insight: { type: "yes", detail: "Level A" }
+        greenpt: { type: unknown }
+        ecosia: { type: unknown }
+        euria: { type: unknown }
+        treadlightly: { type: unknown }
+        viro: { type: unknown }
+        chatgptree: { type: unknown }
+        earthly-insight: { type: unknown }
     - key: data-jurisdiction
       label: "Data jurisdiction"
       group: privacy-data
       cells:
-        greenpt: { type: "text", detail: "Swiss (FADP + GDPR)" }
+        greenpt: { type: "text", detail: "EU (GDPR)", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
         ecosia: { type: "text", detail: "German (GDPR)" }
         euria: { type: "text", detail: "Swiss (FADP + GDPR)" }
         treadlightly: { type: "text", detail: "US" }
@@ -290,7 +290,7 @@ data:
         chatgptree: { type: "text", detail: "US" }
         earthly-insight: { type: text, detail: "US" }
     - key: open-source-models-only
-      label: "Open-source models"
+      label: "Open-weight models"
       group: models-safety
       ideal: { value: "yes" }
       cells:
