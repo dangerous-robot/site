@@ -33,6 +33,7 @@ Sources for every stance row
 Claims, row by row
 - [x] S12: activate the inactive criteria the page needs
 - [x] S13: entities for the page's products and companies
+- [ ] S13a: fix the onboarding defects found in S15 (RF29, RF30, RF31)
 - [ ] S15: first row backed by published claims (renewable hosting)
 - [ ] S16: remaining claim rows, one at a time
 
@@ -83,6 +84,7 @@ Brandon, 2026-10-10:
 - D25 (ChatGPTree, renewable hosting): the cell changes from "no" to "unknown" and cites the reviewed Unverified claim. No source states its hosting either way, and absence is not a source (S10's rule).
 - D26 (Earthly Insight, renewable hosting): the same as D25; the cell is "unknown" and cites its Unverified claim.
 - Euria's renewable-hosting cell keeps "yes" and cites its True claim. GreenPT, Ecosia AI and Viro AI have no reviewed claim yet (held back or failed; pipeline fixes RF29 to RF31 come first), so their cells are unchanged.
+- D32: RF29, RF30 and RF31 (the onboarding defects found in S15) are fixed inside SITE-J, as S13a, before S16, although pipeline changes beyond S11 and S12 were out of scope. GreenPT, Ecosia AI and Viro AI are then re-run.
 
 ## What the page asserts today
 
@@ -543,6 +545,14 @@ Result (2026-10-10): 10 entity files, frontmatter only (no body), each descripti
 
 `dr entity-enrich <ref> --no-interactive` ran on all 10 (exit 0, 3 to 12 s each); every draft was discarded and the hand-written file kept. None set `founded`. Ecosia's site returned 403 to both seed fetches; for Ecosia AI the enricher still wrote a description and two paragraphs, saying Ecosia uses renewable energy for data centers, which no input said and which the page's "Conventional cloud hosting" contradicts; for the company it wrote nothing. The other drafts mixed site marketing stated as fact (Viro AI "clean-energy-powered"), notes about their own missing inputs ("The inputs do not provide specific details ..."), guesses ("likely reflects") and garbled text (Euria "itsExistingFoundedFounded in 2003background", Earthly Insight "AUCtively"). Verify: `dr lint` 0 errors, 10 new `unreferenced-entity` infos (12 to 22); `npm run build` passes; each of the 10 pages is in `dist/research/entities/<type>/<slug>/index.html`, each product page links its company, each company page links its product and shows its legal name; each page `entity:` ref names a file on disk (the S4 check resolves `entity` only when a cell cites a claim). Commit `184b77a`.
 
+#### S13a: fix the onboarding defects found in S15
+Brandon's D32. One commit each, test first (`docs/UNSCHEDULED.md` rows):
+- RF29: `dr onboard products/<slug>` gives the analyst and auditor the enricher's auto-accepted description, not the entity file on disk (name, description, website, parent company).
+- RF30: the name-collision probe excludes the entity's own domain or its parent domain (Viro AI's `ai.viro.app` lost every `viro.app` page).
+- RF31: a bare email address or URL in an ingested source body fails markdownlint MD034, which blocks every commit.
+
+Verify: pytest cases written to fail first; rerun onboarding for GreenPT, Ecosia AI and Viro AI succeeds with first-party pages present.
+
 #### S15: first row backed by published claims
 Renewable hosting (Q12). `dr onboard products/<slug> --only renewable-energy-hosting` per product (6, not TreadLightlyAI); Brandon approves each with `dr review --approve` (never `dr publish`, which records no reviewer and leaves the claim "Unreviewed"); cite in the cells.
 Verify: `dr lint` reports no errors; build check passes; each cell shows the claim mark, and its popup and Evidence entry show verdict, confidence and as-of date matching the claim page, which shows "Reviewed and approved by".
@@ -594,7 +604,7 @@ Verify: built claim, source and entity pages have no `noindex`; the sitemap list
 - Importing the parallax-ai comparison data (`docs/UNSCHEDULED.md:228`); it is unsourced.
 - Listing this page on source pages' "cited by" lists.
 - Editing the matrix in Sveltia CMS (it lists only article layouts, `docs/architecture/site.md:201`).
-- Pipeline changes beyond S11 and S12.
+- Pipeline changes beyond S11, S12 and S13a (D32).
 - Indexing (S14, S17).
 
 ## Questions for Brandon
