@@ -29,7 +29,9 @@ data:
         ai_ethics: "Proprietary model (US), GPT-4"
         financial_transparency: "No published financials."
         environmental: "Conventional cloud hosting; funds tree planting via Evertreen and Veritree."
-        notes: "Evertreen partner [flagged for non-transparent practices](https://redmonitor.substack.com/p/evertreen-non-transparent-tree-planting), Veritree is transparency-focused."
+        notes:
+          text: "REDD-Monitor called partner Evertreen's tree planting non-transparent (December 2025); Evertreen responded. Veritree is transparency-focused."
+          sources: [/research/sources/2025/evertreen-non-transparent-tree-planting-and-dodgy-carbon-offs]
     - key: earthly-insight
       name: Earthly Insight
       url: https://www.earthlyinsight.com/
@@ -64,7 +66,11 @@ data:
         environmental:
           text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
           sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
-        notes: "Bold [environmental commitments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org."
+        notes:
+          text: "Bold environmental commitments. Certified by myClimate.org."
+          sources:
+            - /research/sources/2026/infomaniak-environmental-reducing-cloud-footprint
+            - /research/sources/2026/infomaniaks-environmental-certificates-and-awards
     - key: greenpt
       name: GreenPT
       url: https://chat.greenpt.ai/
@@ -155,10 +161,12 @@ data:
       group: models-safety
       ideal:
         answer: "no large models"
-        # Seeded by sorting the models the `models` cells name under P5 and
-        # R2 (a model is large if it was its lab's most capable tier when
-        # released); each call still needs its lab's model page as a source.
+        # Sorted under P5 and R2 (a model is large if it was its lab's most
+        # capable tier when released). Sourced so far: GPT-4o (OpenAI's model
+        # page calls it the flagship). The other names still need their lab's
+        # model page, so the list carries no last_checked date yet.
         large_models:
+          sources: [/research/sources/2026/gpt-4o-model-documentation]
           large: [GPT-4o]
           not_large: [Mistral Small, Ministral, GPT-OSS, Claude Haiku, Claude Sonnet]
       cells:
@@ -224,16 +232,18 @@ data:
         chatgptree: { type: "text", detail: "$ 11 /mo" }
         earthly-insight: { type: "text", detail: "$ 20 /mo" }
     - key: maturity
-      label: "Maturity (as of March 2026)"
+      label: "Maturity"
       group: business
+      # Launch month and year, each from a source that states it; without
+      # one the cell says so rather than guessing.
       cells:
-        greenpt: { type: "text", detail: "2 years" }
-        ecosia: { type: "text", detail: "2 years (AI feature)" }
-        euria: { type: "text", detail: "6 months" }
-        treadlightly: { type: "text", detail: "2 months (Beta)" }
-        viro: { type: "text", detail: "9 months" }
-        chatgptree: { type: "text", detail: "1 year" }
-        earthly-insight: { type: "text", detail: "9 months" }
+        greenpt: { type: "text", detail: "Not yet sourced" }
+        ecosia: { type: "text", detail: "Launched Oct 2023 (beta)", sources: [/research/sources/2023/new-ecosia-search-features] }
+        euria: { type: "text", detail: "Launched Dec 2025", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "text", detail: "Not yet sourced" }
+        viro: { type: "text", detail: "Not yet sourced" }
+        chatgptree: { type: "text", detail: "Not yet sourced" }
+        earthly-insight: { type: "text", detail: "Not yet sourced" }
     - key: image-and-document-analysis
       label: "Image and document analysis"
       group: product-access
@@ -272,14 +282,17 @@ data:
       group: product-access
       answers: ["yes", partial, unknown]
       ideal: { value: "yes" }
+      # The page's earlier answers, shown again unsourced until each product
+      # is checked. A stated Level A is Partial: P4 counts only Level AA as
+      # Yes.
       cells:
-        greenpt: { type: unknown }
-        ecosia: { type: unknown }
-        euria: { type: unknown }
-        treadlightly: { type: unknown }
-        viro: { type: unknown }
-        chatgptree: { type: unknown }
-        earthly-insight: { type: unknown }
+        greenpt: { type: partial, detail: "Level A" }
+        ecosia: { type: "yes", detail: "Level AA+" }
+        euria: { type: partial }
+        treadlightly: { type: "yes", detail: "Level AA+" }
+        viro: { type: partial }
+        chatgptree: { type: partial }
+        earthly-insight: { type: partial, detail: "Level A" }
     - key: data-jurisdiction
       label: "Data jurisdiction"
       group: privacy-data
