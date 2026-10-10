@@ -37,7 +37,6 @@ graphify-out/
 pipeline/__pycache__/
 __pycache__/
 *.pyc
-uv.lock
 
 # llm-tester runtime artifacts (keys, run outputs, generated matrix)
 scripts/llm-tester/.env.poc

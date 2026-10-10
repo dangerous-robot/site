@@ -16,7 +16,7 @@ Two jobs run in parallel on `ubuntu-latest`:
 
 **`lint-content`** (Python 3.12). Runs the pipeline's research content linter:
 
-1. Installs `uv` and runs `uv sync` in `pipeline/`.
+1. Installs `uv` (`astral-sh/setup-uv`, SHA-pinned, version matched to the laptop) and runs `uv sync --locked` from the repo root, so the job fails rather than resolving fresh when the committed `uv.lock` is stale.
 2. Runs `uv run dr lint --format json --severity error`, writing `lint-report.json` and capturing the exit code without failing yet.
 3. Annotates each reported error on the PR (file path plus check id) via `actions/github-script`.
 4. Fails the job if `dr lint` exited nonzero.

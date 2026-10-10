@@ -12,9 +12,10 @@ This package provides shared infrastructure for research agents that ingest sour
 ## Setup
 
 ```bash
-cd pipeline
-uv sync
+uv sync --locked
 ```
+
+Run it from the repo root: `pipeline/` is a member of the uv workspace defined there, and the committed `uv.lock` at the root is the one CI installs. After changing `pipeline/pyproject.toml`, run `uv lock` at the root and commit the updated `uv.lock`.
 
 ## Running tests
 
