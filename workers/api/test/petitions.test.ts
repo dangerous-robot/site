@@ -372,7 +372,17 @@ describe('no-JS path', () => {
     expect(res.headers.get('Content-Type')).toContain('text/html');
     const html = await res.text();
     expect(html).toContain('Check your email');
+    expect(html).toContain('within 7 days, your signature will be deleted');
     expect(html).toContain(`href="${SITE}/writing/pledge"`);
+  });
+});
+
+describe('sign reply', () => {
+  it('says an unconfirmed signature is deleted after the cleanup window', async () => {
+    const res = await sign();
+    expect(((await res.json()) as { message: string }).message).toBe(
+      "Check your email for a link to confirm your signature. If you don't confirm within 7 days, your signature will be deleted.",
+    );
   });
 });
 

@@ -12,6 +12,12 @@ export interface PetitionState {
 
 export const PETITION_API: string = import.meta.env.PUBLIC_PETITION_API ?? 'https://api.dangerousrobot.org';
 
+// The Worker deletes unconfirmed signatures after UNCONFIRMED_TTL_DAYS
+// (workers/api/src/index.ts) and sends this same sentence to the no-JS page.
+// The site keeps its own copy so the modal is right whichever deploys first.
+export const CHECK_EMAIL_TEXT =
+  "Check your email for a link to confirm your signature. If you don't confirm within 7 days, your signature will be deleted.";
+
 /**
  * Reads a petition from the Worker. Resolves null on any failure (Worker down,
  * row not created yet, timeout), so a page can build and render without it.

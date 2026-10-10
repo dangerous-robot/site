@@ -96,7 +96,15 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   const form = await readForm(request);
   if (!form) return reply(request, env, 400, 'The form could not be read. Please try again.', petition.post_url);
   const field = (k: string) => String(form.get(k) ?? '').trim();
-  const checkEmail = () => reply(request, env, 200, 'Check your email for a link to confirm your signature.', petition.post_url, 'Check your email');
+  const checkEmail = () =>
+    reply(
+      request,
+      env,
+      200,
+      `Check your email for a link to confirm your signature. If you don't confirm within ${UNCONFIRMED_TTL_DAYS} days, your signature will be deleted.`,
+      petition.post_url,
+      'Check your email',
+    );
 
   // Bots get the same answer as people, so they learn nothing from it.
   if (field('website') !== '') return checkEmail();
