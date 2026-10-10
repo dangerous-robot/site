@@ -144,10 +144,10 @@ data:
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
-        ecosia: { type: "yes" }
+        ecosia: { type: "no", detail: "Generates images for logged-in users", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "yes" }
-        treadlightly: { type: "yes" }
-        viro: { type: "no" }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
+        viro: { type: "no", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
         chatgptree: { type: "yes" }
         earthly-insight: { type: "yes" }
     - key: financial-transparency

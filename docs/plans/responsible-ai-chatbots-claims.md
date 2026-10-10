@@ -419,6 +419,7 @@ Result (2026-10-10), rows 1 to 5 of the stance rows; rows 6 to 9 (open-weight mo
 | Data used for training | 4 (GreenPT, Euria, TreadLightlyAI, Viro AI) | 3 (ChatGPTree, Earthly Insight, Ecosia AI) | 0 / 8 / 104 |
 | Hosted on renewable energy | 3 (GreenPT, Euria, TreadLightlyAI) | 4 (ChatGPTree, Earthly Insight, Ecosia AI, Viro AI) | 0 / 11 / 101 |
 | Real-time energy display | 2 (GreenPT, TreadLightlyAI) | 5 (ChatGPTree, Earthly Insight, Ecosia AI, Euria, Viro AI) | 0 / 13 / 99 |
+| No image generation | 3 (Ecosia AI, TreadLightlyAI, Viro AI) | 4 (ChatGPTree, Earthly Insight, Euria, GreenPT) | 0 / 16 / 96 |
 
 Data used for training:
 - Sourced: GreenPT (its privacy page, already a source: "We never use your data to train our AI models"); Euria (Infomaniak's launch post, already a source: "your data is never used to train models"); TreadLightlyAI (its privacy policy, new: "never use your conversations to train AI models"); Viro AI (its Viro AI privacy policy, new: "We don't train AI models on your chats"). Viro's detail now says what the policy says, "Ads may be based on the current message" (the policy: "Ads may be based on the content of the current message or session context"), in place of "Ads based on chat content".
@@ -435,6 +436,11 @@ Real-time energy display:
 - Sourced: GreenPT (its help page on the energy indicator, new: "GreenPT attributes energy use to model processing and displays reported usage in the product. In Chat, the indicator presents a conversation-level value in watt-hours"); TreadLightlyAI (its home page: "show real-time energy and token costs on every response").
 - Viro AI, "yes", not yet sourced: no Viro page fetched says the app shows energy per chat. Its methodology page describes how energy is estimated; its App Store listing says "Our energy methodology is published" and "No other AI app will show you those numbers", which does not say the numbers appear in the chat. Kept as it was; it may need a check by using the product (Q4).
 - ChatGPTree, Ecosia AI, Euria, "no", not yet sourced: no page states the absence. Earthly Insight, "no", not yet sourced: its terms (section 6) describe an "Eco-Tracker" that "displays the amount of your premium subscription that has been contributed towards ecological restoration", with estimates of trees, acres, carbon and rainfall, not energy; the page cannot be ingested (script-rendered).
+
+No image generation:
+- Ecosia AI changes from Yes to No: its help article on AI (https://support.ecosia.org/article/1006-ai-search, new source) has an "Image Generation" section ("The image generation feature allows you to create custom images directly within your AI Chat conversation"; "Feature is only available for logged-in Ecosia account users"; images come from Black Forest Labs). Detail: "Generates images for logged-in users". The Wayback capture `20260918095402` already has the section.
+- Sourced: TreadLightlyAI (its home page: "We deliberately exclude energy-intensive options like image generation"); Viro AI, "no" (its App Store listing, new, seller "Viro Climate Action, Inc": "Generate images, search the live web, and analyze photos and documents"; no page on viro.app mentions image generation).
+- ChatGPTree, Earthly Insight, Euria, GreenPT, "yes", not yet sourced: none of their pages fetched mentions image generation, and absence is not a source.
 
 #### S11: the research linter counts sources the page cites
 `check_unreferenced_sources` (`checks.py:616-639`) also collects the `/research/sources/...` paths cited anywhere in `src/content/resources/*.md` frontmatter, reading only, and skips that step when the directory is absent (so a research repo split off later still lints). AGENTS.md:72 limits what the pipeline writes, not what it reads. Without this, `dr lint` warns on every page-only source with the hint "remove the file" (`checks.py:637`), which an agent could follow.
