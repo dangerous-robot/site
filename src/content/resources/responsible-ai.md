@@ -117,10 +117,10 @@ data:
       criterion: renewable-energy-hosting
       ideal: { value: "yes" }
       cells:
-        greenpt: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
         ecosia: { type: "no" }
-        euria: { type: "yes" }
-        treadlightly: { type: "partial", detail: "All but Anthropic" }
+        euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "partial", detail: "On Free, Starter and Builder plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "no" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
