@@ -67,7 +67,7 @@ data:
           text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
           sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
         notes:
-          text: "Bold environmental commitments. Certified by myClimate.org."
+          text: "Bold environmental commitments. Offsets 200% of its CO2 emissions through myclimate.org."
           sources:
             - /research/sources/2026/infomaniak-environmental-reducing-cloud-footprint
             - /research/sources/2026/infomaniaks-environmental-certificates-and-awards
