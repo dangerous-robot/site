@@ -328,7 +328,7 @@ data:
         euria: { type: "text", detail: "Swiss (FADP + GDPR)", sources: [/research/sources/2026/euria-sovereign-ai-assistant-infomaniak] }
         treadlightly: { type: "text", detail: "US" }
         viro: { type: "text", detail: "US", sources: [/research/sources/2025/viro-ai-terms-conditions] }
-        chatgptree: { type: "text", detail: "US", sources: [/research/sources/2020/terms-of-use-chatgptree] }
+        chatgptree: { type: "text", detail: "US", sources: [/research/sources/2025/chatgptree-terms-of-use] }
         earthly-insight: { type: text, detail: "US" }
     - key: open-source-models-only
       label: "Open-weight models"
