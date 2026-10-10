@@ -21,7 +21,7 @@ Honest labels (no new research)
 - [x] S4: build check that fails on bad citations
 - [x] S5: cells colored by the row's stance, feature rows neutral, `no-good` retired
 - [x] S6: evidence marks with a detail popup, and the Evidence section
-- [ ] S7: today's inline links become source files
+- [x] S7: today's inline links become source files (6 of 9; see S7 for the 3 left as links)
 - [ ] S8: content fixes for the findings
 
 Sources for every stance row
@@ -378,6 +378,7 @@ Verify:
 #### S7: today's inline links become source files
 `dr step-ingest <url> --write` for each of the 9 summary links counted in "What the page asserts today" (at most 9 files; one already ingested is reused); cite them in the summary entry's `sources`. The 2 kSuite links stay plain product links. The 2 hedged privacy-policy links are not cited here: a citation would give an "unknown" cell the "Source" tier, so S10 reads those policies, sets the answer and cites them together.
 Verify: build passes the S4 check; each new source file has `archived_url` or a recorded reason it has none (`site-j-claims-readiness.md` CR4); each cited summary entry shows the Source mark.
+Result (2026-10-09): 6 ingested, each with `archived_url`, cited from 5 summary entries. Not ingested, left as inline links for S8 or S10 to resolve: Infomaniak commitments (`/en/ecology/commitments`, 404, no Wayback snapshot); Redmonitor Substack on Evertreen (404, no Wayback snapshot); Wikipedia TerraPass (live, but the ingestor's fetch gets 403; a tertiary source, so S10 may prefer the DFPI record already cited).
 
 #### S8: content fixes for the findings
 F1, F2, F7 to F15, each with a source where it changes a fact. F11: reorder `products` alphabetically by name. F12: one `term` per ownership cell. F13: under P4, "Level A" becomes partial and a WCAG level stays only where its evidence states it; with no evidence the cell becomes unknown. F14: name every model specifically enough for P5's rule, and replace the seeded `large_models` lists with the model names the cells use, each checked against its lab's own model page (ingested and cited in `large_models.sources`), with today's date in `last_checked`. F15: a description that names no subset of products (copy: Brandon to approve; max 200 characters, `content.config.ts` resources schema).

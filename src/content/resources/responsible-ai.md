@@ -37,7 +37,9 @@ data:
       summary:
         ai_ethics: "Open-weight models (US, EU, CN)."
         financial_transparency: "Infomaniak is a Swiss B Corp; no published financials."
-        environmental: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy. [Receipts](https://www.infomaniak.com/en/ecology/certificates-rewards)"
+        environmental:
+          text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
+          sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
         notes: "Bold [environmental committments](https://www.infomaniak.com/en/ecology/commitments). Certified by myClimate.org."
     - key: ecosia
       name: Ecosia AI
@@ -45,7 +47,11 @@ data:
       status: active
       summary:
         ai_ethics: "Proprietary model (US), GPT-4 mini."
-        financial_transparency: "Non-profit [steward-ownership](https://blog.ecosia.org/ecosia-ai/); publishes [financial reports](https://blog.ecosia.org/ecosia-financial-reports-tree-planting-receipts/)."
+        financial_transparency:
+          text: "Non-profit steward-ownership; publishes financial reports."
+          sources:
+            - /research/sources/2025/ecosias-green-ai-alternative
+            - /research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts
         environmental: "Conventional cloud hosting; funds tree planting projects worldwide"
         notes: "Free, ad-supported."
     - key: treadlightly
@@ -73,7 +79,9 @@ data:
       summary:
         ai_ethics: "Proprietary models (US)."
         financial_transparency: "No published financials."
-        environmental: "Conventional cloud hosting. 33% of revenue to [Global Rewilding Alliance](https://globalrewilding.earth/earthly-insight-joins-our-global-rewilding-champions/)"
+        environmental:
+          text: "Conventional cloud hosting. 33% of revenue to Global Rewilding Alliance."
+          sources: [/research/sources/2025/earthly-insight-joins-global-rewilding-champions]
         notes: "Launched October 2025."
     - key: viro
       name: Viro AI
@@ -82,8 +90,12 @@ data:
       summary:
         ai_ethics: "Proprietary models (US) and open weight models (US, CN)."
         financial_transparency: "Solo-founder LLC; Viro Climate Action, Inc; no public disclosure."
-        environmental: "Conventional cloud hosting; offsets via [Terrapass](https://en.wikipedia.org/wiki/TerraPass) RECs; methodology [published](https://www.viro.app/energy-and-impact-methodology)."
-        notes: "Partner Terrapass entered a [California DFPI consent order](https://dfpi.ca.gov/press_release/dfpi-secures-over-68500-in-consumer-refunds-from-carbon-credit-dealer/) in July 2025."
+        environmental:
+          text: "Conventional cloud hosting; offsets via [Terrapass](https://en.wikipedia.org/wiki/TerraPass) RECs; methodology published."
+          sources: [/research/sources/2026/viro-energy-and-impact-methodology]
+        notes:
+          text: "Partner Terrapass entered a California DFPI consent order in July 2025."
+          sources: [/research/sources/2025/dfpi-secures-over-68500-in-consumer-refunds-from-carbon-credit-dealer]
   features:
     - key: renewable-hosting
       label: "Hosted on renewable energy"
