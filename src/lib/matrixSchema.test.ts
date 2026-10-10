@@ -21,6 +21,11 @@ describe('matrixDataSchema', () => {
     assert.deepEqual(names, sorted);
   });
 
+  test('TreadLightlyAI is capped at the Source tier (Q1)', () => {
+    const products = matrixDataSchema.parse(pageData()).products;
+    assert.equal(products.find((p) => p.key === 'treadlightly')?.max_tier, 'source');
+  });
+
   test('rejects the retired cell types', () => {
     assert.equal(matrixCell.safeParse({ type: 'no-good' }).success, false);
     assert.equal(matrixCell.safeParse({ type: 'planned' }).success, false);

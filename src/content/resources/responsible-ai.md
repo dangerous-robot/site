@@ -78,6 +78,8 @@ data:
       name: TreadLightlyAI
       url: https://treadlightly.ai/
       status: active
+      # Q1: sources only; no claims are researched for the operator's own product.
+      max_tier: source
       summary:
         ai_ethics: "Proprietary models (US) and open-weight models (US, FR)."
         financial_transparency: "Sole proprietorship; no published financials."
