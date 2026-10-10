@@ -1,5 +1,5 @@
 templates:
-  # Active for v0.1.0: 4 company + 7 product
+  # Active: 5 company + 8 product, plus the subject templates below
   # Remaining templates deferred to inactive_templates below
 
   # --- Company ---
@@ -40,6 +40,13 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
+
+  - slug: financial-transparency
+    text: "COMPANY provides financial transparency"
+    entity_type: company
+    topics: [industry-analysis]
+    core: true
+    notes: "Public financials, revenue breakdowns, cost disclosures"
 
   # --- Product ---
 
@@ -91,6 +98,13 @@ templates:
     topics: [ai-safety, environmental-impact]
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
+
+  - slug: open-source-models-only
+    text: "PRODUCT uses only open-weight models"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Auditability: weights and architecture are publicly available"
 
   # --- AI Model Producers (Subject) ---
 
@@ -180,13 +194,6 @@ inactive_templates:
 
   # --- Responsible Business (Company) ---
 
-  - slug: financial-transparency
-    text: "COMPANY provides financial transparency"
-    entity_type: company
-    topics: [industry-analysis]
-    core: true
-    notes: "Public financials, revenue breakdowns, cost disclosures"
-
   - slug: ai-alternatives-guidance
     text: "COMPANY offers AI alternatives guidance"
     entity_type: company
@@ -195,13 +202,6 @@ inactive_templates:
     notes: "Willingness to recommend not using your own product"
 
   # --- Model Selection (Product) ---
-
-  - slug: open-source-models-only
-    text: "PRODUCT uses only open-source models"
-    entity_type: product
-    topics: [ai-safety]
-    core: true
-    notes: "Auditability: weights and architecture are publicly available"
 
   - slug: documents-model-selection
     text: "PRODUCT documents model selection criteria"

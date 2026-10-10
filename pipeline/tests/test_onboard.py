@@ -187,11 +187,11 @@ class TestOnboardEntityHappyPath:
         entity_path = tmp_path / "research" / "entities" / "companies" / "testcorp.md"
         assert entity_path.exists()
 
-        # At least some claim files written (4 company templates active in v0.1.0).
+        # At least some claim files written (5 company templates active).
         # Under TestModel + 1-URL fake researcher, claims land in claims_blocked
         # (insufficient_sources) rather than claims_created; both are valid
         # written-artifact outcomes for this test.
-        assert len(result.templates_applied) == 4
+        assert len(result.templates_applied) == 5
         assert len(result.claims_created) + len(result.claims_blocked) > 0
 
 
@@ -245,10 +245,10 @@ class TestOnboardEntityNoDoubleIngest:
             )
 
         assert result.status == "accepted"
-        # 4 company templates + 1 light-research pass = 5 ingest + 5 research calls.
+        # 5 company templates + 1 light-research pass = 6 ingest + 6 research calls.
         # Pre-refactor was 1 + N*2 calls; cap at templates+1 to lock in the single-pair invariant.
-        assert ingest_calls == 5, f"expected 5 ingest calls, got {ingest_calls}"
-        assert research_calls <= 5, f"expected <=5 research calls, got {research_calls}"
+        assert ingest_calls == 6, f"expected 6 ingest calls, got {ingest_calls}"
+        assert research_calls <= 6, f"expected <=6 research calls, got {research_calls}"
 
 
 class TestOnboardKeepsSourcesOnDisk:
@@ -306,7 +306,7 @@ class TestOnboardKeepsSourcesOnDisk:
         fetched = [urls for urls in ingested if urls]
         # One fetch for the light-research pass, one for the first template.
         assert len(fetched) == 2, ingested
-        assert len(result.claims_blocked) + len(result.claims_created) == 4
+        assert len(result.claims_blocked) + len(result.claims_created) == 5
 
 
 class TestOnboardEntitySeedUrl:

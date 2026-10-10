@@ -15,12 +15,14 @@ from common.templates import (
     templates_for_entity_type,
     validate_analyst_title,
 )
+from linter.checks import check_broken_criteria_slug
+from linter.runner import load_templates as load_template_slugs
 
 
 class TestLoadTemplates:
     def test_loads_active_templates_from_yaml(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
-        assert len(templates) == 14
+        assert len(templates) == 16
 
     def test_returns_template_records(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)
@@ -41,20 +43,35 @@ class TestLoadTemplates:
         assert "data-jurisdiction" not in slugs
 
 
+class TestResponsibleAIPageCriteria:
+    """The Responsible AI chatbots page's claim rows need these criteria active."""
+
+    @pytest.mark.parametrize("slug", ["financial-transparency", "open-source-models-only"])
+    def test_claim_with_page_criterion_passes_lint(self, repo_root: Path, slug: str) -> None:
+        claim = repo_root / "research" / "claims" / "fixture" / f"{slug}.md"
+        fms = {str(claim): {"criteria_slug": slug}}
+        assert check_broken_criteria_slug([claim], fms, load_template_slugs(repo_root)) == []
+
+    def test_open_weight_wording(self, repo_root: Path) -> None:
+        template = get_template(load_templates(repo_root), "open-source-models-only")
+        assert template is not None
+        assert template.text == "PRODUCT uses only open-weight models"
+
+
 class TestTemplatesForEntityType:
     def test_product_filter_returns_active_product_templates(
         self, repo_root: Path
     ) -> None:
         templates = load_templates(repo_root)
         product_templates = templates_for_entity_type(templates, "product")
-        assert len(product_templates) == 7
+        assert len(product_templates) == 8
 
     def test_company_filter_returns_active_company_templates(
         self, repo_root: Path
     ) -> None:
         templates = load_templates(repo_root)
         company_templates = templates_for_entity_type(templates, "company")
-        assert len(company_templates) == 4
+        assert len(company_templates) == 5
 
     def test_unknown_type_returns_empty(self, repo_root: Path) -> None:
         templates = load_templates(repo_root)

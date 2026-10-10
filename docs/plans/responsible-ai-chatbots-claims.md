@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a and S11 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 and S12 onward not started.
+**Status**: in progress. S1 to S8, S8a, S11 and S12 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 and S13 onward not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -31,7 +31,7 @@ Sources for every stance row
 - [x] S11: the research linter counts sources the page cites
 
 Claims, row by row
-- [ ] S12: activate the inactive criteria the page needs
+- [x] S12: activate the inactive criteria the page needs
 - [ ] S13: entities for the page's products and companies
 - [ ] S15: first row backed by published claims (renewable hosting)
 - [ ] S16: remaining claim rows, one at a time
@@ -98,9 +98,9 @@ A **stance row** says which answer the page counts as responsible (the row's `id
 | Hosted on renewable energy (`renewable-hosting`) | stance | Yes | `renewable-energy-hosting` (product, `:46`) | claims (first row, S15) |
 | Real-time energy display (`real-time-energy-display`) | stance | Yes | `realtime-energy-display` (product, `:74`) | claims |
 | No image generation (`no-image-generation`) | stance | Yes | `excludes-image-generation` (product, `:81`) | claims |
-| Published financials (`financial-transparency`) | stance | Yes | `financial-transparency` (company, `:183`, **inactive**); the criterion says "financial transparency", broader than "published financials" | claims after S12 |
+| Published financials (`financial-transparency`) | stance | Yes | `financial-transparency` (company, `:44`); the criterion says "financial transparency", broader than "published financials" | claims |
 | Data used for training (`data-used-for-training`) | stance | No | `no-training-on-user-data` (product, `:53`); polarity inverted: a True verdict means the answer is No | claims |
-| Open-source models (`open-source-models-only`) | stance | Yes | `open-source-models-only` (product, `:199`, **inactive**) | claims after S12 |
+| Open-weight models (`open-source-models-only`) | stance | Yes | `open-source-models-only` (product, `:102`; text "PRODUCT uses only open-weight models", R4) | claims |
 | Models (`models`) | stance, text cells | no large models (P5) | none: see "Why the models row has no criterion" | sources: each product's model list, and each lab's model page for the dated large-model list |
 | Ownership structure (`corporate-structure`) | stance, text cells | non-profit or similar (P6) | `corporate-structure` (company, `:14`, vocabulary `:20-28`) | claims; sources for an owner (P6) |
 | Accessibility (`accessibility`) | stance | Yes (P4) | none (Q10) | sources or a check record only |
@@ -114,7 +114,7 @@ A **stance row** says which answer the page counts as responsible (the row's `id
 
 Free tier, agent web search and normal web search carry `ideal: yes` today; S5 removes it.
 
-**Inactive** means the slug sits under `inactive_templates:` (`templates.yaml:128`), which neither the pipeline nor the Astro criteria loader reads (`templates.yaml:124-126`; `content.config.ts:260-262`). A claim citing one fails `dr lint` `broken-criteria-slug` (`pipeline/linter/checks.py:268-286`, which gets only `templates` slugs from `pipeline/linter/runner.py:53-63`). S12 activates the two the page needs.
+**Inactive** means the slug sits under `inactive_templates:` (`templates.yaml:142`), which neither the pipeline nor the Astro criteria loader reads (`templates.yaml:138-140`; `content.config.ts:262-268`). A claim citing one fails `dr lint` `broken-criteria-slug` (`pipeline/linter/checks.py:270-287`, which gets only `templates` slugs from `pipeline/linter/runner.py:54-64`). The two criteria the page needs are active (S12); `data-jurisdiction` stays inactive (P3).
 
 ### Findings to verify or fix (F-)
 
@@ -338,13 +338,13 @@ Claims cover the 7 stance rows that have a criterion: renewable hosting, real-ti
 | Claims | 42 (7 rows x 6 products) | 30 product claims (5 rows) and 12 company claims (published financials and ownership, one company per product). Today: 3 published claims, none for these products |
 | Product entities to create | 5 | Euria, Ecosia AI, ChatGPTree, Earthly Insight, Viro AI |
 | Company entities to create | 5 | for the 2 company rows: Infomaniak, Ecosia, and the makers of ChatGPTree, Earthly Insight and Viro AI (legal names unverified). GreenPT's exists. An owner named in `owned_by` needs no entity (sources only) |
-| Criteria to activate | 2 | `financial-transparency`, `open-source-models-only` (S12). The page uses neither `excludes-frontier-models` nor `data-jurisdiction` |
+| Criteria activated | 2 | `financial-transparency`, `open-source-models-only` (S12, done). The page uses neither `excludes-frontier-models` nor `data-jurisdiction` |
 | Sources, stance-row cells | up to 63 (9 rows x 7) | fewer in practice: one privacy policy can back several rows |
 | Sources, large-model list | one per lab named in the models row | each lab's own model page (P5) |
 | Sources, feature-row cells | up to 49 (7 rows x 7) | as far as possible (S10) |
 | Sources, summary entries | up to 28 (4 x 7) | S7 covers the 9 existing links; the rest as far as possible (Q7) |
 
-Claims run row by row across all products, not product by product, so each row compares like with like. `dr onboard "<name>" --type product --only <slugs>` limits onboarding to the page's criteria (`pipeline/orchestrator/cli.py:1609`); without `--only` it drafts every active product criterion (7 today, 8 after S12) or company criterion (4 today, 5 after).
+Claims run row by row across all products, not product by product, so each row compares like with like. `dr onboard "<name>" --type product --only <slugs>` limits onboarding to the page's criteria (`pipeline/orchestrator/cli.py:1609`); without `--only` it drafts every active product criterion (8) or company criterion (5).
 
 The prerequisites (published-claim refresh trail and claims readiness CR1 to CR6) are done: `docs/plans/completed/published-claim-refresh-trail.md`, `docs/plans/completed/site-j-claims-readiness.md`.
 
@@ -423,6 +423,7 @@ Result (2026-10-10): `page_cited_source_ids` in `checks.py`, passed `repo_root` 
 #### S12: activate the inactive criteria the page needs
 Move `financial-transparency` and `open-source-models-only` from `inactive_templates` into `templates` (`research/templates.yaml:128`), with the `open-source-models-only` text worded per R4 (no claim cites it yet, so the slug stays). Before moving, find out how criterion intake fans out: AGENTS.md:11 says a new criterion generates a claim for each entity it applies to, so activation may queue drafts for Anthropic, Google, Microsoft, OpenAI and the existing products, beyond this page. Record what actually happens here. Each activated criterion also gets a public page under `/research/criteria/`, and later `dr onboard` runs without `--only` on any entity include them.
 Verify: `dr lint` reports no errors; a claim fixture with `criteria_slug: open-source-models-only` no longer raises `broken-criteria-slug`; both criteria pages build; no drafts appear for entities outside the page unless intended.
+Result (2026-10-10): activation queues no claims. The code that reads `templates` from `templates.yaml`: the linter's slug set (`pipeline/linter/runner.py:54`); `dr onboard`'s template step (`pipeline/orchestrator/pipeline.py:2070`, the only caller of `templates_for_entity_type`); `dr step-analyze` and `dr claim-refresh`, which look up an existing claim's slug (`pipeline/orchestrator/cli.py:586`, `:993`); and the Astro criteria loader (`content.config.ts:262`). No command, hook or workflow turns a new criterion into claims; AGENTS.md:11 describes the planned Router, not shipped code. Claims under the two criteria appear only when `dr onboard` runs: with `--only`, for the slugs named; without it, a product now gets 8 criteria and a company 5. The effect beyond this page: each criterion's public page lists every entity of its type as "No claim on file" (`src/pages/research/criteria/[slug].astro:24`): `financial-transparency` lists Anthropic, Brave Software, Google, GreenPT, Microsoft and OpenAI; `open-source-models-only` lists Brave Browser, ChatGPT, Claude, Gemini and GreenPT; S13's entities join them. `open-source-models-only` reads "PRODUCT uses only open-weight models" (R4); its notes and the `financial-transparency` entry are unchanged. The two page rows carry no `criterion:` yet; S16 adds it with their claims. Verify: `TestResponsibleAIPageCriteria` (`pipeline/tests/test_templates.py`) failed first, a fixture claim under each slug raising `broken-criteria-slug` (`criteria_slug "financial-transparency" not found in research/templates.yaml`) and the old wording failing, and passes after; the tests that count active templates follow the new set (`test_templates.py`: 16, 8 product, 5 company; `test_onboard.py`: a company onboard applies 5 and ingests 6 times); `dr lint` 0 errors; `npm run build` writes `dist/research/criteria/financial-transparency/index.html` and `dist/research/criteria/open-source-models-only/index.html` (heading "PRODUCT uses only open-weight models"); `git status research/claims` shows no new files after activation, lint and build.
 
 #### S13: entities for the page's products and companies
 Create the 5 product and 5 company entity files in the research-load table, following the GreenPT pair (`research/entities/products/greenpt.md`, `companies/greenpt.md`): name, type, website, description, and `parent_company` on each product; then `dr entity-enrich <ref>` fills founded, description and history (`cli.py:1810`). Add `entity:` to each product on the page except TreadLightlyAI.
