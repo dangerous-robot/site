@@ -1,7 +1,7 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: design answered (Q1 to Q13, P1 to P6, R1 to R4) and cross-reviewed; not started.
-**Last updated**: 2026-10-09
+**Status**: in progress. S1 to S8, S8a and S11 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 and S12 onward not started.
+**Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
 **Mockup**: https://claude.ai/artifact/TVwDvNAKYN7gMdgEeNGoot (files: `docs/mockups/responsible-ai-chatbots-claims/`; a 3-product, 4-row slice with sample data)
@@ -26,9 +26,9 @@ Honest labels (no new research)
 - [x] S8a: apply the post-S8 answers (A1 to A8 under Decisions; 5 launch dates and GPT-OSS's source left for S10, see S8a)
 
 Sources for every stance row
-- [ ] S9: stance sentences and their evidence
+- [ ] S9: stance sentences and their evidence (code done; copy pending Brandon)
 - [ ] S10: one source per stance-row cell, then feature rows and the summary
-- [ ] S11: the research linter counts sources the page cites
+- [x] S11: the research linter counts sources the page cites
 
 Claims, row by row
 - [ ] S12: activate the inactive criteria the page needs
@@ -407,6 +407,7 @@ Result (2026-10-10): A1 and A6 were already on main (description; Ecosia `term: 
 #### S9: stance sentences and their evidence
 Brandon writes `ideal.note` for each of the 9 stance rows; each gets `ideal.sources` or a Values `position` (Q11). Add ids to the four position headings in `src/pages/values.astro` (`:21`, `:32`, `:40`, `:48`) from one exported list that the S4 check also reads. Intro sentences (copy TBD, Brandon to write).
 Verify: build check passes; each Values heading id resolves; the Evidence section shows each stance with its sources or its labeled position.
+Result (2026-10-10), code only: `src/lib/valuesPositions.ts` lists the four position headings; `values.astro` renders their text and ids from it, and the matrix lookups pass the same ids to the build check (before, the route passed none, so any `position` would have failed). Unit tests (`valuesPositions.test.ts`): the ids, the heading lookup, each listed position passes the check, "our-contradictions" fails. With a temporary `position` on the renewable-hosting row, `npm run build` failed before the change ("is not a Values position") and passed after; the Evidence entry read "Position: AI is fueling environmental destruction." and its link's id resolved on `/values`; reverted. The built Values page differs only by the four `id` attributes. Copy pending: draft stance sentences and intro sentences for Brandon are in `handoff/2026-10-10-site-j-build.md`; no row carries a note or position until he approves them. Commit `96997f7`.
 
 #### S10: one source per stance-row cell, then feature rows and the summary
 Ingest and cite a source for every stance-row cell, row by row; then feature rows and summary entries as far as possible. The two hedged data-training cells (`responsible-ai.md:157-158`) start here: read the policy, set the answer, cite it. Facts checked by using the product follow Q4. Accessibility cells follow Q10 and P4; a "barriers found by our check" Partial records in the check record what was checked (tool, pages, date), so it can be repeated. Ownership cells add `owned_by` with its sources wherever a source shows an owner (P6).
@@ -415,6 +416,7 @@ Verify: a count of cells per tier printed by `tierCounts` through a small script
 #### S11: the research linter counts sources the page cites
 `check_unreferenced_sources` (`checks.py:616-639`) also collects the `/research/sources/...` paths cited anywhere in `src/content/resources/*.md` frontmatter, reading only, and skips that step when the directory is absent (so a research repo split off later still lints). AGENTS.md:72 limits what the pipeline writes, not what it reads. Without this, `dr lint` warns on every page-only source with the hint "remove the file" (`checks.py:637`), which an agent could follow.
 Verify: a pytest case with a source cited only by a page fixture produces no warning; an uncited source still warns; a fixture with no `src/content/resources` directory runs without error.
+Result (2026-10-10): `page_cited_source_ids` in `checks.py`, passed `repo_root` by the runner; the warning now reads "not cited by any claim or page". Five pytest cases, all failing first (no `repo_root` argument; the runner warned on the page-cited source): page-only source, uncited source, a path in the page body (does not count), no resources directory, and a runner case. `dr lint` on the real tree: 18 `unreferenced-source` warnings before, 5 after (0 errors both times), which is the 13 sources the page cites. `inv audit.prune --apply` reads the same check, so it no longer deletes page-cited sources. Commit `0d812fb`.
 
 ### Claims, row by row
 
@@ -474,3 +476,4 @@ None open.
 | 2026-10-09 | agent (claude-opus-5-5), cross-review | deep, implementation, iterated | Folded P1 to P6 into Decisions. Models row: P5's top-tier rule replaces frontier-scale, so the row has no criterion and is sourced only (claims 48 to 42; S18 and the glossary change dropped); match is computed from a dated large-model list, never hand-set. Ownership: `terms` split the `corporate-structure` vocabulary (good, mixed `privately-held`, bad `publicly-traded`), `owned_by` with sources for P6's owner test; label "non-profit or similar". Accessibility answers limited to yes, partial, unknown (P4). Fixes: "Reviewed claim" needs a named reviewer, since `dr publish` sets `reviewed_at` with no reviewer; hash script opens the enclosing `<details>`; popup closes when focus leaves it, sits under the pill nav, has distinct link names; "not yet sourced" in legend and hidden text; S6 and S7 Verify steps made passable before claims exist; hedged links moved from S7 to S10; S11 option chosen; new build-check rules (no claims in rows without a criterion, missing cells, row answer sets); F15 to F17 (description, `collectFreshestDate` date bug, unused `planned`). Line refs rechecked at `4c427fe`. New questions R1 to R4. |
 | 2026-10-09 | agent (claude-opus-5-5) | design, from mockup feedback | Brandon reviewed a mockup of the page (Claude design canvas). Changed: the row line and legend wording ("We prefer: Yes"; "Rows without a “We prefer” line compare facts only; we take no position on them.") and the hidden cell text to match; the popup link splits (a reviewed claim opens its claim page, a source jumps to its Evidence entry); marks get a 32px hit area; legend text and icons move up one size. The exact wording is the agent's; Brandon asked only that "the responsible answer" and "feature row" be replaced. |
 | 2026-10-09 | agent (claude-opus-5-5) | design, from mockup feedback | Second mockup round. The reviewed-claim mark is a scale, not a check, because a check beside a Yes answer reads as two answers (Brandon). The "We prefer" line shows the preferred answer's icon in the good color instead of the word. The mockup gained a states sheet (each mark state, each popup kind) and a claim-icon comparison. |
+| 2026-10-10 | agent (claude-opus-5-5) | implementation | S8a applied (A1 to A8; launch dates for Ecosia AI and Euria sourced, 5 left "Not yet sourced"; GPT-OSS's source left for S10; dark-theme stance red 4.68:1). S9 code: Values position ids from one list shared with the build check; copy left for Brandon. S11: the linter counts page-cited sources (18 warnings to 5). Status line brought up to date. |
