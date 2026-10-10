@@ -1,20 +1,17 @@
-"""Re-run v1 launch claims via dr claim-refresh, with smaller-surface re-review.
+"""Re-run v1 launch claims via dr claim-refresh and log what changed.
 
-Originally written for the v1 source-quality robust roadmap backfill (2026-05-05);
-landed verification_level + cap_rationale onto the v1 launch claims without
-invalidating sign-off on claims whose verdict and confidence were unchanged.
-Kept around for re-use if a future backfill needs the same preserve-when-unchanged
-semantics. Per-claim deltas are written to docs/plans/source-quality-rerun-log.jsonl.
+Written for the v1 source-quality backfill (2026-05-05), which landed
+verification_level + cap_rationale onto the v1 launch claims. Per-claim deltas
+are written to docs/plans/source-quality-rerun-log.jsonl.
 
-Per source-quality-robust-roadmap_completed.md item 6 + the operator decision:
 - Re-run only claims with status=published and a criteria_slug.
 - Skip status=draft and status=blocked (out of v1 scope, would risk
   unblocking or producing speculative verdicts).
-- After each claim-refresh: if (verdict, confidence) is unchanged and the
-  pre-existing sidecar had a non-null reviewed_at, restore reviewed_at +
-  reviewer + notes + pr_url AND restore status: published (claim-refresh
-  always writes status: draft). The new sidecar's other fields (run timestamp,
-  models_used, audit comparison) are kept.
+- claim-refresh writes status: draft, resets the sidecar's human_review and
+  keeps the prior published state in the sidecar's refresh block. This script
+  leaves all of that as written: every refreshed claim leaves the published
+  list until a person approves it in `dr review-queue`, even when the verdict
+  and confidence are unchanged, because the sources and narrative may not be.
 - Log per-claim status (with source-id deltas) to a JSONL file so the user
   can triage on return.
 
@@ -113,7 +110,7 @@ def main() -> int:
 
     LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-    summary: dict[str, int] = {"unchanged_preserved": 0, "changed_cleared": 0, "errors": 0}
+    summary: dict[str, int] = {"awaits_review": 0, "errors": 0}
 
     for i, (path, pre_fm) in enumerate(runnable, 1):
         rel = path.relative_to(CLAIMS_ROOT).with_suffix("")
@@ -129,7 +126,6 @@ def main() -> int:
         pre_sources = list(pre_fm.get("sources") or [])
         pre_verdict = pre_fm.get("verdict")
         pre_confidence = pre_fm.get("confidence")
-        pre_status = pre_fm.get("status")
         started = time.time()
         print(f"\n[{i}/{len(runnable)}] {ref} -- pre: verdict={pre_verdict} confidence={pre_confidence}")
 
@@ -176,48 +172,11 @@ def main() -> int:
             "sources_added": added,
             "sources_removed": removed,
         }
-
-        if unchanged and pre_review and pre_review.get("reviewed_at"):
-            try:
-                # Restore reviewed_at + reviewer + notes + pr_url in the sidecar.
-                post_data = yaml.safe_load(sidecar.read_text(encoding="utf-8")) or {}
-                post_data["human_review"] = pre_review
-                sidecar.write_text(
-                    yaml.safe_dump(post_data, sort_keys=False, allow_unicode=True),
-                    encoding="utf-8",
-                )
-                # Restore status:published when the pre-state was published.
-                # claim-refresh always writes status:draft; without this, sign-off
-                # preservation alone wouldn't keep the claim on the published list.
-                status_restored = False
-                if pre_status == "published":
-                    text = path.read_text(encoding="utf-8")
-                    new_text, n = re.subn(
-                        r"^status:\s*draft\s*$",
-                        "status: published",
-                        text,
-                        count=1,
-                        flags=re.MULTILINE,
-                    )
-                    if n == 1:
-                        path.write_text(new_text, encoding="utf-8")
-                        status_restored = True
-                log_entry["outcome"] = "unchanged_preserved"
-                log_entry["status_restored"] = status_restored
-                summary["unchanged_preserved"] += 1
-                print(f"  unchanged -- preserved reviewed_at={pre_review.get('reviewed_at')}"
-                      + (" + status:published" if status_restored else ""))
-            except Exception as exc:
-                log_entry["outcome"] = f"unchanged_preserve_failed: {exc}"
-                summary["errors"] += 1
-                print(f"  unchanged but preserve failed: {exc}", file=sys.stderr)
-        else:
-            log_entry["outcome"] = "changed_cleared" if not unchanged else "unchanged_no_prior_signoff"
-            if not unchanged:
-                summary["changed_cleared"] += 1
-                print(f"  changed -- post: verdict={post_verdict} confidence={post_confidence} (sign-off cleared)")
-            else:
-                print(f"  unchanged but no prior sign-off to preserve")
+        log_entry["outcome"] = "awaits_review"
+        log_entry["next_step"] = "draft until a person approves it in dr review-queue"
+        summary["awaits_review"] += 1
+        change = "unchanged" if unchanged else f"now verdict={post_verdict} confidence={post_confidence}"
+        print(f"  refreshed ({change}) -- draft, awaits review in dr review-queue")
 
         with LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry) + "\n")
