@@ -132,7 +132,7 @@ data:
         greenpt: { type: "yes", sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
         ecosia: { type: "no" }
         euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
-        treadlightly: { type: "partial", detail: "On Free, Starter and Builder plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
+        treadlightly: { type: "partial", detail: "Most plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "no" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
@@ -156,7 +156,7 @@ data:
       ideal: { value: "yes" }
       cells:
         greenpt: { type: "yes" }
-        ecosia: { type: "no", detail: "Generates images for logged-in users", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
+        ecosia: { type: "no", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "yes" }
         treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "no", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
@@ -211,7 +211,7 @@ data:
         ecosia: { type: "no" }
         euria: { type: "no", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "no", sources: [/research/sources/2026/treadlightly-privacy-policy] }
-        viro: { type: "no", detail: "Ads may be based on the current message", sources: [/research/sources/2025/viro-ai-privacy-policy-2025] }
+        viro: { type: "no", detail: "Contextual ads", sources: [/research/sources/2025/viro-ai-privacy-policy-2025] }
         chatgptree: { type: "unknown" }
         earthly-insight: { type: "unknown" }
     - key: corporate-structure
@@ -226,10 +226,10 @@ data:
           bad: [publicly-traded]
       cells:
         greenpt: { type: "text", detail: "Private", term: privately-held, sources: [/research/sources/2026/greenpt-terms-of-service] }
-        ecosia: { type: "text", detail: "Non-profit, Steward-ownership", term: steward-ownership, sources: [/research/sources/2018/ecosia-commits-to-trees-not-profits] }
+        ecosia: { type: "text", detail: "Steward-owned", term: steward-ownership, sources: [/research/sources/2018/ecosia-commits-to-trees-not-profits] }
         euria: { type: "text", detail: "B Corp", term: B-corp, sources: [/research/sources/2025/infomaniak-becomes-a-b-corp-certified-company] }
         treadlightly: { type: "text", detail: "Sole proprietorship", term: privately-held }
-        viro: { type: "text", detail: "Solo-founder LLC", term: privately-held }
+        viro: { type: "text", detail: "LLC", term: privately-held }
         chatgptree: { type: "text", detail: "Private", term: privately-held }
         earthly-insight: { type: "text", detail: "LLC", term: privately-held, sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: free-tier
@@ -249,7 +249,7 @@ data:
       cells:
         greenpt: { type: "text", detail: "€ 4.50 | 17.50 /mo", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "text", detail: "n/a" }
-        euria: { type: "text", detail: "€ 1.58 /mo includes [kSuite Pro](https://www.infomaniak.com/en/ksuite)" }
+        euria: { type: "text", detail: "€ 1.58 /mo ([kSuite Pro](https://www.infomaniak.com/en/ksuite))" }
         treadlightly: { type: "text", detail: "$ 3 | 8 | 20 /mo", sources: [/research/sources/2026/treadlightly-ai-pricing] }
         viro: { type: "text", detail: "$ 1 | 10 /mo" }
         chatgptree: { type: "text", detail: "$ 11 /mo", sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
@@ -338,7 +338,7 @@ data:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "no" }
         euria: { type: "yes", sources: [/research/sources/2026/euria-sovereign-ai-assistant-infomaniak] }
-        treadlightly: { type: "partial", detail: "Claude on Advanced", sources: [/research/sources/2026/about-treadlightly-ai] }
+        treadlightly: { type: "partial", detail: "Most plans", sources: [/research/sources/2026/about-treadlightly-ai] }
         viro: { type: "partial" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
