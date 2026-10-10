@@ -1,14 +1,15 @@
 ---
 title: ChatGPTree is hosted on renewable energy
 entity: products/chatgptree
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: unverified
 confidence: medium
 verification_level: independently-verified
 takeaway: ''
 seo_title: ChatGPTree is hosted on renewable energy
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-10-10'
 sources:
 - 2025/eco-friendly-chatgptree-sustainable-ai-chatbot

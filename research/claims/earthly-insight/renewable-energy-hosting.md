@@ -1,14 +1,15 @@
 ---
 title: Earthly Insight is hosted on renewable energy
 entity: products/earthly-insight
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: unverified
 confidence: high
 verification_level: independently-verified
 takeaway: ''
 seo_title: Earthly Insight hosted on renewable energy
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-10-10'
 sources:
 - 2025/earthly-insight-joins-global-rewilding-champions

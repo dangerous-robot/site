@@ -193,7 +193,8 @@ audit:
     provider, and none identifies the provider at all.
   needs_review_reasons: []
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-10-10'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null

@@ -1,7 +1,8 @@
 ---
 title: Euria is hosted on renewable energy
 entity: products/euria
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'true'
 confidence: medium
 verification_level: multiply-verified
@@ -9,7 +10,7 @@ takeaway: Euria runs on renewable energy per company and independent reports, bu
   third‑party verification is absent.
 seo_title: Euria is hosted on renewable energy
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-10-10'
 sources:
 - 2025/euria-sovereign-ai-assistant-challenges-american-dominance
