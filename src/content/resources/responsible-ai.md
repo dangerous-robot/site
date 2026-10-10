@@ -306,13 +306,14 @@ data:
       answers: ["yes", partial, unknown]
       ideal: { value: "yes" }
       # No product publishes an accessibility statement (searched
-      # 2026-10-10). Each cell is Partial because a Lighthouse 13.5.0
-      # accessibility audit of the product's public page found failures
-      # (P4, "barriers found by our check"); the pages and failures are
-      # recorded in the plan's S10 result so the check can be repeated.
+      # 2026-10-10). A cell is Partial where a Lighthouse 13.5.0
+      # accessibility audit of the product's public page found a scored
+      # failure (P4, "barriers found by our check"); Ecosia AI's only
+      # failure carries no weight in the score, so it stays unknown. The
+      # pages and failures are recorded in the plan's S10 result.
       cells:
         greenpt: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
-        ecosia: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
+        ecosia: { type: unknown, last_checked: "2026-10-10" }
         euria: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
         treadlightly: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
         viro: { type: partial, detail: "Mixed support", last_checked: "2026-10-10" }
