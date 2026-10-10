@@ -315,10 +315,10 @@ data:
       group: models-safety
       ideal: { value: "yes" }
       cells:
-        greenpt: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "no" }
-        euria: { type: "yes" }
-        treadlightly: { type: "partial", detail: "Claude is proprietary" }
+        euria: { type: "yes", sources: [/research/sources/2026/euria-sovereign-ai-assistant-infomaniak] }
+        treadlightly: { type: "partial", detail: "Claude Haiku and Sonnet on the Advanced plan", sources: [/research/sources/2026/about-treadlightly-ai] }
         viro: { type: "partial" }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
