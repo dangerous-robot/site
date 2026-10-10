@@ -5,6 +5,7 @@
 // dr-api Worker (workers/api/); the page fetches the live count and public
 // names from it.
 import {
+  CHECK_EMAIL_TEXT,
   PETITION_API,
   closedText,
   fetchPetitionState,
@@ -70,7 +71,12 @@ const names = state?.names ?? [];
         <input type="hidden" name="elapsed" value="" />
         <button type="submit">Sign</button>
       </form>
-      <p class="petition-status" role="status" aria-live="polite"></p>
+      <p class="petition-status" role="status" aria-live="polite" tabindex="-1"></p>
+      <dialog class="petition-dialog" aria-labelledby="petition-dialog-title" aria-describedby="petition-dialog-text">
+        <h3 id="petition-dialog-title">One more step</h3>
+        <p id="petition-dialog-text">{CHECK_EMAIL_TEXT}</p>
+        <button type="button" data-dialog-close>OK</button>
+      </dialog>
 
       <p class="petition-privacy">
         We use your email only to confirm your signature. We never show it, share it, or send you anything else. <a href="/privacy#petitions">How we handle signatures</a>
@@ -93,6 +99,7 @@ const names = state?.names ?? [];
 
 <script>
   import {
+    CHECK_EMAIL_TEXT,
     closedText,
     fetchPetitionState,
     formatCount,
@@ -116,6 +123,12 @@ const names = state?.names ?? [];
     const namesList = section.querySelector<HTMLElement>('[data-names]')!;
     const hiddenSigners = section.querySelector<HTMLElement>('[data-hidden-signers]')!;
     const toggle = section.querySelector<HTMLButtonElement>('[data-roll-toggle]')!;
+    const dialog = section.querySelector<HTMLDialogElement>('.petition-dialog')!;
+
+    // The form (and the focused Sign button) is hidden by now, so the dialog's
+    // default focus return would land on <body>; send focus to the status line.
+    dialog.querySelector('[data-dialog-close]')!.addEventListener('click', () => dialog.close());
+    dialog.addEventListener('close', () => status.focus());
 
     // The Worker drops submissions sent within 3 seconds of page load. Elapsed
     // time from performance.now() is immune to a wrong system clock.
@@ -198,7 +211,8 @@ const names = state?.names ?? [];
         const body = await res.json();
         if (res.ok) {
           form.hidden = true;
-          status.textContent = 'Check your email for a link to confirm your signature.';
+          status.textContent = CHECK_EMAIL_TEXT;
+          dialog.showModal();
           return;
         }
         status.textContent = body.error ?? 'Something went wrong. Please try again.';
@@ -366,6 +380,45 @@ const names = state?.names ?? [];
 
   .petition-status:empty {
     display: none;
+  }
+
+  .petition-status:focus {
+    outline: none;
+  }
+
+  .petition-dialog {
+    max-width: min(28rem, calc(100vw - 2 * var(--space-md)));
+    padding: var(--space-lg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: var(--shadow-popover);
+  }
+
+  .petition-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .petition-dialog h3 {
+    margin: 0 0 var(--space-sm);
+  }
+
+  .petition-dialog p {
+    margin: 0 0 var(--space-lg);
+    line-height: 1.5;
+  }
+
+  /* Same outline button as the form's Sign button. */
+  .petition-dialog button {
+    padding: var(--space-sm) var(--space-lg);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-accent);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
   }
 
   .petition-privacy {
