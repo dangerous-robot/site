@@ -168,21 +168,26 @@ data:
       ideal:
         answer: "no large models"
         # Sorted under P5 and R2 (a model is large if it was its lab's most
-        # capable tier when released). Sourced so far: GPT-4o (OpenAI's model
-        # page calls it the flagship). The other names still need their lab's
-        # model page, so the list carries no last_checked date yet.
+        # capable tier when released). Each lab's model page is cited below;
+        # GPT-OSS still has none, so the list carries no last_checked date.
         large_models:
-          sources: [/research/sources/2026/gpt-4o-model-documentation]
-          large: [GPT-4o]
-          not_large: [Mistral Small, Ministral, GPT-OSS, Claude Haiku, Claude Sonnet]
+          sources:
+            - /research/sources/2026/gpt-4o-model-documentation
+            - /research/sources/2026/gpt-5-6-terra-model-documentation
+            - /research/sources/2026/anthropic-claude-models-overview
+            - /research/sources/2026/google-gemini-api-models
+            - /research/sources/2026/gemma-4-model-overview
+            - /research/sources/2026/mistral-ai-models-overview
+          large: [GPT-4o, Gemini Pro]
+          not_large: [Mistral Small, GPT-OSS, Gemma 4, Claude Haiku, Claude Sonnet, Gemini Flash, GPT-5.6 Terra]
       cells:
-        greenpt: { type: "text", detail: "Mistral Small, GPT-OSS", models: [Mistral Small, GPT-OSS] }
-        ecosia: { type: "text", detail: "GPT mini" }
+        greenpt: { type: "text", detail: "Mistral Small 3.2, GPT-OSS 120B, Gemma 4 31B", models: [Mistral Small, GPT-OSS, Gemma 4], sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
+        ecosia: { type: "text", detail: "Mistral (chat model not named)", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "text", detail: "DeepSeek R1, Qwen 3, Mistral Nemo, Llama 3" }
-        treadlightly: { type: "text", detail: "Mistral Ministral & Small, GPT-OSS, Claude Haiku & Sonnet", models: [Ministral, Mistral Small, GPT-OSS, Claude Haiku, Claude Sonnet] }
+        treadlightly: { type: "text", detail: "Gemma 4 31B, GPT-OSS 120B, Claude Haiku & Sonnet", models: [Gemma 4, GPT-OSS, Claude Haiku, Claude Sonnet], sources: [/research/sources/2026/about-treadlightly-ai] }
         viro: { type: "text", detail: "GPT, Claude, Gemini, LLaMA" }
         chatgptree: { type: "text", detail: "GPT-4o", models: [GPT-4o], sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
-        earthly-insight: { type: "text", detail: "GPT, Gemini Flash & Pro, Claude Sonnet" }
+        earthly-insight: { type: "text", detail: "GPT-5.6 Terra, Claude Sonnet 5, Gemini 3.1 Pro & 3.5 Flash", models: [GPT-5.6 Terra, Claude Sonnet, Gemini Pro, Gemini Flash], sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: data-used-for-training
       label: "Data used for training"
       group: privacy-data
