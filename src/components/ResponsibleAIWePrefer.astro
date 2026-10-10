@@ -1,0 +1,33 @@
+---
+// "We prefer:" followed by the preferred answer: the answer's icon in the good
+// stance color (with the word visually hidden) on yes/no rows, a few words on
+// text rows. Used under the row label and at the top of each Evidence entry.
+import { Check, X } from 'lucide-astro';
+import { preferLine } from '../lib/matrixEvidence';
+import type { MatrixIdeal } from '../lib/matrixSchema';
+
+interface Props {
+  ideal: MatrixIdeal;
+}
+
+const prefer = preferLine(Astro.props.ideal)!;
+const Icon = prefer.value === 'yes' ? Check : X;
+---
+<span class="we-prefer-line">
+  We prefer:
+  {prefer.value && <Icon size={16} aria-hidden="true" />}
+  <span class={prefer.value ? 'sr-only' : undefined}>{prefer.word}</span>
+</span>
+
+<style>
+  .we-prefer-line {
+    color: var(--color-text-faint);
+  }
+
+  .we-prefer-line :global(svg) {
+    display: inline-block;
+    vertical-align: text-bottom;
+    margin-left: 0.3em;
+    color: var(--color-stance-good);
+  }
+</style>

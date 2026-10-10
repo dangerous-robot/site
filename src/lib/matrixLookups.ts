@@ -1,7 +1,18 @@
 // Turns the research collections into the plain lookups the matrix evidence
-// rules read. Type-only Astro import, so nothing here needs the Astro runtime.
-import type { CollectionEntry } from 'astro:content';
+// rules read. The only matrix module that touches the Astro runtime.
+import { getCollection, type CollectionEntry } from 'astro:content';
 import type { CheckLookups } from './matrixCheck';
+
+/** The lookups for the matrix page: every claim, source, entity and criterion. */
+export async function loadMatrixLookups(valuesPositions: string[] = []): Promise<CheckLookups> {
+  const [claims, sources, entities, criteria] = await Promise.all([
+    getCollection('claims'),
+    getCollection('sources'),
+    getCollection('entities'),
+    getCollection('criteria'),
+  ]);
+  return buildMatrixLookups(claims, sources, entities, criteria, valuesPositions);
+}
 
 export function buildMatrixLookups(
   claims: CollectionEntry<'claims'>[],

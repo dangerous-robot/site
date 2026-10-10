@@ -13,7 +13,8 @@ import ShouldIDecisionTree from '../../components/ShouldIDecisionTree.astro';
 import { buildResourceSchema } from '../../lib/resourceSchema';
 import { matrixDataSchema } from '../../lib/matrixSchema';
 import { validateMatrixEvidence } from '../../lib/matrixCheck';
-import { buildMatrixLookups } from '../../lib/matrixLookups';
+import ResponsibleAIEvidence from '../../components/ResponsibleAIEvidence.astro';
+import { loadMatrixLookups } from '../../lib/matrixLookups';
 
 export async function getStaticPaths() {
   const entries = await getCollection('resources');
@@ -40,16 +41,10 @@ const matrixData = layout === 'matrix' ? matrixDataSchema.parse(data) : undefine
 
 // Every citation on the page must resolve and agree with what it cites; a bad
 // one fails the build the same way a schema error does. The Values position
-// ids arrive with the stance sentences (no row sets a position yet).
-if (matrixData) {
-  const [claims, sources, entities, criteria] = await Promise.all([
-    getCollection('claims'),
-    getCollection('sources'),
-    getCollection('entities'),
-    getCollection('criteria'),
-  ]);
-  validateMatrixEvidence(matrixData, buildMatrixLookups(claims, sources, entities, criteria, []));
-}
+// ids arrive with the stance sentences (no row sets a position yet). The same
+// lookups then feed the evidence marks, popups and Evidence section.
+const matrixLookups = matrixData ? await loadMatrixLookups() : undefined;
+if (matrixData && matrixLookups) validateMatrixEvidence(matrixData, matrixLookups);
 
 // Git last-commit date for the content file, used as "last updated" in matrix captions.
 let matrixLastModified: Date | undefined;
@@ -87,7 +82,7 @@ if (layout === 'matrix') {
     </article>
   )}
 
-  {layout === 'matrix' && matrixData && (
+  {layout === 'matrix' && matrixData && matrixLookups && (
     <article class="resource-matrix">
       <div class="resource-matrix__intro">
         <Content />
@@ -97,11 +92,13 @@ if (layout === 'matrix') {
         <div class="resources-pill-nav pill-nav-row">
           <a href="#summary" data-pill-target="summary">Summary</a>
           <a href="#comparison-table" data-pill-target="comparison-table">Comparison table</a>
+          <a href="#evidence" data-pill-target="evidence">Evidence</a>
           <a href="#footnotes" data-pill-target="footnotes">Footnotes</a>
         </div>
       </nav>
-      <ResponsibleAISummary data={matrixData} />
-      <ResponsibleAIMatrix data={matrixData} lastModified={matrixLastModified} />
+      <ResponsibleAISummary data={matrixData} lookups={matrixLookups} />
+      <ResponsibleAIMatrix data={matrixData} lookups={matrixLookups} lastModified={matrixLastModified} />
+      <ResponsibleAIEvidence data={matrixData} lookups={matrixLookups} />
       <ResponsibleAIExcluded data={matrixData} />
       <ResponsibleAIFootnotes data={matrixData} />
     </article>

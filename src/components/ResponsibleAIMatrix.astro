@@ -1,9 +1,11 @@
 ---
-import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink } from 'lucide-astro';
+import { Check, X, Minus, HelpCircle, ArrowUp, ExternalLink, Link, Scale } from 'lucide-astro';
 import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
 import ResponsibleAIFilters from './ResponsibleAIFilters.astro';
 import type { MatrixCell as Cell, MatrixCellType as CellType, MatrixData, MatrixFeature as Feature } from '../lib/matrixSchema';
-import { cellStance, TIER_NAMES, type Stance } from '../lib/matrixEvidence';
+import ResponsibleAIEvidenceMark from './ResponsibleAIEvidenceMark.astro';
+import ResponsibleAIWePrefer from './ResponsibleAIWePrefer.astro';
+import { cellStance, TIER_NAMES, type EvidenceLookups, type Stance } from '../lib/matrixEvidence';
 
 const ICONS: Record<
   Exclude<CellType, 'text' | 'na'>,
@@ -25,15 +27,7 @@ const STANCE_PHRASE: Record<Stance, string> = {
   neutral: '.',
 };
 
-/** The "We prefer" line under a stance row's label; null on a feature row. */
-function preferLine(feature: Feature): { Icon?: AstroComponentFactory; word: string } | null {
-  const ideal = feature.ideal;
-  if (!ideal) return null;
-  if ('value' in ideal) return { Icon: ICONS[ideal.value].Icon, word: ICONS[ideal.value].srLabel };
-  return { word: ideal.answer };
-}
-
-const LEGEND: { label: string; aria: string; items: { stance?: Stance; Icon?: AstroComponentFactory; text: string }[] }[] = [
+const LEGEND: { label: string; aria: string; items: { stance?: Stance; mark?: 'claim' | 'source'; Icon?: AstroComponentFactory; text: string }[] }[] = [
   { label: 'Legend:', aria: 'Symbol legend', items: Object.values(ICONS).map(({ Icon, srLabel }) => ({ Icon, text: srLabel })) },
   {
     label: 'Color:',
@@ -44,7 +38,15 @@ const LEGEND: { label: string; aria: string; items: { stance?: Stance; Icon?: As
       { stance: 'mixed', Icon: Minus, text: 'Partly' },
     ],
   },
-  { label: 'Evidence:', aria: 'Evidence legend', items: [{ text: `No mark: ${TIER_NAMES.none.toLowerCase()}` }] },
+  {
+    label: 'Evidence:',
+    aria: 'Evidence legend',
+    items: [
+      { mark: 'claim', Icon: Scale, text: TIER_NAMES.claim },
+      { mark: 'source', Icon: Link, text: TIER_NAMES.source },
+      { text: `No mark: ${TIER_NAMES.none.toLowerCase()}` },
+    ],
+  },
 ];
 
 function renderDetail(s: string): string {
@@ -62,10 +64,11 @@ function renderDetail(s: string): string {
 
 interface Props {
   data: MatrixData;
+  lookups: EvidenceLookups;
   lastModified?: Date;
 }
 
-const { data, lastModified } = Astro.props;
+const { data, lookups, lastModified } = Astro.props;
 
 const lastModifiedLabel = lastModified
   ? lastModified.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
@@ -142,25 +145,18 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                 </th>
               </tr>
               {rows.map((feature) => {
-                const prefer = preferLine(feature);
                 return (
                 <tr>
                   <th scope="row" class="dim-label">
                     {feature.label}
-                    {prefer && (
-                      <div class="we-prefer">
-                        We prefer:
-                        {prefer.Icon && <prefer.Icon size={16} aria-hidden="true" />}
-                        <span class={prefer.Icon ? 'sr-only' : undefined}>{prefer.word}</span>
-                      </div>
+                    {feature.ideal && (
+                      <div class="we-prefer"><ResponsibleAIWePrefer ideal={feature.ideal} /></div>
                     )}
                   </th>
                   {activeProducts.map((p) => {
                     const cell = feature.cells[p.key] ?? { type: 'na' as CellType };
                     const icon = cell.type in ICONS ? ICONS[cell.type as keyof typeof ICONS] : null;
                     const stance = cellStance(cell, feature);
-                    // Until the evidence marks land, every cell without a citation says so in hidden text.
-                    const unsourced = !cell.claim && !cell.sources?.length;
                     return (
                       <td class={`cell cell--${cell.type} cell--stance-${stance}`} data-product-key={p.key}>
                         {icon && (
@@ -176,7 +172,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                         {cell.type === 'na' && (
                           <span class="na" aria-label="Not applicable">&ndash;</span>
                         )}
-                        {unsourced && <span class="sr-only"> {TIER_NAMES.none}.</span>}
+                        <ResponsibleAIEvidenceMark cited={cell} product={p} subject={feature} lookups={lookups} />
                       </td>
                     );
                   })}
@@ -203,7 +199,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
           <span class="legend-label">{row.label}</span>
           <ul class="legend" aria-label={row.aria}>
             {row.items.map((item) => (
-              <li class:list={['legend-item', item.stance && `legend-item--${item.stance}`]}>
+              <li class:list={['legend-item', item.stance && `legend-item--${item.stance}`, item.mark && `legend-item--mark-${item.mark}`]}>
                 {item.Icon && <item.Icon size={18} aria-hidden="true" />}<span>{item.text}</span>
               </li>
             ))}
@@ -451,6 +447,9 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .cell--stance-bad, .legend-item--bad { --stance: var(--color-stance-bad); }
   .cell--stance-mixed, .legend-item--mixed { --stance: var(--color-stance-mixed); }
   .cell :global(svg), .legend-item :global(svg) { color: var(--stance, var(--color-text)); flex-shrink: 0; }
+  .legend-item--mark-claim :global(svg) { color: var(--color-accent); }
+  .legend-item--mark-source :global(svg) { color: var(--color-text-muted); }
+  .cell :global(.ev-mark svg) { color: inherit; }
 
   /* A text cell (models, ownership) has no icon, and the stance colors are
      tuned for icons, not small text (good is under 4.5:1 on the dark
@@ -472,18 +471,10 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .we-prefer {
     margin-top: 0.15rem;
     font-size: var(--font-size-xs);
-    color: var(--color-text-faint);
     line-height: 1.4;
     /* The global th rule uppercases row labels; this line reads as a sentence. */
     text-transform: none;
     letter-spacing: 0;
-  }
-
-  .we-prefer :global(svg) {
-    display: inline-block;
-    color: var(--color-stance-good);
-    vertical-align: text-bottom;
-    margin-left: 0.3em;
   }
 
   .na {

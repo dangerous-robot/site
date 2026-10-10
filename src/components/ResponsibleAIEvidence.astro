@@ -1,0 +1,276 @@
+---
+// The Evidence section under the comparison table: one collapsed entry per
+// row (and one per summary column), each listing every product's evidence in
+// full. The popups link here; the entries list every product whatever the
+// product filter hides, since the filter acts on the table only.
+import { ArrowUp } from 'lucide-astro';
+import DisclosureIndicator from './DisclosureIndicator.astro';
+import ResponsibleAISourceLinks from './ResponsibleAISourceLinks.astro';
+import ResponsibleAIWePrefer from './ResponsibleAIWePrefer.astro';
+import VerdictBadge from './VerdictBadge.astro';
+import { isoDate } from '../lib/dates';
+import {
+  cellEvidence,
+  checkRecordLine,
+  evidenceId,
+  sourceInfo,
+  SUMMARY_COLUMNS,
+  summarySubject,
+  type Cited,
+  type EvidenceLookups,
+  type EvidenceSubject,
+  type ProductRef,
+} from '../lib/matrixEvidence';
+import { VALUES_PATH_PREFIX, type MatrixData, type MatrixIdeal } from '../lib/matrixSchema';
+import { profileHref } from '../lib/reviewers';
+import { CONFIDENCE_LABELS } from '../lib/verdict';
+
+interface Props {
+  data: Pick<MatrixData, 'products' | 'features'>;
+  lookups: EvidenceLookups;
+}
+
+const { data, lookups } = Astro.props;
+const activeProducts = data.products.filter((p) => p.status === 'active');
+
+/** One Evidence entry: a subject (row or summary column) and what each product cites for it. */
+interface Entry {
+  subject: EvidenceSubject;
+  kind: 'stance' | 'feature' | 'summary';
+  ideal?: MatrixIdeal;
+  items: { product: ProductRef; cited: Cited }[];
+}
+
+const KIND_LABELS: Record<Entry['kind'], string> = {
+  stance: 'our position',
+  feature: 'comparison only, no position',
+  summary: 'summary table',
+};
+
+const entries: Entry[] = [
+  ...data.features.map((feature): Entry => ({
+    subject: feature,
+    kind: feature.ideal ? 'stance' : 'feature',
+    ideal: feature.ideal,
+    items: activeProducts.map((product) => ({ product, cited: feature.cells[product.key] ?? {} })),
+  })),
+  ...SUMMARY_COLUMNS.map((column): Entry => ({
+    subject: summarySubject(column),
+    kind: 'summary',
+    items: activeProducts.map((product) => {
+      const entry = product.summary?.[column.key];
+      return { product, cited: typeof entry === 'object' ? entry : {} };
+    }),
+  })),
+];
+---
+<section id="evidence" class="ra-evidence">
+  <h2>
+    Evidence
+    <a href="#top" class="return-top" aria-label="Return to top">
+      <ArrowUp size={18} aria-hidden="true" />
+    </a>
+  </h2>
+  <p class="ra-evidence__intro">
+    One entry per row. Rows with a position open with it and its evidence, then list what each
+    product's answer rests on. Entries list every product, whatever the product filter hides.
+  </p>
+
+  {entries.map(({ subject, kind, ideal, items }) => (
+    <details class="ra-evidence__row">
+      <summary>
+        <DisclosureIndicator size={16} />
+        <span class="ra-evidence__label">{subject.label}</span>
+        <span class="ra-evidence__kind">{KIND_LABELS[kind]}</span>
+      </summary>
+      <div class="ra-evidence__body">
+        {ideal && (
+          <p class="ra-evidence__stance">
+            <ResponsibleAIWePrefer ideal={ideal} />
+            {ideal.note && <span class="ra-evidence__note"> {ideal.note}</span>}
+            {ideal.position && (
+              <span class="ra-evidence__muted"> Position: <a href={ideal.position}>{ideal.position.slice(VALUES_PATH_PREFIX.length).replace(/-/g, ' ')}</a>.</span>
+            )}
+            {ideal.sources && ideal.sources.length > 0 && (
+              <span class="ra-evidence__muted"> Sources: <ResponsibleAISourceLinks paths={ideal.sources} lookups={lookups} />.</span>
+            )}
+          </p>
+        )}
+        {ideal && 'large_models' in ideal && (
+          <p class="ra-evidence__stance ra-evidence__muted">
+            Large models{ideal.large_models.last_checked && ` as of ${ideal.large_models.last_checked}`}:
+            {' '}{ideal.large_models.large.length > 0 ? ideal.large_models.large.join(', ') : 'none named yet'}.
+            Not large: {ideal.large_models.not_large.join(', ')}.
+            {ideal.large_models.sources && ideal.large_models.sources.length > 0 && (
+              <> Sources: <ResponsibleAISourceLinks paths={ideal.large_models.sources} lookups={lookups} />.</>
+            )}
+          </p>
+        )}
+        <ul class="ra-evidence__items">
+          {items.map(({ product, cited }) => {
+            const ev = cellEvidence(cited, product, lookups);
+            return (
+              <li id={evidenceId(subject.key, product.key)} class="ra-evidence__item">
+                <span class="ra-evidence__product">{product.name}</span>
+                {ev.claim && (
+                  <span class="ra-evidence__detail">
+                    <VerdictBadge verdict={ev.claim.verdict} size="sm" />
+                    <span>Confidence: {CONFIDENCE_LABELS[ev.claim.confidence]}, as of {isoDate(ev.claim.as_of)}.</span>
+                    <a href={cited.claim}>Claim page</a>
+                    {ev.reviewer && (
+                      <span class="ra-evidence__muted">Reviewed and approved by <a href={profileHref(ev.reviewer)}>{ev.reviewer.handle}</a>.</span>
+                    )}
+                  </span>
+                )}
+                {ev.tier === 'source' && (
+                  <span class="ra-evidence__detail">
+                    {ev.sourcePaths.map((path) => {
+                      const info = sourceInfo(path, lookups);
+                      return (
+                        <span>
+                          <a href={path}>{info?.title ?? path}</a>
+                          {info && (
+                            <span class="ra-evidence__muted">
+                              {' '}({info.publisher}, accessed {isoDate(info.accessed_date)}{info.archived_url && <>, <a href={info.archived_url} target="_blank" rel="noopener noreferrer">archived copy</a></>})
+                            </span>
+                          )}
+                        </span>
+                      );
+                    })}
+                    {cited.owned_by && (
+                      <span class="ra-evidence__muted">Owned by {cited.owned_by.name} ({cited.owned_by.kind.replace('-', ' ')}).</span>
+                    )}
+                  </span>
+                )}
+                {ev.tier === 'none' && <span class="ra-evidence__muted">{checkRecordLine(cited)}</span>}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </details>
+  ))}
+</section>
+
+<script>
+  // Browsers do not open a closed <details> when the URL fragment names an
+  // element inside it, so open the enclosing one ourselves: on load, on hash
+  // change, and on a click of an in-page #ev- link (following the same hash
+  // twice fires no hashchange).
+  function openEvidenceTarget(hash: string) {
+    let id = hash.slice(1);
+    try { id = decodeURIComponent(id); } catch {}
+    const el = id ? document.getElementById(id) : null;
+    const details = el?.closest('details');
+    if (details) details.open = true;
+  }
+  openEvidenceTarget(location.hash);
+  window.addEventListener('hashchange', () => openEvidenceTarget(location.hash));
+  document.addEventListener('click', (e) => {
+    const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#ev-"]');
+    if (link) openEvidenceTarget(link.getAttribute('href') ?? '');
+  });
+</script>
+
+<style>
+  .ra-evidence {
+    margin: 0 0 var(--space-2xl);
+    scroll-margin-top: 5rem;
+  }
+
+  .ra-evidence h2 {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--color-text-heading);
+    margin: 0 0 var(--space-sm);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-sm);
+  }
+
+  .ra-evidence__intro {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-md);
+    max-width: 44rem;
+  }
+
+  .ra-evidence__row {
+    border-top: 1px solid var(--color-border);
+    padding: 0.6rem 0;
+  }
+
+  .ra-evidence__row:last-of-type {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .ra-evidence__row summary {
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    color: var(--color-text-heading);
+  }
+
+  .ra-evidence__row summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .ra-evidence__row summary :global(.disclosure-indicator) {
+    color: var(--color-text-faint);
+  }
+
+  .ra-evidence__kind {
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .ra-evidence__body {
+    padding: var(--space-sm) 0 var(--space-xs) 1.5rem;
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-body);
+  }
+
+  .ra-evidence__stance {
+    margin: 0 0 var(--space-sm);
+  }
+
+  .ra-evidence__muted {
+    color: var(--color-text-muted);
+  }
+
+  .ra-evidence__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .ra-evidence__item {
+    scroll-margin-top: 5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.6rem;
+  }
+
+  .ra-evidence__product {
+    font-weight: 600;
+    color: var(--color-text-heading);
+    min-width: 8rem;
+  }
+
+  .ra-evidence__detail {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.6rem;
+  }
+</style>

@@ -11,11 +11,13 @@ import {
   type MatrixCell,
   type MatrixCellType,
   type MatrixFeature,
+  type MatrixIdeal,
   type MatrixProduct,
   type OwnedBy,
   type StanceTerms,
+  type SummaryField,
 } from './matrixSchema';
-import { findReviewer } from './reviewers';
+import { findReviewer, type Person } from './reviewers';
 import { CONFIDENCE_LABELS, type Confidence, type Verdict } from './verdict';
 
 export type Answer = MatrixCellType;
@@ -39,6 +41,19 @@ export interface Cited {
 
 /** Who the evidence is about, for ids and link names. A feature row is one; so is a summary column. */
 export type EvidenceSubject = Pick<MatrixFeature, 'key' | 'label'>;
+
+/** The summary table's columns, in display order. */
+export const SUMMARY_COLUMNS: { key: SummaryField; label: string }[] = [
+  { key: 'ai_ethics', label: 'AI ethics' },
+  { key: 'environmental', label: 'Environmental' },
+  { key: 'financial_transparency', label: 'Financial transparency' },
+  { key: 'notes', label: 'Notes' },
+];
+
+/** The subject a summary column's evidence belongs to; its key gives the `ev-summary-<field>-<product>` ids. */
+export function summarySubject(column: { key: SummaryField; label: string }): EvidenceSubject {
+  return { key: `summary-${column.key}`, label: `${column.label} summary` };
+}
 
 /** The product fields the evidence rules read. */
 export type ProductRef = Pick<MatrixProduct, 'key' | 'name' | 'status' | 'entity' | 'max_tier'>;
@@ -89,10 +104,16 @@ export function isCapped(product: ProductRef): boolean {
 
 export interface CellEvidence {
   tier: Tier;
-  /** The reviewed claim behind a "claim" tier. */
+  /** The reviewed claim behind a "claim" tier, and the person who approved it. */
   claim?: ClaimInfo;
+  reviewer?: Person;
   /** Every source path cited, the owner's included. */
   sourcePaths: string[];
+}
+
+/** The source behind a rendered citation path, when the lookups have it. */
+export function sourceInfo(path: string, lookups: EvidenceLookups): SourceInfo | undefined {
+  return lookups.sources.get(citedId(path, 'source') ?? '');
 }
 
 /**
@@ -110,13 +131,24 @@ export function cellEvidence<T extends Cited>(cited: T, product: ProductRef, loo
   const claim = claimId ? lookups.claims.get(claimId) : undefined;
   const ownTier: Tier = isReviewedClaim(claim) ? 'claim' : ownSources.length > 0 ? 'source' : 'none';
 
-  if (!cited.owned_by) return { tier: ownTier, claim: ownTier === 'claim' ? claim : undefined, sourcePaths };
+  if (!cited.owned_by) {
+    return ownTier === 'claim'
+      ? { tier: ownTier, claim, reviewer: findReviewer(claim!.reviewer), sourcePaths }
+      : { tier: ownTier, sourcePaths };
+  }
   const tier: Tier = ownTier !== 'none' && ownerSources.length > 0 ? 'source' : 'none';
   return { tier, sourcePaths };
 }
 
 export function cellTier<T extends Cited>(cited: T, product: ProductRef, lookups: EvidenceLookups): Tier {
   return cellEvidence(cited, product, lookups).tier;
+}
+
+/** The "We prefer" line under a stance row: an icon's answer (yes/no rows) or a few words (text rows). */
+export function preferLine(ideal: MatrixIdeal | undefined): { value?: 'yes' | 'no'; word: string } | null {
+  if (!ideal) return null;
+  if ('value' in ideal) return { value: ideal.value, word: ideal.value === 'yes' ? 'Yes' : 'No' };
+  return { word: ideal.answer };
 }
 
 export type RowKind = 'yes-no' | 'models' | 'ownership' | 'feature';
@@ -190,6 +222,8 @@ export interface PopupLink {
 export interface PopupContent {
   tier: Tier;
   tierName: string;
+  /** "GreenPT, hosted on renewable energy": names the product and row in accessible names. */
+  forWhom: string;
   /** Reviewed claim only; the component renders the badge from `verdict`. */
   verdict?: Verdict;
   confidence?: string;
@@ -223,20 +257,20 @@ export function popupContent<T extends Cited>(
   lookups: EvidenceLookups,
 ): PopupContent {
   const { tier, claim, sourcePaths } = cellEvidence(cited, product, lookups);
-  const forWhom = `for ${product.name}, ${lowerLabel(subject.label)}`;
-  const content: PopupContent = { tier, tierName: TIER_NAMES[tier] };
+  const forWhom = `${product.name}, ${lowerLabel(subject.label)}`;
+  const content: PopupContent = { tier, tierName: TIER_NAMES[tier], forWhom };
 
   if (claim) {
     content.verdict = claim.verdict;
     content.confidence = CONFIDENCE_LABELS[claim.confidence];
     content.asOf = isoDate(claim.as_of);
-    content.link = { href: cited.claim!, text: 'Open claim page', srText: forWhom };
+    content.link = { href: cited.claim!, text: 'Open claim page', srText: `for ${forWhom}` };
   } else if (tier === 'source') {
-    const first = lookups.sources.get(citedId(sourcePaths[0], 'source') ?? '');
+    const first = sourceInfo(sourcePaths[0], lookups);
     const more = sourcePaths.length - 1;
     const head = first ? `${first.publisher}, accessed ${isoDate(first.accessed_date)}` : sourcePaths[0];
     content.sourceLine = more > 0 ? `${head}, and ${more} more` : head;
-    content.link = { href: `#${evidenceId(subject.key, product.key)}`, text: 'See sources below', srText: forWhom };
+    content.link = { href: `#${evidenceId(subject.key, product.key)}`, text: 'See sources below', srText: `for ${forWhom}` };
   }
   return content;
 }

@@ -1,0 +1,248 @@
+---
+// The evidence mark after a cell or summary entry: a scale for a reviewed
+// claim, a link for sources. Pressing it opens a small popup (the A11yControl
+// disclosure pattern: button, aria-expanded, aria-controls, hidden) with the
+// tier, a line of detail and one link. "Not yet sourced" gets no mark; it
+// says so in hidden text instead, so screen reader users get what the
+// missing mark shows.
+import { Link, Scale } from 'lucide-astro';
+import VerdictBadge from './VerdictBadge.astro';
+import {
+  popupContent,
+  type Cited,
+  type EvidenceLookups,
+  type EvidenceSubject,
+  type ProductRef,
+} from '../lib/matrixEvidence';
+
+interface Props {
+  cited: Cited;
+  product: ProductRef;
+  subject: EvidenceSubject;
+  lookups: EvidenceLookups;
+}
+
+const { cited, product, subject, lookups } = Astro.props;
+const content = popupContent(cited, product, subject, lookups);
+const popId = `pop-${subject.key}-${product.key}`;
+const Icon = content.tier === 'claim' ? Scale : Link;
+---
+{content.tier === 'none' ? (
+  <span class="sr-only"> {content.tierName}.</span>
+) : (
+  <span class="ev-wrap" data-ev-wrap>
+    <button
+      type="button"
+      class={`ev-mark ev-mark--${content.tier}`}
+      aria-expanded="false"
+      aria-controls={popId}
+      data-ev-mark
+    >
+      <Icon size={18} aria-hidden="true" />
+      <span class="sr-only">Evidence for {content.forWhom}: {content.tierName.toLowerCase()}</span>
+    </button>
+    <div class="ev-popup" id={popId} role="group" aria-label={`Evidence detail for ${content.forWhom}`} hidden>
+      <div class="ev-popup__tier">{content.tierName}</div>
+      {content.verdict && (
+        <div class="ev-popup__claim">
+          <VerdictBadge verdict={content.verdict} size="sm" />
+          <span>Confidence: {content.confidence}</span>
+          <span class="ev-popup__muted">As of {content.asOf}</span>
+        </div>
+      )}
+      {content.sourceLine && <div class="ev-popup__line">{content.sourceLine}</div>}
+      {content.link && (
+        <a href={content.link.href} class="ev-popup__link">{content.link.text}<span class="sr-only"> {content.link.srText}</span></a>
+      )}
+    </div>
+  </span>
+)}
+
+<script>
+  // One listener set for every mark on the page, delegated on document
+  // because Summary marks sit outside the matrix root. A mark opens on click,
+  // tap, Enter or Space (pinned), or on a mouse hover after a short delay (not
+  // pinned); a hover-opened popup closes when the pointer leaves mark and
+  // popup, a pinned one on Esc, a click outside, focus leaving, or pressing
+  // the mark again. One popup is open at a time.
+  const HOVER_DELAY = 150;
+  const fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+  let openWrap: HTMLElement | null = null;
+  let pinned = false;
+  let hoverTimer = 0;
+
+  const markOf = (wrap: HTMLElement) => wrap.querySelector<HTMLButtonElement>('[data-ev-mark]')!;
+  const popupOf = (wrap: HTMLElement) => wrap.querySelector<HTMLElement>('.ev-popup')!;
+  const wrapOf = (target: EventTarget | null) =>
+    (target instanceof Element ? target.closest<HTMLElement>('[data-ev-wrap]') : null);
+
+  function close(returnFocus = false) {
+    if (!openWrap) return;
+    const wrap = openWrap;
+    openWrap = null;
+    pinned = false;
+    popupOf(wrap).hidden = true;
+    markOf(wrap).setAttribute('aria-expanded', 'false');
+    if (returnFocus) markOf(wrap).focus();
+  }
+
+  function open(wrap: HTMLElement, pin: boolean) {
+    if (openWrap && openWrap !== wrap) close();
+    openWrap = wrap;
+    pinned = pinned || pin;
+    const popup = popupOf(wrap);
+    popup.hidden = false;
+    markOf(wrap).setAttribute('aria-expanded', 'true');
+    // Shift the popup to stay inside the viewport, 16px from either edge.
+    popup.style.translate = '';
+    const r = popup.getBoundingClientRect();
+    const shift = Math.max(16 - r.left, Math.min(0, window.innerWidth - 16 - r.right));
+    if (shift !== 0) popup.style.translate = `${shift}px 0`;
+  }
+
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const mark = target.closest<HTMLElement>('[data-ev-mark]');
+    if (mark) {
+      const wrap = wrapOf(mark)!;
+      if (openWrap === wrap && pinned) close();
+      else open(wrap, true);
+      return;
+    }
+    if (openWrap && !openWrap.contains(target)) close();
+  });
+
+  // pointerover/pointerout bubble; a move between elements inside one wrap
+  // has relatedTarget inside it too, so only real edge crossings count.
+  document.addEventListener('pointerover', (e) => {
+    const wrap = wrapOf(e.target);
+    if (!wrap || wrap.contains(e.relatedTarget as Node | null)) return;
+    if (!fine.matches || e.pointerType !== 'mouse') return;
+    window.clearTimeout(hoverTimer);
+    if (openWrap === wrap) return;
+    hoverTimer = window.setTimeout(() => open(wrap, false), HOVER_DELAY);
+  });
+
+  document.addEventListener('pointerout', (e) => {
+    const wrap = wrapOf(e.target);
+    if (!wrap || wrap.contains(e.relatedTarget as Node | null)) return;
+    window.clearTimeout(hoverTimer);
+    if (openWrap === wrap && !pinned) hoverTimer = window.setTimeout(() => close(), HOVER_DELAY);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !openWrap) return;
+    close(openWrap.contains(document.activeElement));
+  });
+
+  document.addEventListener('focusout', (e) => {
+    if (!openWrap) return;
+    const next = e.relatedTarget as Node | null;
+    if (next && !openWrap.contains(next)) close();
+  });
+</script>
+
+<style>
+  .ev-wrap {
+    position: relative;
+    display: inline-block;
+    line-height: 0;
+    vertical-align: middle;
+  }
+
+  /* 32px hit area around an 18px icon (WCAG 2.5.8 asks for 24). */
+  .ev-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    cursor: pointer;
+    color: var(--color-text-muted);
+  }
+
+  .ev-mark--claim {
+    color: var(--color-accent);
+  }
+
+  .ev-mark:hover {
+    background: var(--color-radio-selected-bg);
+  }
+
+  .ev-mark[aria-expanded="true"] {
+    background: var(--color-radio-selected-bg);
+    outline: 1px solid var(--color-popover-border);
+  }
+
+  /* Touching the mark (no gap), so the pointer can move onto it (WCAG 1.4.13). */
+  .ev-popup {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 4;
+    width: min(16rem, calc(100vw - 32px));
+    box-sizing: border-box;
+    padding: 0.6rem 0.75rem;
+    background: var(--color-popover-bg);
+    border: 1px solid var(--color-popover-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0;
+    font-family: var(--font-body);
+    font-weight: 400;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ev-popup:not([hidden]) {
+      animation: ev-popup-in 0.15s ease;
+    }
+
+    @keyframes ev-popup-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+
+  :global([data-motion="reduce"]) .ev-popup:not([hidden]) {
+    animation: none;
+  }
+
+  .ev-popup__tier {
+    font-size: var(--font-size-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-faint);
+    margin: 0 0 0.35rem;
+  }
+
+  .ev-popup__claim {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.6rem;
+    margin: 0 0 0.4rem;
+  }
+
+  .ev-popup__muted {
+    color: var(--color-text-muted);
+  }
+
+  .ev-popup__line {
+    margin: 0 0 0.4rem;
+  }
+
+  .ev-popup__link {
+    color: var(--color-accent);
+  }
+</style>

@@ -20,7 +20,7 @@ Honest labels (no new research)
 - [x] S3: schema for cell evidence, row stances and product entities
 - [x] S4: build check that fails on bad citations
 - [x] S5: cells colored by the row's stance, feature rows neutral, `no-good` retired
-- [ ] S6: evidence marks with a detail popup, and the Evidence section
+- [x] S6: evidence marks with a detail popup, and the Evidence section
 - [ ] S7: today's inline links become source files
 - [ ] S8: content fixes for the findings
 
@@ -184,7 +184,7 @@ No totals, no per-product counts, no sorting by color. That keeps to "no composi
 | Keyboard | Tab from the open mark moves into the popup's link (DOM order). Focus moving outside both mark and popup closes it, so an open popup never covers the next focused mark (WCAG 2.4.11). One popup open at a time. |
 | Placement | Below the mark, inside a `position: relative` cell, shifted to stay inside the viewport; width at most `min(16rem, 100vw - 32px)`; z-index 4: above the sticky header and row label (2 and 3, `ResponsibleAIMatrix.astro:343`, `:352`, `:365`), below the stuck pill nav (5, `src/styles/resources.css:172`), which it scrolls under. The table has no scroll container (`ResponsibleAIMatrix.astro:299-305`), so nothing clips the popup. |
 | Style | `--color-popover-bg`, `--color-popover-border`, `--shadow-popover`, `--radius-md` (`tokens.css:37`, `:73-78`, `:112-117`). Mark states (as the mockup's states sheet): at rest no background; hover `--color-radio-selected-bg`; keyboard focus the site ring (`global.css:105`, 2px `--color-accent`, 3px offset); open the hover tint plus a 1px `--color-popover-border` outline. Claim mark `--color-accent`, source mark `--color-text-muted`. High contrast has no popover tokens of its own and inherits these; check contrast in S6. No animation under `prefers-reduced-motion` or `[data-motion="reduce"]` (as `A11yControl.astro:310`). |
-| Script | One delegated listener on the matrix root, like `initMatrix` (`ResponsibleAIMatrix.astro:230-268`). No new dependency. |
+| Script | One delegated listener set, on `document` rather than the matrix root because the summary table's marks sit outside it (`ResponsibleAIEvidenceMark.astro`). No new dependency. |
 | Without JavaScript | Marks do nothing; the Evidence section (in the pill nav) holds the same detail. |
 
 **Accessibility and themes**:

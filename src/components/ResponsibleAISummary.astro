@@ -1,23 +1,21 @@
 ---
 import { ExternalLink, ArrowUp } from 'lucide-astro';
 import InlineMd from './InlineMd.astro';
-import { summaryText, type MatrixData, type SummaryField } from '../lib/matrixSchema';
+import ResponsibleAIEvidenceMark from './ResponsibleAIEvidenceMark.astro';
+import { SUMMARY_COLUMNS, summarySubject, type EvidenceLookups } from '../lib/matrixEvidence';
+import { summaryText, type MatrixData } from '../lib/matrixSchema';
 
 type SummaryData = Pick<MatrixData, 'products'>;
 
 interface Props {
   data: SummaryData;
+  lookups: EvidenceLookups;
 }
 
-const { data } = Astro.props;
+const { data, lookups } = Astro.props;
 const activeProducts = data.products.filter((p) => p.status === 'active');
 
-const columns: { key: SummaryField; label: string }[] = [
-  { key: 'ai_ethics', label: 'AI ethics' },
-  { key: 'environmental', label: 'Environmental' },
-  { key: 'financial_transparency', label: 'Financial transparency' },
-  { key: 'notes', label: 'Notes' },
-];
+const columns = SUMMARY_COLUMNS;
 ---
 <section class="responsible-summary" id="summary">
   <h2>
@@ -48,11 +46,20 @@ const columns: { key: SummaryField; label: string }[] = [
               <ExternalLink size={12} aria-hidden="true" />
             </a>
           </th>
-          {columns.map((col) => (
-            <td data-label={col.label}>
-              <InlineMd text={summaryText(product.summary?.[col.key])} />
-            </td>
-          ))}
+          {columns.map((col) => {
+            const entry = product.summary?.[col.key];
+            return (
+              <td data-label={col.label}>
+                <InlineMd text={summaryText(entry)} />
+                <ResponsibleAIEvidenceMark
+                  cited={typeof entry === 'object' ? entry : {}}
+                  product={product}
+                  subject={summarySubject(col)}
+                  lookups={lookups}
+                />
+              </td>
+            );
+          })}
         </tr>
       ))}
     </tbody>
