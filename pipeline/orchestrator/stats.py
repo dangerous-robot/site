@@ -9,7 +9,7 @@ its target metrics as Paths 1-3 ship (see
 ``docs/plans/completed/source-pool-expansion-tier1.md``):
 
 * ``wayback_recovery`` — Path 1 recovery rate (existing archive.org captures
-  the ``wayback_check`` tool found for a page whose live fetch failed).
+  the ``wayback_check`` tool found).
 * ``acquisition_origins`` — Path 2/3 per-origin distribution.
 * ``academic_topic_coverage`` — Path 2 hit-rate on academic-tagged claims.
 * ``verification_levels`` — analyst-derived level distribution across all claims.

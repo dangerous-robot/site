@@ -1734,7 +1734,7 @@ class TestWaybackBackfillRecheck:
         assert f"2026/page: removed {self._BAD}: archive.org capture is an error page (HTTP 404)" in (
             result.output
         )
-        assert "no 200 capture of this URL" in result.output
+        assert "no other 200 capture found" in result.output
         assert save.called is False
 
     def test_recheck_unverified_leaves_file(self, tmp_path) -> None:

@@ -543,8 +543,10 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
             return True
         if not _write(sid, path, text, None):
             return False
-        reason = "; ".join([check.reason or "capture failed its check", *lookup.errors])
-        click.echo(f"{sid}: removed {old}: {reason}; no 200 capture of this URL", err=True)
+        reasons = [check.reason or "capture failed its check"]
+        reasons += [e for e in lookup.errors if e not in reasons]
+        reason = "; ".join(reasons)
+        click.echo(f"{sid}: removed {old}: {reason}; no other 200 capture found", err=True)
         return False
 
     async def _run() -> int:
