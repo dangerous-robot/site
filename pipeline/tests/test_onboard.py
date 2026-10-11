@@ -586,6 +586,30 @@ class TestProbeCollisionSuggestions:
         assert suggestions == ["viro-pharma.example"]
 
     @pytest.mark.asyncio
+    async def test_never_suggests_a_sibling_subdomain(self, monkeypatch) -> None:
+        """help.viro.app and ai.viro.app are both under Viro's own viro.app."""
+        async def fake_search(client, query, max_results=8):
+            return [
+                {"url": "https://help.viro.app/is-viro-ai-eco-friendly", "title": "Help", "snippet": ""},
+                {"url": "https://shop.example.co.uk/viro", "title": "Shop", "snippet": ""},
+            ]
+        from researcher import agent as researcher_agent_mod
+        monkeypatch.setattr(researcher_agent_mod, "search_brave", fake_search)
+
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="Viro AI",
+            entity_website="https://ai.viro.app",
+        )
+        assert suggestions == ["shop.example.co.uk"]
+
+        # Two sites under one country-code suffix are not one entity.
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="Viro AI",
+            entity_website="https://viro.co.uk",
+        )
+        assert suggestions == ["help.viro.app", "shop.example.co.uk"]
+
+    @pytest.mark.asyncio
     async def test_skipped_when_no_canonical(self) -> None:
         suggestions = await _probe_collision_suggestions(
             client=None, entity_name="Anything", entity_website=None,

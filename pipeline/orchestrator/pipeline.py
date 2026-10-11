@@ -52,7 +52,7 @@ from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_v
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
 from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
-from common.utils import host_matches, slug_from_url, slugify
+from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
@@ -1671,6 +1671,23 @@ async def gather_light_research(
     )
 
 
+# Second-level labels under which country-code domains are registered
+# (example.co.uk). No public-suffix list is installed; where this guess is
+# wrong (shared hosts such as github.io), two sites look like one, so the
+# probe suggests one exclude fewer rather than dropping first-party pages.
+_CC_SECOND_LEVEL = frozenset({"ac", "co", "com", "edu", "go", "gov", "ne", "net", "or", "org"})
+
+
+def _site_domain(host: str) -> str:
+    """The registered domain of ``host``, guessed: ``help.viro.app`` gives
+    ``viro.app``, ``shop.example.co.uk`` gives ``example.co.uk``."""
+    labels = host.split(".")
+    keep = 2
+    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _CC_SECOND_LEVEL:
+        keep = 3
+    return ".".join(labels[-keep:])
+
+
 async def _probe_collision_suggestions(
     client: httpx.AsyncClient,
     entity_name: str,
@@ -1680,8 +1697,8 @@ async def _probe_collision_suggestions(
 
     Skipped (returns []) when there is no canonical website to compare against.
     Returns up to 3 distinct registered domains that appear in the top results
-    and are not the canonical host, a subdomain of it or a parent domain of
-    it. Failures are non-fatal: the probe is best-
+    and are not under the canonical host's own site domain (``_site_domain``).
+    Failures are non-fatal: the probe is best-
     effort disambiguation, not a gate.
     """
     if not entity_website:
@@ -1700,10 +1717,10 @@ async def _probe_collision_suggestions(
         host = normalised_host(r.get("url", "") or "")
         if not host:
             continue
-        # The entity's own host, a subdomain of it, or a parent domain of it
-        # (viro.app for ai.viro.app): excluding one would drop every
-        # first-party page, since the blocklist also matches subdomains.
-        if host_matches(host, canon) or host_matches(canon, host):
+        # Anything under the entity's own site domain (viro.app, help.viro.app
+        # for ai.viro.app): excluding one would drop first-party pages, since
+        # the blocklist also matches subdomains.
+        if _site_domain(host) == _site_domain(canon):
             continue
         counts[host] += 1
     suggestions = [host for host, _ in counts.most_common(3)]
