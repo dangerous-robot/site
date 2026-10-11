@@ -1,0 +1,245 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-11T02:56:45.318047+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - electricity usage training large language models
+  - energy consumption per inference generative AI
+  - peer-reviewed comparison training vs inference AI electricity
+  - factors affecting generative AI inference energy use
+  - LLM training energy costs latest reports
+  - energy efficiency serving AI models cloud providers
+  - tech report energy comparison LLM training inference
+  planner_rationale: These sub-questions collectively cover the electrical consumption
+    during model training and inference phases, while also exploring authoritative
+    comparisons and technical factors. This ensures a comprehensive evaluation of
+    the claim.
+  candidates_seen: 56
+  urls_kept: 14
+  urls_dropped: 28
+  scorer_rationale: "**Scored Candidates and Rationale:**\n\n**Kept for All Sub-questions\
+    \ (sq1-sq4):**\n1. **ScienceDirect (S1364032125008329)**:\n   - **sq1**: Provides\
+    \ published electricity consumption figures for training (e.g., GPT-3: 1287 MWh,\
+    \ GPT-4: 40x more).\n   - **sq2**: Quantifies inference energy (e.g., ChatGPT\
+    \ uses 25x more energy per query than traditional Google search).\n   - **sq3**:\
+    \ Includes comparisons of electricity usage across training and inference phases.\n\
+    \   - **sq4**: Discusses factors like model size, token generation, and concurrency\
+    \ impacting inference energy.\n\n2. **arXiv (2505.09598v2)**:\n   - **sq1**: Provides\
+    \ precise energy data for training (e.g., GPT-4.1 variants with Wh ranges).\n\
+    \   - **sq2**: Yields inference per-query energy metrics (e.g., 0.43 Wh for GPT-4o).\n\
+    \   - **sq3**: Compares training and inference energy at scale.\n   - **sq4**:\
+    \ Explores hardware/token scaling and efficiency drivers (e.g., batch size effects).\n\
+    \n3. **Google Cloud Blog (primary quality)**:\n   - **sq2**: Directly measures\
+    \ environmental impact of inference (0.24 Wh/text prompt, water/carbon metrics).\n\
+    \   - **sq3**: Compares metrics to baseline 2024 data for holistic assessment.\n\
+    \n**Highly Relevant for sq2/sq3/sq4:**\n4. **SciDirect (S2542435126001145)**:\n\
+    \   - **sq2**: Focuses on inference energy (e.g., 0.31 Wh/query, incorrect estimates\
+    \ overstated by 4–20x).\n   - **sq3/sq4**: Dissolves myths about inference energy\
+    \ inefficiency and outlines efficiency pathways.\n\n5. **IEEE Spectrum**:\n  \
+    \ - **sq2/sq3**: Estimates high global inference energy (e.g., 5.1T queries/year),\
+    \ compares to Schneider Electric projections.\n\n6. **AIMultiple**:\n   - **sq1/sq2/sq3**:\
+    \ Asserts inference now dominates energy use (80-90% of AI workloads), with queries\
+    \ consuming 4-5x traditional search.\n\n7. **Microsoft Research (primary quality)**:\n\
+    \   - **sq2/sq3/sq4**: Rigorously quantifies median inference energy (0.34 Wh/query)\
+    \ and explores efficiency levers for future workloads.\n\n8. **MIT Technology\
+    \ Review (sq2/sq3)**:\n   - **sq2**: Highlights inference’s dominance in energy\
+    \ demand (e.g., 60% of Google AI workloads, 70% meta’s AI power).\n\n9. **CMU\
+    \ Tepperspectives (sq1/sq3)**:\n   - **sq1**: Echoes training metrics (GPT-3:\
+    \ 1,287 MWh, 552 tons CO₂) while framing inference’s long-term operational cost.\n\
+    \   - **sq3**: Broadly compares lifecycles of training vs. inference energy use.\n\
+    \n10. **IEA Report (sq1/sq2)**:\n    - **sq1/sq2**: Projects testing AI-related\
+    \ energy demand (e.g., data center electricity reaching 970 TWh by 2035) with\
+    \ high-efficiency expectations.\n\n11. **Medium (@dan.patrick.smith) (sq2/sq3)**:\n\
+    \    - **sq2/sq3**: Emphasizes inference’s recurring cost (e.g., hundreds of times\
+    \ higher than training) and its dominance in peak global queries.\n\n12. **HotCarbon.org\
+    \ (sq2/sq3)**:\n    - **sq2/sq3**: Confirms inference’s 90% share of LLM energy\
+    \ consumption per AWS report and highlights associated operational impact.\n\n\
+    **Dropped (Non-Relevant or Weak Scores):**\n- **Job listings (Indeed/LinkedIn)**:\
+    \ No energy consumption data.\n- **General overviews (e.g., Iron Mountain, EdgeCore,\
+    \ University of Illinois)**:\n  - Lack specific energy figures or training vs.\
+    \ inference comparisons.\n- **Reddit/Finance Yahoo job/tech PR posts**: No original\
+    \ research or quantitative data. \n\n** Entity Disambiguation/Context Notes:**\n\
+    - No invalid entities or non-generative AI topics scored above 2.\n- Tied tertiary/secondary\
+    \ candidates leveraged only for inference-specific content (e.g., MIT News on\
+    \ reasoning workloads)."
+  urls_after_blocklist: 14
+sub_questions:
+- id: sq1
+  question: What are the published electricity consumption figures for training large
+    language models (LLMs) or generative AI models?
+  rationale: This sub-question targets the foundation of the claim by seeking documented
+    energy usage data for the training phase of generative AI models, which is critical
+    for comparison.
+  queries:
+  - electricity usage training large language models
+  - LLM training energy costs latest reports
+  citations:
+  - 2026/s1364032125008329
+  - 2026/ai-energy-consumption
+  - 2025/250509598v2
+- id: sq2
+  question: What are the published or estimated electricity consumption figures for
+    serving generative AI inferences (e.g., per query or hourly basis)?
+  rationale: This sub-question focuses on the operational phase of generative AI,
+    where the claim alleges higher electricity consumption compared to training.
+  queries:
+  - energy consumption per inference generative AI
+  - energy efficiency serving AI models cloud providers
+  citations:
+  - 2026/s2542435126001145
+  - 2026/ai-energy-use
+  - 2026/s1364032125008329
+  - 2026/ai-energy-consumption
+  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
+  - 2025/250509598v2
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
+- id: sq3
+  question: Are there peer-reviewed studies or industry reports comparing the electricity
+    usage of training vs. inference in generative AI?
+  rationale: This sub-question aims to uncover authoritative comparisons between the
+    two phases, addressing the core claim directly.
+  queries:
+  - peer-reviewed comparison training vs inference AI electricity
+  - tech report energy comparison LLM training inference
+  citations:
+  - 2026/s2542435126001145
+  - 2026/ai-energy-use
+  - 2026/s1364032125008329
+  - 2026/ai-energy-consumption
+  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
+  - 2025/250509598v2
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+- id: sq4
+  question: What are the key factors that contribute to the electricity consumption
+    of generative AI inference (e.g., model size, hardware, load balancing)?
+  rationale: Understanding the technical mechanisms driving inference energy use is
+    essential to evaluate the plausibility of the claim and identify contextual influences.
+  queries:
+  - factors affecting generative AI inference energy use
+  citations:
+  - 2026/s2542435126001145
+  - 2026/s1364032125008329
+  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
+  - 2025/250509598v2
+sources_consulted:
+- id: 2026/s2542435126001145
+  url: https://www.sciencedirect.com/science/article/pii/S2542435126001145
+  title: Energy use of AI inference, efficiency pathways, and test-time scaling
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption per inference generative AI
+- id: 2026/ai-energy-use
+  url: https://spectrum.ieee.org/ai-energy-use
+  title: The Hidden Behemoth Behind Every AI Answer
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption per inference generative AI
+- id: 2026/s1364032125008329
+  url: https://www.sciencedirect.com/science/article/abs/pii/S1364032125008329
+  title: 'A systematic review of electricity demand for large language models: evaluations,
+    challenges, and solutions'
+  ingested: true
+  archive:
+    status: failed
+    error: Wayback save failed (HTTP 520)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: electricity usage training large language models
+- id: 2026/ai-energy-consumption
+  url: https://aimultiple.com/ai-energy-consumption
+  title: AI Energy Consumption Statistics
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: energy consumption per inference generative AI
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
+  url: https://www.microsoft.com/en-us/research/publication/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
+  title: 'Energy Use of AI Inference: Efficiency Pathways and Test-Time Compute'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption per inference generative AI
+- id: 2025/250509598v2
+  url: https://arxiv.org/html/2505.09598v2
+  title: How Hungry is AI? Benchmarking Energy, Water, and Carbon Footprint of LLM
+    Inference
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption per inference generative AI
+- id: 2025/measuring-the-environmental-impact-of-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference
+  title: How much energy does Google’s AI use? We did the math
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption per inference generative AI
+- id: 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
+  url: https://blogs.dal.ca/openthink/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
+  title: 'The Hidden Cost of AI Conversations: Understanding LLM Inference Energy
+    Consumption'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: LLM training energy costs latest reports
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+  auditor_reasoning: Multiple independent sources report that inference accounts for
+    the majority of AI energy use—IEEE Spectrum notes 15 TWh in 2025 and points to
+    rapid growth, AIMultiple states >80% of AI compute is inference, and the Dalhousie
+    blog cites ~60% of total AI energy. Together these indicate inference electricity
+    consumption exceeds that of training. No source contradicts this, and the convergence
+    of several analyses gives high confidence.
+  evidence_gaps: []
+  needs_review_reasons: []
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
