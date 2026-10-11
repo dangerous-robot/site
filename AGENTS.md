@@ -145,6 +145,7 @@ The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` pr
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 - `review_entity_disambiguation` -- fires during `dr onboard` when the entity resolver finds ambiguous candidates
+- `review_verification_status` -- fires during `dr onboard` when the verifier finds no strong public signal for the entity; the operator picks the `verification_status` label (`unverified-startup` or `unverified-other`) or aborts
 - `review_entity_enrichment` -- fires during `dr onboard` after the enricher proposes entity metadata
 
 Pass `--interactive` to `dr claim-probe`, `dr claim-draft`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.

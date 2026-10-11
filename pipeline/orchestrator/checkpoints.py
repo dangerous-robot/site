@@ -159,12 +159,25 @@ class CheckpointHandler(Protocol):
         - ``str`` — use this name verbatim (one of the candidates, or a
           free-text override)
 
-        Doubles as the channel for the verifier's ``unverified`` halt:
-        the orchestrator passes ``['unverified-startup',
-        'unverified-other']`` and writes the operator's pick into the
-        entity's ``verification_status``. The auto-approve handler
-        returns ``"reject"`` — auto-approve in the disambiguation case
-        is conservative; it aborts.
+        The auto-approve handler returns ``"reject"`` — auto-approve in
+        the disambiguation case is conservative; it aborts.
+        """
+        ...
+
+    async def review_verification_status(
+        self,
+        entity_name: str,
+        website: str | None,
+        reasoning: str,
+        statuses: list[str],
+    ) -> Literal["reject"] | str:
+        """Ask the operator which ``verification_status`` to record when the
+        verifier found no strong public signal for the entity.
+
+        The entity itself is not in question (its name and file are
+        settled); only the status label is. Returns one of ``statuses``
+        or ``"reject"`` to abort the run. The auto-approve handler
+        returns ``"reject"``.
         """
         ...
 
@@ -271,6 +284,43 @@ class CLICheckpointHandler:
             click.echo(f"Out of range; treating {raw!r} as a literal name.")
         return raw
 
+    async def review_verification_status(
+        self,
+        entity_name: str,
+        website: str | None,
+        reasoning: str,
+        statuses: list[str],
+    ) -> Literal["reject"] | str:
+        where = f" ({website})" if website else ""
+        click.echo(f"\nVerification: {entity_name}{where} could not be verified.")
+        if reasoning:
+            click.echo(f"Verifier: {reasoning}")
+        click.echo(
+            "The entity is not in question; its name and file stay as they are. "
+            "This sets the entity's `verification_status`, which tells the analyst "
+            "to weigh self-published evidence conservatively."
+        )
+        for idx, status in enumerate(statuses, 1):
+            click.echo(f"  {idx}. {status}: {_STATUS_MEANING.get(status, '')}")
+        while True:
+            raw = click.prompt(
+                f"Choice (a number 1..{len(statuses)}, a status, or 'reject' to abort)",
+                default="reject",
+            ).strip()
+            if raw == "reject":
+                return raw
+            if raw.isdigit() and 1 <= int(raw) <= len(statuses):
+                return statuses[int(raw) - 1]
+            if raw in statuses:
+                return raw
+            click.echo(f"{raw!r} is not a verification status; pick a number or 'reject'.")
+
+
+_STATUS_MEANING = {
+    "unverified-startup": "a young company with little public coverage yet",
+    "unverified-other": "any other reason, such as a site that blocks fetches",
+}
+
 
 class AutoApproveCheckpointHandler:
     """Auto-approves all checkpoints. For tests and CI.
@@ -323,6 +373,17 @@ class AutoApproveCheckpointHandler:
         candidates: list[str],
     ) -> Literal["accept", "reject"] | str:
         self.calls.append("review_entity_disambiguation")
-        # Conservative default: auto-approve in the disambiguation /
-        # unverified case aborts rather than picking the first candidate.
+        # Conservative default: auto-approve in the disambiguation case
+        # aborts rather than picking the first candidate.
+        return "reject"
+
+    async def review_verification_status(
+        self,
+        entity_name: str,
+        website: str | None,
+        reasoning: str,
+        statuses: list[str],
+    ) -> Literal["reject"] | str:
+        self.calls.append("review_verification_status")
+        # Conservative default: never label an entity unverified unattended.
         return "reject"

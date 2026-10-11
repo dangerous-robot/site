@@ -2016,31 +2016,24 @@ async def onboard_entity(
             entity_website = bundle.entity_website
             probe_excludes = bundle.probe_excludes
         elif outcome is not None and outcome.status == "unverified":
-            decision = await gate.review_entity_disambiguation(
-                entity_name,
-                ["unverified-startup", "unverified-other"],
+            statuses = ["unverified-startup", "unverified-other"]
+            decision = await gate.review_verification_status(
+                entity_name, entity_website, outcome.reasoning, statuses,
             )
-            if decision == "reject":
+            if decision in statuses:
+                verification_status = decision
+            else:
+                # "reject", or a value outside the schema enum: never
+                # write a non-schema verification_status.
                 result.status = "rejected"
                 result.errors.append(
                     "verifier flagged unverified; operator declined to "
                     "pick a verification_status"
+                    if decision == "reject"
+                    else f"verifier flagged unverified; operator pick "
+                    f"{decision!r} is not a valid verification_status"
                 )
                 return result
-            if decision == "accept":
-                verification_status = "unverified-startup"
-            elif isinstance(decision, str):
-                if decision in ("unverified-startup", "unverified-other"):
-                    verification_status = decision
-                else:
-                    # Free-text outside the schema enum: treat as a
-                    # rejection so we don't write a non-schema value.
-                    result.status = "rejected"
-                    result.errors.append(
-                        f"verifier flagged unverified; operator pick "
-                        f"{decision!r} is not a valid verification_status"
-                    )
-                    return result
 
         # Phase C: enricher (operator-review checkpoint)
         # The enricher subsumes the previous standalone tightening agent:

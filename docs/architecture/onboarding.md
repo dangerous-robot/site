@@ -32,7 +32,8 @@ Phase B: entity_verifier
       reject -> halt (operator picks a new name and re-runs)
       accept -> proceed with the first candidate
       str    -> proceed with the operator's chosen name
-  - On unverified: same checkpoint with [unverified-startup, unverified-other]
+  - On unverified: review_verification_status (the entity is settled; only its
+    verification_status label is chosen: unverified-startup or unverified-other)
       reject -> halt
       str    -> persisted as verification_status on the entity file
   |
@@ -96,7 +97,7 @@ Template screening (Phase D) is a passthrough today: every core template of the 
 
 ## Checkpoint protocol
 
-The onboard flow surfaces three checkpoints. See `pipeline/orchestrator/checkpoints.py` for the handler interface.
+The onboard flow surfaces four checkpoints. See `pipeline/orchestrator/checkpoints.py` for the handler interface.
 
 `CheckpointHandler.review_entity_disambiguation(entity_name, candidates) -> Literal["accept", "reject"] | str`
 
@@ -105,6 +106,12 @@ The onboard flow surfaces three checkpoints. See `pipeline/orchestrator/checkpoi
 - `str` — proceed with this name verbatim (for `needs-disambiguation`) or persist this verification_status (for `unverified`)
 
 Auto-approve handler returns `"reject"` — the conservative default in CI / tests.
+
+`CheckpointHandler.review_verification_status(entity_name, website, reasoning, statuses) -> Literal["reject"] | str`
+
+- Fires when the verifier returns `unverified` (no strong public signal, for example a site that blocks fetches). The entity's name and file are not in question; the pick is written to the entity's `verification_status` and tells the analyst to weigh self-published evidence conservatively.
+- `"reject"` — abort the run (the auto-approve handler's answer)
+- `str` — one of `statuses` (`unverified-startup`, `unverified-other`); the CLI re-prompts on anything else
 
 `CheckpointHandler.review_entity_enrichment(entity_name, draft) -> Literal["accept", "reject"]`
 

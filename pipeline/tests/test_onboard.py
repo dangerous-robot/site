@@ -737,8 +737,11 @@ class TestOnboardPhaseBVerifier:
         from researcher.entity_enricher import entity_enricher_agent
 
         class PickStartupHandler(AutoApproveCheckpointHandler):
-            async def review_entity_disambiguation(self, entity_name, candidates):
-                self.calls.append("review_entity_disambiguation")
+            async def review_verification_status(
+                self, entity_name, website, reasoning, statuses,
+            ):
+                self.calls.append("review_verification_status")
+                assert statuses == ["unverified-startup", "unverified-other"]
                 return "unverified-startup"
 
         with (
@@ -763,7 +766,8 @@ class TestOnboardPhaseBVerifier:
             )
 
         assert result.status == "accepted"
-        assert "review_entity_disambiguation" in handler.calls
+        assert "review_verification_status" in handler.calls
+        assert "review_entity_disambiguation" not in handler.calls
         # Entity file should record the operator-picked verification_status.
         entity_path = (
             tmp_path / "research" / "entities" / "companies" / "obscure-startup.md"
