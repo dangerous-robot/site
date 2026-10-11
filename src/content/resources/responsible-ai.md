@@ -129,11 +129,11 @@ data:
       criterion: renewable-energy-hosting
       ideal: { value: "yes" }
       cells:
-        greenpt: { type: "yes", sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
-        ecosia: { type: "no" }
+        greenpt: { type: "yes", claim: /research/claims/greenpt/renewable-energy-hosting, sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
+        ecosia: { type: "partial", detail: "Company-wide only", claim: /research/claims/ecosia-ai/renewable-energy-hosting }
         euria: { type: "yes", claim: /research/claims/euria/renewable-energy-hosting, sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "partial", detail: "Most plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
-        viro: { type: "no" }
+        viro: { type: "unknown", claim: /research/claims/viro-ai/renewable-energy-hosting }
         chatgptree: { type: "unknown", claim: /research/claims/chatgptree/renewable-energy-hosting }
         earthly-insight: { type: "unknown", claim: /research/claims/earthly-insight/renewable-energy-hosting }
     - key: real-time-energy-display
