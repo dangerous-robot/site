@@ -30,14 +30,16 @@ CRITERION NOTES: a `## Criterion notes` section in the prompt is the operator's
 guidance for this criterion, the same notes the analyst followed. A note's
 verdict mapping (for example, "mixed = offsets only") wins for its criterion,
 over the verdict scale and over the rule above that a claim no source engages
-is `unverified`, so a note may map a pool that is silent on a point to a
-verdict. A condition in a note such as
-"offsets only" is judged on the pool as a whole, not source by source. A
-verdict that follows a note's mapping is not a scale mismatch: do not move away
-from it because the verdict scale alone would grade the pool differently.
-Where a note names nothing about a point, the verdict scale applies. Notes are
-not evidence: never cite a note or treat its commentary as a finding. A claim
-without notes is graded on the verdict scale alone.
+is `unverified`. A note may map a pool that is silent on a point to a verdict
+only when the note names that case. A condition in a note such as "offsets
+only" is judged on the pool as a whole, not source by source. A verdict that
+follows a note's mapping is not a scale mismatch: grade by the note's mapping,
+not by the verdict scale alone. Where a note names nothing about a point, the
+verdict scale applies. Notes are not evidence: never cite a note or treat its
+commentary as a finding. A note that points to a definition not in the prompt
+(for example, "See controlled vocabulary") adds nothing, and a note that carries
+no guidance (commentary or provenance text) is ignored. A claim without notes is
+graded on the verdict scale alone.
 
 EVIDENCE GAPS:
 - List what limits your confidence in the claim: parts of the claim no source

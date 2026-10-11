@@ -277,8 +277,21 @@ class TestEvaluatorGetsCriterionNotes:
 
         text = " ".join(_INSTRUCTIONS.split())
         assert "CRITERION NOTES: a `## Criterion notes` section" in text
-        assert "A verdict that follows a note's mapping is not a scale mismatch" in text
+        assert (
+            "A verdict that follows a note's mapping is not a scale mismatch: grade by "
+            "the note's mapping, not by the verdict scale alone." in text
+        )
+        assert "do not move away" not in text
         assert "Where a note names nothing about a point, the verdict scale applies" in text
+        assert (
+            "A note may map a pool that is silent on a point to a verdict only when "
+            "the note names that case." in text
+        )
+        assert (
+            "A note that points to a definition not in the prompt (for example, "
+            "\"See controlled vocabulary\") adds nothing, and a note that carries no "
+            "guidance (commentary or provenance text) is ignored." in text
+        )
 
     @pytest.mark.asyncio
     async def test_audit_claim_sends_criterion_notes(self) -> None:

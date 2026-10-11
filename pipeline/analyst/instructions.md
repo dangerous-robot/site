@@ -251,7 +251,10 @@ vocabulary") adds nothing. A note that carries no guidance (commentary or
 provenance text) is ignored.
 
 PRECEDENCE: a note's verdict mapping wins for its criterion, over the verdict
-scale and over the ABSENCE OF EVIDENCE default above. The verdict scale governs
-everything the note does not name. So a note may map a pool that is silent on a
-point to a verdict, and a condition in a note such as "offsets only" is judged
+scale, over the ABSENCE OF EVIDENCE default above, and over the choice of
+`unverified` in SUB-QUESTION COVERAGE step 3. Step 3's confidence cap still
+applies: while a sub-question is uncovered, the verdict cannot be `true` or
+`false` at `high` confidence. The verdict scale governs everything the note does
+not name. A note may map a pool that is silent on a point to a verdict only when
+the note names that case. A condition in a note such as "offsets only" is judged
 on the pool as a whole, not source by source.
