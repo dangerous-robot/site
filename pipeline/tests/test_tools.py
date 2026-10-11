@@ -279,6 +279,7 @@ class TestFindOrSaveArchive:
                 lookup = await find_or_save_archive(client, self.URL)
         assert lookup.archived_url is None
         assert lookup.errors == ["archive.org TimeGate check failed (HTTP 429)"]
+        assert lookup.incomplete is True
         assert save.called is False
 
     @pytest.mark.asyncio
@@ -805,6 +806,7 @@ class TestCaptureLookup:
                 lookup = await find_or_save_archive(client, _ARTICLE, allow_save=False)
         assert lookup.archived_url is None
         assert "archive.org capture is an error page (HTTP 404)" in lookup.errors
+        assert lookup.incomplete is False
         assert save.called is False
 
     @pytest.mark.asyncio
@@ -818,6 +820,23 @@ class TestCaptureLookup:
                 lookup = await find_or_save_archive(client, _ARTICLE, allow_save=False)
         assert lookup.archived_url is None
         assert any("CDX" in e and "ReadTimeout" in e for e in lookup.errors)
+        assert lookup.incomplete is True
+
+    @pytest.mark.asyncio
+    async def test_no_save_after_a_replay_429(self, no_sleep) -> None:
+        ts = _ts(1)
+        with respx.mock:
+            _timegate_to(_snap(ts, _ARTICLE))
+            replay = respx.head(_replay(ts, _ARTICLE)).mock(return_value=httpx.Response(429))
+            _cdx()
+            save = respx.get(_SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert replay.call_count == 2
+        assert save.called is False
+        assert lookup.archived_url is None
+        assert lookup.errors == ["archive.org replay check failed (HTTP 429)"]
+        assert lookup.incomplete is True
 
     @pytest.mark.asyncio
     async def test_bad_capture_then_verified_save(self) -> None:

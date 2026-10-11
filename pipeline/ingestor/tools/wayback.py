@@ -244,14 +244,16 @@ class CaptureCheck:
     unverified: bool = False
     # The captured status when the capture is an error page.
     status: int | None = None
+    # The replay check got HTTP 429 twice: archive.org is rate-limiting us.
+    rate_limited: bool = False
 
 
 def _bad(reason: str, status: int | None = None) -> CaptureCheck:
     return CaptureCheck(ok=False, reason=reason, status=status)
 
 
-def _unverified(reason: str) -> CaptureCheck:
-    return CaptureCheck(ok=False, reason=reason, unverified=True)
+def _unverified(reason: str, *, rate_limited: bool = False) -> CaptureCheck:
+    return CaptureCheck(ok=False, reason=reason, unverified=True, rate_limited=rate_limited)
 
 
 async def _follow_replay(
@@ -282,7 +284,9 @@ async def _follow_replay(
         if not replayed or status == 429:
             # archive.org's own answer, e.g. a capture saved moments ago that
             # does not replay yet: nothing is known about the capture.
-            return _unverified(f"{_REPLAY_LABEL} failed (HTTP {status})")
+            return _unverified(
+                f"{_REPLAY_LABEL} failed (HTTP {status})", rate_limited=status == 429
+            )
         if status == 200:
             return CaptureCheck(ok=True, link=first)
         if status >= 400:
@@ -407,6 +411,10 @@ class ArchiveLookup:
     # True when an existing capture was recorded (vs a fresh Save Page Now one).
     found_existing: bool = False
     errors: list[str] = field(default_factory=list)
+    # archive.org failed to answer part of the search for an existing capture
+    # (an error, a timeout, a capture it could not replay), so a good one may
+    # exist even though none was found.
+    incomplete: bool = False
 
 
 async def find_or_save_archive(
@@ -425,10 +433,10 @@ async def find_or_save_archive(
     recorded. With no good capture, Save Page Now is asked for one, which
     is checked too. A good capture older than ``max_age`` or dated before
     ``not_before`` is replaced by a fresh checked save when one succeeds,
-    and kept otherwise. No save follows a 429 from TimeGate or CDX:
-    archive.org is already rate-limiting us. ``allow_save=False`` makes no
-    capture. ``also_same_as`` is where the live fetch ended, so a captured
-    redirect to it still counts as the page.
+    and kept otherwise. No save follows a 429 from TimeGate, the replay
+    check or CDX: archive.org is already rate-limiting us.
+    ``allow_save=False`` makes no capture. ``also_same_as`` is where the
+    live fetch ended, so a captured redirect to it still counts as the page.
     """
     lookup = ArchiveLookup()
     rate_limited = False
@@ -438,6 +446,7 @@ async def find_or_save_archive(
     timegate = await check_archive_org_timegate(client, url)
     if timegate.get("error"):
         lookup.errors.append(timegate["error"])
+        lookup.incomplete = True
         rate_limited = timegate["error"] == TIMEGATE_RATE_LIMITED
     elif timegate["available"]:
         check = await check_capture(
@@ -447,13 +456,15 @@ async def find_or_save_archive(
             candidate = check.link
         else:
             logger.info("TimeGate capture %s rejected: %s", timegate["archived_url"], check.reason)
+            rate_limited = check.rate_limited
             cdx = await latest_ok_capture(client, url)
             candidate = cdx["archived_url"]
             if candidate is None:
+                lookup.incomplete = check.unverified or bool(cdx.get("error"))
                 rejected.append(check.reason or "archive.org capture failed its check")
                 if cdx.get("error"):
                     rejected.append(cdx["error"])
-                    rate_limited = cdx["error"] == _CDX_RATE_LIMITED
+                    rate_limited = rate_limited or cdx["error"] == _CDX_RATE_LIMITED
     can_save = allow_save and not rate_limited
 
     if candidate is not None:
@@ -505,4 +516,6 @@ async def archive_with_time_limit(
         )
     except asyncio.TimeoutError:
         logger.warning("archive.org lookup timed out after %.0fs for %s", limit, url)
-        return ArchiveLookup(errors=[f"archive.org lookup timed out after {limit:.0f}s"])
+        return ArchiveLookup(
+            errors=[f"archive.org lookup timed out after {limit:.0f}s"], incomplete=True
+        )

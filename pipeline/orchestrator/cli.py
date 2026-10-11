@@ -503,13 +503,16 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
     already have one are skipped, unless --recheck: then the existing link
     is checked the same way and kept, replaced with an existing good capture
     (no save is made), or removed when none exists. A plain backfill of a
-    removed source afterwards may save a fresh capture. Exits 1 if any source
-    could not be archived, could not be checked, or lost its link.
+    removed source afterwards may save a fresh capture. The live page is
+    fetched first so that, as in the ingest, a captured redirect to where it
+    ends up still counts as the page. Exits 1 if any source could not be
+    archived, could not be checked, or lost its link.
     """
     import httpx
 
     from common.content_loader import resolve_repo_root
     from common.frontmatter import parse_frontmatter
+    from common.timeouts import default_httpx_timeout
     from ingestor.tools.wayback import archive_with_time_limit, check_capture
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
@@ -522,9 +525,26 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
             return False
         return True
 
-    async def _recheck(client, sid: str, path: Path, text: str, url: str, old: str) -> bool:
+    async def _live_end(client, url: str) -> str | None:
+        """Where the live page ends up now, or None when it does not load.
+
+        Source files do not record where the ingest's fetch ended, so this
+        stands in for it: without it a capture that redirects there, which the
+        ingest accepted, would be rejected here.
+        """
+        try:
+            async with client.stream(
+                "GET", url, follow_redirects=True, timeout=default_httpx_timeout()
+            ) as resp:
+                return str(resp.url) if resp.is_success else None
+        except (httpx.HTTPError, httpx.InvalidURL):
+            return None
+
+    async def _recheck(
+        client, sid: str, path: Path, text: str, url: str, old: str, live: str | None
+    ) -> bool:
         """Check ``old`` and keep, replace or remove it; False when the source counts as failed."""
-        check = await check_capture(client, old, url)
+        check = await check_capture(client, old, url, also_same_as=live)
         if check.ok:
             click.echo(f"{sid}: unchanged")
             return True
@@ -532,7 +552,9 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
             click.echo(f"{sid}: could not check {old}: {check.reason}", err=True)
             return False
         # No save here: a replacement must already exist on archive.org.
-        lookup = await archive_with_time_limit(client, url, allow_save=False)
+        lookup = await archive_with_time_limit(
+            client, url, allow_save=False, also_same_as=live
+        )
         if lookup.archived_url:
             if lookup.archived_url == old:
                 click.echo(f"{sid}: unchanged")
@@ -546,7 +568,14 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
         reasons = [check.reason or "capture failed its check"]
         reasons += [e for e in lookup.errors if e not in reasons]
         reason = "; ".join(reasons)
-        click.echo(f"{sid}: removed {old}: {reason}; no other 200 capture found", err=True)
+        if lookup.incomplete:
+            outcome = (
+                "the search for another capture did not finish; "
+                f"rerun `dr wayback-backfill {sid}` later"
+            )
+        else:
+            outcome = "no other 200 capture found"
+        click.echo(f"{sid}: removed {old}: {reason}; {outcome}", err=True)
         return False
 
     async def _run() -> int:
@@ -568,12 +597,14 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
                     failed += 1
                     continue
                 url = str(fm["url"])
+                live = await _live_end(client, url)
                 if fm.get("archived_url"):
-                    if not await _recheck(client, sid, path, text, url, str(fm["archived_url"])):
+                    old = str(fm["archived_url"])
+                    if not await _recheck(client, sid, path, text, url, old, live):
                         failed += 1
                     continue
-                # No freshness limit: nothing here shows the live page is up.
-                lookup = await archive_with_time_limit(client, url)
+                # No freshness limit: only the ingest refreshes a stale capture.
+                lookup = await archive_with_time_limit(client, url, also_same_as=live)
                 if not lookup.archived_url:
                     reason = "; ".join(lookup.errors) or "no archive.org snapshot"
                     click.echo(f"{sid}: archive lookup failed: {reason}", err=True)
