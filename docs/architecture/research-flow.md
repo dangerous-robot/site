@@ -64,7 +64,7 @@ flowchart LR
 
 ## 3. Pipeline execution
 
-The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1.
+The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the statement the claim file carries as its title: the analyst's title, which for a template-backed claim must pass the template (vocabulary slot resolved). A title that fails the template skips the Evaluator, since the claim is written as blocked. `dr claim-probe`, which writes nothing, grades the operator's text.
 
 ```mermaid
 sequenceDiagram
@@ -98,7 +98,7 @@ sequenceDiagram
         Operator->>Analyst: sources
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
-        Operator->>Evaluator: claim text, analyst narrative, sources
+        Operator->>Evaluator: claim title, analyst narrative, sources
         Evaluator-->>Operator: ComparisonResult (independent, open-loop)
 
         alt needs_review

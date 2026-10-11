@@ -831,3 +831,150 @@ async def test_rejected_review_names_the_real_flag_reason(monkeypatch) -> None:
 
     assert "Flagged for human review: 2+ evidence gaps" in result.errors
     assert not any("disagree" in e for e in result.errors)
+
+
+class TestAuditorGradedStatement:
+    """Which statement the auditor grades, and when the audit is skipped."""
+
+    @staticmethod
+    def _template():
+        from common.templates import TemplateRecord
+        return TemplateRecord(
+            slug="corporate-structure", text="COMPANY has STRUCTURE corporate structure",
+            entity_type="company", topics=["industry-analysis"], core=True,
+            vocabulary={"STRUCTURE": ["publicly-traded", "privately-held"]},
+        )
+
+    @staticmethod
+    def _patch_pipeline(monkeypatch, title: str, audit_calls: list):
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
+
+        sf = SourceFile(
+            frontmatter=SourceFrontmatter(
+                url="https://example.com/a", title="Src", publisher="Pub",
+                accessed_date=datetime.date(2026, 1, 1), kind="article", summary="Summary.",
+            ),
+            body="", slug="src", year=2026,
+        )
+
+        async def _fake_research(*args, **kwargs):
+            return _ro(urls=["https://example.com/a"] * 4)
+
+        async def _fake_ingest(*args, **kwargs):
+            return [("https://example.com/a", sf)] * 4, []
+
+        async def _fake_analyse(*args, **kwargs):
+            return AnalystOutput(
+                entity=EntityResolution(entity_name="Acme", entity_type=EntityType.COMPANY, entity_description="d"),
+                verdict=VerdictAssessment(
+                    title=title, verdict=Verdict.TRUE, confidence=Confidence.HIGH,
+                    narrative="n", topics=[Category("industry-analysis")],
+                    verification_level=VerificationLevel.PARTIALLY_VERIFIED, seo_title="Acme claim",
+                ),
+            ), None
+
+        async def _fake_audit(entity_name, statement, *args, **kwargs):
+            audit_calls.append(statement)
+            return None
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+        monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+
+    def test_vocabulary_claim_grades_the_resolved_title(self) -> None:
+        from common.templates import render_claim_text
+        from orchestrator.pipeline import _graded_statement
+
+        template = self._template()
+        claim_text = render_claim_text(template, "Acme")
+        title = "Acme has privately-held corporate structure"
+        assert _graded_statement(template, "Acme", claim_text, title) == title
+
+    @pytest.mark.parametrize("title", [
+        "Acme has state-owned corporate structure",
+        "Acme has one of (publicly-traded, privately-held) corporate structure",
+    ])
+    def test_title_failing_the_template_skips_the_audit(self, title: str) -> None:
+        from common.templates import render_claim_text
+        from orchestrator.pipeline import _graded_statement
+
+        template = self._template()
+        claim_text = render_claim_text(template, "Acme")
+        assert _graded_statement(template, "Acme", claim_text, title) is None
+
+    def test_free_text_with_one_of_keeps_the_operator_text(self) -> None:
+        from orchestrator.pipeline import _graded_statement
+
+        claim = "Acme is one of (if not the) largest AI labs"
+        assert _graded_statement(None, "Acme", claim, "Acme ranks among the largest labs") == claim
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_skips_auditor_and_review_on_failing_title(self, monkeypatch) -> None:
+        from common.templates import render_claim_text
+        from orchestrator.checkpoints import AutoApproveCheckpointHandler
+
+        audit_calls: list[str] = []
+        review_calls: list = []
+        self._patch_pipeline(monkeypatch, "Acme has state-owned corporate structure", audit_calls)
+
+        class _Recording(AutoApproveCheckpointHandler):
+            async def review_disagreement(self, comparison):
+                review_calls.append(comparison)
+                return True
+
+        template = self._template()
+        result = await verify_claim(
+            entity_name="Acme", claim_text=render_claim_text(template, "Acme"),
+            config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True),
+            checkpoint=_Recording(), template=template,
+        )
+
+        assert audit_calls == []
+        assert review_calls == []
+        assert result.consistency is None
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_grades_the_resolved_title(self, monkeypatch) -> None:
+        from common.templates import render_claim_text
+
+        title = "Acme has publicly-traded corporate structure"
+        audit_calls: list[str] = []
+        self._patch_pipeline(monkeypatch, title, audit_calls)
+
+        template = self._template()
+        await verify_claim(
+            entity_name="Acme", claim_text=render_claim_text(template, "Acme"),
+            config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True),
+            template=template,
+        )
+
+        assert audit_calls == [title]
+
+    @pytest.mark.asyncio
+    async def test_research_claim_grades_the_title_it_writes(self, monkeypatch, tmp_path) -> None:
+        """A later dr step-audit grades the claim file's title; the pipeline run grades the same."""
+        title = "Acme powers its data centers with wind energy"
+        audit_calls: list[str] = []
+        written: dict = {}
+        self._patch_pipeline(monkeypatch, title, audit_calls)
+
+        def _fake_write_claim_file(**kwargs):
+            written.update(kwargs)
+            return tmp_path / "research" / "claims" / "acme" / "claim.md"
+
+        monkeypatch.setattr("orchestrator.persistence._write_source_files", lambda *a, **k: ["sources/2026/src"])
+        monkeypatch.setattr("orchestrator.persistence._write_claim_file", _fake_write_claim_file)
+        monkeypatch.setattr("orchestrator.persistence._write_audit_sidecar", lambda **k: None)
+        monkeypatch.setattr("orchestrator.persistence._write_entity_file", lambda **k: "companies/acme")
+        monkeypatch.setattr("orchestrator.persistence._build_sources_consulted", lambda *a, **k: [])
+
+        from orchestrator.pipeline import research_claim
+        await research_claim(
+            claim_text="Acme runs on 100% wind",
+            config=VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path)),
+        )
+
+        assert written.get("title") == title
+        assert audit_calls == [title]

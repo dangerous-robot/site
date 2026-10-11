@@ -1652,3 +1652,50 @@ def test_step_audit_sends_claim_title(tmp_path) -> None:
 
     assert result.exit_code == 0, result.output
     assert any(claim_title in p for p in captured)
+
+
+def test_step_audit_skips_blocked_claims(tmp_path) -> None:
+    """A blocked claim's title keeps the raw placeholder; step-audit neither grades it nor
+    rewrites its sidecar under --write."""
+    from pydantic_ai.models.function import FunctionModel
+
+    from auditor.agent import auditor_agent
+    from common.frontmatter import serialize_frontmatter
+
+    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
+    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
+        serialize_frontmatter(
+            {"name": "Example", "type": "company", "description": "A company."}, "Body.\n"
+        ),
+        encoding="utf-8",
+    )
+    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "corporate-structure.md").write_text(
+        serialize_frontmatter(
+            {"title": "Example has STRUCTURE corporate structure", "entity": "companies/example",
+             "verdict": "unverified", "confidence": "low", "topics": ["industry-analysis"],
+             "sources": [], "status": "blocked", "blocked_reason": "analyst_error"},
+            "This claim is blocked: `analyst_error`.\n",
+        ),
+        encoding="utf-8",
+    )
+    sidecar = claim_dir / "corporate-structure.audit.yaml"
+    sidecar.write_text("schema_version: 1\n", encoding="utf-8")
+
+    calls: list = []
+
+    def _fn(messages, info):
+        calls.append(messages)
+        raise AssertionError("the auditor must not run on a blocked claim")
+
+    with auditor_agent.override(model=FunctionModel(_fn)):
+        result = CliRunner().invoke(main, [
+            "--model", "test", "step-audit", "--entity", "example", "--write",
+            "--repo-root", str(tmp_path),
+        ])
+
+    assert result.exit_code == 0, result.output
+    assert calls == []
+    assert "Skipped (blocked): example/corporate-structure" in result.output
+    assert sidecar.read_text(encoding="utf-8") == "schema_version: 1\n"

@@ -1264,7 +1264,9 @@ class TestOnboardUsesEntityFileOnDisk:
 
         verdict_model = TestModel(
             custom_output_args={
-                "title": "GreenTest runs on renewable energy",
+                # The title must pass the template, or the claim is blocked and the
+                # auditor is skipped.
+                "title": "GreenTest is hosted on renewable energy",
                 "topics": ["environmental-impact"],
                 "verdict": "mixed",
                 "confidence": "medium",

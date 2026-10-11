@@ -1021,6 +1021,7 @@ def claim_refresh(
         verify_claim(
             entity_name, claim_text, cfg, gate,
             resolved_entity=resolved_entity, topics=refresh_topics,
+            template=template,
         )
     )
 
@@ -1428,6 +1429,11 @@ def step_audit(
             fm, body = parse_frontmatter(text)
 
             claim_id = str(path.relative_to(claims_dir).with_suffix(""))
+            # A blocked claim's title keeps the raw vocabulary placeholder and
+            # its body is the block notice: there is no claim to grade.
+            if fm.get("status") == "blocked":
+                click.echo(f"Skipped (blocked): {claim_id}", err=True)
+                continue
             actual_verdict = Verdict(fm["verdict"])
             actual_confidence = Confidence(fm["confidence"])
 
@@ -1462,7 +1468,8 @@ def step_audit(
 
             bundle = ClaimBundle(
                 claim_id=claim_id,
-                # The title is the validated claim statement, slot resolved.
+                # The title is the statement the pipeline graded when it wrote
+                # this claim; blocked claims were skipped above.
                 claim_text=fm["title"],
                 entity=ent,
                 topics=[Category(t) for t in fm["topics"]],

@@ -227,28 +227,18 @@ class TestAuditClaimSendsTheClaim:
         assert result.needs_review is False
 
     @pytest.mark.asyncio
-    async def test_audit_claim_vocabulary_sends_resolved_title(self) -> None:
+    async def test_audit_claim_grades_the_statement_it_is_given(self) -> None:
+        """The caller picks the statement (_graded_statement); _audit_claim never swaps it,
+        even for text containing the vocabulary hint prefix."""
         from orchestrator.pipeline import VerifyConfig, _audit_claim
 
         captured: list[str] = []
-        hint = "Acme has one of (publicly-traded, privately-held) corporate structure"
-        title = "Acme has privately-held corporate structure"
+        claim = "Acme is one of (if not the) largest AI labs"
+        title = "Acme ranks among the largest labs"
         analyst_out = _analyst_output(title=title)
-        with _capturing_auditor(captured):
-            await _audit_claim("Acme", hint, analyst_out, [], VerifyConfig(model="test"))
-
-        prompt = "\n".join(captured)
-        assert title in prompt
-        assert "one of (" not in prompt
-
-    @pytest.mark.asyncio
-    async def test_audit_claim_keeps_natural_one_of_phrasing(self) -> None:
-        from orchestrator.pipeline import VerifyConfig, _audit_claim
-
-        captured: list[str] = []
-        claim = "Acme is one of the largest AI labs"
-        analyst_out = _analyst_output(title="Acme ranks among the largest labs")
         with _capturing_auditor(captured):
             await _audit_claim("Acme", claim, analyst_out, [], VerifyConfig(model="test"))
 
-        assert any(claim in p for p in captured)
+        prompt = "\n".join(captured)
+        assert claim in prompt
+        assert title not in prompt

@@ -50,7 +50,7 @@ from common.canonical_url import canonical_key
 from common.content_loader import resolve_repo_root
 from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_var
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
-from common.templates import VOCABULARY_HINT_PREFIX, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
+from common.templates import TemplateRecord, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
 from common.utils import slug_from_url, slugify
 from auditor.bundle import build_bundle
@@ -328,6 +328,7 @@ async def verify_claim(
     resolved_entity: ResolvedEntity | None = None,
     url_index: dict[str, str] | None = None,
     topics: list[str] | None = None,
+    template: TemplateRecord | None = None,
 ) -> VerificationResult:
     """Run the full verification pipeline.
 
@@ -337,6 +338,10 @@ async def verify_claim(
     4. Analyst: synthesize sources into a claim with verdict
     5. Auditor: independently assess the claim
     6. [Checkpoint on disagreement] Review conflict
+
+    ``template`` is the criterion a template-backed caller rendered
+    ``claim_text`` from; it decides which statement the auditor grades
+    (``_graded_statement``).
 
     Returns a VerificationResult with all intermediate outputs.
     """
@@ -486,11 +491,19 @@ async def verify_claim(
                 return result
 
             # Step 4: Auditor
-            say("  › Auditing")
-            logger.info("Step 4/4: Running auditor check...")
-            comparison = await _audit_claim(
-                entity_name, claim_text, analyst_out, result.sources, cfg
+            statement = _graded_statement(
+                template, entity_name, claim_text, analyst_out.verdict.title
             )
+            if statement is None:
+                say("  › Auditor skipped: the title fails the template, so the claim will be blocked")
+                logger.info("Step 4/4: Auditor skipped; analyst title fails template %s", template.slug)
+                comparison = None
+            else:
+                say("  › Auditing")
+                logger.info("Step 4/4: Running auditor check...")
+                comparison = await _audit_claim(
+                    entity_name, statement, analyst_out, result.sources, cfg
+                )
             result.consistency = comparison
 
             # Checkpoint: review disagreement
@@ -1248,25 +1261,39 @@ def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) ->
         logger.warning("Analyst output has unresolved citation references: %s", unresolved)
 
 
-async def _audit_claim(
+def _graded_statement(
+    template: TemplateRecord | None,
     entity_name: str,
     claim_text: str,
+    analyst_title: str,
+) -> str | None:
+    """The claim statement the auditor grades, or None to skip the audit.
+
+    A template-backed claim is written under the analyst's title, and a title
+    that fails the template blocks the claim; auditing it would spend an
+    auditor call, and possibly an operator prompt, on a claim that never
+    ships. A passing title also resolves any vocabulary slot that the
+    rendered ``claim_text`` holds as a "one of (...)" hint. Without a
+    template (``dr claim-probe``, which writes nothing) the operator's text
+    is graded.
+    """
+    if template is None:
+        return claim_text
+    title_ok, _ = validate_analyst_title(template, entity_name, analyst_title)
+    return analyst_title if title_ok else None
+
+
+async def _audit_claim(
+    entity_name: str,
+    statement: str,
     analyst_out: AnalystOutput,
     sources: list[dict],
     cfg: VerifyConfig,
 ) -> ComparisonResult | None:
-    # A vocabulary template renders its slot as a "one of (...)" hint, which
-    # would make the claim a near-tautology; grade the analyst's validated
-    # title, which resolves the slot to one value. Any other claim text is
-    # the authority for what is being claimed.
-    graded = (
-        analyst_out.verdict.title
-        if f"{VOCABULARY_HINT_PREFIX}(" in claim_text
-        else claim_text
-    )
+    """Grade ``statement`` against ``sources``; the caller picks the statement."""
     bundle = build_bundle(
         entity_name=analyst_out.entity.entity_name,
-        claim_text=graded,
+        claim_text=statement,
         entity_type=analyst_out.entity.entity_type,
         description=analyst_out.entity.entity_description,
         topics=analyst_out.verdict.topics,
@@ -1480,8 +1507,11 @@ async def research_claim(
             # Step 5: Auditor check
             progress("  › Auditing", log=False)
             logger.info("Step 5/5: Running auditor check...")
+            # Grade the title the claim file carries, which is what a later
+            # dr step-audit on that file grades, so the two runs agree.
             comparison = await _audit_claim(
-                analyst_out.entity.entity_name, claim_text, analyst_out, result.sources, cfg
+                analyst_out.entity.entity_name, analyst_out.verdict.title,
+                analyst_out, result.sources, cfg,
             )
             result.consistency = comparison
 
@@ -2366,6 +2396,7 @@ async def onboard_entity(
                         sem=sem, url_index=onboard_url_index,
                         resolved_entity=onboard_resolved_entity,
                         topics=list(template.topics or []),
+                        template=template,
                     )
 
                     if vr.errors:
