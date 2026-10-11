@@ -4,6 +4,10 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-10
+
+- **Theme 1 work confirmed.** RE-AC (Claim restatement) and the beta.7 pipeline fixes RE-AD to RE-AJ serve theme 1 in [`priorities.md`](priorities.md). beta.7 ships when SITE-J (Responsible AI chatbots) and all seven fixes have landed.
+
 ## 2026-10-09
 
 - **URLs end in a slash.** The canonical form of every page URL is the trailing-slash form (`/about/`), the form GitHub Pages serves; `trailingSlash: "always"` in `astro.config.ts`, and canonical tags, the sitemap, internal links and the SEO scripts follow it. Decided because every no-slash sitemap URL was a 301. *(Final)*
