@@ -1,6 +1,5 @@
 ---
 url: https://developers.openai.com/api/docs/models/gpt-4o
-archived_url: https://web.archive.org/web/20261008154831/https://developers.openai.com/api/docs/models/GPT-4o
 title: GPT-4o Model
 publisher: OpenAI
 accessed_date: '2026-10-10'
