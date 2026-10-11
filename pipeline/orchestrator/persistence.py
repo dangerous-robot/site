@@ -341,6 +341,7 @@ def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
     return {
         "verification_level": level.value if level is not None else None,
         "cap_rationale": verdict.cap_rationale,
+        "cap_rationale_fitted": getattr(verdict, "_cap_rationale_fitted", False),
         "source_overrides": (
             [o.model_dump(mode="python", exclude_none=True) for o in overrides]
             if overrides else None
@@ -433,6 +434,7 @@ def fit_verdict_to_written_pool(
                 "Confidence is capped at low: no source on this claim independently "
                 f"addresses {shorten(entity_name, 200)}."
             )
+            verdict._cap_rationale_fitted = True
     note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
     if log:
         logger.info("Level fit: %s", note)
@@ -448,6 +450,9 @@ def shorten(text: str, limit: int = 80) -> str:
 def _enum_value(value: object) -> object:
     # Callers pass enums; a parsed file holds their string values.
     return getattr(value, "value", value)
+
+
+_CAPPED_LEVELS = frozenset({VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value})
 
 
 def _write_claim_file(
@@ -470,6 +475,7 @@ def _write_claim_file(
     verification_level: str | None = None,
     cap_rationale: str | None = None,
     source_overrides: list[dict] | None = None,
+    cap_rationale_fitted: bool = False,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -493,7 +499,9 @@ def _write_claim_file(
     ``analyst_titles`` in the audit sidecar) and the title is unchanged from
     the analyst's last title (ignoring case and spacing). The existing
     ``cap_rationale`` wins while ``verification_level`` and ``confidence`` are
-    both unchanged. Otherwise the passed values are written.
+    both unchanged and the level is a capped one (``claimed`` or
+    ``self-reported``), unless ``cap_rationale_fitted`` says the level fit
+    wrote the passed one. Otherwise the passed values are written.
     """
     claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
 
@@ -505,8 +513,9 @@ def _write_claim_file(
     # On a forced overwrite, an operator may have edited these fields since
     # the last run. The analyst always writes a seo_title, so an operator's
     # seo_title is kept while the title it shortens is unchanged. A cap_rationale names
-    # the confidence cap, so it is kept only while the level and confidence it
-    # explains are both unchanged. A takeaway is kept when the analyst gives
+    # the confidence cap, so it is kept only on a capped level, while the level and
+    # confidence it explains are both unchanged, and not over the level fit's
+    # rationale, which describes this run's written sources. A takeaway is kept when the analyst gives
     # none. Corrections (the public record of what changed) and tags (homepage
     # card picks) are operator-owned and always kept.
     existing_fm: dict = {}
@@ -541,7 +550,8 @@ def _write_claim_file(
     existing_cap_rationale = existing_fm.get("cap_rationale") or ""
     if (
         existing_cap_rationale
-        and verification_level is not None
+        and not cap_rationale_fitted
+        and _enum_value(verification_level) in _CAPPED_LEVELS
         and _enum_value(verification_level) == _enum_value(existing_fm.get("verification_level"))
         and _enum_value(confidence) == _enum_value(existing_fm.get("confidence"))
     ):

@@ -1063,6 +1063,35 @@ class TestWriteClaimFile:
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         assert fm["cap_rationale"] == "Confidence is capped at low."
 
+    def test_force_overwrite_drops_cap_rationale_on_an_uncapped_level(self, tmp_path):
+        path = self._call(
+            tmp_path, confidence=Confidence.MEDIUM, verification_level="partially-verified",
+        )
+        self._set_frontmatter(path, cap_rationale="Stray rationale.")
+
+        self._call(
+            tmp_path, force=True, confidence=Confidence.MEDIUM,
+            verification_level="partially-verified", cap_rationale=None,
+        )
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert "cap_rationale" not in fm
+
+    def test_force_overwrite_takes_the_level_fit_rationale(self, tmp_path):
+        path = self._call(
+            tmp_path, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Old analyst rationale.",
+        )
+
+        self._call(
+            tmp_path, force=True, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Fit rationale.",
+            cap_rationale_fitted=True,
+        )
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["cap_rationale"] == "Fit rationale."
+
     def test_blocked_force_overwrite_drops_cap_rationale(self, tmp_path):
         # A blocked write passes no verification_level, so an old rationale
         # naming a cap must not survive it.

@@ -206,6 +206,10 @@ class VerdictAssessment(BaseModel):
         max_length=200,
     )
 
+    # True when the write-time level fit wrote ``cap_rationale`` for a level
+    # it lowered, so a refresh writes it over the rationale on disk.
+    _cap_rationale_fitted: bool = PrivateAttr(default=False)
+
     @field_validator("narrative")
     @classmethod
     def _normalize_narrative_lists(cls, v: str) -> str:

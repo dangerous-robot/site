@@ -32,7 +32,7 @@ from common.source_classification import (
 )
 from ingestor.models import SourceFile
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for, parse_entity_ref
-from orchestrator.persistence import fit_verdict_to_written_pool
+from orchestrator.persistence import fit_verdict_to_written_pool, verdict_write_kwargs
 from orchestrator.pipeline import VerifyConfig, _apply_entity_match, research_claim, verify_claim
 from researcher.decomposed import ResearchOutput
 
@@ -854,3 +854,10 @@ def test_fit_self_reported_lowered_to_claimed_replaces_the_stale_rationale() -> 
     assert verdict.cap_rationale == (
         "Confidence is capped at low: no source on this claim independently addresses Brave Browser."
     )
+    assert verdict_write_kwargs(verdict)["cap_rationale_fitted"] is True
+
+
+def test_fit_keeping_the_analyst_rationale_is_not_marked_fitted() -> None:
+    verdict = _assessment("multiply-verified", cap="The analyst's own words.")
+    fit_verdict_to_written_pool(verdict, _pool(("a", "first-party", "blog")), ["a"], "Brave Browser")
+    assert verdict_write_kwargs(verdict)["cap_rationale_fitted"] is False
