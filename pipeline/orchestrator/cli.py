@@ -686,17 +686,16 @@ def step_analyze(
     entity_name = entity_fm["name"]
 
     # Reconstruct claim text: prefer re-rendering the template; fall back to title
-    claim_text: str
+    claim_text = fm["title"]
+    template = None
     criteria_slug = fm.get("criteria_slug")
     if criteria_slug:
         try:
-            templates = load_templates(root)
-            template = get_template(templates, criteria_slug)
+            template = get_template(load_templates(root), criteria_slug)
+        except Exception as exc:
+            logger.warning("Could not load templates (falling back to title): %s", exc)
+        if template is not None:
             claim_text = render_claim_text(template, entity_name)
-        except (KeyError, ValueError):
-            claim_text = fm["title"]
-    else:
-        claim_text = fm["title"]
 
     # Load sources
     # Same shape the main pipeline gives the analyst: ``source_id`` lets
@@ -712,7 +711,10 @@ def step_analyze(
     cfg = VerifyConfig(model=ctx.obj["model"], **_ctx_per_agent_kwargs(ctx))
 
     async def _run():
-        return await _analyse_claim(entity_name, claim_text, source_dicts, cfg)
+        return await _analyse_claim(
+            entity_name, claim_text, source_dicts, cfg,
+            criterion_notes=template.notes if template else None,
+        )
 
     analyst_out, analyst_failure = asyncio.run(_run())
 
@@ -1402,7 +1404,10 @@ def claim_promote(
     )
     topics_input = click.prompt("Topics (comma-separated, e.g. environmental-impact,ai-safety)")
     core_input = click.prompt("Core template?", default="Y", show_default=True)
-    notes_input = click.prompt("Notes (optional)", default="", show_default=False)
+    notes_input = click.prompt(
+        "Notes (optional; public, and sent to the analyst as grading guidance)",
+        default="", show_default=False,
+    )
 
     placeholder = _ENTITY_TYPE_PLACEHOLDERS[entity_type_input]
     template_text = claim_title.replace(entity_name, placeholder) if entity_name and entity_name in claim_title else claim_title

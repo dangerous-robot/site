@@ -255,6 +255,7 @@ def build_analyst_prompt(
     sources: list[dict],
     resolved_entity: "ResolvedEntity | None" = None,
     sub_questions: list[SubQuestion] | None = None,
+    criterion_notes: str | None = None,
 ) -> str:
     """Build the user prompt for the analyst agent."""
     parts: list[str] = []
@@ -283,6 +284,11 @@ def build_analyst_prompt(
     parts.append("")
     parts.append(f"## Claim to evaluate: {claim_text}")
     parts.append("")
+
+    if criterion_notes and criterion_notes.strip():
+        parts.append("## Criterion notes")
+        parts.append(criterion_notes.strip())
+        parts.append("")
 
     if sub_questions:
         parts.append("## Sub-questions")

@@ -170,7 +170,7 @@ Criteria are loaded from a single YAML file (`research/templates.yaml`), not via
 | `subjects` | string[] | conditional | Required and non-empty when `entity_type === 'subject'`; forbidden otherwise. Each value is a path of the form `subjects/{slug}` pinning the criterion to specific subject entities. |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy)) |
 | `core` | boolean | yes (default: false) | Whether this is a core/required criterion |
-| `notes` | string | no | Editorial notes |
+| `notes` | string | no | Shown on the public criteria page and sent to the analyst as grading guidance (scope, verdict mapping, narrative coverage); write it as public text |
 | `vocabulary` | map | no | Entity-type-specific vocabulary substitutions |
 
 Subject-type criteria use `subjects` for explicit pairing with subject entities; company/product criteria match by `entity_type` alone.

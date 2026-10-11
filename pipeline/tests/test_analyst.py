@@ -316,3 +316,52 @@ class TestNarrativeListNormalization:
         # `- foo` inside a fence is content, not a list marker; don't inject blanks.
         original = "Intro.\n\n```\n- not a list\n- still not\n```\n\nOutro."
         assert self._va(original).narrative == original
+
+
+class TestCriterionNotesInPrompt:
+    NOTES = "Verdict encodes degree: mixed = offsets only"
+
+    def test_notes_follow_the_claim_and_precede_the_sources(self) -> None:
+        prompt = build_analyst_prompt(
+            "X", "X is hosted on renewable energy", [], criterion_notes=self.NOTES,
+        )
+        assert f"## Criterion notes\n{self.NOTES}" in prompt
+        assert (
+            prompt.index("## Claim to evaluate")
+            < prompt.index("## Criterion notes")
+            < prompt.index("## Source materials")
+        )
+
+    @pytest.mark.parametrize("notes", [None, "", "   "])
+    def test_empty_notes_add_no_section(self, notes) -> None:
+        prompt = build_analyst_prompt(
+            "X", "X is hosted on renewable energy", [], criterion_notes=notes,
+        )
+        assert "## Criterion notes" not in prompt
+
+
+class TestAnalystInstructionAnchors:
+    """Other edits to instructions.md must keep these lines byte-identical."""
+
+    def test_criterion_notes_section(self) -> None:
+        from analyst.agent import _INSTRUCTIONS
+
+        assert "CRITERION NOTES: a `## Criterion notes` section" in _INSTRUCTIONS
+        assert CRITERION_NOTES_PRECEDENCE_LINE in _INSTRUCTIONS
+
+    def test_absence_rule_names_index_sources(self) -> None:
+        from analyst.agent import _INSTRUCTIONS
+
+        assert ABSENCE_INDEX_SENTENCE in _INSTRUCTIONS
+
+
+CRITERION_NOTES_PRECEDENCE_LINE = (
+    "PRECEDENCE (pending an operator decision): until it is set, where a note's "
+    "verdict mapping conflicts with the verdict scale, the verdict scale governs."
+)
+
+ABSENCE_INDEX_SENTENCE = (
+    "A source with `Kind: index` supports no statement that a specific entity is "
+    "absent from it unless its text in the prompt names comparable entities and "
+    "the entity is visibly missing from that list."
+)

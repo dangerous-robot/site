@@ -436,6 +436,49 @@ class TestClaimRefreshCLI:
         assert result.exit_code == 0
         assert "ENTITY" not in received["claim_text"]
 
+    def test_criterion_notes_reach_verify_claim(self, monkeypatch, tmp_path) -> None:
+        """verify_claim takes the analyst's criterion notes from the template it is handed."""
+        import asyncio
+        from click.testing import CliRunner
+        from orchestrator.cli import main
+
+        sentinel = "SENTINEL-NOTES: mixed = offsets only"
+        self._write_claim(tmp_path, "openai", "publishes-sustainability-report", {
+            "status": "published",
+            "criteria_slug": "publishes-sustainability-report",
+            "claim": "OpenAI publishes an annual sustainability report.",
+        })
+        self._write_templates_yaml(tmp_path, [
+            {"slug": "publishes-sustainability-report", "text": "COMPANY publishes a sustainability or ESG report", "entity_type": "company", "topics": ["environmental-impact"], "core": True, "notes": sentinel},
+        ])
+
+        received: dict = {}
+
+        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+            received.update(kwargs)
+            from orchestrator.pipeline import VerificationResult
+            return VerificationResult(
+                entity=entity_name,
+                claim_text=claim_text,
+                urls_found=[],
+                urls_ingested=[],
+                urls_failed=[],
+                sources=[],
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
+        monkeypatch.setattr(
+            "asyncio.run",
+            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+        )
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+
+        result = CliRunner().invoke(main, ["claim-refresh", "openai/publishes-sustainability-report"], catch_exceptions=False)
+        assert result.exit_code == 0
+        assert received["template"].notes == sentinel
+
 
 def _write_published_refresh_fixture(tmp_path) -> "Path":
     """A published, reviewed claim plus sidecar, ready for `dr claim-refresh`."""
@@ -1321,7 +1364,7 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
 
     captured: list[list[dict]] = []
 
-    async def _fake_analyse(entity_name, claim_text, source_dicts, cfg):
+    async def _fake_analyse(entity_name, claim_text, source_dicts, cfg, **kwargs):
         captured.append(source_dicts)
         verdict = SimpleNamespace(
             title="Acme is green", topics=[], narrative="N.",
@@ -1349,6 +1392,78 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
     cleaned, unresolved = clean_citations("Acme says so 【2026/foo】.", sources)
     assert unresolved == []
     assert "*Foo Report*" in cleaned
+
+
+class TestStepAnalyzeCriterion:
+    SENTINEL = "SENTINEL-NOTES: mixed = offsets only"
+
+    def _write_repo(self, tmp_path, criteria_slug: str, templates: list | None) -> None:
+        import yaml
+
+        research = tmp_path / "research"
+        (research / "entities" / "companies").mkdir(parents=True)
+        (research / "entities" / "companies" / "acme.md").write_text(
+            "---\nname: Acme\ntype: company\n---\n", encoding="utf-8"
+        )
+        (research / "claims" / "acme").mkdir(parents=True)
+        (research / "claims" / "acme" / "green.md").write_text(
+            "---\ntitle: Acme title fallback\nentity: companies/acme\n"
+            f"criteria_slug: {criteria_slug}\nsources: []\n---\nBody.\n",
+            encoding="utf-8",
+        )
+        if templates is not None:
+            (research / "templates.yaml").write_text(
+                yaml.safe_dump({"templates": templates}), encoding="utf-8"
+            )
+
+    def _run(self, tmp_path) -> tuple:
+        captured: dict = {}
+
+        async def _fake_analyse(entity_name, claim_text, source_dicts, cfg, **kwargs):
+            captured["claim_text"] = claim_text
+            captured["criterion_notes"] = kwargs.get("criterion_notes")
+            verdict = SimpleNamespace(
+                title="Acme is green", topics=[], narrative="N.",
+                verdict=SimpleNamespace(value="unverified"),
+                confidence=SimpleNamespace(value="low"),
+                verification_level=SimpleNamespace(value="claimed"),
+                source_overrides=None,
+                cap_rationale=None,
+            )
+            entity = SimpleNamespace(entity_name="Acme", entity_type="company")
+            return SimpleNamespace(entity=entity, verdict=verdict), None
+
+        with patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
+            result = CliRunner().invoke(
+                main,
+                ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],
+            )
+        return result, captured
+
+    def test_criterion_notes_reach_analyst(self, tmp_path) -> None:
+        self._write_repo(tmp_path, "green-hosting", [
+            {"slug": "green-hosting", "text": "COMPANY is hosted on renewable energy", "entity_type": "company", "topics": ["environmental-impact"], "core": True, "notes": self.SENTINEL},
+        ])
+        result, captured = self._run(tmp_path)
+        assert result.exit_code == 0, result.output
+        assert captured["claim_text"] == "Acme is hosted on renewable energy"
+        assert captured["criterion_notes"] == self.SENTINEL
+
+    def test_unknown_criteria_slug_falls_back_to_title(self, tmp_path) -> None:
+        self._write_repo(tmp_path, "not-a-template", [
+            {"slug": "green-hosting", "text": "COMPANY is hosted on renewable energy", "entity_type": "company", "topics": ["environmental-impact"], "core": True},
+        ])
+        result, captured = self._run(tmp_path)
+        assert result.exit_code == 0, result.output
+        assert captured["claim_text"] == "Acme title fallback"
+        assert captured["criterion_notes"] is None
+
+    def test_missing_templates_file_falls_back_to_title(self, tmp_path) -> None:
+        self._write_repo(tmp_path, "green-hosting", None)
+        result, captured = self._run(tmp_path)
+        assert result.exit_code == 0, result.output
+        assert captured["claim_text"] == "Acme title fallback"
+        assert captured["criterion_notes"] is None
 
 
 class TestClaimRefreshFlagReason:

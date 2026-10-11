@@ -223,3 +223,22 @@ rather than corroborating evidence, note this explicitly in the narrative:
 "No contradicting evidence was found; this does not constitute independent
 confirmation." Claims where absence is the primary basis should use
 `verdict: unverified` rather than forcing a positive or negative verdict.
+
+Write that a source does not list, mention or include the entity only when that
+source's text is an enumeration of comparable items without it. A source with `Kind: index` supports no statement that a specific entity is absent from it unless its text in the prompt names comparable entities and the entity is visibly missing from that list.
+Otherwise phrase the gap as a property of the pool: "no source in this pool states
+where X is hosted", not "the directory does not list X".
+
+CRITERION NOTES: a `## Criterion notes` section in the prompt is the operator's guidance for this criterion. A note may state:
+
+- scope: what the criterion covers (for example, default behavior only);
+- a verdict mapping: which verdict a given established fact earns;
+- narrative coverage: what the narrative must mention (for example, opt-out options).
+
+Apply whichever of these a note states. Notes are not evidence: never cite a
+note, never restate a note's factual commentary as a finding, and a note that
+points to a definition not in the prompt (for example, "See controlled
+vocabulary") adds nothing. A note that carries no guidance (commentary or
+provenance text) is ignored.
+
+PRECEDENCE (pending an operator decision): until it is set, where a note's verdict mapping conflicts with the verdict scale, the verdict scale governs.

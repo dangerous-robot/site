@@ -352,7 +352,7 @@ async def verify_claim(
 
     ``template`` is the criterion a template-backed caller rendered
     ``claim_text`` from; it decides which statement the auditor grades
-    (``_graded_statement``).
+    (``_graded_statement``) and supplies the analyst's criterion notes.
 
     Returns a VerificationResult with all intermediate outputs.
     """
@@ -490,6 +490,7 @@ async def verify_claim(
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
                 repo_root=repo_root,
+                criterion_notes=template.notes if template else None,
             )
             result.analyst_output = analyst_out
 
@@ -1269,6 +1270,7 @@ async def _analyse_claim(
     resolved_entity: ResolvedEntity | None = None,
     sub_questions: list[SubQuestion] | None = None,
     repo_root: Path | None = None,
+    criterion_notes: str | None = None,
 ) -> tuple[AnalystOutput | None, FailureInfo | None]:
     """Run the analyst agent. Returns (output, failure) — failure is set
     only when output is None, so callers can persist structured failure
@@ -1289,6 +1291,7 @@ async def _analyse_claim(
         sources,
         resolved_entity=resolved_entity,
         sub_questions=sub_questions,
+        criterion_notes=criterion_notes,
     )
     model_spec = cfg.model_for("analyst")
 

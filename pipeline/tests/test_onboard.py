@@ -1376,6 +1376,72 @@ class TestOnboardUsesEntityFileOnDisk:
             "file-excluded.example", "cli-excluded.example", "probe-excluded.example",
         ]
 
+    @pytest.mark.asyncio
+    async def test_criterion_notes_reach_analyst(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import yaml
+
+        sentinel = "SENTINEL-NOTES: mixed = offsets only"
+        _setup_tmp_repo(tmp_path)
+        templates_path = tmp_path / "research" / "templates.yaml"
+        data = yaml.safe_load(templates_path.read_text(encoding="utf-8"))
+        [entry] = [t for t in data["templates"] if t["slug"] == "renewable-energy-hosting"]
+        entry["notes"] = sentinel
+        templates_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+        ref = self._write_product(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+        monkeypatch.setattr("orchestrator.pipeline.below_threshold", lambda sources: False)
+
+        import orchestrator.pipeline as pipeline_mod
+        analyst_prompts: list[str] = []
+        real_analyst_prompt = pipeline_mod.build_analyst_prompt
+
+        def spy_analyst_prompt(*args, **kwargs):
+            prompt = real_analyst_prompt(*args, **kwargs)
+            analyst_prompts.append(prompt)
+            return prompt
+
+        monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", spy_analyst_prompt)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        verdict_model = TestModel(
+            custom_output_args={
+                "title": "GreenTest is hosted on renewable energy",
+                "topics": ["environmental-impact"],
+                "verdict": "mixed",
+                "confidence": "medium",
+                "narrative": "The evidence is mixed.",
+                "verification_level": "independently-verified",
+                "seo_title": "GreenTest runs on renewable energy",
+            },
+        )
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            verdict_only_agent.override(model=verdict_model),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(description=self.ENRICHER_DESCRIPTION),
+            ),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "GreenTest", "product", config=config, entity_ref=ref,
+                only=["renewable-energy-hosting"],
+            )
+
+        assert result.status == "accepted", result.errors
+        assert analyst_prompts, "analyst never ran"
+        assert f"## Criterion notes\n{sentinel}" in analyst_prompts[0]
+
 
 class TestOnboardSubjectFanOut:
     """Subject onboarding queues only templates whose subjects: list names the subject."""
