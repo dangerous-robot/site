@@ -116,6 +116,7 @@ class TestBundleNeverLeaksVerdict:
         # title) has to be added here on purpose.
         assert set(ClaimBundle.model_fields) == {
             "claim_id", "claim_text", "entity", "topics", "narrative", "sources",
+            "criterion_notes",
         }
 
     def test_real_claim_verdict_not_in_prompt(self) -> None:
@@ -250,3 +251,56 @@ class TestAuditClaimSendsTheClaim:
         prompt = "\n".join(captured)
         assert claim in prompt
         assert title not in prompt
+
+
+_NOTES = "Verdict encodes degree: mixed = offsets only"
+
+
+class TestEvaluatorGetsCriterionNotes:
+    def test_notes_follow_the_claim_and_precede_the_narrative(self) -> None:
+        bundle = _claim_bundle().model_copy(update={"criterion_notes": _NOTES})
+        prompt = build_auditor_prompt(bundle)
+        assert f"## Criterion notes\n{_NOTES}" in prompt
+        assert (
+            prompt.index("## Claim")
+            < prompt.index("## Criterion notes")
+            < prompt.index("## Analyst narrative")
+        )
+
+    @pytest.mark.parametrize("notes", [None, "", "   "])
+    def test_empty_notes_add_no_section(self, notes) -> None:
+        bundle = _claim_bundle().model_copy(update={"criterion_notes": notes})
+        assert "## Criterion notes" not in build_auditor_prompt(bundle)
+
+    def test_instructions_say_a_note_is_not_a_scale_mismatch(self) -> None:
+        from auditor.agent import _INSTRUCTIONS
+
+        text = " ".join(_INSTRUCTIONS.split())
+        assert "CRITERION NOTES: a `## Criterion notes` section" in text
+        assert "A verdict that follows a note's mapping is not a scale mismatch" in text
+        assert "Where a note names nothing about a point, the verdict scale applies" in text
+
+    @pytest.mark.asyncio
+    async def test_audit_claim_sends_criterion_notes(self) -> None:
+        from orchestrator.pipeline import VerifyConfig, _audit_claim
+
+        captured: list[str] = []
+        with _capturing_auditor(captured):
+            await _audit_claim(
+                "ChatGPTree", _CLAIM, _analyst_output(title=_CLAIM), [],
+                VerifyConfig(model="test"), criterion_notes=_NOTES,
+            )
+        assert f"## Criterion notes\n{_NOTES}" in "\n".join(captured)
+
+    @pytest.mark.asyncio
+    async def test_audit_claim_without_notes_sends_none(self) -> None:
+        from orchestrator.pipeline import VerifyConfig, _audit_claim
+
+        captured: list[str] = []
+        with _capturing_auditor(captured):
+            await _audit_claim(
+                "ChatGPTree", _CLAIM, _analyst_output(title=_CLAIM), [],
+                VerifyConfig(model="test"),
+            )
+        assert captured
+        assert "## Criterion notes" not in "\n".join(captured)

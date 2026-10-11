@@ -38,6 +38,9 @@ class ClaimBundle(BaseModel):
     topics: list[Category] = Field(min_length=1, max_length=3)
     narrative: str  # Markdown body stripped of frontmatter
     sources: list[SourceContext]
+    # The criterion's template notes, the same text the analyst received, so a
+    # verdict that follows a note's mapping is not graded as a scale mismatch.
+    criterion_notes: str | None = None
 
 
 class IndependentAssessment(BaseModel):

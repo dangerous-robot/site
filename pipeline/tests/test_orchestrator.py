@@ -1079,7 +1079,7 @@ def _patch_run(monkeypatch, files, ro, analyst_out, audit_sources: list | None =
     async def _fake_analyse(*args, **kwargs):
         return analyst_out, None
 
-    async def _fake_audit(entity_name, statement, ao, sources, cfg):
+    async def _fake_audit(entity_name, statement, ao, sources, cfg, criterion_notes=None):
         if audit_sources is not None:
             audit_sources.append(list(sources))
         return None

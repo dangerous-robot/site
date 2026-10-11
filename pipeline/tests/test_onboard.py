@@ -1377,7 +1377,7 @@ class TestOnboardUsesEntityFileOnDisk:
         ]
 
     @pytest.mark.asyncio
-    async def test_criterion_notes_reach_analyst(
+    async def test_criterion_notes_reach_analyst_and_auditor(
         self, tmp_path: Path, monkeypatch
     ) -> None:
         import yaml
@@ -1405,6 +1405,16 @@ class TestOnboardUsesEntityFileOnDisk:
             return prompt
 
         monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", spy_analyst_prompt)
+
+        auditor_prompts: list[str] = []
+        real_auditor_prompt = pipeline_mod.build_auditor_prompt
+
+        def spy_auditor_prompt(bundle):
+            prompt = real_auditor_prompt(bundle)
+            auditor_prompts.append(prompt)
+            return prompt
+
+        monkeypatch.setattr("orchestrator.pipeline.build_auditor_prompt", spy_auditor_prompt)
 
         from researcher.entity_verifier import entity_verifier_agent
         from researcher.entity_enricher import entity_enricher_agent
@@ -1441,6 +1451,8 @@ class TestOnboardUsesEntityFileOnDisk:
         assert result.status == "accepted", result.errors
         assert analyst_prompts, "analyst never ran"
         assert f"## Criterion notes\n{sentinel}" in analyst_prompts[0]
+        assert auditor_prompts, "auditor never ran"
+        assert f"## Criterion notes\n{sentinel}" in auditor_prompts[0]
 
 
 class TestOnboardSubjectFanOut:

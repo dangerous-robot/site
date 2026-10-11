@@ -496,12 +496,15 @@ async def verify_claim(
             # Step 3: Analyst
             say("  › Analysing")
             logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+            # One value for both agents: the Evaluator must judge against the
+            # same notes the analyst followed.
+            criterion_notes = template.notes if template else None
             analyst_out, analyst_failure = await _analyse_claim(
                 entity_name, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
                 sub_questions=result.sub_questions,
                 repo_root=repo_root,
-                criterion_notes=template.notes if template else None,
+                criterion_notes=criterion_notes,
             )
             result.analyst_output = analyst_out
 
@@ -528,7 +531,8 @@ async def verify_claim(
                 say("  › Auditing")
                 logger.info("Step 4/4: Running auditor check...")
                 comparison = await _audit_claim(
-                    entity_name, statement, analyst_out, cited_sources, cfg
+                    entity_name, statement, analyst_out, cited_sources, cfg,
+                    criterion_notes=criterion_notes,
                 )
             result.consistency = comparison
 
@@ -1488,6 +1492,7 @@ async def _audit_claim(
     analyst_out: AnalystOutput,
     sources: list[dict],
     cfg: VerifyConfig,
+    criterion_notes: str | None = None,
 ) -> ComparisonResult | None:
     """Grade ``statement`` against ``sources``; the caller picks the statement."""
     bundle = build_bundle(
@@ -1498,6 +1503,7 @@ async def _audit_claim(
         topics=analyst_out.verdict.topics,
         narrative=analyst_out.verdict.narrative,
         sources=sources,
+        criterion_notes=criterion_notes,
     )
 
     prompt = build_auditor_prompt(bundle)

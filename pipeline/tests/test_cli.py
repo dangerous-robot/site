@@ -2186,6 +2186,91 @@ def test_step_audit_sends_claim_title(tmp_path) -> None:
     assert any(claim_title in p for p in captured)
 
 
+_STEP_AUDIT_NOTES = "SENTINEL-NOTES: mixed = offsets only"
+
+
+def _step_audit_prompts(tmp_path, criteria_slug: str | None, templates: list | None) -> list[str]:
+    """Run step-audit on one claim with a scripted Evaluator; return the user prompts it got."""
+    from contextlib import nullcontext
+
+    import yaml
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from auditor.agent import auditor_agent
+    from common.frontmatter import serialize_frontmatter
+
+    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
+    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
+        serialize_frontmatter(
+            {"name": "Example", "type": "company", "description": "A company."}, "Body.\n"
+        ),
+        encoding="utf-8",
+    )
+    fm = {"title": "Example is hosted on renewable energy", "entity": "companies/example",
+          "verdict": "mixed", "confidence": "low", "topics": ["environmental-impact"],
+          "sources": []}
+    if criteria_slug:
+        fm["criteria_slug"] = criteria_slug
+    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "claim.md").write_text(
+        serialize_frontmatter(fm, "Only offsets are documented.\n"), encoding="utf-8"
+    )
+    if templates is not None:
+        (tmp_path / "research" / "templates.yaml").write_text(
+            yaml.safe_dump({"templates": templates}), encoding="utf-8"
+        )
+
+    captured: list[str] = []
+
+    def _fn(messages, info):
+        for message in messages:
+            for part in getattr(message, "parts", []):
+                if isinstance(part, UserPromptPart):
+                    captured.append(str(part.content))
+        args = {"verdict": "mixed", "confidence": "low", "reasoning": "Scripted.",
+                "evidence_gaps": []}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    with auditor_agent.override(model=FunctionModel(_fn)):
+        with patch.object(auditor_agent, "override", side_effect=lambda **kw: nullcontext()):
+            result = CliRunner().invoke(main, [
+                "--model", "test", "step-audit", "--claim", "example/claim",
+                "--repo-root", str(tmp_path),
+            ])
+    assert result.exit_code == 0, result.output
+    assert captured, "the Evaluator never ran"
+    return captured
+
+
+def _green_template(**extra) -> dict:
+    return {"slug": "green-hosting", "text": "COMPANY is hosted on renewable energy",
+            "entity_type": "company", "topics": ["environmental-impact"], "core": True, **extra}
+
+
+def test_step_audit_sends_criterion_notes(tmp_path) -> None:
+    prompts = _step_audit_prompts(
+        tmp_path, "green-hosting", [_green_template(notes=_STEP_AUDIT_NOTES)]
+    )
+    assert f"## Criterion notes\n{_STEP_AUDIT_NOTES}" in "\n".join(prompts)
+
+
+@pytest.mark.parametrize(
+    "criteria_slug,templates",
+    [
+        ("green-hosting", [_green_template()]),
+        (None, [_green_template(notes=_STEP_AUDIT_NOTES)]),
+        ("not-a-template", [_green_template(notes=_STEP_AUDIT_NOTES)]),
+        ("green-hosting", None),
+    ],
+    ids=["template-without-notes", "no-criteria-slug", "unknown-slug", "no-templates-file"],
+)
+def test_step_audit_without_notes_sends_none(tmp_path, criteria_slug, templates) -> None:
+    prompts = _step_audit_prompts(tmp_path, criteria_slug, templates)
+    assert "## Criterion notes" not in "\n".join(prompts)
+
+
 def test_step_audit_skips_blocked_claims(tmp_path) -> None:
     """A blocked claim's title keeps the raw placeholder; step-audit neither grades it nor
     rewrites its sidecar under --write."""

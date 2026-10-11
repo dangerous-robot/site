@@ -661,7 +661,7 @@ def step_analyze(
 
     from common.content_loader import load_entity, resolve_repo_root
     from common.frontmatter import parse_frontmatter
-    from common.templates import get_template, load_templates, render_claim_text
+    from common.templates import render_claim_text
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
@@ -695,15 +695,9 @@ def step_analyze(
 
     # Reconstruct claim text: prefer re-rendering the template; fall back to title
     claim_text = fm["title"]
-    template = None
-    criteria_slug = fm.get("criteria_slug")
-    if criteria_slug:
-        try:
-            template = get_template(load_templates(root), criteria_slug)
-        except Exception as exc:
-            logger.warning("Could not load templates (falling back to title): %s", exc)
-        if template is not None:
-            claim_text = render_claim_text(template, entity_name)
+    template = _claim_template(fm, root)
+    if template is not None:
+        claim_text = render_claim_text(template, entity_name)
 
     # Load sources
     # Same shape the main pipeline gives the analyst: ``source_id`` lets
@@ -781,7 +775,7 @@ def step_analyze(
             repo_root=root,
             force=force,
             status=fm.get("status", "draft"),
-            criteria_slug=criteria_slug,
+            criteria_slug=fm.get("criteria_slug"),
             **verdict_write_kwargs(a.verdict),
         )
         click.echo(f"Wrote {written_path}")
@@ -1607,6 +1601,7 @@ def step_audit(
                 except FileNotFoundError:
                     click.echo(f"Warning: source '{sid}' not found", err=True)
 
+            template = _claim_template(fm, root)
             bundle = ClaimBundle(
                 claim_id=claim_id,
                 # The title is the statement the pipeline graded when it wrote
@@ -1616,6 +1611,7 @@ def step_audit(
                 topics=[Category(t) for t in fm["topics"]],
                 narrative=body,
                 sources=source_contexts,
+                criterion_notes=template.notes if template else None,
             )
 
             if dry_run:
@@ -2203,6 +2199,24 @@ def review_queue(
 # --------------------------------------------------------------------------- #
 # dr publish                                                                    #
 # --------------------------------------------------------------------------- #
+
+
+def _claim_template(fm: dict, root: Path):
+    """The template named by the claim's ``criteria_slug``, or None.
+
+    None also covers an unknown slug and an unreadable ``templates.yaml``, so a
+    claim-file command degrades to the title and no notes instead of failing.
+    """
+    from common.templates import get_template, load_templates
+
+    criteria_slug = fm.get("criteria_slug")
+    if not criteria_slug:
+        return None
+    try:
+        return get_template(load_templates(root), criteria_slug)
+    except Exception as exc:
+        logger.warning("Could not load templates (falling back to title): %s", exc)
+        return None
 
 
 def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:

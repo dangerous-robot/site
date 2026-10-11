@@ -16,6 +16,7 @@ def build_bundle(
     topics: list[Category],
     narrative: str,
     sources: list[dict],
+    criterion_notes: str | None = None,
 ) -> ClaimBundle:
     """Build a ClaimBundle from primitive values.
 
@@ -46,4 +47,5 @@ def build_bundle(
         topics=topics,
         narrative=narrative,
         sources=source_contexts,
+        criterion_notes=criterion_notes,
     )

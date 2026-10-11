@@ -43,6 +43,11 @@ def build_auditor_prompt(bundle: ClaimBundle) -> str:
     parts.append(bundle.claim_text.strip())
     parts.append("")
 
+    if bundle.criterion_notes and bundle.criterion_notes.strip():
+        parts.append("## Criterion notes")
+        parts.append(bundle.criterion_notes.strip())
+        parts.append("")
+
     parts.append("## Analyst narrative (context; not the thing you grade)")
     parts.append(bundle.narrative.strip())
     parts.append("")
