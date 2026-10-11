@@ -192,3 +192,59 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
 
     assert failure is None
     assert out.verdict.narrative == "Brave says so (*Title 1*) and *Title 1* agrees."
+
+
+# --------------------------------------------------------------------------- #
+# cited_source_ids: which sources the claim lists                              #
+# --------------------------------------------------------------------------- #
+
+from analyst.agent import SourceOverride  # noqa: E402
+from analyst.citations import cited_source_ids  # noqa: E402
+from common.models import Category, Confidence, Independence, Verdict, VerificationLevel  # noqa: E402
+
+
+def _cited_verdict(narrative: str = "", cited=None, overrides=None) -> VerdictAssessment:
+    return VerdictAssessment(
+        title="Claim title",
+        verdict=Verdict.MIXED,
+        confidence=Confidence.MEDIUM,
+        narrative=narrative or "Nothing named here.",
+        topics=[Category("environmental-impact")],
+        verification_level=VerificationLevel.INDEPENDENTLY_VERIFIED,
+        seo_title="Claim title",
+        cited_sources=list(cited or []),
+        source_overrides=overrides,
+    )
+
+
+_POOL = [
+    {"source_id": "2026/energy", "title": "Energy and AI: Grid‑scale outlook"},
+    {"source_id": "2026/quotes", "title": "The “Green” Cloud Report"},
+    {"source_id": "2026/plain", "title": "Plain Survey"},
+]
+
+
+def test_title_with_non_breaking_hyphen_matches_ascii_hyphen() -> None:
+    v = _cited_verdict("Per *Energy and AI: Grid-scale outlook*, demand rises.")
+    assert cited_source_ids(v, _POOL) == ["2026/energy"]
+
+
+def test_title_with_curly_quotes_matches_straight_quotes() -> None:
+    v = _cited_verdict('As *The "Green" Cloud Report* shows, it is offsets.')
+    assert cited_source_ids(v, _POOL) == ["2026/quotes"]
+
+
+def test_cited_sources_id_outside_pool_ignored() -> None:
+    v = _cited_verdict(cited=["2026/plain", "2026/not-in-pool"])
+    assert cited_source_ids(v, _POOL) == ["2026/plain"]
+
+
+def test_source_override_counts_as_cited() -> None:
+    v = _cited_verdict(overrides=[SourceOverride(
+        source="2026/quotes", independence=Independence.FIRST_PARTY, reason="Restates the entity.",
+    )])
+    assert cited_source_ids(v, _POOL) == ["2026/quotes"]
+
+
+def test_nothing_cited_returns_empty() -> None:
+    assert cited_source_ids(_cited_verdict(), _POOL) == []

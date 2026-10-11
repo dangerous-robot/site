@@ -1,7 +1,9 @@
 """URL Scorer: scores search candidates by relevance to a claim (tool-free, Haiku)."""
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+import math
+
+from pydantic import BaseModel, Field, field_validator
 from pydantic_ai import Agent
 
 from common.models import SubQuestion
@@ -28,6 +30,24 @@ class ScoredCandidate(BaseModel):
             "construction; only kept candidates carry `addresses`."
         ),
     )
+    score: float = Field(
+        default=3.0,
+        description="The candidate's highest per-sub-question score (1 to 5).",
+    )
+
+    @field_validator("score", mode="before")
+    @classmethod
+    def _coerce_score(cls, v: object) -> float:
+        # Unbounded and forgiving on purpose: a failed validation retries and
+        # then falls back to every candidate tagged with every sub-question,
+        # which loses all scores and tags over one odd value.
+        if isinstance(v, bool):
+            return 3.0
+        try:
+            score = float(v)  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return 3.0
+        return score if math.isfinite(score) else 3.0
 
 
 class ScoredURLs(BaseModel):
@@ -50,6 +70,8 @@ Rules:
 - Score each candidate against EACH sub-question separately on the title and snippet only — do not assume body content.
 - Keep a candidate (in the `kept` list) when it scores >= 3 on AT LEAST ONE sub-question.
 - For each kept candidate, set `addresses` to the list of sub-question ids on which it scored >= 3. `addresses` must be non-empty.
+- For each kept candidate, set `score` to its highest score across the sub-questions.
+- Never drop a candidate because it repeats or duplicates another candidate; duplicates are merged after scoring. Score each one on its own.
 - Drop a candidate (in the `dropped` list) only when it scores < 3 on EVERY sub-question.
 - Every input URL must appear in either `kept` (as a ScoredCandidate) or `dropped` (as a URL string). No omissions.
 - Return URLs as-is (exact strings from input).

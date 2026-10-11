@@ -14,6 +14,7 @@ from common.canonical_url import canonical_key, canonicalize
 from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from common.source_classification import EntityIdentity, profile_url_names_entity
+from common.utils import host_matches, url_host
 from orchestrator.checkpoints import StepError
 from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
 from researcher.agent import search_brave
@@ -441,13 +442,14 @@ async def decomposed_research(
         legal_name=entity_legal_name,
         founded=entity_founded,
     )
-    def _fallback_to_candidates() -> tuple[list[str], dict[str, list[str]]]:
+    def _fallback_to_candidates() -> tuple[list[str], dict[str, list[str]], dict[str, float]]:
         # Without scorer output we have no per-URL addresses; tag every
         # candidate as addressing every sub-question so downstream
-        # invariants (non-empty addresses) still hold.
+        # invariants (non-empty addresses) still hold. Equal scores keep
+        # the candidates' order.
         fallback_addrs = [sq.id for sq in out.sub_questions] or ["sq1"]
         urls = [c.url for c in candidates]
-        return urls, {url: list(fallback_addrs) for url in urls}
+        return urls, {url: list(fallback_addrs) for url in urls}, {}
 
     raw_by_url: dict[str, str] = {
         c.url: c.raw_content for c in candidates if c.raw_content
@@ -462,10 +464,15 @@ async def decomposed_research(
         else None
     )
 
-    def _commit(urls: list[str], addresses: dict[str, list[str]]) -> ResearchOutput:
+    entity_host = url_host(entity_website)
+
+    def _commit(
+        urls: list[str], addresses: dict[str, list[str]], scores: dict[str, float]
+    ) -> ResearchOutput:
         urls, addresses = _apply_entity_exclude(
             urls, addresses, avoid_topics, out.trace, entity_identity
         )
+        urls = _rank_kept(urls, scores, entity_host)
         out.urls = urls
         out.url_addresses = addresses
         out.prefetched_bodies = {u: raw_by_url[u] for u in urls if u in raw_by_url}
@@ -510,13 +517,14 @@ def _page_key(url: str) -> str:
 
 def _merge_kept(
     kept: list[ScoredCandidate], candidates: list[SearchCandidate]
-) -> tuple[list[str], dict[str, list[str]]]:
+) -> tuple[list[str], dict[str, list[str]], dict[str, float]]:
     """Map each kept URL to its candidate's URL and merge same-page duplicates.
 
     The scorer can echo a candidate URL in another form (``www.``, trailing
     slash, tracking params). Using the candidate's own URL keeps its
     prefetched body reachable, and merging stops two forms of one page from
-    being ingested as separate sources with the same id.
+    being ingested as separate sources with the same id. A merged page keeps
+    the highest score any of its forms got.
     """
     by_page = {_page_key(c.url): c.url for c in candidates}
     # Forms of one arXiv paper share a key but are separate candidates; the
@@ -524,16 +532,32 @@ def _merge_kept(
     by_key: dict[str, str] = {}
     urls: list[str] = []
     addresses: dict[str, list[str]] = {}
+    scores: dict[str, float] = {}
     for sc in kept:
         url = by_page.get(_page_key(sc.url), sc.url)
         url = by_key.setdefault(canonical_key(url), url)
         if url not in addresses:
             urls.append(url)
             addresses[url] = []
+        scores[url] = max(scores.get(url, sc.score), sc.score)
         for sq_id in sc.addresses:
             if sq_id not in addresses[url]:
                 addresses[url].append(sq_id)
-    return urls, addresses
+    return urls, addresses, scores
+
+
+def _rank_kept(urls: list[str], scores: dict[str, float], entity_host: str) -> list[str]:
+    """Order kept URLs for ingest: the entity's own host, then score, then scorer order.
+
+    Only the entity's own website host is boosted. A parent company's host
+    is not, so a Google or Amazon parent does not put every google.com or
+    aws.amazon.com page ahead of pages about the entity. A URL without a
+    score ranks as 3, the scorer's "worth fetching" level.
+    """
+    def on_entity_host(url: str) -> bool:
+        return bool(entity_host) and host_matches(url_host(url), entity_host)
+
+    return sorted(urls, key=lambda u: (not on_entity_host(u), -scores.get(u, 3.0)))
 
 
 def _group_queries_by_sq(planned) -> dict[str, list[str]]:

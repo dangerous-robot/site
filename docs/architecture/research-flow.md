@@ -66,6 +66,15 @@ flowchart LR
 
 The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the statement the claim file carries as its title: the analyst's title, which for a template-backed claim must pass the template (vocabulary slot resolved). A title that fails the template skips the Evaluator, since the claim is written as blocked. `dr claim-probe`, which writes nothing, grades the operator's text. For a template-backed claim the analyst also gets the criterion's `notes` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence.
 
+Ingest order and the listed sources:
+
+- The Researcher ranks the URLs the scorer kept: pages on the entity's own website host first, then by the scorer's score, then by scorer position. A parent company's host gets no boost.
+- Before ingest the URLs are reordered so the sub-question with the fewest sources (dedup hits already on disk count) is filled first. Each pick takes that sub-question's first URL in ranked order, so an entity page that addresses only a well-covered sub-question can follow URLs for thinner ones.
+- A sub-question that no ingested source addresses is logged as a warning (and a progress line where the run shows progress). The analyst prompt marks it, and the narrative describes the gap in plain words without the sub-question id. The sidecar's `sub_questions[].citations` is empty for it.
+- After the analyst, the claim lists only the sources it relied on: the ids in its `cited_sources`, the sources its own `source_overrides` name (the entity-match relabels do not count), and the sources whose title the narrative names. Uncited fresh sources are not written. Every ingested source stays in the sidecar's `sources_consulted`.
+- Every ingested source is listed when nothing is cited, or when the cited subset would support a lower `verification_level` than the full list (both checked with the write-time level fit).
+- The Evaluator grades against the listed sources. When the analyst fails, `dr claim-draft` writes every ingested source and no claim.
+
 ```mermaid
 sequenceDiagram
     actor Operator
@@ -98,7 +107,7 @@ sequenceDiagram
         Operator->>Analyst: sources
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
-        Operator->>Evaluator: claim title, analyst narrative, sources
+        Operator->>Evaluator: claim title, analyst narrative, listed sources
         Evaluator-->>Operator: ComparisonResult (independent, open-loop)
 
         alt needs_review

@@ -110,6 +110,9 @@ RULES:
 - Cite sources by title in italics, for example *AWS Cloud Sustainability*. Never
   write source ids, bracketed tokens such as 【2026/example】, or numbered
   references such as "Source 3".
+- List in `cited_sources` the id of every source the narrative names or relies on,
+  and every source your `verification_level` count and `source_overrides` use. The
+  claim lists only these sources, plus any the narrative names by title.
 - Use `unverified` only when sources discuss the topic area but fail to engage
   with the claim's central assertion at all -- they circle it without touching it.
 - For claims with a vocabulary placeholder ("one of (A, B, C ...)"), before
@@ -143,7 +146,8 @@ the verdict:
 2. If every sub-question has >=1 addressing source, treat the pool as fully covered.
    Verdict and confidence follow the normal rules.
 3. If any sub-question has zero addressing sources, the pool has a coverage gap.
-   The narrative MUST name the uncovered sub-question(s). The verdict cannot be
+   The narrative MUST describe each uncovered sub-question in plain words; never
+   write a sub-question id such as sq2 in the narrative. The verdict cannot be
    `true` or `false` with `high` confidence; choose `unverified` (when the gap
    dominates) or render the available verdict at `medium` confidence with the gap
    explicit. The confidence cap is editorial, not mechanical: a single uncovered

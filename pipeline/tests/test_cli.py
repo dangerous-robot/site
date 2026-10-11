@@ -2172,3 +2172,66 @@ def test_step_audit_skips_blocked_claims(tmp_path) -> None:
     assert calls == []
     assert "Skipped (blocked): example/corporate-structure" in result.output
     assert sidecar.read_text(encoding="utf-8") == "schema_version: 1\n"
+
+
+class TestClaimRefreshListsCitedSources:
+    """A refresh writes only the sources the analyst cites; the dropped one shows in the sidecar."""
+
+    def test_uncited_source_left_out_and_reported_dropped(self, monkeypatch, tmp_path) -> None:
+        import asyncio
+
+        import yaml
+
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.frontmatter import parse_frontmatter
+        from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
+        from orchestrator.pipeline import VerificationResult
+
+        claim_path = _write_published_refresh_fixture(tmp_path)
+
+        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+            ao = AnalystOutput(
+                entity=EntityResolution(
+                    entity_name="Brave", entity_type=EntityType.PRODUCT, entity_description="d",
+                ),
+                verdict=VerdictAssessment(
+                    title="Brave hosts on renewable energy",
+                    verdict=Verdict.UNVERIFIED,
+                    confidence=Confidence.LOW,
+                    narrative="Per *D*, nothing.",
+                    topics=[Category("environmental-impact")],
+                    verification_level=VerificationLevel.CLAIMED,
+                    seo_title="Brave renewable hosting",
+                ),
+            )
+            return VerificationResult(
+                entity=entity_name, claim_text=claim_text,
+                urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+                analyst_output=ao, consistency=_comparison(),
+                cached_sources=[
+                    ("https://b.example", "2025/b", {"title": "B"}),
+                    ("https://d.example", "2026/d", {"title": "D"}),
+                ],
+                uncited_urls={"https://b.example"},
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
+        monkeypatch.setattr(
+            "asyncio.run",
+            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+        )
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+
+        result = CliRunner().invoke(
+            main, ["claim-refresh", "brave/renewable-energy-hosting"], catch_exceptions=False
+        )
+
+        assert result.exit_code == 0, result.output
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        assert fm["sources"] == ["2026/d"]
+        sidecar = yaml.safe_load(
+            claim_path.with_name("renewable-energy-hosting.audit.yaml").read_text(encoding="utf-8")
+        )
+        assert "2025/b" in sidecar["refresh"]["dropped_sources"]

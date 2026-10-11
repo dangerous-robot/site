@@ -10,6 +10,13 @@ source titles. Fields too short to hold a title reject them instead (see
 from __future__ import annotations
 
 import re
+import unicodedata
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from analyst.agent import SourceOverride, VerdictAssessment
 
 # Bracket runs and numbered references are matched by one alternation in a
 # single substitution pass, so a title inserted for one (say "Open Source 1
@@ -123,3 +130,46 @@ def clean_citations(text: str, sources: list[dict]) -> tuple[str, list[str]]:
         return _join_titles(titles)
 
     return _CITATION.sub(replace, text), unresolved
+
+
+# Dashes and curly quotes a model may write where a stored title has ASCII
+# (or the reverse), so the same title reads as a match.
+_TITLE_FOLD = {
+    **dict.fromkeys(map(ord, "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"), "-"),
+    **dict.fromkeys(map(ord, "\u2018\u2019"), "'"),
+    **dict.fromkeys(map(ord, "\u201c\u201d"), '"'),
+}
+
+
+def _match_form(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text).translate(_TITLE_FOLD)
+    return " ".join(text.split()).casefold()
+
+
+def cited_source_ids(
+    verdict: "VerdictAssessment",
+    sources: list[dict],
+    overrides: "Iterable[SourceOverride] | None" = None,
+) -> list[str]:
+    """Ids of ``sources`` the verdict relies on, in ``sources`` order.
+
+    The union of the analyst's ``cited_sources``, the sources named in
+    ``overrides`` (default: the verdict's ``source_overrides``), and the
+    sources whose title appears in the narrative. Ids outside ``sources``
+    are ignored. Two sources with one title (two forms of one paper) both
+    match. An empty result means nothing could be matched, not that the
+    analyst relied on nothing.
+    """
+    if overrides is None:
+        overrides = verdict.source_overrides or []
+    named = set(verdict.cited_sources) | {o.source for o in overrides}
+    narrative = _match_form(verdict.narrative or "")
+    out: list[str] = []
+    for src in sources:
+        sid = src.get("source_id")
+        if not sid or sid in out:
+            continue
+        title = _match_form(src.get("title") or "")
+        if sid in named or (title and title in narrative):
+            out.append(sid)
+    return out

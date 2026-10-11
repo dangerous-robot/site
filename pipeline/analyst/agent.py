@@ -172,6 +172,14 @@ class VerdictAssessment(BaseModel):
             "disclosure for this claim. Omit when no overrides apply."
         ),
     )
+    cited_sources: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Source ids the narrative, verdict, verification_level and "
+            "source_overrides rely on. The claim lists only these sources "
+            "(with any named by title in the narrative)."
+        ),
+    )
     seo_title: str = Field(
         description=(
             "Short page title for search results. Always provide; "
@@ -291,9 +299,20 @@ def build_analyst_prompt(
         parts.append("")
 
     if sub_questions:
+        # Sources loaded from disk carry no `addresses`; coverage is then
+        # unknown, so no sub-question is marked.
+        covered: set[str] | None = None
+        if any("addresses" in src for src in sources):
+            covered = {sq_id for src in sources for sq_id in src.get("addresses") or []}
         parts.append("## Sub-questions")
         for sq in sub_questions:
-            parts.append(f"- {sq.id}: {sq.question}")
+            line = f"- {sq.id}: {sq.question}"
+            if covered is not None and sq.id not in covered:
+                line += (
+                    " (no source addresses this sub-question; describe this gap "
+                    "in plain words and never write the sub-question id)"
+                )
+            parts.append(line)
             parts.append(f"  Rationale: {sq.rationale}")
         parts.append("")
 

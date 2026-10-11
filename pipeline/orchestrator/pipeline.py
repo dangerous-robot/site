@@ -28,7 +28,7 @@ import traceback
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Literal
+from typing import Callable, Literal
 
 import click
 import httpx
@@ -42,7 +42,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution, SourceOverride
-from analyst.citations import clean_citations
+from analyst.citations import cited_source_ids, clean_citations
 from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for, parse_entity_ref
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
@@ -159,6 +159,10 @@ class VerificationResult(BaseModel):
     final_urls: dict[str, str] = Field(default_factory=dict, exclude=True)
     # Requested URL -> archive lookup record, for fresh sources.
     archive: dict[str, dict] = Field(default_factory=dict, exclude=True)
+    # Ingested URLs (cached or fresh) of sources the analyst did not cite;
+    # kept out of the claim's ``sources:`` and not written. Keyed by URL so
+    # a slug renamed at write time cannot desync it.
+    uncited_urls: set[str] = Field(default_factory=set, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -178,21 +182,26 @@ class VerificationResult(BaseModel):
     def persist_sources(self, repo_root: Path, url_index: dict[str, str] | None = None) -> list[str]:
         """Write the fresh sources and return every source id for the claim.
 
-        A cached and a fresh source can still name the same file, so each id
-        appears once. ``url_index`` gains the fresh sources under the
+        Sources in ``uncited_urls`` are neither written nor returned. A
+        cached and a fresh source can still name the same file, so each id
+        appears once. ``url_index`` gains the written sources under the
         requested, stored and redirect-target URLs, so later claims in the
         same run reuse them instead of fetching again.
         """
         from orchestrator.persistence import _write_source_files
 
-        fresh_ids = _write_source_files(self.source_files, repo_root)
+        to_write = [(url, sf) for url, sf in self.source_files if url not in self.uncited_urls]
+        fresh_ids = _write_source_files(to_write, repo_root)
         if url_index is not None:
-            for (url, sf), sid in zip(self.source_files, fresh_ids):
+            for (url, sf), sid in zip(to_write, fresh_ids):
                 url_index.setdefault(canonical_key(url), sid)
                 url_index.setdefault(canonical_key(sf.frontmatter.url), sid)
                 if url in self.final_urls:
                     url_index.setdefault(canonical_key(self.final_urls[url]), sid)
-        return list(dict.fromkeys(self.cached_source_ids + fresh_ids))
+        cached_ids = [
+            sid for url, sid, _sd in self.cached_sources if url not in self.uncited_urls
+        ]
+        return list(dict.fromkeys(cached_ids + fresh_ids))
 
 
 def below_threshold(usable_sources: list) -> bool:
@@ -444,6 +453,7 @@ async def verify_claim(
             result.sub_question_coverage = _invert_addresses(
                 ro.sub_questions, result.sources
             )
+            _warn_uncovered(ro.sub_questions, result.sub_question_coverage, say)
 
             if cfg.show_progress:
                 progress(
@@ -502,6 +512,8 @@ async def verify_claim(
                     progress("  ! analyst failed to produce an assessment")
                 return result
 
+            cited_sources = _apply_cited_filter(result, analyst_out, entity_name)
+
             # Step 4: Auditor
             statement = _graded_statement(
                 template, entity_name, claim_text, analyst_out.verdict.title
@@ -514,7 +526,7 @@ async def verify_claim(
                 say("  › Auditing")
                 logger.info("Step 4/4: Running auditor check...")
                 comparison = await _audit_claim(
-                    entity_name, statement, analyst_out, result.sources, cfg
+                    entity_name, statement, analyst_out, cited_sources, cfg
                 )
             result.consistency = comparison
 
@@ -536,6 +548,12 @@ async def verify_claim(
 def _short(text: str, limit: int = 80) -> str:
     # Keeps an override reason under SourceOverride.reason's 300-char limit.
     return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
+# Reason prefixes of the overrides ``_apply_entity_match`` writes. They are
+# the code's relabels, not the analyst relying on a source.
+_ENTITY_MATCH_PREFIX = "Entity match:"
+_OFF_ENTITY_PREFIX = "Off-entity:"
 
 
 def _apply_entity_match(
@@ -579,7 +597,7 @@ def _apply_entity_match(
         if reason is not None:
             if label == Independence.FIRST_PARTY.value:
                 continue
-            new_label, note = Independence.FIRST_PARTY, f"Entity match: {reason}."
+            new_label, note = Independence.FIRST_PARTY, f"{_ENTITY_MATCH_PREFIX} {reason}."
         elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
         elif label == Independence.FIRST_PARTY.value:
@@ -590,13 +608,13 @@ def _apply_entity_match(
             owner = publisher or url_host(sd.get("url")) or "another organization"
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: first-party for {_short(owner)}, not {entity_name} "
+                f"{_OFF_ENTITY_PREFIX} first-party for {_short(owner)}, not {entity_name} "
                 "or a provider the claim names."
             )
         elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: the source does not mention {entity_name} "
+                f"{_OFF_ENTITY_PREFIX} the source does not mention {entity_name} "
                 "or a provider the claim names."
             )
         else:
@@ -681,6 +699,59 @@ def _invert_addresses(
             if sq_id in coverage and sid not in coverage[sq_id]:
                 coverage[sq_id].append(sid)
     return coverage
+
+
+def _warn_uncovered(
+    sub_questions: list[SubQuestion],
+    coverage: dict[str, list[str]],
+    say: Callable[..., None],
+) -> None:
+    """Log and report each sub-question that no ingested source addresses.
+
+    Not a ``result.errors`` entry: the first such entry names a blocked
+    claim's cause, and the sidecar's ``sub_questions[].citations: []``
+    already records the gap.
+    """
+    for sq in sub_questions:
+        if not coverage.get(sq.id):
+            logger.warning("sub-question %s has no ingested source: %s", sq.id, sq.question)
+            say("  ! sub-question %s has no ingested source: %s", sq.id, sq.question)
+
+
+def _order_by_coverage(
+    urls: list[str],
+    url_addresses: dict[str, list[str]],
+    sub_question_ids: list[str],
+    current_counts: dict[str, int],
+) -> list[str]:
+    """Reorder ``urls`` so the sub-question with the fewest sources is filled first.
+
+    Greedy: take the sub-question with the lowest projected count (ties by
+    sub-question order), take its first untaken URL in input order, and add
+    one to every sub-question that URL addresses. A thin sub-question's
+    second URL also comes early, so a failed fetch of its first still leaves
+    another near the front. URLs that address no known sub-question follow
+    in input order.
+    """
+    projected = {sq: current_counts.get(sq, 0) for sq in sub_question_ids}
+    taken: set[str] = set()
+    ordered: list[str] = []
+    while True:
+        pick = None
+        for sq in sorted(sub_question_ids, key=lambda q: projected[q]):
+            pick = next(
+                (u for u in urls if u not in taken and sq in url_addresses.get(u, [])), None
+            )
+            if pick is not None:
+                break
+        if pick is None:
+            break
+        taken.add(pick)
+        ordered.append(pick)
+        for sq in url_addresses.get(pick, []):
+            if sq in projected:
+                projected[sq] += 1
+    return ordered + [u for u in urls if u not in taken]
 
 
 def _apply_blocklist_cap(
@@ -808,6 +879,15 @@ async def _ingest_claim_sources(
     notes = IngestNotes()
     remaining = max(0, cfg.max_sources - len(cached_sources))
     if remaining > 0:
+        # Before the candidate_pool_size cut, so a thin sub-question's URLs
+        # are inside the pool and among the first attempted.
+        cached_counts: Counter[str] = Counter(
+            sq for url, _sid, _sd in cached_sources for sq in ro.url_addresses.get(url, [])
+        )
+        urls_to_ingest = _order_by_coverage(
+            urls_to_ingest, ro.url_addresses,
+            [sq.id for sq in ro.sub_questions], cached_counts,
+        )
         # Every indexed URL of a source the claim already has, so a fetch that
         # redirects to one does not count toward ``remaining``.
         cached_by_id = {sid: url for url, sid, _sd in cached_sources}
@@ -1081,7 +1161,7 @@ async def _ingest_urls(
     archive: bool = True,
     known_pages: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
-    """Waterfall: attempt up to candidate_pool_size URLs in score order,
+    """Waterfall: attempt up to candidate_pool_size URLs in the order given,
     stopping once max_sources successes are collected (~2 concurrent).
 
     Two URLs that reach one page (by redirect) give one result: the later
@@ -1397,6 +1477,57 @@ async def _audit_claim(
     )
 
 
+def _apply_cited_filter(
+    result: VerificationResult, analyst_out: AnalystOutput, entity_name: str
+) -> list[dict]:
+    """Narrow the claim's listed sources to those the analyst relied on; return them.
+
+    Cited is ``cited_source_ids`` over the analyst's own overrides (the
+    entity-match relabels do not count). Sets ``result.uncited_urls`` to the
+    ingested URLs of every other source. The full list is kept, with a
+    warning, when nothing is cited (that means unknown, not none) or when
+    the cited subset would fit a lower ``verification_level`` than the full
+    list: both sides go through ``fit_verdict_to_written_pool`` on a copy,
+    so the counting rules are the write-time fit's and the linter's.
+    ``result.sources`` stays whole, since the write-time fit and the
+    sidecar read it.
+    """
+    from orchestrator.persistence import fit_verdict_to_written_pool
+
+    verdict = analyst_out.verdict
+    analyst_overrides = [
+        o for o in verdict.source_overrides or []
+        if not o.reason.startswith((_ENTITY_MATCH_PREFIX, _OFF_ENTITY_PREFIX))
+    ]
+    cited = set(cited_source_ids(verdict, result.sources, analyst_overrides))
+    if not cited:
+        logger.warning("Analyst cited no source by id or title; the claim lists every ingested source")
+        return result.sources
+
+    all_ids = [sd["source_id"] for sd in result.sources if sd.get("source_id")]
+
+    def fitted_level(ids: list[str]) -> object:
+        trial = verdict.model_copy(deep=True)
+        fit_verdict_to_written_pool(trial, result.sources, ids, entity_name)
+        return trial.verification_level
+
+    level = getattr(verdict.verification_level, "value", verdict.verification_level)
+    if fitted_level([sid for sid in all_ids if sid in cited]) != fitted_level(all_ids):
+        logger.warning(
+            "Cited sources do not support verification_level %s; the claim lists every ingested source",
+            level,
+        )
+        return result.sources
+
+    url_ids = [(url, sid) for url, sid, _sd in result.cached_sources] + [
+        (url, f"{sf.year}/{sf.slug}") for url, sf in result.source_files
+    ]
+    result.uncited_urls = {url for url, sid in url_ids if sid not in cited}
+    if result.uncited_urls:
+        logger.info("Uncited sources left off the claim: %s", sorted(result.uncited_urls))
+    return [sd for sd in result.sources if sd.get("source_id") in cited]
+
+
 async def research_claim(
     claim_text: str,
     config: VerifyConfig | None = None,
@@ -1474,8 +1605,6 @@ async def research_claim(
                 url_index, repo_root,
             )
 
-            cached_map = {url: sid for url, sid, _ in cached_sources}
-
             for url, sid, sd in cached_sources:
                 sd["addresses"] = _addresses_with_aliases(url, ro.url_addresses, notes.aliases)
                 result.urls_ingested.append(url)
@@ -1495,6 +1624,10 @@ async def research_claim(
 
             result.sub_question_coverage = _invert_addresses(
                 ro.sub_questions, result.sources
+            )
+            _warn_uncovered(
+                ro.sub_questions, result.sub_question_coverage,
+                lambda m, *a: progress(m, *a, log=False),
             )
 
             # Checkpoint: review sources
@@ -1516,23 +1649,9 @@ async def research_claim(
                 _record_threshold_block(result, ingest_errors)
                 return result
 
-            # Step 3: Write sources to disk
-            progress("  › Writing sources", log=False)
-            logger.info("Step 3/5: Writing %d source files...", len(source_files))
-            fresh_ids = _write_source_files(source_files, repo_root)
-            fresh_map = {url: sid for (url, _sf), sid in zip(source_files, fresh_ids)}
-            seen: set[str] = set()
-            source_ids = []
-            for url in urls:
-                url = notes.aliases.get(url, url)
-                sid = cached_map.get(url) or fresh_map.get(url)
-                if sid and sid not in seen:
-                    source_ids.append(sid)
-                    seen.add(sid)
-
-            # Step 4: Analyse claim (analyst identifies entity)
+            # Step 3: Analyse claim (analyst identifies entity)
             progress("  › Analysing", log=False)
-            logger.info("Step 4/5: Analysing claim...")
+            logger.info("Step 3/5: Analysing claim...")
             analyst_out, analyst_failure = await _analyse_claim(
                 None, claim_text, result.sources, cfg,
                 resolved_entity=resolved_entity,
@@ -1545,9 +1664,33 @@ async def research_claim(
                 result.errors.append("Analyst failed to produce an assessment")
                 if analyst_failure is not None and result.failure is None:
                     result.failure = analyst_failure
+                if source_files:
+                    _write_source_files(source_files, repo_root)
                 return result
 
             result.entity = analyst_out.entity.entity_name
+            cited_sources = _apply_cited_filter(
+                result, analyst_out, analyst_out.entity.entity_name
+            )
+
+            # Step 4: Write the cited sources to disk. Ids come from the
+            # write, keyed by URL, since a write can rename a colliding slug.
+            cited_files = [
+                (url, sf) for url, sf in source_files if url not in result.uncited_urls
+            ]
+            progress("  › Writing sources", log=False)
+            logger.info("Step 4/5: Writing %d source files...", len(cited_files))
+            fresh_ids = _write_source_files(cited_files, repo_root)
+            id_by_url = {
+                url: sid for url, sid, _ in cached_sources if url not in result.uncited_urls
+            }
+            id_by_url.update(
+                {url: sid for (url, _sf), sid in zip(cited_files, fresh_ids)}
+            )
+            source_ids = list(dict.fromkeys(
+                id_by_url[u] for u in (notes.aliases.get(url, url) for url in urls)
+                if u in id_by_url
+            ))
 
             # Write entity and claim to disk
             # Skip when entity is pre-resolved (file already exists on disk).
@@ -1596,7 +1739,7 @@ async def research_claim(
             # dr step-audit on that file grades, so the two runs agree.
             comparison = await _audit_claim(
                 analyst_out.entity.entity_name, analyst_out.verdict.title,
-                analyst_out, result.sources, cfg,
+                analyst_out, cited_sources, cfg,
             )
             result.consistency = comparison
 

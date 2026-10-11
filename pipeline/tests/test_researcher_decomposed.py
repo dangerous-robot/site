@@ -1094,7 +1094,7 @@ def test_merge_kept_maps_variants_to_candidate_url_and_merges_addresses() -> Non
         ScoredCandidate(url="https://x.com/a", addresses=["sq1", "sq2"]),
     ]
 
-    urls, addresses = _merge_kept(kept, candidates)
+    urls, addresses, _scores = _merge_kept(kept, candidates)
 
     assert urls == ["https://x.com/a", "https://b.com/"]
     assert addresses == {"https://x.com/a": ["sq1", "sq2"], "https://b.com/": ["sq1"]}
@@ -1106,7 +1106,7 @@ def test_merge_kept_merges_variants_absent_from_candidates() -> None:
         ScoredCandidate(url="https://www.new.com/p/", addresses=["sq2"]),
     ]
 
-    urls, addresses = _merge_kept(kept, [])
+    urls, addresses, _scores = _merge_kept(kept, [])
 
     assert urls == ["https://new.com/p"]
     assert addresses == {"https://new.com/p": ["sq1", "sq2"]}
@@ -1124,7 +1124,7 @@ def test_merge_kept_merges_forms_of_one_arxiv_paper_first_kept_wins() -> None:
         ScoredCandidate(url=abs_url, addresses=["sq2"]),
     ]
 
-    urls, addresses = _merge_kept(kept, candidates)
+    urls, addresses, _scores = _merge_kept(kept, candidates)
 
     assert urls == [html_url]
     assert addresses == {html_url: ["sq1", "sq2"]}
@@ -1186,7 +1186,8 @@ async def test_entity_exclude_spares_entity_profile_url() -> None:
     ro = await _exclude_run(
         "Earthly Insight", "https://earthlyinsight.com", ["linkedin.com"], [own, other, site]
     )
-    assert ro.urls == [own, site]
+    # The entity's own website ranks first; the spared post follows.
+    assert ro.urls == [site, own]
     assert ro.trace["entity_exclude_spared"] == [own]
     assert ro.trace["entity_exclude_dropped"] == [other]
 
@@ -1205,3 +1206,114 @@ async def test_entity_exclude_still_drops_entity_file_excludes(entity_name, webs
     assert ro.urls == [f"{website}/about"]
     assert ro.trace["entity_exclude_dropped"] == [url]
     assert "entity_exclude_spared" not in ro.trace
+
+
+# --------------------------------------------------------------------------- #
+# Kept-URL ranking: entity host, then score, then scorer position              #
+# --------------------------------------------------------------------------- #
+
+async def _scored_run(kept: list[dict], resolved: ResolvedEntity | None):
+    """Run decomposed_research with the scorer scripted through TestModel."""
+    urls = [k["url"] for k in kept]
+    fake_candidates = [
+        SearchCandidate(url=u, title="t", snippet="", from_query="q1") for u in urls
+    ]
+    scorer_model = TestModel(
+        custom_output_args={"kept": kept, "dropped": [], "rationale": "scored"},
+    )
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(_plan(["q1"], "ok")))),
+        patch("researcher.decomposed.resolve_model", return_value=scorer_model),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        async with httpx.AsyncClient() as client:
+            return await decomposed_research(
+                "test claim", resolved.entity_name if resolved else "Entity",
+                _make_cfg(max_initial_queries=2), asyncio.Semaphore(8), client,
+                resolved_entity=resolved,
+            )
+
+
+@pytest.mark.asyncio
+async def test_kept_urls_ordered_entity_host_then_score() -> None:
+    brave = "https://brave.com/blog/ecosia"
+    generic = "https://generic.example/a"
+    other = "https://other.example/b"
+    parent = "https://cloud.google.com/sustainability"
+    resolved = ResolvedEntity(
+        entity_ref="products/brave",
+        entity_name="Brave",
+        entity_type=EntityType.PRODUCT,
+        entity_description="",
+        website="https://brave.com",
+        parent_company="companies/google",
+    )
+    ro = await _scored_run(
+        [
+            {"url": generic, "addresses": ["sq1"], "score": 5},
+            {"url": brave, "addresses": ["sq1"], "score": 3},
+            {"url": other, "addresses": ["sq2"], "score": 4},
+            {"url": parent, "addresses": ["sq2"], "score": 4},
+        ],
+        resolved,
+    )
+    # The parent company's host gets no boost: it ranks by score with the rest.
+    assert ro.urls == [brave, generic, other, parent]
+
+
+@pytest.mark.asyncio
+async def test_kept_urls_without_resolved_entity_rank_by_score_then_position() -> None:
+    ro = await _scored_run(
+        [
+            {"url": "https://a.example", "addresses": ["sq1"], "score": 3},
+            {"url": "https://b.example", "addresses": ["sq1"], "score": 5},
+            {"url": "https://c.example", "addresses": ["sq1"], "score": 3},
+        ],
+        None,
+    )
+    assert ro.urls == ["https://b.example", "https://a.example", "https://c.example"]
+
+
+@pytest.mark.asyncio
+async def test_unusual_scores_validate_and_keep_scorer_tags() -> None:
+    """A small model's out-of-range or non-numeric score must not fail validation.
+
+    A failure would retry and then fall back to every candidate tagged with
+    every sub-question, losing the scorer's tags.
+    """
+    ro = await _scored_run(
+        [
+            {"url": "https://two.example", "addresses": ["sq1"], "score": 2},
+            {"url": "https://seven.example", "addresses": ["sq2"], "score": 7},
+            {"url": "https://high.example", "addresses": ["sq1"], "score": "high"},
+            {"url": "https://none.example", "addresses": ["sq2"]},
+        ],
+        None,
+    )
+    assert ro.urls == [
+        "https://seven.example", "https://high.example", "https://none.example", "https://two.example",
+    ]
+    assert not [e for e in ro.errors if e.error_type == "model_error"]
+    assert ro.url_addresses == {
+        "https://two.example": ["sq1"],
+        "https://seven.example": ["sq2"],
+        "https://high.example": ["sq1"],
+        "https://none.example": ["sq2"],
+    }
+
+
+def test_merge_kept_same_page_keeps_highest_score() -> None:
+    kept = [
+        ScoredCandidate(url="https://p.example/x", addresses=["sq1"], score=3),
+        ScoredCandidate(url="https://www.p.example/x/", addresses=["sq2"], score=5),
+    ]
+    urls, addresses, scores = _merge_kept(kept, [])
+    assert urls == ["https://p.example/x"]
+    assert scores == {"https://p.example/x": 5.0}
+
+
+def test_scored_candidate_score_coercion() -> None:
+    assert ScoredCandidate(url="u", addresses=["sq1"], score="4.5").score == 4.5
+    assert ScoredCandidate(url="u", addresses=["sq1"], score="high").score == 3.0
+    assert ScoredCandidate(url="u", addresses=["sq1"], score=None).score == 3.0
+    assert ScoredCandidate(url="u", addresses=["sq1"]).score == 3.0

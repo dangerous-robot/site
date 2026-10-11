@@ -978,3 +978,285 @@ class TestAuditorGradedStatement:
 
         assert written.get("title") == title
         assert audit_calls == [title]
+
+
+# --------------------------------------------------------------------------- #
+# Uncovered sub-questions and the cited source list                            #
+# --------------------------------------------------------------------------- #
+
+_TITLES = {
+    "a": "Alpha Report", "b": "Beta Study", "c": "Gamma Dataset", "d": "Delta Notes",
+}
+
+
+def _sf(key: str, *, kind: str = "article", independence: str | None = None) -> SourceFile:
+    return SourceFile(
+        frontmatter=SourceFrontmatter(
+            url=f"https://example.com/{key}", title=_TITLES[key], publisher=f"Pub {key}",
+            accessed_date=datetime.date(2026, 4, 26), kind=kind, summary="A summary.",
+            independence=independence,
+        ),
+        body="Body.", slug=key, year=2026,
+    )
+
+
+def _sq_ro(keys: list[str], addresses: dict[str, list[str]]):
+    from common.models import SubQuestion
+    from researcher.decomposed import ResearchOutput
+
+    urls = [f"https://example.com/{k}" for k in keys]
+    return ResearchOutput(
+        urls=urls,
+        url_addresses={f"https://example.com/{k}": a for k, a in addresses.items()},
+        sub_questions=[
+            SubQuestion(id="sq1", question="Per-prompt energy?", rationale="r1"),
+            SubQuestion(id="sq2", question="Web-search energy?", rationale="r2"),
+        ],
+        trace={"mode": "test"},
+    )
+
+
+def _analyst(narrative: str = "n", *, cited=None, overrides=None, level=None):
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+    from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
+
+    level = level or VerificationLevel.CLAIMED
+    return AnalystOutput(
+        entity=EntityResolution(entity_name="Acme", entity_type=EntityType.COMPANY, entity_description="d"),
+        verdict=VerdictAssessment(
+            title="Acme claim title", verdict=Verdict.MIXED, confidence=Confidence.LOW,
+            narrative=narrative, topics=[Category("environmental-impact")],
+            verification_level=level, seo_title="Acme claim",
+            cap_rationale="Confidence is capped at low: entity sources only.",
+            cited_sources=list(cited or []), source_overrides=overrides,
+        ),
+    )
+
+
+def _patch_run(monkeypatch, files, ro, analyst_out, audit_sources: list | None = None):
+    async def _fake_research(*args, **kwargs):
+        return ro
+
+    async def _fake_ingest(*args, **kwargs):
+        return [(sf.frontmatter.url, sf) for sf in files], []
+
+    async def _fake_analyse(*args, **kwargs):
+        return analyst_out, None
+
+    async def _fake_audit(entity_name, statement, ao, sources, cfg):
+        if audit_sources is not None:
+            audit_sources.append(list(sources))
+        return None
+
+    monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
+    monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
+    monkeypatch.setattr("orchestrator.pipeline._analyse_claim", _fake_analyse)
+    monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
+
+
+def _patch_research_claim_writes(monkeypatch, tmp_path, written: dict, *, rename: dict | None = None):
+    rename = rename or {}
+
+    def _spy_write_source_files(source_files, repo_root):
+        ids = []
+        for _url, sf in source_files:
+            sf.slug = rename.get(sf.slug, sf.slug)
+            ids.append(f"{sf.year}/{sf.slug}")
+        written.setdefault("source_files", []).extend(u for u, _sf in source_files)
+        return ids
+
+    def _spy_write_claim_file(**kwargs):
+        written["claim"] = kwargs
+        return tmp_path / "research" / "claims" / "acme" / "claim.md"
+
+    monkeypatch.setattr("orchestrator.persistence._write_source_files", _spy_write_source_files)
+    monkeypatch.setattr("orchestrator.persistence._write_claim_file", _spy_write_claim_file)
+    monkeypatch.setattr(
+        "orchestrator.persistence._write_audit_sidecar", lambda **k: written.__setitem__("sidecar", k),
+    )
+    monkeypatch.setattr("orchestrator.persistence._write_entity_file", lambda **k: "companies/acme")
+
+
+class TestUncoveredSubQuestionWarning:
+    FILES = ["a", "b", "c", "d"]
+
+    @pytest.mark.asyncio
+    async def test_verify_claim_warns_and_records_no_error(self, monkeypatch, caplog) -> None:
+        ro = _sq_ro(self.FILES, {k: ["sq1"] for k in self.FILES})
+        _patch_run(monkeypatch, [_sf(k) for k in self.FILES], ro, _analyst())
+
+        with caplog.at_level("WARNING", logger="orchestrator.pipeline"):
+            result = await verify_claim(
+                entity_name="Acme", claim_text="A claim",
+                config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True),
+            )
+
+        warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+        assert any("sq2" in m and "no ingested source" in m for m in warnings), warnings
+        assert not any("sq1" in m and "no ingested source" in m for m in warnings)
+        assert not any("sq2" in e for e in result.errors)
+        assert result.sub_question_coverage["sq2"] == []
+
+    @pytest.mark.asyncio
+    async def test_research_claim_warns_and_sidecar_shows_gap(self, monkeypatch, tmp_path, caplog) -> None:
+        from orchestrator.pipeline import research_claim
+
+        ro = _sq_ro(self.FILES, {k: ["sq1"] for k in self.FILES})
+        _patch_run(monkeypatch, [_sf(k) for k in self.FILES], ro, _analyst())
+        written: dict = {}
+        _patch_research_claim_writes(monkeypatch, tmp_path, written)
+
+        with caplog.at_level("WARNING", logger="orchestrator.pipeline"):
+            result = await research_claim(
+                claim_text="A claim",
+                config=VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path)),
+            )
+
+        warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+        assert any("sq2" in m and "no ingested source" in m for m in warnings), warnings
+        assert not any("sq2" in e for e in result.errors)
+        block = {e["id"]: e for e in written["sidecar"]["sub_questions_block"]}
+        assert block["sq2"]["citations"] == []
+
+
+class TestCitedSourceFilter:
+    FILES = ["a", "b", "c", "d"]
+
+    @staticmethod
+    def _override(key: str, reason: str = "Restates the entity's own figure."):
+        from analyst.agent import SourceOverride
+        from common.models import Independence
+
+        return SourceOverride(source=f"2026/{key}", independence=Independence.FIRST_PARTY, reason=reason)
+
+    async def _research_claim(self, monkeypatch, tmp_path, analyst_out, *, rename=None):
+        from orchestrator.pipeline import research_claim
+
+        ro = _sq_ro(self.FILES, {k: ["sq1", "sq2"] for k in self.FILES})
+        audit_sources: list = []
+        _patch_run(monkeypatch, [_sf(k) for k in self.FILES], ro, analyst_out, audit_sources)
+        written: dict = {}
+        _patch_research_claim_writes(monkeypatch, tmp_path, written, rename=rename)
+        result = await research_claim(
+            claim_text="A claim",
+            config=VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path)),
+        )
+        return result, written, audit_sources
+
+    @pytest.mark.asyncio
+    async def test_research_claim_lists_only_cited_sources(self, monkeypatch, tmp_path) -> None:
+        ao = _analyst(
+            "Per *Alpha Report* and *Beta Study*, it is offsets.",
+            overrides=[self._override("c")],
+        )
+        result, written, audit_sources = await self._research_claim(monkeypatch, tmp_path, ao)
+
+        assert written["claim"]["source_ids"] == ["2026/a", "2026/b", "2026/c"]
+        assert [o["source"] for o in written["claim"]["source_overrides"]] == ["2026/c"]
+        assert written["source_files"] == [
+            "https://example.com/a", "https://example.com/b", "https://example.com/c",
+        ]
+        assert [sd["source_id"] for sd in audit_sources[0]] == ["2026/a", "2026/b", "2026/c"]
+        # The sidecar still records every ingested source.
+        assert len(result.sources_consulted()) == 4
+
+    @pytest.mark.asyncio
+    async def test_code_entity_override_does_not_keep_an_uncited_source(self, monkeypatch, tmp_path) -> None:
+        ao = _analyst(
+            "Per *Alpha Report* and *Beta Study*, it is offsets.",
+            overrides=[self._override("d", "Off-entity: the source does not mention Acme or a provider the claim names.")],
+        )
+        _result, written, _audit = await self._research_claim(monkeypatch, tmp_path, ao)
+
+        assert written["claim"]["source_ids"] == ["2026/a", "2026/b"]
+        assert written["claim"]["source_overrides"] is None
+
+    @pytest.mark.asyncio
+    async def test_renamed_slug_keeps_the_cited_source(self, monkeypatch, tmp_path) -> None:
+        ao = _analyst("Per *Alpha Report* and *Beta Study*, it is offsets.")
+        _result, written, _audit = await self._research_claim(
+            monkeypatch, tmp_path, ao, rename={"b": "example-b"},
+        )
+
+        assert written["claim"]["source_ids"] == ["2026/a", "2026/example-b"]
+
+    @pytest.mark.asyncio
+    async def test_analyst_failure_still_writes_every_fresh_file(self, monkeypatch, tmp_path) -> None:
+        result, written, _audit = await self._research_claim(monkeypatch, tmp_path, None)
+
+        assert result.analyst_output is None
+        assert written["source_files"] == [f"https://example.com/{k}" for k in self.FILES]
+        assert "claim" not in written
+
+    @pytest.mark.asyncio
+    async def test_nothing_cited_keeps_every_source(self, monkeypatch, tmp_path) -> None:
+        _result, written, _audit = await self._research_claim(monkeypatch, tmp_path, _analyst("No titles."))
+
+        assert written["claim"]["source_ids"] == [f"2026/{k}" for k in self.FILES]
+
+    @staticmethod
+    def _result_with_pool():
+        """Two independent and two first-party sources, all cached."""
+        from orchestrator.pipeline import VerificationResult
+
+        labels = {"a": "independent", "b": "independent", "c": "first-party", "d": "first-party"}
+        cached = [
+            (f"https://example.com/{k}", f"2026/{k}", {
+                "source_id": f"2026/{k}", "title": _TITLES[k], "url": f"https://example.com/{k}",
+                "independence": lab, "kind": "report",
+            })
+            for k, lab in labels.items()
+        ]
+        return VerificationResult(
+            entity="Acme", claim_text="c", urls_found=[], urls_ingested=[], urls_failed=[],
+            sources=[sd for _u, _s, sd in cached], cached_sources=cached,
+        )
+
+    def test_level_guard_keeps_full_list(self, caplog) -> None:
+        from common.models import VerificationLevel
+        from orchestrator.pipeline import _apply_cited_filter
+
+        result = self._result_with_pool()
+        ao = _analyst(
+            "Per *Gamma Dataset* and *Delta Notes*, it holds.",
+            level=VerificationLevel.MULTIPLY_VERIFIED,
+        )
+        with caplog.at_level("WARNING", logger="orchestrator.pipeline"):
+            kept = _apply_cited_filter(result, ao, "Acme")
+
+        assert [sd["source_id"] for sd in kept] == ["2026/a", "2026/b", "2026/c", "2026/d"]
+        assert result.uncited_urls == set()
+        assert any("verification_level" in r.getMessage() for r in caplog.records)
+
+    def test_level_needing_no_independent_source_uses_subset(self) -> None:
+        from orchestrator.pipeline import _apply_cited_filter
+
+        result = self._result_with_pool()
+        ao = _analyst("Per *Gamma Dataset* and *Delta Notes*, it holds.")
+        kept = _apply_cited_filter(result, ao, "Acme")
+
+        assert [sd["source_id"] for sd in kept] == ["2026/c", "2026/d"]
+        assert result.uncited_urls == {"https://example.com/a", "https://example.com/b"}
+
+
+class TestPersistSourcesSkipsUncited:
+    def test_uncited_cached_and_fresh_entries_left_out(self, tmp_path) -> None:
+        from orchestrator.pipeline import VerificationResult
+
+        result = VerificationResult(
+            entity="Acme", claim_text="c", urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+            cached_sources=[
+                ("https://example.com/x", "2025/x", {"source_id": "2025/x"}),
+                ("https://example.com/y", "2025/y", {"source_id": "2025/y"}),
+            ],
+            source_files=[("https://example.com/a", _sf("a")), ("https://example.com/b", _sf("b"))],
+            uncited_urls={"https://example.com/y", "https://example.com/b"},
+        )
+        url_index: dict[str, str] = {}
+
+        ids = result.persist_sources(tmp_path, url_index)
+
+        assert ids == ["2025/x", "2026/a"]
+        assert (tmp_path / "research" / "sources" / "2026" / "a.md").exists()
+        assert not (tmp_path / "research" / "sources" / "2026" / "b.md").exists()
+        assert set(url_index.values()) == {"2026/a"}

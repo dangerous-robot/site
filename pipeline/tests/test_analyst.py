@@ -379,3 +379,54 @@ ABSENCE_INDEX_SENTENCE = (
     "absent from it unless its text in the prompt names comparable entities and "
     "the entity is visibly missing from that list."
 )
+
+
+class TestUncoveredSubQuestionMarker:
+    SQS = [
+        SubQuestion(id="sq1", question="Per-prompt energy?", rationale="r1"),
+        SubQuestion(id="sq2", question="Web-search energy?", rationale="r2"),
+    ]
+    MARKER = "no source addresses this sub-question"
+
+    @staticmethod
+    def _source(addresses):
+        src = {"title": "T", "source_id": "2026/t", "publisher": "P", "summary": "S"}
+        if addresses is not None:
+            src["addresses"] = addresses
+        return src
+
+    def _line(self, prompt: str, sq_id: str) -> str:
+        return next(line for line in prompt.splitlines() if line.startswith(f"- {sq_id}:"))
+
+    def test_marks_only_the_uncovered_sub_question(self) -> None:
+        prompt = build_analyst_prompt(
+            "X", "claim", [self._source(["sq1"])], sub_questions=self.SQS,
+        )
+        assert self.MARKER in self._line(prompt, "sq2")
+        assert "never write the sub-question id" in self._line(prompt, "sq2")
+        assert self.MARKER not in self._line(prompt, "sq1")
+
+    def test_no_marker_when_sources_carry_no_addresses(self) -> None:
+        # Sources loaded from disk have no `addresses`; coverage is unknown.
+        prompt = build_analyst_prompt(
+            "X", "claim", [self._source(None)], sub_questions=self.SQS,
+        )
+        assert self.MARKER not in prompt
+
+
+class TestCoverageAndCitedSourcesInstructions:
+    def test_uncovered_sub_question_described_in_plain_words(self) -> None:
+        from analyst.agent import _INSTRUCTIONS
+
+        text = _words(_INSTRUCTIONS)
+        assert "MUST name the uncovered sub-question" not in text
+        assert "never write a sub-question id such as sq2 in the narrative" in text
+
+    def test_cited_sources_rule_present(self) -> None:
+        from analyst.agent import _INSTRUCTIONS
+
+        assert "`cited_sources`" in _INSTRUCTIONS
+
+    def test_verdict_has_cited_sources_default_empty(self) -> None:
+        assert "cited_sources" in VerdictAssessment.model_fields
+        assert VerdictAssessment.model_fields["cited_sources"].default_factory() == []
