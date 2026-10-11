@@ -151,7 +151,7 @@ The `audit` object has the shape:
 | `refresh.previous` | object | The last published state, read before the overwrite: `status`, `verdict`, `confidence`, `title`, `as_of`, `sources`, `reviewed_at`, `reviewer`, `ran_at`. A second refresh before re-approval keeps it unchanged |
 | `refresh.dropped_sources` | string[] | Source ids in `refresh.previous.sources` that the latest run no longer cites |
 
-The pipeline also writes a top-level `analyst_titles` block, which the site does not read: the `title` and `seo_title` the analyst last wrote to the claim. A forced rewrite compares against it to tell an operator's `seo_title` from the analyst's; a blocked write leaves it unchanged. A claim whose sidecar has no `analyst_titles` treats any `seo_title` on disk as the operator's.
+The pipeline also writes a top-level `analyst_titles` block, which the site does not read: the `title` and `seo_title` the analyst last wrote to the claim. A forced rewrite compares against it to tell an operator's `seo_title` from the analyst's; a blocked write leaves it unchanged. A claim whose sidecar has no `analyst_titles` treats any `seo_title` on disk as the operator's, so that value is kept on every later rewrite while the analyst's title is unchanged; deleting `seo_title` from the claim lets the next rewrite take the analyst's.
 
 Sidecar files are optional. Claims without a sidecar have no `audit` field.
 
