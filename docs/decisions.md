@@ -10,6 +10,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 - **An entity's own post survives the blocklist.** A URL on `research/blocklist.yaml` is kept when it is the entity's own profile post and its page text was fetched (RE-AE (Source pool independence)); the blocklist entry stays. *(Final)*
 - **Archive refresh rules.** A capture older than 90 days is replaced by a fresh checked capture; when the fresh save fails or does not replay with 200, the old 200 capture is kept and the reason is logged (RE-AI (Archive snapshot correctness)). *(Final)*
 - **Beta.7 fix-run findings scheduled.** The seven rows that change published output or operator text are RE-AK (Published fields survive the pipeline), beta.7; the seven source-pool and coverage rows are RE-AL (Source pool and coverage quality), beta.8. Existing `seo_title`s: backfill the analyst's titles once from git rather than clearing or keeping them. *(Final)*
+- **Brave Browser dropped.** A browser is not a chatbot, so the product is out of scope for theme 1: the `brave-browser/renewable-energy-hosting` claim, the `products/brave-browser` and `companies/brave-software` entities and the seven sources only that claim cited are deleted. Live docs that used the claim as an example or test case name another claim; completed plans and architecture examples keep it as history. *(Final)*
 - **Evaluator reruns held.** The read-only and `--write` `dr step-audit` runs for RE-AD (Evaluator grades the claim) do not run yet (operator decision 2026-10-11). *(Final)*
 
 ## 2026-10-10

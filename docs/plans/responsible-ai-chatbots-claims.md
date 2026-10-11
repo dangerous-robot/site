@@ -96,7 +96,7 @@ The page makes three kinds of assertions. Almost none carry evidence.
 | Summary table | `responsible-ai.md:23-86` (`summary:` under each product) | 4 free-text fields x 7 products = 28 entries | 9 inline links (Euria receipts and commitments, Ecosia blog and financial reports, Evertreen substack, Global Rewilding Alliance, Terrapass Wikipedia, Viro methodology, DFPI order) |
 | Footnotes | `responsible-ai.md:274-280` | 3 | none |
 
-The 3 published claims (`research/claims/brave-browser/renewable-energy-hosting.md` and two subject claims) cover no product on the page. Each product except TreadLightlyAI has a product entity and a company entity (S13; GreenPT's pair predates the plan).
+The 2 published claims that predate the plan (two subject claims; the Brave Browser claim was deleted with its entity on 2026-10-11) cover no product on the page. Each product except TreadLightlyAI has a product entity and a company entity (S13; GreenPT's pair predates the plan).
 
 ### Rows: stance, criterion, evidence
 

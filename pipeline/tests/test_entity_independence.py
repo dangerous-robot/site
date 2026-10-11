@@ -151,12 +151,17 @@ def test_identity_falls_back_to_parent_name_when_file_missing(tmp_path: Path) ->
 # --- E3: the real Brave entities --------------------------------------------
 
 
-def test_brave_entity_has_parent(repo_root: Path) -> None:
-    resolved = parse_entity_ref("products/brave-browser", repo_root)
+def test_product_entity_on_disk_includes_its_parent(repo_root: Path) -> None:
+    resolved = parse_entity_ref("products/euria", repo_root)
     identity = entity_identity_for(resolved, repo_root)
-    assert "brave software" in identity.names
-    assert "brave" in identity.names  # alias on companies/brave-software
-    assert entity_first_party_reason("Brave Software", FORUM_URL, identity) is not None
+    assert "euria" in identity.names
+    assert "infomaniak" in identity.names  # parent_company: companies/infomaniak
+    assert (
+        entity_first_party_reason(
+            "Infomaniak", "https://news.infomaniak.com/en/euria-sovereign-ai-assistant/", identity
+        )
+        is not None
+    )
 
 
 # --- E2: verify_claim relabels the analyst's pool and records overrides -----
