@@ -823,3 +823,16 @@ def test_entity_affiliated_ignores_shared_site_hosts() -> None:
     assert entity_affiliated("", "https://platform.claude.com/docs", claude)
     assert entity_affiliated("", "https://www.claude.co.uk/a", claude)
     assert not entity_affiliated("Claudette Media", "https://claudette.ai/a", claude)
+
+
+def test_fit_self_reported_lowered_to_claimed_replaces_the_stale_rationale() -> None:
+    verdict = _assessment(
+        "self-reported", confidence="low",
+        cap="Confidence is capped at low -- all sources originate from entity documentation.",
+    )
+    sources = _pool(("a", "unknown", "documentation"))
+    fit_verdict_to_written_pool(verdict, sources, ["a"], "Brave Browser")
+    assert verdict.verification_level == VerificationLevel.CLAIMED
+    assert verdict.cap_rationale == (
+        "Confidence is capped at low: no source on this claim independently addresses Brave Browser."
+    )

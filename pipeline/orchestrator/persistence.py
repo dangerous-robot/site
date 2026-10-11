@@ -368,7 +368,9 @@ def fit_verdict_to_written_pool(
     article is kept because the analyst may judge one with methodology or
     data self-reported.
     A capped result gets ``confidence: low`` and, when the verdict has none,
-    a template ``cap_rationale``.
+    a template ``cap_rationale``. A ``self-reported`` verdict lowered to
+    ``claimed`` always gets the template: its own rationale describes the
+    first-party report that is no longer written.
 
     Returns a one-line note when the level changed, else None. Call it just
     before the claim (and its sidecar) is written, after the final
@@ -425,7 +427,7 @@ def fit_verdict_to_written_pool(
     verdict.verification_level = new_level
     if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
         verdict.confidence = Confidence.LOW
-        if not verdict.cap_rationale:
+        if not verdict.cap_rationale or required is None:
             name = entity_name if len(entity_name) <= 200 else entity_name[:197] + "..."
             verdict.cap_rationale = (
                 f"Confidence is capped at low: no source on this claim independently addresses {name}."
