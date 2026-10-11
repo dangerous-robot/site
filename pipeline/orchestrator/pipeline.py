@@ -73,10 +73,12 @@ from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHan
 from common.models import SubQuestion
 from common.source_classification import (
     classify_source_type,
+    EntityIdentity,
     entity_affiliated,
     entity_first_party_reason,
     independence_for_source_type,
     SHARED_PLATFORM_HOSTS,
+    profile_url_names_entity,
     publisher_named_in_claim,
     source_engages_entity,
 )
@@ -792,17 +794,49 @@ def _apply_blocklist_cap(
     errors: list[StepError] | None = None,
     url_addresses: dict[str, list[str]] | None = None,
     sub_question_ids: list[str] | None = None,
+    identity: EntityIdentity | None = None,
+    prefetched_bodies: dict[str, str] | None = None,
+    trace: dict | None = None,
 ) -> tuple[list[str], list[StepError]]:
     """Filter raw_urls through the blocklist, cap at candidate_pool_size, and
     append blocked_host / all_blocked errors. Returns (kept_urls, error_list).
 
     With sub-questions, the cap keeps each sub-question's first two URLs
     (``_coverage_pool``), so they stay in the pool even when they rank low.
+
+    A blocklisted URL that is the entity's own profile post
+    (``profile_url_names_entity``) and has non-empty page text in
+    ``prefetched_bodies`` is kept and listed under ``trace["blocklist_spared"]``.
     """
     out_errors: list[StepError] = list(errors) if errors else []
     repo_root_str = cfg.repo_root or str(resolve_repo_root())
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
+    if identity is not None and dropped:
+        # Blocklist entries exist because those hosts refuse anonymous fetches;
+        # with the search's page text in hand no fetch is needed, and the
+        # entity's own post may be its only first-party statement.
+        bodies = prefetched_bodies or {}
+        spared = [
+            d for d in dropped
+            if (bodies.get(d.url) or "").strip() and profile_url_names_entity(d.url, identity)
+        ]
+        if spared:
+            spared_records = [
+                {
+                    "url": d.url,
+                    "host": d.host,
+                    "reason": f"entity's own {d.host} post; page text came with the search result",
+                }
+                for d in spared
+            ]
+            if trace is not None:
+                trace["blocklist_spared"] = spared_records
+            logger.info("Blocklist spared the entity's own post(s): %s", [d.url for d in spared])
+            spared_urls = {d.url for d in spared}
+            dropped = [d for d in dropped if d.url not in spared_urls]
+            kept_set = set(kept) | spared_urls
+            kept = [u for u in raw_urls if u in kept_set]
     urls = _coverage_pool(
         kept, url_addresses or {}, sub_question_ids or [], cfg.candidate_pool_size
     )
@@ -988,10 +1022,18 @@ async def _research(
         claim_text, entity_name, cfg, sem, client,
         resolved_entity=resolved_entity, topics=topics,
     )
+    identity = (
+        entity_identity_for(resolved_entity, _cfg_repo_root(cfg))
+        if resolved_entity is not None
+        else None
+    )
     urls, errors = _apply_blocklist_cap(
         out.urls, cfg, out.errors,
         url_addresses=out.url_addresses,
         sub_question_ids=[sq.id for sq in out.sub_questions],
+        identity=identity,
+        prefetched_bodies=out.prefetched_bodies,
+        trace=out.trace,
     )
     logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
     out.urls = urls

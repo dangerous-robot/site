@@ -207,6 +207,79 @@ class TestResearchBlocklist:
         assert pool == [urls[0], urls[1], urls[2], urls[8], urls[9]]
 
 
+_OWN_POST = (
+    "https://www.linkedin.com/posts/earthly-insight_responsibility-in-the-age-of-ai-turning-"
+    "activity-7417951275817918464-H7h7"
+)
+_OTHER_POST = "https://www.linkedin.com/posts/earth-insight_other-activity-2"
+_SITE = "https://earthlyinsight.com/about"
+
+
+async def _blocklist_research(tmp_path, monkeypatch, bodies, resolved=True):
+    """Run ``_research`` on Earthly Insight's pool with a linkedin.com blocklist."""
+    from common.models import EntityType, SubQuestion
+    from orchestrator.entity_resolution import ResolvedEntity
+    from orchestrator.pipeline import _research
+    from researcher.decomposed import ResearchOutput
+
+    _write_blocklist(tmp_path)
+    urls = [_SITE, _OWN_POST, _OTHER_POST]
+
+    async def _fake_decomposed(*args, **kwargs):
+        return ResearchOutput(
+            urls=list(urls), url_addresses={u: ["sq1"] for u in urls},
+            sub_questions=[SubQuestion(id="sq1", question="q?", rationale="r")],
+            prefetched_bodies=dict(bodies), trace={"mode": "test"},
+        )
+
+    monkeypatch.setattr("researcher.decomposed.decomposed_research", _fake_decomposed)
+    entity = ResolvedEntity(
+        entity_ref="companies/earthly-insight", entity_name="Earthly Insight",
+        entity_type=EntityType.COMPANY, entity_description="",
+        website="https://earthlyinsight.com",
+    ) if resolved else None
+    cfg = VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path))
+    return await _research(
+        None, "Earthly Insight", "A claim", cfg, asyncio.Semaphore(1), resolved_entity=entity
+    )
+
+
+class TestBlocklistSparesEntityProfilePost:
+    @pytest.mark.asyncio
+    async def test_entity_post_with_page_text_passes_blocklist(self, tmp_path, monkeypatch) -> None:
+        out = await _blocklist_research(
+            tmp_path, monkeypatch, {_OWN_POST: "We run on renewable power.", _OTHER_POST: "Other text."}
+        )
+        assert out.urls == [_SITE, _OWN_POST]
+        assert out.prefetched_bodies == {_OWN_POST: "We run on renewable power."}
+        assert [e.url for e in out.errors if e.error_type == "blocked_host"] == [_OTHER_POST]
+        spared = out.trace["blocklist_spared"]
+        assert [s["url"] for s in spared] == [_OWN_POST]
+        assert "linkedin.com" in spared[0]["reason"]
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("bodies", [{}, {_OWN_POST: "  \n"}], ids=["no-body", "blank-body"])
+    async def test_entity_post_without_page_text_drops(self, tmp_path, monkeypatch, bodies) -> None:
+        out = await _blocklist_research(tmp_path, monkeypatch, bodies)
+        assert out.urls == [_SITE]
+        assert [e.url for e in out.errors if e.error_type == "blocked_host"] == [_OWN_POST, _OTHER_POST]
+        assert "blocklist_spared" not in out.trace
+
+    @pytest.mark.asyncio
+    async def test_third_party_linkedin_post_with_page_text_drops(self, tmp_path, monkeypatch) -> None:
+        out = await _blocklist_research(tmp_path, monkeypatch, {_OTHER_POST: "Other text."})
+        assert _OTHER_POST not in out.urls
+        assert _OTHER_POST in [e.url for e in out.errors if e.error_type == "blocked_host"]
+
+    @pytest.mark.asyncio
+    async def test_no_resolved_entity_spares_nothing(self, tmp_path, monkeypatch) -> None:
+        out = await _blocklist_research(
+            tmp_path, monkeypatch, {_OWN_POST: "We run on renewable power."}, resolved=False
+        )
+        assert out.urls == [_SITE]
+        assert "blocklist_spared" not in out.trace
+
+
 class TestVerifyConfigPerAgentModels:
     def test_model_for_falls_back_to_base(self) -> None:
         cfg = VerifyConfig(model="anthropic:claude")
