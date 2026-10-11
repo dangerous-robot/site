@@ -394,6 +394,35 @@ Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plan
 
 ---
 
+## Claim restatement (`dr claim-restate`)
+
+Goal: turn an `unverified` claim into one the sources on disk can settle, without new research. A new command and agent read one unverified claim plus the whole `research/sources/` pool, rank restatements by how decisively the existing evidence settles them (either direction), and record the proposal in the claim's audit sidecar; the operator chooses the framing and acts with `dr claim-draft`, a template edit plus `dr claim-refresh`, or `dr review --archive`. Design: `docs/plans/claim-restate.md`.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Command, agent, sidecar block, `--accept` writes the criterion, runbook | `claim-restate.md` | Evaluator-class model (`--restater-model`, falls back to the auditor's). Retrieval is deterministic keyword ranking over `research/sources/`, cited sources first; its counts feed the "Local source-search prefilter" analysis above. `--accept` appends a `core: false` criterion to `research/templates.yaml` through the writer factored out of `dr claim-promote`. Serves the Responsible AI chatbots page: 3 of 6 renewable-hosting cells cite Unverified claims. Triage: Responsible AI chatbots; propose schedule; 2026-10-10 |
+| Follow-ups | | `dr claim-draft --restates <ref>` writes the link and copies the proposal; a lint check that a template-backed claim's title matches its criterion text (needed once a criterion's text is edited); bounded web research for candidates marked `needs_new_research` (one `dr step-research` call per candidate, operator-triggered); a title-only change on `dr claim-refresh` requires a `--correction` at approval (cut from v1); lint rule `restatement-pending` for a proposal older than 30 days with no action (cut from v1). Triage: Responsible AI chatbots; keep; 2026-10-10 |
+
+---
+
+## Unverified-claim sweep findings (2026-10-10)
+
+Found while reading the five `verdict: unverified` claims and their sidecars for the claim restatement design (`docs/plans/claim-restate.md`, § Pipeline defects found on the way). None is fixed by that plan.
+
+| Work Item | Plan | Notes |
+|-----------|------|-------|
+| Evaluator grades the narrative, not the claim | (none) | 4 of 5 unverified sidecars return `auditor_verdict: true` with reasoning such as "the narrative correctly notes the absence"; the instruction at `pipeline/auditor/instructions.md:14` asks it to assess the analyst's output. A `true` from the Evaluator on an `unverified` analyst verdict is not support for the claim. Fifth instance 2026-10-10: `research/claims/subjects/generative-ai/answering-a-generative-ai-prompt-uses-roughly-ten-times-the-electricity-of-a-web-search.audit.yaml` has `auditor_verdict: true`, `auditor_confidence: high`, while its reasoning says "we indeed lack the data to verify the ten-times-more claim". Triage: Simplicity and clarity; propose schedule; 2026-10-10 |
+| Template `notes` never reach the analyst prompt | (none) | `renewable-energy-hosting` says "mixed = offsets only", and ChatGPTree (offsets only) came out `unverified`. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Off-entity pool contamination lifts `verification_level` | (none) | GreenPT pages in ChatGPTree's pool, `2016/announcement-100` in Brave's and Earthly Insight's, `2024/ai-server` (OVHcloud) in Viro's: independent sources about other entities make a claim with no engaging source read as independently-verified. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Narrative asserts an absence a source does not state | (none) | Earthly Insight's "GWF does not list" rests on index pages that list no host at all. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Entity exclude rule dropped a first-party statement | (none) | Earthly Insight's only first-party renewable statement (a LinkedIn post scored 5) was dropped by `research.entity_exclude_dropped`. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Viro `verification_level: claimed` should be `self-reported` | (none) | First-party `kind: documentation` is in the pool; see `docs/architecture/source-quality.md`. Content fix at review time. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Router-class model wrote a garbled sub-question | (none) | "What sontent" in `research/claims/brave-browser/renewable-energy-hosting.audit.yaml`. Triage: Performance and cost; keep; 2026-10-10 |
+| Comparative claim: the baseline half is never ingested | (none) | `dr claim-draft subjects/generative-ai "Answering a generative AI prompt uses roughly ten times the electricity of a web search"` came out `unverified`: all 8 ingested sources give per-prompt figures (0.24 to 0.34 Wh) and none gives a web-search figure. The scorer rationale in the sidecar names three candidates for the web-search sub-question (a CEUR-WS paper, kanoppi.co, the IEA report) and keeps them, yet none was ingested, and the IEA report, the primary source of the 10x figure, was dropped as "duplicated kept sources". The decomposed researcher has no check that each sub-question lands at least one ingested source before the analyst runs. Same pattern will hit any "X uses N times Y" claim. Triage: Simplicity and clarity; propose schedule; 2026-10-10 |
+| Docs versus code, found while reading | (none) | `docs/architecture/research-flow.md` § 6 says every LLM call is guarded by the `llm_concurrency` semaphore, but `dr step-audit` calls the auditor directly without it or `_run_with_null_retry` (`pipeline/orchestrator/cli.py:1477-1478`); `docs/architecture/content-model.md` § Claim Audit Sidecar omits the `research` and `sub_questions` blocks every pipeline sidecar carries; `AGENTS.md:181` and `_COMMAND_GROUPS` (`cli.py:120-121`) file `dr step-audit` as read-only although `--write` rewrites the sidecar; `pipeline/README.md` § Structure lists a `consistency/` package and phase labels that do not exist. Triage: Simplicity and clarity; keep; 2026-10-10 |
+
+---
+
 ## Decouple subject from entity model
 
 Goal: Today subjects resolve to entity files under `research/entities/subjects/`. Decide whether non-entity subjects get a lighter-weight record (e.g., `research/subjects/<slug>.md` with minimal frontmatter) or whether the entity collection grows a `kind: subject` variant. Either way, researcher/analyst/auditor must stop assuming the subject has a website, parent_company, or other entity-shaped fields. Subjects can be abstract or natural-world topics — e.g., *love*, *hurricanes* — not just a company, product, or industry sector.
