@@ -918,6 +918,93 @@ class TestEntityEnrichCLI:
         # history written
         assert "Makes widgets" in body
 
+    def _run_enrich_with_empty_bundle(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch, fetch_errors=None
+    ):
+        """Run `dr entity-enrich --force` with light research that found no page.
+
+        Returns (result, enricher spy, entity path, original file text).
+        """
+        from contextlib import contextmanager
+        from unittest.mock import patch
+
+        from pydantic_ai import Agent
+        from pydantic_ai.models.test import TestModel
+        from researcher.entity_enricher import entity_enricher_agent
+
+        self._write_entity_minimal(
+            tmp_path, "products", "ecosia-ai",
+            body="Operator-written history paragraph.\n",
+        )
+        entity_path = tmp_path / "research" / "entities" / "products" / "ecosia-ai.md"
+        original = entity_path.read_text(encoding="utf-8")
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+
+        async def _fake_gather(entity_name, entity_type, cfg, sem, client, seed_url=None):
+            from orchestrator.pipeline import LightResearchBundle
+            kwargs = {} if fetch_errors is None else {"fetch_errors": fetch_errors}
+            return LightResearchBundle(
+                entity_name=entity_name,
+                entity_type=entity_type,
+                raw_description="",
+                entity_website="https://ecosia.example",
+                probe_excludes=[],
+                **kwargs,
+            )
+
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research", _fake_gather
+        )
+
+        canned = {
+            "founded": 2009,
+            "description": "Guessed description from model memory.",
+            "history_markdown": "Guessed history paragraph.",
+        }
+
+        @contextmanager
+        def _noop(**kwargs):
+            yield
+
+        runner = CliRunner()
+        with (
+            entity_enricher_agent.override(model=TestModel(custom_output_args=canned)),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+            patch.object(
+                entity_enricher_agent, "run", wraps=entity_enricher_agent.run
+            ) as spy,
+        ):
+            result = runner.invoke(
+                main,
+                ["entity-enrich", "products/ecosia-ai", "--force"],
+            )
+        return result, spy, entity_path, original
+
+    def test_refuses_when_no_page_fetched(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """No page summary means nothing to enrich from: refuse, write nothing."""
+        result, spy, entity_path, original = self._run_enrich_with_empty_bundle(
+            tmp_path, monkeypatch,
+        )
+        assert "not enriched" in result.output
+        spy.assert_not_called()
+        assert result.exit_code == 1, result.output
+        text = entity_path.read_text(encoding="utf-8")
+        assert text == original
+        assert "Guessed" not in text
+
+    def test_not_enriched_report_names_fetch_reason(
+        self, tmp_path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        result, _spy, _path, _original = self._run_enrich_with_empty_bundle(
+            tmp_path, monkeypatch,
+            fetch_errors=["https://ecosia.example: http_403: Forbidden"],
+        )
+        assert "not enriched" in result.output
+        assert "http_403" in result.output
+
 
 class TestOnboardCLIPhaseB:
     """End-to-end CLI tests for Commit 2's Phase B + subject onboard wiring."""

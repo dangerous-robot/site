@@ -53,6 +53,25 @@ async def _fake_research_empty(*args, **kwargs):
     return _ro()
 
 
+def _fake_gather(raw_description: str, fetch_errors: list[str] | None = None):
+    """Stand-in for gather_light_research with a fixed page summary.
+
+    The onboard enricher only runs when light research collected a summary,
+    so tests that exercise the enricher must supply one.
+    """
+    async def fake(entity_name, entity_type, cfg, sem, client, seed_url=None):
+        from orchestrator.pipeline import LightResearchBundle
+        return LightResearchBundle(
+            entity_name=entity_name,
+            entity_type=entity_type,
+            raw_description=raw_description,
+            entity_website="https://example.com/report",
+            probe_excludes=[],
+            fetch_errors=list(fetch_errors or []),
+        )
+    return fake
+
+
 def _make_source_file(url: str, slug: str) -> SourceFile:
     return SourceFile(
         frontmatter=SourceFrontmatter(
@@ -785,6 +804,10 @@ class TestOnboardPhaseBVerifier:
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research",
+            _fake_gather("Anthropic builds AI systems."),
+        )
 
         from researcher.entity_verifier import entity_verifier_agent
         from researcher.entity_enricher import entity_enricher_agent
@@ -845,6 +868,10 @@ class TestOnboardPhaseBVerifier:
 
         monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research",
+            _fake_gather("OpenAI builds AI systems."),
+        )
 
         from researcher.entity_verifier import entity_verifier_agent
         from researcher.entity_enricher import entity_enricher_agent
@@ -880,6 +907,111 @@ class TestOnboardPhaseBVerifier:
         assert fm.get("founded") == 2015
         assert "research and deployment" in fm.get("description", "")
         assert "Founded in 2015" in body
+
+    @pytest.mark.asyncio
+    async def test_onboard_skips_enricher_when_no_page_fetched(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """--force on an existing entity leaves the file alone when no page summary was collected."""
+        _setup_tmp_repo(tmp_path)
+        entity_dir = tmp_path / "research" / "entities" / "companies"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        existing = entity_dir / "openai.md"
+        original = "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n"
+        existing.write_text(original, encoding="utf-8")
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research",
+            _fake_gather("", ["https://example.com/report: http_403: Forbidden"]),
+        )
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(
+                    founded=2015,
+                    description="Guessed description.",
+                    history_markdown="Guessed history.",
+                ),
+            ),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+            patch.object(
+                entity_enricher_agent, "run", wraps=entity_enricher_agent.run
+            ) as spy,
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+                force_overwrite=True,
+            )
+            await onboard_entity("OpenAI", "company", config=config)
+
+        spy.assert_not_called()
+        text = existing.read_text(encoding="utf-8")
+        assert text == original
+        assert "Guessed" not in text
+
+    @pytest.mark.asyncio
+    async def test_onboard_new_entity_skips_enricher_when_no_page_fetched(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """A new entity gets the placeholder description, not a model-memory guess."""
+        _setup_tmp_repo(tmp_path)
+
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research", _fake_gather(""),
+        )
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(
+                    founded=2015,
+                    description="Guessed description.",
+                    history_markdown="Guessed history.",
+                ),
+            ),
+            patch.object(
+                Agent, "override", side_effect=lambda **kw: _noop(**kw)
+            ),
+            patch.object(
+                entity_enricher_agent, "run", wraps=entity_enricher_agent.run
+            ) as spy,
+        ):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+            )
+            await onboard_entity("Ecosia", "company", config=config)
+
+        spy.assert_not_called()
+        entity_path = tmp_path / "research" / "entities" / "companies" / "ecosia.md"
+        assert entity_path.exists()
+        text = entity_path.read_text(encoding="utf-8")
+        fm, body = parse_frontmatter(text)
+        assert fm.get("description") == "Ecosia (company)."
+        assert fm.get("founded") is None
+        assert "Guessed" not in text
 
     @pytest.mark.asyncio
     async def test_swallows_search_failures(self, monkeypatch) -> None:
@@ -1258,3 +1390,61 @@ class TestOnboardSubjectFanOut:
         # The "No core templates" rejection is reserved for company /
         # product paths now; subjects warn rather than halt.
         assert not any("No core templates" in e for e in result.errors)
+
+
+class TestGatherLightResearchErrors:
+    """Light research returns why no page summary was collected."""
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_keeps_fetch_errors(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.checkpoints import StepError
+        from orchestrator.pipeline import gather_light_research
+
+        async def fake_ingest(*args, **kwargs):
+            return [], [StepError(
+                step="ingest", url="https://ecosia.example",
+                error_type="http_403", message="Forbidden", retryable=False,
+            )]
+
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None, seed_url="ecosia.example",
+        )
+        assert bundle.raw_description == ""
+        assert any("http_403" in e for e in bundle.fetch_errors)
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_reports_search_errors(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.checkpoints import StepError
+        from orchestrator.pipeline import gather_light_research
+
+        async def fake_research(*args, **kwargs):
+            return _ro(errors=[StepError(
+                step="research", error_type="no_results",
+                message="search returned nothing", retryable=False,
+            )])
+
+        monkeypatch.setattr("orchestrator.pipeline._research", fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None,
+        )
+        assert bundle.entity_website is None
+        assert bundle.raw_description == ""
+        assert any("no_results" in e for e in bundle.fetch_errors)
+

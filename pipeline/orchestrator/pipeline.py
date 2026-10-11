@@ -1572,7 +1572,8 @@ class EnrichmentResult:
     ``status``:
         - ``"accepted"``  – operator accepted the draft; entity file updated.
         - ``"rejected"``  – operator rejected the draft; nothing written.
-        - ``"failed"``    – enricher agent or write step raised; see ``errors``.
+        - ``"failed"``    – no page summary to enrich from, or the enricher
+          agent or write step raised; see ``errors``.
 
     ``founded`` / ``description`` / ``history_markdown`` capture the
     fields that were actually persisted (only populated for ``accepted``).
@@ -1602,7 +1603,9 @@ class LightResearchBundle:
     """Shared input for the entity verifier and enricher agents.
 
     ``raw_description`` is the untightened webpage summary; the enricher
-    produces the tightened one-sentence ``description``.
+    produces the tightened one-sentence ``description``. ``fetch_errors``
+    says why no summary was collected (fetch, search or ingest failures),
+    so callers that refuse to enrich can report the reason.
     """
 
     entity_name: str
@@ -1610,6 +1613,11 @@ class LightResearchBundle:
     raw_description: str
     entity_website: str | None
     probe_excludes: list[str]
+    fetch_errors: list[str] = field(default_factory=list)
+
+
+def _describe_step_error(e: StepError) -> str:
+    return f"{e.url or '-'}: {e.error_type}: {e.message}"
 
 
 async def gather_light_research(
@@ -1622,21 +1630,25 @@ async def gather_light_research(
 ) -> LightResearchBundle:
     """Run the orchestrator's light-research pass and return a bundle.
 
-    Errors during fetch/probe are non-fatal (logged and swallowed) so
-    onboarding can still proceed with whatever signals were collected.
-    Returns the raw webpage summary; the enricher produces the tightened
-    one-sentence ``description``.
+    Errors during search/fetch/probe are non-fatal so onboarding can still
+    proceed with whatever signals were collected; search and fetch errors
+    are returned in ``fetch_errors``. Returns the raw webpage summary; the
+    enricher produces the tightened one-sentence ``description``.
     """
     raw_description = ""
     entity_website: str | None = None
     probe_excludes: list[str] = []
+    fetch_errors: list[str] = []
 
     try:
         if seed_url:
             url = seed_url if seed_url.startswith(("http://", "https://")) else f"https://{seed_url}"
             entity_website = url
             logger.info("Light research: ingesting seed URL %s", url)
-            source_files, _ = await _ingest_urls(client, [url], cfg, sem, archive=False)
+            source_files, ingest_errors = await _ingest_urls(
+                client, [url], cfg, sem, archive=False,
+            )
+            fetch_errors.extend(_describe_step_error(e) for e in ingest_errors)
         else:
             query = f"{entity_name} official website"
             light_ro = await _research(client, entity_name, query, cfg, sem)
@@ -1644,15 +1656,19 @@ async def gather_light_research(
             urls = [u for u in light_ro.urls if u.startswith(("http://", "https://"))]
             if urls:
                 entity_website = urls[0]
-            source_files, _ = (
-                await _ingest_urls(
+                source_files, ingest_errors = await _ingest_urls(
                     client, urls[:1], cfg, sem,
                     prefetched_bodies=light_ro.prefetched_bodies,
                     archive=False,
                 )
-                if urls
-                else ([], [])
-            )
+                fetch_errors.extend(_describe_step_error(e) for e in ingest_errors)
+            else:
+                source_files = []
+                fetch_errors.extend(
+                    _describe_step_error(e) for e in light_ro.errors
+                )
+                if not fetch_errors:
+                    fetch_errors.append("search found no website")
         if source_files:
             _src_url, sf = source_files[0]
             raw_description = sf.frontmatter.summary or ""
@@ -1661,6 +1677,7 @@ async def gather_light_research(
         )
     except Exception as exc:
         logger.warning("Light research failed: %s", exc)
+        fetch_errors.append(f"light research failed: {exc}")
 
     return LightResearchBundle(
         entity_name=entity_name,
@@ -1668,6 +1685,7 @@ async def gather_light_research(
         raw_description=raw_description,
         entity_website=entity_website,
         probe_excludes=probe_excludes,
+        fetch_errors=fetch_errors,
     )
 
 
@@ -1774,8 +1792,10 @@ async def enrich_entity(
     ``history_markdown`` into the file in place. Other fields
     (aliases, parent_company, search_hints, etc.) are preserved untouched.
 
-    Both ``dr entity-enrich`` and ``dr onboard --force`` call this
-    helper so the re-enrichment path stays single-sourced.
+    Refuses (status ``failed``, nothing written) when light research
+    collected no page summary. Only ``dr entity-enrich`` calls this
+    helper; ``onboard_entity`` runs its own enricher step with the same
+    refusal.
     """
     from common.models import resolve_model
     from orchestrator.entity_resolution import parse_entity_ref
@@ -1818,6 +1838,19 @@ async def enrich_entity(
                 sem,
                 client,
                 seed_url=resolved.website,
+            )
+
+        # With no page summary the enricher can only write from model
+        # memory, and auto-approve would persist that guess as fact.
+        if not bundle.raw_description.strip():
+            return EnrichmentResult(
+                entity_ref=entity_ref,
+                entity_name=resolved.entity_name,
+                status="failed",
+                errors=[
+                    "not enriched: light research collected no page summary",
+                    *bundle.fetch_errors,
+                ],
             )
 
         # Phase C: enricher agent.
@@ -2053,7 +2086,14 @@ async def onboard_entity(
         founded_year: int | None = None
         history_markdown: str | None = None
         # Without --force nothing would use a draft for an entity file on disk.
-        run_enricher = file_entity is None or cfg.force_overwrite
+        # Without a page summary the draft could only come from model memory.
+        wants_draft = file_entity is None or cfg.force_overwrite
+        run_enricher = wants_draft and bool(bundle.raw_description.strip())
+        if wants_draft and not run_enricher:
+            progress(
+                "Enricher skipped: light research collected no page summary%s",
+                "".join(f"\n  ! {e}" for e in bundle.fetch_errors),
+            )
         try:
             if run_enricher:
                 prompt = build_entity_enricher_prompt(bundle)

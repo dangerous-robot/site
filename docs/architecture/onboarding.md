@@ -9,10 +9,12 @@ dr onboard "Entity Name" [seed-url] --type {company|product|subject} [--force] [
 ```
 
 - A second positional argument supplies a seed URL and skips the homepage search step (useful when the homepage is non-obvious or rate-limited).
-- `--force` allows re-running over an existing entity directory; without it, the command refuses to overwrite. `--force` additionally re-runs the enricher and splices the new `founded`, `description`, and `history` body into the existing file.
+- `--force` allows re-running over an existing entity directory; without it, the command refuses to overwrite. `--force` additionally re-runs the enricher and splices the new `founded`, `description`, and `history` body into the existing file, unless light research collected no page summary (then the file is left as it was).
 - An entity ref in place of the name (`dr onboard products/<slug>`) onboards an entity whose file is already on disk. That file (name, description, website, parent company, search hints) is the entity the analyst and evaluator are given; its website is the seed URL unless one is passed; the enricher is skipped unless `--force` is set. Its `search_hints` are merged with any `--search-hint-*` flags and the probe's suggestions for the run, not written back.
 - `--only` restricts the run to the named template slugs (the operator escape hatch for partial onboards and re-runs).
 - `--interactive` enables the CLI checkpoint prompts (see Checkpoints below).
+
+`dr entity-enrich <type>/<slug>` re-runs only light research and the enricher on an existing entity. When light research collects no page summary it refuses: it prints `not enriched` with the fetch or search errors, writes nothing, and exits 1.
 
 ## Flow
 
@@ -39,6 +41,9 @@ Phase B: entity_verifier
   |
   v
 Phase C: entity_enricher (operator-review checkpoint)
+  - Skipped when light research collected no page summary (failed fetch,
+    empty summary, or search found no website); the reasons are printed.
+    A new entity then gets the placeholder description "<name> (<type>)."
   - Drafts founded, tightened description, history_markdown
   - review_entity_enrichment: accept writes the draft, reject keeps the raw summary
   |
