@@ -61,13 +61,13 @@ The Markdown body provides extended context about the entity.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `title` | string | yes | Human-readable claim statement |
-| `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; a forced rewrite (`dr claim-refresh`, `--force`) keeps an existing value while the title is unchanged, and keeps an existing `cap_rationale` while `verification_level` and `confidence` are both unchanged. Falls back to `title` if absent. |
+| `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; a forced rewrite (`dr claim-refresh`, `--force`) keeps an operator's value (one that differs from the analyst's last `seo_title`, recorded in the sidecar's `analyst_titles`) while the analyst's title is unchanged. Falls back to `title` if absent. |
 | `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
 | `confidence` | enum | yes | `high`, `medium`, `low` |
 | `verification_level` | enum | no | Source-pool diversity signal, set by the analyst from `independence` and `kind` on the claim's sources: `claimed`, `self-reported`, `partially-verified`, `independently-verified`, `multiply-verified`. See [source-quality.md](source-quality.md) |
-| `cap_rationale` | string | no | One-sentence explanation when the confidence cap fires (a `verification_level` of `claimed` or `self-reported` caps `confidence` at `low`); max 400 chars. See [source-quality.md](source-quality.md) |
+| `cap_rationale` | string | no | One-sentence explanation when the confidence cap fires (a `verification_level` of `claimed` or `self-reported` caps `confidence` at `low`); max 400 chars. A forced rewrite (`dr claim-refresh`, `--force`) keeps an existing value while `verification_level` and `confidence` are both unchanged. See [source-quality.md](source-quality.md) |
 | `source_overrides` | object[] | no | Per-claim overrides of source-level fields, used when a source classified `independent` is actually restating a primary disclosure for this claim. Each entry: `source`, `reason`, optional `independence`. See [source-quality.md § Source overrides on claims](source-quality.md#source-overrides-on-claims) |
 | `takeaway` | string | no | Optional reader-facing one-liner; max 200 chars; rendered under the verdict badge |
 | `criteria_slug` | string | no | Optional back-reference to the criterion template this claim was generated from |
@@ -150,6 +150,8 @@ The `audit` object has the shape:
 | `refresh.refreshed_at` | timestamp | When the refresh that took the snapshot ran |
 | `refresh.previous` | object | The last published state, read before the overwrite: `status`, `verdict`, `confidence`, `title`, `as_of`, `sources`, `reviewed_at`, `reviewer`, `ran_at`. A second refresh before re-approval keeps it unchanged |
 | `refresh.dropped_sources` | string[] | Source ids in `refresh.previous.sources` that the latest run no longer cites |
+
+The pipeline also writes a top-level `analyst_titles` block, which the site does not read: the `title` and `seo_title` the analyst last wrote to the claim. A forced rewrite compares against it to tell an operator's `seo_title` from the analyst's; a blocked write leaves it unchanged. A claim whose sidecar has no `analyst_titles` treats any `seo_title` on disk as the operator's.
 
 Sidecar files are optional. Claims without a sidecar have no `audit` field.
 

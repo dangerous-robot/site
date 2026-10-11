@@ -25,6 +25,7 @@ from orchestrator.persistence import (
     _build_sources_consulted,
     _write_audit_sidecar,
     _write_claim_file,
+    analyst_titles_record,
     set_claim_status,
 )
 
@@ -1071,6 +1072,99 @@ class TestWriteClaimFile:
 
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         assert "cap_rationale" not in fm
+
+    # With an audit sidecar, the analyst's last title and seo_title are
+    # recorded in it, so an operator's seo_title can be told from the analyst's.
+
+    _TITLE = "Brave hosts on renewable energy"
+
+    def _claim_path(self, repo_root: Path) -> Path:
+        return repo_root / "research" / "claims" / "test-entity" / "test-claim.md"
+
+    def _add_sidecar(self, repo_root: Path) -> Path:
+        claim_path = self._claim_path(repo_root)
+        claim_path.parent.mkdir(parents=True, exist_ok=True)
+        return _write_audit_sidecar(
+            claim_path=claim_path, comparison=None, model="test", ran_at=FIXED_TS,
+            sources_consulted=[], agents_run=["researcher"],
+        )
+
+    def _blocked(self, repo_root: Path):
+        return self._call(
+            repo_root, force=True, title="Brave hosts on VALUE energy",
+            confidence=Confidence.LOW, status="blocked",
+            blocked_reason=BlockedReason.ANALYST_ERROR,
+        )
+
+    def _seo_title(self, path: Path) -> str:
+        return parse_frontmatter(path.read_text(encoding="utf-8"))[0]["seo_title"]
+
+    def test_blocked_write_between_runs_keeps_operator_seo_title(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._call(tmp_path, title=self._TITLE, seo_title="Analyst seo title")
+        self._set_frontmatter(path, seo_title="Operator seo title")
+
+        self._blocked(tmp_path)
+        self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
+
+        assert self._seo_title(path) == "Operator seo title"
+
+    def test_blocked_write_seeds_record_for_claim_written_before_it(self, tmp_path):
+        path = self._call(tmp_path, title=self._TITLE, seo_title="Operator seo title")
+        self._add_sidecar(tmp_path)
+
+        self._blocked(tmp_path)
+        self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
+
+        assert self._seo_title(path) == "Operator seo title"
+
+    def test_analyst_seo_title_replaced_when_title_unchanged(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        path = self._call(tmp_path, title=self._TITLE, seo_title="Brave hosted on renewable energy")
+
+        self._call(
+            tmp_path, force=True, title=self._TITLE,
+            seo_title="Brave renewable hosting claim", confidence=Confidence.LOW,
+        )
+
+        assert self._seo_title(path) == "Brave renewable hosting claim"
+        assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
+            "title": self._TITLE, "seo_title": "Brave renewable hosting claim",
+        }
+
+    def test_operator_seo_title_replaced_when_analyst_title_changes(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._call(tmp_path, title=self._TITLE, seo_title="Analyst seo title")
+        self._set_frontmatter(path, seo_title="Operator seo title")
+
+        self._call(
+            tmp_path, force=True, title="Brave hosts on fossil energy", seo_title="New analyst seo title",
+        )
+
+        assert self._seo_title(path) == "New analyst seo title"
+
+    def test_sidecar_rewrite_keeps_analyst_titles(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        self._call(tmp_path, title=self._TITLE, seo_title="Analyst seo title")
+
+        sidecar = self._add_sidecar(tmp_path)
+
+        assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
+            "title": self._TITLE, "seo_title": "Analyst seo title",
+        }
+
+    def test_claim_written_before_first_sidecar_records_passed_titles(self, tmp_path):
+        path = self._call(tmp_path, title=self._TITLE, seo_title="Analyst seo title")
+        sidecar = _write_audit_sidecar(
+            claim_path=path, comparison=None, model="test", ran_at=FIXED_TS,
+            sources_consulted=[], agents_run=["researcher"],
+            analyst_titles=analyst_titles_record(self._TITLE, "Analyst seo title"),
+        )
+
+        self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
+
+        assert self._seo_title(path) == "New analyst seo title"
+        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["seo_title"] == "New analyst seo title"
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
         path = self._call(tmp_path, narrative="original")

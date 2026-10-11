@@ -200,7 +200,11 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
             return {"error": f"Unsupported content type: {ct}", "url": url}
         page = extract_page_data(resp.text, url)
         if page.get("text"):
-            record_text(page["text"])
+            # The model is shown the title and description too, so a key
+            # quote copied from either is on the page.
+            record_text("\n".join(
+                part for part in (page.get("title"), page.get("description"), page["text"]) if part
+            ))
             if is_requested and not _ARCHIVE_COPY.match(url):
                 deps.final_url = str(resp.url)
         else:

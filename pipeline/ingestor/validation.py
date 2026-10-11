@@ -75,17 +75,32 @@ def _check_archived_url_domain(source: SourceFile, result: ValidationResult) -> 
         )
 
 
-_OPENING_MARKS = {'"': '"', "'": "'", "\u201c": "\u201d", "\u2018": "\u2019", "\u00ab": "\u00bb"}
+# Quotation marks are folded to the two ASCII marks before a quote is
+# unwrapped, so a mismatched pair (curly open, straight close) or a German
+# low-9 pair still unwraps.
+_QUOTE_MARKS = ('"', "'")
 # What may follow a quote's closing mark and still leave only the marked text
 # claimed verbatim: nothing, a trailing period or comma, or a dash attribution.
-_AFTER_CLOSING_MARK = re.compile(r"^[.,]?\s*$|^\s*(?:\u2014|\u2013|\u2015|--|-)\s*\S")
-_ELLIPSIS = re.compile(r"\.\.\.")
+# Dashes are already folded to "-" when this runs.
+_AFTER_CLOSING_MARK = re.compile(r"^[.,]?\s*$|^\s*-{1,2}\s*\S")
+# An ellipsis, bare or in brackets ("[...]", "(...)"); NFKC has already
+# turned the ellipsis character into three periods.
+_ELISION = re.compile(r"\s*[\[(]?\s*\.\.\.\s*[\])]?\s*")
+_MARKDOWN_IMAGE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
 _MARKDOWN_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
-_WHITESPACE = re.compile(r"\s+")
+_MARKDOWN_ESCAPE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!|<>~])")
+_MARKDOWN_EMPHASIS = re.compile(r"[*_`]")
+_WORD = re.compile(r"\w")
 _CHAR_MAP = str.maketrans({
-    **{c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015"},
-    "\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"',
+    **{c: "-" for c in "\u2010\u2011\u2012\u2013\u2014\u2015\u2212"},
+    **{c: "'" for c in "\u2018\u2019\u201a\u201b\u2039\u203a"},
+    **{c: '"' for c in "\u201c\u201d\u201e\u201f\u00ab\u00bb"},
 })
+# A quote with an ellipsis must read as one excerpt, not words picked from
+# across the page: the elided page text is capped, every fragment between two
+# ellipses needs this many words, and one fragment needs at least two.
+_MAX_ELIDED_CHARS = 300
+_MIN_INTERIOR_FRAGMENT_WORDS = 3
 
 
 def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
@@ -97,7 +112,7 @@ def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
     quotes = source.frontmatter.key_quotes or []
     if not quotes:
         return []
-    page = _normalize_for_match(page_text)
+    page = _normalize_page(page_text)
     kept: list[str] = []
     dropped: list[str] = []
     for quote in quotes:
@@ -107,40 +122,86 @@ def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
 
 
 def _quote_on_page(quote: str, normalized_page: str) -> bool:
-    fragments = [f for f in _ELLIPSIS.split(_normalize_for_match(_match_text(quote))) if f]
-    if not fragments:
+    text = _strip_markup(_match_text(_fold(quote)))
+    fragments = [
+        f for f in _ELISION.split(" ".join(text.split())) if _WORD.search(f)
+    ]
+    if not fragments or not _fragments_read_as_excerpt(fragments):
         return False
-    position = 0
-    for fragment in fragments:
-        found = normalized_page.find(fragment, position)
-        if found == -1:
-            return False
-        position = found + len(fragment)
-    return True
+    patterns = [_fragment_pattern(f) for f in fragments]
+    for first in patterns[0].finditer(normalized_page):
+        elided = 0
+        position = first.end()
+        for pattern in patterns[1:]:
+            found = pattern.search(normalized_page, position)
+            if found is None:
+                return False
+            elided += found.start() - position
+            position = found.end()
+        # Matching each later fragment at its earliest place keeps the elided
+        # text as short as it can be for this start.
+        if elided <= _MAX_ELIDED_CHARS:
+            return True
+    return False
+
+
+def _fragments_read_as_excerpt(fragments: list[str]) -> bool:
+    if len(fragments) == 1:
+        return True
+    words = [len([w for w in f.split() if _WORD.search(w)]) for f in fragments]
+    return max(words) >= 2 and all(
+        n >= _MIN_INTERIOR_FRAGMENT_WORDS for n in words[1:-1]
+    )
+
+
+def _fragment_pattern(fragment: str) -> re.Pattern[str]:
+    # Page text has a newline wherever an inline tag started or ended, which
+    # can split a word ("CO\n2") or put a break before punctuation; a page
+    # newline may therefore match nothing, and a space in the quote matches a
+    # page space or newline. A page space must match a quote space, so words
+    # never run together ("the rapist" is not in "the therapist").
+    parts = ["[ \n]" if ch == " " else re.escape(ch) for ch in fragment]
+    pattern = "\n?".join(parts)
+    if _WORD.match(fragment[0]):
+        pattern = r"(?<!\w)" + pattern
+    if _WORD.match(fragment[-1]):
+        pattern += r"(?!\w)"
+    return re.compile(pattern)
 
 
 def _match_text(quote: str) -> str:
-    """The part of a stored quote that must appear on the page.
+    """The part of a folded quote that must appear on the page.
 
     Stored quotes are often wrapped in quotation marks, sometimes with an
     attribution after the closing mark; neither is page text.
     """
     text = quote.strip()
-    closing = _OPENING_MARKS.get(text[:1])
-    if closing is None:
+    mark = text[:1]
+    if mark not in _QUOTE_MARKS:
         return text
-    end = text.rfind(closing, 1)
+    end = text.rfind(mark, 1)
     if end == -1 or not _AFTER_CLOSING_MARK.match(text[end + 1:]):
         return text
     return text[1:end]
 
 
-def _normalize_for_match(text: str) -> str:
-    # NFKC folds no-break spaces and the ellipsis character; Markdown markup
-    # comes from prefetched bodies. All whitespace is removed, not collapsed,
-    # because the page text has a newline wherever an inline tag ended, which
-    # puts a space before punctuation that followed the tag.
-    text = unicodedata.normalize("NFKC", html.unescape(text)).translate(_CHAR_MAP)
+def _fold(text: str) -> str:
+    # NFKC folds no-break spaces, full-width marks and the ellipsis character.
+    return unicodedata.normalize("NFKC", html.unescape(text)).translate(_CHAR_MAP)
+
+
+def _strip_markup(text: str) -> str:
+    # Markdown markup comes from prefetched bodies. Emphasis marks and
+    # underscores are removed from both sides, so "data\_center" on the page
+    # matches "data_center" in the quote.
+    text = _MARKDOWN_ESCAPE.sub(r"\1", text)
+    text = _MARKDOWN_IMAGE.sub("", text)
     text = _MARKDOWN_LINK.sub(r"\1", text)
-    text = text.replace("**", "").replace("__", "").replace("`", "")
-    return _WHITESPACE.sub("", text).casefold()
+    return _MARKDOWN_EMPHASIS.sub("", text).casefold()
+
+
+def _normalize_page(text: str) -> str:
+    # Each run of whitespace becomes one newline if it holds a line break,
+    # else one space; see _fragment_pattern for how each is matched.
+    text = _strip_markup(_fold(text))
+    return re.sub(r"\s+", lambda m: "\n" if "\n" in m.group() else " ", text)

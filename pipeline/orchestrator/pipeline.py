@@ -1346,6 +1346,7 @@ async def research_claim(
         _write_claim_file,
         _write_entity_file,
         _write_source_files,
+        analyst_titles_record,
         verdict_write_kwargs,
     )
 
@@ -1539,6 +1540,9 @@ async def research_claim(
                     result.sub_questions,
                     result.sub_question_coverage,
                     result.queries_by_sub_question,
+                ),
+                analyst_titles=analyst_titles_record(
+                    analyst_out.verdict.title, analyst_out.verdict.seo_title
                 ),
             )
 
@@ -1997,6 +2001,7 @@ async def onboard_entity(
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
+        analyst_titles_record,
         entity_ref_for,
         verdict_write_kwargs,
     )
@@ -2631,6 +2636,7 @@ async def onboard_entity(
                             vr.sub_question_coverage,
                             vr.queries_by_sub_question,
                         ),
+                        analyst_titles=analyst_titles_record(ao.verdict.title, ao.verdict.seo_title),
                     )
 
                     progress("[%d/%d] Done: %s", idx, total, slug)

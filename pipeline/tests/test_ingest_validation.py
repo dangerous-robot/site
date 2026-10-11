@@ -138,3 +138,77 @@ def test_quote_with_no_text_dropped(quote: str) -> None:
 def test_kept_quote_string_unchanged() -> None:
     quote = '  "Brave publishes a transparency report."  '
     assert _kept([quote]) == [quote]
+
+
+@pytest.mark.parametrize(
+    "quote",
+    ["Google will reach [...] by 2030.", "Google will reach […] by 2030.", "Google will reach (...) by 2030."],
+    ids=["brackets", "brackets-ellipsis-char", "parentheses"],
+)
+def test_bracketed_elision_kept(quote: str) -> None:
+    assert _kept([quote], "Google will reach net zero by 2030.") == [quote]
+
+
+def test_short_edge_fragment_kept_when_another_has_two_words() -> None:
+    assert _kept(["Google [...] by 2030."], "Google will reach net zero by 2030.") == [
+        "Google [...] by 2030."
+    ]
+
+
+@pytest.mark.parametrize(
+    "quote, page",
+    [
+        ("AWS ... renewable ... 2025", "AWS sells cloud. Wind is renewable. In 2025 prices rose."),
+        ("AWS ... 2025", "AWS sells cloud. In 2025 prices rose."),
+        (
+            "Google will reach ... by 2030.",
+            "Google will reach new markets. " + "Filler text here. " * 20 + "Emissions fall by 2030.",
+        ),
+    ],
+    ids=["one-word-interior-fragment", "one-word-fragments", "elided-text-too-long"],
+)
+def test_ellipsis_quote_stitched_from_scattered_words_dropped(quote: str, page: str) -> None:
+    assert _kept([quote], page) is None
+
+
+def test_ellipsis_match_uses_the_nearest_start() -> None:
+    # The first "Google will reach" is too far from "by 2030."; the second is not.
+    page = "Google will reach new markets. " + "Filler text here. " * 20 + "Google will reach net zero by 2030."
+    assert _kept(["Google will reach ... by 2030."], page) == ["Google will reach ... by 2030."]
+
+
+@pytest.mark.parametrize(
+    "quote, page",
+    [
+        ("renewable energy for its data centers", "renewable energy for its *data centers* by 2030"),
+        ("data_center plan", "the data\\_center plan"),
+        ("its data centers run on wind", "its data centers ![a wind farm](https://x.example/w.png)run on wind"),
+        ("emissions fell -5%", "emissions fell −5%"),
+        ("total CO2 emissions", "total CO\n2\nemissions"),
+    ],
+    ids=["single-emphasis", "escaped-underscore", "image", "unicode-minus", "word-split-by-inline-tag"],
+)
+def test_more_normalized_matches_kept(quote: str, page: str) -> None:
+    assert _kept([quote], page) == [quote]
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "“Google will reach 100% renewable energy\"",
+        "„Brave publishes a transparency report.“",
+        "‘Brave publishes a transparency report.'",
+    ],
+    ids=["curly-open-straight-close", "german-low-9", "single-curly-open-straight-close"],
+)
+def test_mismatched_or_unlisted_quotation_marks_unwrapped(quote: str) -> None:
+    assert _kept([quote]) == [quote]
+
+
+@pytest.mark.parametrize(
+    "quote, page",
+    [("the rapist", "the therapist said"), ("rapist said", "the therapist said")],
+    ids=["across-word-boundary", "inside-word"],
+)
+def test_quote_does_not_match_across_or_inside_words(quote: str, page: str) -> None:
+    assert _kept([quote], page) is None

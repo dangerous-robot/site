@@ -365,6 +365,36 @@ async def test_quote_across_inline_tag_is_kept(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_quote_from_meta_description_is_kept(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    quote = "Brave reports every government data request it receives."
+    html = (
+        f'<html><head><title>Transparency</title><meta name="description" content="{quote}"></head>'
+        "<body><p>Brave publishes a transparency report.</p></body></html>"
+    )
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=html))
+        outcome = await _run_ingest_one(
+            url, _scripted_model([url], _source_args(url, key_quotes=[quote])), tmp_path
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes == [quote]
+
+
+@pytest.mark.asyncio
+async def test_page_with_only_a_description_is_not_fetched() -> None:
+    url = "https://brave.com/transparency/"
+    html = '<html><head><meta name="description" content="Only a description."></head><body></body></html>'
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=html))
+        async with httpx.AsyncClient() as client:
+            ctx = _make_ctx(client, url)
+            await web_fetch(ctx, url)
+    assert ctx.deps.fetched_text == {}
+    assert fetch_failure_reason(ctx.deps) is not None
+
+
+@pytest.mark.asyncio
 async def test_quote_checked_against_archive_copy_text(tmp_path) -> None:
     url = "https://brave.com/transparency/"
     archive = "https://web.archive.org/web/2025/https://brave.com/transparency/"
