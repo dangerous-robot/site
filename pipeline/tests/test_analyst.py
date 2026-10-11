@@ -352,16 +352,8 @@ class TestAnalystInstructionAnchors:
 
         text = _words(_INSTRUCTIONS)
         assert "CRITERION NOTES: a `## Criterion notes` section" in text
-        assert _words(CRITERION_NOTES_PRECEDENCE_PLACEHOLDER) in text
-
-    def test_precedence_states_no_interim_rule(self) -> None:
-        # Q-AG1 (note mapping versus the verdict scale) is the operator's call;
-        # until it is answered the prompt must not pick a winner either way.
-        from analyst.agent import _INSTRUCTIONS
-
-        text = _words(_INSTRUCTIONS)
-        assert "the verdict scale governs" not in text
-        assert "the note governs" not in text
+        assert _words(CRITERION_NOTES_PRECEDENCE_RULE) in text
+        assert "PRECEDENCE (pending" not in text
 
     def test_absence_rule_names_index_sources(self) -> None:
         from analyst.agent import _INSTRUCTIONS
@@ -369,9 +361,12 @@ class TestAnalystInstructionAnchors:
         assert _words(ABSENCE_INDEX_SENTENCE) in _words(_INSTRUCTIONS)
 
 
-CRITERION_NOTES_PRECEDENCE_PLACEHOLDER = (
-    "PRECEDENCE (pending, Q-AG1): no rule is set yet for a note's verdict mapping "
-    "that conflicts with the verdict scale; the operator's answer replaces this line."
+CRITERION_NOTES_PRECEDENCE_RULE = (
+    "PRECEDENCE: a note's verdict mapping wins for its criterion, over the verdict "
+    "scale and over the ABSENCE OF EVIDENCE default above. The verdict scale "
+    "governs everything the note does not name. So a note may map a pool that is "
+    "silent on a point to a verdict, and a condition in a note such as \"offsets "
+    "only\" is judged on the pool as a whole, not source by source."
 )
 
 ABSENCE_INDEX_SENTENCE = (

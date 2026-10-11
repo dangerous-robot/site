@@ -250,5 +250,8 @@ points to a definition not in the prompt (for example, "See controlled
 vocabulary") adds nothing. A note that carries no guidance (commentary or
 provenance text) is ignored.
 
-PRECEDENCE (pending, Q-AG1): no rule is set yet for a note's verdict mapping
-that conflicts with the verdict scale; the operator's answer replaces this line.
+PRECEDENCE: a note's verdict mapping wins for its criterion, over the verdict
+scale and over the ABSENCE OF EVIDENCE default above. The verdict scale governs
+everything the note does not name. So a note may map a pool that is silent on a
+point to a verdict, and a condition in a note such as "offsets only" is judged
+on the pool as a whole, not source by source.
