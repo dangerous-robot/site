@@ -1615,6 +1615,12 @@ class LightResearchBundle:
     probe_excludes: list[str]
     fetch_errors: list[str] = field(default_factory=list)
 
+    @property
+    def has_page_summary(self) -> bool:
+        """Whether a page summary was collected. Without one the enricher
+        could only write from model memory, so callers skip it."""
+        return bool(self.raw_description.strip())
+
 
 def _describe_step_error(e: StepError) -> str:
     return f"{e.url or '-'}: {e.error_type}: {e.message}"
@@ -1672,6 +1678,15 @@ async def gather_light_research(
         if source_files:
             _src_url, sf = source_files[0]
             raw_description = sf.frontmatter.summary or ""
+        # A blank summary with no recorded error happens when the page was
+        # ingested with an empty summary, or when an ingest worker raised
+        # (``_ingest_urls`` gathers with ``return_exceptions=True``).
+        if not raw_description.strip() and not fetch_errors:
+            fetch_errors.append(
+                f"{entity_website or '-'}: empty_summary: "
+                + ("page fetched but summary empty" if source_files
+                   else "page not ingested and no error recorded")
+            )
         probe_excludes = await _probe_collision_suggestions(
             client, entity_name, entity_website
         )
@@ -1840,9 +1855,8 @@ async def enrich_entity(
                 seed_url=resolved.website,
             )
 
-        # With no page summary the enricher can only write from model
-        # memory, and auto-approve would persist that guess as fact.
-        if not bundle.raw_description.strip():
+        # Auto-approve would persist a model-memory guess as fact.
+        if not bundle.has_page_summary:
             return EnrichmentResult(
                 entity_ref=entity_ref,
                 entity_name=resolved.entity_name,
@@ -1935,6 +1949,7 @@ async def onboard_entity(
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
+        entity_ref_for,
         verdict_write_kwargs,
     )
 
@@ -2088,7 +2103,7 @@ async def onboard_entity(
         # Without --force nothing would use a draft for an entity file on disk.
         # Without a page summary the draft could only come from model memory.
         wants_draft = file_entity is None or cfg.force_overwrite
-        run_enricher = wants_draft and bool(bundle.raw_description.strip())
+        run_enricher = wants_draft and bundle.has_page_summary
         if wants_draft and not run_enricher:
             progress(
                 "Enricher skipped: light research collected no page summary%s",
@@ -2129,6 +2144,17 @@ async def onboard_entity(
                 )
             else:
                 logger.info("Enricher draft rejected; keeping raw summary")
+
+        # A name-based run over an entity file on disk has no file_entity;
+        # with no page summary, the file's description stands in for the
+        # blank one in screening, the checkpoint and the analyst.
+        if file_entity is None and not bundle.has_page_summary:
+            try:
+                entity_description = parse_entity_ref(
+                    entity_ref_for(entity_name, et), repo_root,
+                ).entity_description or ""
+            except ValueError:
+                pass
 
         merged_search_hints = _merge_search_hints(
             search_hints_include, search_hints_exclude, probe_excludes,

@@ -910,7 +910,7 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_onboard_skips_enricher_when_no_page_fetched(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, capsys
     ) -> None:
         """--force on an existing entity leaves the file alone when no page summary was collected."""
         _setup_tmp_repo(tmp_path)
@@ -961,6 +961,51 @@ class TestOnboardPhaseBVerifier:
         text = existing.read_text(encoding="utf-8")
         assert text == original
         assert "Guessed" not in text
+        err = capsys.readouterr().err
+        assert "Enricher skipped: light research collected no page summary" in err
+        assert "  ! https://example.com/report: http_403: Forbidden" in err
+
+    @pytest.mark.asyncio
+    async def test_name_based_force_keeps_on_disk_description(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """With no page summary, a name-based run reads the description from the entity file on disk."""
+        _setup_tmp_repo(tmp_path)
+        entity_dir = tmp_path / "research" / "entities" / "companies"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        existing = entity_dir / "openai.md"
+        original = "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n"
+        existing.write_text(original, encoding="utf-8")
+
+        monkeypatch.setattr(
+            "orchestrator.pipeline.gather_light_research",
+            _fake_gather("", ["https://example.com/report: http_403: Forbidden"]),
+        )
+
+        seen: list[str] = []
+
+        class RecordingHandler(AutoApproveCheckpointHandler):
+            async def review_onboard(self, *args, entity_description: str = "", **kwargs):
+                seen.append(entity_description)
+                return []
+
+        from researcher.entity_verifier import entity_verifier_agent
+
+        with entity_verifier_agent.override(model=_verifier_model("verified")):
+            config = VerifyConfig(
+                model="test",
+                max_sources=2,
+                skip_wayback=True,
+                repo_root=str(tmp_path),
+                force_overwrite=True,
+            )
+            result = await onboard_entity(
+                "OpenAI", "company", config=config, checkpoint=RecordingHandler(),
+            )
+
+        assert result.entity_ref == "companies/openai"
+        assert seen == ["An AI lab."]
+        assert existing.read_text(encoding="utf-8") == original
 
     @pytest.mark.asyncio
     async def test_onboard_new_entity_skips_enricher_when_no_page_fetched(
@@ -1447,4 +1492,97 @@ class TestGatherLightResearchErrors:
         assert bundle.entity_website is None
         assert bundle.raw_description == ""
         assert any("no_results" in e for e in bundle.fetch_errors)
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_reports_no_website(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.pipeline import gather_light_research
+
+        async def fake_research(*args, **kwargs):
+            return _ro()
+
+        monkeypatch.setattr("orchestrator.pipeline._research", fake_research)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None,
+        )
+        assert bundle.fetch_errors == ["search found no website"]
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_reports_exception(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.pipeline import gather_light_research
+
+        async def fake_research(*args, **kwargs):
+            raise RuntimeError("Brave 500")
+
+        monkeypatch.setattr("orchestrator.pipeline._research", fake_research)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None,
+        )
+        assert not bundle.has_page_summary
+        assert bundle.fetch_errors == ["light research failed: Brave 500"]
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_reports_empty_summary(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.pipeline import gather_light_research
+
+        sf = _make_source_file("https://ecosia.example", "ecosia")
+        sf.frontmatter.summary = ""
+
+        async def fake_ingest(*args, **kwargs):
+            return [("https://ecosia.example", sf)], []
+
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None, seed_url="ecosia.example",
+        )
+        assert not bundle.has_page_summary
+        assert bundle.fetch_errors == [
+            "https://ecosia.example: empty_summary: page fetched but summary empty"
+        ]
+
+    @pytest.mark.asyncio
+    async def test_gather_light_research_reports_silent_ingest_failure(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """A worker that raised leaves no source and no error; the bundle still says why."""
+        import asyncio
+
+        from common.models import EntityType
+        from orchestrator.pipeline import gather_light_research
+
+        async def fake_ingest(*args, **kwargs):
+            return [], []
+
+        monkeypatch.setattr("orchestrator.pipeline._ingest_urls", fake_ingest)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+
+        bundle = await gather_light_research(
+            "Ecosia AI", EntityType.PRODUCT, VerifyConfig(repo_root=str(tmp_path)),
+            asyncio.Semaphore(1), None, seed_url="ecosia.example",
+        )
+        assert bundle.fetch_errors == [
+            "https://ecosia.example: empty_summary: page not ingested and no error recorded"
+        ]
 

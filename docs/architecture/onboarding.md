@@ -43,7 +43,9 @@ Phase B: entity_verifier
 Phase C: entity_enricher (operator-review checkpoint)
   - Skipped when light research collected no page summary (failed fetch,
     empty summary, or search found no website); the reasons are printed.
-    A new entity then gets the placeholder description "<name> (<type>)."
+    A new entity then gets the placeholder description "<name> (<type>).";
+    an entity file already on disk keeps its description, which screening,
+    the checkpoint and the analyst read.
   - Drafts founded, tightened description, history_markdown
   - review_entity_enrichment: accept writes the draft, reject keeps the raw summary
   |

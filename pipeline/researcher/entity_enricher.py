@@ -105,6 +105,9 @@ entity_enricher_agent = Agent(
 def build_entity_enricher_prompt(bundle: "LightResearchBundle") -> str:
     """Assemble the per-call user prompt from a light-research bundle."""
     section = _PER_TYPE_SECTIONS.get(bundle.entity_type, "")
+    # Production callers skip the enricher without a summary
+    # (LightResearchBundle.has_page_summary); this default keeps the
+    # prompt honest if a new caller forgets.
     raw_summary = (bundle.raw_description or "").strip() or "(no webpage summary collected)"
     lines = [
         f"Entity name: {bundle.entity_name}",

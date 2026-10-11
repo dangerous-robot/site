@@ -257,6 +257,12 @@ def _write_source_files(
     return source_ids
 
 
+def entity_ref_for(entity_name: str, entity_type: EntityType) -> str:
+    """The ref ``_write_entity_file`` writes for a name, like 'companies/slug'."""
+    type_dir = _ENTITY_TYPE_DIR.get(entity_type, f"{entity_type.value}s")
+    return f"{type_dir}/{slugify(entity_name)}"
+
+
 def _write_entity_file(
     entity_name: str,
     entity_type: EntityType,
@@ -271,13 +277,9 @@ def _write_entity_file(
     history_markdown: str | None = None,
 ) -> str:
     """Write entity file if it doesn't exist. Returns entity path like 'companies/slug'."""
-    entity_slug = slugify(entity_name)
-    type_dir = _ENTITY_TYPE_DIR.get(entity_type, f"{entity_type.value}s")
-
-    entity_dir = repo_root / "research" / "entities" / type_dir
-    entity_dir.mkdir(parents=True, exist_ok=True)
-    entity_path = entity_dir / f"{entity_slug}.md"
-    entity_ref = f"{type_dir}/{entity_slug}"
+    entity_ref = entity_ref_for(entity_name, entity_type)
+    entity_path = repo_root / "research" / "entities" / f"{entity_ref}.md"
+    entity_path.parent.mkdir(parents=True, exist_ok=True)
 
     if entity_path.exists():
         logger.info("Entity already exists: %s", entity_path)
