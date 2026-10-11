@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 0 / 46 / 66), with 14 web-search cells and the free-tier trial cells waiting on Brandon (D18, D19 in the handoff note), so not ticked; S15 cites reviewed claims in 3 of 6 renewable-hosting cells (ChatGPTree and Earthly Insight Unverified, so their cells read unknown; Euria True; page tier counts 3 / 45 / 64), S13a fixed the onboarding defects RF29 to RF31 and the reruns drafted GreenPT (True) and Viro AI (Unverified), both awaiting Brandon's review; Ecosia AI is still rejected by the entity verifier (D28); S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 0 / 46 / 66), with 14 web-search cells and the free-tier trial cells waiting on Brandon (D18, D19 in the handoff note), so not ticked; S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -34,7 +34,7 @@ Claims, row by row
 - [x] S12: activate the inactive criteria the page needs
 - [x] S13: entities for the page's products and companies
 - [x] S13a: fix the onboarding defects found in S15 (RF29, RF30, RF31)
-- [ ] S15: first row backed by published claims (renewable hosting)
+- [x] S15: first row backed by published claims (renewable hosting)
 - [ ] S16: remaining claim rows, one at a time
 
 S14 and S17 (indexing) are not part of SITE-J and have no checkbox; their notes stay under "Steps" for reference.
@@ -604,6 +604,8 @@ Result (2026-10-10), reruns after S13a. Command: `uv run --directory pipeline dr
 - Sources: 11 new, each with `archived_url` (each loads with HTTP 200). `dr lint` 0 errors; markdownlint 0 errors on the new files. None is cited on the page yet.
 
 Commit `3e94230`.
+
+Result (2026-10-11): Brandon approved the GreenPT (True), Viro AI (Unverified) and Ecosia AI (Mixed) claims in `dr review` on 2026-10-10; Ecosia AI was onboarded interactively, which settled D28 (the entity verifier rejecting Ecosia AI). Committed in `7c729af` with Ecosia AI's 7 sources. Cells in `417e47b`: GreenPT keeps yes and cites its claim; Viro AI no to unknown (an Unverified claim allows only unknown, as D25 did for ChatGPTree), which settles D34 and leaves D11 (whether renewable matching means no or partial) moot until a source decides it; Ecosia AI no to partial with detail "Company-wide only" (a Mixed claim allows only partial; its sources show company-wide renewable commitments, not AI hosting). `npm run test:site` 185 pass; build passes; the built page links all three claims.
 
 #### S16: remaining claim rows, one at a time
 Same as S15 for real-time energy display, image generation, published financials, data used for training, open-source models and ownership (company claims use `companies/<slug>` with `--only financial-transparency` or `--only corporate-structure`); the research-load table in this plan records progress.
