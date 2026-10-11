@@ -4,6 +4,14 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-10-11
+
+- **Criterion notes bind the analyst and the Evaluator.** When a criterion note in `research/templates.yaml` maps evidence to a verdict ("mixed = offsets only"), that mapping wins for its criterion; `pipeline/common/verdict-scale.md` governs everything the note does not name. The Evaluator receives the same notes, so a verdict that follows one is not flagged as a scale mismatch. Grading rules move to their own per-criterion field in beta.8 (RE-AL (Source pool and coverage quality)); `notes` then stays reader-facing. *(Final)*
+- **An entity's own post survives the blocklist.** A URL on `research/blocklist.yaml` is kept when it is the entity's own profile post and its page text was fetched (RE-AE (Source pool independence)); the blocklist entry stays. *(Final)*
+- **Archive refresh rules.** A capture older than 90 days is replaced by a fresh checked capture; when the fresh save fails or does not replay with 200, the old 200 capture is kept and the reason is logged (RE-AI (Archive snapshot correctness)). *(Final)*
+- **Beta.7 fix-run findings scheduled.** The seven rows that change published output or operator text are RE-AK (Published fields survive the pipeline), beta.7; the seven source-pool and coverage rows are RE-AL (Source pool and coverage quality), beta.8. Existing `seo_title`s: backfill the analyst's titles once from git rather than clearing or keeping them. *(Final)*
+- **Evaluator reruns held.** The read-only and `--write` `dr step-audit` runs for RE-AD (Evaluator grades the claim) do not run yet (operator decision 2026-10-11). *(Final)*
+
 ## 2026-10-10
 
 - **Theme 1 work confirmed.** RE-AC (Claim restatement) and the beta.7 pipeline fixes RE-AD to RE-AJ serve theme 1 in [`priorities.md`](priorities.md). beta.7 ships when SITE-J (Responsible AI chatbots) and all seven fixes have landed.
