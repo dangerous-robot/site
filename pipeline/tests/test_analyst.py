@@ -340,24 +340,38 @@ class TestCriterionNotesInPrompt:
         assert "## Criterion notes" not in prompt
 
 
+def _words(text: str) -> str:
+    return " ".join(text.split())
+
+
 class TestAnalystInstructionAnchors:
-    """Other edits to instructions.md must keep these lines byte-identical."""
+    """Other edits to instructions.md must keep this wording; rewrapping is fine."""
 
     def test_criterion_notes_section(self) -> None:
         from analyst.agent import _INSTRUCTIONS
 
-        assert "CRITERION NOTES: a `## Criterion notes` section" in _INSTRUCTIONS
-        assert CRITERION_NOTES_PRECEDENCE_LINE in _INSTRUCTIONS
+        text = _words(_INSTRUCTIONS)
+        assert "CRITERION NOTES: a `## Criterion notes` section" in text
+        assert _words(CRITERION_NOTES_PRECEDENCE_PLACEHOLDER) in text
+
+    def test_precedence_states_no_interim_rule(self) -> None:
+        # Q-AG1 (note mapping versus the verdict scale) is the operator's call;
+        # until it is answered the prompt must not pick a winner either way.
+        from analyst.agent import _INSTRUCTIONS
+
+        text = _words(_INSTRUCTIONS)
+        assert "the verdict scale governs" not in text
+        assert "the note governs" not in text
 
     def test_absence_rule_names_index_sources(self) -> None:
         from analyst.agent import _INSTRUCTIONS
 
-        assert ABSENCE_INDEX_SENTENCE in _INSTRUCTIONS
+        assert _words(ABSENCE_INDEX_SENTENCE) in _words(_INSTRUCTIONS)
 
 
-CRITERION_NOTES_PRECEDENCE_LINE = (
-    "PRECEDENCE (pending an operator decision): until it is set, where a note's "
-    "verdict mapping conflicts with the verdict scale, the verdict scale governs."
+CRITERION_NOTES_PRECEDENCE_PLACEHOLDER = (
+    "PRECEDENCE (pending, Q-AG1): no rule is set yet for a note's verdict mapping "
+    "that conflicts with the verdict scale; the operator's answer replaces this line."
 )
 
 ABSENCE_INDEX_SENTENCE = (
