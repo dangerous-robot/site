@@ -1,0 +1,206 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-11T00:23:29.643329+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - GreenPT renewable energy hosting website
+  - GreenPT sustainability report hosting energy
+  - GreenPT third-party renewable energy audit
+  - GreenPT transparency report hosting provider
+  - European hosting provider renewable energy GreenPT
+  - GreenPT data centers renewable energy sources
+  planner_rationale: These sub-questions cover the claim by verifying GreenPT’s own
+    statements (sq1), third-party validations (sq2), and the underlying technical
+    infrastructure (sq3).
+  candidates_seen: 78
+  urls_kept: 15
+  urls_dropped: 55
+  scorer_rationale: "The scoring process for the candidates focused on three sub-questions\
+    \ regarding GreenPT's renewable energy hosting claim. Here's the breakdown of\
+    \ the rationale:\n\n1. **sq1 (GreenPT's self-reported hosting and renewable energy):**\n\
+    \   - **Primary sources** (GreenPT’s official website, documentation, or blogs)\
+    \ scoring 5 or 4 were retained if they explicitly mentioned hosting providers\
+    \ (e.g., Scaleway or Verda), energy sourcing, or certifications (e.g., Ecograder\
+    \ A+, ISO 50001 or ISO 27001) for renewable energy claims. Examples such as `https://greenpt.com/sustainability`\
+    \ and `https://greenpt.com/blog/greenpt-search-fast-private-sustainable` directly\
+    \ mention 100% renewable energy hosting, European data centers, and certifications.\
+    \ Snippets like those found on Reddit or Apps were avoided entirely due to low\
+    \ publisher quality and irrelevance fulfillment.\n\n2. **sq2 (Third-party audits\
+    \ or transparency reports):**\n   - This question looks for third-party validation\
+    \ informing GreenPT’s renewable energy. Candidates scored 5 if they were submitted\
+    \ with ISO certifications or Ecograder certification from credible data centers\
+    \ like Scaleway or Verda. Candidates scoring 3 or 5 are evaluated based on mention\
+    \ of audits or certifications—regardless, supported by primary or secondary sources.)\
+    \ Examples of scoring for this question: `https://docs.greenpt.ai/sustainability`\
+    \ displays ISO-aligned infrastructure energy.\n\n3. **sq3 (Hosting providers and\
+    \ their renewable claims):**\n   - Providers like Scaleway, Verda, or alternative\
+    \ resources confirming 'certified hosting' are prioritized in ongoing scoring.\
+    \ The mention prompts high relevance (4–5) if matched with compelled source contexts,\
+    \ such as `AI World Article and Mistral's sustainability.`\n\n**Dropped Candidates\
+    \ Justifications:**\n- **Apps.apple.com, Reddit discussions, arxiv.org:** Excluded\
+    \ entirely as they lack direct relevance, are untrustworthy, or cover unrelated\
+    \ entities.\n- **shell-linked arXiv posts ( listing data centers) didn’t pass\
+    \ audit scores** as selections came directly from GreenPT facts validating primary/secondary\
+    \ tiers.\n- **Low-qualified or speculative sources excluded:** Summary quality\
+    \ tiers avoided glossy supportive resolutions without hard claims about hosting\
+    \ (e.g., YouTube or unrelated hosting lists)."
+  urls_after_blocklist: 14
+sub_questions:
+- id: sq1
+  question: Does GreenPT’s official website or documentation mention its hosting infrastructure
+    and energy sourcing?
+  rationale: First-party documentation is the most reliable source for the entity's
+    self-reported practices, including hosting and renewable energy use.
+  queries:
+  - GreenPT renewable energy hosting website
+  - GreenPT sustainability report hosting energy
+  citations:
+  - 2026/sustainability-renewable-ai-measured-impact-greenpt
+  - 2026/greenpt-vs-chatgpt
+  - 2026/greenpt-search-fast-private-sustainable
+  - 2026/docs-greenpt-sustainability
+  - 2026/business
+  - 2023/ai-impact-environment
+- id: sq2
+  question: Are there third-party audits, transparency reports, or sustainability
+    disclosures by GreenPT regarding its hosting infrastructure?
+  rationale: Independent audits or third-party reports can verify or add context to
+    GreenPT’s claims about renewable energy hosting.
+  queries:
+  - GreenPT third-party renewable energy audit
+  - GreenPT transparency report hosting provider
+  citations:
+  - 2026/sustainability-renewable-ai-measured-impact-greenpt
+  - 2026/greenpt-search-fast-private-sustainable
+  - 2026/docs-greenpt-sustainability
+  - 2026/business
+- id: sq3
+  question: What hosting providers are used by GreenPT, and do they claim to use renewable
+    energy?
+  rationale: The technical infrastructure behind GreenPT’s hosting determines whether
+    renewable energy is actually used.
+  queries:
+  - European hosting provider renewable energy GreenPT
+  - GreenPT data centers renewable energy sources
+  citations:
+  - 2026/sustainability-renewable-ai-measured-impact-greenpt
+  - 2026/greenpt-vs-chatgpt
+  - 2026/greenpt-search-fast-private-sustainable
+  - 2026/docs-greenpt-sustainability
+  - 2026/greenpt
+  - 2026/is-greenpt-ai-the-only-eco-friendly-gpt-chat-lets-find-out-6b05e90a78d6
+  - 2023/ai-impact-environment
+sources_consulted:
+- id: 2026/sustainability-renewable-ai-measured-impact-greenpt
+  url: https://greenpt.com/sustainability
+  title: 'Sustainability at GreenPT: renewable AI, measured impact'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT renewable energy hosting website
+- id: 2026/greenpt-vs-chatgpt
+  url: https://greenpt.com/greenpt-vs-chatgpt
+  title: GreenPT vs ChatGPT
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT sustainability report hosting energy
+- id: 2026/greenpt-search-fast-private-sustainable
+  url: https://greenpt.com/blog/greenpt-search-fast-private-sustainable
+  title: 'Introducing GreenPT Search: a search engine that doesn''t force AI on every
+    query'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT renewable energy hosting website
+- id: 2026/docs-greenpt-sustainability
+  url: https://docs.greenpt.ai/sustainability
+  title: GreenPT Sustainability
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT sustainability report hosting energy
+- id: 2026/greenpt
+  url: https://felloai.com/greenpt
+  title: 'GreenPT Review: Cost, Features, and Is It Actually Free?'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT renewable energy hosting website
+- id: 2026/is-greenpt-ai-the-only-eco-friendly-gpt-chat-lets-find-out-6b05e90a78d6
+  url: https://medium.com/@wilco.burggraaf/is-greenpt-ai-the-only-eco-friendly-gpt-chat-lets-find-out-6b05e90a78d6
+  title: Is GreenPT.ai the Only Eco-Friendly GPT Chat? Let’s Find Out!
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT renewable energy hosting website
+- id: 2026/business
+  url: https://greenpt.com/business
+  title: GreenPT for Businesses
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT sustainability report hosting energy
+- id: 2023/ai-impact-environment
+  url: https://greenpt.com/blog/ai-impact-environment
+  title: AI's Impact on the Environment, and How to Do Better
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: GreenPT third-party renewable energy audit
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: false
+  auditor_reasoning: GreenPT’s own sustainability report and documentation explicitly
+    state its data centres run on 100% renewable energy, and two external pieces (the
+    Fello AI review and a Medium article) repeat this claim. No source contradicts
+    it. While the independent sources do not provide independent measurements, they
+    do corroborate the company’s statements, giving enough support for a true verdict
+    with medium confidence.
+  evidence_gaps:
+  - No third‑party audit or renewable‑energy certificate is presented; independent
+    sources appear to rely on GreenPT's own statements rather than independent measurement.
+  needs_review_reasons: []
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null

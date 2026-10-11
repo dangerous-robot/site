@@ -1,0 +1,179 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-11T00:31:13.965601+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Viro AI hosting provider cloud
+  - Viro AI data center sustainability
+  - Viro AI transparency report energy
+  - Viro AI ESG renewable hosting
+  - Viro AI sustainability partnerships
+  - Viro AI carbon neutrality certification
+  - Viro renewable energy infrastructure disclosures
+  planner_rationale: The claim requires verifying the technical mechanism (hosting
+    provider), first-party disclosures, and third-party validation to confirm renewable
+    energy hosting.
+  candidates_seen: 99
+  urls_kept: 8
+  urls_dropped: 37
+  scorer_rationale: The retained candidates were selected based on their direct relevance
+    to the sub-questions. For **sq1**, only the Viro AI Terms & Conditions and Privacy
+    Policy explicitly mention reliance on **third-party cloud infrastructure providers**.
+    No other retained candidates discuss Viro AI's specific hosting providers, including
+    OVHcloud, which lacks Viro AI-specific validation. For **sq2**, only Viro AI’s
+    official homepage and methodology document provide clear first-party claims about
+    renewable energy usage and transparency. For **sq3**, Viro AI’s methodology posts
+    and sustainability blogs offer direct evidence of third-party-validated renewable
+    energy projects, overcoming the indirect sustainability claims of OVHcloud's offerings.
+    OVHcloud remains kept for sq3 due to its data center sustainability initiatives,
+    though they lack specificity concerning Viro AI itself.
+  urls_after_blocklist: 8
+sub_questions:
+- id: sq1
+  question: What hosting providers does Viro AI rely on for its infrastructure, including
+    cloud or data center partners?
+  rationale: Identifying the hosting provider is critical to determine whether they
+    offer renewable energy hosting options.
+  queries:
+  - Viro AI hosting provider cloud
+  - Viro AI data center sustainability
+  citations:
+  - 2025/viro-ai-terms-conditions
+  - 2025/viro-ai-privacy-policy-2025
+- id: sq2
+  question: Does Viro AI publish a transparency report or sustainability page detailing
+    energy sources for its operations?
+  rationale: First-party disclosures may directly address renewable energy hosting
+    claims.
+  queries:
+  - Viro AI transparency report energy
+  - Viro AI sustainability partnerships
+  - Viro renewable energy infrastructure disclosures
+  citations:
+  - 2026/viro-energy-and-impact-methodology
+  - 2026/viro-ai-planet-focused-platform
+- id: sq3
+  question: Are there third-party verifying reports (e.g., ESG assessments, global
+    sustainable energy initiatives) confirming that Viro AI's hosting aligns with
+    renewable energy standards?
+  rationale: Third-party databases or certifications can validate claims independently
+    of Viro AI's own statements.
+  queries:
+  - Viro AI ESG renewable hosting
+  - Viro AI carbon neutrality certification
+  citations:
+  - 2026/viro-energy-and-impact-methodology
+  - 2024/ai-server
+  - 2025/why-does-ai-use-so-much-energy
+  - 2024/ai-climate-impact-energy
+  - 2025/how-much-energy-do-your-ai-prompts-really-use
+sources_consulted:
+- id: 2025/viro-ai-terms-conditions
+  url: https://www.viro.app/terms-conditions-viro-ai
+  title: Terms & Conditions for Viro AI
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI hosting provider cloud
+- id: 2025/viro-ai-privacy-policy-2025
+  url: https://www.viro.app/privacy-policy-viro-ai
+  title: Privacy Policy for Viro AI
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI hosting provider cloud
+- id: 2026/viro-energy-and-impact-methodology
+  url: https://www.viro.app/energy-and-impact-methodology
+  title: Energy and Impact Methodology
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI transparency report energy
+- id: 2026/viro-ai-planet-focused-platform
+  url: https://ai.viro.app
+  title: AI for Our Planet
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI data center sustainability
+- id: 2024/ai-server
+  url: https://www.ovhcloud.com/en/bare-metal/ai-server
+  title: AI Server Hosting – GPU-Powered Infrastructure for AI Workloads
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI hosting provider cloud
+- id: 2025/why-does-ai-use-so-much-energy
+  url: https://www.viro.app/post/why-does-ai-use-so-much-energy
+  title: Why Does AI Use So Much Energy?
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI transparency report energy
+- id: 2024/ai-climate-impact-energy
+  url: https://www.viro.app/post/ai-climate-impact-energy
+  title: How Big a Threat Is AI to the Climate?
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI data center sustainability
+- id: 2025/how-much-energy-do-your-ai-prompts-really-use
+  url: https://www.viro.app/post/how-much-energy-do-your-ai-prompts-really-use
+  title: Is AI Eco-Friendly? Google Gemini Shares the Numbers
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Viro AI transparency report energy
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: low
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Sources 3 and 4 are Viro AI’s own statements claiming 100% clean
+    energy, but none provide third‑party ESG certifications, cloud provider details,
+    or independent verification. The privacy policy (Source 2) and terms (Source 1)
+    also lack such information. Therefore the narrative’s conclusion that the claim
+    remains unverified due to reliance on self‑reported statements is supported by
+    the evidence. Because all sources are self‑reported, confidence is capped at low.
+  evidence_gaps: []
+  needs_review_reasons:
+  - verdict disagreement
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
