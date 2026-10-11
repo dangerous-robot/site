@@ -812,6 +812,7 @@ def _apply_blocklist_cap(
     repo_root_str = cfg.repo_root or str(resolve_repo_root())
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
+    spared_records: list[dict[str, str]] = []
     if identity is not None and dropped:
         # Blocklist entries exist because those hosts refuse anonymous fetches;
         # with the search's page text in hand no fetch is needed, and the
@@ -830,8 +831,6 @@ def _apply_blocklist_cap(
                 }
                 for d in spared
             ]
-            if trace is not None:
-                trace["blocklist_spared"] = spared_records
             logger.info("Blocklist spared the entity's own post(s): %s", [d.url for d in spared])
             spared_urls = {d.url for d in spared}
             dropped = [d for d in dropped if d.url not in spared_urls]
@@ -840,6 +839,11 @@ def _apply_blocklist_cap(
     urls = _coverage_pool(
         kept, url_addresses or {}, sub_question_ids or [], cfg.candidate_pool_size
     )
+    if spared_records and trace is not None:
+        # The cap can still cut a spared post; the sidecar lists only posts that reached the pool.
+        in_pool = [r for r in spared_records if r["url"] in urls]
+        if in_pool:
+            trace["blocklist_spared"] = in_pool
     for d in dropped:
         out_errors.append(
             StepError(

@@ -215,7 +215,7 @@ _OTHER_POST = "https://www.linkedin.com/posts/earth-insight_other-activity-2"
 _SITE = "https://earthlyinsight.com/about"
 
 
-async def _blocklist_research(tmp_path, monkeypatch, bodies, resolved=True):
+async def _blocklist_research(tmp_path, monkeypatch, bodies, resolved=True, pool_size=None):
     """Run ``_research`` on Earthly Insight's pool with a linkedin.com blocklist."""
     from common.models import EntityType, SubQuestion
     from orchestrator.entity_resolution import ResolvedEntity
@@ -238,7 +238,8 @@ async def _blocklist_research(tmp_path, monkeypatch, bodies, resolved=True):
         entity_type=EntityType.COMPANY, entity_description="",
         website="https://earthlyinsight.com",
     ) if resolved else None
-    cfg = VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path))
+    extra = {"candidate_pool_size": pool_size, "max_sources": pool_size} if pool_size else {}
+    cfg = VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path), **extra)
     return await _research(
         None, "Earthly Insight", "A claim", cfg, asyncio.Semaphore(1), resolved_entity=entity
     )
@@ -256,6 +257,15 @@ class TestBlocklistSparesEntityProfilePost:
         spared = out.trace["blocklist_spared"]
         assert [s["url"] for s in spared] == [_OWN_POST]
         assert "linkedin.com" in spared[0]["reason"]
+
+    @pytest.mark.asyncio
+    async def test_spared_post_cut_by_the_pool_cap_is_not_listed(self, tmp_path, monkeypatch) -> None:
+        out = await _blocklist_research(
+            tmp_path, monkeypatch, {_OWN_POST: "We run on renewable power."}, pool_size=1
+        )
+        assert out.urls == [_SITE]
+        assert "blocklist_spared" not in out.trace
+        assert _OWN_POST not in out.prefetched_bodies
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("bodies", [{}, {_OWN_POST: "  \n"}], ids=["no-body", "blank-body"])
