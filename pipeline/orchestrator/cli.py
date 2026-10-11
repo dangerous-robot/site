@@ -347,11 +347,9 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     import datetime
     import httpx
     from common.content_loader import resolve_repo_root
-    from common.frontmatter import serialize_frontmatter
-    from common.source_classification import classify_source_type, independence_for_source_type
     from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
     from orchestrator.checkpoints import StepError
-    from orchestrator.persistence import resolve_source_slugs
+    from orchestrator.persistence import resolve_source_slugs, source_markdown
     from orchestrator.pipeline import _check_ingested_source
 
     root_str: str
@@ -396,12 +394,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 hint = "" if capture else " (Save Page Now runs only with --write)"
                 click.echo(f"Archive lookup failed for {url}: {archive['error']}{hint}", err=True)
 
-            fm_dict = sf.frontmatter.model_dump(mode="python")
-            source_type = classify_source_type(sf.frontmatter.publisher, sf.frontmatter.kind.value)
-            fm_dict["source_type"] = source_type
-            if not fm_dict.get("independence"):
-                fm_dict["independence"] = independence_for_source_type(source_type)
-            markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
+            markdown = source_markdown(sf)
 
             if not (do_write or force):
                 click.echo(markdown)

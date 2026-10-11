@@ -13,6 +13,7 @@ import yaml
 from auditor.compare import needs_review_reasons
 from auditor.models import ComparisonResult
 from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
+from common.markdown_links import wrap_bare_links
 from common.sidecar import read_sidecar
 
 if TYPE_CHECKING:
@@ -201,6 +202,20 @@ def resolve_source_slugs(source_files: list[SourceFile], repo_root: Path) -> Non
         assigned[f"{sf.year}/{sf.slug}"] = sf.frontmatter.url
 
 
+def source_markdown(sf: SourceFile) -> str:
+    """The text of a source file as written under ``research/sources/``."""
+    fm_dict = sf.frontmatter.model_dump(mode="python")
+    source_type = classify_source_type(
+        sf.frontmatter.publisher, sf.frontmatter.kind.value
+    )
+    fm_dict["source_type"] = source_type
+    if not fm_dict.get("independence"):
+        fm_dict["independence"] = independence_for_source_type(source_type)
+    # The ingest model copies addresses from the page; a bare one fails
+    # markdownlint MD034 in the pre-commit hook.
+    return serialize_frontmatter(fm_dict, wrap_bare_links(sf.body.rstrip()) + "\n")
+
+
 def _write_source_files(
     source_files: list[tuple[str, SourceFile]],
     repo_root: Path,
@@ -213,14 +228,7 @@ def _write_source_files(
         target_dir.mkdir(parents=True, exist_ok=True)
         target_path = target_dir / f"{sf.slug}.md"
 
-        fm_dict = sf.frontmatter.model_dump(mode="python")
-        source_type = classify_source_type(
-            sf.frontmatter.publisher, sf.frontmatter.kind.value
-        )
-        fm_dict["source_type"] = source_type
-        if not fm_dict.get("independence"):
-            fm_dict["independence"] = independence_for_source_type(source_type)
-        markdown = serialize_frontmatter(fm_dict, sf.body.rstrip() + "\n")
+        markdown = source_markdown(sf)
 
         # Callers normally resolve slugs first (``resolve_source_slugs``);
         # this guard covers callers that skip it, so an id returned here
