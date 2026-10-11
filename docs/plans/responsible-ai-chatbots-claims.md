@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a and S11 to S13 done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 0 / 46 / 66), with 14 web-search cells and the free-tier trial cells waiting on Brandon (D18, D19 in the handoff note), so not ticked; S15 cites reviewed claims in 3 of 6 renewable-hosting cells (ChatGPTree and Earthly Insight Unverified, so their cells read unknown; Euria True; page tier counts 3 / 45 / 64), GreenPT, Ecosia AI and Viro AI wait on the pipeline fixes RF29 to RF31 and reruns; S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 0 / 46 / 66), with 14 web-search cells and the free-tier trial cells waiting on Brandon (D18, D19 in the handoff note), so not ticked; S15 cites reviewed claims in 3 of 6 renewable-hosting cells (ChatGPTree and Earthly Insight Unverified, so their cells read unknown; Euria True; page tier counts 3 / 45 / 64), S13a fixed the onboarding defects RF29 to RF31 and the reruns drafted GreenPT (True) and Viro AI (Unverified), both awaiting Brandon's review; Ecosia AI is still rejected by the entity verifier (D28); S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -33,7 +33,7 @@ Sources for every stance row
 Claims, row by row
 - [x] S12: activate the inactive criteria the page needs
 - [x] S13: entities for the page's products and companies
-- [ ] S13a: fix the onboarding defects found in S15 (RF29, RF30, RF31)
+- [x] S13a: fix the onboarding defects found in S15 (RF29, RF30, RF31)
 - [ ] S15: first row backed by published claims (renewable hosting)
 - [ ] S16: remaining claim rows, one at a time
 
@@ -344,7 +344,7 @@ Claims cover the 7 stance rows that have a criterion: renewable hosting, real-ti
 
 | Item | Count | Notes |
 |---|---|---|
-| Claims | 42 (7 rows x 6 products) | 30 product claims (5 rows) and 12 company claims (published financials and ownership, one company per product). Today: 6 published claims, 3 of them for these products. Renewable hosting (S15): 3 approved by Brandon and cited (ChatGPTree, Earthly Insight, Euria); GreenPT's draft held back, Ecosia AI and Viro AI without a draft |
+| Claims | 42 (7 rows x 6 products) | 30 product claims (5 rows) and 12 company claims (published financials and ownership, one company per product). Today: 6 published claims, 3 of them for these products. Renewable hosting (S15): 3 approved by Brandon and cited (ChatGPTree, Earthly Insight, Euria); GreenPT (True) and Viro AI (Unverified) drafted on rerun after S13a, awaiting review; Ecosia AI without a draft (verifier, D28) |
 | Product entities created | 5 | Euria, Ecosia AI, ChatGPTree, Earthly Insight, Viro AI (S13) |
 | Company entities created | 5 | for the 2 company rows: Infomaniak, Ecosia, ChatGPTree, Earthly Insight and Viro (S13; legal names from each company's own pages). GreenPT's exists. An owner named in `owned_by` needs no entity (sources only) |
 | Criteria activated | 2 | `financial-transparency`, `open-source-models-only` (S12, done). The page uses neither `excludes-frontier-models` nor `data-jurisdiction` |
@@ -552,6 +552,15 @@ Brandon's D32. One commit each, test first (`docs/UNSCHEDULED.md` rows):
 - RF31: a bare email address or URL in an ingested source body fails markdownlint MD034, which blocks every commit.
 
 Verify: pytest cases written to fail first; rerun onboarding for GreenPT, Ecosia AI and Viro AI succeeds with first-party pages present.
+Result (2026-10-10): all three fixed, each test seen failing for the stated reason first.
+
+| Defect | Fix | Test, failing first | Commit |
+|---|---|---|---|
+| RF29 | With a ref, onboard builds the resolved entity from the file (description, website, parent company, aliases, legal name; file `search_hints` merged with the CLI's and the probe's), seeds light research with the file's website and skips the enricher unless `--force` | `TestOnboardUsesEntityFileOnDisk`: the analyst prompt read "Description: GreenTest plants verified trees monthly (enricher guess)" and "Parent company: none"; research got website `https://example.com/report` | `59abdc5` |
+| RF30 | The probe skips every host under the website's own site domain: first parent domains (`viro.app`), then, after the Viro AI rerun showed `help.viro.app` excluded, sibling subdomains too | `test_never_suggests_own_or_parent_domain` (`['viro.app', 'viro-pharma.example']`), `test_never_suggests_a_sibling_subdomain` (`['help.viro.app', 'shop.example.co.uk']`) | `d408007`, `b72315c` |
+| RF31 | Both source writers go through `source_markdown()`, which wraps bare emails and http(s) URLs in the body in `<>`; code, links, autolinks and HTML unchanged | `pipeline/tests/test_source_bare_links.py`: the body was written "email (mail@example.org)" by `_write_source_files` and by `dr step-ingest --write` | `296c6fe` |
+
+pytest 1065 to 1078 passed. RF31 checked with markdownlint on a scratch copy of GreenPT's held-back `2026/contact` body: MD034 on the original, 0 errors once wrapped; the wrapper changes none of the 126 Markdown files under `research/`. Not covered (in the backlog rows): a bare `www.` host; a same-name domain on another TLD (`earthlyinsight.ai`); app-store hosts. The reruns are in S15's rerun result. Ecosia AI is still rejected, by the entity verifier rather than these defects (D28).
 
 #### S15: first row backed by published claims
 Renewable hosting (Q12). `dr onboard products/<slug> --only renewable-energy-hosting` per product (6, not TreadLightlyAI); Brandon approves each with `dr review --approve` (never `dr publish`, which records no reviewer and leaves the claim "Unreviewed"); cite in the cells.
@@ -579,6 +588,21 @@ Result (2026-10-10), drafts. Brandon approved the ChatGPTree, Earthly Insight an
 Commit `c3cd387`.
 
 Result (2026-10-10), cells cited: 3 of 6. ChatGPTree and Earthly Insight read "unknown" and cite their Unverified claims (D25, D26); Euria keeps "yes" and cites its True claim beside its source (the build check allows a claim and sources on one cell). No detail text added. GreenPT, Ecosia AI and Viro AI wait on the pipeline fixes RF29 to RF31 and reruns; their cells are unchanged. The unit test of today's page data now loads the claims on disk (`researchClaims()` in `src/lib/matrixTestFixtures.ts`), so it checks the cited claims too; with ChatGPTree set back to "no" it fails (`verdict unverified does not allow the answer "no"`). Verified from a detached worktree of HEAD plus the change, because a peer's empty untracked entity file (`research/entities/subjects/us-hyperscalers.md`) failed the main checkout's build: `npm run test:site` 185 pass, including `unverified x unknown (same) is true`; `npm run build` passes the build check; `dr lint` 0 errors (the pre-commit hook's run). In the built page each of the three cells shows the scale mark ("reviewed claim"), and its popup and Evidence entry show the verdict, confidence and as-of date the claim page shows (ChatGPTree Unverified, Medium; Earthly Insight Unverified, High; Euria True, Medium; all 2026-10-10, from `as_of`); each claim page shows "Reviewed and approved by" (the handle `brandon-f`, as on the older Brave claim). Euria's Evidence entry lists the claim and its source. Page tier counts 0 / 46 / 66 became 3 / 45 / 64. Not ticked until all six are cited or have a recorded reason. Commit `729d567`.
+
+Result (2026-10-10), reruns after S13a. Command: `uv run --directory pipeline dr --verbose onboard products/<slug> --only renewable-energy-hosting` (no website argument and no `--search-hint-exclude`: the entity file now supplies both). GreenPT's held-back draft was not restored. Logs in `handoff/2026-10-10-s15-runs/rerun-*.log` (local).
+
+| Product | Claim | Verdict, confidence, level | Auditor | Sources (new / cited) | First-party pages | Page cell | Agrees |
+|---|---|---|---|---|---|---|---|
+| GreenPT | `research/claims/greenpt/renewable-energy-hosting.md` | True, high, multiply-verified | True | 6 / 8 | Yes: greenpt.com sustainability, business, blog, GreenPT vs ChatGPT; docs.greenpt.ai | Yes, cites the sustainability page | Yes |
+| Ecosia AI | none: rejected again by the entity verifier ("unverified"; the seed `www.ecosia.org/ai-chat` returns 403) | | | 0 | | No, not yet sourced | |
+| Viro AI | `research/claims/viro-ai/renewable-energy-hosting.md` | Unverified, low, claimed | True; `needs_review` | 5 / 8 | Yes: viro.app terms, privacy policy, methodology and three blog posts; ai.viro.app | No, not yet sourced | No: Unverified allows only "unknown" (D11) |
+
+- GreenPT: the analyst got the entity file's description and "Parent company: companies/greenpt" (debug log). Independent sources: a Fello AI review and a Medium article. The probe still suggests `account.greenpt.ai` (already in the file's excludes), `greenpt.en.softonic.com` and `apps.apple.com`. The GreenPT blog post `2023/ai-impact-environment` is filed under 2023; an ingest-model slip, left as written.
+- Ecosia AI: the probe now suggests only `felloai.com` (it excluded `ecosia.org` before), but the verifier runs before research and `--no-interactive` answers it with reject. Still open under D28.
+- Viro AI: the first rerun (after `d408007`) drafted Mixed, medium, but the probe excluded `help.viro.app` and dropped its "Is Viro AI eco-friendly" page, so the sibling-subdomain fix `b72315c` followed and the draft was set aside unedited in `handoff/2026-10-10-s15-runs/viro-ai-rerun1/`. The second rerun excluded only `play.google.com` and `apps.apple.com`. Its sources say "Powered by 100% clean energy" (ai.viro.app) and describe renewable matching (methodology); the analyst called that self-reported and chose Unverified, the auditor True. `ai.viro.app/data-centers` was not among the candidates this time. One cited source is unrelated (OVHcloud's AI server page, labeled first-party).
+- Sources: 11 new, each with `archived_url` (each loads with HTTP 200). `dr lint` 0 errors; markdownlint 0 errors on the new files. None is cited on the page yet.
+
+Commit `3e94230`.
 
 #### S16: remaining claim rows, one at a time
 Same as S15 for real-time energy display, image generation, published financials, data used for training, open-source models and ownership (company claims use `companies/<slug>` with `--only financial-transparency` or `--only corporate-structure`); the research-load table in this plan records progress.
@@ -630,3 +654,4 @@ None open.
 | 2026-10-10 | agent (claude-opus-5-5) | implementation | S10 rows 6 to 9 (open-weight models, accessibility, models, ownership), the feature rows and 5 summary entries: page tier counts 0/17/95 to 0/46/66, 15 new source files. Accessibility now comes from a recorded Lighthouse check (all Partial); the large-model list cites every lab but GPT-OSS; facts changed by their sources: Ecosia AI models (Mistral, not GPT mini) and file upload (Yes), Earthly Insight models and price ($23), GreenPT PUE 1.25, Ecosia jurisdiction "EU (GDPR)". Brandon's detail-text rule recorded under Decisions. S10 left unticked (D18, D19). Backlog RF28. |
 | 2026-10-10 | agent (claude-opus-5-5) | implementation | S15 drafts: onboard code path read before running (no entity or page writes without `--force`); 3 drafts committed (ChatGPTree and Earthly Insight Unverified against "no" cells, Euria True), GreenPT held back for a markdownlint failure in one source, Ecosia AI rejected by the verifier, Viro AI blocked by a probe that excluded its own domain. Backlog RF29 to RF31. Status line and research-load row updated; S15 stays unticked. |
 | 2026-10-10 | agent (claude-opus-5-5) | implementation | S15 cells: Brandon's D25 and D26 recorded under Decisions; ChatGPTree and Earthly Insight renewable-hosting cells become unknown and cite their Unverified claims, Euria's cites its True claim; the page-data unit test now loads real claims. S15 result, research-load row, status line and the stale "approvals not committed" sentence brought up to date; S15 stays unticked (3 of 6). |
+| 2026-10-10 | agent (claude-opus-5-5) | implementation | S13a scheduled (D32) and done: RF29, RF30 (own and parent domain, then sibling subdomains) and RF31 fixed test first; S15 reruns drafted GreenPT (True) and Viro AI (Unverified), Ecosia AI still rejected by the verifier (D28). Status line, research-load row, S13a and S15 results updated. |
