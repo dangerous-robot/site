@@ -43,7 +43,7 @@ from pydantic_ai.exceptions import UnexpectedModelBehavior
 from analyst.agent import AnalystOutput, VerdictAssessment, analyst_agent, build_analyst_prompt, verdict_only_agent
 from analyst.agent import EntityResolution, SourceOverride
 from analyst.citations import clean_citations
-from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for
+from orchestrator.entity_resolution import ResolvedEntity, SearchHints, entity_identity_for, parse_entity_ref
 from auditor.agent import auditor_agent, build_auditor_prompt
 from common.blocklist import normalised_host, filter_urls, load_blocklist
 from common.canonical_url import canonical_key
@@ -1901,6 +1901,21 @@ async def onboard_entity(
         entity_ref=None,
     )
 
+    # A ref names a hand-written entity file. That file, not the enricher's
+    # draft, is what the analyst and auditor are told is authoritative, and
+    # its website seeds light research so the collision probe compares
+    # against the entity's real domain rather than a search hit.
+    file_entity: ResolvedEntity | None = None
+    if entity_ref is not None:
+        try:
+            file_entity = parse_entity_ref(entity_ref, repo_root)
+        except ValueError as exc:
+            result.status = "rejected"
+            result.errors.append(f"could not load entity: {exc}")
+            return result
+        if seed_url is None:
+            seed_url = file_entity.website
+
     with bind_run_id(cfg.run_id):
         logger.info(
             "onboard_entity entry: name=%s type=%s seed_url=%s",
@@ -2017,19 +2032,25 @@ async def onboard_entity(
         )
 
         enrichment_draft = None
-        entity_description = bundle.raw_description
+        entity_description = (
+            file_entity.entity_description if file_entity is not None
+            else bundle.raw_description
+        )
         founded_year: int | None = None
         history_markdown: str | None = None
+        # Without --force nothing would use a draft for an entity file on disk.
+        run_enricher = file_entity is None or cfg.force_overwrite
         try:
-            prompt = build_entity_enricher_prompt(bundle)
-            with entity_enricher_agent.override(
-                model=resolve_model(cfg.model_for("researcher")),
-            ):
-                run_res = await asyncio.wait_for(
-                    entity_enricher_agent.run(prompt),
-                    timeout=cfg.research_timeout_s,
-                )
-            enrichment_draft = run_res.output
+            if run_enricher:
+                prompt = build_entity_enricher_prompt(bundle)
+                with entity_enricher_agent.override(
+                    model=resolve_model(cfg.model_for("researcher")),
+                ):
+                    run_res = await asyncio.wait_for(
+                        entity_enricher_agent.run(prompt),
+                        timeout=cfg.research_timeout_s,
+                    )
+                enrichment_draft = run_res.output
         except Exception as exc:
             logger.warning(
                 "Enricher failed; falling back to raw page summary: %s", exc
@@ -2186,16 +2207,30 @@ async def onboard_entity(
         # Without this resolved entity, the just-persisted search_hints,
         # founded year, and verification_status would not reach the
         # per-template researcher on the run that wrote them.
-        onboard_resolved_entity = ResolvedEntity(
-            entity_ref=entity_ref,
-            entity_name=entity_name,
-            entity_type=et,
-            entity_description=entity_description,
-            website=entity_website,
-            search_hints=merged_search_hints,
-            founded=founded_year,
-            verification_status=verification_status,
-        )
+        if file_entity is not None:
+            # Re-read: --force may have just spliced an enrichment into it.
+            on_disk = parse_entity_ref(entity_ref, repo_root)
+            file_hints = on_disk.search_hints or SearchHints()
+            onboard_resolved_entity = dataclasses.replace(
+                on_disk,
+                search_hints=_merge_search_hints(
+                    list(file_hints.include) + list(search_hints_include or []),
+                    list(file_hints.exclude) + list(search_hints_exclude or []),
+                    probe_excludes,
+                ),
+                verification_status=verification_status or on_disk.verification_status,
+            )
+        else:
+            onboard_resolved_entity = ResolvedEntity(
+                entity_ref=entity_ref,
+                entity_name=entity_name,
+                entity_type=et,
+                entity_description=entity_description,
+                website=entity_website,
+                search_hints=merged_search_hints,
+                founded=founded_year,
+                verification_status=verification_status,
+            )
 
         # Step 5: Per-template research pipeline. Each template gets its own
         # run_id so the per-claim agent runs (researcher/ingestor/analyst/

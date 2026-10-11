@@ -964,6 +964,169 @@ class TestOnboardSearchHintsPersisted:
         assert resolved.search_hints.exclude == ["operator-bad.example", "evil.example"]
 
 
+class TestOnboardUsesEntityFileOnDisk:
+    """A ref to a hand-written entity file makes that file the authoritative
+    entity for the analyst and auditor, not the enricher's draft."""
+
+    FILE_DESCRIPTION = "GreenTest is a chatbot that says it runs on hydropower."
+    ENRICHER_DESCRIPTION = "GreenTest plants verified trees monthly (enricher guess)."
+
+    def _write_product(self, tmp_path: Path) -> str:
+        path = tmp_path / "research" / "entities" / "products" / "greentest.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "---\n"
+            "name: GreenTest\n"
+            "type: product\n"
+            f"description: {self.FILE_DESCRIPTION}\n"
+            "website: https://greentest.example\n"
+            "parent_company: companies/greentest-bv\n"
+            "search_hints:\n"
+            "  exclude:\n"
+            "  - file-excluded.example\n"
+            "---\n",
+            encoding="utf-8",
+        )
+        return "products/greentest"
+
+    @pytest.mark.asyncio
+    async def test_entity_file_reaches_analyst_and_auditor(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        _setup_tmp_repo(tmp_path)
+        ref = self._write_product(tmp_path)
+        before = (tmp_path / "research" / "entities" / f"{ref}.md").read_text()
+
+        seed_urls: list = []
+        real_gather = __import__(
+            "orchestrator.pipeline", fromlist=["gather_light_research"]
+        ).gather_light_research
+
+        async def spy_gather(*args, **kwargs):
+            seed_urls.append(kwargs.get("seed_url"))
+            return await real_gather(*args, **kwargs)
+
+        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", spy_gather)
+        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
+        # One fake URL is below the two-source threshold; let the analyst run.
+        monkeypatch.setattr("orchestrator.pipeline.below_threshold", lambda sources: False)
+
+        import orchestrator.pipeline as pipeline_mod
+        analyst_prompts: list[str] = []
+        auditor_prompts: list[str] = []
+        real_analyst_prompt = pipeline_mod.build_analyst_prompt
+        real_auditor_prompt = pipeline_mod.build_auditor_prompt
+
+        def spy_analyst_prompt(*args, **kwargs):
+            prompt = real_analyst_prompt(*args, **kwargs)
+            analyst_prompts.append(prompt)
+            return prompt
+
+        def spy_auditor_prompt(*args, **kwargs):
+            prompt = real_auditor_prompt(*args, **kwargs)
+            auditor_prompts.append(prompt)
+            return prompt
+
+        monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", spy_analyst_prompt)
+        monkeypatch.setattr("orchestrator.pipeline.build_auditor_prompt", spy_auditor_prompt)
+
+        from researcher.entity_verifier import entity_verifier_agent
+        from researcher.entity_enricher import entity_enricher_agent
+
+        verdict_model = TestModel(
+            custom_output_args={
+                "title": "GreenTest runs on renewable energy",
+                "topics": ["environmental-impact"],
+                "verdict": "mixed",
+                "confidence": "medium",
+                "narrative": "The evidence is mixed.",
+                "verification_level": "independently-verified",
+                "seo_title": "GreenTest runs on renewable energy",
+            },
+        )
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            verdict_only_agent.override(model=verdict_model),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            entity_enricher_agent.override(
+                model=_enricher_model(description=self.ENRICHER_DESCRIPTION),
+            ),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "GreenTest", "product", config=config, entity_ref=ref,
+                only=["renewable-energy-hosting"],
+            )
+
+        assert result.status == "accepted", result.errors
+        assert analyst_prompts, "analyst never ran"
+        assert auditor_prompts, "auditor never ran"
+        analyst_prompt = analyst_prompts[0]
+        assert f"Description: {self.FILE_DESCRIPTION}" in analyst_prompt
+        assert "Parent company: companies/greentest-bv" in analyst_prompt
+        assert self.ENRICHER_DESCRIPTION not in analyst_prompt
+        assert f"Description: {self.FILE_DESCRIPTION}" in auditor_prompts[0]
+        assert self.ENRICHER_DESCRIPTION not in auditor_prompts[0]
+        # Light research starts from the file's website, not a search.
+        assert seed_urls and seed_urls[0] == "https://greentest.example"
+        # The file is read, never rewritten, without --force.
+        assert (tmp_path / "research" / "entities" / f"{ref}.md").read_text() == before
+
+    @pytest.mark.asyncio
+    async def test_entity_file_search_hints_reach_research(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        _setup_tmp_repo(tmp_path)
+        ref = self._write_product(tmp_path)
+
+        seen: list = []
+
+        async def spy_research(client, entity, claim, cfg, sem, **kwargs):
+            seen.append(kwargs.get("resolved_entity"))
+            return _ro(urls=["https://example.com/report"])
+
+        monkeypatch.setattr("orchestrator.pipeline._research", spy_research)
+
+        async def fake_probe(client, entity_name, entity_website):
+            return ["probe-excluded.example"]
+
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", fake_probe)
+
+        from researcher.entity_verifier import entity_verifier_agent
+
+        with (
+            ingestor_agent.override(model=_ingestor_model()),
+            analyst_agent.override(model=_analyst_model()),
+            auditor_agent.override(model=_auditor_model()),
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+            )
+            result = await onboard_entity(
+                "GreenTest", "product", config=config, entity_ref=ref,
+                only=["renewable-energy-hosting"],
+                search_hints_exclude=["cli-excluded.example"],
+            )
+
+        assert result.status == "accepted", result.errors
+        per_template = [r for r in seen if r is not None]
+        assert per_template, "per-template research never ran with a resolved entity"
+        resolved = per_template[0]
+        assert resolved.website == "https://greentest.example"
+        assert resolved.parent_company == "companies/greentest-bv"
+        assert resolved.search_hints is not None
+        assert resolved.search_hints.exclude == [
+            "file-excluded.example", "cli-excluded.example", "probe-excluded.example",
+        ]
+
+
 class TestOnboardSubjectFanOut:
     """Subject onboarding queues only templates whose subjects: list names the subject."""
 
