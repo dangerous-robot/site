@@ -13,6 +13,7 @@ from common.blocklist import BlocklistEntry, filter_urls
 from common.canonical_url import canonical_key, canonicalize
 from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
+from common.source_classification import EntityIdentity, profile_url_names_entity
 from orchestrator.checkpoints import StepError
 from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
 from researcher.agent import search_brave
@@ -452,8 +453,19 @@ async def decomposed_research(
         c.url: c.raw_content for c in candidates if c.raw_content
     }
 
+    entity_identity = (
+        EntityIdentity.from_parts(
+            [resolved_entity.entity_name, resolved_entity.legal_name, *resolved_entity.aliases],
+            [resolved_entity.website],
+        )
+        if resolved_entity
+        else None
+    )
+
     def _commit(urls: list[str], addresses: dict[str, list[str]]) -> ResearchOutput:
-        urls, addresses = _apply_entity_exclude(urls, addresses, avoid_topics, out.trace)
+        urls, addresses = _apply_entity_exclude(
+            urls, addresses, avoid_topics, out.trace, entity_identity
+        )
         out.urls = urls
         out.url_addresses = addresses
         out.prefetched_bodies = {u: raw_by_url[u] for u in urls if u in raw_by_url}
@@ -536,16 +548,29 @@ def _apply_entity_exclude(
     addresses: dict[str, list[str]],
     avoid: list[str],
     trace: dict,
+    identity: EntityIdentity | None = None,
 ) -> tuple[list[str], dict[str, list[str]]]:
     """Drop URLs whose host matches a domain-shaped entry in `avoid`.
 
     Topical avoid entries (free text without a `.`) are left to the LLM scorer.
+    A URL that is the entity's own account on a profile platform
+    (``profile_url_names_entity``) is kept and listed under
+    ``entity_exclude_spared``: excluding linkedin.com to shed a namesake
+    must not drop the entity's own post.
     """
     domain_excludes = [a.strip().lower() for a in avoid if "." in a and " " not in a]
     if not domain_excludes:
         return urls, addresses
     entries = [BlocklistEntry(host=d, reason="entity_exclude") for d in domain_excludes]
     kept, dropped = filter_urls(urls, entries)
+    if identity is not None:
+        spared = {d.url for d in dropped if profile_url_names_entity(d.url, identity)}
+        if spared:
+            trace["entity_exclude_spared"] = [d.url for d in dropped if d.url in spared]
+            logger.info("Entity-exclude filter spared the entity's own URL(s): %s", sorted(spared))
+            dropped = [d for d in dropped if d.url not in spared]
+            kept_set = set(kept) | spared
+            kept = [u for u in urls if u in kept_set]
     if dropped:
         trace["entity_exclude_dropped"] = [d.url for d in dropped]
         logger.info(

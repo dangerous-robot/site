@@ -348,6 +348,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     import httpx
     from common.content_loader import resolve_repo_root
     from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
+    from ingestor.arxiv_affiliation import arxiv_corporate_lab
     from orchestrator.checkpoints import StepError
     from orchestrator.persistence import resolve_source_slugs, source_markdown
     from orchestrator.pipeline import _check_ingested_source
@@ -380,7 +381,10 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 click.echo(f"Error: agent failed: {exc}", err=True)
                 return 1
 
-            checked = _check_ingested_source(url, res.output, deps, Path(root_str))
+            corporate_lab = await arxiv_corporate_lab(client, url)
+            checked = _check_ingested_source(
+                url, res.output, deps, Path(root_str), corporate_lab
+            )
             if isinstance(checked, StepError):
                 if checked.error_type == "fetch_failed":
                     click.echo(f"Error: fetch failed, no page text for {url}: {checked.message}", err=True)
@@ -659,7 +663,12 @@ def step_analyze(
     from common.frontmatter import parse_frontmatter
     from common.templates import get_template, load_templates, render_claim_text
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
-    from orchestrator.persistence import _write_claim_file, load_source_dict, verdict_write_kwargs
+    from orchestrator.persistence import (
+        _write_claim_file,
+        fit_verdict_to_written_pool,
+        load_source_dict,
+        verdict_write_kwargs,
+    )
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -719,6 +728,12 @@ def step_analyze(
             click.echo("Error: analyst agent failed to produce output.", err=True)
         sys.exit(1)
 
+    # Fit before printing, so the printed level is the one --write writes.
+    source_ids = fm.get("sources") or []
+    level_clamp = fit_verdict_to_written_pool(
+        analyst_out.verdict, source_dicts, source_ids, entity_name
+    )
+
     # Always print the result
     a = analyst_out
     click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
@@ -727,6 +742,8 @@ def step_analyze(
     click.echo(f"Verdict:    {a.verdict.verdict.value}")
     click.echo(f"Confidence: {a.verdict.confidence.value}")
     click.echo(f"Level:      {a.verdict.verification_level.value}")
+    if level_clamp:
+        click.echo(f"Level fit:  {level_clamp}")
     click.echo(f"Narrative:")
     for line in a.verdict.narrative.strip().split("\n"):
         click.echo(f"  {line}")
@@ -737,7 +754,6 @@ def step_analyze(
     # Write claim file
     entity_ref = fm["entity"]
     claim_slug = claim_path.stem
-    source_ids = fm.get("sources") or []
 
     try:
         written_path = _write_claim_file(
@@ -1045,6 +1061,7 @@ def claim_refresh(
         _write_audit_sidecar,
         _read_published_snapshot,
         _write_claim_file,
+        fit_verdict_to_written_pool,
         verdict_write_kwargs,
     )
     from orchestrator.pipeline import VerifyConfig, _build_sub_questions_block, verify_claim
@@ -1147,7 +1164,7 @@ def claim_refresh(
     source_ids = vr.persist_sources(root)
     target_path = _claim_path_for(write_entity_ref, entity_name, claim_slug_for_write, root)
 
-    def _write_sidecar(agents_run: list[str], comparison=None) -> None:
+    def _write_sidecar(agents_run: list[str], comparison=None, level_clamp: str | None = None) -> None:
         _write_audit_sidecar(
             claim_path=target_path,
             comparison=comparison,
@@ -1165,6 +1182,7 @@ def claim_refresh(
             reset_review=True,
             previous_publication=previous_publication,
             current_source_ids=source_ids,
+            level_clamp=level_clamp,
         )
 
     # Branch A: threshold-blocked.
@@ -1274,7 +1292,10 @@ def claim_refresh(
         logger.warning("Template %s has invalid topic; falling back to analyst topics: %s", criteria_slug, exc)
         inherited_topics = list(ao.verdict.topics)
 
-    _write_sidecar(["researcher", "ingestor", "analyst", "auditor"], vr.consistency)
+    level_clamp = fit_verdict_to_written_pool(ao.verdict, vr.sources, source_ids, entity_name)
+    if level_clamp:
+        click.echo(f"Level fit: {level_clamp}")
+    _write_sidecar(["researcher", "ingestor", "analyst", "auditor"], vr.consistency, level_clamp)
     claim_path_written = _write_claim_file(
         title=ao.verdict.title,
         entity_name=entity_name,

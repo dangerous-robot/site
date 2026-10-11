@@ -113,6 +113,7 @@ The `audit` object has the shape:
 | `pipeline_run.ran_at` | date | When the pipeline run occurred |
 | `pipeline_run.model` | string | Model used |
 | `pipeline_run.agents` | string[] | Agents that participated |
+| `pipeline_run.level_clamp` | string | Present only when the write-time level fit lowered the analyst's `verification_level`; says from what to what and why (see `docs/architecture/source-quality.md` § Level fit to the written sources) |
 | `models_used` | map | Per-agent model lineage (agent name to model string). Optional during the v1 transition: sidecars written before the field landed validate without it; new sidecars always carry it |
 | `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`, optional `acquisition` and `archive`) |
 | `sources_consulted[].acquisition` | object | Optional record of how the source was acquired |

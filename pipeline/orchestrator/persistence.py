@@ -20,15 +20,23 @@ if TYPE_CHECKING:
     from analyst.agent import VerdictAssessment
     from orchestrator.entity_resolution import SearchHints
 from common.models import (
+    INDEPENDENT_SOURCES_REQUIRED,
+    SELF_REPORT_KINDS,
     BlockedReason,
     ClaimStatus,
     Category,
     Confidence,
     EntityType,
     FailureInfo,
+    Independence,
     Verdict,
+    VerificationLevel,
 )
-from common.source_classification import classify_source_type, independence_for_source_type
+from common.source_classification import (
+    classify_source_type,
+    effective_independence,
+    independence_for_source_type,
+)
 from common.canonical_url import canonical_key, same_resource
 from common.templates import normalize_title
 from common.utils import host_token, slugify
@@ -337,6 +345,79 @@ def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
             if overrides else None
         ),
     }
+
+
+def fit_verdict_to_written_pool(
+    verdict: "VerdictAssessment",
+    sources: list[dict],
+    source_ids: list[str],
+    entity_name: str,
+) -> str | None:
+    """Lower ``verification_level`` to what the written source list supports.
+
+    The analyst picks the level from every source it was shown, but the claim
+    cites only ``source_ids``, and the site counts that list. Overrides for
+    sources not in the list are dropped. Independence per source is its
+    override, else the label in ``sources`` (already relabelled for the
+    entity). A level short of independent sources falls to
+    ``independently-verified`` with one, else to ``self-reported`` (a
+    first-party report, documentation or dataset is written) or ``claimed``.
+    A capped result gets ``confidence: low`` and, when the verdict has none,
+    a template ``cap_rationale``.
+
+    Returns a one-line note when the level changed, else None. Call it just
+    before the claim (and its sidecar) is written, after the final
+    ``source_ids`` exist.
+    """
+    written = set(source_ids)
+    if verdict.source_overrides:
+        verdict.source_overrides = [
+            o for o in verdict.source_overrides if o.source in written
+        ] or None
+
+    level = _enum_value(verdict.verification_level)
+    required = INDEPENDENT_SOURCES_REQUIRED.get(level)
+    if required is None:
+        return None
+    by_id = {sd.get("source_id"): sd for sd in sources}
+    overrides = {
+        o.source: o.independence.value
+        for o in verdict.source_overrides or []
+        if o.independence is not None
+    }
+    labels = effective_independence(
+        source_ids,
+        {sid: by_id.get(sid, {}).get("independence") for sid in source_ids},
+        overrides,
+    )
+    independent = sum(1 for v in labels.values() if v == Independence.INDEPENDENT.value)
+    if independent >= required:
+        return None
+
+    if independent >= 1:
+        new_level = VerificationLevel.INDEPENDENTLY_VERIFIED
+    elif any(
+        label == Independence.FIRST_PARTY.value
+        and by_id.get(sid, {}).get("kind") in SELF_REPORT_KINDS
+        for sid, label in labels.items()
+    ):
+        new_level = VerificationLevel.SELF_REPORTED
+    else:
+        new_level = VerificationLevel.CLAIMED
+    verdict.verification_level = new_level
+    if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
+        verdict.confidence = Confidence.LOW
+        if not verdict.cap_rationale:
+            name = entity_name if len(entity_name) <= 200 else entity_name[:197] + "..."
+            verdict.cap_rationale = (
+                f"Confidence is capped at low: no source on this claim independently addresses {name}."
+            )
+    note = (
+        f"verification_level {level} lowered to {new_level.value}: the written sources "
+        f"include {independent} independent source(s), and {level} needs {required}"
+    )
+    logger.info("Level fit: %s", note)
+    return note
 
 
 def _enum_value(value: object) -> object:
@@ -652,6 +733,7 @@ def _write_audit_sidecar(
     previous_publication: dict | None = None,
     current_source_ids: list[str] | None = None,
     analyst_titles: dict | None = None,
+    level_clamp: str | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -664,6 +746,9 @@ def _write_audit_sidecar(
     The ``analyst_titles`` block is carried over from the existing sidecar;
     ``_write_claim_file`` owns it. Pass ``analyst_titles`` only when the claim
     was written before its first sidecar existed.
+
+    ``level_clamp`` is the note from ``fit_verdict_to_written_pool``; it
+    explains why the claim's level differs from the analyst's.
 
     Returns the sidecar path.
     """
@@ -761,6 +846,8 @@ def _write_audit_sidecar(
         "model": model,
         "agents": agents_run,
     }
+    if level_clamp:
+        pipeline_run_block["level_clamp"] = level_clamp
     if failure is not None:
         pipeline_run_block["failure"] = {
             k: v for k, v in dataclasses.asdict(failure).items() if v is not None

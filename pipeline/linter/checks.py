@@ -9,7 +9,8 @@ from typing import Any
 from urllib.parse import urlparse
 
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
-from common.models import Confidence, Independence, VerificationLevel
+from common.models import INDEPENDENT_SOURCES_REQUIRED, Confidence, Independence, VerificationLevel
+from common.source_classification import effective_independence
 
 from .models import LintIssue
 
@@ -36,11 +37,6 @@ CANONICAL_CLAIM_KEYS = {
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
 CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}
 CAPPED_CONFIDENCE_VALUES = {Confidence.MEDIUM.value, Confidence.HIGH.value}
-# Thresholds from analyst/instructions.md (verification_level rules).
-INDEPENDENT_SOURCES_REQUIRED = {
-    VerificationLevel.INDEPENDENTLY_VERIFIED.value: 1,
-    VerificationLevel.MULTIPLY_VERIFIED.value: 2,
-}
 CITATION_ISSUE_KINDS = {
     "bracket": ("raw-citation-token", "raw citation token(s)"),
     "numbered": ("numbered-source-reference", "numbered source reference(s)"),
@@ -752,11 +748,12 @@ def check_verification_level_pool(
             if isinstance(o, dict) and isinstance(o.get("source"), str) and o.get("independence")
         }
         refs = [r for r in fm.get("sources") or [] if isinstance(r, str)]
-        independent = sum(
-            1 for ref in refs
-            if overrides.get(ref, source_frontmatters.get(ref, {}).get("independence"))
-            == Independence.INDEPENDENT.value
+        labels = effective_independence(
+            refs,
+            {ref: source_frontmatters.get(ref, {}).get("independence") for ref in refs},
+            overrides,
         )
+        independent = sum(1 for v in labels.values() if v == Independence.INDEPENDENT.value)
         if independent < required:
             issues.append(LintIssue(
                 path=str(path),

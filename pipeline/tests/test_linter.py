@@ -598,6 +598,33 @@ class TestVerificationLevelPool:
         assert self._check("claimed", ["2026/brave-home"]) == []
         assert self._check("self-reported", ["2026/brave-home"]) == []
 
+    def test_partially_verified_needs_one_independent(self):
+        issues = self._check("partially-verified", ["2026/brave-home"])
+        assert [i.check_id for i in issues] == ["verification-level-pool-mismatch"]
+        assert self._check(
+            "partially-verified", ["2026/brave-home", "2026/aws-report"]
+        ) == []
+
+    def test_override_without_independence_keeps_source_label(self):
+        overrides = [{"source": "2026/aws-report", "reason": "a note only"}]
+        assert self._check(
+            "independently-verified", ["2026/aws-report"], overrides
+        ) == []
+
+    def test_uses_the_shared_counting_rule(self, monkeypatch):
+        import linter.checks as checks
+
+        calls = []
+        real = checks.effective_independence
+
+        def _spy(*args):
+            calls.append(args)
+            return real(*args)
+
+        monkeypatch.setattr(checks, "effective_independence", _spy)
+        self._check("independently-verified", ["2026/aws-report"])
+        assert len(calls) == 1
+
 
 def _sidecar(analyst_verdict: str | None = "unverified", override: dict | None = None, refresh: dict | None = None) -> dict:
     data: dict = {

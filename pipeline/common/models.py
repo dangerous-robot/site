@@ -171,6 +171,17 @@ class VerificationLevel(str, Enum):
     MULTIPLY_VERIFIED = "multiply-verified"
 
 
+# Independent sources each level needs (analyst/instructions.md level rules).
+INDEPENDENT_SOURCES_REQUIRED: dict[str, int] = {
+    VerificationLevel.PARTIALLY_VERIFIED.value: 1,
+    VerificationLevel.INDEPENDENTLY_VERIFIED.value: 1,
+    VerificationLevel.MULTIPLY_VERIFIED.value: 2,
+}
+# First-party source kinds that make a pool with no independent source
+# self-reported rather than claimed.
+SELF_REPORT_KINDS: frozenset[str] = frozenset({"report", "documentation", "dataset"})
+
+
 class EntityType(str, Enum):
     COMPANY = "company"
     PRODUCT = "product"

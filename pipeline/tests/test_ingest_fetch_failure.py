@@ -491,3 +491,102 @@ def test_step_ingest_drops_paraphrased_quote(tmp_path) -> None:
     text = written[0].read_text()
     assert _VERBATIM in text
     assert _PARAPHRASE not in text
+
+
+# ---------------------------------------------------------------------------
+# arXiv: a corporate lab in the author block makes the paper first-party
+# ---------------------------------------------------------------------------
+
+from pathlib import Path  # noqa: E402
+
+from common.models import Independence  # noqa: E402
+from orchestrator.persistence import source_markdown  # noqa: E402
+
+_FIXTURES = Path(__file__).parent / "fixtures"
+_CORPORATE_HTML = (_FIXTURES / "arxiv_html_corporate.html").read_text(encoding="utf-8")
+_ACADEMIC_HTML = (_FIXTURES / "arxiv_html_academic.html").read_text(encoding="utf-8")
+
+
+def _arxiv_source(url: str) -> dict:
+    return {
+        "frontmatter": {
+            "url": url,
+            "title": "A paper on the energy use of AI",
+            "publisher": "arXiv",
+            "accessed_date": _TODAY.isoformat(),
+            "kind": "paper",
+            "independence": "independent",
+            "summary": "A paper measuring the energy use of serving AI prompts.",
+        },
+        "body": "The paper measures energy per prompt.",
+        "slug": "paper",
+        "year": 2025,
+    }
+
+
+@pytest.fixture
+def _no_arxiv_wait(monkeypatch):
+    # The arXiv bucket allows one request per three seconds.
+    from unittest.mock import AsyncMock
+
+    monkeypatch.setattr("ingestor.arxiv_affiliation.throttle_acquire", AsyncMock())
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("url", "html_url"),
+    [
+        ("https://arxiv.org/abs/2508.15734", "https://arxiv.org/html/2508.15734"),
+        ("https://arxiv.org/html/2508.15734v1", "https://arxiv.org/html/2508.15734v1"),
+    ],
+    ids=["abs", "html"],
+)
+async def test_arxiv_abs_and_html_ingests_agree_on_corporate_lab(
+    tmp_path, _no_arxiv_wait, url, html_url,
+) -> None:
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_CORPORATE_HTML))
+        respx.get(html_url).mock(return_value=httpx.Response(200, html=_CORPORATE_HTML))
+        outcome = await _run_ingest_one(url, _scripted_model([url], _arxiv_source(url)), tmp_path)
+    assert isinstance(outcome, tuple), outcome
+    sf = outcome[1]
+    assert sf.frontmatter.publisher == "Google"
+    assert sf.frontmatter.independence == Independence.FIRST_PARTY
+    assert "source_type: primary" in source_markdown(sf)
+
+
+_ABS = "https://arxiv.org/abs/2505.09598"
+_HTML_V2 = "https://arxiv.org/html/2505.09598v2"
+_FOOTNOTE_HTML = _ACADEMIC_HTML.replace(
+    "Corresponding author.", "Work done during an internship at Google."
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("url", "html_url", "html_response"),
+    [
+        (_HTML_V2, _HTML_V2, httpx.Response(200, html=_ACADEMIC_HTML)),
+        (_HTML_V2, _HTML_V2, httpx.Response(200, html=_FOOTNOTE_HTML)),
+        (_ABS, "https://arxiv.org/html/2505.09598", httpx.Response(404, text="No HTML")),
+        (_ABS, "https://arxiv.org/html/2505.09598", httpx.ConnectError(_DNS_ERROR)),
+    ],
+    ids=["university-only-body-cites-openai", "footnote-only", "html-404", "html-unreachable"],
+)
+async def test_arxiv_academic_footnote_or_missing_html_unchanged(
+    tmp_path, _no_arxiv_wait, url, html_url, html_response,
+) -> None:
+    assert "OpenAI" in _ACADEMIC_HTML  # cited in the body, outside the author block
+    with respx.mock:
+        if url != html_url:
+            respx.get(url).mock(return_value=httpx.Response(200, html=_ACADEMIC_HTML))
+        route = respx.get(html_url)
+        if isinstance(html_response, Exception):
+            route.mock(side_effect=html_response)
+        else:
+            route.mock(return_value=html_response)
+        outcome = await _run_ingest_one(url, _scripted_model([url], _arxiv_source(url)), tmp_path)
+    assert isinstance(outcome, tuple), outcome
+    sf = outcome[1]
+    assert sf.frontmatter.publisher == "arXiv"
+    assert sf.frontmatter.independence == Independence.INDEPENDENT

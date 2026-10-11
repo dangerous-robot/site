@@ -96,3 +96,63 @@ class TestTertiary:
 
     def test_substack(self) -> None:
         assert _classify_source_type("My Substack", "article") == "tertiary"
+
+
+# --- Corporate lab named in an arXiv author block ---------------------------
+
+from common.source_classification import (  # noqa: E402
+    EntityIdentity,
+    corporate_lab_publisher,
+    profile_url_names_entity,
+)
+
+
+class TestCorporateLabPublisher:
+    def test_google_deepmind_affiliation(self) -> None:
+        assert corporate_lab_publisher("Jane Doe Google DeepMind, London") == "Google"
+
+    def test_lab_email_domain(self) -> None:
+        assert corporate_lab_publisher("Alice Smith alice@anthropic.com") == "Anthropic"
+
+    def test_university_only(self) -> None:
+        assert corporate_lab_publisher("Affiliation: University of Rhode Island") is None
+
+    def test_meta_substring_is_not_meta(self) -> None:
+        assert corporate_lab_publisher("Metacritic") is None
+        assert corporate_lab_publisher("a meta-analysis of fair results") is None
+
+    def test_fair_is_case_sensitive(self) -> None:
+        assert corporate_lab_publisher("FAIR, Paris") == "Meta"
+
+    def test_first_lab_in_author_order_wins(self) -> None:
+        text = "Bob (OpenAI) Carol (Microsoft Research) Dan (Google)"
+        assert corporate_lab_publisher(text) == "OpenAI"
+        assert corporate_lab_publisher("Carol microsoft.com x@microsoft.com Bob OpenAI") == "Microsoft"
+
+
+# --- The entity's own account on a profile platform --------------------------
+
+EARTHLY = EntityIdentity.from_parts(["Earthly Insight"], ["https://earthlyinsight.com"])
+
+
+class TestProfileUrlNamesEntity:
+    def test_linkedin_post_handle_before_underscore(self) -> None:
+        url = "https://www.linkedin.com/posts/earthly-insight_responsibility-activity-1"
+        assert profile_url_names_entity(url, EARTHLY)
+
+    def test_linkedin_company_page(self) -> None:
+        assert profile_url_names_entity("https://linkedin.com/company/earthlyinsight/", EARTHLY)
+
+    def test_at_handle_forms(self) -> None:
+        assert profile_url_names_entity("https://www.youtube.com/@earthly_insight", EARTHLY)
+        assert profile_url_names_entity("https://x.com/@EarthlyInsight/status/1", EARTHLY)
+
+    def test_lookalike_handle_does_not_match(self) -> None:
+        assert not profile_url_names_entity(
+            "https://www.linkedin.com/posts/earth-insight_other-activity-2", EARTHLY
+        )
+        assert not profile_url_names_entity("https://x.com/earthlyinsightfan", EARTHLY)
+
+    def test_no_match_off_profile_hosts(self) -> None:
+        assert not profile_url_names_entity("https://apps.apple.com/earthly-insight", EARTHLY)
+        assert not profile_url_names_entity("https://example.com/earthly-insight", EARTHLY)

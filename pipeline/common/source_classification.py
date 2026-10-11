@@ -7,8 +7,9 @@ and `onboard_entity`) and the standalone `dr ingest` write path.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 from common.utils import host_matches, url_host
 
@@ -144,12 +145,78 @@ class EntityIdentity:
         )
 
 
+# Platforms where one host serves many organizations' own accounts, so the
+# account handle in the path, not the host, says whose statement a page is.
+PROFILE_PLATFORMS: frozenset[str] = frozenset(
+    {"linkedin.com", "x.com", "twitter.com", "facebook.com", "instagram.com", "youtube.com"}
+)
+# Hosts that serve the entity and any same-name organization alike, so a
+# whole-host exclude would drop the entity's own pages too.
+SHARED_PLATFORM_HOSTS: frozenset[str] = PROFILE_PLATFORMS | {
+    "apps.apple.com", "play.google.com", "github.com",
+}
+_LINKEDIN_ACCOUNT_KINDS = frozenset({"company", "in", "showcase"})
+_YOUTUBE_ACCOUNT_KINDS = frozenset({"c", "user"})
+
+
+def _profile_platform(host: str) -> str | None:
+    return next((p for p in sorted(PROFILE_PLATFORMS) if host_matches(host, p)), None)
+
+
+def _profile_handle(platform: str, path: str) -> str | None:
+    parts = [p for p in path.split("/") if p]
+    if not parts:
+        return None
+    if platform == "linkedin.com":
+        if len(parts) >= 2 and parts[0] in _LINKEDIN_ACCOUNT_KINDS:
+            return parts[1]
+        if len(parts) >= 2 and parts[0] == "posts":
+            # /posts/<handle>_<post slug>
+            return parts[1].split("_", 1)[0]
+        return None
+    if platform == "youtube.com":
+        if parts[0].startswith("@"):
+            return parts[0]
+        if len(parts) >= 2 and parts[0] in _YOUTUBE_ACCOUNT_KINDS:
+            return parts[1]
+        return None
+    return parts[0]
+
+
+def _handle_variants(name: str) -> set[str]:
+    words = name.split()
+    return {"-".join(words), "_".join(words), "".join(words)}
+
+
+def profile_url_names_entity(url: str, identity: EntityIdentity) -> bool:
+    """True when ``url`` is on a profile platform and its account handle is the entity's.
+
+    The handle must equal an entity name with its words joined by ``-``, ``_``
+    or nothing. Never true off ``PROFILE_PLATFORMS``.
+    """
+    host = url_host(url)
+    platform = _profile_platform(host)
+    if platform is None:
+        return False
+    try:
+        path = urlparse(url).path
+    except ValueError:
+        return False
+    handle = _profile_handle(platform, path)
+    if not handle:
+        return False
+    handle = handle.lower().removeprefix("@")
+    return any(handle in _handle_variants(name) for name in identity.names)
+
+
 def entity_first_party_reason(
     publisher: str, url: str, identity: EntityIdentity
 ) -> str | None:
     """Return why a source is first-party for the entity, or None.
 
     Host: the URL host equals or is a subdomain of an entity website host.
+    Profile: the URL is the entity's own account on a profile platform
+    (``profile_url_names_entity``), whose publisher is usually the platform.
     Publisher: the normalized publisher equals an entity name, legal name or
     alias. Equality, not substring: "meta" must not match "Metacritic".
     """
@@ -157,6 +224,99 @@ def entity_first_party_reason(
     for entity_host in sorted(identity.hosts):
         if host_matches(host, entity_host):
             return f"URL host {host} is the entity's website ({entity_host})"
+    if profile_url_names_entity(url, identity):
+        return f"URL is the entity's own {_profile_platform(host)} account"
     if _normalize_name(publisher) in identity.names:
         return f"Publisher {publisher!r} is the entity or its parent company"
     return None
+
+
+# --- Off-entity sources ------------------------------------------------------
+
+
+def _padded_words(text: str) -> str:
+    # Space-padded so a phrase test with surrounding spaces is a whole-word match.
+    return " " + " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split()) + " "
+
+
+def publisher_named_in_claim(publisher: str, claim_text: str) -> bool:
+    """True when the normalized publisher appears as whole words in the claim text.
+
+    The claim may name a provider the entity relies on ("Euria is hosted on
+    renewable energy by Infomaniak"); that provider's own pages are evidence.
+    """
+    name = _normalize_name(publisher)
+    return bool(name) and f" {name} " in _padded_words(claim_text)
+
+
+def source_engages_entity(sd: Mapping, identity: EntityIdentity) -> bool:
+    """True when a source's text names the entity or one of its website hosts.
+
+    Reads the ingested title, summary, key quotes and body. Names match as
+    whole words ("ChatGPT" does not name "ChatGPTree"); hosts match on the
+    raw text, where normalizing would split "brave.com" in two.
+    """
+    parts = [sd.get("title"), sd.get("summary"), *(sd.get("key_quotes") or []), sd.get("body")]
+    raw = " ".join(p for p in parts if isinstance(p, str)).lower()
+    words = _padded_words(raw)
+    if any(f" {name} " in words for name in identity.names):
+        return True
+    return any(
+        re.search(rf"(?<![\w.-]){re.escape(host)}(?![\w-])", raw) for host in identity.hosts
+    )
+
+
+def effective_independence(
+    source_ids: Iterable[str],
+    file_labels: Mapping[str, str | None],
+    overrides: Mapping[str, str | None],
+) -> dict[str, str | None]:
+    """Each source's independence on one claim: its override when set, else its own label.
+
+    The one counting rule for the lint check and the write-time level fit,
+    matching ``countSourcesByIndependence`` in ``src/lib/sourceQuality.ts``.
+    """
+    return {
+        sid: overrides.get(sid) or file_labels.get(sid)
+        for sid in source_ids
+    }
+
+
+# --- Corporate labs named in a paper's author block --------------------------
+
+# (pattern, publisher, case-sensitive). Every publisher here is also in
+# _PRIMARY_PUBLISHERS, so a relabelled paper classifies as primary.
+_CORPORATE_LAB_PATTERNS: tuple[tuple[str, str, bool], ...] = (
+    (r"\bGoogle Research\b", "Google", False),
+    (r"\bGoogle DeepMind\b", "Google", False),
+    (r"\bDeepMind\b", "Google", False),
+    (r"\bGoogle\b", "Google", False),
+    (r"@google\.com\b", "Google", False),
+    (r"@deepmind\.com\b", "Google", False),
+    (r"\bAnthropic\b", "Anthropic", False),
+    (r"@anthropic\.com\b", "Anthropic", False),
+    (r"\bOpenAI\b", "OpenAI", False),
+    (r"@openai\.com\b", "OpenAI", False),
+    (r"\bMeta AI\b", "Meta", False),
+    # Uppercase only: "fair" is an ordinary word.
+    (r"\bFAIR\b", "Meta", True),
+    (r"\bMeta Platforms\b", "Meta", False),
+    (r"@meta\.com\b", "Meta", False),
+    (r"@fb\.com\b", "Meta", False),
+    (r"\bMicrosoft Research\b", "Microsoft", False),
+    (r"@microsoft\.com\b", "Microsoft", False),
+)
+
+
+def corporate_lab_publisher(author_text: str) -> str | None:
+    """The corporate AI lab named earliest in ``author_text``, or None.
+
+    ``author_text`` is a paper's author block (names, affiliations, emails),
+    so the earliest match is the first lab in author order.
+    """
+    best: tuple[int, str] | None = None
+    for pattern, publisher, case_sensitive in _CORPORATE_LAB_PATTERNS:
+        match = re.search(pattern, author_text, 0 if case_sensitive else re.IGNORECASE)
+        if match and (best is None or match.start() < best[0]):
+            best = (match.start(), publisher)
+    return best[1] if best else None

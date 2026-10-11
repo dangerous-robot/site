@@ -648,6 +648,35 @@ class TestClaimRefreshKeepsPublishedState:
         assert fm["seo_title"] == "Operator seo title for Brave"
         assert fm["cap_rationale"] == "Operator rationale for the low cap."
 
+    def test_refresh_lowers_a_level_the_written_sources_do_not_support(
+        self, monkeypatch, tmp_path,
+    ) -> None:
+        import yaml
+
+        from common.frontmatter import parse_frontmatter
+        from common.models import Confidence, VerificationLevel
+
+        claim_path = _write_published_refresh_fixture(tmp_path)
+
+        result = _run_refresh(
+            monkeypatch, tmp_path, success=True,
+            verdict_fields={
+                "confidence": Confidence.MEDIUM,
+                "verification_level": VerificationLevel.MULTIPLY_VERIFIED,
+            },
+        )
+
+        assert result.exit_code == 0, result.output
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        # Neither cached source carries an independent label.
+        assert fm["verification_level"] == "claimed"
+        assert fm["confidence"] == "low"
+        assert fm["cap_rationale"].startswith("Confidence is capped at low: ")
+        sidecar = yaml.safe_load(
+            claim_path.with_name("renewable-energy-hosting.audit.yaml").read_text(encoding="utf-8")
+        )
+        assert "multiply-verified lowered to claimed" in sidecar["pipeline_run"]["level_clamp"]
+
 
 class TestRemovedCommands:
     """Explicit coverage asserting that hard-removed commands no longer exist in the CLI."""
@@ -1299,6 +1328,8 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
             verdict=SimpleNamespace(value="unverified"),
             confidence=SimpleNamespace(value="low"),
             verification_level=SimpleNamespace(value="claimed"),
+            source_overrides=None,
+            cap_rationale=None,
         )
         entity = SimpleNamespace(entity_name="Acme", entity_type="company")
         return SimpleNamespace(entity=entity, verdict=verdict), None

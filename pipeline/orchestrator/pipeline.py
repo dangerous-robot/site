@@ -52,7 +52,7 @@ from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_v
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
 from common.templates import TemplateRecord, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
-from common.utils import slug_from_url, slugify
+from common.utils import host_matches, slug_from_url, slugify
 from auditor.bundle import build_bundle
 from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
@@ -64,6 +64,7 @@ from ingestor.agent import (
     ingestor_agent,
     requested_page_text,
 )
+from ingestor.arxiv_affiliation import arxiv_corporate_lab
 from ingestor.models import SourceFile
 from ingestor.validation import drop_unfound_quotes, validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
@@ -73,6 +74,9 @@ from common.source_classification import (
     classify_source_type,
     entity_first_party_reason,
     independence_for_source_type,
+    SHARED_PLATFORM_HOSTS,
+    publisher_named_in_claim,
+    source_engages_entity,
 )
 from orchestrator.persistence import build_source_url_index, load_source_dict, resolve_source_slugs
 from researcher.decomposed import ResearchOutput
@@ -527,31 +531,70 @@ async def verify_claim(
     return result
 
 
+def _short(text: str, limit: int = 80) -> str:
+    # Keeps an override reason under SourceOverride.reason's 300-char limit.
+    return text if len(text) <= limit else text[: limit - 3] + "..."
+
+
 def _apply_entity_match(
-    sources: list[dict], resolved_entity: ResolvedEntity, repo_root: Path
+    sources: list[dict],
+    resolved_entity: ResolvedEntity,
+    repo_root: Path,
+    claim_text: str = "",
 ) -> list[SourceOverride]:
-    """Relabel the claim entity's own sources ``first-party`` in place.
+    """Relabel sources in place for this claim's entity; return the overrides.
 
     A source's file-level ``independence`` is entity-agnostic (a brave.com
     page can be independent evidence on an AWS claim), so the correction is
     per claim: the analyst sees the corrected label, and the returned
     overrides are recorded on the claim's ``source_overrides`` so the site's
-    source counts agree with the level. Only ever moves toward first-party.
+    source counts agree with the level.
+
+    - The entity's own source (``entity_first_party_reason``) is ``first-party``.
+    - Any other ``first-party`` source is another organization's self-report.
+      It stays ``first-party`` only when the claim names its publisher (a
+      provider the entity relies on); otherwise it becomes ``unknown``, even
+      when it mentions the entity.
+    - Any other ``independent`` source stays ``independent`` only when it
+      names the entity (``source_engages_entity``) or the claim names its
+      publisher; otherwise it becomes ``unknown``.
+    - ``unknown`` sources are left alone.
+
+    A subject entity is a topic, not an organization, so only the first
+    rule applies to it.
     """
     identity = entity_identity_for(resolved_entity, repo_root)
+    entity_name = _short(resolved_entity.entity_name)
+    check_off_entity = resolved_entity.entity_type != EntityType.SUBJECT
     overrides: list[SourceOverride] = []
     for sd in sources:
-        if sd.get("independence") == Independence.FIRST_PARTY.value:
+        label = sd.get("independence")
+        publisher = sd.get("publisher") or ""
+        reason = entity_first_party_reason(publisher, sd.get("url") or "", identity)
+        if reason is not None:
+            if label == Independence.FIRST_PARTY.value:
+                continue
+            new_label, note = Independence.FIRST_PARTY, f"Entity match: {reason}."
+        elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
-        reason = entity_first_party_reason(sd.get("publisher") or "", sd.get("url") or "", identity)
-        if reason is None:
+        elif label == Independence.FIRST_PARTY.value:
+            new_label = Independence.UNKNOWN
+            note = (
+                f"Off-entity: first-party for {_short(publisher)}, not {entity_name} "
+                "or a provider the claim names."
+            )
+        elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):
+            new_label = Independence.UNKNOWN
+            note = (
+                f"Off-entity: the source does not mention {entity_name} "
+                "or a provider the claim names."
+            )
+        else:
             continue
-        sd["independence"] = Independence.FIRST_PARTY.value
-        logger.info("Entity match: %s is first-party (%s)", sd["source_id"], reason)
+        sd["independence"] = new_label.value
+        logger.info("%s -> %s (%s)", sd["source_id"], new_label.value, note)
         overrides.append(SourceOverride(
-            source=sd["source_id"],
-            independence=Independence.FIRST_PARTY,
-            reason=f"Entity match: {reason}.",
+            source=sd["source_id"], independence=new_label, reason=note,
         ))
     return overrides
 
@@ -559,10 +602,11 @@ def _apply_entity_match(
 def _merge_entity_overrides(
     verdict: VerdictAssessment, overrides: list[SourceOverride]
 ) -> None:
-    """Add entity-match overrides to the analyst's, one entry per source.
+    """Add the entity-match overrides to the analyst's, one entry per source.
 
-    The entity match beats any label, so an analyst override for the same
-    source that is not ``first-party`` is corrected rather than duplicated.
+    The code's label beats the analyst's: an analyst override for the same
+    source with a different ``independence`` is corrected rather than
+    duplicated. When they agree, the analyst's reason is kept.
     """
     if not overrides:
         return
@@ -572,8 +616,8 @@ def _merge_entity_overrides(
         prior = by_source.get(override.source)
         if prior is None:
             merged.append(override)
-        elif prior.independence != Independence.FIRST_PARTY:
-            prior.independence = Independence.FIRST_PARTY
+        elif prior.independence != override.independence:
+            prior.independence = override.independence
             prior.reason = override.reason
     verdict.source_overrides = merged
 
@@ -859,12 +903,20 @@ def _trace_acquisition_sink(research_trace: object) -> dict | None:
 
 
 def _check_ingested_source(
-    url: str, sf: SourceFile, deps: IngestorDeps, repo_root: Path
+    url: str,
+    sf: SourceFile,
+    deps: IngestorDeps,
+    repo_root: Path,
+    corporate_lab: str | None = None,
 ) -> tuple[str, SourceFile] | StepError:
     """Accept the ingest model's SourceFile only if ``url`` was fetched and it validates.
 
     The model can return a SourceFile after every fetch failed, or without
     calling ``web_fetch`` at all; its summary is then invented.
+
+    ``corporate_lab`` (from ``arxiv_corporate_lab``) makes the lab the
+    publisher and the paper ``first-party``: a lab's own paper is its
+    self-report, whichever arXiv page was ingested.
     """
     message = fetch_failure_reason(deps)
     if message is not None:
@@ -889,6 +941,11 @@ def _check_ingested_source(
         sf.frontmatter.archived_url = None
     for quote in drop_unfound_quotes(sf, requested_page_text(deps)):
         logger.warning("Dropping key quote not found on the page for %s: %r", url, quote)
+    if corporate_lab:
+        logger.info("arXiv paper %s has a %s author; labelling it first-party", url, corporate_lab)
+        # The exact lab name: the entity match compares publishers by equality.
+        sf.frontmatter.publisher = corporate_lab
+        sf.frontmatter.independence = Independence.FIRST_PARTY
     validation = validate_source_file(sf, url, str(repo_root))
     for warning in validation.warnings:
         logger.warning("Ingest validation warning for %s: %s", url, warning)
@@ -959,8 +1016,10 @@ async def _ingest_one(
         derived = slug_from_url(url)
         if derived:
             sf.slug = derived
+        # Outside the LLM semaphore and time limit; never raises.
+        corporate_lab = await arxiv_corporate_lab(client, url)
         outcome: tuple[str, SourceFile] | StepError = _check_ingested_source(
-            url, sf, deps, repo_root
+            url, sf, deps, repo_root, corporate_lab
         )
     except asyncio.TimeoutError:
         logger.warning("Ingest timed out: %s", url)
@@ -1206,14 +1265,14 @@ async def _analyse_claim(
     only when output is None, so callers can persist structured failure
     detail into the audit sidecar and progress line.
 
-    With a ``resolved_entity``, the entity's own sources are relabelled
-    ``first-party`` in ``sources`` (in place, so the auditor and sidecar see
-    the same labels) and recorded on the verdict's ``source_overrides``.
+    With a ``resolved_entity``, ``_apply_entity_match`` relabels ``sources``
+    in place (so the auditor and sidecar see the same labels) and the
+    changes are recorded on the verdict's ``source_overrides``.
     """
     entity_overrides: list[SourceOverride] = []
     if resolved_entity is not None:
         entity_overrides = _apply_entity_match(
-            sources, resolved_entity, repo_root or _cfg_repo_root(cfg)
+            sources, resolved_entity, repo_root or _cfg_repo_root(cfg), claim_text
         )
     prompt = build_analyst_prompt(
         entity_name,
@@ -1347,6 +1406,7 @@ async def research_claim(
         _write_entity_file,
         _write_source_files,
         analyst_titles_record,
+        fit_verdict_to_written_pool,
         verdict_write_kwargs,
     )
 
@@ -1490,6 +1550,10 @@ async def research_claim(
             else:
                 entity_ref = resolved_entity.entity_ref
             claim_slug = slugify(analyst_out.verdict.title)
+            level_clamp = fit_verdict_to_written_pool(
+                analyst_out.verdict, result.sources, source_ids,
+                analyst_out.entity.entity_name,
+            )
             claim_path = _write_claim_file(
                 title=analyst_out.verdict.title,
                 entity_name=analyst_out.entity.entity_name,
@@ -1544,6 +1608,7 @@ async def research_claim(
                 analyst_titles=analyst_titles_record(
                     analyst_out.verdict.title, analyst_out.verdict.seo_title
                 ),
+                level_clamp=level_clamp,
             )
 
             # Checkpoint: review disagreement
@@ -1782,7 +1847,8 @@ async def _probe_collision_suggestions(
 
     Skipped (returns []) when there is no canonical website to compare against.
     Returns up to 3 distinct registered domains that appear in the top results
-    and are not under the canonical host's own site domain (``_site_domain``).
+    and are not under the canonical host's own site domain (``_site_domain``)
+    or a shared platform (``SHARED_PLATFORM_HOSTS``).
     Failures are non-fatal: the probe is best-
     effort disambiguation, not a gate.
     """
@@ -1806,6 +1872,10 @@ async def _probe_collision_suggestions(
         # for ai.viro.app): excluding one would drop first-party pages, since
         # the blocklist also matches subdomains.
         if _site_domain(host) == _site_domain(canon):
+            continue
+        # LinkedIn, the App Store and the like host the entity's own account
+        # as readily as a collider's, so a whole-host exclude is never right.
+        if any(host_matches(host, shared) for shared in SHARED_PLATFORM_HOSTS):
             continue
         counts[host] += 1
     suggestions = [host for host, _ in counts.most_common(3)]
@@ -2003,6 +2073,7 @@ async def onboard_entity(
         _write_entity_file,
         analyst_titles_record,
         entity_ref_for,
+        fit_verdict_to_written_pool,
         verdict_write_kwargs,
     )
 
@@ -2600,6 +2671,9 @@ async def onboard_entity(
                         )
                         inherited_topics = list(ao.verdict.topics)
 
+                    level_clamp = fit_verdict_to_written_pool(
+                        ao.verdict, vr.sources, source_ids, entity_name
+                    )
                     claim_path = _write_claim_file(
                         title=ao.verdict.title,
                         entity_name=entity_name,
@@ -2637,6 +2711,7 @@ async def onboard_entity(
                             vr.queries_by_sub_question,
                         ),
                         analyst_titles=analyst_titles_record(ao.verdict.title, ao.verdict.seo_title),
+                        level_clamp=level_clamp,
                     )
 
                     progress("[%d/%d] Done: %s", idx, total, slug)

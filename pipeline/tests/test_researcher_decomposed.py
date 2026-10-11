@@ -1142,3 +1142,66 @@ async def test_execute_searches_keeps_arxiv_abs_and_html_apart() -> None:
             candidates = await execute_searches(["q1"], client)
 
     assert [c.url for c in candidates] == [r["url"] for r in results]
+
+
+async def _exclude_run(
+    entity_name: str, website: str, exclude: list[str], urls: list[str]
+):
+    from orchestrator.entity_resolution import SearchHints
+
+    cfg = _make_cfg(max_initial_queries=2)
+    resolved = ResolvedEntity(
+        entity_ref="products/x",
+        entity_name=entity_name,
+        entity_type=EntityType.PRODUCT,
+        entity_description="",
+        website=website,
+        search_hints=SearchHints(include=[], exclude=exclude),
+    )
+    fake_candidates = [
+        SearchCandidate(url=u, title="t", snippet="", from_query="q1") for u in urls
+    ]
+    fake_scored = ScoredURLs(
+        kept=[ScoredCandidate(url=u, addresses=["sq1"]) for u in urls],
+        dropped=[],
+        rationale="kept all",
+    )
+    with (
+        patch.object(research_planner_agent, "run", new=AsyncMock(return_value=_AgentResult(_plan(["q1"], "ok")))),
+        patch.object(url_scorer_agent, "run", new=AsyncMock(return_value=_AgentResult(fake_scored))),
+        patch("researcher.decomposed.execute_searches", new=AsyncMock(return_value=fake_candidates)),
+    ):
+        async with httpx.AsyncClient() as client:
+            return await decomposed_research(
+                "test claim", entity_name, cfg, asyncio.Semaphore(8), client,
+                resolved_entity=resolved,
+            )
+
+
+@pytest.mark.asyncio
+async def test_entity_exclude_spares_entity_profile_url() -> None:
+    own = "https://www.linkedin.com/posts/earthly-insight_responsibility-activity-1"
+    other = "https://www.linkedin.com/posts/earth-insight_other-activity-2"
+    site = "https://earthlyinsight.com/about"
+    ro = await _exclude_run(
+        "Earthly Insight", "https://earthlyinsight.com", ["linkedin.com"], [own, other, site]
+    )
+    assert ro.urls == [own, site]
+    assert ro.trace["entity_exclude_spared"] == [own]
+    assert ro.trace["entity_exclude_dropped"] == [other]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("entity_name", "website", "exclude", "url"),
+    [
+        ("Gemini", "https://gemini.google.com", "gemini.com", "https://www.gemini.com/gemini-dollar"),
+        ("ChatGPT", "https://chatgpt.com", "apps.apple.com", "https://apps.apple.com/us/app/chatgpt/id6448311069"),
+        ("Claude", "https://claude.ai", "anthropic.com", "https://www.anthropic.com/claude"),
+    ],
+)
+async def test_entity_exclude_still_drops_entity_file_excludes(entity_name, website, exclude, url) -> None:
+    ro = await _exclude_run(entity_name, website, [exclude], [url, f"{website}/about"])
+    assert ro.urls == [f"{website}/about"]
+    assert ro.trace["entity_exclude_dropped"] == [url]
+    assert "entity_exclude_spared" not in ro.trace

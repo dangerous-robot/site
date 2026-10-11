@@ -26,6 +26,18 @@ Single claim-level field, set by the analyst. Each row's "Derivation" describes 
 
 The display-copy column is what the claim page shows readers under each level. Both the label and the gloss are mirrored from `src/lib/sourceQuality.ts`; editing those strings here means editing them on the site too.
 
+An `unknown` source counts as neither `independent` nor `first-party`. A pool with zero `independent` and zero `first-party` sources is `claimed`.
+
+### Level fit to the written sources
+
+The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. Just before the claim is written (`dr claim-refresh`, `dr onboard`, `dr step-analyze` and `research_claim`), `fit_verdict_to_written_pool` in `pipeline/orchestrator/persistence.py`:
+
+- drops `source_overrides` entries for sources not in the written list;
+- counts each written source's effective `independence` (its override, else its label after the entity match) with `effective_independence` in `pipeline/common/source_classification.py`, the same function the `verification-level-pool-mismatch` lint check uses;
+- lowers a level that needs more `independent` sources than the list has (`partially-verified` and `independently-verified` need one, `multiply-verified` two): to `independently-verified` with one, else to `self-reported` when a written `first-party` source has `kind` in {report, documentation, dataset}, else to `claimed`.
+
+A lowered level of `self-reported` or `claimed` also sets `confidence: low` and, when the analyst wrote none, the `cap_rationale` "Confidence is capped at low: no source on this claim independently addresses <entity>." The audit sidecar records why under `pipeline_run.level_clamp`, since the auditor and the analyst snapshot saw the level from before the fit.
+
 ### `claimed` vs `self-reported` boundary
 
 The boundary turns on whether a `first-party` source contains formal documentation:
@@ -49,9 +61,16 @@ The proxy is a starting classification. It has a known failure mode (next sectio
 The proxy knows nothing about the claim's entity, so a page published by the entity itself can arrive labelled `independent` (a "Brave Software" report on brave.com proxies to `secondary`, and the ingest model can also set the label). When the pipeline knows the claim's entity (`dr claim-refresh`, `dr onboard`, `dr verify`, and `research_claim` when the entity is pre-resolved), it applies a deterministic match before the analyst runs (`entity_first_party_reason` in `pipeline/common/source_classification.py`). A source is `first-party` for the claim when either:
 
 - **Host**: its URL host (without `www.`) equals or is a subdomain of the host of the entity's `website` or its parent company's `website`. `search.brave.com` matches `brave.com`; `notbrave.com` and `brave.com.example.net` do not.
+- **Profile**: the URL is the entity's own account on LinkedIn, X, Twitter, Facebook, Instagram or YouTube: the account handle in the path (`linkedin.com/company/<handle>`, `linkedin.com/posts/<handle>_...`, `x.com/<handle>`, `youtube.com/@<handle>`) equals an entity name with its words joined by `-`, `_` or nothing. The publisher of such a page is usually the platform.
 - **Publisher**: its `publisher`, lowercased with punctuation and a trailing `inc`/`llc`/`ltd` removed, equals the entity's `name`, `legal_name` or an alias, or the same fields on the parent company (`parent_company` on the entity file). Equality, not substring: "Meta" does not match "Metacritic".
 
-The match beats any label and only ever moves a source toward `first-party`. The analyst sees the corrected label, and each correction is recorded on the claim as a `source_overrides` entry with a reason starting "Entity match:" (see [Source overrides on claims](#source-overrides-on-claims)). The source file's `independence` is not changed: a brave.com page is first-party on a Brave claim and may be independent evidence on another entity's claim. `parent_company` and `aliases:` on the entity files are the levers: without `parent_company`, a forum thread published by "Brave Software" on another host does not match a Brave Browser claim.
+A source that does not match is about someone else, and for a company or product entity it does not count for the entity either way:
+
+- A `first-party` source is another organization's self-report (AWS documentation naming a customer, a Google paper benchmarking ChatGPT). It becomes `unknown`, even when it mentions the entity, unless the claim text names its publisher as a provider ("Euria is hosted on renewable energy by Infomaniak").
+- An `independent` source becomes `unknown` unless its title, summary, key quotes or body name the entity (a whole-word match on a name, legal name or alias, its parent's, or a website host) or the claim text names its publisher.
+- An `unknown` source is left alone.
+
+A subject entity is a topic, not an organization, so only the match above applies to it. The match beats any label, including an analyst override for the same source. The analyst sees the corrected label, and each correction is recorded on the claim as a `source_overrides` entry with a reason starting "Entity match:" or "Off-entity:" (see [Source overrides on claims](#source-overrides-on-claims)). The source file's `independence` is not changed: a brave.com page is first-party on a Brave claim and may be independent evidence on another entity's claim. `parent_company` and `aliases:` on the entity files are the levers: without `parent_company`, a forum thread published by "Brave Software" on another host does not match a Brave Browser claim. The mention test reads the ingested text, which is short, so a source that names the entity only deep in the page is marked `unknown`; the "Off-entity:" reason shows this on review.
 
 ### `source_type` and `independence`: why both?
 
@@ -73,7 +92,7 @@ That coincidence is why the ingestor mechanically derives `independence` from `s
 Edges where the proxy is imprecise:
 
 - **Regulator filings about (not by) the entity** are `primary` by publisher rule (sec.gov, ftc.gov) and proxied to `first-party`. The document originates outside the entity but speaks with regulator authority — neither label fits cleanly. Today the proxy treats them as first-party; the analyst can correct per-claim if it matters.
-- **Academic articles authored by entity employees** are `secondary` by publisher (arxiv, IEEE) and proxied to `independent`. They may functionally be entity-authored content disclosed through a third-party venue. Independent venue, not independent author.
+- **Academic articles authored by entity employees** are `secondary` by publisher (arxiv, IEEE) and proxied to `independent`. They may functionally be entity-authored content disclosed through a third-party venue. Independent venue, not independent author. For arXiv papers this is handled: at ingest, `arxiv_corporate_lab` (`pipeline/ingestor/arxiv_affiliation.py`) reads the author block of the paper's HTML render, and when it names Google, DeepMind, Anthropic, OpenAI, Meta AI, FAIR or Microsoft Research (or an email at one of their domains), the lab becomes the `publisher` and the paper `first-party`, so `source_type` is `primary`. The `abs/` and `html/` ingests of one paper agree. The first lab in author order wins, footnotes and thanks are ignored, and a paper with no HTML render keeps the ingest model's labels.
 - **Secondary sources that restate primary numbers without original analysis** — by far the most common edge — are addressed per-claim via `source_overrides` (see § Source overrides on claims). Other edges currently rely on the analyst flagging them in the narrative.
 - **The claim entity's own pages** labelled `independent` (by the proxy or the ingest model) are handled: the entity match above relabels them `first-party` for that claim and records a `source_overrides` entry.
 
@@ -109,11 +128,11 @@ Claims where absence of evidence is the primary basis should use `verdict: unver
 
 ### Lint enforcement
 
-`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`. The warning surfaces drift; the analyst is responsible for the cap at write time.
+`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`, and (`verification-level-pool-mismatch`) when a level needs more `independent` sources than the claim's written list has. The warnings surface drift; the analyst sets the cap and the [level fit](#level-fit-to-the-written-sources) lowers an unsupported level at write time.
 
 ## Source overrides on claims
 
-A claim may carry an optional `source_overrides:` list to record per-claim overrides of source-level fields. Two things write it: the analyst, for the restatement failure mode above, and the pipeline's entity match (see [Entity match](#entity-match-the-claim-entitys-own-pages)), whose entries have a reason starting "Entity match:". Example of an analyst override:
+A claim may carry an optional `source_overrides:` list to record per-claim overrides of source-level fields. Two things write it: the analyst, for the restatement failure mode above, and the pipeline's entity match (see [Entity match](#entity-match-the-claim-entitys-own-pages)), whose entries have a reason starting "Entity match:" or "Off-entity:". Example of an analyst override:
 
 ```yaml
 source_overrides:

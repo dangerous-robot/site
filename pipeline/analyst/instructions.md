@@ -175,7 +175,12 @@ TWO derived signals:
    - `self-reported` -- The pool has zero `independent` sources and at least one
      `first-party` source whose `kind` is in {report, documentation, dataset}.
    - `claimed` -- The pool has zero `independent` sources and every `first-party`
-     source has `kind` in {blog, index, video, article}.
+     source has `kind` in {blog, index, video, article}. A pool with zero `independent`
+     and zero `first-party` sources is also `claimed`.
+
+   An `unknown` source counts as neither `independent` nor `first-party`. The pipeline
+   marks a source `unknown` (with a reason starting "Off-entity") when it is another
+   organization's own page, or does not mention the entity or a provider the claim names.
 
    FIRST-PARTY ARTICLE BOUNDARY: a `first-party` source with `kind: article` defaults to
    `claimed`. Upgrade to `self-reported` ONLY when the article contains methodology,

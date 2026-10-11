@@ -629,6 +629,26 @@ class TestProbeCollisionSuggestions:
         assert suggestions == ["help.viro.app", "shop.example.co.uk"]
 
     @pytest.mark.asyncio
+    async def test_probe_skips_shared_platform_hosts(self, monkeypatch) -> None:
+        """The entity's own LinkedIn page or App Store listing is no collision."""
+        async def fake_search(client, query, max_results=8):
+            return [
+                {"url": "https://www.linkedin.com/company/earthly-insight", "title": "LinkedIn", "snippet": ""},
+                {"url": "https://apps.apple.com/us/app/earthly-insight/id1", "title": "App", "snippet": ""},
+                {"url": "https://earthlyinsight.ai/privacy", "title": "Privacy", "snippet": ""},
+                {"url": "https://play.google.com/store/apps/details?id=x", "title": "Play", "snippet": ""},
+                {"url": "https://github.com/earthly-insight", "title": "GitHub", "snippet": ""},
+            ]
+        from researcher import agent as researcher_agent_mod
+        monkeypatch.setattr(researcher_agent_mod, "search_brave", fake_search)
+
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="Earthly Insight",
+            entity_website="https://earthlyinsight.com",
+        )
+        assert suggestions == ["earthlyinsight.ai"]
+
+    @pytest.mark.asyncio
     async def test_skipped_when_no_canonical(self) -> None:
         suggestions = await _probe_collision_suggestions(
             client=None, entity_name="Anything", entity_website=None,
