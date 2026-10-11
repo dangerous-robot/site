@@ -1,7 +1,7 @@
 # Plan: `dr claim-restate` (claim restatement proposals)
 
 **Status**: design reviewed by the operator 2026-10-10; all questions answered. Not started. The us-data-centers worked example is on disk, untracked (RISK-4).
-**Last updated**: 2026-10-10
+**Last updated**: 2026-10-11
 **Serves**: RE-AC (Claim restatement) in `docs/v1.0.0-roadmap.md` (beta.8), theme 1, Responsible AI chatbots (`docs/priorities.md`, proposed on the theme's `Work:` line, operator to confirm).
 **Line numbers** are as of HEAD `0b3d0a9`. Paths are repo-relative; `pipeline/` is omitted where obvious.
 **Register** code work with `python3 scripts/release-gate/work_item.py start --title "RE-AC (Claim restatement)" --kind minor --release v1.0.0 --plan docs/plans/claim-restate.md` (AGENTS.md § Agent workflow tooling); one checkout holds one active item, so SITE-J's record must be finished first and re-registered by that line of work when it resumes.
@@ -12,7 +12,7 @@ In the operator's words, the plan prioritizes "a) reusing existing sources (what
 
 An unverified claim is one whose sources circle the assertion without settling it (`docs/architecture/glossary.md:49`); often the pool on disk already settles a nearby statement. `dr claim-restate` reads one unverified claim plus the whole local source pool and proposes ranked restatements, each with the verdict the existing evidence would give it and the passages that give it; the operator picks the framing and acts with existing commands. The command does no web research, never rewrites the claim text, and writes nothing unless `--write` is given, which records the proposal in the claim's audit sidecar. `--write --accept N` turns the chosen candidate into a criterion in `research/templates.yaml` so the operator can onboard it as a template-backed claim with the existing commands.
 
-Today there are five unverified claims: four `renewable-energy-hosting` claims (`chatgptree`, `earthly-insight`, `viro-ai`, `brave-browser`), three of which are cells on the Responsible AI chatbots page where an Unverified claim renders as "unknown" (D25, D26 in `docs/plans/responsible-ai-chatbots-claims.md`), and the subject claim `subjects/us-data-centers/there-are-fewer-than-10-...` (draft, analyst `unverified`, auditor `true`).
+Today there are five unverified claims: three `renewable-energy-hosting` claims (`chatgptree`, `earthly-insight`, `viro-ai`), all cells on the Responsible AI chatbots page where an Unverified claim renders as "unknown" (D25, D26 in `docs/plans/responsible-ai-chatbots-claims.md`), and two subject claims, `subjects/us-data-centers/there-are-fewer-than-10-...` (draft, analyst `unverified`, auditor `true`) and `subjects/generative-ai/answering-a-generative-ai-prompt-uses-roughly-ten-times-the-electricity-of-a-web-search` (draft, analyst `unverified`, auditor `true`).
 
 ## Status checklist
 
@@ -40,7 +40,7 @@ D1 to D10 and D13 to D17 are settled. D11 and D12 are content decisions pending 
 - D8: nothing is rendered on the site in v1; the public trail is the new claim, the archived original and the `corrections` entry.
 - D9: one `restatement` block per sidecar; `--write` replaces any earlier block; history lives in git (see RISK-2).
 - D10: the `why_unverified` enum has five values: `quantifier-unsupported`, `term-mismatch`, `upstream-provider`, `entity-silent` (the recurring reasons R1 to R4 found in the evidence sweep) and `other` (see "Generalization").
-- D11 (pending from the operator, content not design), wrapper products and the browser. For Earthly Insight, Viro and ChatGPTree (on third-party models) and for Brave (a browser), should `renewable-energy-hosting` resolve to `not-applicable` with the question moved to the provider entity, or be restated at product level? This also picks the template direction. Options: T1, keep "PRODUCT is hosted on renewable energy" and add to `notes` that a product on third-party models gets `not-applicable` with a pointer to the provider, and that "matched" or "purchased" renewable energy without facility supply evidence is `mostly-true` at most (GreenPT and Euria get re-read, likely hold or drop to `mostly-true`; the four unverified claims become `not-applicable` or stay unverified; nothing new to show readers); T2, a new controlled-vocabulary template "PRODUCT's renewable energy claim rests on MECHANISM" with the vocabulary on-site generation / direct supply contract / matched certificates or PPAs / offsets only / none stated, verdict `true` when a source names the mechanism, as with `corporate-structure` (GreenPT and Euria read "direct supply contract" or "matched", ChatGPTree "offsets only", Viro "matched", Brave and Earthly Insight "none stated"; the vocabulary does the work and the operator never picks a thesis; overlaps `discloses-energy-sourcing` for "none stated", so that template may fold in); T3, per-entity ad hoc claims (C1, C2, A1, A2 as one-offs; lint blocks publishing without `criteria_slug`; right fit only for the subject claim and the Evertreen finding). Recommendation: T2 for the template row, T3 for A1, A2 and C2; it is the one option that gives every product a checkable, non-polar fact. Decide before S9; the command itself is unchanged by the answer.
+- D11 (pending from the operator, content not design), wrapper products. For Earthly Insight, Viro and ChatGPTree (on third-party models), should `renewable-energy-hosting` resolve to `not-applicable` with the question moved to the provider entity, or be restated at product level? This also picks the template direction. Options: T1, keep "PRODUCT is hosted on renewable energy" and add to `notes` that a product on third-party models gets `not-applicable` with a pointer to the provider, and that "matched" or "purchased" renewable energy without facility supply evidence is `mostly-true` at most (GreenPT and Euria get re-read, likely hold or drop to `mostly-true`; the three unverified claims become `not-applicable` or stay unverified; nothing new to show readers); T2, a new controlled-vocabulary template "PRODUCT's renewable energy claim rests on MECHANISM" with the vocabulary on-site generation / direct supply contract / matched certificates or PPAs / offsets only / none stated, verdict `true` when a source names the mechanism, as with `corporate-structure` (GreenPT and Euria read "direct supply contract" or "matched", ChatGPTree "offsets only", Viro "matched", Earthly Insight "none stated"; the vocabulary does the work and the operator never picks a thesis; overlaps `discloses-energy-sourcing` for "none stated", so that template may fold in); T3, per-entity ad hoc claims (C1, C2, A1, A2 as one-offs; lint blocks publishing without `criteria_slug`; right fit only for the subject claim and the Evertreen finding). Recommendation: T2 for the template row, T3 for A1, A2 and C2; it is the one option that gives every product a checkable, non-polar fact. Decide before S9; the command itself is unchanged by the answer.
 - D12 (pending from the operator, content not design), ChatGPTree. The template note says "mixed = offsets only"; the glossary says sources must engage. Options: (a) re-verdict to `mixed` by hand now (no restatement; the template-notes defect row covers the cause); (b) keep it `unverified` and in scope for S9. Recommendation: (b) for S9, since it is unverified on disk today and C1 is the clearest offsets-versus-supply example; re-verdict after.
 - D13: `dr claim-restate --write --accept N` writes the chosen candidate as a criterion in `research/templates.yaml` (S5). It reuses the writer `dr claim-promote` has, factored out of that command; the entry is `core: false`, scoped to the original claim's entity type (and, for a subject, to that subject), and its `notes` name the claim it was restated from. The sidecar records the acceptance; the command prints the `dr onboard --only` command and does not run the pipeline. Template authorship stays a human act: the operator picks the candidate, and the text written is the candidate text with the entity name replaced by the placeholder, nothing more.
 - D14: the agent never proposes a claim on a different entity. A candidate's `rationale` may name the upstream provider (OpenAI, AWS, Evertreen); the operator drafts there by hand. `RestatementCandidate` has no target-entity field.
@@ -50,15 +50,15 @@ D1 to D10 and D13 to D17 are settled. D11 and D12 are content decisions pending 
 
 ## What the evidence sweep found
 
-Hand sweep of the five claims against the whole pool (112 source files, 2016 to 2026), no network, no model. Source ids are paths under `research/sources/` without `.md`; `source:line` numbers refer to the source file.
+Hand sweep of four of the five claims against the whole pool (108 source files, 2016 to 2026), no network, no model; the `subjects/generative-ai` claim is not in the sweep. Source ids are paths under `research/sources/` without `.md`; `source:line` numbers refer to the source file.
 
 Summary:
 
 - Only one claim can be settled by evidence on disk in a way that still names the problem: the US data centers claim, restated as the published renewable share (A1).
-- The four template claims fail for one structural reason: the entity never addresses hosting (Brave, ChatGPTree, Earthly Insight) or describes "clean energy" as procurement matched to an estimate (Viro). Restatement there yields "what the entity says and does not say" claims: true, capped at low confidence, and overlapping the `discloses-energy-sourcing` template.
-- Three of the four product entities are wrappers over other companies' models (ChatGPTree on GPT-4; Earthly Insight and Viro on ChatGPT, Gemini, Claude). The hosting question belongs to OpenAI, Google and Anthropic, none of which have energy sources in the pool.
-- Four of five sidecars show the auditor returning `true` with reasoning that rates the narrative, not the claim; they were written before RE-AD (Evaluator grades the claim) and keep that pattern until refreshed. The agent must not read `auditor_verdict: true` in such a sidecar as support for the original text.
-- Off-entity sources sit in four of the five pools (GreenPT pages in ChatGPTree's, a 2016 Google page in Brave's and Earthly Insight's, OVHcloud in Viro's) and inflate `verification_level`.
+- The three template claims fail for one structural reason: the entity never addresses hosting (ChatGPTree, Earthly Insight) or describes "clean energy" as procurement matched to an estimate (Viro). Restatement there yields "what the entity says and does not say" claims: true, capped at low confidence, and overlapping the `discloses-energy-sourcing` template.
+- All three product entities are wrappers over other companies' models (ChatGPTree on GPT-4; Earthly Insight and Viro on ChatGPT, Gemini, Claude). The hosting question belongs to OpenAI, Google and Anthropic, none of which have energy sources in the pool.
+- Four of the five unverified sidecars show the auditor returning `true` with reasoning that rates the narrative, not the claim; they were written before RE-AD (Evaluator grades the claim) and keep that pattern until refreshed. The agent must not read `auditor_verdict: true` in such a sidecar as support for the original text.
+- Off-entity sources sit in three of the four swept pools (GreenPT pages in ChatGPTree's, a 2016 Google page in Earthly Insight's, OVHcloud in Viro's) and inflate `verification_level`.
 
 ### Claim A: US data centers, "fewer than 10 certified to run on 50%+ renewable"
 
@@ -77,21 +77,6 @@ Sources: cited `2026/energy`, `2026/efficiency`, `2026/ironmountain-sustainabili
 | A0 | Original | stays `unverified` | n/a | none | n/a | Yes: a registry (EPA Green Power Partnership, Energy Star certified data centers, Green Web Foundation dataset) |
 
 A1 and A2 are ad hoc claims on a subject entity (no template applies). `dr lint` requires `criteria_slug` on published claims (`published-without-criterion`, severity `error`, `pipeline/linter/checks.py:99-128`), so a restated subject claim needs a template entry before it can leave draft; `--accept` writes it (S5, D13).
-
-### Claim B: Brave Browser is hosted on renewable energy
-
-File: `research/claims/brave-browser/renewable-energy-hosting.md` (published, self-reported, low, `cap_rationale` set). Analyst `unverified`/low; auditor `true`/low; reviewed 2026-10-04 with no override.
-
-Why unverified: no Brave document mentions energy and the pool is first-party only (R4); a browser runs on the reader's device, so "hosted" applies only to Brave's backend services (Sync, Search, Leo), and the one provider fact (AWS) comes from a community forum post (R3).
-
-Sources: cited `2026/631793` (Brave Community: "Brave and Amazon (who host the servers) just store the scrambled data", lines 17-18), `2026/building-brave`, `2026/browser`, `2026/transparency`, `2026/soc2`, `2026/brave-browser-home`, `2016/announcement-100` (Google 2017 renewable match, off-entity), `2026/clean-energy-resources-meet-data-center-electricity-demand` (sector context, off-entity); uncited product pages `2026/faq`, `2026/6`, `2025/brave-website-challenge`, `2021/unstoppable-domains` (nothing on energy); uncited `2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry` (AWS aims to run entirely on renewable energy between 2025 and 2030, lines 14-15; "once fully transitioned", lines 20-21).
-
-| Rank | Candidate text | Expected verdict / confidence | Level | Carrying sources | Speaks to the problem? | New research? |
-|---|---|---|---|---|---|---|
-| B1 | Brave's transparency report and privacy policy state where the electricity for Brave's servers comes from. | `false` / low (first-party pool; the two documents are on disk in full and cover usage, creators, token purchases and data handling, nothing on energy) | self-reported | `2026/transparency`; `2026/browser`; `2026/soc2` | Weakly: a disclosure gap, stated as a refuted affirmative because the candidate-form rule forbids "neither says". Overlaps the unused `discloses-energy-sourcing` template, which may be the cleaner move | No |
-| B2 | Brave Sync stores user data on Amazon Web Services. | `true` / low (one forum post, kind blog, independence unknown) | claimed | `2026/631793` | No, neutral; a step toward a provider-level claim | No |
-| B3 | Brave's Sync service runs on AWS, which has not reached 100% renewable energy. | `mixed` at best | partially-verified | `2026/631793`; `2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry` | Yes, not settleable today | Yes: AWS's current energy mix |
-| B0 | Original | stays `unverified`; arguably `not-applicable` for a browser (D11) | n/a | none | n/a | Yes: AWS sustainability report; Brave posts naming regions and providers |
 
 ### Claim C: ChatGPTree is hosted on renewable energy
 
@@ -146,13 +131,13 @@ Recurring reasons, the restatement move for each, and the signals the agent or t
 |---|---|---|---|---|
 | R1 | A count, threshold or population nobody publishes | A | Restate as the aggregate figure that is published (A1), or as what the named sources do and do not disclose (A3) | Title has a comparator or number ("fewer than", "N%"); narrative says "no source provides a concrete count/tally"; a sub-question starting "How many" with `citations: []` or only topic-circling citations |
 | R2 | Concept mismatch: the claim's word (certified, hosted, clean) is not the sources' word (matched, purchased, offset, procurement) | A, C, E | Restate using the mechanism the sources name; or move to a vocabulary template (T2, under D11) | `key_quotes` contain "matched", "match", "purchase", "procurement", "offset", "certificates", "PPA"; claim text contains "certified", "hosted on", "runs on", "100%"; template `notes` encode degree ("mixed = offsets only") |
-| R3 | Entity level vs upstream provider (wrapper products, cloud hosts), provider named or not | B, C, D, E | Restate as "built on X" (neutral, low); name the provider in the rationale so the operator can draft the hosting claim on the provider entity by hand (D14); flag that settling it needs the provider's sources | Entity `description` or sources say "integrates/consolidates ChatGPT, Gemini, Claude", "powered by GPT-4", "who host the servers"; sq3 ("which provider") citations name a third party; `sources_consulted` includes a cloud vendor's own pages (OVHcloud, Google Sustainability) |
-| R4 | Entity silent; pool first-party only | B, C, D | Restate as what the named documents cover and omit (B1); better, run `discloses-energy-sourcing` or T2 "none stated" instead | `cap_rationale` present; every sq1 citation is `first-party` or `unknown`; narrative "none of the sources mention"; `evidence_gaps` "none identifies the provider" |
-| R5 | Off-entity sources inflating the pool | B, C, D, E | Not a restatement: drop them before ranking and recompute `verification_level` on what remains (retrieval, `search_hints.exclude`, and the independence relabel in "Source pool retrieval") | `publisher` is neither the entity nor a provider named by sq3; `scorer_rationale` phrases "potential host or competitor", "relevant if ... uses", "insight into how cloud providers disclose"; no `source_overrides` for a page whose host differs from the entity website |
-| R6 | Auditor grades the narrative, not the claim | A, B, C, E | Not a restatement: the bundle carries no auditor verdict, so `auditor_verdict: true` on an `unverified` analyst verdict cannot read as support for the original text | `verdict_agrees: false` with `analyst_verdict: unverified` and `auditor_verdict: 'true'`; `auditor_reasoning` matches "narrative correctly notes", "the claim that the evidence does not support ... is well-supported". Cause: the Evaluator instruction to base its verdict only on the narrative. RE-AD (Evaluator grades the claim) replaces it with grading the claim statement; sidecars written before that change keep the pattern until refreshed |
+| R3 | Entity level vs upstream provider (wrapper products, cloud hosts), provider named or not | C, D, E | Restate as "built on X" (neutral, low); name the provider in the rationale so the operator can draft the hosting claim on the provider entity by hand (D14); flag that settling it needs the provider's sources | Entity `description` or sources say "integrates/consolidates ChatGPT, Gemini, Claude", "powered by GPT-4"; sq3 ("which provider") citations name a third party; `sources_consulted` includes a cloud vendor's own pages (OVHcloud, Google Sustainability) |
+| R4 | Entity silent; pool first-party only | C, D | Restate as what the named documents cover and omit; better, run `discloses-energy-sourcing` or T2 "none stated" instead | `cap_rationale` present; every sq1 citation is `first-party` or `unknown`; narrative "none of the sources mention"; `evidence_gaps` "none identifies the provider" |
+| R5 | Off-entity sources inflating the pool | C, D, E | Not a restatement: drop them before ranking and recompute `verification_level` on what remains (retrieval, `search_hints.exclude`, and the independence relabel in "Source pool retrieval") | `publisher` is neither the entity nor a provider named by sq3; `scorer_rationale` phrases "potential host or competitor", "relevant if ... uses", "insight into how cloud providers disclose"; no `source_overrides` for a page whose host differs from the entity website |
+| R6 | Auditor grades the narrative, not the claim | A, C, E | Not a restatement: the bundle carries no auditor verdict, so `auditor_verdict: true` on an `unverified` analyst verdict cannot read as support for the original text | `verdict_agrees: false` with `analyst_verdict: unverified` and `auditor_verdict: 'true'`; `auditor_reasoning` matches "narrative correctly notes", "the claim that the evidence does not support ... is well-supported". Cause: the Evaluator instruction to base its verdict only on the narrative. RE-AD (Evaluator grades the claim) replaces it with grading the claim statement; sidecars written before that change keep the pattern until refreshed |
 | R7 | Narrative asserts an absence the sources do not state | D | Instructions: re-derive "silent on" from source text, not from the narrative | Narrative "does not list X" where the cited source is `kind: index` with no entity names in `key_quotes` or body |
 
-Where the pool is too thin for restatement to help: A's original count (needs a registry of facilities by renewable share); B (AWS's current energy mix; which Brave services run where); C (OpenAI's energy sourcing); D (Earthly Insight's own renewable statement; OpenAI, Google, Anthropic current sourcing; the 2016 Google page fails the as-of rule); E (Viro's hosting provider; the providers behind its third-party chats). A1 is the one restatement that disk evidence settles decisively while naming a problem; everything else on disk settles only "what the entity says" claims at low confidence.
+Where the pool is too thin for restatement to help: A's original count (needs a registry of facilities by renewable share); C (OpenAI's energy sourcing); D (Earthly Insight's own renewable statement; OpenAI, Google, Anthropic current sourcing; the 2016 Google page fails the as-of rule); E (Viro's hosting provider; the providers behind its third-party chats). A1 is the one restatement that disk evidence settles decisively while naming a problem; everything else on disk settles only "what the entity says" claims at low confidence.
 
 ## Command contract
 
@@ -181,10 +166,10 @@ Help group: add `claim-restate` to the "Read-only" row of `_COMMAND_GROUPS` (`cl
 Examples:
 
 ```
-uv run dr claim-restate brave-browser/renewable-energy-hosting
+uv run dr claim-restate chatgptree/renewable-energy-hosting
 uv run dr claim-restate subjects/us-data-centers/there-are-fewer-than-10-us-data-centers-that-are-certified-to-run-on-50-or-greater-renewable-energy-power-sources --format json
 uv run dr claim-restate viro-ai/renewable-energy-hosting --pool cited --max-candidates 3
-uv run dr claim-restate chatgptree/renewable-energy-hosting --write
+uv run dr claim-restate earthly-insight/renewable-energy-hosting --write
 uv run dr claim-restate subjects/us-data-centers/there-are-fewer-than-10-us-data-centers-that-are-certified-to-run-on-50-or-greater-renewable-energy-power-sources --write --accept 1
 ```
 
@@ -192,31 +177,33 @@ Text report sketch (candidates sorted in code by decisiveness, then by fewer `ne
 
 ```
 ============================================================
-Restatement proposal: brave-browser/renewable-energy-hosting
+Restatement proposal: chatgptree/renewable-energy-hosting
 ============================================================
-Original:  "Brave Browser is hosted on renewable energy"  (unverified, low, as of 2026-10-04)
+Original:  "ChatGPTree is hosted on renewable energy"  (unverified, medium, as of 2026-10-10)
 Why unverified: upstream-provider
-  No source names the data centers behind Brave's services beyond "sync runs on AWS";
-  renewable sourcing is never stated by Brave or a third party.
-Pool: 112 sources on disk, 8 cited, 24 sent (16 uncited, ranked by entity, title and topic terms)
+  ChatGPTree is powered by GPT-4, and no source names the data centers that serve it;
+  its own pages describe tree planting, not where its electricity comes from.
+Pool: 108 sources on disk, 6 cited, 24 sent (18 uncited, ranked by entity, title and topic terms)
 Model: greenpt:gpt-oss-120b
 
-#1  decisiveness 4/4  expected: false (low)  level: self-reported
-    "Brave Browser's transparency report and privacy policy state where the electricity for Brave Browser's servers comes from."
-    frame: disclosure
-    supports:  2026/transparency  "...lists token metrics..." [quote verified]
-               2026/brave-browser-home  (no matching passage; quote unverified)
+#1  decisiveness 4/4  expected: true (medium)  level: independently-verified
+    "ChatGPTree plants one tree per subscriber per month to offset its AI's carbon footprint."
+    frame: other
+    supports:  2025/rooted-in-founders-belief-that-tech-can-do-good-chatgptree-is-an-ai-tool-with-a-regenerative-focus
+                 "...aims to offset its environmental impact by planting one tree per subscriber monthly..." [quote verified]
+               2025/eco-friendly-chatgptree-sustainable-ai-chatbot  "...plants verified trees monthly for each subscription..." [quote verified]
+               2026/building-regenerative-ai-with-chatgptree  (no matching passage; quote unverified)
     contradicts: none
-    rationale: Brave's transparency report and site cover tokens, security and privacy; none mention energy sourcing.
+    rationale: ChatGPTree's own site and GeekWire's profile, An AI Tool with a Regenerative Focus, both describe monthly tree planting per subscriber as how ChatGPTree offsets its AI's footprint.
 
-#2  decisiveness 3/4  expected: mostly-true (low)  level: claimed
-    "Brave Browser's sync service runs on Amazon Web Services."
+#2  decisiveness 3/4  expected: true (low)  level: claimed
+    "ChatGPTree's answers come from GPT-4."
     frame: supplier
-    supports:  2026/631793  "...servers are located on AWS..." [quote verified]
+    supports:  2025/eco-friendly-chatgptree-sustainable-ai-chatbot  "...powered by GPT-4..." [quote verified]
     ...
 
 #4  decisiveness 1/4  expected: unverified  NEEDS NEW RESEARCH
-    "Amazon Web Services matched 100% of Brave's hosting electricity with renewable energy in 2025."
+    "ChatGPTree's GPT-4 answers are served from data centers that run on renewable energy."
     frame: supplier
     ...
 
@@ -237,7 +224,7 @@ Run: dr onboard subjects/us-data-centers --only renewable-sources-supplied-about
 
 Deterministic ranking in a new module `pipeline/restater/retrieval.py` (pure functions; disk reads only through `load_source_dict`, `orchestrator/persistence.py:109`, so the source dict shape stays the one the analyst and auditor see).
 
-Pool size today: 112 source files, bodies are the ingest model's short text (UNSCHEDULED RF20). The whole pool would fit one prompt; the cap exists for predictable cost and so the ranking is testable.
+Pool size today: 108 source files, bodies are the ingest model's short text (UNSCHEDULED RF20). The whole pool would fit one prompt; the cap exists for predictable cost and so the ranking is testable.
 
 Query terms, all read from disk:
 
@@ -373,7 +360,7 @@ Code-side checks (`evaluate.py`, pure functions, tested without a model):
 
 Priority (b) of the Goal is served by items 4 and 5, not by a thesis: a `disclosure` or `supplier` candidate about what the entity has not published, or what its supplier does, is the usual decisive framing for an unverified environmental claim, and it appears as one ranked candidate alongside the rest. The instructions never name "negative impact".
 
-Model tier: this is Evaluator-class work. Reading a dozen or more passages and judging, per candidate, whether they settle a statement and how strongly is the Evaluator's job (`AGENTS.md:121`, "independent evaluation"), not a classification the Router could make (`AGENTS.md:17`). The Router-class model used for research and ingest (Ministral 14B) produced the garbled sub-question "What sontent" in `research/claims/brave-browser/renewable-energy-hosting.audit.yaml` (`sub_questions[0].question`), the quality band to expect from it on multi-passage judgment. So the agent runs on the Evaluator's slot: `--restater-model`, falling back to `--auditor-model`, then `--model` (default `greenpt:gpt-oss-120b`, `common/models.py:DEFAULT_MODEL`). The option is added to the `dr` group next to `--auditor-model` (`cli.py:197`) with `envvar="DR_RESTATER_MODEL"`. `AGENT_NAMES` (`common/models.py:73`) and `VerifyConfig` are not extended: that tuple enumerates agents that run inside `verify_claim`, and this agent never does. The sidecar records the model in `restatement.model`.
+Model tier: this is Evaluator-class work. Reading a dozen or more passages and judging, per candidate, whether they settle a statement and how strongly is the Evaluator's job (`AGENTS.md:121`, "independent evaluation"), not a classification the Router could make (`AGENTS.md:17`). So the agent runs on the Evaluator's slot: `--restater-model`, falling back to `--auditor-model`, then `--model` (default `greenpt:gpt-oss-120b`, `common/models.py:DEFAULT_MODEL`). The option is added to the `dr` group next to `--auditor-model` (`cli.py:197`) with `envvar="DR_RESTATER_MODEL"`. `AGENT_NAMES` (`common/models.py:73`) and `VerifyConfig` are not extended: that tuple enumerates agents that run inside `verify_claim`, and this agent never does. The sidecar records the model in `restatement.model`.
 
 Concurrency and retries: one model call per invocation, so `llm_concurrency` does not apply (the semaphore exists for fan-out inside `verify_claim`, `research_claim` and `onboard_entity`, `orchestrator/pipeline.py:346, 1312, 1808`). Call the agent through `_run_with_null_retry(restater_agent, prompt, RESTATE_TIMEOUT_S)` (`pipeline.py:1124`) so Infomaniak null bodies and rate limits are retried the same way as the analyst and auditor; `RESTATE_TIMEOUT_S = 180.0` as a module constant in `restater/agent.py` (the auditor's 120 s is for an 8-source prompt; this one sends up to 24). `dr step-audit` calls `auditor_agent.run` directly without the retry wrapper or the semaphore (`cli.py:1477-1478`); the new command follows the pipeline path, not that shortcut.
 
@@ -388,27 +375,27 @@ restatement:
   model: greenpt:gpt-oss-120b
   pool:
     mode: all                      # all | cited
-    on_disk: 112
-    cited: 8
+    on_disk: 108
+    cited: 6
     sent: 24
   original:
-    title: Brave Browser is hosted on renewable energy
+    title: ChatGPTree is hosted on renewable energy
     verdict: unverified
-    confidence: low
-    as_of: '2026-10-04'
+    confidence: medium
+    as_of: '2026-10-10'
   why_unverified: upstream-provider
   why_unverified_note: ...
   candidates:
   - rank: 1
     text: ...
-    frame: disclosure
-    expected_verdict: 'false'
-    expected_confidence: low
-    verification_level_estimate: self-reported
+    frame: other
+    expected_verdict: 'true'
+    expected_confidence: medium
+    verification_level_estimate: independently-verified
     decisiveness: 4
     needs_new_research: false
     supporting:
-    - source: 2026/transparency
+    - source: 2025/rooted-in-founders-belief-that-tech-can-do-good-chatgptree-is-an-ai-tool-with-a-regenerative-focus
       quote: ...
       quote_verified: true
       note: ...
@@ -416,7 +403,7 @@ restatement:
     rationale: ...
   accepted:                        # present only after --write --accept N (S5)
     candidate: 1
-    criterion_slug: brave-browsers-transparency-report-and-privacy-policy-state-where-the-electricity-for-brave-browsers-servers-comes-from
+    criterion_slug: chatgptree-plants-one-tree-per-subscriber-per-month-to-offset-its-ais-carbon-footprint
     accepted_at: '2026-10-11T09:02:40+00:00'
 ```
 
@@ -448,7 +435,7 @@ The entry `--accept N` writes, from candidate `N` (`rank == N`) of the sidecar b
 | Field | Value | Source |
 |---|---|---|
 | `slug` | `slugify(candidate text)` (`common/utils.py:9`), the function that names ad hoc claim files (`pipeline.py:1446`); refused when it exists | candidate `text` |
-| `text` | candidate text with the first match of the entity `name` or an `aliases` entry (longest first, case-insensitive; "US Data Centers" must match "US data centers") replaced by the placeholder for the entity type; refused when none matches, with a hint to use `dr claim-draft` and `dr claim-promote` instead (the sweep's B1, "Brave's ...", would be refused: the entity name is "Brave Browser" and the entity file lists no aliases, which is why instructions item 5 asks for the name as shown) | candidate `text`, entity file |
+| `text` | candidate text with the first match of the entity `name` or an `aliases` entry (longest first, case-insensitive; "US Data Centers" must match "US data centers") replaced by the placeholder for the entity type; refused when none matches, with a hint to use `dr claim-draft` and `dr claim-promote` instead (which is why instructions item 5 asks for the entity name exactly as shown) | candidate `text`, entity file |
 | `entity_type` | from the claim's `entity` ref prefix (`parse_entity_ref`, `entity_resolution.py:105`) | claim frontmatter |
 | `subjects` | `[subjects/<slug>]`, only when the entity is a subject (required by `TemplateRecord`, `templates.py:46-52`) | claim `entity` |
 | `topics` | copied | claim frontmatter |
@@ -480,7 +467,7 @@ A candidate the operator wants to edit before using goes through `dr claim-draft
 2. Edit the criterion's `text` in `research/templates.yaml` (for `renewable-energy-hosting`, `templates.yaml:53-58`).
 3. `uv run dr claim-refresh <ref>` (`cli.py:897`): the claim text is rendered from the template (`render_claim_text`, `cli.py:993`), the analyst's title is validated against it (`validate_analyst_title`, `cli.py:1133`), and a published original is snapshotted in the sidecar's `refresh` block (`persistence.py:486-539`).
 4. `uv run dr review-queue`, approve. If the verdict changed, approval asks for `--correction` (`review.py:239-246`). If only the title changed, nothing asks (D15; a follow-up in `docs/UNSCHEDULED.md`), so the operator who wants a public trail passes `--correction` by hand.
-5. Siblings: a template edit changes nothing on disk for other entities' claims. Each sibling keeps its old title until it is refreshed, at which point its new title must match the new text or the claim blocks (`pipeline.py:2417-2423`). No lint rule checks a claim title against its template text today, so a half-migrated criterion is visible only by reading titles (follow-up row). For the renewable-hosting row this is 6 product claims plus Brave; refresh them one at a time and approve each. Keeping `criteria_slug: renewable-energy-hosting` on a retitled claim keeps it in the same comparison-matrix row (`src/lib/matrixCheck.ts:82`), so readers would see different wording per entity under one criterion.
+5. Siblings: a template edit changes nothing on disk for other entities' claims. Each sibling keeps its old title until it is refreshed, at which point its new title must match the new text or the claim blocks (`pipeline.py:2417-2423`). No lint rule checks a claim title against its template text today, so a half-migrated criterion is visible only by reading titles (follow-up row). For the renewable-hosting row this is 5 product claims; refresh them one at a time and approve each. Keeping `criteria_slug: renewable-energy-hosting` on a retitled claim keeps it in the same comparison-matrix row (`src/lib/matrixCheck.ts:82`), so readers would see different wording per entity under one criterion.
 
 **C. Keep the original, record the analysis.** `--write` only. The claim stays `unverified`; the proposal is on record for the next refresh. Nothing reminds the operator in v1 (D16).
 
@@ -515,7 +502,7 @@ Each step is one commit, test-first. Line numbers as of HEAD `0b3d0a9`.
 
 #### S1: retrieval module
 Files: `pipeline/restater/__init__.py`, `pipeline/restater/retrieval.py`, `pipeline/tests/test_restater_retrieval.py`.
-Done when: the retrieval tests pass; a script call `rank_sources(repo_root, claim_path, max_sources=24)` on the real repo lists the 8 cited brave sources first, and `--dry-run` style output can print it.
+Done when: the retrieval tests pass; a script call `rank_sources(repo_root, claim_path, max_sources=24)` on the real repo lists the 6 cited chatgptree sources first, and `--dry-run` style output can print it.
 Size: about 150 lines plus tests.
 
 #### S2: models, instructions, agent, evaluate, report
@@ -525,12 +512,12 @@ Size: about 300 lines plus the instructions and tests. Independent of S1 (the bu
 
 #### S3: the command
 Files: `pipeline/orchestrator/cli.py` (new command, `--restater-model` group option, `_COMMAND_GROUPS`), `pipeline/tests/test_cli.py`, `pipeline/tests/test_cli_smoke.py`.
-Done when: `TestClaimRestateCli` passes; `uv run dr claim-restate --help` shows the contract; `uv run dr claim-restate brave-browser/renewable-energy-hosting --dry-run` prints the ranking without a model call and without a provider key.
+Done when: `TestClaimRestateCli` passes; `uv run dr claim-restate --help` shows the contract; `uv run dr claim-restate chatgptree/renewable-energy-hosting --dry-run` prints the ranking without a model call and without a provider key.
 Depends on S1 and S2.
 
 #### S4: sidecar write, carry-over, closure
 Files: `pipeline/orchestrator/persistence.py` (`write_restatement_block`, carry-over in `_write_audit_sidecar`), `pipeline/orchestrator/review.py` (pop on approve and archive), `pipeline/tests/test_audit_trail.py`, `docs/architecture/content-model.md`.
-Done when: the carry-over and closure tests pass; `--write` on a copy of the brave sidecar leaves every other key byte-identical after a YAML round trip.
+Done when: the carry-over and closure tests pass; `--write` on a copy of the chatgptree sidecar leaves every other key byte-identical after a YAML round trip.
 Depends on S3 for the CLI path; the persistence functions can be written in parallel with S3.
 
 #### S5: `--accept` writes the criterion
@@ -555,7 +542,7 @@ Done when: every command in the runbook section has been run once against the re
 Depends on S1 to S7.
 
 #### S9: run on the five worked examples and record the operator's picks
-Files: the five sidecars under `research/claims/` (`--write`), this plan (a "Worked examples" table: claim, `why_unverified` the agent chose, the candidate the operator picked or "none", the outcome A, B or C, and whether the pick matched the sweep's top candidate A1, B1, C1, D1 or E1).
+Files: the five sidecars under `research/claims/` (`--write`), this plan (a "Worked examples" table: claim, `why_unverified` the agent chose, the candidate the operator picked or "none", the outcome A, B or C, and whether the pick matched the sweep's top candidate A1, C1, D1 or E1; the `subjects/generative-ai` claim has no sweep candidate).
 Done when: `uv run dr claim-restate <ref> --write` has run on all five claims; the operator has chosen a candidate or declined for each; for at least the us-data-centers claim, `--write --accept <n>` and the printed `dr onboard --only` command have been run and `dr lint` passes with the new entry in `research/templates.yaml`. This step is the acceptance of the whole plan: it shows whether the command's ranking agrees with a hand sweep and whether the output changes what the operator does.
 Depends on S8 and on D11 and D12.
 
@@ -567,18 +554,17 @@ Each becomes a `docs/UNSCHEDULED.md` row; none is fixed by this plan.
 
 - Sidecars written before RE-AD (Evaluator grades the claim) show the Evaluator grading the narrative instead of the claim: 4 of 5 unverified sidecars return `auditor_verdict: true` with reasoning such as "the narrative correctly notes the absence". RE-AD makes the Evaluator grade the claim statement; these sidecars keep the old pattern until refreshed.
 - Template `notes` never reach the analyst prompt: `renewable-energy-hosting` says "mixed = offsets only", and ChatGPTree (offsets only) came out `unverified`.
-- Off-entity pool contamination: GreenPT pages in ChatGPTree's pool, `2016/announcement-100` in Brave's and Earthly Insight's, `2024/ai-server` (OVHcloud) in Viro's; they lift `verification_level` to independently-verified on claims with no engaging source.
+- Off-entity pool contamination: GreenPT pages in ChatGPTree's pool, `2016/announcement-100` in Earthly Insight's, `2024/ai-server` (OVHcloud) in Viro's; they lift `verification_level` to independently-verified on claims with no engaging source.
 - The narrative asserts an absence a source does not state: Earthly Insight's "GWF does not list" rests on index pages that list no host at all.
 - The entity exclude rule dropped Earthly Insight's only first-party renewable statement (a LinkedIn post scored 5, `research.entity_exclude_dropped`).
 - Viro's `verification_level: claimed` should be `self-reported` under the source-quality rules (first-party `kind: documentation` in the pool).
-- The Router-class model produced a garbled sub-question ("What sontent") in `research/claims/brave-browser/renewable-energy-hosting.audit.yaml`.
 - Docs versus code: `docs/architecture/research-flow.md` § 6 says all LLM calls are guarded by the `llm_concurrency` semaphore, but `dr step-audit` calls `auditor_agent.run` directly with neither the semaphore nor `_run_with_null_retry` (`orchestrator/cli.py:1477-1478`); `docs/architecture/content-model.md` § Claim Audit Sidecar does not list the `research` and `sub_questions` blocks every pipeline-written sidecar carries (`persistence.py:666-669`), which `auditSchema` strips at build (`src/content.config.ts:38`); `AGENTS.md:181` and `_COMMAND_GROUPS` (`cli.py:120-121`) file `dr step-audit` under read-only although `--write` rewrites the sidecar; `pipeline/README.md` § Structure lists `consistency/` and "Phase 4.x" labels that do not exist; `common/models.py:70-73` says adding an agent means extending `AGENT_NAMES` and `VerifyConfig`, which this plan's CLI-only agent deliberately does not do.
 
 ## Risks
 
 - RISK-1, quote fidelity. Source bodies are the ingest model's short text, not page text (RF20), and key quotes are not always verbatim (RF10), so candidates may rest on paraphrase. Mitigation: the `quote_verified` mark and the decisiveness cap; the report says so. Design changes only if the operator wants unverified-quote candidates dropped rather than capped.
 - RISK-2, model variance (RF6). The same pool gave `unverified`, `mostly-true` and `true` across analyst runs. A proposal is advisory and the operator picks, so variance costs a re-run, not a wrong publication. D9 keeps only the last run in the sidecar; earlier runs are in git.
-- RISK-3, low ceiling for four of five claims. The sweep found that only A1 is settled decisively by disk evidence while naming a problem; the template claims yield low-confidence "what the entity says" candidates. S9 may show the command confirms the ceiling rather than lifting it, which is still the answer to priority (a).
+- RISK-3, low ceiling for three of the four swept claims. The sweep found that only A1 is settled decisively by disk evidence while naming a problem; the template claims yield low-confidence "what the entity says" candidates. S9 may show the command confirms the ceiling rather than lifting it, which is still the answer to priority (a).
 - RISK-4, the primary worked example is untracked. The claim and sidecar under `research/claims/subjects/us-data-centers/` and the entity file are on disk but not committed, and research files are regenerated by pipeline runs, so they can change or vanish before S7 and S9 run. Mitigation: S7 snapshots them into `pipeline/tests/fixtures/restate/us-data-centers/`, so the acceptance test never depends on the untracked files; S9 runs against whatever is on disk then and records the result. If the files are gone at S9, `dr claim-draft subjects/us-data-centers "<original title>"` regenerates a claim whose sidecar and verdict may differ from the sweep.
 
 ## Questions for the operator
