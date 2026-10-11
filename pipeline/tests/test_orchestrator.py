@@ -170,6 +170,32 @@ class TestResearchBlocklist:
         assert urls == ["https://linkedin.com/a", "https://example.com/b"]
         assert errors == []
 
+    @pytest.mark.asyncio
+    async def test_pool_cut_keeps_a_thin_sub_questions_low_ranked_urls(self, monkeypatch, tmp_path) -> None:
+        """40 kept URLs, a pool of 32, and the only sq2 URLs ranked 33-40."""
+        from common.models import SubQuestion
+        from orchestrator.pipeline import _research
+        from researcher.decomposed import ResearchOutput
+
+        urls = [f"https://example.com/{i}" for i in range(1, 41)]
+        addresses = {u: (["sq2"] if i >= 32 else [f"sq{1 + 2 * (i % 2)}"]) for i, u in enumerate(urls)}
+
+        async def _fake_decomposed(*args, **kwargs):
+            return ResearchOutput(
+                urls=list(urls), url_addresses=dict(addresses),
+                sub_questions=[SubQuestion(id=s, question=f"{s}?", rationale="r") for s in ("sq1", "sq2", "sq3")],
+                trace={"mode": "test"},
+            )
+
+        monkeypatch.setattr("researcher.decomposed.decomposed_research", _fake_decomposed)
+        cfg = VerifyConfig(model="test", skip_wayback=True, repo_root=str(tmp_path), candidate_pool_size=32)
+        out = await _research(None, "Acme", "A claim", cfg, asyncio.Semaphore(1))
+
+        assert len(out.urls) == 32
+        assert [u for u in out.urls if "sq2" in out.url_addresses[u]]
+        # Survivors keep their rank order.
+        assert out.urls == [u for u in urls if u in set(out.urls)]
+
 
 class TestVerifyConfigPerAgentModels:
     def test_model_for_falls_back_to_base(self) -> None:
@@ -1081,18 +1107,20 @@ class TestUncoveredSubQuestionWarning:
     FILES = ["a", "b", "c", "d"]
 
     @pytest.mark.asyncio
-    async def test_verify_claim_warns_and_records_no_error(self, monkeypatch, caplog) -> None:
+    async def test_verify_claim_warns_and_records_no_error(self, monkeypatch, caplog, capsys) -> None:
         ro = _sq_ro(self.FILES, {k: ["sq1"] for k in self.FILES})
         _patch_run(monkeypatch, [_sf(k) for k in self.FILES], ro, _analyst())
 
         with caplog.at_level("WARNING", logger="orchestrator.pipeline"):
             result = await verify_claim(
                 entity_name="Acme", claim_text="A claim",
-                config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True),
+                config=VerifyConfig(model="test", repo_root="/tmp", skip_wayback=True, show_progress=True),
             )
 
         warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
         assert any("sq2" in m and "no ingested source" in m for m in warnings), warnings
+        # The console shows the warning itself; progress adds only the count line.
+        assert "no ingested source" not in capsys.readouterr().err
         assert not any("sq1" in m and "no ingested source" in m for m in warnings)
         assert not any("sq2" in e for e in result.errors)
         assert result.sub_question_coverage["sq2"] == []
@@ -1123,11 +1151,15 @@ class TestCitedSourceFilter:
     FILES = ["a", "b", "c", "d"]
 
     @staticmethod
-    def _override(key: str, reason: str = "Restates the entity's own figure."):
+    def _override(key: str, reason: str = "Restates the entity's own figure.", *, code: bool = False, independence=None):
         from analyst.agent import SourceOverride
         from common.models import Independence
 
-        return SourceOverride(source=f"2026/{key}", independence=Independence.FIRST_PARTY, reason=reason)
+        override = SourceOverride(
+            source=f"2026/{key}", independence=independence or Independence.FIRST_PARTY, reason=reason,
+        )
+        override._code_relabel = code
+        return override
 
     async def _research_claim(self, monkeypatch, tmp_path, analyst_out, *, rename=None):
         from orchestrator.pipeline import research_claim
@@ -1164,7 +1196,7 @@ class TestCitedSourceFilter:
     async def test_code_entity_override_does_not_keep_an_uncited_source(self, monkeypatch, tmp_path) -> None:
         ao = _analyst(
             "Per *Alpha Report* and *Beta Study*, it is offsets.",
-            overrides=[self._override("d", "Off-entity: the source does not mention Acme or a provider the claim names.")],
+            overrides=[self._override("d", "The source does not mention Acme.", code=True)],
         )
         _result, written, _audit = await self._research_claim(monkeypatch, tmp_path, ao)
 
@@ -1228,6 +1260,23 @@ class TestCitedSourceFilter:
         assert result.uncited_urls == set()
         assert any("verification_level" in r.getMessage() for r in caplog.records)
 
+    def test_analyst_override_corrected_by_entity_match_stays_cited(self) -> None:
+        from common.models import Independence
+        from orchestrator.pipeline import _apply_cited_filter, _merge_entity_overrides
+
+        result = self._result_with_pool()
+        ao = _analyst(
+            "Per *Gamma Dataset*, it holds.",
+            overrides=[self._override("a", "Independent test lab.", independence=Independence.INDEPENDENT)],
+        )
+        _merge_entity_overrides(ao.verdict, [
+            self._override("a", "Entity match: acme.com.", code=True),
+            self._override("b", "Entity match: acme.com.", code=True),
+        ])
+        kept = _apply_cited_filter(result, ao, "Acme")
+
+        assert [sd["source_id"] for sd in kept] == ["2026/a", "2026/c"]
+
     def test_level_needing_no_independent_source_uses_subset(self) -> None:
         from orchestrator.pipeline import _apply_cited_filter
 
@@ -1237,6 +1286,36 @@ class TestCitedSourceFilter:
 
         assert [sd["source_id"] for sd in kept] == ["2026/c", "2026/d"]
         assert result.uncited_urls == {"https://example.com/a", "https://example.com/b"}
+
+
+class TestTitleBlockedClaimKeepsEverySource:
+    FILES = ["a", "b", "c", "d"]
+
+    async def _verify(self, monkeypatch, tmp_path, template):
+        from common.templates import render_claim_text
+
+        ro = _sq_ro(self.FILES, {k: ["sq1", "sq2"] for k in self.FILES})
+        _patch_run(monkeypatch, [_sf(k) for k in self.FILES], ro, _analyst("Per *Alpha Report*, it holds."))
+        claim_text = render_claim_text(template, "Acme") if template else "A claim"
+        return await verify_claim(
+            entity_name="Acme", claim_text=claim_text,
+            config=VerifyConfig(model="test", repo_root=str(tmp_path), skip_wayback=True),
+            template=template,
+        )
+
+    @pytest.mark.asyncio
+    async def test_failing_title_leaves_the_source_list_whole(self, monkeypatch, tmp_path) -> None:
+        # The analyst title "Acme claim title" fails this template.
+        result = await self._verify(monkeypatch, tmp_path, TestAuditorGradedStatement._template())
+
+        assert result.uncited_urls == set()
+        assert result.persist_sources(tmp_path) == [f"2026/{k}" for k in self.FILES]
+
+    @pytest.mark.asyncio
+    async def test_without_template_the_filter_applies(self, monkeypatch, tmp_path) -> None:
+        result = await self._verify(monkeypatch, tmp_path, None)
+
+        assert result.persist_sources(tmp_path) == ["2026/a"]
 
 
 class TestPersistSourcesSkipsUncited:

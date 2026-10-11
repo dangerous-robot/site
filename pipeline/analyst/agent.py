@@ -6,7 +6,7 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, PrivateAttr, field_validator
 from pydantic_ai import Agent
 
 from analyst.citations import NO_CITATION_FIELDS, has_citation_reference
@@ -133,6 +133,10 @@ class SourceOverride(BaseModel):
         description="One short sentence explaining why the override was applied (cited in the architecture doc).",
         max_length=300,
     )
+    # True on the entity-match relabels the orchestrator adds, which do not
+    # mean the analyst relied on the source. Private, so it stays out of the
+    # analyst's output schema and the claim file.
+    _code_relabel: bool = PrivateAttr(default=False)
 
 
 class VerdictAssessment(BaseModel):

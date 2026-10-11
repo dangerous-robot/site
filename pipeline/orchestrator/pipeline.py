@@ -28,7 +28,7 @@ import traceback
 from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Literal
+from typing import Literal
 
 import click
 import httpx
@@ -453,7 +453,7 @@ async def verify_claim(
             result.sub_question_coverage = _invert_addresses(
                 ro.sub_questions, result.sources
             )
-            _warn_uncovered(ro.sub_questions, result.sub_question_coverage, say)
+            _warn_uncovered(ro.sub_questions, result.sub_question_coverage)
 
             if cfg.show_progress:
                 progress(
@@ -512,17 +512,18 @@ async def verify_claim(
                     progress("  ! analyst failed to produce an assessment")
                 return result
 
-            cited_sources = _apply_cited_filter(result, analyst_out, entity_name)
-
             # Step 4: Auditor
             statement = _graded_statement(
                 template, entity_name, claim_text, analyst_out.verdict.title
             )
             if statement is None:
+                # The caller blocks this claim, and a blocked claim lists every
+                # ingested source: no cited filter from a rejected analyst output.
                 say("  › Auditor skipped: the title fails the template, so the claim will be blocked")
                 logger.info("Step 4/4: Auditor skipped; analyst title fails template %s", template.slug)
                 comparison = None
             else:
+                cited_sources = _apply_cited_filter(result, analyst_out, entity_name)
                 say("  › Auditing")
                 logger.info("Step 4/4: Running auditor check...")
                 comparison = await _audit_claim(
@@ -548,12 +549,6 @@ async def verify_claim(
 def _short(text: str, limit: int = 80) -> str:
     # Keeps an override reason under SourceOverride.reason's 300-char limit.
     return text if len(text) <= limit else text[: limit - 3] + "..."
-
-
-# Reason prefixes of the overrides ``_apply_entity_match`` writes. They are
-# the code's relabels, not the analyst relying on a source.
-_ENTITY_MATCH_PREFIX = "Entity match:"
-_OFF_ENTITY_PREFIX = "Off-entity:"
 
 
 def _apply_entity_match(
@@ -597,7 +592,7 @@ def _apply_entity_match(
         if reason is not None:
             if label == Independence.FIRST_PARTY.value:
                 continue
-            new_label, note = Independence.FIRST_PARTY, f"{_ENTITY_MATCH_PREFIX} {reason}."
+            new_label, note = Independence.FIRST_PARTY, f"Entity match: {reason}."
         elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
         elif label == Independence.FIRST_PARTY.value:
@@ -608,22 +603,22 @@ def _apply_entity_match(
             owner = publisher or url_host(sd.get("url")) or "another organization"
             new_label = Independence.UNKNOWN
             note = (
-                f"{_OFF_ENTITY_PREFIX} first-party for {_short(owner)}, not {entity_name} "
+                f"Off-entity: first-party for {_short(owner)}, not {entity_name} "
                 "or a provider the claim names."
             )
         elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):
             new_label = Independence.UNKNOWN
             note = (
-                f"{_OFF_ENTITY_PREFIX} the source does not mention {entity_name} "
+                f"Off-entity: the source does not mention {entity_name} "
                 "or a provider the claim names."
             )
         else:
             continue
         sd["independence"] = new_label.value
         logger.info("%s -> %s (%s)", sd["source_id"], new_label.value, note)
-        overrides.append(SourceOverride(
-            source=sd["source_id"], independence=new_label, reason=note,
-        ))
+        override = SourceOverride(source=sd["source_id"], independence=new_label, reason=note)
+        override._code_relabel = True
+        overrides.append(override)
     return overrides
 
 
@@ -634,7 +629,8 @@ def _merge_entity_overrides(
 
     The code's label beats the analyst's: an analyst override for the same
     source with a different ``independence`` is corrected rather than
-    duplicated. When they agree, the analyst's reason is kept.
+    duplicated, and stays the analyst's for the cited filter. When they
+    agree, the analyst's reason is kept.
     """
     if not overrides:
         return
@@ -704,18 +700,17 @@ def _invert_addresses(
 def _warn_uncovered(
     sub_questions: list[SubQuestion],
     coverage: dict[str, list[str]],
-    say: Callable[..., None],
 ) -> None:
-    """Log and report each sub-question that no ingested source addresses.
+    """Log a warning for each sub-question that no ingested source addresses.
 
-    Not a ``result.errors`` entry: the first such entry names a blocked
-    claim's cause, and the sidecar's ``sub_questions[].citations: []``
-    already records the gap.
+    The console shows warnings, so no separate progress line. Not a
+    ``result.errors`` entry: the first such entry names a blocked claim's
+    cause, and the sidecar's ``sub_questions[].citations: []`` already
+    records the gap.
     """
     for sq in sub_questions:
         if not coverage.get(sq.id):
             logger.warning("sub-question %s has no ingested source: %s", sq.id, sq.question)
-            say("  ! sub-question %s has no ingested source: %s", sq.id, sq.question)
 
 
 def _order_by_coverage(
@@ -758,14 +753,27 @@ def _apply_blocklist_cap(
     raw_urls: list[str],
     cfg: VerifyConfig,
     errors: list[StepError] | None = None,
+    url_addresses: dict[str, list[str]] | None = None,
+    sub_question_ids: list[str] | None = None,
 ) -> tuple[list[str], list[StepError]]:
-    """Filter raw_urls through the blocklist, cap at max_sources, and append
-    blocked_host / all_blocked errors. Returns (kept_urls, error_list)."""
+    """Filter raw_urls through the blocklist, cap at candidate_pool_size, and
+    append blocked_host / all_blocked errors. Returns (kept_urls, error_list).
+
+    With sub-questions, the cap keeps the URLs ``_order_by_coverage`` puts
+    first, so each sub-question's best URLs stay in the pool even when they
+    rank low; the survivors keep their input order.
+    """
     out_errors: list[StepError] = list(errors) if errors else []
     repo_root_str = cfg.repo_root or str(resolve_repo_root())
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
-    urls = kept[: cfg.candidate_pool_size]
+    if sub_question_ids and len(kept) > cfg.candidate_pool_size:
+        pool = set(
+            _order_by_coverage(kept, url_addresses or {}, sub_question_ids, {})[: cfg.candidate_pool_size]
+        )
+        urls = [u for u in kept if u in pool]
+    else:
+        urls = kept[: cfg.candidate_pool_size]
     for d in dropped:
         out_errors.append(
             StepError(
@@ -879,8 +887,8 @@ async def _ingest_claim_sources(
     notes = IngestNotes()
     remaining = max(0, cfg.max_sources - len(cached_sources))
     if remaining > 0:
-        # Before the candidate_pool_size cut, so a thin sub-question's URLs
-        # are inside the pool and among the first attempted.
+        # Ingest stops at ``remaining`` successes in list order, so a thin
+        # sub-question's URLs go first; dedup hits on disk count as coverage.
         cached_counts: Counter[str] = Counter(
             sq for url, _sid, _sd in cached_sources for sq in ro.url_addresses.get(url, [])
         )
@@ -948,7 +956,11 @@ async def _research(
         claim_text, entity_name, cfg, sem, client,
         resolved_entity=resolved_entity, topics=topics,
     )
-    urls, errors = _apply_blocklist_cap(out.urls, cfg, out.errors)
+    urls, errors = _apply_blocklist_cap(
+        out.urls, cfg, out.errors,
+        url_addresses=out.url_addresses,
+        sub_question_ids=[sq.id for sq in out.sub_questions],
+    )
     logger.info("Decomposed research: %d kept (cap=%d)", len(urls), cfg.candidate_pool_size)
     out.urls = urls
     out.errors = errors
@@ -1495,10 +1507,7 @@ def _apply_cited_filter(
     from orchestrator.persistence import fit_verdict_to_written_pool
 
     verdict = analyst_out.verdict
-    analyst_overrides = [
-        o for o in verdict.source_overrides or []
-        if not o.reason.startswith((_ENTITY_MATCH_PREFIX, _OFF_ENTITY_PREFIX))
-    ]
+    analyst_overrides = [o for o in verdict.source_overrides or [] if not o._code_relabel]
     cited = set(cited_source_ids(verdict, result.sources, analyst_overrides))
     if not cited:
         logger.warning("Analyst cited no source by id or title; the claim lists every ingested source")
@@ -1625,10 +1634,7 @@ async def research_claim(
             result.sub_question_coverage = _invert_addresses(
                 ro.sub_questions, result.sources
             )
-            _warn_uncovered(
-                ro.sub_questions, result.sub_question_coverage,
-                lambda m, *a: progress(m, *a, log=False),
-            )
+            _warn_uncovered(ro.sub_questions, result.sub_question_coverage)
 
             # Checkpoint: review sources
             proceed = await gate.review_sources(
