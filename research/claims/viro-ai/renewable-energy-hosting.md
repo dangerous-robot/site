@@ -1,7 +1,8 @@
 ---
 title: Viro AI is hosted on renewable energy
 entity: products/viro-ai
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: unverified
 confidence: low
 verification_level: claimed
@@ -10,7 +11,7 @@ cap_rationale: Confidence is capped at low -- all sources originate from entity 
 takeaway: ''
 seo_title: Viro AI is hosted on renewable energy
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-10-10'
 sources:
 - 2025/viro-ai-terms-conditions

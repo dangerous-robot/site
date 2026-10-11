@@ -200,7 +200,8 @@ audit:
     sources appear to rely on GreenPT's own statements rather than independent measurement.
   needs_review_reasons: []
 human_review:
-  reviewed_at: null
-  reviewer: null
+  reviewed_at: '2026-10-10'
+  reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+  verdict_override: null

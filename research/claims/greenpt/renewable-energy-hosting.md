@@ -1,14 +1,15 @@
 ---
 title: GreenPT is hosted on renewable energy
 entity: products/greenpt
-topics: [environmental-impact]
+topics:
+- environmental-impact
 verdict: 'true'
 confidence: high
 verification_level: multiply-verified
 takeaway: ''
 seo_title: GreenPT is hosted on renewable energy
 criteria_slug: renewable-energy-hosting
-status: draft
+status: published
 as_of: '2026-10-10'
 sources:
 - 2026/sustainability-renewable-ai-measured-impact-greenpt
