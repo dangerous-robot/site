@@ -598,14 +598,14 @@ def _apply_entity_match(
             owner = publisher or url_host(url) or "another organization"
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: first-party for {shorten(owner)}, not {entity_name} "
-                "or a provider the claim names."
+                f"Off-entity: first-party for {shorten(owner)}, not {entity_name}, "
+                "and the claim does not name it."
             )
         elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: the source does not mention {entity_name} "
-                "or a provider the claim names."
+                f"Off-entity: the source does not mention {entity_name}, "
+                "and the claim does not name its publisher."
             )
         else:
             continue

@@ -662,6 +662,7 @@ def step_analyze(
     from common.content_loader import load_entity, resolve_repo_root
     from common.frontmatter import parse_frontmatter
     from common.templates import get_template, load_templates, render_claim_text
+    from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
         _write_claim_file,
@@ -684,6 +685,13 @@ def step_analyze(
     # Resolve entity
     entity_fm, _ = load_entity(fm["entity"], root)
     entity_name = entity_fm["name"]
+    # With the resolved entity the analyst sees the entity-match labels, and
+    # --write keeps their overrides, as claim-refresh does.
+    resolved_entity = None
+    try:
+        resolved_entity = parse_entity_ref(fm["entity"], root)
+    except ValueError as exc:
+        click.echo(f"Warning: could not load entity '{fm['entity']}': {exc}", err=True)
 
     # Reconstruct claim text: prefer re-rendering the template; fall back to title
     claim_text = fm["title"]
@@ -713,6 +721,8 @@ def step_analyze(
     async def _run():
         return await _analyse_claim(
             entity_name, claim_text, source_dicts, cfg,
+            resolved_entity=resolved_entity,
+            repo_root=root,
             criterion_notes=template.notes if template else None,
         )
 

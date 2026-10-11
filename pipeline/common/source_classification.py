@@ -353,15 +353,46 @@ _CORPORATE_LAB_PATTERNS: tuple[tuple[str, str, bool], ...] = (
 )
 
 
-def corporate_lab_publisher(author_text: str) -> str | None:
-    """The corporate AI lab named earliest in ``author_text``, or None.
+# (pattern, case-sensitive). An academic affiliation named before any lab
+# makes the paper academic work with industry co-authors, not a lab's own.
+_ACADEMIC_AFFILIATION_PATTERNS: tuple[tuple[str, bool], ...] = (
+    (r"\bUniv\w*", False),
+    (r"\bInstitut\w*", False),
+    (r"\bCollege\b", False),
+    (r"\bSchool of\b", False),
+    (r"\bAcademy of\b", False),
+    (r"\bPolytechnic\b", False),
+    (r"\bPolitecnico\b", False),
+    (r"\b(?:MIT|ETH|EPFL|CNRS|Inria|INRIA|KAIST)\b", True),
+    (r"@[\w.-]+\.edu\b", False),
+    (r"@[\w.-]+\.ac\.[a-z]{2}\b", False),
+)
 
-    ``author_text`` is a paper's author block (names, affiliations, emails),
-    so the earliest match is the first lab in author order.
+
+def _earliest(patterns: Iterable[tuple[str, bool]], text: str) -> int | None:
+    starts = [
+        m.start()
+        for pattern, case_sensitive in patterns
+        if (m := re.search(pattern, text, 0 if case_sensitive else re.IGNORECASE))
+    ]
+    return min(starts, default=None)
+
+
+def corporate_lab_publisher(author_text: str) -> str | None:
+    """The corporate AI lab that is the first affiliation in ``author_text``, or None.
+
+    ``author_text`` is a paper's author block (names, affiliations, emails)
+    in author order. A paper whose first affiliation is academic is that
+    group's work even with a lab co-author, so it gets None: as a lab's
+    paper it would be first-party for the lab, and off-entity on every
+    other entity's claim.
     """
     best: tuple[int, str] | None = None
     for pattern, publisher, case_sensitive in _CORPORATE_LAB_PATTERNS:
         match = re.search(pattern, author_text, 0 if case_sensitive else re.IGNORECASE)
         if match and (best is None or match.start() < best[0]):
             best = (match.start(), publisher)
-    return best[1] if best else None
+    if best is None:
+        return None
+    academic = _earliest(_ACADEMIC_AFFILIATION_PATTERNS, author_text)
+    return None if academic is not None and academic < best[0] else best[1]

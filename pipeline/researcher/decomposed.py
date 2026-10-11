@@ -4,19 +4,26 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
 from common.blocklist import BlocklistEntry, filter_urls
+from common.content_loader import resolve_repo_root
 from common.canonical_url import canonical_key, canonicalize
 from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolve_model
 from common.publisher_quality import classify_url_publisher_quality
 from common.source_classification import EntityIdentity, profile_url_names_entity
 from common.utils import host_matches, url_host
 from orchestrator.checkpoints import StepError
-from orchestrator.entity_resolution import ResolvedEntity, build_entity_context, resolve_parent_name
+from orchestrator.entity_resolution import (
+    ResolvedEntity,
+    build_entity_context,
+    entity_identity_for,
+    resolve_parent_name,
+)
 from researcher.agent import search_brave
 from researcher.planner import ResearchPlan, research_planner_agent
 from researcher.scorer import (
@@ -456,10 +463,10 @@ async def decomposed_research(
         c.url: c.raw_content for c in candidates if c.raw_content
     }
 
+    # The parent company's names count too, as in the pipeline's entity match.
     entity_identity = (
-        EntityIdentity.from_parts(
-            [resolved_entity.entity_name, resolved_entity.legal_name, *resolved_entity.aliases],
-            [resolved_entity.website],
+        entity_identity_for(
+            resolved_entity, Path(cfg.repo_root) if cfg.repo_root else resolve_repo_root()
         )
         if resolved_entity
         else None

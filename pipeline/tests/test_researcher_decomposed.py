@@ -1145,17 +1145,20 @@ async def test_execute_searches_keeps_arxiv_abs_and_html_apart() -> None:
 
 
 async def _exclude_run(
-    entity_name: str, website: str, exclude: list[str], urls: list[str]
+    entity_name: str, website: str, exclude: list[str], urls: list[str],
+    parent_company: str | None = None, repo_root: str = "",
 ):
     from orchestrator.entity_resolution import SearchHints
 
     cfg = _make_cfg(max_initial_queries=2)
+    cfg.repo_root = repo_root
     resolved = ResolvedEntity(
         entity_ref="products/x",
         entity_name=entity_name,
         entity_type=EntityType.PRODUCT,
         entity_description="",
         website=website,
+        parent_company=parent_company,
         search_hints=SearchHints(include=[], exclude=exclude),
     )
     fake_candidates = [
@@ -1190,6 +1193,23 @@ async def test_entity_exclude_spares_entity_profile_url() -> None:
     assert ro.urls == [site, own]
     assert ro.trace["entity_exclude_spared"] == [own]
     assert ro.trace["entity_exclude_dropped"] == [other]
+
+
+@pytest.mark.asyncio
+async def test_entity_exclude_spares_parent_company_profile_url(tmp_path) -> None:
+    companies = tmp_path / "research" / "entities" / "companies"
+    companies.mkdir(parents=True)
+    (companies / "infomaniak.md").write_text(
+        "---\nname: Infomaniak\ntype: company\nwebsite: https://www.infomaniak.com\n---\n",
+        encoding="utf-8",
+    )
+    parent_post = "https://www.linkedin.com/posts/infomaniak_euria-activity-1"
+    ro = await _exclude_run(
+        "Euria", "https://euria.infomaniak.com", ["linkedin.com"], [parent_post],
+        parent_company="companies/infomaniak", repo_root=str(tmp_path),
+    )
+    assert ro.trace["entity_exclude_spared"] == [parent_post]
+    assert ro.urls == [parent_post]
 
 
 @pytest.mark.asyncio

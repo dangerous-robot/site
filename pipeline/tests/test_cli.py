@@ -1394,6 +1394,65 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
     assert "*Foo Report*" in cleaned
 
 
+def test_step_analyze_write_keeps_the_entity_match_override(tmp_path) -> None:
+    """--write records the Off-entity relabel and fits the level to it, as claim-refresh does."""
+    from contextlib import nullcontext
+
+    import yaml
+    from pydantic_ai.models.test import TestModel
+
+    from analyst.agent import verdict_only_agent
+    from common.frontmatter import parse_frontmatter
+
+    research = tmp_path / "research"
+    (research / "entities" / "companies").mkdir(parents=True)
+    (research / "entities" / "companies" / "acme.md").write_text(
+        "---\nname: Acme\ntype: company\nwebsite: https://acme.com\n---\n", encoding="utf-8"
+    )
+    (research / "claims" / "acme").mkdir(parents=True)
+    claim_path = research / "claims" / "acme" / "green.md"
+    claim_path.write_text(
+        "---\ntitle: Acme is green\nentity: companies/acme\nsources:\n- 2026/grid-news\n---\nBody.\n",
+        encoding="utf-8",
+    )
+    (research / "sources" / "2026").mkdir(parents=True)
+    (research / "sources" / "2026" / "grid-news.md").write_text(
+        "---\nurl: https://news.example.com/grid\ntitle: Grid News\npublisher: Daily News\n"
+        "kind: article\nindependence: independent\nsummary: Data centers use more power.\n---\n"
+        "Data centers use more power.\n",
+        encoding="utf-8",
+    )
+    model = TestModel(custom_output_args={
+        "title": "Acme is green",
+        "verdict": "true",
+        "confidence": "high",
+        "narrative": "Grid News says so.",
+        "topics": ["environmental-impact"],
+        "verification_level": "independently-verified",
+        "seo_title": "Acme green claim",
+    })
+
+    with verdict_only_agent.override(model=model), patch(
+        "orchestrator.pipeline.verdict_only_agent.override",
+        side_effect=lambda **kw: nullcontext(),
+    ):
+        result = CliRunner().invoke(
+            main,
+            [
+                "--model", "test", "step-analyze", "--claim", "acme/green",
+                "--write", "--force", "--repo-root", str(tmp_path),
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    [override] = fm["source_overrides"]
+    assert override["source"] == "2026/grid-news"
+    assert override["independence"] == "unknown"
+    assert override["reason"].startswith("Off-entity:")
+    assert fm["verification_level"] == "claimed"
+
+
 class TestStepAnalyzeCriterion:
     SENTINEL = "SENTINEL-NOTES: mixed = offsets only"
 

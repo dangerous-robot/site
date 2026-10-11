@@ -184,7 +184,8 @@ TWO derived signals:
 
    An `unknown` source counts as neither `independent` nor `first-party`. The pipeline
    marks a source `unknown` (with a reason starting "Off-entity") when it is another
-   organization's own page, or does not mention the entity or a provider the claim names.
+   organization's own page, or does not mention the entity, and the claim does not name
+   its publisher.
 
    FIRST-PARTY ARTICLE BOUNDARY: a `first-party` source with `kind: article` defaults to
    `claimed`. Upgrade to `self-reported` ONLY when the article contains methodology,

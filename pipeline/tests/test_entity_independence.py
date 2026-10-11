@@ -479,6 +479,24 @@ def test_google_paper_on_chatgpt_claim_is_unknown(tmp_path: Path) -> None:
     assert overrides[0].reason.startswith("Off-entity: first-party for Google")
 
 
+def test_off_entity_note_says_what_was_checked(tmp_path: Path) -> None:
+    # The independent rule checks the entity mention and the publisher, not
+    # providers the source mentions, and the note says only that.
+    sources = [
+        _sd(
+            "2026/scaleway-news", "https://news.example.com/scaleway", "Daily News", "independent",
+            body="Scaleway's data centers run on renewable power.",
+        )
+    ]
+    overrides = _apply_entity_match(
+        sources, _brave_resolved(), tmp_path, "Brave runs on Scaleway's renewable data centers"
+    )
+    assert overrides[0].reason == (
+        "Off-entity: the source does not mention Brave Browser, "
+        "and the claim does not name its publisher."
+    )
+
+
 def test_off_entity_reason_fits_override_limit(tmp_path: Path) -> None:
     sources = [_sd("2026/long", "https://x.org/a", "P" * 500, "first-party")]
     overrides = _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")

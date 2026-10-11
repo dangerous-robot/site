@@ -129,6 +129,18 @@ class TestCorporateLabPublisher:
         assert corporate_lab_publisher(text) == "OpenAI"
         assert corporate_lab_publisher("Carol microsoft.com x@microsoft.com Bob OpenAI") == "Microsoft"
 
+    def test_academic_first_affiliation_is_not_a_lab_paper(self) -> None:
+        universities = " ".join(
+            f"Author{i} Department of Computer Science, Stanford University" for i in range(8)
+        )
+        assert corporate_lab_publisher(f"{universities} Zed Google Research") is None
+        assert corporate_lab_publisher("Ann ann@cs.cmu.edu Bob bob@google.com") is None
+        assert corporate_lab_publisher("Ann (ETH Zurich) Bob (Anthropic)") is None
+
+    def test_lab_first_affiliation_with_academic_coauthors(self) -> None:
+        text = "Jane Doe Google DeepMind Bob Smith University of Oxford"
+        assert corporate_lab_publisher(text) == "Google"
+
 
 # --- The entity's own account on a profile platform --------------------------
 
