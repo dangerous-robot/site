@@ -749,6 +749,38 @@ def _order_by_coverage(
     return ordered + [u for u in urls if u not in taken]
 
 
+def _coverage_pool(
+    urls: list[str],
+    url_addresses: dict[str, list[str]],
+    sub_question_ids: list[str],
+    size: int,
+) -> list[str]:
+    """The first ``size`` of ``urls``, except each sub-question's first two URLs always stay.
+
+    Two, to match ``_order_by_coverage``, which tries a thin sub-question's
+    second URL early in case the first fetch fails. The rest of the pool
+    fills in input order, so a high-ranked URL that addresses no
+    sub-question (a cached source, say) is not pushed out. The result keeps
+    input order.
+    """
+    if len(urls) <= size:
+        return list(urls)
+    reserved: dict[str, None] = {}
+    for _round in range(2):
+        for sq in sub_question_ids:
+            pick = next(
+                (u for u in urls if u not in reserved and sq in url_addresses.get(u, [])), None
+            )
+            if pick is not None:
+                reserved[pick] = None
+    keep = set(list(reserved)[:size])
+    for u in urls:
+        if len(keep) >= size:
+            break
+        keep.add(u)
+    return [u for u in urls if u in keep]
+
+
 def _apply_blocklist_cap(
     raw_urls: list[str],
     cfg: VerifyConfig,
@@ -759,21 +791,16 @@ def _apply_blocklist_cap(
     """Filter raw_urls through the blocklist, cap at candidate_pool_size, and
     append blocked_host / all_blocked errors. Returns (kept_urls, error_list).
 
-    With sub-questions, the cap keeps the URLs ``_order_by_coverage`` puts
-    first, so each sub-question's best URLs stay in the pool even when they
-    rank low; the survivors keep their input order.
+    With sub-questions, the cap keeps each sub-question's first two URLs
+    (``_coverage_pool``), so they stay in the pool even when they rank low.
     """
     out_errors: list[StepError] = list(errors) if errors else []
     repo_root_str = cfg.repo_root or str(resolve_repo_root())
     entries = load_blocklist(Path(repo_root_str))
     kept, dropped = filter_urls(raw_urls, entries)
-    if sub_question_ids and len(kept) > cfg.candidate_pool_size:
-        pool = set(
-            _order_by_coverage(kept, url_addresses or {}, sub_question_ids, {})[: cfg.candidate_pool_size]
-        )
-        urls = [u for u in kept if u in pool]
-    else:
-        urls = kept[: cfg.candidate_pool_size]
+    urls = _coverage_pool(
+        kept, url_addresses or {}, sub_question_ids or [], cfg.candidate_pool_size
+    )
     for d in dropped:
         out_errors.append(
             StepError(

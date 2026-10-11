@@ -192,9 +192,19 @@ class TestResearchBlocklist:
         out = await _research(None, "Acme", "A claim", cfg, asyncio.Semaphore(1))
 
         assert len(out.urls) == 32
-        assert [u for u in out.urls if "sq2" in out.url_addresses[u]]
+        assert [u for u in out.urls if "sq2" in out.url_addresses[u]] == urls[32:34]
         # Survivors keep their rank order.
         assert out.urls == [u for u in urls if u in set(out.urls)]
+
+    def test_pool_cut_keeps_a_high_ranked_url_that_addresses_no_sub_question(self, tmp_path) -> None:
+        from orchestrator.pipeline import _coverage_pool
+
+        urls = [f"https://example.com/{i}" for i in range(1, 11)]
+        addresses = {u: ["sq1"] for u in urls[1:8]} | {u: ["sq2"] for u in urls[8:]}
+
+        pool = _coverage_pool(urls, addresses, ["sq1", "sq2"], 5)
+
+        assert pool == [urls[0], urls[1], urls[2], urls[8], urls[9]]
 
 
 class TestVerifyConfigPerAgentModels:
