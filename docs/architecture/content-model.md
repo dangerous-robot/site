@@ -61,7 +61,7 @@ The Markdown body provides extended context about the entity.
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `title` | string | yes | Human-readable claim statement |
-| `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; falls back to `title` if absent. |
+| `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; a forced rewrite (`dr claim-refresh`, `--force`) keeps an existing value while the title is unchanged, and keeps an existing `cap_rationale` while `verification_level` and `confidence` are both unchanged. Falls back to `title` if absent. |
 | `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |

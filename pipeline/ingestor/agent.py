@@ -90,6 +90,18 @@ def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
     return same_page_any_scheme(page, url)
 
 
+def requested_page_text(deps: IngestorDeps) -> str:
+    """The fetched text of ``deps.requested_url`` and its archive.org copies.
+
+    Text from any other page the model fetched is left out, so it cannot
+    vouch for a key quote.
+    """
+    return "\n".join(
+        text for url, text in deps.fetched_text.items()
+        if _is_page_or_archive_copy(url, deps.requested_url)
+    )
+
+
 def fetch_failure_reason(deps: IngestorDeps) -> str | None:
     """Why ``deps.requested_url`` yielded no text, or None when it (or its archive.org copy) did.
 

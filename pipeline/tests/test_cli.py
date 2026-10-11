@@ -477,6 +477,22 @@ def _write_published_refresh_fixture(tmp_path) -> "Path":
     return claim_path
 
 
+def _write_operator_fields_refresh_fixture(tmp_path) -> "Path":
+    """A published claim whose seo_title and cap_rationale an operator wrote."""
+    claim_path = _write_published_refresh_fixture(tmp_path)
+    text = claim_path.read_text(encoding="utf-8")
+    text = text.replace(
+        "confidence: medium\n",
+        "confidence: low\n"
+        "verification_level: claimed\n"
+        "cap_rationale: Operator rationale for the low cap.\n"
+        "seo_title: Operator seo title for Brave\n",
+        1,
+    )
+    claim_path.write_text(text, encoding="utf-8")
+    return claim_path
+
+
 def _comparison(*, agrees: bool = True, gaps: list[str] | None = None, needs_review: bool = False):
     from auditor.models import ComparisonResult
     from common.models import Confidence, Verdict, VerdictSeverity
@@ -497,8 +513,11 @@ def _comparison(*, agrees: bool = True, gaps: list[str] | None = None, needs_rev
     )
 
 
-def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None):
-    """Invoke `dr claim-refresh` with verify_claim stubbed; success=False hits the analyst-error branch."""
+def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None, verdict_fields=None):
+    """Invoke `dr claim-refresh` with verify_claim stubbed; success=False hits the analyst-error branch.
+
+    ``verdict_fields`` overrides keyword arguments of the fake VerdictAssessment.
+    """
     import asyncio
 
     from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
@@ -512,15 +531,16 @@ def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None):
                 entity=EntityResolution(
                     entity_name="Brave", entity_type=EntityType.PRODUCT, entity_description="d",
                 ),
-                verdict=VerdictAssessment(
-                    title="Brave hosts on renewable energy",
-                    verdict=Verdict.UNVERIFIED,
-                    confidence=Confidence.LOW,
-                    narrative="New narrative.",
-                    topics=[Category("environmental-impact")],
-                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
-                    seo_title="Brave renewable hosting",
-                ),
+                verdict=VerdictAssessment(**{
+                    "title": "Brave hosts on renewable energy",
+                    "verdict": Verdict.UNVERIFIED,
+                    "confidence": Confidence.LOW,
+                    "narrative": "New narrative.",
+                    "topics": [Category("environmental-impact")],
+                    "verification_level": VerificationLevel.PARTIALLY_VERIFIED,
+                    "seo_title": "Brave renewable hosting",
+                    **(verdict_fields or {}),
+                }),
             )
         return VerificationResult(
             entity=entity_name, claim_text=claim_text,
@@ -605,6 +625,28 @@ class TestClaimRefreshKeepsPublishedState:
         assert previous["reviewer"] == "reviewer@example.com"
         assert previous["reviewed_at"] == "2026-05-11"
         assert previous["ran_at"] == "2026-05-11T10:00:00+00:00"
+
+
+    def test_refresh_keeps_operator_seo_title_and_cap_rationale(self, monkeypatch, tmp_path) -> None:
+        from common.frontmatter import parse_frontmatter
+        from common.models import Confidence, VerificationLevel
+
+        claim_path = _write_operator_fields_refresh_fixture(tmp_path)
+
+        result = _run_refresh(
+            monkeypatch, tmp_path, success=True,
+            verdict_fields={
+                "confidence": Confidence.LOW,
+                "verification_level": VerificationLevel.CLAIMED,
+                "cap_rationale": "Analyst rationale for the low cap.",
+                "seo_title": "Brave hosted on renewable energy",
+            },
+        )
+
+        assert result.exit_code == 0, result.output
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        assert fm["seo_title"] == "Operator seo title for Brave"
+        assert fm["cap_rationale"] == "Operator rationale for the low cap."
 
 
 class TestRemovedCommands:

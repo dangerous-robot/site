@@ -915,20 +915,35 @@ class TestAcquisitionAndToolOutcomes:
 
 
 class TestWriteClaimFile:
-    def _call(self, repo_root: Path, force: bool = False, narrative: str = "initial narrative"):
+    def _call(
+        self,
+        repo_root: Path,
+        force: bool = False,
+        narrative: str = "initial narrative",
+        *,
+        title: str = "Test Claim",
+        confidence: Confidence = Confidence.HIGH,
+        **kwargs,
+    ):
         return _write_claim_file(
-            title="Test Claim",
+            title=title,
             entity_name="Test Entity",
             entity_ref="companies/test-entity",
             topics=[Category.ENVIRONMENTAL_IMPACT],
             verdict=Verdict.TRUE,
-            confidence=Confidence.HIGH,
+            confidence=confidence,
             narrative=narrative,
             claim_slug="test-claim",
             source_ids=[],
             repo_root=repo_root,
             force=force,
+            **kwargs,
         )
+
+    def _set_frontmatter(self, path: Path, **fields) -> None:
+        fm, body = parse_frontmatter(path.read_text(encoding="utf-8"))
+        fm.update(fields)
+        path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
     def test_writes_new_file(self, tmp_path):
         path = self._call(tmp_path)
@@ -986,6 +1001,76 @@ class TestWriteClaimFile:
 
         fm_after, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         assert fm_after["tags"] == ["home-familiar", "highlight"]
+
+    def test_force_overwrite_keeps_seo_title_when_title_unchanged(self, tmp_path):
+        path = self._call(tmp_path, seo_title="Pipeline seo title")
+        self._set_frontmatter(path, seo_title="Operator seo title")
+
+        self._call(tmp_path, force=True, title="  test   CLAIM ", seo_title="Analyst seo title")
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["seo_title"] == "Operator seo title"
+
+    def test_force_overwrite_takes_new_seo_title_when_title_changed(self, tmp_path):
+        path = self._call(tmp_path, seo_title="Operator seo title")
+
+        self._call(tmp_path, force=True, title="A different claim", seo_title="Analyst seo title")
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["seo_title"] == "Analyst seo title"
+
+    def test_force_overwrite_keeps_cap_rationale_when_level_and_confidence_unchanged(self, tmp_path):
+        path = self._call(
+            tmp_path, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Pipeline rationale.",
+        )
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._call(
+            tmp_path, force=True, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Analyst rationale.",
+        )
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["cap_rationale"] == "Operator rationale."
+
+    def test_force_overwrite_takes_new_cap_rationale_when_level_changes(self, tmp_path):
+        path = self._call(
+            tmp_path, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Operator rationale.",
+        )
+
+        self._call(
+            tmp_path, force=True, confidence=Confidence.LOW,
+            verification_level="self-reported", cap_rationale="Analyst rationale.",
+        )
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["cap_rationale"] == "Analyst rationale."
+
+    def test_force_overwrite_takes_new_cap_rationale_when_confidence_changes(self, tmp_path):
+        path = self._call(
+            tmp_path, confidence=Confidence.MEDIUM,
+            verification_level="claimed", cap_rationale="Confidence is capped at medium.",
+        )
+
+        self._call(
+            tmp_path, force=True, confidence=Confidence.LOW,
+            verification_level="claimed", cap_rationale="Confidence is capped at low.",
+        )
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert fm["cap_rationale"] == "Confidence is capped at low."
+
+    def test_blocked_force_overwrite_drops_cap_rationale(self, tmp_path):
+        # A blocked write passes no verification_level, so an old rationale
+        # naming a cap must not survive it.
+        path = self._call(tmp_path, cap_rationale="Operator rationale.")
+
+        self._call(tmp_path, force=True)
+
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        assert "cap_rationale" not in fm
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
         path = self._call(tmp_path, narrative="original")

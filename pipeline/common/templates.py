@@ -151,7 +151,7 @@ def render_blocked_title(template: TemplateRecord, entity_name: str) -> str:
 _WHITESPACE_RE = re.compile(r"\s+")
 
 
-def _normalize_title(text: str) -> str:
+def normalize_title(text: str) -> str:
     return _WHITESPACE_RE.sub(" ", text.strip()).lower()
 
 
@@ -162,7 +162,7 @@ def _build_title_pattern(template: TemplateRecord, entity_name: str) -> "re.Patt
     else is literal. Operates on the normalized (lowercased, whitespace-collapsed)
     text so the matcher tolerates casing and spacing variation only.
     """
-    template_text = _normalize_title(_substitute_entity(template, entity_name))
+    template_text = normalize_title(_substitute_entity(template, entity_name))
     pattern_parts: list[str] = []
     cursor = 0
     placeholder_spans = sorted(
@@ -188,11 +188,11 @@ def validate_analyst_title(
     entity substitution + per-vocab-slot value choice + optional 'a'/'an' before
     each resolved value. Otherwise (False, reason). Case- and whitespace-insensitive.
     """
-    actual = _normalize_title(analyst_title)
+    actual = normalize_title(analyst_title)
     template_text = _substitute_entity(template, entity_name)
 
     if not template.vocabulary:
-        if actual == _normalize_title(template_text):
+        if actual == normalize_title(template_text):
             return True, None
         return False, f"title diverges from template; expected {template_text!r}"
 

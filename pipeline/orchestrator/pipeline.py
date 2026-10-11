@@ -57,9 +57,15 @@ from auditor.bundle import build_bundle
 from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
 from common.models import DEFAULT_MODEL, AgentName, FailureInfo, FailureStep, resolve_model
-from ingestor.agent import IngestorDeps, archive_after_ingest, fetch_failure_reason, ingestor_agent
+from ingestor.agent import (
+    IngestorDeps,
+    archive_after_ingest,
+    fetch_failure_reason,
+    ingestor_agent,
+    requested_page_text,
+)
 from ingestor.models import SourceFile
-from ingestor.validation import validate_source_file
+from ingestor.validation import drop_unfound_quotes, validate_source_file
 from ingestor.tools.web_fetch import TerminalFetchError
 from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHandler, StepError
 from common.models import SubQuestion
@@ -881,6 +887,8 @@ def _check_ingested_source(
             "Dropping model-written archived_url %s for %s", sf.frontmatter.archived_url, url
         )
         sf.frontmatter.archived_url = None
+    for quote in drop_unfound_quotes(sf, requested_page_text(deps)):
+        logger.warning("Dropping key quote not found on the page for %s: %r", url, quote)
     validation = validate_source_file(sf, url, str(repo_root))
     for warning in validation.warnings:
         logger.warning("Ingest validation warning for %s: %s", url, warning)

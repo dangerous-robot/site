@@ -311,19 +311,105 @@ async def test_model_url_replaced_with_requested_url(tmp_path) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Key quotes are checked against the requested page's fetched text
+# ---------------------------------------------------------------------------
+
+_VERBATIM = "Brave publishes a transparency report."
+_PARAPHRASE = "Brave releases a yearly transparency document."
+
+
+@pytest.mark.asyncio
+async def test_paraphrased_key_quote_is_dropped(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url], _source_args(url, key_quotes=[_VERBATIM, _PARAPHRASE])),
+            tmp_path,
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes == [_VERBATIM]
+
+
+@pytest.mark.asyncio
+async def test_unrelated_page_text_does_not_verify_quote(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    unrelated = "https://brave.com/privacy/"
+    unrelated_quote = "Brave never sells your browsing data."
+    unrelated_html = f"<html><body><p>{unrelated_quote}</p></body></html>"
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        respx.get(unrelated).mock(return_value=httpx.Response(200, html=unrelated_html))
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url, unrelated], _source_args(url, key_quotes=[unrelated_quote])),
+            tmp_path,
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes is None
+
+
+@pytest.mark.asyncio
+async def test_quote_across_inline_tag_is_kept(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    html = "<html><body><p>Brave <strong>publishes</strong> a report.</p></body></html>"
+    quote = "Brave publishes a report."
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=html))
+        outcome = await _run_ingest_one(
+            url, _scripted_model([url], _source_args(url, key_quotes=[quote])), tmp_path
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes == [quote]
+
+
+@pytest.mark.asyncio
+async def test_quote_checked_against_archive_copy_text(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    archive = "https://web.archive.org/web/2025/https://brave.com/transparency/"
+    with respx.mock:
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        respx.get(archive).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url, archive], _source_args(url, key_quotes=[_VERBATIM, _PARAPHRASE])),
+            tmp_path,
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes == [_VERBATIM]
+
+
+@pytest.mark.asyncio
+async def test_straight_quote_wrapped_verbatim_quote_is_kept_end_to_end(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    wrapped = f'"{_VERBATIM}"'
+    with respx.mock:
+        respx.get(url).mock(return_value=httpx.Response(200, html=_HTML))
+        outcome = await _run_ingest_one(
+            url, _scripted_model([url], _source_args(url, key_quotes=[wrapped])), tmp_path
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.key_quotes == [wrapped]
+
+
+# ---------------------------------------------------------------------------
 # dr step-ingest
 # ---------------------------------------------------------------------------
 
 
-def _invoke_step_ingest(tmp_path, url: str, mock_kwargs: dict, model_url: str):
+def _invoke_step_ingest(
+    tmp_path, url: str, mock_kwargs: dict, model_url: str, source_overrides: dict | None = None
+):
     from click.testing import CliRunner
 
     from orchestrator.cli import main
 
     (tmp_path / "research" / "sources").mkdir(parents=True)
+    source = _source_args(model_url, **(source_overrides or {}))
     with respx.mock:
         respx.get(url).mock(**mock_kwargs)
-        with ingestor_agent.override(model=_scripted_model([url], _source_args(model_url))):
+        with ingestor_agent.override(model=_scripted_model([url], source)):
             with patch(
                 "ingestor.agent.ingestor_agent.override",
                 side_effect=lambda **kw: nullcontext(),
@@ -361,3 +447,17 @@ def test_step_ingest_keeps_requested_url_when_model_echoes_redirect(tmp_path) ->
     written = list((tmp_path / "research" / "sources").rglob("*.md"))
     assert len(written) == 1
     assert f"url: {url}" in written[0].read_text()
+
+
+def test_step_ingest_drops_paraphrased_quote(tmp_path) -> None:
+    url = "https://brave.com/transparency/"
+    result = _invoke_step_ingest(
+        tmp_path, url, {"return_value": httpx.Response(200, html=_HTML)}, url,
+        source_overrides={"key_quotes": [_VERBATIM, _PARAPHRASE]},
+    )
+    assert result.exit_code == 0, result.output
+    written = list((tmp_path / "research" / "sources").rglob("*.md"))
+    assert len(written) == 1
+    text = written[0].read_text()
+    assert _VERBATIM in text
+    assert _PARAPHRASE not in text

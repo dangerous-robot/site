@@ -29,6 +29,7 @@ from common.models import (
 )
 from common.source_classification import classify_source_type, independence_for_source_type
 from common.canonical_url import canonical_key, same_resource
+from common.templates import normalize_title
 from common.utils import host_token, slugify
 from ingestor.models import SourceFile
 
@@ -337,6 +338,11 @@ def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
     }
 
 
+def _enum_value(value: object) -> object:
+    # Callers pass enums; a parsed file holds their string values.
+    return getattr(value, "value", value)
+
+
 def _write_claim_file(
     title: str,
     entity_name: str,
@@ -374,6 +380,11 @@ def _write_claim_file(
     threshold-blocked variant; the caller supplies a placeholder
     ``narrative`` and ``verdict``/``confidence`` since the Analyst did
     not run.
+
+    On a forced overwrite, the existing ``seo_title`` wins while the title
+    is unchanged (ignoring case and spacing), and the existing
+    ``cap_rationale`` wins while ``verification_level`` and ``confidence``
+    are both unchanged. Otherwise the passed values are written.
     """
     claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
 
@@ -382,10 +393,13 @@ def _write_claim_file(
             f"claim file already exists: {claim_path} (pass force=True to overwrite)"
         )
 
-    # Preserve operator-edited takeaway/seo_title when force-overwriting an
-    # existing file and the analyst didn't suggest a new value. Corrections
-    # (the public record of what changed) and tags (homepage card picks) are
-    # operator-owned and always kept.
+    # On a forced overwrite, an operator may have edited these fields since
+    # the last run. The analyst always writes a seo_title, so the existing one
+    # is kept while the title it shortens is unchanged. A cap_rationale names
+    # the confidence cap, so it is kept only while the level and confidence it
+    # explains are both unchanged. A takeaway is kept when the analyst gives
+    # none. Corrections (the public record of what changed) and tags (homepage
+    # card picks) are operator-owned and always kept.
     existing_fm: dict = {}
     if claim_path.exists() and force:
         try:
@@ -400,6 +414,23 @@ def _write_claim_file(
     existing_corrections = existing_fm.get("corrections") or None
     existing_tags = existing_fm.get("tags") or []
 
+    existing_title = existing_fm.get("title")
+    if existing_seo_title and isinstance(existing_title, str) and (
+        normalize_title(existing_title) == normalize_title(title)
+    ):
+        seo_title = existing_seo_title
+    elif seo_title is None:
+        seo_title = existing_seo_title
+
+    existing_cap_rationale = existing_fm.get("cap_rationale") or ""
+    if (
+        existing_cap_rationale
+        and verification_level is not None
+        and _enum_value(verification_level) == _enum_value(existing_fm.get("verification_level"))
+        and _enum_value(confidence) == _enum_value(existing_fm.get("confidence"))
+    ):
+        cap_rationale = existing_cap_rationale
+
     fm = {
         "title": title,
         "entity": entity_ref,
@@ -409,7 +440,7 @@ def _write_claim_file(
         "verification_level": verification_level,
         "cap_rationale": cap_rationale,
         "takeaway": takeaway if takeaway is not None else existing_takeaway,
-        "seo_title": seo_title if seo_title is not None else existing_seo_title,
+        "seo_title": seo_title,
         "criteria_slug": criteria_slug,
         "status": status,
         "blocked_reason": blocked_reason,
