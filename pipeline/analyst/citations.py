@@ -170,6 +170,11 @@ def cited_source_ids(
         if not sid or sid in out:
             continue
         title = _match_form(src.get("title") or "")
-        if sid in named or (title and title in narrative):
+        if sid in named or (title and _contains_phrase(narrative, title)):
             out.append(sid)
     return out
+
+
+def _contains_phrase(text: str, phrase: str) -> bool:
+    # Word edges, so a short title such as "AI" does not match inside "said".
+    return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None

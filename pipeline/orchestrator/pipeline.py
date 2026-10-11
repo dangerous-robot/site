@@ -1508,7 +1508,7 @@ def _apply_cited_filter(
 
     def fitted_level(ids: list[str]) -> object:
         trial = verdict.model_copy(deep=True)
-        fit_verdict_to_written_pool(trial, result.sources, ids, entity_name)
+        fit_verdict_to_written_pool(trial, result.sources, ids, entity_name, log=False)
         return trial.verification_level
 
     level = getattr(verdict.verification_level, "value", verdict.verification_level)

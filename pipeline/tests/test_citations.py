@@ -248,3 +248,9 @@ def test_source_override_counts_as_cited() -> None:
 
 def test_nothing_cited_returns_empty() -> None:
     assert cited_source_ids(_cited_verdict(), _POOL) == []
+
+
+def test_short_title_matches_only_as_a_whole_word() -> None:
+    pool = [{"source_id": "2026/ai", "title": "AI"}]
+    assert cited_source_ids(_cited_verdict("The company said nothing."), pool) == []
+    assert cited_source_ids(_cited_verdict("Per *AI*, the figure holds."), pool) == ["2026/ai"]

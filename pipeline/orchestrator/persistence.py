@@ -353,6 +353,7 @@ def fit_verdict_to_written_pool(
     sources: list[dict],
     source_ids: list[str],
     entity_name: str,
+    log: bool = True,
 ) -> str | None:
     """Lower ``verification_level`` to what the written source list supports.
 
@@ -374,7 +375,7 @@ def fit_verdict_to_written_pool(
 
     Returns a one-line note when the level changed, else None. Call it just
     before the claim (and its sidecar) is written, after the final
-    ``source_ids`` exist.
+    ``source_ids`` exist. ``log=False`` is for trial runs on a copy.
     """
     written = set(source_ids)
     if verdict.source_overrides:
@@ -433,7 +434,8 @@ def fit_verdict_to_written_pool(
                 f"Confidence is capped at low: no source on this claim independently addresses {name}."
             )
     note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
-    logger.info("Level fit: %s", note)
+    if log:
+        logger.info("Level fit: %s", note)
     return note
 
 
