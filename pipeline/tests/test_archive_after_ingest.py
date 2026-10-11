@@ -6,6 +6,7 @@ is mocked with respx, so these tests make no network calls.
 
 from __future__ import annotations
 
+import datetime
 import re
 from pathlib import Path
 
@@ -21,7 +22,14 @@ from researcher.decomposed import ResearchOutput
 
 _PAGE_URL = "https://example.org/page"
 _PAGE = "<html><head><title>Page</title></head><body><p>The stored page.</p></body></html>"
-_SNAPSHOT = "https://web.archive.org/web/20260101000000/https://example.org/page"
+
+def _ts(days_ago: float) -> str:
+    when = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_ago)
+    return when.strftime("%Y%m%d%H%M%S")
+
+
+# A recent capture, so the freshness refresh after a live fetch leaves it alone.
+_SNAPSHOT = f"https://web.archive.org/web/{_ts(1)}/https://example.org/page"
 _TIMEGATE = re.compile(r"https://web\.archive\.org/web/\d{14}/.+")
 _SAVE = re.compile(r"https://web\.archive\.org/save/.+")
 _CACHED = [f"https://example.com/cached-{i}" for i in range(3)]
@@ -105,8 +113,11 @@ def _entries(sidecar: dict) -> dict[str, dict]:
 
 
 @pytest.mark.asyncio
-async def test_snapshot_found_sets_archived_url_and_records_found(tmp_path, stubbed_pipeline) -> None:
+async def test_snapshot_found_sets_archived_url_and_records_found(
+    tmp_path, stubbed_pipeline, mock_capture_replay
+) -> None:
     with respx.mock as mock:
+        mock_capture_replay()
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         mock.get(_TIMEGATE).mock(
             return_value=httpx.Response(302, headers={"location": _SNAPSHOT})
@@ -233,7 +244,7 @@ async def test_an_unexpected_lookup_error_keeps_the_source(
     """An error the wayback helpers do not catch (httpx.InvalidURL) must not drop a good ingest."""
     from orchestrator.pipeline import verify_claim
 
-    async def _raise(client, url, *, allow_save=True):
+    async def _raise(client, url, *, allow_save=True, **kwargs):
         raise httpx.InvalidURL("Invalid non-printable ASCII character in URL")
 
     monkeypatch.setattr("ingestor.agent.archive_with_time_limit", _raise)
@@ -253,11 +264,12 @@ async def test_an_unexpected_lookup_error_keeps_the_source(
 
 @pytest.mark.asyncio
 async def test_a_model_written_non_archive_link_does_not_reject_the_ingest(
-    tmp_path, stubbed_pipeline
+    tmp_path, stubbed_pipeline, mock_capture_replay
 ) -> None:
     """The model's own archived_url is dropped before validation, then the lookup sets it."""
     stubbed_pipeline["archived_url"] = "https://archive.ph/abc123"
     with respx.mock as mock:
+        mock_capture_replay()
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         mock.get(_TIMEGATE).mock(
             return_value=httpx.Response(302, headers={"location": _SNAPSHOT})
@@ -276,3 +288,24 @@ async def test_skip_wayback_drops_a_model_written_link(tmp_path, stubbed_pipelin
         source_fm, _sidecar = await _run(tmp_path, skip_wayback=True)
 
     assert "archived_url" not in source_fm
+
+
+@pytest.mark.asyncio
+async def test_live_fetch_refreshes_a_stale_capture_the_model_found(
+    tmp_path, pipeline_without_models, stub_ingest_model_calling_wayback, mock_capture_replay
+) -> None:
+    """With the page live, the model's wayback_check link is not reused: an old capture is refreshed."""
+    stale = f"https://web.archive.org/web/{_ts(120)}/https://example.org/page"
+    fresh = f"https://web.archive.org/web/{_ts(0)}/https://example.org/page"
+    with respx.mock as mock:
+        mock_capture_replay()
+        mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
+        mock.get(_TIMEGATE).mock(return_value=httpx.Response(302, headers={"location": stale}))
+        save = mock.get(_SAVE).mock(
+            return_value=httpx.Response(302, headers={"location": fresh})
+        )
+        source_fm, sidecar = await _run(tmp_path)
+
+    assert source_fm["archived_url"] == fresh
+    assert save.call_count == 1
+    assert _entries(sidecar)["2026/page"]["archive"] == {"status": "found"}

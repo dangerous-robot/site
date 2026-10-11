@@ -83,9 +83,10 @@ If you change the verdict with `e` before approving, approval records the change
 
 ## Archive links for sources
 
-The pipeline gives each new source an `archived_url` after ingesting it: an existing archive.org snapshot if there is one, otherwise it asks archive.org to capture the page. Commands that write nothing (`dr claim-probe`, `dr step-ingest` without `--write`) only look for an existing snapshot. The `dr` command list in AGENTS.md says which commands can capture.
+The pipeline gives each new source an `archived_url` after ingesting it: an existing archive.org capture that replays with HTTP 200 for the same page if there is one, otherwise it asks archive.org to capture the page and checks that capture the same way. When the live fetch succeeded and the capture found is older than 90 days or than the page's `published_date`, it asks for a fresh capture and keeps the old one if that fails. Commands that write nothing (`dr claim-probe`, `dr step-ingest` without `--write`) only look for an existing snapshot. The `dr` command list in AGENTS.md says which commands can capture.
 
 - Add links to existing sources: `uv run dr wayback-backfill <year>/<slug> ...`. It skips a source that already has a link and exits 1 if any source got none.
+- Check existing links: `uv run dr wayback-backfill --recheck <year>/<slug> ...`. A link that replays with HTTP 200 for the same page prints `unchanged`. A bad link (an error page, a redirect to another page, a capture of another URL) is replaced by an existing good capture, or removed with the reason when none exists; no capture is made. A link archive.org could not check is left as is. It exits 1 on a removal or a failed check. After a removal, a plain `uv run dr wayback-backfill <year>/<slug>` may save a fresh capture, which is checked before it is written.
 - A failed lookup is recorded in the claim sidecar as `sources_consulted[].archive` with `status: failed` and the reason (for example `archive.org TimeGate check failed (HTTP 429)`). The source is still written, without a link; rerun `dr wayback-backfill` later.
 - A link without a 14-digit timestamp (`https://web.archive.org/web/<url>`) does not name a capture. The pipeline no longer writes one.
 

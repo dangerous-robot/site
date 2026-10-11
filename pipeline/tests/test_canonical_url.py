@@ -271,3 +271,40 @@ class TestArxivKey:
     )
     def test_non_paper_urls_key_as_before(self, url: str) -> None:
         assert canonical_key(url) == canonicalize(url)
+
+
+class TestSamePageAnyScheme:
+    @pytest.mark.parametrize(
+        ("a", "b"),
+        [
+            ("http://example.com:80/article", "https://example.com/article"),
+            ("https://example.com:443/article", "http://example.com/article"),
+            ("http://example.com:443/article", "https://example.com/article"),
+            ("https://docs.python.org./", "https://docs.python.org/"),
+            ("https://www.example.com/article", "https://example.com/article"),
+            ("https://example.com/article/", "https://example.com/article"),
+            ("example.com/article", "https://example.com/article"),
+        ],
+    )
+    def test_same_page(self, a: str, b: str) -> None:
+        from common.canonical_url import same_page_any_scheme
+
+        assert same_page_any_scheme(a, b)
+
+    @pytest.mark.parametrize(
+        ("a", "b"),
+        [
+            ("https://example.com/Article", "https://example.com/article"),
+            ("https://example.com/article?id=1", "https://example.com/article?id=2"),
+            ("https://example.com:8080/article", "https://example.com/article"),
+            ("https://example.com/article", "https://other.example/article"),
+            ("https://", "https://example.com/"),
+            ("http://[::1/", "https://example.com/"),
+            ("", "https://example.com/"),
+            (None, "https://example.com/"),
+        ],
+    )
+    def test_different_page(self, a, b: str) -> None:
+        from common.canonical_url import same_page_any_scheme
+
+        assert not same_page_any_scheme(a, b)

@@ -426,55 +426,126 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
 # dr wayback-backfill                                                           #
 # --------------------------------------------------------------------------- #
 
-def _with_archived_url(text: str, archived_url: str) -> str:
-    """Return ``text`` with one ``archived_url:`` line added after ``url:``.
+def _set_archived_url(text: str, archived_url: str | None) -> str:
+    """Return ``text`` with its ``archived_url:`` line set to ``archived_url``.
 
-    Editing the line, not re-serializing the frontmatter, keeps the rest of
-    the file byte-for-byte (quoting, wrapping and key order).
+    The line is added after ``url:`` when absent, replaced (with any indented
+    continuation lines) when present, and removed when ``archived_url`` is
+    None. Editing the line, not re-serializing the frontmatter, keeps the rest
+    of the file byte-for-byte (quoting, wrapping and key order).
     """
     import yaml
 
     from common.frontmatter import parse_frontmatter
 
     lines = text.splitlines(keepends=True)
-    if not lines or lines[0].rstrip("\n") != "---":
+    if not lines or lines[0].rstrip("\r\n") != "---":
         raise ValueError("no frontmatter")
-    url_at = next(
-        (i for i, ln in enumerate(lines[1:], 1) if ln.startswith("url:")), None
+    close_at = next(
+        (i for i, ln in enumerate(lines[1:], 1) if ln.rstrip("\r\n") == "---"), None
     )
-    if url_at is None:
-        raise ValueError("no url line in frontmatter")
-    insert_at = url_at + 1
-    while insert_at < len(lines) and lines[insert_at].startswith(" "):
-        insert_at += 1
-    new_line = yaml.safe_dump({"archived_url": archived_url}, width=1_000_000)
-    updated = "".join(lines[:insert_at] + [new_line] + lines[insert_at:])
+    if close_at is None:
+        raise ValueError("frontmatter is not closed")
+
+    def _key_line(key: str) -> int | None:
+        return next(
+            (i for i in range(1, close_at) if lines[i].startswith(f"{key}:")), None
+        )
+
+    def _after_continuation(i: int) -> int:
+        i += 1
+        while i < close_at and lines[i].startswith(" "):
+            i += 1
+        return i
+
+    new_lines = (
+        [yaml.safe_dump({"archived_url": archived_url}, width=1_000_000)]
+        if archived_url
+        else []
+    )
+    existing = _key_line("archived_url")
+    if existing is not None:
+        updated_lines = lines[:existing] + new_lines + lines[_after_continuation(existing):]
+    else:
+        url_at = _key_line("url")
+        if url_at is None:
+            raise ValueError("no url line in frontmatter")
+        insert_at = _after_continuation(url_at)
+        updated_lines = lines[:insert_at] + new_lines + lines[insert_at:]
+    updated = "".join(updated_lines)
 
     before, body = parse_frontmatter(text)
     after, new_body = parse_frontmatter(updated)
-    if after != {**before, "archived_url": archived_url} or new_body != body:
-        raise ValueError("inserting archived_url changed other frontmatter")
+    expected = {k: v for k, v in before.items() if k != "archived_url"}
+    if archived_url:
+        expected["archived_url"] = archived_url
+    if after != expected or new_body != body:
+        raise ValueError("setting archived_url changed other frontmatter")
     return updated
 
 
 @main.command("wayback-backfill")
 @click.argument("source_ids", nargs=-1, required=True)
+@click.option(
+    "--recheck",
+    is_flag=True,
+    help="Also check sources that already have archived_url, and replace or remove a bad link.",
+)
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
-def wayback_backfill(source_ids: tuple[str, ...], repo_root: str | None) -> None:
+def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str | None) -> None:
     """Add an archive.org link to existing source files that lack one.
 
     SOURCE_IDS are year/slug ids, e.g. 2025/brave-website-challenge. Each
-    source's URL is looked up on archive.org (TimeGate, then Save Page Now)
-    and the link is written as `archived_url`. Sources that already have one
-    are skipped. Exits 1 if any source could not be archived.
+    source's URL is looked up on archive.org and a link is written as
+    `archived_url` only when archive.org replays that capture with HTTP 200
+    for the same page (TimeGate's nearest capture, else the newest such one
+    in the CDX index, else a checked Save Page Now capture). Sources that
+    already have one are skipped, unless --recheck: then the existing link
+    is checked the same way and kept, replaced with an existing good capture
+    (no save is made), or removed when none exists. A plain backfill of a
+    removed source afterwards may save a fresh capture. Exits 1 if any source
+    could not be archived, could not be checked, or lost its link.
     """
     import httpx
 
     from common.content_loader import resolve_repo_root
     from common.frontmatter import parse_frontmatter
-    from ingestor.tools.wayback import archive_with_time_limit
+    from ingestor.tools.wayback import archive_with_time_limit, check_capture
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
+
+    def _write(sid: str, path: Path, text: str, archived_url: str | None) -> bool:
+        try:
+            path.write_text(_set_archived_url(text, archived_url), encoding="utf-8")
+        except ValueError as exc:
+            click.echo(f"{sid}: not written: {exc}", err=True)
+            return False
+        return True
+
+    async def _recheck(client, sid: str, path: Path, text: str, url: str, old: str) -> bool:
+        """Check ``old`` and keep, replace or remove it; False when the source counts as failed."""
+        check = await check_capture(client, old, url)
+        if check.ok:
+            click.echo(f"{sid}: unchanged")
+            return True
+        if check.unverified:
+            click.echo(f"{sid}: could not check {old}: {check.reason}", err=True)
+            return False
+        # No save here: a replacement must already exist on archive.org.
+        lookup = await archive_with_time_limit(client, url, allow_save=False)
+        if lookup.archived_url:
+            if lookup.archived_url == old:
+                click.echo(f"{sid}: unchanged")
+                return True
+            if not _write(sid, path, text, lookup.archived_url):
+                return False
+            click.echo(f"{sid}: {old} -> {lookup.archived_url}")
+            return True
+        if not _write(sid, path, text, None):
+            return False
+        reason = "; ".join([check.reason or "capture failed its check", *lookup.errors])
+        click.echo(f"{sid}: removed {old}: {reason}; no 200 capture of this URL", err=True)
+        return False
 
     async def _run() -> int:
         failed = 0
@@ -487,25 +558,26 @@ def wayback_backfill(source_ids: tuple[str, ...], repo_root: str | None) -> None
                     continue
                 text = path.read_text(encoding="utf-8")
                 fm, _body = parse_frontmatter(text)
-                if fm.get("archived_url"):
+                if fm.get("archived_url") and not recheck:
                     click.echo(f"{sid}: already has archived_url, skipped")
                     continue
                 if not fm.get("url"):
                     click.echo(f"{sid}: no url in frontmatter", err=True)
                     failed += 1
                     continue
-                lookup = await archive_with_time_limit(client, str(fm["url"]))
+                url = str(fm["url"])
+                if fm.get("archived_url"):
+                    if not await _recheck(client, sid, path, text, url, str(fm["archived_url"])):
+                        failed += 1
+                    continue
+                # No freshness limit: nothing here shows the live page is up.
+                lookup = await archive_with_time_limit(client, url)
                 if not lookup.archived_url:
                     reason = "; ".join(lookup.errors) or "no archive.org snapshot"
                     click.echo(f"{sid}: archive lookup failed: {reason}", err=True)
                     failed += 1
                     continue
-                try:
-                    path.write_text(
-                        _with_archived_url(text, lookup.archived_url), encoding="utf-8"
-                    )
-                except ValueError as exc:
-                    click.echo(f"{sid}: not written: {exc}", err=True)
+                if not _write(sid, path, text, lookup.archived_url):
                     failed += 1
                     continue
                 click.echo(f"{sid}: {lookup.archived_url}")

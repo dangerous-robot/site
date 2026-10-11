@@ -282,9 +282,10 @@ class TestFindOrSaveArchive:
         assert save.called is False
 
     @pytest.mark.asyncio
-    async def test_miss_then_save(self) -> None:
+    async def test_miss_then_save(self, mock_capture_replay) -> None:
         archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
         with respx.mock:
+            mock_capture_replay()
             respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
             respx.get(self.SAVE_RE).mock(
                 return_value=httpx.Response(200, headers={"content-location": archived})
@@ -292,7 +293,7 @@ class TestFindOrSaveArchive:
             async with httpx.AsyncClient() as client:
                 lookup = await find_or_save_archive(client, self.URL)
         assert lookup.archived_url == archived
-        assert lookup.from_timegate is False
+        assert lookup.found_existing is False
         assert lookup.errors == []
 
     @pytest.mark.asyncio
@@ -307,20 +308,26 @@ class TestFindOrSaveArchive:
 
 
 class TestArchiveBudgets:
-    def test_lookup_budget_covers_check_save_and_the_retry_waits(self) -> None:
+    def test_lookup_cost_covers_every_archive_request_and_the_retry_waits(self) -> None:
         from common import timeouts as t
 
-        assert t.archive_lookup_budget_s() == (
-            t.WAYBACK_CHECK_S + t.WAYBACK_SAVE_S + 2 * t.RATE_LIMIT_RETRY_S
+        assert t.archive_lookup_cost_s() == (
+            t.WAYBACK_CHECK_S + 2 * t.WAYBACK_VERIFY_S + t.WAYBACK_CDX_S
+            + t.WAYBACK_SAVE_S + 3 * t.RATE_LIMIT_RETRY_S
         )
 
-    def test_ingest_budget_includes_the_recovery_retry_waits(self) -> None:
+    def test_lookup_budget_is_the_lookup_cost(self) -> None:
+        from common import timeouts as t
+
+        assert t.archive_lookup_budget_s() == t.archive_lookup_cost_s()
+
+    def test_ingest_budget_includes_the_recovery_lookup(self) -> None:
         from common import timeouts as t
 
         assert t.ingest_budget_with_wayback_s() == (
             t.HTTP_CONNECT_S + t.HTTP_READ_S
             + t.RATE_LIMIT_RETRY_S + t.HTTP_CONNECT_S + t.HTTP_READ_S
-            + t.WAYBACK_CHECK_S + t.WAYBACK_SAVE_S + 2 * t.RATE_LIMIT_RETRY_S
+            + t.archive_lookup_cost_s()
             + t.LLM_BUDGET_S
         )
 
@@ -498,9 +505,10 @@ class TestWaybackCheckTool:
         )
 
     @pytest.mark.asyncio
-    async def test_timegate_hit_skips_save(self) -> None:
+    async def test_timegate_hit_skips_save(self, mock_capture_replay) -> None:
         """TimeGate 302 → acquisition=archive_org; save endpoint must not be called."""
         with respx.mock:
+            mock_capture_replay()
             self._mock_timegate_hit()
             save_route = respx.get(
                 re.compile(r"https://web\.archive\.org/save/.+")
@@ -521,11 +529,12 @@ class TestWaybackCheckTool:
         )
 
     @pytest.mark.asyncio
-    async def test_timegate_miss_then_save_succeeds(self) -> None:
+    async def test_timegate_miss_then_save_succeeds(self, mock_capture_replay) -> None:
         """TimeGate 404 → save captures live URL; no acquisition write
         (save is fresh capture, not recovery), no failure recorded."""
         save_archived = "https://web.archive.org/web/20260509000000/https://example.com/article"
         with respx.mock:
+            mock_capture_replay()
             self._mock_timegate_miss()
             respx.get(re.compile(r"https://web\.archive\.org/save/.+")).mock(
                 return_value=httpx.Response(
@@ -712,3 +721,435 @@ class TestIngestUrlsAcquisitionDrain:
         assert all(e.url != url_ok for e in errors), (
             "Successful ingest must not surface wayback failures as StepErrors"
         )
+
+
+# --------------------------------------------------------------------------- #
+# Capture checks: only a 200 capture of the same page is recorded             #
+# --------------------------------------------------------------------------- #
+
+_CDX_RE = re.compile(r"https://web\.archive\.org/cdx/search/cdx.*")
+_SAVE_RE = re.compile(r"https://web\.archive\.org/save/.+")
+_CDX_HEADER = ["timestamp", "original", "statuscode"]
+_ARTICLE = "https://example.com/article"
+
+
+def _ts(days_ago: float) -> str:
+    when = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_ago)
+    return when.strftime("%Y%m%d%H%M%S")
+
+
+def _snap(ts: str, original: str) -> str:
+    return f"https://web.archive.org/web/{ts}/{original}"
+
+
+def _replay(ts: str, original: str) -> str:
+    return f"https://web.archive.org/web/{ts}id_/{original}"
+
+
+def _replayed(status: int, **headers: str) -> httpx.Response:
+    return httpx.Response(
+        status, headers={"memento-datetime": "Sat, 10 Oct 2026 00:00:00 GMT", **headers}
+    )
+
+
+def _timegate_to(link: str) -> None:
+    respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(302, headers={"location": link}))
+
+
+def _cdx(*rows: list[str]):
+    return respx.get(_CDX_RE).mock(return_value=httpx.Response(200, json=[_CDX_HEADER, *rows]))
+
+
+def _save_to(link: str):
+    return respx.get(_SAVE_RE).mock(
+        return_value=httpx.Response(200, headers={"content-location": link})
+    )
+
+
+class TestCaptureLookup:
+    @pytest.mark.asyncio
+    async def test_rejects_capture_of_differently_cased_url(self) -> None:
+        cased = "https://example.com/Article"
+        older, newer = _ts(5), _ts(1)
+        with respx.mock:
+            _timegate_to(_snap(newer, cased))
+            # The newer row is a 200 too: only the same-page rule skips it.
+            _cdx([older, _ARTICLE, "200"], [newer, cased, "200"])
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, allow_save=False)
+        assert lookup.archived_url == _snap(older, _ARTICLE)
+        assert lookup.found_existing is True
+        assert lookup.errors == []
+
+    @pytest.mark.asyncio
+    async def test_rejects_404_capture_of_same_url(self) -> None:
+        bad, good = _ts(1), _ts(30)
+        with respx.mock:
+            _timegate_to(_snap(bad, _ARTICLE))
+            respx.head(_replay(bad, _ARTICLE)).mock(return_value=_replayed(404))
+            _cdx([good, _ARTICLE, "200"])
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url == _snap(good, _ARTICLE)
+        assert lookup.errors == []
+
+    @pytest.mark.asyncio
+    async def test_bad_capture_no_cdx_row_without_save_records_none_with_reason(self) -> None:
+        bad = _ts(1)
+        with respx.mock:
+            _timegate_to(_snap(bad, _ARTICLE))
+            respx.head(_replay(bad, _ARTICLE)).mock(return_value=_replayed(404))
+            _cdx([_ts(3), _ARTICLE, "404"], [_ts(2), "https://example.com/Article", "200"])
+            save = respx.get(_SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, allow_save=False)
+        assert lookup.archived_url is None
+        assert "archive.org capture is an error page (HTTP 404)" in lookup.errors
+        assert save.called is False
+
+    @pytest.mark.asyncio
+    async def test_cdx_timeout_records_none_never_the_bad_capture(self) -> None:
+        bad = _ts(1)
+        with respx.mock:
+            _timegate_to(_snap(bad, _ARTICLE))
+            respx.head(_replay(bad, _ARTICLE)).mock(return_value=_replayed(404))
+            respx.get(_CDX_RE).mock(side_effect=httpx.ReadTimeout("cdx timeout"))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, allow_save=False)
+        assert lookup.archived_url is None
+        assert any("CDX" in e and "ReadTimeout" in e for e in lookup.errors)
+
+    @pytest.mark.asyncio
+    async def test_bad_capture_then_verified_save(self) -> None:
+        bad, fresh = _ts(1), _ts(0)
+        with respx.mock:
+            _timegate_to(_snap(bad, _ARTICLE))
+            respx.head(_replay(bad, _ARTICLE)).mock(return_value=_replayed(404))
+            respx.head(_replay(fresh, _ARTICLE)).mock(return_value=_replayed(200))
+            _cdx()
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url == _snap(fresh, _ARTICLE)
+        assert lookup.found_existing is False
+        assert lookup.errors == []
+
+    @pytest.mark.asyncio
+    async def test_save_of_error_page_records_none(self) -> None:
+        fresh = _ts(0)
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            respx.head(_replay(fresh, _ARTICLE)).mock(return_value=_replayed(403))
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url is None
+        assert lookup.errors == ["Save Page Now captured an error page (HTTP 403)"]
+
+    @pytest.mark.asyncio
+    async def test_save_unverified_records_none(self) -> None:
+        fresh = _ts(0)
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            respx.head(_replay(fresh, _ARTICLE)).mock(side_effect=httpx.ConnectError("down"))
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url is None
+        assert len(lookup.errors) == 1
+        assert lookup.errors[0].startswith("could not verify the Save Page Now capture (")
+
+    @pytest.mark.asyncio
+    async def test_port_80_original_matches(self) -> None:
+        ts, original = _ts(1), "http://example.com:80/article"
+        with respx.mock:
+            _timegate_to(_snap(ts, original))
+            respx.head(_replay(ts, original)).mock(return_value=_replayed(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url == _snap(ts, original)
+
+
+class TestCheckCapture:
+    async def _check(self, link: str, url: str = _ARTICLE, **kwargs):
+        from ingestor.tools.wayback import check_capture
+
+        async with httpx.AsyncClient() as client:
+            return await check_capture(client, link, url, **kwargs)
+
+    @pytest.mark.asyncio
+    async def test_200_replay_is_ok_and_records_the_plain_link(self) -> None:
+        ts = _ts(1)
+        with respx.mock:
+            respx.head(_replay(ts, _ARTICLE)).mock(return_value=_replayed(200))
+            check = await self._check(_replay(ts, _ARTICLE))
+        assert check.ok is True
+        assert check.link == _snap(ts, _ARTICLE)
+
+    @pytest.mark.asyncio
+    async def test_404_replay_is_bad(self) -> None:
+        ts = _ts(1)
+        with respx.mock:
+            respx.head(_replay(ts, _ARTICLE)).mock(return_value=_replayed(404))
+            check = await self._check(_snap(ts, _ARTICLE))
+        assert check.ok is False and check.unverified is False
+        assert check.status == 404
+        assert check.reason == "archive.org capture is an error page (HTTP 404)"
+
+    @pytest.mark.asyncio
+    async def test_5xx_without_memento_is_unverified(self) -> None:
+        ts = _ts(1)
+        with respx.mock:
+            respx.head(_replay(ts, _ARTICLE)).mock(return_value=httpx.Response(503))
+            check = await self._check(_snap(ts, _ARTICLE))
+        assert check.ok is False and check.unverified is True
+
+    @pytest.mark.asyncio
+    async def test_429_twice_is_unverified(self, no_sleep) -> None:
+        ts = _ts(1)
+        with respx.mock:
+            route = respx.head(_replay(ts, _ARTICLE)).mock(return_value=httpx.Response(429))
+            check = await self._check(_snap(ts, _ARTICLE))
+        assert check.unverified is True
+        assert route.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_hop_to_trailing_slash_then_200_is_ok_with_the_first_link(self) -> None:
+        ts = _ts(1)
+        page, slashed = "https://example.com/docs", "https://example.com/docs/"
+        with respx.mock:
+            respx.head(_replay(ts, page)).mock(
+                return_value=_replayed(302, location=_replay(ts, slashed))
+            )
+            respx.head(_replay(ts, slashed)).mock(return_value=_replayed(200))
+            check = await self._check(_snap(ts, page), page)
+        assert check.ok is True
+        assert check.link == _snap(ts, page)
+
+    @pytest.mark.asyncio
+    async def test_hop_to_another_page_is_bad_unless_it_is_the_fetched_page(self) -> None:
+        ts = _ts(1)
+        root, moved = "https://docs.python.org./", "https://docs.python.org/3/"
+        with respx.mock:
+            respx.head(_replay(ts, root)).mock(
+                return_value=_replayed(302, location=f"/web/{ts}id_/{moved}")
+            )
+            respx.head(_replay(ts, moved)).mock(return_value=_replayed(200))
+            bad = await self._check(_snap(ts, root), "https://docs.python.org/")
+            ok = await self._check(
+                _snap(ts, root), "https://docs.python.org/", also_same_as=moved
+            )
+        assert bad.ok is False and bad.unverified is False
+        assert bad.reason == f"archive.org capture redirects to {moved}"
+        assert ok.ok is True
+        assert ok.link == _snap(ts, root)
+
+    @pytest.mark.asyncio
+    async def test_more_than_three_hops_is_bad(self) -> None:
+        ts = _ts(1)
+        page, slashed = "https://example.com/a", "https://example.com/a/"
+        with respx.mock:
+            first = respx.head(_replay(ts, page)).mock(
+                return_value=_replayed(302, location=_replay(ts, slashed))
+            )
+            second = respx.head(_replay(ts, slashed)).mock(
+                return_value=_replayed(302, location=_replay(ts, page))
+            )
+            check = await self._check(_snap(ts, page), page)
+        assert check.ok is False and check.unverified is False
+        assert first.call_count + second.call_count == 3
+
+    @pytest.mark.asyncio
+    async def test_trailing_dot_host_matches(self) -> None:
+        ts, original = _ts(1), "https://docs.python.org./"
+        with respx.mock:
+            respx.head(_replay(ts, original)).mock(return_value=_replayed(200))
+            check = await self._check(_snap(ts, original), "https://docs.python.org/")
+        assert check.ok is True
+
+    @pytest.mark.asyncio
+    async def test_undated_link_is_bad_without_a_request(self) -> None:
+        with respx.mock:
+            check = await self._check("https://web.archive.org/web/2025/https://example.com/article")
+        assert check.ok is False and check.unverified is False
+        assert "not a dated" in check.reason
+
+    @pytest.mark.asyncio
+    async def test_capture_of_another_url_is_bad_without_a_request(self) -> None:
+        with respx.mock:
+            check = await self._check(_snap(_ts(1), "https://example.com/Article"))
+        assert check.reason == "capture is of a different URL (https://example.com/Article)"
+
+
+class TestFreshness:
+    MAX_AGE = datetime.timedelta(days=90)
+
+    @pytest.mark.asyncio
+    async def test_stale_capture_triggers_verified_save(self, mock_capture_replay) -> None:
+        stale, fresh = _ts(120), _ts(0)
+        with respx.mock:
+            mock_capture_replay()
+            _timegate_to(_snap(stale, _ARTICLE))
+            save = _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, max_age=self.MAX_AGE)
+        assert save.called is True
+        assert lookup.archived_url == _snap(fresh, _ARTICLE)
+        assert lookup.found_existing is False
+
+    @pytest.mark.asyncio
+    async def test_capture_before_published_date_triggers_save(self, mock_capture_replay) -> None:
+        older, fresh = _ts(10), _ts(0)
+        published = datetime.date.today() - datetime.timedelta(days=5)
+        with respx.mock:
+            mock_capture_replay()
+            _timegate_to(_snap(older, _ARTICLE))
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(
+                    client, _ARTICLE, max_age=self.MAX_AGE, not_before=published
+                )
+        assert lookup.archived_url == _snap(fresh, _ARTICLE)
+
+    @pytest.mark.asyncio
+    async def test_recent_capture_is_kept_without_a_save(self, mock_capture_replay) -> None:
+        recent = _ts(10)
+        with respx.mock:
+            mock_capture_replay()
+            _timegate_to(_snap(recent, _ARTICLE))
+            save = respx.get(_SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, max_age=self.MAX_AGE)
+        assert lookup.archived_url == _snap(recent, _ARTICLE)
+        assert save.called is False
+
+    @pytest.mark.asyncio
+    async def test_stale_capture_kept_when_save_is_error_page(self, mock_capture_replay) -> None:
+        stale, fresh = _ts(120), _ts(0)
+        with respx.mock:
+            respx.head(_replay(fresh, _ARTICLE)).mock(return_value=_replayed(403))
+            mock_capture_replay()
+            _timegate_to(_snap(stale, _ARTICLE))
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, max_age=self.MAX_AGE)
+        assert lookup.archived_url == _snap(stale, _ARTICLE)
+        assert lookup.found_existing is True
+
+    @pytest.mark.asyncio
+    async def test_stale_capture_kept_when_save_fails(self, mock_capture_replay) -> None:
+        stale = _ts(120)
+        with respx.mock:
+            mock_capture_replay()
+            _timegate_to(_snap(stale, _ARTICLE))
+            respx.get(_SAVE_RE).mock(return_value=httpx.Response(503))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE, max_age=self.MAX_AGE)
+        assert lookup.archived_url == _snap(stale, _ARTICLE)
+
+    @pytest.mark.asyncio
+    async def test_stale_capture_kept_without_save(self, mock_capture_replay) -> None:
+        stale = _ts(120)
+        with respx.mock:
+            mock_capture_replay()
+            _timegate_to(_snap(stale, _ARTICLE))
+            save = respx.get(_SAVE_RE).mock(return_value=httpx.Response(200))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(
+                    client, _ARTICLE, allow_save=False, max_age=self.MAX_AGE
+                )
+        assert lookup.archived_url == _snap(stale, _ARTICLE)
+        assert save.called is False
+
+
+class TestLatestOkCapture:
+    async def _latest(self, url: str = _ARTICLE) -> dict:
+        from ingestor.tools.wayback import latest_ok_capture
+
+        async with httpx.AsyncClient() as client:
+            return await latest_ok_capture(client, url)
+
+    @pytest.mark.asyncio
+    async def test_429_is_retried_once(self, no_sleep) -> None:
+        ts = _ts(2)
+        with respx.mock:
+            route = respx.get(_CDX_RE).mock(
+                side_effect=[
+                    httpx.Response(429, headers={"Retry-After": "1.5"}),
+                    httpx.Response(200, json=[_CDX_HEADER, [ts, _ARTICLE, "200"]]),
+                ]
+            )
+            result = await self._latest()
+        assert result == {"archived_url": _snap(ts, _ARTICLE)}
+        assert route.call_count == 2
+        assert no_sleep == [1.5]
+
+    @pytest.mark.asyncio
+    async def test_5xx_is_an_error(self) -> None:
+        with respx.mock:
+            respx.get(_CDX_RE).mock(return_value=httpx.Response(502))
+            result = await self._latest()
+        assert result["archived_url"] is None
+        assert "HTTP 502" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_transport_error_is_an_error(self) -> None:
+        with respx.mock:
+            respx.get(_CDX_RE).mock(side_effect=httpx.ConnectError("refused"))
+            result = await self._latest()
+        assert result["archived_url"] is None
+        assert "ConnectError" in result["error"]
+
+    @pytest.mark.parametrize("body", [[], [_CDX_HEADER]])
+    @pytest.mark.asyncio
+    async def test_empty_answers_are_silent_misses(self, body) -> None:
+        with respx.mock:
+            respx.get(_CDX_RE).mock(return_value=httpx.Response(200, json=body))
+            result = await self._latest()
+        assert result == {"archived_url": None}
+
+    @pytest.mark.asyncio
+    async def test_unreadable_answer_is_an_error(self) -> None:
+        with respx.mock:
+            respx.get(_CDX_RE).mock(return_value=httpx.Response(200, text="<html>busy</html>"))
+            result = await self._latest()
+        assert result["archived_url"] is None
+        assert "CDX" in result["error"]
+
+    @pytest.mark.asyncio
+    async def test_rows_are_filtered_by_status_and_page(self) -> None:
+        good, error_row, cased = _ts(9), _ts(3), _ts(1)
+        with respx.mock:
+            route = respx.get(_CDX_RE).mock(
+                return_value=httpx.Response(
+                    200,
+                    json=[
+                        _CDX_HEADER,
+                        [good, "http://www.example.com/article/", "200"],
+                        [error_row, _ARTICLE, "404"],
+                        [cased, "https://example.com/Article", "200"],
+                    ],
+                )
+            )
+            result = await self._latest()
+        assert result == {"archived_url": _snap(good, "http://www.example.com/article/")}
+        params = route.calls.last.request.url.params
+        assert params["url"] == _ARTICLE
+        assert params["filter"] == "statuscode:200"
+
+
+class TestReplayWithoutMemento:
+    @pytest.mark.asyncio
+    async def test_archive_org_own_404_leaves_a_save_unverified(self) -> None:
+        """A capture saved moments ago may not replay yet; that is not an error page."""
+        fresh = _ts(0)
+        with respx.mock:
+            respx.get(_TIMEGATE_URL_RE).mock(return_value=httpx.Response(404))
+            respx.head(_replay(fresh, _ARTICLE)).mock(return_value=httpx.Response(404))
+            _save_to(_snap(fresh, _ARTICLE))
+            async with httpx.AsyncClient() as client:
+                lookup = await find_or_save_archive(client, _ARTICLE)
+        assert lookup.archived_url is None
+        assert lookup.errors == [
+            "could not verify the Save Page Now capture (archive.org replay check failed (HTTP 404))"
+        ]

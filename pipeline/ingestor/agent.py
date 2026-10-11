@@ -12,11 +12,15 @@ from pathlib import Path
 import httpx
 from pydantic_ai import Agent, RunContext
 
-from common.canonical_url import same_resource
+from common.canonical_url import same_page_any_scheme
 from common.instructions import load_instructions
 from common.timeouts import RATE_LIMIT_RETRY_S, default_httpx_timeout
 from ingestor.models import SourceFile
-from ingestor.tools.wayback import archive_with_time_limit, find_or_save_archive
+from ingestor.tools.wayback import (
+    SNAPSHOT_MAX_AGE,
+    archive_with_time_limit,
+    find_or_save_archive,
+)
 from ingestor.tools.web_fetch import (
     TERMINAL_STATUS_CODES,
     TerminalFetchError,
@@ -41,8 +45,8 @@ class IngestorDeps:
     requested_url: str
     skip_wayback: bool = False
     # False for commands that write nothing (read-only ``dr step-ingest``,
-    # ``dr claim-probe``): archive lookups then check TimeGate only and never
-    # ask Save Page Now to capture a page.
+    # ``dr claim-probe``): archive lookups then use existing captures only
+    # and never ask Save Page Now to capture a page.
     allow_save: bool = True
     today: datetime.date = field(default_factory=datetime.date.today)
     # url -> body string supplied by the researcher (e.g., Tavily's
@@ -68,18 +72,14 @@ class IngestorDeps:
     # Unset for archive.org copies and prefetched bodies (no redirect info).
     final_url: str | None = None
     # The archive link ``wayback_check`` returned for ``requested_url``; the
-    # lookup run in code after the ingest reuses it instead of repeating it.
+    # lookup run in code after the ingest reuses it when the live fetch
+    # failed, instead of repeating it.
     wayback_link: str | None = None
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
 # the archived page's own URL, with or without its scheme.
 _ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[0-9*]+[a-z_]*/)?(.+)")
-_SCHEME = re.compile(r"^https?://", re.IGNORECASE)
-
-
-def _as_https(url: str) -> str:
-    return "https://" + _SCHEME.sub("", url)
 
 
 def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
@@ -87,7 +87,7 @@ def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
     # live fetch of an http:// URL may be upgraded to https.
     archived = _ARCHIVE_COPY.match(fetched)
     page = archived.group(1) if archived else fetched
-    return same_resource(_as_https(page), _as_https(url))
+    return same_page_any_scheme(page, url)
 
 
 def fetch_failure_reason(deps: IngestorDeps) -> str | None:
@@ -204,21 +204,23 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
 async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     """Check archival fallbacks for ``url`` and surface the recovered archive.
 
-    Queries archive.org's TimeGate (CDX-indexed) for the closest snapshot
-    to "now"; on "no snapshot" falls through to ``save_to_wayback`` which
-    asks the Wayback Machine to capture the live URL, unless
-    ``allow_save`` is False (the run writes nothing).
+    Runs ``find_or_save_archive``: the archive.org capture closest to "now"
+    counts only when it replays with HTTP 200 for the same page, else the
+    newest such capture in the CDX index; with none, Save Page Now is asked
+    to capture the live URL (unless ``allow_save`` is False, the run writes
+    nothing) and that capture is checked the same way. No freshness limit
+    applies here.
 
     Populates two side-channels on ``ctx.deps`` for the orchestrator to
     drain post-run:
 
     * ``acquisition_writes[url]``: ``{stage, recovered_via, outcome}``
-      on a TimeGate hit. ``save_to_wayback`` success does *not* write
-      acquisition — save creates a fresh archive of a still-reachable
-      URL, not a recovery of a lost one.
+      when an existing capture is found. ``save_to_wayback`` success does
+      *not* write acquisition — save creates a fresh archive of a
+      still-reachable URL, not a recovery of a lost one.
     * ``wayback_failures``: ``{stage, error_type, message}`` for each
-      failed TimeGate or save request. The orchestrator promotes to
-      ``StepError`` only when the ingest itself failed terminally.
+      archive.org failure behind a missing link. The orchestrator promotes
+      to ``StepError`` only when the ingest itself failed terminally.
     """
     if not url.startswith(("http://", "https://")):
         return {"available": False, "archived_url": None, "error": f"Invalid URL: {url!r}"}
@@ -234,7 +236,7 @@ async def wayback_check(ctx: RunContext[IngestorDeps], url: str) -> dict:
     if lookup.archived_url is None:
         return {"available": False, "archived_url": None}
 
-    if lookup.from_timegate:
+    if lookup.found_existing:
         deps.acquisition_writes[url] = {
             "stage": "ingest",
             "recovered_via": "archive_org",
@@ -250,19 +252,31 @@ async def archive_after_ingest(sf: SourceFile, deps: IngestorDeps) -> dict:
 
     The model's own ``archived_url`` is not trusted (``_check_ingested_source``
     already dropped any link ``wayback_check`` did not return): it is replaced
-    by the lookup's link, or cleared when the lookup fails or raises. A link
-    ``wayback_check`` returned during this ingest is reused, so the lookup is
-    not repeated. With ``skip_wayback`` nothing is looked up. With
-    ``deps.allow_save`` False the lookup checks TimeGate only.
+    by the lookup's link, or cleared when the lookup fails or raises.
+
+    When the live fetch succeeded, the page is known to be up, so a capture
+    older than ``SNAPSHOT_MAX_AGE`` or than the page's ``published_date`` is
+    refreshed with a checked Save Page Now capture. Otherwise (the text came
+    from an archive copy or a prefetched body) a link ``wayback_check``
+    returned during this ingest is reused, so the lookup is not repeated.
+    With ``skip_wayback`` nothing is looked up. With ``deps.allow_save``
+    False no capture is made.
     """
     if deps.skip_wayback:
         return {"status": "not-attempted"}
-    if deps.wayback_link:
+    freshness: dict = {}
+    if deps.final_url is not None:
+        freshness = {
+            "max_age": SNAPSHOT_MAX_AGE,
+            "not_before": sf.frontmatter.published_date,
+            "also_same_as": deps.final_url,
+        }
+    elif deps.wayback_link:
         sf.frontmatter.archived_url = deps.wayback_link
         return {"status": "found"}
     try:
         lookup = await archive_with_time_limit(
-            deps.http_client, sf.frontmatter.url, allow_save=deps.allow_save
+            deps.http_client, sf.frontmatter.url, allow_save=deps.allow_save, **freshness
         )
     except Exception as exc:
         # The helpers catch only httpx.HTTPError; anything else (e.g.

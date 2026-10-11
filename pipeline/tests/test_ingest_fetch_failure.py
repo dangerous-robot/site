@@ -176,8 +176,8 @@ def _scripted_model(fetch_urls: list[str], source: dict) -> FunctionModel:
     return FunctionModel(_fn)
 
 
-async def _run_ingest_one(url: str, model: FunctionModel, tmp_path):
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), skip_wayback=True)
+async def _run_ingest_one(url: str, model: FunctionModel, tmp_path, *, skip_wayback: bool = True):
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), skip_wayback=skip_wayback)
     async with httpx.AsyncClient() as client:
         with ingestor_agent.override(model=model):
             # Keep our FunctionModel: neutralize the orchestrator's own override.
@@ -224,6 +224,35 @@ async def test_wayback_recovery_still_ingests(tmp_path) -> None:
         )
     assert isinstance(outcome, tuple)
     assert outcome[0] == url
+
+
+@pytest.mark.asyncio
+async def test_wayback_recovery_does_not_refresh_stale_capture(tmp_path, mock_capture_replay) -> None:
+    """With the live page down, an old capture is recorded as is: no save without live evidence."""
+    import re
+
+    url = "https://brave.com/transparency/"
+    captured = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=200)
+    stale = f"https://web.archive.org/web/{captured:%Y%m%d%H%M%S}/{url}"
+    with respx.mock:
+        mock_capture_replay()
+        respx.get(url).mock(side_effect=httpx.ConnectError(_DNS_ERROR))
+        respx.get(stale).mock(return_value=httpx.Response(200, html=_HTML))
+        respx.get(re.compile(r"https://web\.archive\.org/web/\d{14}/.+")).mock(
+            return_value=httpx.Response(302, headers={"location": stale})
+        )
+        save = respx.get(re.compile(r"https://web\.archive\.org/save/.+")).mock(
+            return_value=httpx.Response(200)
+        )
+        outcome = await _run_ingest_one(
+            url,
+            _scripted_model([url, stale], _source_args(url, archived_url=stale)),
+            tmp_path,
+            skip_wayback=False,
+        )
+    assert isinstance(outcome, tuple)
+    assert outcome[1].frontmatter.archived_url == stale
+    assert save.called is False
 
 
 @pytest.mark.asyncio

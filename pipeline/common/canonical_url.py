@@ -19,6 +19,12 @@ one arXiv paper (abs, html or pdf page, any version, ``http`` or
 This is the one exception to keeping ``http`` and ``https`` apart.
 ``canonicalize`` and ``same_resource`` stay page-exact, because the abs
 page carries only the abstract and is not the same text as the paper.
+
+``same_page_any_scheme`` ignores the scheme for one job: deciding whether
+an archive.org capture, or a fetched archive copy, is of the requested
+page. Wayback often holds only the ``http`` capture, records originals
+with ``:80`` or a trailing-dot host, and matches URLs ignoring path case,
+so its own matching cannot be trusted.
 """
 
 from __future__ import annotations
@@ -197,5 +203,35 @@ def same_resource(a: str | None, b: str | None) -> bool:
         return False
     try:
         return canonicalize(a) == canonicalize(b)
+    except ValueError:
+        return False
+
+
+_HAS_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*://")
+
+
+def _any_scheme_form(url: str) -> str:
+    # Archive copy links can carry the original without its scheme.
+    url = url.strip()
+    if not _HAS_SCHEME.match(url):
+        url = "https://" + url
+    # Canonicalize under the URL's own scheme first, so ``http://h:80`` loses
+    # its default port before the swap to https would make 80 non-default.
+    parts = urlsplit(canonicalize(url))
+    host = (parts.hostname or "").rstrip(".")
+    netloc = host if parts.port is None else f"{host}:{parts.port}"
+    return canonicalize(urlunsplit(("https", netloc, parts.path, parts.query, "")))
+
+
+def same_page_any_scheme(a: str | None, b: str | None) -> bool:
+    """True when two URLs are the same page apart from scheme, default port or a trailing-dot host.
+
+    Path case, query and non-default ports still count. Missing or malformed
+    URLs never match.
+    """
+    if not a or not b:
+        return False
+    try:
+        return _any_scheme_form(a) == _any_scheme_form(b)
     except ValueError:
         return False

@@ -1298,7 +1298,17 @@ class TestClaimRefreshFlagReason:
 
 _ARCHIVE_PAGE_URL = "https://example.org/page"
 _ARCHIVE_PAGE = "<html><head><title>Page</title></head><body><p>The stored page.</p></body></html>"
-_ARCHIVE_SNAPSHOT = "https://web.archive.org/web/20260101000000/https://example.org/page"
+
+
+def _archive_ts(days_ago: float) -> str:
+    import datetime
+
+    when = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_ago)
+    return when.strftime("%Y%m%d%H%M%S")
+
+
+# A recent capture, so the freshness refresh after a live fetch leaves it alone.
+_ARCHIVE_SNAPSHOT = f"https://web.archive.org/web/{_archive_ts(1)}/https://example.org/page"
 
 
 def _timegate_re():
@@ -1332,11 +1342,14 @@ class TestStepIngestArchive:
             ],
         )
 
-    def test_read_only_prints_the_snapshot_and_never_saves(self, tmp_path, stub_ingest_model) -> None:
+    def test_read_only_prints_the_snapshot_and_never_saves(
+        self, tmp_path, stub_ingest_model, mock_capture_replay
+    ) -> None:
         import httpx
         import respx
 
         with respx.mock as mock:
+            mock_capture_replay()
             mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
             mock.get(_timegate_re()).mock(
                 return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
@@ -1424,11 +1437,12 @@ class TestStepIngestArchive:
         written = (tmp_path / "research" / "sources" / "2026" / "page.md").read_text()
         assert "archived_url" not in written
 
-    def test_write_saves_on_a_miss(self, tmp_path, stub_ingest_model) -> None:
+    def test_write_saves_on_a_miss(self, tmp_path, stub_ingest_model, mock_capture_replay) -> None:
         import httpx
         import respx
 
         with respx.mock as mock:
+            mock_capture_replay()
             mock.get(_ARCHIVE_PAGE_URL).mock(return_value=httpx.Response(200, html=_ARCHIVE_PAGE))
             mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
             mock.get(_save_re()).mock(
@@ -1561,12 +1575,13 @@ class TestWaybackBackfill:
             main, ["wayback-backfill", *ids, "--repo-root", str(tmp_path)]
         )
 
-    def test_adds_only_the_archived_url_line(self, tmp_path) -> None:
+    def test_adds_only_the_archived_url_line(self, tmp_path, mock_capture_replay) -> None:
         import httpx
         import respx
 
         sources = self._repo(tmp_path)
         with respx.mock as mock:
+            mock_capture_replay()
             mock.get(_timegate_re()).mock(
                 return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
             )
@@ -1601,6 +1616,156 @@ class TestWaybackBackfill:
         result = self._invoke(tmp_path, "2026/missing")
         assert result.exit_code == 1
         assert "2026/missing: not found" in result.output
+
+    def test_backfill_passes_no_freshness(self, tmp_path, mock_capture_replay) -> None:
+        """No live fetch backs a backfill, so an old good capture is recorded without a save."""
+        import httpx
+        import respx
+
+        old = f"https://web.archive.org/web/{_archive_ts(300)}/https://example.org/page"
+        sources = self._repo(tmp_path)
+        with respx.mock as mock:
+            mock_capture_replay()
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(302, headers={"location": old}))
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path, "2026/page")
+
+        assert result.exit_code == 0, result.output
+        assert f"archived_url: {old}\n" in (sources / "page.md").read_text()
+        assert save.called is False
+
+
+class TestWaybackBackfillRecheck:
+    _URL = "https://example.org/page"
+    _BAD = f"https://web.archive.org/web/{_archive_ts(2)}/https://example.org/page"
+
+    def _source(self, archived_url: str | None) -> str:
+        link = f"archived_url: {archived_url}\n" if archived_url else ""
+        return (
+            "---\n"
+            f"url: {self._URL}\n"
+            f"{link}"
+            "title: Page\n"
+            "publisher: Example\n"
+            "published_date: '2025-12-09'\n"
+            "accessed_date: '2026-05-04'\n"
+            "kind: article\n"
+            "summary: A long summary that a YAML round trip could re-wrap differently from how\n"
+            "  it is stored now.\n"
+            "---\n"
+            "Body.\n"
+        )
+
+    def _write(self, tmp_path, archived_url: str | None):
+        path = tmp_path / "research" / "sources" / "2026" / "page.md"
+        path.parent.mkdir(parents=True)
+        path.write_text(self._source(archived_url), encoding="utf-8")
+        return path
+
+    def _invoke(self, tmp_path):
+        return CliRunner().invoke(
+            main, ["wayback-backfill", "--recheck", "2026/page", "--repo-root", str(tmp_path)]
+        )
+
+    @staticmethod
+    def _replay(link: str) -> str:
+        return link.replace("/https://", "id_/https://", 1)
+
+    @staticmethod
+    def _replayed(status: int):
+        import httpx
+
+        return httpx.Response(status, headers={"memento-datetime": "Sat, 10 Oct 2026 00:00:00 GMT"})
+
+    def test_wayback_backfill_recheck_replaces_error_capture(self, tmp_path) -> None:
+        import re
+
+        import httpx
+        import respx
+
+        good_ts = _archive_ts(30)
+        good = f"https://web.archive.org/web/{good_ts}/{self._URL}"
+        path = self._write(tmp_path, self._BAD)
+        with respx.mock as mock:
+            mock.head(self._replay(self._BAD)).mock(return_value=self._replayed(404))
+            mock.get(_timegate_re()).mock(
+                return_value=httpx.Response(302, headers={"location": self._BAD})
+            )
+            mock.get(re.compile(r"https://web\.archive\.org/cdx/search/cdx.*")).mock(
+                return_value=httpx.Response(
+                    200, json=[["timestamp", "original", "statuscode"], [good_ts, self._URL, "200"]]
+                )
+            )
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert path.read_text() == self._source(good)
+        assert f"2026/page: {self._BAD} -> {good}" in result.output
+        assert save.called is False
+
+    def test_recheck_unchanged(self, tmp_path) -> None:
+        import respx
+
+        path = self._write(tmp_path, self._BAD)
+        with respx.mock as mock:
+            mock.head(self._replay(self._BAD)).mock(return_value=self._replayed(200))
+            timegate = mock.get(_timegate_re())
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert "2026/page: unchanged" in result.output
+        assert path.read_text() == self._source(self._BAD)
+        assert timegate.called is False
+
+    def test_recheck_removes_link_when_no_good_capture(self, tmp_path) -> None:
+        import httpx
+        import respx
+
+        path = self._write(tmp_path, self._BAD)
+        with respx.mock as mock:
+            mock.head(self._replay(self._BAD)).mock(return_value=self._replayed(404))
+            mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
+            save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 1
+        assert path.read_text() == self._source(None)
+        assert f"2026/page: removed {self._BAD}: archive.org capture is an error page (HTTP 404)" in (
+            result.output
+        )
+        assert "no 200 capture of this URL" in result.output
+        assert save.called is False
+
+    def test_recheck_unverified_leaves_file(self, tmp_path) -> None:
+        import httpx
+        import respx
+
+        path = self._write(tmp_path, self._BAD)
+        with respx.mock as mock:
+            mock.head(self._replay(self._BAD)).mock(side_effect=httpx.ConnectError("down"))
+            timegate = mock.get(_timegate_re())
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 1
+        assert path.read_text() == self._source(self._BAD)
+        assert "ConnectError" in result.output
+        assert timegate.called is False
+
+    def test_recheck_without_a_link_backfills(self, tmp_path, mock_capture_replay) -> None:
+        import httpx
+        import respx
+
+        path = self._write(tmp_path, None)
+        with respx.mock as mock:
+            mock_capture_replay()
+            mock.get(_timegate_re()).mock(
+                return_value=httpx.Response(302, headers={"location": self._BAD})
+            )
+            result = self._invoke(tmp_path)
+
+        assert result.exit_code == 0, result.output
+        assert path.read_text() == self._source(self._BAD)
 
 
 def test_step_audit_sends_claim_title(tmp_path) -> None:

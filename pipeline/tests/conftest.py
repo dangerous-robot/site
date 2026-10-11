@@ -131,3 +131,31 @@ def human_at_terminal(monkeypatch):
 
     monkeypatch.setattr(review_mod, "_stdin_is_tty", lambda: True)
     monkeypatch.setattr(review_mod, "_prompt_slug", lambda verb, slug: slug)
+
+
+_CAPTURE_REPLAY_RE = r"https://web\.archive\.org/web/\d{14}id_/.+"
+
+
+@pytest.fixture
+def mock_capture_replay():
+    """Return a function that mocks the ``id_`` replay HEAD check of archive.org captures.
+
+    Every capture the archive lookup records (a TimeGate hit or a Save Page
+    Now result) is first checked with a HEAD on its ``id_`` replay. respx
+    routes by method, so a test that mocks a capture must mock that HEAD too,
+    inside its ``respx.mock`` block. ``url`` narrows the route to one replay
+    URL (exact string or pattern) when a test needs different statuses for
+    different captures; respx uses the first route that matches, so narrow
+    routes go first.
+    """
+    import re
+
+    import httpx
+    import respx
+
+    def _mock(status: int = 200, url=None, *, memento: bool = True):
+        headers = {"memento-datetime": "Sat, 10 Oct 2026 00:00:00 GMT"} if memento else {}
+        pattern = url if url is not None else re.compile(_CAPTURE_REPLAY_RE)
+        return respx.head(pattern).mock(return_value=httpx.Response(status, headers=headers))
+
+    return _mock
