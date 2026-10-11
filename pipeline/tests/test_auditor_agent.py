@@ -99,16 +99,24 @@ class TestBundleNeverLeaksVerdict:
         prompt = build_auditor_prompt(bundle)
         assert "confidence:" not in prompt.lower()
 
-    def test_prompt_excludes_title(self) -> None:
-        bundle = _sample_bundle()
-        prompt = build_auditor_prompt(bundle)
-        assert "title:" not in prompt.lower()
+    def test_prompt_grades_the_claim_statement_before_the_narrative(self) -> None:
+        # The statement graded is the claim_text the caller picks (the
+        # template rendering, or the analyst title), under "## Claim".
+        prompt = build_auditor_prompt(_sample_bundle())
+        assert "## Claim\nTestCorp meets industry safety standards\n" in prompt
+        assert prompt.index("## Claim") < prompt.index("## Analyst narrative")
 
-    def test_bundle_model_has_no_verdict_field(self) -> None:
-        fields = set(ClaimBundle.model_fields.keys())
-        assert "verdict" not in fields
-        assert "confidence" not in fields
-        assert "title" not in fields
+    def test_prompt_excludes_level_and_cap(self) -> None:
+        prompt = build_auditor_prompt(_sample_bundle()).lower()
+        assert "verification_level" not in prompt
+        assert "cap_rationale" not in prompt
+
+    def test_bundle_carries_no_analyst_grading_field(self) -> None:
+        # An exact set, so a new field (verdict, confidence, level, a second
+        # title) has to be added here on purpose.
+        assert set(ClaimBundle.model_fields) == {
+            "claim_id", "claim_text", "entity", "topics", "narrative", "sources",
+        }
 
     def test_real_claim_verdict_not_in_prompt(self) -> None:
         bundle = ClaimBundle(
