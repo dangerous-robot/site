@@ -9,7 +9,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
-from common.models import INDEPENDENT_SOURCES_REQUIRED, Confidence, Independence, VerificationLevel
+from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, Confidence, Independence, VerificationLevel
 from common.source_classification import effective_independence
 
 from .models import LintIssue
@@ -730,6 +730,10 @@ def check_verification_level_pool(
 ) -> list[LintIssue]:
     """Warn when `verification_level` needs more independent sources than the pool has.
 
+    `self-reported` warns when the pool has no independent source and no
+    first-party report, documentation, dataset or article, the rule the
+    write-time level fit applies.
+
     `source_frontmatters` is keyed by source id ("2026/foo"). Effective
     independence is the claim's `source_overrides` entry when it sets one,
     else the source file's label, matching `src/lib/sourceQuality.ts`
@@ -740,7 +744,7 @@ def check_verification_level_pool(
         fm = claim_frontmatters.get(str(path), {})
         level = fm.get("verification_level")
         required = INDEPENDENT_SOURCES_REQUIRED.get(level)
-        if required is None:
+        if required is None and level != VerificationLevel.SELF_REPORTED.value:
             continue
         overrides = {
             o["source"]: o["independence"]
@@ -753,8 +757,28 @@ def check_verification_level_pool(
             {ref: source_frontmatters.get(ref, {}).get("independence") for ref in refs},
             overrides,
         )
-        independent = sum(1 for v in labels.values() if v == Independence.INDEPENDENT.value)
-        if independent < required:
+        independent = sum(1 for _, v in labels if v == Independence.INDEPENDENT.value)
+        if required is None:
+            if independent or any(
+                label == Independence.FIRST_PARTY.value
+                and source_frontmatters.get(ref, {}).get("kind") in SELF_REPORTED_BASIS_KINDS
+                for ref, label in labels
+            ):
+                continue
+            issues.append(LintIssue(
+                path=str(path),
+                check_id="verification-level-pool-mismatch",
+                severity="warning",
+                message=(
+                    "verification_level `self-reported` needs a first-party report, "
+                    "documentation, dataset or article; the pool has none"
+                ),
+                hint=(
+                    "lower `verification_level` to `claimed`, or correct the "
+                    "source's `independence` / the claim's `source_overrides`"
+                ),
+            ))
+        elif independent < required:
             issues.append(LintIssue(
                 path=str(path),
                 check_id="verification-level-pool-mismatch",

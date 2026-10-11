@@ -261,8 +261,50 @@ def source_engages_entity(sd: Mapping, identity: EntityIdentity) -> bool:
     words = _padded_words(raw)
     if any(f" {name} " in words for name in identity.names):
         return True
+    # A "." may precede the host, so "www.brave.com" and "search.brave.com"
+    # count; a letter or "-" may not, so "notbrave.com" does not.
     return any(
-        re.search(rf"(?<![\w.-]){re.escape(host)}(?![\w-])", raw) for host in identity.hosts
+        re.search(rf"(?<![\w-]){re.escape(host)}(?![\w-])", raw) for host in identity.hosts
+    )
+
+
+# Second-level labels under a two-letter country code ("bbc.co.uk").
+_COUNTRY_SECOND_LEVEL: frozenset[str] = frozenset({"ac", "co", "com", "edu", "gov", "net", "org"})
+# Hosts where many organizations' sites share one registrable label, so an
+# entity website there says nothing about the platform's other pages.
+_SHARED_SITE_HOSTS: frozenset[str] = SHARED_PLATFORM_HOSTS | {
+    "github.io", "medium.com", "netlify.app", "notion.site", "pages.dev",
+    "sites.google.com", "substack.com", "vercel.app", "wixsite.com",
+}
+
+
+def _brand_label(host: str) -> str:
+    """The registrable label of a host: ``claude`` for platform.claude.com and claude.ai."""
+    labels = [label for label in host.split(".") if label]
+    if len(labels) < 2:
+        return ""
+    if len(labels) >= 3 and len(labels[-1]) == 2 and labels[-2] in _COUNTRY_SECOND_LEVEL:
+        return labels[-3]
+    return labels[-2]
+
+
+def entity_affiliated(publisher: str, url: str, identity: EntityIdentity) -> bool:
+    """True when a source looks published by the entity or its parent under another name or host.
+
+    The publisher names the entity or parent as whole words ("Anthropic
+    (Claude Platform)" for Claude), or the URL's registrable label equals
+    that of an entity website host (platform.claude.com for claude.ai,
+    ai.google.dev for gemini.google.com). Looser than
+    ``entity_first_party_reason``, so it only keeps a label, never sets one.
+    """
+    words = _padded_words(publisher)
+    if any(f" {name} " in words for name in identity.names):
+        return True
+    label = _brand_label(url_host(url))
+    return bool(label) and any(
+        label == _brand_label(h)
+        for h in identity.hosts
+        if not any(host_matches(h, shared) for shared in _SHARED_SITE_HOSTS)
     )
 
 
@@ -270,16 +312,17 @@ def effective_independence(
     source_ids: Iterable[str],
     file_labels: Mapping[str, str | None],
     overrides: Mapping[str, str | None],
-) -> dict[str, str | None]:
-    """Each source's independence on one claim: its override when set, else its own label.
+) -> list[tuple[str, str | None]]:
+    """Each source ref's independence on one claim: its override when set, else its own label.
 
     The one counting rule for the lint check and the write-time level fit,
-    matching ``countSourcesByIndependence`` in ``src/lib/sourceQuality.ts``.
+    matching ``countSourcesByIndependence`` in ``src/lib/sourceQuality.ts``:
+    one entry per ref, so a repeated ref counts each time, as on the site.
     """
-    return {
-        sid: overrides.get(sid) or file_labels.get(sid)
+    return [
+        (sid, overrides.get(sid) or file_labels.get(sid))
         for sid in source_ids
-    }
+    ]
 
 
 # --- Corporate labs named in a paper's author block --------------------------

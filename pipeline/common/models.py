@@ -180,6 +180,9 @@ INDEPENDENT_SOURCES_REQUIRED: dict[str, int] = {
 # First-party source kinds that make a pool with no independent source
 # self-reported rather than claimed.
 SELF_REPORT_KINDS: frozenset[str] = frozenset({"report", "documentation", "dataset"})
+# First-party kinds that can back a self-reported level the analyst chose: an
+# article qualifies when it has methodology, data or signed commitments.
+SELF_REPORTED_BASIS_KINDS: frozenset[str] = SELF_REPORT_KINDS | {"article"}
 
 
 class EntityType(str, Enum):

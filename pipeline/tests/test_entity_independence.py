@@ -25,6 +25,7 @@ from common.frontmatter import parse_frontmatter
 from common.models import Confidence, EntityType, Independence, VerificationLevel
 from common.source_classification import (
     EntityIdentity,
+    entity_affiliated,
     entity_first_party_reason,
     publisher_named_in_claim,
     source_engages_entity,
@@ -696,3 +697,129 @@ async def test_research_claim_writes_the_fitted_level(tmp_path: Path, monkeypatc
     assert claim_fm["confidence"] == "medium"
     sidecar = yaml.safe_load(claim_path.with_name(claim_path.stem + ".audit.yaml").read_text())
     assert "multiply-verified" in sidecar["pipeline_run"]["level_clamp"]
+
+
+# --- The entity's own pages on a sibling host or under a publisher variant ---
+
+
+@pytest.mark.parametrize(
+    ("entity_ref", "source_id", "url", "publisher", "body"),
+    [
+        (
+            "products/claude", "2026/anthropic-claude-models-overview",
+            "https://platform.claude.com/docs/en/about-claude/models/overview",
+            "Anthropic (Claude Platform)", "Claude is a family of models.",
+        ),
+        (
+            "products/gemini", "2026/google-gemini-api-models",
+            "https://ai.google.dev/gemini-api/docs/models",
+            "Google AI for Developers", "Gemini models in the API.",
+        ),
+        (
+            "products/gemini", "2026/cloud-blog",
+            "https://cloud.google.com/blog/products/ai/gemini-energy",
+            "Google Cloud Blog", "Measuring Gemini's energy per prompt.",
+        ),
+    ],
+)
+def test_entity_docs_on_a_sibling_host_stay_first_party(
+    repo_root: Path, entity_ref: str, source_id: str, url: str, publisher: str, body: str
+) -> None:
+    resolved = parse_entity_ref(entity_ref, repo_root)
+    sources = [_sd(source_id, url, publisher, "first-party", kind="documentation", body=body)]
+    overrides = _apply_entity_match(sources, resolved, repo_root, "It is hosted on renewable energy")
+    assert overrides == []
+    assert sources[0]["independence"] == "first-party"
+
+
+def test_affiliated_first_party_that_never_names_the_entity_is_unknown(repo_root: Path) -> None:
+    resolved = parse_entity_ref("products/claude", repo_root)
+    sources = [_sd(
+        "2026/platform-status", "https://status.claude.com/history", "",
+        "first-party", title="Status history", body="Incidents by region.",
+    )]
+    overrides = _apply_entity_match(sources, resolved, repo_root, "Claude is green")
+    assert sources[0]["independence"] == "unknown"
+    assert [o.source for o in overrides] == ["2026/platform-status"]
+
+
+def test_unaffiliated_first_party_naming_the_entity_is_still_unknown(repo_root: Path) -> None:
+    # Another organization's self-report stays unknown even when it names the entity.
+    resolved = parse_entity_ref("products/claude", repo_root)
+    sources = [_sd(
+        "2026/greenpt-compare", "https://greenpt.ai/compare", "GreenPT",
+        "first-party", body="GreenPT uses less energy than Claude.",
+    )]
+    _apply_entity_match(sources, resolved, repo_root, "Claude is green")
+    assert sources[0]["independence"] == "unknown"
+
+
+def test_publisher_containing_an_entity_word_needs_the_word_whole(tmp_path: Path) -> None:
+    # "Brave New World Press" names "brave" only through an alias the entity lacks.
+    sources = [_sd(
+        "2026/press", "https://bravenewworld.example/a", "Brave New World Press",
+        "first-party", body="Brave Browser is reviewed here.",
+    )]
+    _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
+    assert sources[0]["independence"] == "unknown"
+
+
+def test_off_entity_note_names_the_host_when_publisher_is_empty(tmp_path: Path) -> None:
+    sources = [_sd("2026/anon", "https://www.greenpt.ai/energy", "", "first-party")]
+    overrides = _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
+    assert overrides[0].reason.startswith("Off-entity: first-party for greenpt.ai, not Brave Browser")
+
+
+def test_source_engages_entity_counts_www_and_subdomain_mentions() -> None:
+    le_chat = EntityIdentity.from_parts(["Le Chat"], ["https://mistral.ai"])
+    for body in ("see www.mistral.ai", "https://www.mistral.ai/news", "docs.mistral.ai", "see mistral.ai"):
+        assert source_engages_entity({"body": body}, le_chat), body
+    for body in ("notmistral.ai", "evil-mistral.ai", "mistral.aix"):
+        assert not source_engages_entity({"body": body}, le_chat), body
+
+
+def test_fit_self_reported_without_first_party_report_is_claimed() -> None:
+    verdict = _assessment("self-reported", confidence="low")
+    sources = _pool(("a", "unknown", "report"), ("b", "first-party", "blog"))
+    note = fit_verdict_to_written_pool(verdict, sources, ["a", "b"], "Brave Browser")
+    assert verdict.verification_level == VerificationLevel.CLAIMED
+    assert note and "self-reported lowered to claimed" in note
+
+
+def test_fit_self_reported_when_the_only_report_is_unwritten_is_claimed() -> None:
+    verdict = _assessment("self-reported", confidence="low")
+    sources = _pool(("a", "first-party", "report"), ("b", "first-party", "blog"))
+    fit_verdict_to_written_pool(verdict, sources, ["b"], "Brave Browser")
+    assert verdict.verification_level == VerificationLevel.CLAIMED
+
+
+@pytest.mark.parametrize("kind", ["report", "documentation", "dataset", "article"])
+def test_fit_self_reported_with_first_party_basis_is_kept(kind: str) -> None:
+    # A first-party article may back self-reported (the analyst's article boundary call).
+    verdict = _assessment("self-reported", confidence="low")
+    sources = _pool(("a", "first-party", kind))
+    assert fit_verdict_to_written_pool(verdict, sources, ["a"], "Brave Browser") is None
+    assert verdict.verification_level == VerificationLevel.SELF_REPORTED
+
+
+def test_fit_self_reported_with_an_independent_source_is_kept() -> None:
+    verdict = _assessment("self-reported", confidence="low")
+    sources = _pool(("a", "independent", "article"))
+    assert fit_verdict_to_written_pool(verdict, sources, ["a"], "Brave Browser") is None
+
+
+def test_fit_counts_a_repeated_ref_each_time() -> None:
+    # Matches countSourcesByIndependence in src/lib/sourceQuality.ts.
+    verdict = _assessment("multiply-verified")
+    sources = _pool(("a", "independent", "article"))
+    assert fit_verdict_to_written_pool(verdict, sources, ["a", "a"], "Brave Browser") is None
+
+
+def test_entity_affiliated_ignores_shared_site_hosts() -> None:
+    hosted = EntityIdentity.from_parts(["Tiny Bot"], ["https://tinybot.github.io"])
+    assert not entity_affiliated("GitHub", "https://github.com/other/repo", hosted)
+    assert not entity_affiliated("", "https://someone.github.io/post", hosted)
+    claude = EntityIdentity.from_parts(["Claude"], ["https://claude.ai"])
+    assert entity_affiliated("", "https://platform.claude.com/docs", claude)
+    assert entity_affiliated("", "https://www.claude.co.uk/a", claude)
+    assert not entity_affiliated("Claudette Media", "https://claudette.ai/a", claude)

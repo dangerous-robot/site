@@ -33,8 +33,9 @@ An `unknown` source counts as neither `independent` nor `first-party`. A pool wi
 The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. Just before the claim is written (`dr claim-refresh`, `dr onboard`, `dr step-analyze` and `research_claim`), `fit_verdict_to_written_pool` in `pipeline/orchestrator/persistence.py`:
 
 - drops `source_overrides` entries for sources not in the written list;
-- counts each written source's effective `independence` (its override, else its label after the entity match) with `effective_independence` in `pipeline/common/source_classification.py`, the same function the `verification-level-pool-mismatch` lint check uses;
-- lowers a level that needs more `independent` sources than the list has (`partially-verified` and `independently-verified` need one, `multiply-verified` two): to `independently-verified` with one, else to `self-reported` when a written `first-party` source has `kind` in {report, documentation, dataset}, else to `claimed`.
+- counts each written source ref's effective `independence` (its override, else its label after the entity match) with `effective_independence` in `pipeline/common/source_classification.py`, the same function the `verification-level-pool-mismatch` lint check uses; a ref listed twice counts twice, as on the site;
+- lowers a level that needs more `independent` sources than the list has (`partially-verified` and `independently-verified` need one, `multiply-verified` two): to `independently-verified` with one, else to `self-reported` when a written `first-party` source has `kind` in {report, documentation, dataset}, else to `claimed`;
+- lowers `self-reported` to `claimed` when the list has no `independent` source and no `first-party` source with `kind` in {report, documentation, dataset, article}. A first-party `article` keeps `self-reported`, since the analyst may judge one self-reported (see the boundary below).
 
 A lowered level of `self-reported` or `claimed` also sets `confidence: low` and, when the analyst wrote none, the `cap_rationale` "Confidence is capped at low: no source on this claim independently addresses <entity>." The audit sidecar records why under `pipeline_run.level_clamp`, since the auditor and the analyst snapshot saw the level from before the fit.
 
@@ -66,7 +67,7 @@ The proxy knows nothing about the claim's entity, so a page published by the ent
 
 A source that does not match is about someone else, and for a company or product entity it does not count for the entity either way:
 
-- A `first-party` source is another organization's self-report (AWS documentation naming a customer, a Google paper benchmarking ChatGPT). It becomes `unknown`, even when it mentions the entity, unless the claim text names its publisher as a provider ("Euria is hosted on renewable energy by Infomaniak").
+- A `first-party` source is another organization's self-report (AWS documentation naming a customer, a Google paper benchmarking ChatGPT). It becomes `unknown`, even when it mentions the entity, unless the claim text names its publisher as a provider ("Euria is hosted on renewable energy by Infomaniak"). One exception keeps the entity's own pages on a sibling host or under a publisher variant: a source that names the entity and whose publisher names the entity or its parent as whole words, or whose URL has the same registrable label as an entity website host (`platform.claude.com` and `claude.ai`, `ai.google.dev` and `gemini.google.com`), stays `first-party` with no override (`entity_affiliated`).
 - An `independent` source becomes `unknown` unless its title, summary, key quotes or body name the entity (a whole-word match on a name, legal name or alias, its parent's, or a website host) or the claim text names its publisher.
 - An `unknown` source is left alone.
 
@@ -128,7 +129,7 @@ Claims where absence of evidence is the primary basis should use `verdict: unver
 
 ### Lint enforcement
 
-`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`, and (`verification-level-pool-mismatch`) when a level needs more `independent` sources than the claim's written list has. The warnings surface drift; the analyst sets the cap and the [level fit](#level-fit-to-the-written-sources) lowers an unsupported level at write time.
+`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`, and (`verification-level-pool-mismatch`) when a level needs more `independent` sources than the claim's written list has, or the level is `self-reported` and the list has neither an `independent` source nor a `first-party` report, documentation, dataset or article. The warnings surface drift; the analyst sets the cap and the [level fit](#level-fit-to-the-written-sources) lowers an unsupported level at write time.
 
 ## Source overrides on claims
 

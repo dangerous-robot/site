@@ -539,8 +539,8 @@ class TestRawCitationTokens:
 class TestVerificationLevelPool:
     CLAIM = _p("research/claims/foo/bar.md")
     SOURCES = {
-        "2026/brave-home": {"independence": "first-party"},
-        "2026/brave-transparency": {"independence": "first-party"},
+        "2026/brave-home": {"independence": "first-party", "kind": "blog"},
+        "2026/brave-transparency": {"independence": "first-party", "kind": "report"},
         "2026/aws-report": {"independence": "independent"},
         "2026/press": {"independence": "independent"},
     }
@@ -594,9 +594,29 @@ class TestVerificationLevelPool:
             "multiply-verified", ["2026/aws-report", "2026/press"]
         ) == []
 
-    def test_lower_levels_not_checked(self):
+    def test_claimed_not_checked(self):
         assert self._check("claimed", ["2026/brave-home"]) == []
-        assert self._check("self-reported", ["2026/brave-home"]) == []
+
+    def test_self_reported_needs_a_first_party_report(self):
+        issues = self._check("self-reported", ["2026/brave-home"])
+        assert [i.check_id for i in issues] == ["verification-level-pool-mismatch"]
+        assert "self-reported" in issues[0].message
+        assert self._check("self-reported", ["2026/brave-home", "2026/brave-transparency"]) == []
+
+    def test_self_reported_with_an_independent_source_not_flagged(self):
+        # The pool supports more than self-reported; the check only flags overstatement.
+        assert self._check("self-reported", ["2026/aws-report"]) == []
+
+    def test_self_reported_report_overridden_to_unknown_warns(self):
+        overrides = [{
+            "source": "2026/brave-transparency", "independence": "unknown", "reason": "Off-entity: x",
+        }]
+        issues = self._check("self-reported", ["2026/brave-transparency"], overrides)
+        assert [i.check_id for i in issues] == ["verification-level-pool-mismatch"]
+
+    def test_repeated_ref_counts_each_time_like_the_site(self):
+        # countSourcesByIndependence in src/lib/sourceQuality.ts counts every ref.
+        assert self._check("multiply-verified", ["2026/aws-report", "2026/aws-report"]) == []
 
     def test_partially_verified_needs_one_independent(self):
         issues = self._check("partially-verified", ["2026/brave-home"])

@@ -52,7 +52,7 @@ from common.logging_setup import bind_run_id, hr, new_run_id, progress, run_id_v
 from common.models import BlockedReason, Category, Confidence, EntityType, Independence, Verdict
 from common.templates import TemplateRecord, blocked_title_message, get_template, load_templates, render_blocked_title, render_claim_text, templates_for_entity_type, validate_analyst_title
 from common.timeouts import ingest_budget_with_wayback_s
-from common.utils import host_matches, slug_from_url, slugify
+from common.utils import host_matches, slug_from_url, slugify, url_host
 from auditor.bundle import build_bundle
 from auditor.compare import compare, needs_review_reasons
 from auditor.models import ComparisonResult
@@ -72,6 +72,7 @@ from orchestrator.checkpoints import AutoApproveCheckpointHandler, CheckpointHan
 from common.models import SubQuestion
 from common.source_classification import (
     classify_source_type,
+    entity_affiliated,
     entity_first_party_reason,
     independence_for_source_type,
     SHARED_PLATFORM_HOSTS,
@@ -552,9 +553,12 @@ def _apply_entity_match(
 
     - The entity's own source (``entity_first_party_reason``) is ``first-party``.
     - Any other ``first-party`` source is another organization's self-report.
-      It stays ``first-party`` only when the claim names its publisher (a
-      provider the entity relies on); otherwise it becomes ``unknown``, even
-      when it mentions the entity.
+      It stays ``first-party`` when the claim names its publisher (a provider
+      the entity relies on), or when it names the entity and looks published
+      by the entity or its parent on another host or under another name
+      (``entity_affiliated``: Anthropic's platform.claude.com docs on a Claude
+      claim). Otherwise it becomes ``unknown``, even when it mentions the
+      entity.
     - Any other ``independent`` source stays ``independent`` only when it
       names the entity (``source_engages_entity``) or the claim names its
       publisher; otherwise it becomes ``unknown``.
@@ -578,9 +582,14 @@ def _apply_entity_match(
         elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
         elif label == Independence.FIRST_PARTY.value:
+            if source_engages_entity(sd, identity) and entity_affiliated(
+                publisher, sd.get("url") or "", identity
+            ):
+                continue
+            owner = publisher or url_host(sd.get("url")) or "another organization"
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: first-party for {_short(publisher)}, not {entity_name} "
+                f"Off-entity: first-party for {_short(owner)}, not {entity_name} "
                 "or a provider the claim names."
             )
         elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):

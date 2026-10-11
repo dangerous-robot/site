@@ -22,6 +22,7 @@ if TYPE_CHECKING:
 from common.models import (
     INDEPENDENT_SOURCES_REQUIRED,
     SELF_REPORT_KINDS,
+    SELF_REPORTED_BASIS_KINDS,
     BlockedReason,
     ClaimStatus,
     Category,
@@ -362,6 +363,10 @@ def fit_verdict_to_written_pool(
     entity). A level short of independent sources falls to
     ``independently-verified`` with one, else to ``self-reported`` (a
     first-party report, documentation or dataset is written) or ``claimed``.
+    ``self-reported`` falls to ``claimed`` when no independent source and no
+    first-party report, documentation, dataset or article is written; an
+    article is kept because the analyst may judge one with methodology or
+    data self-reported.
     A capped result gets ``confidence: low`` and, when the verdict has none,
     a template ``cap_rationale``.
 
@@ -377,7 +382,7 @@ def fit_verdict_to_written_pool(
 
     level = _enum_value(verdict.verification_level)
     required = INDEPENDENT_SOURCES_REQUIRED.get(level)
-    if required is None:
+    if required is None and level != VerificationLevel.SELF_REPORTED.value:
         return None
     by_id = {sd.get("source_id"): sd for sd in sources}
     overrides = {
@@ -390,20 +395,33 @@ def fit_verdict_to_written_pool(
         {sid: by_id.get(sid, {}).get("independence") for sid in source_ids},
         overrides,
     )
-    independent = sum(1 for v in labels.values() if v == Independence.INDEPENDENT.value)
-    if independent >= required:
-        return None
 
-    if independent >= 1:
-        new_level = VerificationLevel.INDEPENDENTLY_VERIFIED
-    elif any(
-        label == Independence.FIRST_PARTY.value
-        and by_id.get(sid, {}).get("kind") in SELF_REPORT_KINDS
-        for sid, label in labels.items()
-    ):
-        new_level = VerificationLevel.SELF_REPORTED
-    else:
+    def first_party_of(kinds: frozenset[str]) -> bool:
+        return any(
+            label == Independence.FIRST_PARTY.value and by_id.get(sid, {}).get("kind") in kinds
+            for sid, label in labels
+        )
+
+    independent = sum(1 for _, v in labels if v == Independence.INDEPENDENT.value)
+    if required is None:
+        # self-reported. With an independent source the pool supports more,
+        # and the fit only lowers.
+        if independent or first_party_of(SELF_REPORTED_BASIS_KINDS):
+            return None
         new_level = VerificationLevel.CLAIMED
+        reason = "include no first-party report, documentation, dataset or article"
+    elif independent >= required:
+        return None
+    else:
+        reason = (
+            f"include {independent} independent source(s), and {level} needs {required}"
+        )
+        if independent >= 1:
+            new_level = VerificationLevel.INDEPENDENTLY_VERIFIED
+        elif first_party_of(SELF_REPORT_KINDS):
+            new_level = VerificationLevel.SELF_REPORTED
+        else:
+            new_level = VerificationLevel.CLAIMED
     verdict.verification_level = new_level
     if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
         verdict.confidence = Confidence.LOW
@@ -412,10 +430,7 @@ def fit_verdict_to_written_pool(
             verdict.cap_rationale = (
                 f"Confidence is capped at low: no source on this claim independently addresses {name}."
             )
-    note = (
-        f"verification_level {level} lowered to {new_level.value}: the written sources "
-        f"include {independent} independent source(s), and {level} needs {required}"
-    )
+    note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
     logger.info("Level fit: %s", note)
     return note
 
