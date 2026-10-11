@@ -2,9 +2,9 @@
 
 **Status**: design reviewed by the operator 2026-10-10; all questions answered. Not started. The us-data-centers worked example is on disk, untracked (RISK-4).
 **Last updated**: 2026-10-10
-**Serves**: none yet. Proposed as a new roadmap item under theme 1, Responsible AI chatbots (`docs/priorities.md`); see "Release-triage inputs".
+**Serves**: RE-AC (Claim restatement) in `docs/v1.0.0-roadmap.md` (beta.7), theme 1, Responsible AI chatbots (`docs/priorities.md`, proposed on the theme's `Work:` line, operator to confirm).
 **Line numbers** are as of HEAD `0b3d0a9`. Paths are repo-relative; `pipeline/` is omitted where obvious.
-**Register** code work before S1: `python3 scripts/release-gate/work_item.py start --title "RE-AC (Claim restatement)" --kind minor --release v1.0.0 --plan docs/plans/claim-restate.md` (AGENTS.md § Agent workflow tooling; re-check the letter against `docs/v1.0.0-roadmap.md` first).
+**Register** code work with `python3 scripts/release-gate/work_item.py start --title "RE-AC (Claim restatement)" --kind minor --release v1.0.0 --plan docs/plans/claim-restate.md` (AGENTS.md § Agent workflow tooling); one checkout holds one active item, so SITE-J's record must be finished first and re-registered by that line of work when it resumes.
 
 ## Goal
 

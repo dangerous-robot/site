@@ -396,11 +396,10 @@ Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plan
 
 ## Claim restatement (`dr claim-restate`)
 
-Goal: turn an `unverified` claim into one the sources on disk can settle, without new research. A new command and agent read one unverified claim plus the whole `research/sources/` pool, rank restatements by how decisively the existing evidence settles them (either direction), and record the proposal in the claim's audit sidecar; the operator chooses the framing and acts with `dr claim-draft`, a template edit plus `dr claim-refresh`, or `dr review --archive`. Design: `docs/plans/claim-restate.md`.
+Goal: turn an `unverified` claim into one the sources on disk can settle, without new research. A new command and agent read one unverified claim plus the whole `research/sources/` pool, rank restatements by how decisively the existing evidence settles them (either direction), and record the proposal in the claim's audit sidecar; the operator chooses the framing and acts with `dr claim-draft`, a template edit plus `dr claim-refresh`, or `dr review --archive`. Scheduled as RE-AC (Claim restatement) in the v1.0.0 roadmap, plan `docs/plans/claim-restate.md`; this section keeps only the follow-ups.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
-| Command, agent, sidecar block, `--accept` writes the criterion, runbook | `claim-restate.md` | Evaluator-class model (`--restater-model`, falls back to the auditor's). Retrieval is deterministic keyword ranking over `research/sources/`, cited sources first; its counts feed the "Local source-search prefilter" analysis above. `--accept` appends a `core: false` criterion to `research/templates.yaml` through the writer factored out of `dr claim-promote`. Serves the Responsible AI chatbots page: 3 of 6 renewable-hosting cells cite Unverified claims. Triage: Responsible AI chatbots; propose schedule; 2026-10-10 |
 | Follow-ups | | `dr claim-draft --restates <ref>` writes the link and copies the proposal; a lint check that a template-backed claim's title matches its criterion text (needed once a criterion's text is edited); bounded web research for candidates marked `needs_new_research` (one `dr step-research` call per candidate, operator-triggered); a title-only change on `dr claim-refresh` requires a `--correction` at approval (cut from v1); lint rule `restatement-pending` for a proposal older than 30 days with no action (cut from v1). Triage: Responsible AI chatbots; keep; 2026-10-10 |
 
 ---

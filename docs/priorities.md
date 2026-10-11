@@ -15,7 +15,7 @@ How to read it:
 
 ## Ranked
 
-1. **Responsible AI chatbots, backed by claims.** Work: SITE-J (Responsible AI chatbots) and the prerequisites listed under it in the roadmap. Source: [`decisions.md`](decisions.md) 2026-10-06, "Next large effort".
+1. **Responsible AI chatbots, backed by claims.** Work: SITE-J (Responsible AI chatbots) and the prerequisites listed under it in the roadmap; RE-AC (Claim restatement) (Proposed, operator to confirm). Source: [`decisions.md`](decisions.md) 2026-10-06, "Next large effort".
 2. **Security, a deeper analysis.** Work: `UNSCHEDULED.md` "Security follow-ups" (the deeper security analysis row), OPS-K (Separate agent credentials). Known issues found by the analysis go first in a release (rule above). Source: [`decisions.md`](decisions.md) 2026-10-07.
 3. **Refocus foundation, finished.** Work: `UNSCHEDULED.md` "Refocus foundation completion" (required refocus updates first, then contradiction scan, sparse research areas, SEO updates), "SEO post-restructure follow-ups". Builds on SITE-I (The refocus) ([`plans/completed/refocus-foundation.md`](plans/completed/refocus-foundation.md)). Source: [`decisions.md`](decisions.md) 2026-10-07.
 4. **Simplicity and clarity, including good observability.** Work: `UNSCHEDULED.md` "Pipeline observability", "Pipeline code-quality refactors". Applies to the pipeline, agent tooling and these planning docs alike: fewer moving parts, plainer docs, runs you can see into. Source: [`decisions.md`](decisions.md) 2026-10-07.
