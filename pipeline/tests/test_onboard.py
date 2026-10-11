@@ -563,6 +563,29 @@ class TestProbeCollisionSuggestions:
         assert len(suggestions) <= 3
 
     @pytest.mark.asyncio
+    async def test_never_suggests_own_or_parent_domain(self, monkeypatch) -> None:
+        """Viro AI's website is ai.viro.app; viro.app is its own parent domain."""
+        async def fake_search(client, query, max_results=8):
+            return [
+                {"url": "https://www.viro.app/terms-conditions-viro-ai", "title": "Terms", "snippet": ""},
+                {"url": "https://viro.app/privacy-policy", "title": "Privacy", "snippet": ""},
+                {"url": "https://ai.viro.app/data-centers", "title": "Data centers", "snippet": ""},
+                {"url": "https://docs.ai.viro.app/faq", "title": "FAQ", "snippet": ""},
+                {"url": "https://viro-pharma.example/", "title": "Viro Pharma", "snippet": ""},
+            ]
+        from researcher import agent as researcher_agent_mod
+        monkeypatch.setattr(researcher_agent_mod, "search_brave", fake_search)
+
+        suggestions = await _probe_collision_suggestions(
+            client=None, entity_name="Viro AI",
+            entity_website="https://ai.viro.app",
+        )
+        assert "viro.app" not in suggestions
+        assert "ai.viro.app" not in suggestions
+        assert "docs.ai.viro.app" not in suggestions
+        assert suggestions == ["viro-pharma.example"]
+
+    @pytest.mark.asyncio
     async def test_skipped_when_no_canonical(self) -> None:
         suggestions = await _probe_collision_suggestions(
             client=None, entity_name="Anything", entity_website=None,

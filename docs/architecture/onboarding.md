@@ -22,7 +22,8 @@ dr onboard "Ecosia AI" --type product
   v
 Phase A: light research
   - Fetch homepage / seed URL
-  - Probe Brave for name-collision exclusions
+  - Probe Brave for name-collision exclusions (never the website's own host,
+    a subdomain of it or a parent domain of it)
   |
   v
 Phase B: entity_verifier

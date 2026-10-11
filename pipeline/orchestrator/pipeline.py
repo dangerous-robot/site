@@ -1680,7 +1680,8 @@ async def _probe_collision_suggestions(
 
     Skipped (returns []) when there is no canonical website to compare against.
     Returns up to 3 distinct registered domains that appear in the top results
-    and don't match the canonical. Failures are non-fatal: the probe is best-
+    and are not the canonical host, a subdomain of it or a parent domain of
+    it. Failures are non-fatal: the probe is best-
     effort disambiguation, not a gate.
     """
     if not entity_website:
@@ -1699,7 +1700,10 @@ async def _probe_collision_suggestions(
         host = normalised_host(r.get("url", "") or "")
         if not host:
             continue
-        if host_matches(host, canon):
+        # The entity's own host, a subdomain of it, or a parent domain of it
+        # (viro.app for ai.viro.app): excluding one would drop every
+        # first-party page, since the blocklist also matches subdomains.
+        if host_matches(host, canon) or host_matches(canon, host):
             continue
         counts[host] += 1
     suggestions = [host for host, _ in counts.most_common(3)]
