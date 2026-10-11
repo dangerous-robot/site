@@ -21,6 +21,10 @@ class SearchCandidate(BaseModel):
     raw_content: str | None = None
 
 
+# The keep threshold ("worth fetching"); a missing or unreadable score gets it.
+DEFAULT_SCORE = 3.0
+
+
 class ScoredCandidate(BaseModel):
     url: str
     addresses: list[str] = Field(
@@ -31,7 +35,7 @@ class ScoredCandidate(BaseModel):
         ),
     )
     score: float = Field(
-        default=3.0,
+        default=DEFAULT_SCORE,
         description="The candidate's highest per-sub-question score (1 to 5).",
     )
 
@@ -42,12 +46,12 @@ class ScoredCandidate(BaseModel):
         # then falls back to every candidate tagged with every sub-question,
         # which loses all scores and tags over one odd value.
         if isinstance(v, bool):
-            return 3.0
+            return DEFAULT_SCORE
         try:
             score = float(v)  # type: ignore[arg-type]
         except (TypeError, ValueError):
-            return 3.0
-        return score if math.isfinite(score) else 3.0
+            return DEFAULT_SCORE
+        return score if math.isfinite(score) else DEFAULT_SCORE
 
 
 class ScoredURLs(BaseModel):

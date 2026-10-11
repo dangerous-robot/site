@@ -74,8 +74,7 @@ SNAPSHOT_MAX_AGE = datetime.timedelta(days=90)
 _REDIRECT_STATUSES = frozenset({301, 302, 303, 307, 308})
 # A capture's link carries its 14-digit timestamp; ``/web/<url>`` does not
 # name a capture.
-_DATED_SNAPSHOT = re.compile(r"https://web\.archive\.org/web/\d{14}[a-z_]*/.+")
-_SNAPSHOT_PARTS = re.compile(r"https://web\.archive\.org/web/(\d{14})[a-z_]*/(.+)")
+_DATED_SNAPSHOT = re.compile(r"https://web\.archive\.org/web/(\d{14})[a-z_]*/(.+)")
 
 
 async def _wait(seconds: float) -> None:
@@ -226,7 +225,7 @@ def _snapshot_parts(link: str | None) -> tuple[str, str] | None:
     dated = _dated_snapshot(link)
     if dated is None:
         return None
-    match = _SNAPSHOT_PARTS.match(dated)
+    match = _DATED_SNAPSHOT.match(dated)
     return (match.group(1), match.group(2)) if match else None
 
 
@@ -356,7 +355,7 @@ async def latest_ok_capture(client: httpx.AsyncClient, url: str) -> dict[str, An
     try:
         rows = resp.json()
     except ValueError:
-        return {"archived_url": None, "error": f"{_CDX_LABEL} returned an unreadable answer"}
+        rows = None
     if not isinstance(rows, list):
         return {"archived_url": None, "error": f"{_CDX_LABEL} returned an unreadable answer"}
     good = [

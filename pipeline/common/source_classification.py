@@ -239,6 +239,10 @@ def _padded_words(text: str) -> str:
     return " " + " ".join(re.sub(r"[^\w\s]", " ", text.lower()).split()) + " "
 
 
+def _names_entity(padded_words: str, identity: EntityIdentity) -> bool:
+    return any(f" {name} " in padded_words for name in identity.names)
+
+
 def publisher_named_in_claim(publisher: str, claim_text: str) -> bool:
     """True when the normalized publisher appears as whole words in the claim text.
 
@@ -258,8 +262,7 @@ def source_engages_entity(sd: Mapping, identity: EntityIdentity) -> bool:
     """
     parts = [sd.get("title"), sd.get("summary"), *(sd.get("key_quotes") or []), sd.get("body")]
     raw = " ".join(p for p in parts if isinstance(p, str)).lower()
-    words = _padded_words(raw)
-    if any(f" {name} " in words for name in identity.names):
+    if _names_entity(_padded_words(raw), identity):
         return True
     # A "." may precede the host, so "www.brave.com" and "search.brave.com"
     # count; a letter or "-" may not, so "notbrave.com" does not.
@@ -297,8 +300,7 @@ def entity_affiliated(publisher: str, url: str, identity: EntityIdentity) -> boo
     ai.google.dev for gemini.google.com). Looser than
     ``entity_first_party_reason``, so it only keeps a label, never sets one.
     """
-    words = _padded_words(publisher)
-    if any(f" {name} " in words for name in identity.names):
+    if _names_entity(_padded_words(publisher), identity):
         return True
     label = _brand_label(url_host(url))
     return bool(label) and any(

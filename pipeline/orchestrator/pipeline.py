@@ -26,6 +26,7 @@ import logging
 import os
 import traceback
 from collections import Counter
+from collections.abc import Container
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
@@ -79,7 +80,7 @@ from common.source_classification import (
     publisher_named_in_claim,
     source_engages_entity,
 )
-from orchestrator.persistence import build_source_url_index, load_source_dict, resolve_source_slugs
+from orchestrator.persistence import build_source_url_index, load_source_dict, resolve_source_slugs, shorten
 from researcher.decomposed import ResearchOutput
 
 logger = logging.getLogger(__name__)
@@ -546,11 +547,6 @@ async def verify_claim(
     return result
 
 
-def _short(text: str, limit: int = 80) -> str:
-    # Keeps an override reason under SourceOverride.reason's 300-char limit.
-    return text if len(text) <= limit else text[: limit - 3] + "..."
-
-
 def _apply_entity_match(
     sources: list[dict],
     resolved_entity: ResolvedEntity,
@@ -582,13 +578,14 @@ def _apply_entity_match(
     rule applies to it.
     """
     identity = entity_identity_for(resolved_entity, repo_root)
-    entity_name = _short(resolved_entity.entity_name)
+    entity_name = shorten(resolved_entity.entity_name)
     check_off_entity = resolved_entity.entity_type != EntityType.SUBJECT
     overrides: list[SourceOverride] = []
     for sd in sources:
         label = sd.get("independence")
         publisher = sd.get("publisher") or ""
-        reason = entity_first_party_reason(publisher, sd.get("url") or "", identity)
+        url = sd.get("url") or ""
+        reason = entity_first_party_reason(publisher, url, identity)
         if reason is not None:
             if label == Independence.FIRST_PARTY.value:
                 continue
@@ -596,14 +593,12 @@ def _apply_entity_match(
         elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
         elif label == Independence.FIRST_PARTY.value:
-            if source_engages_entity(sd, identity) and entity_affiliated(
-                publisher, sd.get("url") or "", identity
-            ):
+            if source_engages_entity(sd, identity) and entity_affiliated(publisher, url, identity):
                 continue
-            owner = publisher or url_host(sd.get("url")) or "another organization"
+            owner = publisher or url_host(url) or "another organization"
             new_label = Independence.UNKNOWN
             note = (
-                f"Off-entity: first-party for {_short(owner)}, not {entity_name} "
+                f"Off-entity: first-party for {shorten(owner)}, not {entity_name} "
                 "or a provider the claim names."
             )
         elif label == Independence.INDEPENDENT.value and not source_engages_entity(sd, identity):
@@ -713,6 +708,16 @@ def _warn_uncovered(
             logger.warning("sub-question %s has no ingested source: %s", sq.id, sq.question)
 
 
+def _first_url_for(
+    sq: str,
+    urls: list[str],
+    url_addresses: dict[str, list[str]],
+    taken: Container[str],
+) -> str | None:
+    """The first URL in ``urls``, not in ``taken``, that addresses sub-question ``sq``."""
+    return next((u for u in urls if u not in taken and sq in url_addresses.get(u, [])), None)
+
+
 def _order_by_coverage(
     urls: list[str],
     url_addresses: dict[str, list[str]],
@@ -734,9 +739,7 @@ def _order_by_coverage(
     while True:
         pick = None
         for sq in sorted(sub_question_ids, key=lambda q: projected[q]):
-            pick = next(
-                (u for u in urls if u not in taken and sq in url_addresses.get(u, [])), None
-            )
+            pick = _first_url_for(sq, urls, url_addresses, taken)
             if pick is not None:
                 break
         if pick is None:
@@ -768,9 +771,7 @@ def _coverage_pool(
     reserved: dict[str, None] = {}
     for _round in range(2):
         for sq in sub_question_ids:
-            pick = next(
-                (u for u in urls if u not in reserved and sq in url_addresses.get(u, [])), None
-            )
+            pick = _first_url_for(sq, urls, url_addresses, reserved)
             if pick is not None:
                 reserved[pick] = None
     keep = set(list(reserved)[:size])
@@ -1547,11 +1548,10 @@ def _apply_cited_filter(
         fit_verdict_to_written_pool(trial, result.sources, ids, entity_name, log=False)
         return trial.verification_level
 
-    level = getattr(verdict.verification_level, "value", verdict.verification_level)
     if fitted_level([sid for sid in all_ids if sid in cited]) != fitted_level(all_ids):
         logger.warning(
             "Cited sources do not support verification_level %s; the claim lists every ingested source",
-            level,
+            getattr(verdict.verification_level, "value", verdict.verification_level),
         )
         return result.sources
 

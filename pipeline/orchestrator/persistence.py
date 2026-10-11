@@ -429,14 +429,20 @@ def fit_verdict_to_written_pool(
     if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
         verdict.confidence = Confidence.LOW
         if not verdict.cap_rationale or required is None:
-            name = entity_name if len(entity_name) <= 200 else entity_name[:197] + "..."
             verdict.cap_rationale = (
-                f"Confidence is capped at low: no source on this claim independently addresses {name}."
+                "Confidence is capped at low: no source on this claim independently "
+                f"addresses {shorten(entity_name, 200)}."
             )
     note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
     if log:
         logger.info("Level fit: %s", note)
     return note
+
+
+def shorten(text: str, limit: int = 80) -> str:
+    """``text`` cut to ``limit`` characters with a trailing "...", so it fits a
+    length-limited field such as ``SourceOverride.reason``."""
+    return text if len(text) <= limit else text[: limit - 3] + "..."
 
 
 def _enum_value(value: object) -> object:

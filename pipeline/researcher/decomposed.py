@@ -20,6 +20,7 @@ from orchestrator.entity_resolution import ResolvedEntity, build_entity_context,
 from researcher.agent import search_brave
 from researcher.planner import ResearchPlan, research_planner_agent
 from researcher.scorer import (
+    DEFAULT_SCORE,
     ScoredCandidate,
     ScoredURLs,
     SearchCandidate,
@@ -552,12 +553,12 @@ def _rank_kept(urls: list[str], scores: dict[str, float], entity_host: str) -> l
     Only the entity's own website host is boosted. A parent company's host
     is not, so a Google or Amazon parent does not put every google.com or
     aws.amazon.com page ahead of pages about the entity. A URL without a
-    score ranks as 3, the scorer's "worth fetching" level.
+    score ranks as ``DEFAULT_SCORE``, the scorer's "worth fetching" level.
     """
     def on_entity_host(url: str) -> bool:
         return bool(entity_host) and host_matches(url_host(url), entity_host)
 
-    return sorted(urls, key=lambda u: (not on_entity_host(u), -scores.get(u, 3.0)))
+    return sorted(urls, key=lambda u: (not on_entity_host(u), -scores.get(u, DEFAULT_SCORE)))
 
 
 def _group_queries_by_sq(planned) -> dict[str, list[str]]:
