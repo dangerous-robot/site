@@ -118,7 +118,7 @@ Roles are listed below; several are automated via PydanticAI agents in `pipeline
 | **Researcher** | Takes claim text, returns relevant URLs for ingestion (`web_search` tool) | Automated | `researcher/` |
 | **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
 | **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
-| **Evaluator** | Produces an independent evaluation of analyst output, returning `IndependentAssessment` | Automated | `auditor/` |
+| **Evaluator** | Grades the claim statement against the sources, with the analyst's narrative as context, returning `IndependentAssessment` | Automated | `auditor/` |
 
 ### Directory layout
 

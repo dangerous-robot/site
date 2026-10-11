@@ -81,7 +81,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. During `dr onboard` / `dr entity-enrich`, the package also hosts two agent-internal helpers — `entity_verifier` (gates against name collisions) and `entity_enricher` (drafts `founded`, tightened `description`, and `history_markdown`) — both tool-free, both consuming the same `LightResearchBundle`. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
-| **Evaluator** | Produces an independent evaluation of the analyst's output |
+| **Evaluator** | Grades the claim statement against the sources, independent of the analyst's verdict |
 
 ## Workflow
 
@@ -120,7 +120,7 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **Researcher** | Find sources for a claim |
 | **Ingestor** | Fetch URL; extract content; classify source kind; produce source file |
 | **Analyst** | Propose draft verdict; write narrative; cite sources |
-| **Evaluator** | Produce an independent evaluation; flag disagreements |
+| **Evaluator** | Grade the claim statement against the sources (the narrative is context, not the thing graded); flag disagreements |
 
 ## Object lifecycle (general)
 

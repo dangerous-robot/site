@@ -1255,8 +1255,18 @@ async def _audit_claim(
     sources: list[dict],
     cfg: VerifyConfig,
 ) -> ComparisonResult | None:
+    # A vocabulary template renders its slot as a "one of (...)" hint, which
+    # would make the claim a near-tautology; grade the analyst's validated
+    # title, which resolves the slot to one value. Any other claim text is
+    # the authority for what is being claimed.
+    graded = (
+        analyst_out.verdict.title
+        if f"{VOCABULARY_HINT_PREFIX}(" in claim_text
+        else claim_text
+    )
     bundle = build_bundle(
         entity_name=analyst_out.entity.entity_name,
+        claim_text=graded,
         entity_type=analyst_out.entity.entity_type,
         description=analyst_out.entity.entity_description,
         topics=analyst_out.verdict.topics,

@@ -27,21 +27,24 @@ class EntityContext(BaseModel):
 
 
 class ClaimBundle(BaseModel):
-    """Everything the LLM sees -- no verdict, confidence, or title."""
+    """Everything the LLM sees -- no analyst verdict or confidence."""
 
     claim_id: str
+    # The claim under test, with any vocabulary slot resolved to one value.
+    # The Evaluator grades this statement; the narrative is the analyst's
+    # argument and is never the thing graded.
+    claim_text: str
     entity: EntityContext
     topics: list[Category] = Field(min_length=1, max_length=3)
     narrative: str  # Markdown body stripped of frontmatter
     sources: list[SourceContext]
-    # title deliberately excluded -- often encodes the verdict
 
 
 class IndependentAssessment(BaseModel):
     """Structured output from the LLM."""
 
     verdict: Verdict = Field(
-        description="Your independent verdict based solely on the narrative and source evidence."
+        description="Your independent verdict on the claim statement, judged against the source materials only."
     )
     confidence: Confidence = Field(
         description="How confident you are in the evidence supporting this verdict."

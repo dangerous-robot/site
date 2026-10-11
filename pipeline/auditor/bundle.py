@@ -10,6 +10,7 @@ from .models import ClaimBundle, EntityContext, SourceContext
 
 def build_bundle(
     entity_name: str,
+    claim_text: str,
     entity_type: str,
     description: str,
     topics: list[Category],
@@ -40,6 +41,7 @@ def build_bundle(
 
     return ClaimBundle(
         claim_id=f"verify/{slugify(entity_name)}",
+        claim_text=claim_text,
         entity=entity,
         topics=topics,
         narrative=narrative,

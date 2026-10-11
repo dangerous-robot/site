@@ -13,6 +13,7 @@ from common.models import Category, Confidence, Verdict
 def _sample_bundle() -> ClaimBundle:
     return ClaimBundle(
         claim_id="test/sample-claim",
+        claim_text="TestCorp meets industry safety standards",
         entity=EntityContext(
             name="TestCorp",
             type="company",
@@ -77,6 +78,7 @@ class TestBuildAuditorPrompt:
     def test_prompt_no_sources(self) -> None:
         bundle = ClaimBundle(
             claim_id="test/no-sources",
+            claim_text="X does a thing",
             entity=EntityContext(name="X", type="company", description="Desc."),
             topics=[Category.AI_SAFETY],
             narrative="A claim.",
@@ -111,6 +113,7 @@ class TestBundleNeverLeaksVerdict:
     def test_real_claim_verdict_not_in_prompt(self) -> None:
         bundle = ClaimBundle(
             claim_id="ecosia/renewable-energy-hosting",
+            claim_text="Ecosia is hosted on renewable energy",
             entity=EntityContext(
                 name="Ecosia",
                 type="company",
@@ -123,3 +126,129 @@ class TestBundleNeverLeaksVerdict:
         prompt = build_auditor_prompt(bundle)
         assert "verdict:" not in prompt.lower()
         assert "confidence:" not in prompt.lower()
+
+
+_CLAIM = "ChatGPTree is hosted on renewable energy"
+_NARRATIVE = (
+    "No source names the data centers behind the product or their energy mix. "
+    "The evidence for renewable hosting is missing."
+)
+
+
+def _claim_bundle(claim_text: str = _CLAIM) -> ClaimBundle:
+    return ClaimBundle(
+        claim_id="chatgptree/renewable-energy-hosting",
+        claim_text=claim_text,
+        entity=EntityContext(name="ChatGPTree", type="product", description="A chatbot."),
+        topics=[Category.ENVIRONMENTAL_IMPACT],
+        narrative=_NARRATIVE,
+        sources=[],
+    )
+
+
+class TestEvaluatorGradesTheClaim:
+    def test_prompt_puts_claim_text_before_narrative(self) -> None:
+        prompt = build_auditor_prompt(_claim_bundle())
+        assert f"## Claim\n{_CLAIM}" in prompt
+        assert prompt.index(_CLAIM) < prompt.index(_NARRATIVE)
+
+    def test_instructions_grade_the_claim(self) -> None:
+        from auditor.agent import _INSTRUCTIONS
+
+        assert "ONLY on the narrative" not in _INSTRUCTIONS
+        assert "an accurate narrative is not evidence for the claim" in _INSTRUCTIONS.lower()
+        assert "narrative" not in IndependentAssessment.model_fields["verdict"].description
+
+
+def _analyst_output(title: str, verdict: str = "unverified", confidence: str = "low"):
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+
+    return AnalystOutput(
+        entity=EntityResolution(
+            entity_name="ChatGPTree", entity_type="product", entity_description="A chatbot."
+        ),
+        verdict=VerdictAssessment(
+            title=title,
+            verdict=verdict,
+            confidence=confidence,
+            narrative=_NARRATIVE,
+            topics=["environmental-impact"],
+            verification_level="claimed",
+            cap_rationale="Only the entity's own pages address the claim.",
+            seo_title="ChatGPTree renewable hosting claim",
+        ),
+    )
+
+
+def _capturing_auditor(captured: list[str], verdict: str = "unverified", confidence: str = "low"):
+    """Swap in an Evaluator model that records the user prompt and returns a scripted assessment."""
+    from contextlib import contextmanager, nullcontext
+    from unittest.mock import patch
+
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    def _fn(messages, info):
+        for message in messages:
+            for part in getattr(message, "parts", []):
+                if isinstance(part, UserPromptPart):
+                    captured.append(str(part.content))
+        args = {"verdict": verdict, "confidence": confidence, "reasoning": "Scripted.",
+                "evidence_gaps": []}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    @contextmanager
+    def _ctx():
+        with auditor_agent.override(model=FunctionModel(_fn)):
+            # Keep this model: callers enter their own override with the configured one.
+            with patch.object(auditor_agent, "override", side_effect=lambda **kw: nullcontext()):
+                yield
+
+    return _ctx()
+
+
+class TestAuditClaimSendsTheClaim:
+    @pytest.mark.asyncio
+    async def test_audit_claim_sends_claim_text(self) -> None:
+        """The prompt assertion is the point; verdict_agrees and needs_review are wiring
+        checks only, since the assessment is scripted."""
+        from orchestrator.pipeline import VerifyConfig, _audit_claim
+
+        captured: list[str] = []
+        analyst_out = _analyst_output(title="Renewable hosting for the chatbot")
+        with _capturing_auditor(captured):
+            result = await _audit_claim(
+                "ChatGPTree", _CLAIM, analyst_out, [], VerifyConfig(model="test")
+            )
+
+        assert any(_CLAIM in p for p in captured)
+        assert result is not None
+        assert result.verdict_agrees is True
+        assert result.needs_review is False
+
+    @pytest.mark.asyncio
+    async def test_audit_claim_vocabulary_sends_resolved_title(self) -> None:
+        from orchestrator.pipeline import VerifyConfig, _audit_claim
+
+        captured: list[str] = []
+        hint = "Acme has one of (publicly-traded, privately-held) corporate structure"
+        title = "Acme has privately-held corporate structure"
+        analyst_out = _analyst_output(title=title)
+        with _capturing_auditor(captured):
+            await _audit_claim("Acme", hint, analyst_out, [], VerifyConfig(model="test"))
+
+        prompt = "\n".join(captured)
+        assert title in prompt
+        assert "one of (" not in prompt
+
+    @pytest.mark.asyncio
+    async def test_audit_claim_keeps_natural_one_of_phrasing(self) -> None:
+        from orchestrator.pipeline import VerifyConfig, _audit_claim
+
+        captured: list[str] = []
+        claim = "Acme is one of the largest AI labs"
+        analyst_out = _analyst_output(title="Acme ranks among the largest labs")
+        with _capturing_auditor(captured):
+            await _audit_claim("Acme", claim, analyst_out, [], VerifyConfig(model="test"))
+
+        assert any(claim in p for p in captured)

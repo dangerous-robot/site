@@ -16,6 +16,7 @@ class TestClaimBundle:
     def test_valid_construction(self) -> None:
         bundle = ClaimBundle(
             claim_id="ecosia/renewable-energy-hosting",
+            claim_text="Ecosia is hosted on renewable energy",
             entity=EntityContext(
                 name="Ecosia",
                 type="company",
@@ -42,6 +43,7 @@ class TestClaimBundle:
     def test_empty_sources(self) -> None:
         bundle = ClaimBundle(
             claim_id="test/no-sources",
+            claim_text="Test does a thing",
             entity=EntityContext(name="Test", type="company", description="A test entity."),
             topics=[Category.AI_SAFETY],
             narrative="A claim with no sources.",

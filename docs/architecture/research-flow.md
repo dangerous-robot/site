@@ -98,7 +98,7 @@ sequenceDiagram
         Operator->>Analyst: sources
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
-        Operator->>Evaluator: analyst output + sources
+        Operator->>Evaluator: claim text, analyst narrative, sources
         Evaluator-->>Operator: ComparisonResult (independent, open-loop)
 
         alt needs_review

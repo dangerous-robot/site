@@ -1462,6 +1462,8 @@ def step_audit(
 
             bundle = ClaimBundle(
                 claim_id=claim_id,
+                # The title is the validated claim statement, slot resolved.
+                claim_text=fm["title"],
                 entity=ent,
                 topics=[Category(t) for t in fm["topics"]],
                 narrative=body,

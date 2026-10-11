@@ -1601,3 +1601,54 @@ class TestWaybackBackfill:
         result = self._invoke(tmp_path, "2026/missing")
         assert result.exit_code == 1
         assert "2026/missing: not found" in result.output
+
+
+def test_step_audit_sends_claim_title(tmp_path) -> None:
+    """step-audit grades the claim statement in the frontmatter title, not only the body."""
+    from contextlib import nullcontext
+
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from auditor.agent import auditor_agent
+    from common.frontmatter import serialize_frontmatter
+
+    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
+    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
+        serialize_frontmatter(
+            {"name": "Example", "type": "company", "description": "A company."}, "Body.\n"
+        ),
+        encoding="utf-8",
+    )
+    claim_title = "Example hosts its chatbot on renewable energy"
+    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "claim.md").write_text(
+        serialize_frontmatter(
+            {"title": claim_title, "entity": "companies/example", "verdict": "unverified",
+             "confidence": "low", "topics": ["environmental-impact"], "sources": []},
+            "No source names the data centers or their energy mix.\n",
+        ),
+        encoding="utf-8",
+    )
+
+    captured: list[str] = []
+
+    def _fn(messages, info):
+        for message in messages:
+            for part in getattr(message, "parts", []):
+                if isinstance(part, UserPromptPart):
+                    captured.append(str(part.content))
+        args = {"verdict": "unverified", "confidence": "low", "reasoning": "Scripted.",
+                "evidence_gaps": []}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    with auditor_agent.override(model=FunctionModel(_fn)):
+        with patch.object(auditor_agent, "override", side_effect=lambda **kw: nullcontext()):
+            result = CliRunner().invoke(main, [
+                "--model", "test", "step-audit", "--claim", "example/claim",
+                "--repo-root", str(tmp_path),
+            ])
+
+    assert result.exit_code == 0, result.output
+    assert any(claim_title in p for p in captured)

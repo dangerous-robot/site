@@ -23,8 +23,9 @@ auditor_agent = Agent(
 def build_auditor_prompt(bundle: ClaimBundle) -> str:
     """Build the user prompt from a ClaimBundle.
 
-    Deliberately excludes verdict, confidence, and title to preserve
-    information asymmetry.
+    Leaves out the analyst's verdict and confidence so the Evaluator forms
+    its own. The claim statement comes before the narrative and is what the
+    Evaluator grades.
     """
     parts: list[str] = []
 
@@ -38,7 +39,11 @@ def build_auditor_prompt(bundle: ClaimBundle) -> str:
     parts.append(f"## Topics: {topics_label}")
     parts.append("")
 
-    parts.append("## Claim Narrative")
+    parts.append("## Claim")
+    parts.append(bundle.claim_text.strip())
+    parts.append("")
+
+    parts.append("## Analyst narrative (context; not the thing you grade)")
     parts.append(bundle.narrative.strip())
     parts.append("")
 
@@ -61,8 +66,8 @@ def build_auditor_prompt(bundle: ClaimBundle) -> str:
         parts.append("")
 
     parts.append(
-        "Based on the narrative and sources above, provide your independent "
-        "assessment of what verdict and confidence level the evidence supports."
+        "Judge the claim above against the source materials and give your "
+        "independent verdict and confidence on that claim."
     )
 
     return "\n".join(parts)
