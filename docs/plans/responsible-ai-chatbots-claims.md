@@ -78,6 +78,10 @@ Post-S8 answers, Brandon 2026-10-09 (open questions from the S1 to S8 build and 
 - A7: the two dead summary links (ChatGPTree's Evertreen criticism, a redmonitor Substack post; Euria's "environmental commitments", an infomaniak.com page) get replacement sources, ingested as source files. Where none is found, the link and the sentence it backs come out; the Evertreen allegation does not stand unsourced.
 - A8 (review F6): in the dark theme only, `--color-stance-bad` gets its own lighter red (about #e05555, 4.7:1 on `#19191b`; WCAG 1.4.11 asks 3:1) instead of `--color-verdict-false` (#b22222, 2.6:1). Verdict colors are unchanged, so "False" stays distinct from "Mostly false".
 
+Brandon, 2026-10-11:
+
+- D19 (what separates the two web search rows): "Normal web search" is a search box where the user types terms and gets a list of website results. "Agent web search" is the chatbot deciding on its own to search the web to answer a prompt better. The 14 cells can now be sourced against these definitions.
+
 Brandon, 2026-10-10:
 
 - Cell detail text is as short as possible, ideally none: the full statement lives in the cited source and the popup. Drop text that repeats the cell's answer or its structured data (`models`, `term`, `owned_by`); keep at most a two- or three-word qualifier; the short form never says more than its source. Examples: "On Free, Starter and Builder plans" becomes "Most plans"; "Generates images for logged-in users" becomes no detail; "Barriers found by our automated check" becomes "Mixed support"; "Ads may be based on the current message" becomes "Contextual ads". Applied across the page (`19562d8`, `ec390d8`, `9894fe7`).
