@@ -220,21 +220,28 @@ test.describe('on a mouse device', () => {
 
   test('E4: Off stops a running cycle at once and persists across reload', async ({ page, network }) => {
     const root = await openWatch(page);
-    await expect(root.getByTestId('watch-preview-switch')).toBeVisible();
+    const switchEl = root.getByTestId('watch-preview-switch');
+    await expect(switchEl).toBeVisible();
     await expect(switchRadio(root, 'On')).toHaveAttribute('aria-checked', 'true');
     expect(await storedPreviews(page)).toBeNull();
 
-    const target = card(root, 'fxAlpha0002');
+    // Switch and first card on screen together, so focusing a radio
+    // cannot scroll the card out from under the pointer (which also stops it).
+    await switchEl.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    const target = card(root, 'fxAlpha0001');
     await pointAt(page, target);
-    await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
+    const box = await target.boundingBox();
+    await loadFrames(page, frameUrls('fxAlpha0001', 'sd'));
     await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
     await expect(target).toHaveAttribute('data-frame', '1');
 
-    // Keyboard, so the pointer stays on the card and only Off can stop it.
-    await switchRadio(root, 'Off').focus();
-    await page.keyboard.press('Space');
+    // An arrow key selects without a click event or focus leaving the card,
+    // so only the switch itself can stop the cycle here.
+    await switchRadio(root, 'On').focus();
+    await page.keyboard.press('ArrowRight');
     await expect(switchRadio(root, 'Off')).toHaveAttribute('aria-checked', 'true');
     await expectRestored(target);
+    expect(await target.boundingBox()).toEqual(box);
     expect(await storedPreviews(page)).toBe('off');
     await page.clock.runFor(FRAME_INTERVAL_MS * 3);
     await expectRestored(target);
@@ -312,6 +319,18 @@ test.describe('on a mouse device', () => {
     await expect(on).toHaveAttribute('aria-checked', 'true');
     expect(await storedPreviews(page)).toBeNull();
   });
+
+  test('a live reduce-motion change stops a running cycle', async ({ page }) => {
+    const root = await openWatch(page);
+    const target = card(root, 'fxAlpha0002');
+    await pointAt(page, target);
+    await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
+    await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
+    await expect(target).toHaveAttribute('data-frame', '1');
+
+    await page.evaluate(() => (document.documentElement.dataset.motion = 'reduce'));
+    await expectRestored(target);
+  });
 });
 
 async function expectReduceDefault(page: Page, network: NetworkLog): Promise<void> {
@@ -353,7 +372,7 @@ test.describe('with reduce motion', () => {
 });
 
 test.describe('on a touch device', () => {
-  test.use({ hasTouch: true, isMobile: true });
+  test.use({ hasTouch: true });
 
   test('the switch stays hidden', async ({ page }) => {
     const root = await openWatch(page);
