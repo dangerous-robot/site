@@ -293,11 +293,11 @@ data:
       label: "Normal Web search"
       group: product-access
       cells:
-        greenpt: { type: "no" }
-        ecosia: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-search-fast-private-sustainable] }
+        ecosia: { type: "yes", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "no" }
-        treadlightly: { type: "yes" }
-        viro: { type: "yes" }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/web-search-help-treadlightlyai] }
+        viro: { type: "yes", sources: [/research/sources/2026/viro-search-web-tool-documentation] }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
     - key: accessibility
