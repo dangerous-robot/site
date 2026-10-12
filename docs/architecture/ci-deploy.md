@@ -6,13 +6,24 @@ How continuous integration, deployment, and quality checks work for the Dangerou
 
 **Trigger:** Pull requests targeting `main`. The workflow also declares `workflow_call`, so the deploy pipeline can reuse it as a verification gate.
 
-Two jobs run in parallel on `ubuntu-latest`:
+Three jobs run in parallel on `ubuntu-latest`:
 
-**`check`** (Node 22). Steps run sequentially so a failure in an earlier step short-circuits the rest:
+**`check`** (Node 22). The job sets `WATCH_DATA: fixture`, so `/watch` is built from the invented fixture data with no network and no API key. Steps run sequentially so a failure in an earlier step short-circuits the rest:
 
-1. `npm run build` -- Astro site build (catches template/config errors)
-2. `npm run lint:md` -- Markdown linting on research content
-3. `npm run check:citations` -- Citation integrity check
+1. `npm run check:types` -- `astro check`
+2. `npm run test:site` -- unit tests (`node:test`)
+3. `npm run build` -- Astro site build (catches template/config errors)
+4. `npm run check:watch` -- `/watch` dist check (see [Watch page checks](#watch-page-checks))
+5. `npm run lint:md` -- Markdown linting on research content
+6. `npm run check:citations` -- Citation integrity check
+
+**`e2e`** (Node 22). Runs the `/watch` browser tests:
+
+1. `npm ci`, then `npx playwright install --with-deps chromium`.
+2. `npm run test:e2e` -- Playwright builds the site with fixture data and serves it on port 4329 (see [Watch page checks](#watch-page-checks)).
+3. On failure only, uploads `node_modules/.cache/watch-e2e/*/test-results/` (traces and screenshots) as the `playwright-results` artifact, kept 7 days. The path is inside a dot directory, so the upload step sets `include-hidden-files: true`.
+
+The checkout, setup-node and upload-artifact steps in `e2e` are pinned by commit SHA.
 
 **`lint-content`** (Python 3.12). Runs the pipeline's research content linter:
 
@@ -25,13 +36,28 @@ If any job fails, the PR check fails.
 
 ## Deploy Workflow (`.github/workflows/deploy.yml`)
 
-**Trigger:** Push to `main`, or manual dispatch (`workflow_dispatch`).
+**Trigger:** Push to `main`, manual dispatch (`workflow_dispatch`), or the weekly schedule (`cron: '17 6 * * 1'`, Mondays 06:17 UTC).
 
 Three-job pipeline:
 
-1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check` and `lint-content` jobs gate every deploy.
-2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `astro build`, and uploads `dist/` as a Pages artifact.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e` and `lint-content` jobs gate every deploy.
+2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
+
+### Weekly scheduled deploy
+
+`/watch` shows playlist and video data fetched from the YouTube Data API at build time. The YouTube API Services Developer Policies allow that data to be stored for at most 30 days, and nothing from the API is committed, so the page is rebuilt every week.
+
+A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e` or `lint-content`) also blocks the weekly refresh, and the last good deploy stays live.
+
+### YouTube API key
+
+`YOUTUBE_API_KEY` is a GitHub Actions repository secret. It is passed to two steps of the `build` job and to nothing else:
+
+- `npm run build`, with `WATCH_EXPECT_KEY: '1'`. The `/watch` content loader fetches live data with the key. If the key is missing it logs a warning (shown as a `Watch page` annotation) and the page renders its empty state; if the API fails, the build still succeeds and publishes the empty state.
+- `npm run check:watch`, with `WATCH_CHECK_CONTEXT: deploy`. The key lets the check scan `dist/` for its exact value; deploy context fails the step if `/watch` was built from fixture data.
+
+The loader never sets a `Referer` or `Origin` header. The key carries an API restriction (YouTube Data API v3) and no HTTP referrer restriction.
 
 Key settings:
 
@@ -41,35 +67,64 @@ Key settings:
 
 ## Quality Checks (`npm run check`)
 
-The `check` script chains five stages in order:
+The `check` script chains seven stages in order:
 
-```
-npm run check:types && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers
+```bash
+npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch
 ```
 
-Run it locally before pushing. The CI `check` job runs a subset: build, lint:md and check:citations. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
+Run it locally before pushing. The CI `check` job runs all of these except check:reviewers. `inv check` (also the pre-commit hook) runs check:types, test:site, build, check:watch, lint:md and check:citations, then the pipeline's pytest suite; it does not run check:reviewers. Browser tests (`npm run test:e2e`) are in none of these; CI runs them in the `e2e` job. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
 
 ### Stage 1: Types
 
 `astro check` -- type-checks the site.
 
-### Stage 2: Build
+### Stage 2: Unit Tests
+
+`tsx --test 'src/lib/**/*.test.ts'` -- `node:test` unit tests for the site's library code, including the `/watch` loader and client logic, which run against fixtures with no network.
+
+### Stage 3: Build
 
 `astro build` -- compiles the site to `dist/`. Catches broken imports, invalid frontmatter, and template errors.
 
-### Stage 3: Markdown Lint
+### Stage 4: Markdown Lint
 
 `markdownlint-cli2 'research/**/*.md'`
 
 Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-linting) below.
 
-### Stage 4: Citation Integrity
+### Stage 5: Citation Integrity
 
 `tsx scripts/check-citations.ts` -- see [Citation Integrity](#citation-integrity) below.
 
-### Stage 5: Reviewer Display
+### Stage 6: Reviewer Display
 
 `tsx scripts/check-reviewer-display.ts` -- checks reviewed claim pages in `dist/` for the reviewer's handle and profile link, and that each profile lists exactly the reviewed published claims. See [`site.md`](site.md#cross-linking).
+
+### Stage 7: Watch Page
+
+`tsx scripts/check-watch-page.ts` -- checks the built `/watch` page and scans `dist/` for API key leaks. See [Watch page checks](#watch-page-checks).
+
+## Watch Page Checks
+
+**Dist check** (`npm run check:watch`, `scripts/check-watch-page.ts`). Run after a build. It reads `dist/`, or the directory in `WATCH_CHECK_DIST`. It fails when:
+
+- any file in `dist/` contains `AIza` (the prefix of every Google API key), or the exact value of `YOUTUBE_API_KEY` when that variable is set in the step's environment;
+- `/privacy` does not link the Google Privacy Policy;
+- `/watch` has no single page root with `data-watch-mode` of `live`, `fixture` or `none`, or contains an `<iframe>` before Play;
+- in `none` mode, the page-level empty state is missing or any thumbnail renders;
+- in `live` or `fixture` mode, a thumbnail is not a link to youtube.com, the YouTube Terms of Service link is missing, tabs and panels do not match, or a panel has neither a grid nor an empty state;
+- in `fixture` mode, tabs, statuses and video counts differ from `src/lib/watch/fixtures/expected.ts`;
+- with `WATCH_CHECK_CONTEXT=deploy`, the page was built from fixture data.
+
+An empty or failed playlist, and live mode with no thumbnails, print GitHub `::warning::` lines and do not fail the check. A keyless build (`none` mode) passes, in deploy context too, so a missing key never fails a deploy.
+
+**Browser tests** (`npm run test:e2e`, config in `playwright.config.ts`, specs in `tests/e2e/`). Playwright runs Chromium against a fixture build:
+
+- The port is `WATCH_E2E_PORT`, default 4329. Do not set it to 4321, which `inv dev` uses. `reuseExistingServer` is off, so a run never attaches to another run's server.
+- Each run builds into its own directory, `node_modules/.cache/watch-e2e/<port>/dist`, with test results beside it in `test-results/` (both are created by the run), then serves it with `astro preview`.
+- `WATCH_E2E_REUSE_BUILD=1` skips the build when that directory already holds one, for runs where only spec files changed. CI ignores it.
+- `tests/e2e/helpers.ts` routes every request to another origin: `i.ytimg.com` gets generated images, `youtube-nocookie.com` a blank page, and anything else is blocked and fails the test. No test touches the network.
 
 ## Citation Integrity
 
@@ -122,4 +177,7 @@ All other `markdownlint` defaults are enforced.
 | `check:citations`  | `tsx scripts/check-citations.ts`                     | Validate claim-to-source references              |
 | `check:reviewers`  | `tsx scripts/check-reviewer-display.ts`              | Check reviewer mentions in `dist/`               |
 | `check:types`      | `astro check`                                        | Type-check the site                              |
-| `check`            | `npm run check:types && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers` | Run the full local quality gate (CI's `check` job runs a subset) |
+| `check:watch`      | `tsx scripts/check-watch-page.ts`                    | Check `/watch` in `dist/` and scan for key leaks |
+| `test:site`        | `tsx --test 'src/lib/**/*.test.ts'`                  | Unit tests                                       |
+| `test:e2e`         | `playwright test`                                    | `/watch` browser tests (Chromium, fixture build) |
+| `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |

@@ -12,13 +12,13 @@ Static Astro site, deployed to GitHub Pages, that publishes writing and editoria
 | Hosting       | GitHub Pages                  |
 | Custom domain | `dangerousrobot.org`          |
 
-Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `@astrojs/rss` (the `/writing` feed), `js-yaml` (YAML parsing in the `content.config.ts` loaders), and `lucide-astro` (icons). Dev dependencies are `markdownlint-cli2`, `gray-matter`, `tsx` (used by lint and validation scripts), and `@types/js-yaml`.
+Runtime dependencies are Astro plus `@astrojs/sitemap` (sitemap integration), `@astrojs/rss` (the `/writing` feed), `js-yaml` (YAML parsing in the `content.config.ts` loaders), and `lucide-astro` (icons). Dev dependencies include `markdownlint-cli2`, `gray-matter`, `tsx` (used by lint and validation scripts), `@types/js-yaml`, and `@playwright/test` (browser tests for `/watch`).
 
 ## Content Collections
 
 The site mixes pipeline-managed research content (under `research/`, outside `src/`) with hand-authored editorial content (under `src/content/resources/` and `src/content/writing/`). Astro's content layer loads both via loaders defined in `src/content.config.ts`.
 
-Seven collections are defined:
+Eight collections are defined:
 
 | Collection  | Loader / source                        | Schema highlights                                        |
 |-------------|----------------------------------------|----------------------------------------------------------|
@@ -29,6 +29,7 @@ Seven collections are defined:
 | `resources` | `glob()` from `src/content/resources`  | title, description, pubDate, layout, wallpaper, topics (resources-scoped enum), data, further_reading |
 | `writing`   | `glob()` from `src/content/writing`    | title, description (max 200), pubDate, updatedDate, author, ai_assisted, draft, tags |
 | `actions`   | `glob()` from `src/content/actions` (flat, `*.md`) | the writing fields minus tags, plus petition, petition_statement |
+| `watchPlaylists` | custom `watch-youtube` loader (YouTube Data API v3 at build) | slug, youtubeId, order, name, creator, description, status (`ok`, `empty`, `failed`), dataMode, videos (embedded) |
 
 The `sources` and `entities` collections use a `glob()` loader -- each entry is a Markdown file with YAML frontmatter. The Markdown body is rendered as HTML on detail pages via Astro's `render()` function.
 
@@ -37,6 +38,8 @@ The `claims` collection uses a custom loader (`claims-with-audit`) that reads ea
 The `criteria` collection uses a `file()` loader, loading all entries from a single YAML file rather than individual Markdown files.
 
 The `resources` collection holds editorial articles for the `/resources/` section (decision tools, comparison articles, reference guides). Its schema is independent of the research collections: it carries a layout discriminator (`article | matrix | guide | tool`), a wallpaper variant, a small resources-scoped `topics` enum (`ai-literacy`, `ai-safety`, `consumer-guide`, `responsible-ai`), and an optional `data` payload that is validated per layout at render time. See AGENTS.md "Editorial content" section for the boundary between `research/` and `src/content/resources/`.
+
+The `watchPlaylists` collection feeds `/watch`; see [Watch page data](#watch-page-data).
 
 The `writing` collection holds blog posts for `/writing`. Posts are authored by hand or through the Sveltia CMS admin (see [Writing and the admin](#writing-and-the-admin)). Field reference and draft rules are in [content-model.md](content-model.md#writing).
 
@@ -205,6 +208,60 @@ The thesis text on the page is in the `dangers` array and the markup; it is exce
 
 Step-by-step authoring instructions, by CMS or by hand, are in [`docs/runbook.md`](../runbook.md) "Writing posts".
 
+### Watch page data
+
+`/watch` (`src/pages/watch.astro`) shows curated YouTube playlists: playlist tabs, a thumbnail grid per playlist, hover popups, hover frame previews, and a click-to-load `youtube-nocookie.com` player. It is not in the nav.
+
+The curated list is `src/content/watch/playlists.yaml` (playlist ID, slug, order, editor description, optional creator and `max_videos`), validated by `curatedFileSchema` in `src/lib/watch/schema.ts`. Everything else comes from the YouTube Data API v3 at build time, through the `watch-youtube` loader in `src/content.config.ts`. No API data is committed, and the loader clears its store on every build, so the live page holds data no older than its last deploy (see [ci-deploy.md](ci-deploy.md#weekly-scheduled-deploy)).
+
+Each `watchPlaylists` entry is one normalized playlist with its videos embedded. Videos that are missing (deleted or private to the owner), private, duplicated, not yet processed, live or upcoming, not embeddable, or lacking a usable title, date or thumbnail are dropped at build and counted. The page adds a formatted date to each video and passes the data to the client as one JSON block.
+
+**Loader modes** (`resolveMode` in `src/lib/watch/env.ts`):
+
+| Mode | When | Data |
+|------|------|------|
+| `fixture` | `WATCH_DATA=fixture`, even when a key is set | Invented responses in `src/lib/watch/fixtures/api/`, for `src/lib/watch/fixtures/playlists.fixture.yaml`. No network. CI's `check` job and the browser tests use it. |
+| `live` | `YOUTUBE_API_KEY` is set | The YouTube Data API |
+| `none` | Neither | No data. The page renders one page-level empty state and no tabs, player or grid. |
+
+The key is read through Vite's `loadEnv`, limited to `YOUTUBE_API_KEY`, so a key in the root `.env` reaches the loader and no other `.env` value does. A global API failure (quota, a rejected key) falls back to `none` with a warning, and the build still succeeds. A playlist whose videos the API cannot list is shown as failed; one missing from the API's playlist lookup is left out, with a `skipped` line.
+
+**Log lines.** The loader prints playlist IDs and counts only, never API titles or descriptions, so build logs hold no YouTube data:
+
+```text
+[watch loader] fetched <playlist ID>: <n> videos (dropped: <k>, not embeddable: <e>)
+[watch loader] skipped <playlist ID>: <reason>
+[watch loader] mode=<live|fixture|none> playlists=<n> videos=<n>
+[watch loader] warning: <call, HTTP status, API reason and message>
+```
+
+Under GitHub Actions each warning is also printed as a `::warning title=Watch page::` annotation. `WATCH_EXPECT_KEY=1` (set on the deploy build) adds a warning when no key is set. The loader never sends a `Referer` or `Origin` header.
+
+### Watch page client
+
+Client code is one controller per component in `src/components/watch/client/`. `main.ts` reads the JSON block, calls every controller's `init<Name>(root, bus, playlists)`, and owns the page state: the selected playlist, the video in the player, and whether a video has been loaded. It alone writes the URL (`?list=<slug>&v=<video ID>`, through `history.replaceState`), shows the selected panel and announces tab changes.
+
+Controllers talk only through one `EventTarget` bus, with the event names in `WATCH_EVENTS` (`src/lib/watch/contract.ts`):
+
+| Event | Detail | Sent by |
+|-------|--------|---------|
+| `watch:playlist` | `{slug}` | `tabs.ts` on a tab click; `main.ts` at startup |
+| `watch:video` | `{slug, id, play, notice}` | `grid.ts` on a card click (`play: true`); `main.ts` for the arrival poster and for a poster that follows a tab change (`play: false`) |
+| `watch:play` | `{slug, id}` | `player.ts` when the embed goes in |
+| `watch:preview` | `{enabled}` | `preview.ts` when the previews setting changes |
+
+| Module | Role |
+|--------|------|
+| `tabs.ts` | Tab selection; arrow keys, Home and End move focus only |
+| `player.ts` | Poster, details and the embed. The embed goes in only once the player frame is at least half on screen (YouTube rule); a pick made further down scrolls the player into view first. Also Show more and Back to video list. |
+| `grid.ts` | Plays a card in the page on a plain click (cards are YouTube links without JavaScript) and marks the playing card |
+| `popup.ts` | The shared hover popup, placed by `placePopup` (`src/lib/watch/popup-position.ts`) so it never covers the player |
+| `preview.ts` | The hover previews switch (stored as `dr-watch-previews`; on by default, off by default under either reduce-motion setting) and frame cycling on cards |
+| `cardIntent.ts` | Which card the reader rests on, shared by the popup and the preview, so both start at the same moment (300ms after the pointer comes to rest, or at once on keyboard focus) and stop on the same events |
+| `dom.ts` | DOM and media-query helpers |
+
+Pure logic (URL state, the preview cycler, frame URLs, popup placement) lives in `src/lib/watch/` with unit tests. Thumbnails and frames load from `i.ytimg.com` with no referrer; `/privacy` records the `/watch` exception to the site's no-third-party-requests rule.
+
 ### How dynamic routes work
 
 Each dynamic route file exports `getStaticPaths()`, which:
@@ -292,16 +349,31 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 | `npm run lint:md`   | `markdownlint-cli2 'research/**/*.md'`                   | Lint research Markdown files             |
 | `npm run check:citations` | `tsx scripts/check-citations.ts`                   | Validate source references in claims     |
 | `npm run check:reviewers` | `tsx scripts/check-reviewer-display.ts`            | Check reviewer mentions in `dist/` (handle, profile links) |
-| `npm run check`     | `check:types + build + lint:md + check:citations + check:reviewers` | Local quality gate (CI's `check` job runs build, lint:md and check:citations) |
+| `npm run check:watch` | `tsx scripts/check-watch-page.ts`                       | Check `/watch` in `dist/` and scan `dist/` for API key leaks |
+| `npm run test:site` | `tsx --test 'src/lib/**/*.test.ts'`                       | Unit tests                               |
+| `npm run test:e2e`  | `playwright test`                                         | `/watch` browser tests                   |
+| `npm run check`     | `check:types + test:site + build + lint:md + check:citations + check:reviewers + check:watch` | Local quality gate (CI's `check` job runs all but check:reviewers) |
+
+### Tests
+
+`/watch` is covered at three levels, all on fixture or synthetic data with no network:
+
+| Layer | Command | What it covers |
+|-------|---------|----------------|
+| Unit | `npm run test:site` (`node:test`, `src/lib/**/*.test.ts`) | Duration parsing, the API client (paging, batching, retry, error mapping, key redaction, no `Referer` header), normalizing and dropping, mode resolution and log lines, URL state, the preview cycler, frame URLs and popup placement |
+| Browser | `npm run test:e2e` (Playwright, Chromium, `tests/e2e/`) | Tabs, player, grid and popup, previews, and flows across them, against a fixture build served on its own port (`WATCH_E2E_PORT`, default 4329, not the 4321 that `inv dev` uses). See [ci-deploy.md](ci-deploy.md#watch-page-checks). |
+| Dist | `npm run check:watch` after a build | The built `/watch` page matches its data mode, and no API key reached `dist/` |
+
+`inv check` and the pre-commit hook run the unit tests and the dist check; browser tests run in CI's `e2e` job and on demand.
 
 ## Deployment
 
-The deploy pipeline is in `.github/workflows/deploy.yml`. It runs on every push to `main` (and on manual dispatch).
+The deploy pipeline is in `.github/workflows/deploy.yml`. It runs on every push to `main`, on manual dispatch, and every Monday at 06:17 UTC, which rebuilds `main` so the YouTube data on `/watch` stays within its 30-day storage limit.
 
 Jobs:
 
 1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the CI checks gate every deploy.
-2. **build** -- Checkout, setup Node 22, `npm ci`, `npm run build`, upload `dist/` as a Pages artifact.
+2. **build** -- Checkout, setup Node 22, `npm ci`, `npm run build` (with the `YOUTUBE_API_KEY` secret), `npm run check:watch` in deploy context, upload `dist/` as a Pages artifact.
 3. **deploy** -- Deploys to the `github-pages` environment via `actions/deploy-pages@v5`.
 
 The same CI workflow (`.github/workflows/ci.yml`) also runs on PRs. See [ci-deploy.md](ci-deploy.md) for details.
