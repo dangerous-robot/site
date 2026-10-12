@@ -1489,7 +1489,7 @@ def _published_claim_repo(tmp_path):
     return claim_path, sidecar_path
 
 
-def _step_analyze_write(tmp_path, verdict: str):
+def _step_analyze_write(tmp_path, verdict: str, **output):
     from contextlib import nullcontext
 
     from pydantic_ai.models.test import TestModel
@@ -1505,6 +1505,7 @@ def _step_analyze_write(tmp_path, verdict: str):
         "verification_level": "self-reported",
         "cap_rationale": "Only Acme says so.",
         "seo_title": "Acme green claim",
+        **output,
     })
     with verdict_only_agent.override(model=model), patch(
         "orchestrator.pipeline.verdict_only_agent.override",
@@ -1559,6 +1560,38 @@ def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> Non
     after = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
     after.pop("analyst_titles")  # the claim write's own record
     assert after == before
+
+
+def test_step_analyze_write_takes_the_analysts_seo_title_and_takeaway(tmp_path) -> None:
+    """The keep rules decide, as on the other write paths: values the analyst
+    last wrote are replaced, and the record follows the new run."""
+    import yaml
+
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(serialize_frontmatter({
+        **fm, "status": "draft", "title": "Acme was green",
+        "seo_title": "Acme was green", "takeaway": "Acme was green last year.",
+    }, body), encoding="utf-8")
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["analyst_titles"] = {
+        "title": "Acme was green", "seo_title": "Acme was green", "verdict": "true",
+        "takeaway": "Acme was green last year.", "cap_rationale": None,
+    }
+    sidecar_path.write_text(yaml.safe_dump(sidecar), encoding="utf-8")
+
+    result = _step_analyze_write(tmp_path, "false", takeaway="Acme is no longer green.")
+
+    assert result.exit_code == 0, result.output
+    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    assert fm["seo_title"] == "Acme green claim"
+    assert fm["takeaway"] == "Acme is no longer green."
+    record = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["analyst_titles"]
+    assert record["title"] == "Acme is green"
+    assert record["seo_title"] == "Acme green claim"
+    assert record["takeaway"] == "Acme is no longer green."
 
 
 class TestStepAnalyzeCriterion:

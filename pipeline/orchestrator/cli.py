@@ -796,6 +796,8 @@ def step_analyze(
             force=force,
             status=status,
             criteria_slug=fm.get("criteria_slug"),
+            seo_title=a.verdict.seo_title,
+            takeaway=a.verdict.takeaway,
             **verdict_write_kwargs(a.verdict),
         )
         click.echo(f"Wrote {written_path}")
