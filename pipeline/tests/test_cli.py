@@ -1589,6 +1589,63 @@ def test_step_analyze_write_returns_a_non_draft_claim_to_draft(tmp_path, previou
     assert "refresh" not in sidecar
 
 
+def _add_audit_block(sidecar_path, analyst_verdict: str = "true") -> None:
+    """Give the sidecar the Evaluator's comparison of the claim on disk."""
+    import yaml
+
+    data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    data["audit"] = {
+        "analyst_verdict": analyst_verdict, "auditor_verdict": "false",
+        "analyst_confidence": "high", "auditor_confidence": "medium",
+        "verdict_agrees": False, "confidence_agrees": False, "needs_review": True,
+        "auditor_reasoning": "The report is self-published.",
+        "evidence_gaps": [], "needs_review_reasons": ["verdict_disagreement"],
+    }
+    sidecar_path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+@pytest.mark.parametrize("status", ["draft", "published"])
+def test_step_analyze_write_clears_the_evaluators_comparison(tmp_path, status) -> None:
+    """The Evaluator graded the old analysis, so the claim page must not show
+    it agreeing or disagreeing with the new verdict until dr step-audit
+    --write grades the new one."""
+    import yaml
+
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(serialize_frontmatter({**fm, "status": status}, body), encoding="utf-8")
+    _add_audit_block(sidecar_path)
+
+    result = _step_analyze_write(tmp_path, "false")
+
+    assert result.exit_code == 0, result.output
+    assert yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["audit"] is None
+
+
+def test_approval_after_step_analyze_records_no_override(tmp_path, human_at_terminal) -> None:
+    """A verdict the analyst changed is not a reviewer's override."""
+    import yaml
+
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
+    from orchestrator.review import approve_claim
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(
+        serialize_frontmatter({**fm, "criteria_slug": "green-claim"}, body), encoding="utf-8"
+    )
+    _add_audit_block(sidecar_path)
+
+    result = _step_analyze_write(tmp_path, "false")
+    assert result.exit_code == 0, result.output
+    approve_claim(claim_path, reviewer="reviewer@example.org", mode="approve", correction_summary="New evidence.")
+
+    review = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["human_review"]
+    assert review["verdict_override"] is None
+
+
 def test_step_analyze_write_takes_the_analysts_seo_title_and_takeaway(tmp_path) -> None:
     """The keep rules decide, as on the other write paths: values the analyst
     last wrote are replaced, and the record follows the new run."""

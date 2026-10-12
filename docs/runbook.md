@@ -72,7 +72,7 @@ The same setting is in the repo's Moderation settings. A limit expires (anywhere
 
 ## Refreshing a published claim
 
-A refresh rewrites the claim as a draft and resets its sign-off; so does a forced rewrite of it (`dr step-analyze --write --force`, `dr claim-draft --force`, `dr onboard --force`), and these steps apply to it too. The pipeline keeps the published verdict and reviewer in the sidecar's `refresh` block until you approve again. A committed draft or blocked claim drops off the live site, so approve before you commit.
+A refresh rewrites the claim as a draft and resets its sign-off; so does a forced rewrite of it (`dr step-analyze --write --force`, `dr claim-draft --force`, `dr onboard --force`), and these steps apply to it too. `dr step-analyze --write --force` also clears the sidecar's Evaluator comparison, which graded the old analysis; run `uv run dr step-audit --claim <entity>/<claim-slug> --write` before approving to restore it. The pipeline keeps the published verdict and reviewer in the sidecar's `refresh` block until you approve again. A committed draft or blocked claim drops off the live site, so approve before you commit.
 
 1. Run `uv run dr claim-refresh <entity>/<claim-slug>`.
 2. Run `uv run dr review-queue`. A refreshed claim shows "Was published: {verdict} (reviewed {date})".

@@ -650,7 +650,8 @@ def step_analyze(
     Default: read-only (prints analyst output). Use --write (or --force) to
     overwrite the claim file on disk. A claim that is not a draft (published,
     archived or blocked) returns to draft and awaits re-approval, as with
-    claim-refresh.
+    claim-refresh. The sidecar's Evaluator comparison (``audit``) is cleared,
+    since it graded the old analysis; run ``dr step-audit --write`` after.
 
     Example:
         dr step-analyze --claim microsoft/corporate-structure
@@ -671,6 +672,7 @@ def step_analyze(
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
         _write_claim_file,
+        clear_audit,
         fit_verdict_to_written_pool,
         load_source_dict,
         mark_forced_rewrite,
@@ -769,10 +771,12 @@ def step_analyze(
 
     # Without --force the write below refuses, so nothing is reset.
     status = fm.get("status", "draft")
-    if force and mark_forced_rewrite(
-        claim_path, source_ids, datetime.datetime.now(tz=datetime.timezone.utc),
-    ):
-        status = ClaimStatus.DRAFT
+    if force:
+        if mark_forced_rewrite(
+            claim_path, source_ids, datetime.datetime.now(tz=datetime.timezone.utc),
+        ):
+            status = ClaimStatus.DRAFT
+        clear_audit(claim_path)
 
     try:
         written_path = _write_claim_file(

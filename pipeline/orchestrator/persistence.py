@@ -849,6 +849,32 @@ def mark_refreshed(
     )
 
 
+def clear_audit(claim_path: Path) -> None:
+    """Set the sidecar's ``audit`` block to null for a new analysis of the claim.
+
+    For a rewrite that runs the analyst but not the Evaluator (``dr
+    step-analyze --write``): the Evaluator's verdict and reasoning describe
+    the old analysis, so comparing them with the new verdict would show an
+    agreement nobody checked, and ``dr review --approve`` would read the old
+    analyst verdict as a reviewer's override. The claim page shows the
+    Evaluator check as unavailable until ``dr step-audit --write``, as for a
+    blocked claim. Call it before the claim write.
+    """
+    sidecar_path = sidecar_path_for(claim_path)
+    if not sidecar_path.exists():
+        return
+    data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"cannot parse sidecar {sidecar_path}")
+    if data.get("audit") is None:
+        return
+    data["audit"] = None
+    sidecar_path.write_text(
+        yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+
 def mark_forced_rewrite(
     claim_path: Path,
     current_source_ids: list[str] | None,

@@ -127,7 +127,7 @@ The `audit` object has the shape:
 | `sources_consulted[].archive` | object | Optional. Outcome of the archive.org lookup the pipeline runs after ingesting a source; absent on sources reused from disk. `dr step-audit --write` carries it over |
 | `sources_consulted[].archive.status` | enum | `found` (the source got an `archived_url`), `failed` (no capture replays with HTTP 200 for the same page, rate-limited after one retry, Save Page Now returned no dated snapshot or captured an error page, another error, or the lookup's time limit) or `not-attempted` (run with `--skip-wayback`) |
 | `sources_consulted[].archive.error` | string | Optional. Why a `failed` lookup failed, e.g. `archive.org TimeGate check failed (HTTP 429)` or `archive.org capture is an error page (HTTP 404)` |
-| `audit` | object or null | Analyst/Evaluator verdict comparison block; may be `null` |
+| `audit` | object or null | Analyst/Evaluator verdict comparison block; `null` when the Evaluator did not grade the analysis on disk: a blocked run, or `dr step-analyze --write --force`, which clears it until `dr step-audit --write` grades the new analysis (the claim page then shows the Evaluator check as unavailable, and `dr review --approve` records no `verdict_override`) |
 | `audit.analyst_verdict` | string | Verdict from the Analyst agent |
 | `audit.auditor_verdict` | string | Verdict from the Auditor agent |
 | `audit.analyst_confidence` | string | Confidence from the Analyst agent |
