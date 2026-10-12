@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 
 // Each parallel run sets its own port. The operator's `inv dev` holds 4321,
@@ -12,6 +13,12 @@ const baseURL = `http://127.0.0.1:${port}`;
 const cacheDir = `node_modules/.cache/watch-e2e/${port}`;
 const outDir = `${cacheDir}/dist`;
 
+// Opt in to skip the build when only spec files changed since the last run
+// on this port. The client bundle is baked into the build, so a source edit
+// needs a fresh one; the default and CI always build.
+const reuseBuild = process.env.WATCH_E2E_REUSE_BUILD === '1' && !process.env.CI && existsSync(`${outDir}/watch/index.html`);
+const build = `npm run build -- --outDir ${outDir} && `;
+
 export default defineConfig({
   testDir: 'tests/e2e',
   outputDir: `${cacheDir}/test-results`,
@@ -25,7 +32,7 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npm run build -- --outDir ${outDir} && npm run preview -- --outDir ${outDir} --port ${port} --host 127.0.0.1`,
+    command: `${reuseBuild ? '' : build}npm run preview -- --outDir ${outDir} --port ${port} --host 127.0.0.1`,
     url: `${baseURL}/watch`,
     // Fixture data keeps the run offline even when a key is in .env.
     env: { WATCH_DATA: 'fixture' },
