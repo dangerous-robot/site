@@ -1,0 +1,84 @@
+---
+// Click-to-load player (UI spec § 3.3, § 4.7). Stub: final markup, hooks and
+// the frame sizing other components measure; client/player.ts adds the
+// iframe, Show more and Back to video list behaviour.
+import { CirclePlay } from 'lucide-astro';
+import { TESTID, youtubeWatchUrl } from '../../lib/watch/contract';
+import { coverSrcset } from '../../lib/watch/frames';
+import type { WatchPlayerProps } from '../../lib/watch/types';
+
+type Props = WatchPlayerProps;
+const { video, playlist } = Astro.props;
+// Rendered even with no video, hidden, so the client always finds the same
+// elements to fill.
+const title = video?.title ?? '';
+---
+<section
+  class="watch-player"
+  aria-labelledby="watch-player-title"
+  data-testid={TESTID.player}
+  data-video-id={video?.id}
+  data-playlist={playlist?.slug}
+  hidden={!video}
+>
+  <p class="watch-notice" data-testid={TESTID.notice} hidden>That video is no longer in this playlist.</p>
+  <div class="watch-player__frame" data-testid={TESTID.playerFrame}>
+    <button type="button" class="watch-player__poster" aria-label={`Play: ${title}`} data-testid={TESTID.play}>
+      <img
+        class="watch-player__img"
+        src={video?.cover.src}
+        srcset={video ? coverSrcset(video.cover) : undefined}
+        sizes="(max-width: 1119px) 100vw, 1080px"
+        alt=""
+        fetchpriority="high"
+        decoding="async"
+        referrerpolicy="no-referrer"
+      />
+      <span class="watch-player__play" aria-hidden="true"><CirclePlay size={28} /> Play</span>
+    </button>
+  </div>
+  <h2 class="watch-player__title" id="watch-player-title" tabindex="-1" data-testid={TESTID.playerTitle}>{title}</h2>
+  <p class="watch-player__meta" data-testid={TESTID.playerMeta}>
+    <span class="watch-player__channel">{video?.channel}</span>
+    <span class="watch-player__duration">{video?.durationText}</span>
+    <time class="watch-player__date" datetime={video?.publishedIso}>{video?.publishedText}</time>
+  </p>
+  <p class="watch-player__desc" id="watch-player-desc">{video?.description}</p>
+  <button type="button" class="watch-player__more" aria-expanded="false" aria-controls="watch-player-desc" hidden>Show more</button>
+  <p class="watch-player__links">
+    <a href={video && playlist ? youtubeWatchUrl(video.id, playlist.youtubeId) : undefined} data-testid={TESTID.youtubeLink}>Watch on YouTube</a>
+    <a href={playlist ? `#watch-panel-${playlist.slug}` : undefined} class="watch-player__back" data-testid={TESTID.backLink}>Back to video list</a>
+  </p>
+</section>
+<style>
+  /* Sizing other components' tests measure (popup overlap, 200x200 minimum). */
+  .watch-player__frame {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    width: min(100%, calc(70vh * 16 / 9));
+    min-height: 200px;
+    background: #000;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+
+  /* Out of flow, so a tall image cannot stretch the 16:9 box. */
+  .watch-player__poster,
+  .watch-player__img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .watch-player__poster {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .watch-player__img {
+    object-fit: cover;
+  }
+</style>

@@ -1,0 +1,37 @@
+---
+// Playlist rail (UI spec § 3.3). Stub: final markup and hooks; keyboard
+// behaviour lives in client/tabs.ts and the rail styles still to come.
+import { TESTID } from '../../lib/watch/contract';
+import type { WatchPlaylistTabsProps } from '../../lib/watch/types';
+
+type Props = WatchPlaylistTabsProps;
+const { playlists, selectedSlug } = Astro.props;
+---
+<div class="watch-rail__head">
+  <span class="watch-rail__label" id="watch-playlists-label">Playlists</span><span class="watch-rail__line" aria-hidden="true"></span>
+</div>
+<div class="watch-tabs" role="tablist" aria-labelledby="watch-playlists-label" aria-orientation="vertical" data-testid={TESTID.tablist}>
+  {playlists.map((p) => {
+    const selected = p.slug === selectedSlug;
+    const describedBy = [p.creator ? `watch-tab-${p.slug}-creator` : null, `watch-tab-${p.slug}-desc`].filter(Boolean).join(' ');
+    return (
+      <button
+        type="button"
+        role="tab"
+        class="watch-tab"
+        id={`watch-tab-${p.slug}`}
+        aria-selected={selected ? 'true' : 'false'}
+        aria-controls={`watch-panel-${p.slug}`}
+        tabindex={selected ? 0 : -1}
+        aria-labelledby={`watch-tab-${p.slug}-name`}
+        aria-describedby={describedBy}
+        data-testid={TESTID.tab}
+        data-playlist={p.slug}
+      >
+        <span class="watch-tab__name" id={`watch-tab-${p.slug}-name`}>{p.name}</span>
+        {p.creator && <span class="watch-tab__creator" id={`watch-tab-${p.slug}-creator`}>{p.creator}</span>}
+        <span class="watch-tab__desc" id={`watch-tab-${p.slug}-desc`}>{p.description}</span>
+      </button>
+    );
+  })}
+</div>

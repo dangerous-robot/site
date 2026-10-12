@@ -1,0 +1,82 @@
+---
+// One video card (UI spec § 3.3). An anchor to YouTube, so it works without
+// JavaScript; client/grid.ts turns a plain click into in-page play. Stub:
+// final markup, hooks, media sizing and the frame layer that preview
+// cycling inserts.
+import { TESTID, youtubeWatchUrl } from '../../lib/watch/contract';
+import { coverSrcset } from '../../lib/watch/frames';
+import type { VideoThumbProps } from '../../lib/watch/types';
+
+type Props = VideoThumbProps;
+const { video, playlist, eager } = Astro.props;
+// The same video can sit in two playlists, so ids carry the slug.
+const idBase = `watch-thumb-${playlist.slug}-${video.id}`;
+const meta = [video.channel, video.durationSpoken, `published ${video.publishedText}`].filter(Boolean).join(', ');
+---
+<a
+  class="watch-thumb"
+  href={youtubeWatchUrl(video.id, playlist.youtubeId)}
+  id={idBase}
+  aria-labelledby={`${idBase}-title`}
+  aria-describedby={`${idBase}-meta`}
+  data-testid={TESTID.thumb}
+  data-video-id={video.id}
+  data-playlist={playlist.slug}
+  data-frame-tier={video.frameTier}
+>
+  <span class="watch-thumb__media">
+    <img
+      class="watch-thumb__cover"
+      src={video.cover.src}
+      srcset={coverSrcset(video.cover)}
+      sizes="(max-width: 640px) 100vw, (max-width: 1119px) 50vw, 540px"
+      alt=""
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
+      referrerpolicy="no-referrer"
+      width="480"
+      height="270"
+    />
+    {video.durationText && <span class="watch-thumb__duration" aria-hidden="true" data-testid={TESTID.thumbDuration}>{video.durationText}</span>}
+  </span>
+  <span class="watch-thumb__title" id={`${idBase}-title`} data-testid={TESTID.thumbTitle}>{video.title}</span>
+  <span class="watch-thumb__playing" hidden>Playing</span>
+  <span class="sr-only" id={`${idBase}-meta`}>{meta}</span>
+</a>
+<style>
+  .watch-thumb {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .watch-thumb__media {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    transition: border-color 0.15s;
+  }
+
+  /* Frame layers are created by client/preview.ts, outside Astro's scoping. */
+  .watch-thumb__cover,
+  .watch-thumb__media :global(.watch-thumb__frame) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .watch-thumb__media :global(.watch-thumb__frame) {
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .watch-thumb__media :global(.watch-thumb__frame.is-shown) {
+    opacity: 1;
+  }
+</style>

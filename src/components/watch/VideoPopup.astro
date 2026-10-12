@@ -1,0 +1,12 @@
+---
+// The one shared hover popup (UI spec § 3.3, § 4.3). Visual only: every
+// field also reaches screen readers through the card, so it is aria-hidden
+// and never takes focus. client/popup.ts fills, places and shows it. Stub:
+// final markup; styles still to come.
+import { TESTID } from '../../lib/watch/contract';
+---
+<div class="watch-popup" aria-hidden="true" data-testid={TESTID.popup} hidden>
+  <p class="watch-popup__title"></p>
+  <p class="watch-popup__meta"><span class="watch-popup__channel"></span> <span class="watch-popup__duration"></span> <span class="watch-popup__date"></span></p>
+  <p class="watch-popup__desc"></p>
+</div>

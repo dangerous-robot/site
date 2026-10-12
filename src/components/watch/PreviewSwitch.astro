@@ -1,0 +1,15 @@
+---
+// "Hover previews: On / Off" (UI spec § 3.3, § 4.5). Rendered hidden:
+// client/preview.ts shows it only on mouse devices and sets the checked
+// radio from the stored choice and reduce-motion settings. Stub: final
+// markup; styles still to come.
+import { TESTID } from '../../lib/watch/contract';
+---
+<div class="watch-switch" data-testid={TESTID.previewSwitch} hidden>
+  <span class="watch-switch__label" id="watch-switch-label">Hover previews</span>
+  <div class="watch-switch__group" role="radiogroup" aria-labelledby="watch-switch-label" aria-describedby="watch-switch-hint">
+    <button type="button" class="watch-switch__radio" role="radio" aria-checked="true" data-value="on">On</button>
+    <button type="button" class="watch-switch__radio" role="radio" aria-checked="false" data-value="off">Off</button>
+  </div>
+  <p class="watch-switch__hint" id="watch-switch-hint" data-testid={TESTID.previewHint} hidden>Off because reduce motion is on.</p>
+</div>

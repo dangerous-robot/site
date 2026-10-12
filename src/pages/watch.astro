@@ -1,0 +1,132 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Breadcrumb from '../components/Breadcrumb.astro';
+import EmptyState from '../components/EmptyState.astro';
+import PreviewSwitch from '../components/watch/PreviewSwitch.astro';
+import VideoPopup from '../components/watch/VideoPopup.astro';
+import WatchPanel from '../components/watch/WatchPanel.astro';
+import WatchPlayer from '../components/watch/WatchPlayer.astro';
+import WatchPlaylistTabs from '../components/watch/WatchPlaylistTabs.astro';
+import { defaultPlaylist } from '../components/watch/defaultPlaylist';
+import { jsonForScript } from '../lib/jsonForScript';
+import { TESTID, YOUTUBE_TERMS_URL } from '../lib/watch/contract';
+import type { WatchClientData, WatchMode, WatchPlaylistView } from '../lib/watch/types';
+import { formatPostDate } from '../lib/writing';
+
+// TODO(Brandon): write the intro. It ships visibly as is, and the same text
+// should become the page description below.
+const WATCH_LEDE = 'Intro: TBD, Brandon to write.';
+
+const entries = (await getCollection('watchPlaylists')).sort((a, b) => a.data.order - b.data.order);
+// formatPostDate imports astro:content, so dates are formatted here and
+// never in client code.
+const playlists: WatchPlaylistView[] = entries.map(({ data }) => ({
+  ...data,
+  videos: data.videos.map((video) => ({ ...video, publishedText: formatPostDate(new Date(video.publishedIso)) })),
+}));
+// No entries means no key, a global API error, or every playlist omitted.
+const mode: WatchMode = playlists.length > 0 ? playlists[0].dataMode : 'none';
+const selected = defaultPlaylist(playlists);
+const selectedSlug = selected?.slug ?? '';
+const initialVideo = selected?.videos[0] ?? null;
+const payload: WatchClientData = { playlists };
+---
+<Base title="Watch" layout="wide">
+  <div class="watch" data-testid={TESTID.page} data-watch-mode={mode}>
+    <Breadcrumb crumbs={[{ label: 'Home', href: '/' }, { label: 'Watch' }]} />
+    <h1>Watch</h1>
+    <p class="lede" data-testid={TESTID.lede}>{WATCH_LEDE}</p>
+
+    {mode === 'none' ? (
+      <div data-testid={TESTID.pageEmpty}>
+        <EmptyState message="These videos could not be loaded." />
+      </div>
+    ) : (
+      <>
+        {/* Unscoped on purpose: it reaches other components' classes. Without
+            JavaScript every panel shows and the controls that need it hide. */}
+        <noscript>
+          <style is:inline>
+            .watch-panel[hidden] { display: block !important; }
+            .watch-rail, .watch-player, .watch-switch { display: none !important; }
+            .watch-layout { display: block !important; }
+          </style>
+        </noscript>
+        <div class="watch-layout">
+          <div class="watch-rail">
+            <WatchPlaylistTabs playlists={playlists} selectedSlug={selectedSlug} />
+          </div>
+          <div class="watch-main">
+            <WatchPlayer video={initialVideo} playlist={selected ?? null} />
+            <div class="watch-toolbar">
+              <p class="watch-attribution">Videos and images from YouTube. <a href={YOUTUBE_TERMS_URL}>YouTube Terms of Service</a></p>
+              <PreviewSwitch />
+            </div>
+            {playlists.map((p) => (
+              <WatchPanel playlist={p} selected={p.slug === selectedSlug} eagerFirstRow={p.slug === selectedSlug} />
+            ))}
+          </div>
+        </div>
+        <VideoPopup />
+        <p class="sr-only" role="status" aria-live="polite" data-testid={TESTID.status}></p>
+        <script type="application/json" data-watch-data set:html={jsonForScript(payload)}></script>
+      </>
+    )}
+  </div>
+</Base>
+
+<script>
+  import { initWatch } from '../components/watch/client/main';
+  initWatch();
+</script>
+
+<style>
+  .lede {
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-lg);
+  }
+
+  .watch-main {
+    min-width: 0;
+  }
+
+  .watch-rail {
+    margin-bottom: var(--space-lg);
+  }
+
+  /* Literal breakpoint: BREAKPOINT_DESKTOP_PX in contract.ts. */
+  @media (min-width: 1120px) {
+    .watch-layout {
+      display: grid;
+      grid-template-columns: 15rem minmax(0, 1fr);
+      gap: var(--space-xl);
+    }
+
+    .watch-rail {
+      position: sticky;
+      top: var(--space-lg);
+      align-self: start;
+      max-height: calc(100vh - 2 * var(--space-lg));
+      overflow-y: auto;
+      margin-bottom: 0;
+    }
+  }
+
+  .watch-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .watch-attribution {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+</style>

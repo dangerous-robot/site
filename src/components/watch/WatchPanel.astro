@@ -1,0 +1,44 @@
+---
+// One tab panel per playlist (UI spec § 3.3, § 5). client/main.ts shows and
+// hides panels; the grid and popup behaviour live in client/grid.ts and
+// client/popup.ts. Stub: final markup and copy; grid styles still to come.
+import EmptyState from '../EmptyState.astro';
+import VideoThumb from './VideoThumb.astro';
+import { TESTID, youtubePlaylistUrl } from '../../lib/watch/contract';
+import type { WatchPanelProps } from '../../lib/watch/types';
+
+type Props = WatchPanelProps;
+const { playlist, selected, eagerFirstRow } = Astro.props;
+const n = playlist.videos.length;
+---
+<div
+  class="watch-panel"
+  role="tabpanel"
+  id={`watch-panel-${playlist.slug}`}
+  aria-labelledby={`watch-panel-${playlist.slug}-title`}
+  data-testid={TESTID.panel}
+  data-playlist={playlist.slug}
+  hidden={!selected}
+>
+  <div class="watch-panel__head">
+    <h2 class="watch-panel__title" id={`watch-panel-${playlist.slug}-title`}>{playlist.name}</h2>
+    {n > 0 && <span class="watch-panel__count" data-testid={TESTID.panelCount}>{n} {n === 1 ? 'video' : 'videos'}</span>}
+  </div>
+  {playlist.status === 'ok' ? (
+    <ul class="watch-grid" data-testid={TESTID.grid}>
+      {playlist.videos.map((video, index) => (
+        <li><VideoThumb video={video} playlist={playlist} eager={eagerFirstRow && index < 2} /></li>
+      ))}
+    </ul>
+  ) : playlist.status === 'failed' ? (
+    <div data-testid={TESTID.empty}>
+      <EmptyState message="These videos could not be loaded.">
+        <p><a href={youtubePlaylistUrl(playlist.youtubeId)}>See the playlist on YouTube</a></p>
+      </EmptyState>
+    </div>
+  ) : (
+    <div data-testid={TESTID.empty}>
+      <EmptyState message="This playlist has no public videos right now." />
+    </div>
+  )}
+</div>
