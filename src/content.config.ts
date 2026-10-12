@@ -5,8 +5,12 @@ import yaml from 'js-yaml';
 import fs from 'node:fs/promises';
 import nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { loadEnv } from 'vite';
 import { VERDICT_ORDER } from './lib/verdict';
 import { httpUrl } from './lib/httpUrl';
+import { CURATED_PATHS, createWatchClient, resolveMode } from './lib/watch/env';
+import { createConsoleLog, loadWatchData } from './lib/watch/load';
+import { curatedFileSchema, watchPlaylistSchema } from './lib/watch/schema';
 
 
 const sources = defineCollection({
@@ -378,4 +382,47 @@ const actions = defineCollection({
   }),
 });
 
-export const collections = { sources, claims, entities, criteria, resources, writing, actions };
+/**
+ * /watch playlists, fetched from the YouTube Data API at build (plan § 2).
+ * No API data is committed: the 30-day storage limit is met by rebuilding.
+ */
+const watchPlaylists = defineCollection({
+  loader: {
+    name: 'watch-youtube',
+    load: async ({ store, parseData, watcher }) => {
+      // Always refetch, so a stale local data store never outlives the
+      // 30-day limit on API data.
+      store.clear();
+
+      // Root .env does not reach process.env inside the loader (checked
+      // 2026-10-12), so the key alone is read through Vite. The prefix keeps
+      // every other .env value out of this process's reach.
+      const env = resolveMode({
+        WATCH_DATA: process.env.WATCH_DATA,
+        WATCH_EXPECT_KEY: process.env.WATCH_EXPECT_KEY,
+        GITHUB_ACTIONS: process.env.GITHUB_ACTIONS,
+        YOUTUBE_API_KEY: loadEnv(import.meta.env.MODE, process.cwd(), 'YOUTUBE_API_KEY').YOUTUBE_API_KEY,
+      });
+
+      // Keyless builds read the live list too, so a bad edit to it fails
+      // every build, not only the deploy that has a key.
+      const curatedPath = nodePath.resolve(CURATED_PATHS[env.mode === 'fixture' ? 'fixture' : 'live']);
+      watcher?.add(curatedPath);
+      const curated = curatedFileSchema.parse(yaml.load(await fs.readFile(curatedPath, 'utf-8'))).playlists;
+
+      const result = await loadWatchData({
+        curated,
+        client: await createWatchClient(env),
+        env,
+        log: createConsoleLog(env),
+      });
+      for (const playlist of result.playlists) {
+        const data = await parseData({ id: playlist.slug, data: { ...playlist } });
+        store.set({ id: playlist.slug, data });
+      }
+    },
+  },
+  schema: watchPlaylistSchema,
+});
+
+export const collections = { sources, claims, entities, criteria, resources, writing, actions, watchPlaylists };
