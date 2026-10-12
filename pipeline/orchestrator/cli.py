@@ -670,11 +670,10 @@ def step_analyze(
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
-        _read_published_snapshot,
         _write_claim_file,
         fit_verdict_to_written_pool,
         load_source_dict,
-        mark_refreshed,
+        mark_forced_rewrite,
         verdict_write_kwargs,
     )
 
@@ -768,19 +767,11 @@ def step_analyze(
     entity_ref = fm["entity"]
     claim_slug = claim_path.stem
 
-    # A new verdict and narrative must not go live without review (production
-    # builds archived claims as well as published ones), and a blocked claim
-    # with a verdict is no longer blocked: as in claim-refresh, the claim
-    # returns to draft with its sign-off reset, and a published claim's
-    # sidecar keeps the published state. The sidecar is written first so a
-    # failed claim write leaves the claim as it was with the snapshot
-    # pending. Without --force the write below refuses, so nothing is reset.
+    # Without --force the write below refuses, so nothing is reset.
     status = fm.get("status", "draft")
-    if force and status != ClaimStatus.DRAFT.value:
-        mark_refreshed(
-            claim_path, _read_published_snapshot(claim_path), source_ids,
-            datetime.datetime.now(tz=datetime.timezone.utc),
-        )
+    if force and mark_forced_rewrite(
+        claim_path, source_ids, datetime.datetime.now(tz=datetime.timezone.utc),
+    ):
         status = ClaimStatus.DRAFT
 
     try:

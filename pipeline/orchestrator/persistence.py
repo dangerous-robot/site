@@ -849,6 +849,32 @@ def mark_refreshed(
     )
 
 
+def mark_forced_rewrite(
+    claim_path: Path,
+    current_source_ids: list[str] | None,
+    ran_at: datetime.datetime,
+) -> bool:
+    """Prepare a forced rewrite of a claim on disk that is not a draft.
+
+    A rewrite must not go live without review (production builds archived
+    claims as well as published ones), and a blocked claim with a verdict is
+    no longer blocked, so a published, archived or blocked claim is written
+    back as a draft (or blocked) with its sign-off reset and, when published,
+    its published state kept (``mark_refreshed``), as ``dr claim-refresh``
+    does. Call it before the claim write: the sidecar is written first, so a
+    failed claim write leaves the claim unchanged with the snapshot pending.
+    Returns True when the claim was not a draft; a missing claim or a draft
+    is left alone.
+    """
+    if not claim_path.exists():
+        return False
+    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    if fm.get("status", ClaimStatus.DRAFT.value) == ClaimStatus.DRAFT.value:
+        return False
+    mark_refreshed(claim_path, _read_published_snapshot(claim_path), current_source_ids, ran_at)
+    return True
+
+
 def _write_audit_sidecar(
     claim_path: Path,
     comparison: ComparisonResult | None,

@@ -722,6 +722,44 @@ async def test_research_claim_writes_the_fitted_level(tmp_path: Path, monkeypatc
     assert "multiply-verified" in sidecar["pipeline_run"]["level_clamp"]
 
 
+@pytest.mark.asyncio
+async def test_forced_research_claim_over_a_published_claim_keeps_the_refresh_trail(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    """dr claim-draft --force does what dr claim-refresh does: the rewrite
+    waits for review and the sidecar keeps what readers saw."""
+    _write_parent(tmp_path)
+    _write_cached_transparency(tmp_path)
+    _patch_pipeline(monkeypatch)
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
+    first = await research_claim(
+        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
+    )
+    claim_path = tmp_path / first.claim_path
+    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
+    claim_path.write_text(
+        claim_path.read_text().replace("status: draft", "status: published"), encoding="utf-8"
+    )
+    sidecar = yaml.safe_load(sidecar_path.read_text())
+    sidecar["human_review"].update(reviewed_at="2026-10-02", reviewer="reviewer@example.org")
+    sidecar_path.write_text(yaml.safe_dump(sidecar), encoding="utf-8")
+    published_verdict = parse_frontmatter(claim_path.read_text())[0]["verdict"]
+
+    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8, force_overwrite=True)
+    second = await research_claim(
+        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
+    )
+
+    assert tmp_path / second.claim_path == claim_path
+    assert parse_frontmatter(claim_path.read_text())[0]["status"] == "draft"
+    sidecar = yaml.safe_load(sidecar_path.read_text())
+    assert sidecar["human_review"]["reviewed_at"] is None
+    assert sidecar["human_review"]["reviewer"] is None
+    assert sidecar["refresh"]["previous"]["status"] == "published"
+    assert sidecar["refresh"]["previous"]["verdict"] == published_verdict
+    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
+
+
 # --- The entity's own pages on a sibling host or under a publisher variant ---
 
 

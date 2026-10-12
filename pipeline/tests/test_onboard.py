@@ -1686,3 +1686,143 @@ class TestGatherLightResearchErrors:
             "https://ecosia.example: empty_summary: page not ingested and no error recorded"
         ]
 
+
+
+class TestOnboardForceRewritesKeepTheRefreshTrail:
+    """dr onboard --force over a claim that is not a draft does what dr
+    claim-refresh does: the sign-off is reset before the rewrite, and a
+    published claim's sidecar keeps what readers saw."""
+
+    SLUG = "publishes-sustainability-report"
+
+    def _setup(self, tmp_path: Path, status: str) -> tuple[Path, Path]:
+        import yaml
+
+        _setup_tmp_repo(tmp_path)
+        entity_dir = tmp_path / "research" / "entities" / "companies"
+        entity_dir.mkdir(parents=True, exist_ok=True)
+        (entity_dir / "openai.md").write_text(
+            "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n",
+            encoding="utf-8",
+        )
+        claim_path = tmp_path / "research" / "claims" / "openai" / f"{self.SLUG}.md"
+        claim_path.parent.mkdir(parents=True)
+        claim_path.write_text(
+            "---\ntitle: OpenAI publishes a sustainability or ESG report\n"
+            "entity: companies/openai\ntopics: [environmental-impact]\n"
+            f"verdict: 'true'\nconfidence: high\ncriteria_slug: {self.SLUG}\n"
+            f"status: {status}\nas_of: '2026-10-01'\nsources:\n- 2026/old\n---\nBody.\n",
+            encoding="utf-8",
+        )
+        sidecar_path = claim_path.with_name(f"{self.SLUG}.audit.yaml")
+        sidecar_path.write_text(yaml.safe_dump({
+            "schema_version": 1,
+            "pipeline_run": {"ran_at": "2026-10-01T00:00:00+00:00", "model": "m", "agents": ["analyst"]},
+            "sources_consulted": [],
+            "audit": None,
+            "human_review": {
+                "reviewed_at": "2026-10-02", "reviewer": "reviewer@example.org",
+                "notes": None, "pr_url": None,
+            },
+        }), encoding="utf-8")
+        return claim_path, sidecar_path
+
+    async def _onboard(self, tmp_path: Path, monkeypatch, *, blocked: bool) -> OnboardResult:
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.models import (
+            BlockedReason, Category, Confidence, EntityType, Verdict, VerificationLevel,
+        )
+        from orchestrator.pipeline import VerificationResult
+        from researcher.entity_verifier import entity_verifier_agent
+
+        async def fake_verify_claim(entity_name, claim_text, cfg, gate, **kwargs):
+            ao = None if blocked else AnalystOutput(
+                entity=EntityResolution(
+                    entity_name="OpenAI", entity_type=EntityType.COMPANY, entity_description="d",
+                ),
+                verdict=VerdictAssessment(
+                    title="OpenAI publishes a sustainability or ESG report",
+                    verdict=Verdict.FALSE,
+                    confidence=Confidence.MEDIUM,
+                    narrative="New narrative.",
+                    topics=[Category("environmental-impact")],
+                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
+                    seo_title="OpenAI sustainability report",
+                ),
+            )
+            return VerificationResult(
+                entity=entity_name, claim_text=claim_text,
+                urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
+                analyst_output=ao,
+                blocked_reason=BlockedReason.INSUFFICIENT_SOURCES if blocked else None,
+                cached_sources=[("https://new.example", "2026/new", {"title": "New"})],
+            )
+
+        monkeypatch.setattr("orchestrator.pipeline.verify_claim", fake_verify_claim)
+        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather(""))
+        with (
+            entity_verifier_agent.override(model=_verifier_model("verified")),
+            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
+        ):
+            config = VerifyConfig(
+                model="test", skip_wayback=True, repo_root=str(tmp_path), force_overwrite=True,
+            )
+            return await onboard_entity(
+                "OpenAI", "company", config=config, entity_ref="companies/openai",
+                only=[self.SLUG],
+            )
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("blocked", [False, True], ids=["success", "blocked"])
+    async def test_published_claim_keeps_the_published_state(
+        self, tmp_path: Path, monkeypatch, blocked: bool,
+    ) -> None:
+        import yaml
+
+        from orchestrator.review import refresh_verdict_change
+
+        claim_path, sidecar_path = self._setup(tmp_path, "published")
+
+        result = await self._onboard(tmp_path, monkeypatch, blocked=blocked)
+
+        assert not result.claims_failed, result.errors
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        assert fm["status"] == ("blocked" if blocked else "draft")
+        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert sidecar["human_review"]["reviewed_at"] is None
+        assert sidecar["human_review"]["reviewer"] is None
+        previous = sidecar["refresh"]["previous"]
+        assert previous["status"] == "published"
+        assert previous["verdict"] == "true"
+        assert previous["reviewer"] == "reviewer@example.org"
+        assert sidecar["refresh"]["dropped_sources"] == ["2026/old"]
+        if not blocked:
+            # dr review --approve then asks for a public correction.
+            assert refresh_verdict_change(fm, sidecar) == ("true", "false")
+
+    @pytest.mark.asyncio
+    async def test_archived_claim_loses_its_sign_off(self, tmp_path: Path, monkeypatch) -> None:
+        import yaml
+
+        claim_path, sidecar_path = self._setup(tmp_path, "archived")
+
+        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
+
+        assert not result.claims_failed, result.errors
+        assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
+        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert sidecar["human_review"]["reviewed_at"] is None
+        assert "refresh" not in sidecar
+
+    @pytest.mark.asyncio
+    async def test_draft_claim_keeps_its_review(self, tmp_path: Path, monkeypatch) -> None:
+        import yaml
+
+        _claim_path, sidecar_path = self._setup(tmp_path, "draft")
+
+        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
+
+        assert not result.claims_failed, result.errors
+        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert sidecar["human_review"]["reviewer"] == "reviewer@example.org"
+        assert "refresh" not in sidecar

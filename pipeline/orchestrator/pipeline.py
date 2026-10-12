@@ -1632,12 +1632,14 @@ async def research_claim(
     - Writes the claim file to research/claims/
     """
     from orchestrator.persistence import (
+        _claim_path_for,
         _write_audit_sidecar,
         _write_claim_file,
         _write_entity_file,
         _write_source_files,
         analyst_record_for,
         fit_verdict_to_written_pool,
+        mark_forced_rewrite,
         verdict_write_kwargs,
     )
 
@@ -1794,6 +1796,11 @@ async def research_claim(
                 analyst_out.verdict, result.sources, source_ids,
                 analyst_out.entity.entity_name,
             )
+            if cfg.force_overwrite:
+                mark_forced_rewrite(
+                    _claim_path_for(entity_ref, analyst_out.entity.entity_name, claim_slug, repo_root),
+                    source_ids, datetime.datetime.now(datetime.timezone.utc),
+                )
             claim_path = _write_claim_file(
                 title=analyst_out.verdict.title,
                 entity_name=analyst_out.entity.entity_name,
@@ -2312,6 +2319,7 @@ async def onboard_entity(
         analyst_record_for,
         entity_ref_for,
         fit_verdict_to_written_pool,
+        mark_forced_rewrite,
         verdict_write_kwargs,
     )
 
@@ -2726,6 +2734,11 @@ async def onboard_entity(
 
                     # Every branch below writes a claim, so sources go to disk first.
                     source_ids = vr.persist_sources(repo_root, onboard_url_index)
+                    if iter_cfg.force_overwrite:
+                        mark_forced_rewrite(
+                            existing_claim_path, source_ids,
+                            datetime.datetime.now(datetime.timezone.utc),
+                        )
 
                     # Threshold-blocked branch: persist a placeholder claim
                     # file with status='blocked' so the operator can see
