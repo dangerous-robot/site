@@ -13,6 +13,8 @@
     "check:reviewers": "tsx scripts/check-reviewer-display.ts",
     "check:types": "astro check",
     "test:site": "tsx --test 'src/lib/**/*.test.ts'",
+    "test:e2e": "playwright test",
+    "check:watch": "tsx scripts/check-watch-page.ts",
     "check": "npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers"
   },
   "engines": {
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
+    "@playwright/test": "^1.64.0",
     "@types/js-yaml": "^4.0.9",
     "d3-cloud": "^1.2.9",
     "d3-force": "^3.0.0",
