@@ -1350,14 +1350,50 @@ class TestWriteClaimFile:
         record = yaml.safe_load(sidecar.read_text())["analyst_record"]
         assert record["cap_rationale"] == "New analyst rationale."
 
-    def test_operator_cap_rationale_replaced_when_the_level_changes(self, tmp_path):
+    def test_operator_cap_rationale_kept_when_the_level_changes(self, tmp_path):
         self._add_sidecar(tmp_path)
         path = self._capped_run(tmp_path, "Analyst rationale.")
         self._set_frontmatter(path, cap_rationale="Operator rationale.")
 
         self._capped_run(tmp_path, "Self-reported rationale.", verification_level="self-reported")
 
-        assert self._cap_rationale(path) == "Self-reported rationale."
+        assert self._cap_rationale(path) == "Operator rationale."
+
+    def test_operator_cap_rationale_kept_when_the_confidence_changes(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.", confidence="medium")
+
+        self._capped_run(tmp_path, "Fit rationale.", cap_rationale_fitted=True)
+
+        assert self._cap_rationale(path) == "Operator rationale."
+
+    def test_operator_cap_rationale_kept_across_level_changes_until_the_operator_edits_it(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._capped_run(tmp_path, "Self-reported rationale.", verification_level="self-reported")
+        self._capped_run(tmp_path, "Claimed rationale.")
+        assert self._cap_rationale(path) == "Operator rationale."
+
+        self._set_frontmatter(path, cap_rationale="Claimed rationale.")
+        self._capped_run(tmp_path, "Newer analyst rationale.")
+        assert self._cap_rationale(path) == "Newer analyst rationale."
+
+    def test_operator_cap_rationale_dropped_when_no_cap_applies(self, tmp_path):
+        # A cap reason on an uncapped claim would state a cap the claim does
+        # not have, so the keep rule holds only while a cap applies.
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._call(
+            tmp_path, force=True, title=self._TITLE, seo_title="Analyst seo title",
+            confidence=Confidence.MEDIUM, verification_level="partially-verified",
+        )
+
+        assert self._cap_rationale(path) is None
 
     def test_blocked_write_keeps_the_cap_rationale_record(self, tmp_path):
         sidecar = self._add_sidecar(tmp_path)
