@@ -34,9 +34,9 @@ Data comes from YouTube Data API v3. It is fetched at build time by a custom Ast
 - [x] T14: Panels, thumbnails, card clicks and popup (wave 4, lane F) [parallel]
 - [x] T15: Preview switch and frame cycling (wave 4, lane G) [parallel]
 - [x] T16: Post-build dist check script (wave 4, lane H) [parallel]
-- [ ] T22: Cross-lane browser tests after the wave 4 merge (wave 5)
-- [ ] T17: Wire checks into npm, Invoke and CI; weekly scheduled deploy of main (wave 5)
-- [ ] T18: Architecture docs and roadmap (wave 5)
+- [x] T22: Cross-lane browser tests after the wave 4 merge (wave 5)
+- [x] T17: Wire checks into npm, Invoke and CI; weekly scheduled deploy of main (wave 5)
+- [x] T18: Architecture docs and roadmap (wave 5)
 - [ ] T19: Live key verification on Brandon's machine (wave 6)
 - [ ] T21: Manual-dispatch deploy verification of the per-playlist fetch log lines (wave 6, ask Brandon first)
 - [ ] T20: Manual browser check and first deploy (wave 6, ask Brandon first)
@@ -142,7 +142,7 @@ Per-playlist outcomes in `live` and `fixture` mode:
 |------|-----------|
 | `playlists.list` returns the ID and `playlistItems.list` works, at least one video kept | `status: ok`. `fetched` line. |
 | Readable, but every video is filtered out | `status: empty`. Panel: "This playlist has no public videos right now." `fetched` line with `0 videos`. |
-| Title known from `playlists.list`, but `playlistItems.list` returns 404 `playlistNotFound` or 403 `forbidden` (not a key error) | `status: failed`, no videos. Panel: "These videos could not be loaded." plus "See the playlist on YouTube". Warning. |
+| Title known from `playlists.list`, but `playlistItems.list` fails for any reason other than a key or quota error (for example 404, 403 not about the key, 400, 5xx after retries, timeout) | `status: failed`, no videos. Panel: "These videos could not be loaded." plus "See the playlist on YouTube". Warning. |
 | The ID is missing from the batched `playlists.list` response | Omitted from the page. Warning plus `skipped` line. |
 
 Global errors stop the load. A key error is any response whose `error.errors[0].reason` is `keyInvalid` (whatever the status, since an invalid key can return 400), or a 403 `forbidden` whose `error.message` mentions `referer` (case-insensitive). Quota (`quotaExceeded`), network after retries and malformed JSON are also global.
@@ -223,7 +223,7 @@ export interface WatchBuildResult { mode: WatchMode; playlists: WatchPlaylist[];
 export interface WatchState {
   selectedSlug: string;                           // tab shown
   video: { slug: string; id: string } | null;     // in the player
-  loaded: boolean;                                // a known deep-linked v, a card click, or poster Play
+  loaded: boolean;                                // a known deep-linked v, or an embed that has started (watch:play)
   notice: boolean;                                // unknown v on arrival
 }
 ```
@@ -239,7 +239,7 @@ The client JSON block is `<script type="application/json" data-watch-data>` hold
 | CSS classes | UI spec § 7.2, prefix `watch-`, BEM-style elements (`.watch-thumb__media`). Scoped `<style>` in each component; nothing added to `src/styles/global.css`. Page-level blocks (`.watch`, `.watch-layout`, `.watch-rail`, `.watch-main`, `.watch-toolbar`, `.watch-attribution`, `.lede`) live in `watch.astro`. Classes on elements that JS creates (`.watch-thumb__frame`, `.is-shown`, `.watch-player__iframe`) must be styled with `:global()` inside their owner's scoped block, because Astro scoping does not reach inserted nodes. `CLASS` in `contract.ts` exports the names JS touches: `thumbMedia`, `thumbFrame`, `frameShown`, `thumbPlaying`, `playerIframe`. |
 | Storage key | `dr-watch-previews`, values `on` or `off`, written only on an explicit choice. |
 | Bus events | `WATCH_EVENTS = { playlist: 'watch:playlist', video: 'watch:video', play: 'watch:play', preview: 'watch:preview' }` on one `EventTarget` created in `client/main.ts`. Details in `types.ts`: playlist `{slug}`, video `{slug, id, play: boolean, notice: boolean}`, play `{slug, id}`, preview `{enabled}`. `play: false` means "show this poster"; only `play: true` and `watch:play` mark a card playing. |
-| Startup and ownership | `main.ts` parses the URL, calls every `init*`, then emits `watch:playlist` for the arrival tab and `watch:video {play: false}` for the arrival poster (with `notice: true` for an unknown `v`). It does not announce at startup. `main.ts` owns `WatchState`: a known deep-linked `v`, `play: true` and `watch:play` set `loaded`; on a reader's tab change while `loaded` is false it emits `watch:video {play: false}` for the new playlist's first video (UI spec § 4.6), and emits nothing for a playlist with no videos (§ 5). Controllers render what the bus says and keep no copy of the selection state. |
+| Startup and ownership | `main.ts` parses the URL, calls every `init*`, then emits `watch:playlist` for the arrival tab and `watch:video {play: false}` for the arrival poster (with `notice: true` for an unknown `v`). It does not announce at startup. `main.ts` owns `WatchState`: a known deep-linked `v` and `watch:play` set `loaded`, so `?v=` names a video only once its embed has started (a pick still waiting for the player to scroll into view does not change the URL); on a reader's tab change while `loaded` is false and no pick is waiting, it emits `watch:video {play: false}` for the new playlist's first video (UI spec § 4.6), and emits nothing for a playlist with no videos (§ 5). Controllers render what the bus says and keep no copy of the selection state. |
 | Embed | `https://www.youtube-nocookie.com/embed/<id>?autoplay=1&rel=0`, `allow="autoplay; encrypted-media; picture-in-picture; fullscreen"`, `allowfullscreen`, `title="<title> (YouTube video)"`. Never a `referrerpolicy` attribute on the iframe. |
 | Autoplay gate | `PLAYER_MIN_VISIBLE_RATIO = 0.5`: an iframe is inserted only when the player frame is at least half in view (UI spec § 4.7). |
 | Breakpoints | `BREAKPOINT_DESKTOP_PX = 1120` (rail beside the main column at 1120px and up), `BREAKPOINT_PHONE_PX = 640` (one grid column at 640px and down). CSS uses the same literal values (UI spec § 2). |

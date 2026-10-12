@@ -57,7 +57,7 @@ export interface WatchState {
   selectedSlug: string;
   /** Video in the player. */
   video: { slug: string; id: string } | null;
-  /** A known deep-linked v, a card click, or poster Play. */
+  /** A known deep-linked v, or an embed that has started (watch:play). */
   loaded: boolean;
   /** Unknown v on arrival. */
   notice: boolean;

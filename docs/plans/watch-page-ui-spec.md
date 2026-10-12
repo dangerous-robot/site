@@ -445,7 +445,7 @@ The description is plain text with `white-space: pre-line`; no auto-linking.
 
 - Shape: `/watch?list={slug}&v={videoId}`. Query, not hash (the skip link uses `#main-content`, `src/layouts/Base.astro:142`).
 - Write with `history.replaceState` only (no history entries per pick).
-- Before any video is loaded: `list` follows the selected tab, `v` omitted. After one is loaded: `list` and `v` name the loaded video and its playlist; changing tabs afterwards does not change the URL.
+- A video counts as loaded once its embed has started, or when it arrives by a known deep link. Before any video is loaded: `list` follows the selected tab, `v` omitted. After one is loaded: `list` and `v` name the loaded video and its playlist; changing tabs afterwards does not change the URL.
 - Arrival: `list` known selects that tab. `v` known in that playlist sets the poster (no iframe) and counts as loaded, so the URL keeps it. `v` given without `list`: use the first playlist containing it. Unknown `list`: first default playlist, URL rewritten without it. Unknown `v`: first video of the playlist, show the notice "That video is no longer in this playlist.", URL rewritten without `v`.
 - Parsing and serialising live in `src/lib/watch/state.ts` (covered by the arch doc's URL round-trip unit test, U8).
 
