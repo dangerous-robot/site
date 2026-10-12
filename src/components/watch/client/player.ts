@@ -3,9 +3,9 @@
 // only when notice is true; play: true also inserts the embed once the frame
 // is at least half in view. Emits watch:play when the embed goes in.
 //
-// The embed is built with createElement on purpose: the client bundle is
-// inlined into the page, and the post-build check fails if the iframe tag
-// text appears anywhere in the built /watch HTML.
+// The embed is built with createElement on purpose: the post-build check
+// fails if the iframe tag text appears anywhere in the built /watch HTML,
+// and a small client bundle may be inlined into it.
 import {
   ATTR,
   CLASS,
@@ -156,7 +156,9 @@ export function initPlayer(root: HTMLElement, bus: EventTarget, data: WatchPlayl
           insertEmbed(playlist, video);
         }
       },
-      { threshold: PLAYER_MIN_VISIBLE_RATIO },
+      // 1 as well: if the crossing report lands a hair under the ratio, the
+      // frame still settles fully in view and reports again.
+      { threshold: [PLAYER_MIN_VISIBLE_RATIO, 1] },
     );
     pending = observer;
     observer.observe(frame!);

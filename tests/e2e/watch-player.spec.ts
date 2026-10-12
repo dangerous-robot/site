@@ -117,6 +117,36 @@ test.describe('poster Play with the frame less than half in view', () => {
     await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SHORT}$`));
   });
 
+  test('scrolls smoothly, or instantly under either reduce setting', async ({ page }) => {
+    await page.addInitScript(() => {
+      const calls: (ScrollIntoViewOptions | boolean | undefined)[] = [];
+      Object.assign(window, { scrollCalls: calls });
+      Element.prototype.scrollIntoView = (arg) => void calls.push(arg);
+    });
+    const behaviours = () =>
+      page.evaluate(() =>
+        (window as unknown as { scrollCalls: ScrollIntoViewOptions[] }).scrollCalls.map((c) => c.behavior),
+      );
+
+    await scrollFrameMostlyOut(page);
+    await page.getByTestId('watch-play').dispatchEvent('click');
+    expect(await behaviours()).toEqual(['smooth']);
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await scrollFrameMostlyOut(page);
+    await page.getByTestId('watch-play').dispatchEvent('click');
+    expect(await behaviours()).toEqual(['auto']);
+
+    // The site's Motion setting, without the OS setting.
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await scrollFrameMostlyOut(page);
+    await page.evaluate(() => {
+      document.documentElement.dataset.motion = 'reduce';
+    });
+    await page.getByTestId('watch-play').dispatchEvent('click');
+    expect(await behaviours()).toEqual(['auto']);
+  });
+
   test('scrolls the frame into view, then inserts the embed', async ({ page }) => {
     await scrollFrameMostlyOut(page);
     await page.getByTestId('watch-play').dispatchEvent('click');
