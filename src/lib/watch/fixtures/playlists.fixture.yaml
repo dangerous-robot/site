@@ -1,0 +1,30 @@
+# Curated list for WATCH_DATA=fixture builds, unit tests and browser tests.
+# Every ID and every line of text is invented (no YouTube API data is kept
+# in the repo). fixtureFetch serves matching responses from fixtures/api/.
+#
+# alpha    readable; two playlistItems pages with deleted, private, live,
+#          non-embeddable and duplicate items; sd and mq frame tiers
+# bravo    readable, but every item is filtered out (status: empty);
+#          no description here, so the API description is used
+# charlie  listed, but playlistItems.list returns 404 (status: failed)
+# delta    missing from playlists.list, so it is omitted from the page
+
+playlists:
+  - slug: alpha
+    playlist_id: PLfixtureAlpha01
+    order: 1
+    description: "Fixture playlist with a mix of kept and dropped videos."
+
+  - slug: bravo
+    playlist_id: PLfixtureBravo02
+    order: 2
+
+  - slug: charlie
+    playlist_id: PLfixtureCharlie3
+    order: 3
+    description: "Fixture playlist whose videos cannot be loaded."
+
+  - slug: delta
+    playlist_id: PLfixtureDelta04
+    order: 4
+    description: "Fixture playlist the API does not return."

@@ -1,0 +1,31 @@
+# Curated playlists for /watch. The build fetches titles, videos and
+# thumbnails from the YouTube Data API; nothing from the API is stored here.
+# Schema: src/lib/watch/schema.ts (curatedFileSchema).
+#
+# slug        ?list= value in shared URLs; kebab-case, unique
+# playlist_id YouTube playlist ID, unique
+# order       tab order, unique positive integer
+# description editor copy, max 200 characters; omit to use the API description
+# creator     optional; overrides the owner channel name from the API
+# max_videos  optional, 1 to 200, default 50
+#
+# TODO(Brandon): rewrite the three stub descriptions and confirm the slugs
+# before the first deploy (slugs appear in shared URLs).
+
+playlists:
+  - slug: dangerous-robot
+    playlist_id: PLXFc9I7KsRUk
+    order: 1
+    description: "Description: TBD, Brandon to write."
+
+  - slug: far-ai-research-highlights
+    playlist_id: PLpvkFqYJXcreU5HqW6aUYeppYPG8aBRZ_
+    order: 2
+    description: "Description: TBD, Brandon to write."
+    max_videos: 50
+
+  - slug: oxford-ethics-colloquia
+    playlist_id: PLf4lTwFHevBuvTDX4m8N5WVAX62IkhXJ7
+    order: 3
+    description: "Description: TBD, Brandon to write."
+    max_videos: 50
