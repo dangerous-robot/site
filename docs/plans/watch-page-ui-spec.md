@@ -552,7 +552,7 @@ No new tokens. Fixed colours appear only on elements that sit on video imagery, 
 - Themes: every themed colour is a token; `tokens.css` switches them on `[data-theme]` and `[data-contrast]`, set before paint by `Base.astro:109-131`. Nothing on /watch reads the theme. Check all four combinations (dark, light, dark high contrast, light high contrast).
 - Motion: remove all transitions and animations (card border, frame crossfade, popup fade, smooth scroll) under both `@media (prefers-reduced-motion: reduce)` and `:root[data-motion="reduce"]`, as `global.css:44-49` and `A11yControl.astro` style block do.
 - Focus: global `:focus-visible` (`global.css:105-109`: 2px accent, 3px offset) on tabs, cards (ring wraps image and title), poster button, links, Show more. Switch radios use the copied `.a11y-radio:focus-visible` (1px offset). The player title (`tabindex="-1"`) gets the ring only after keyboard use (browser `:focus-visible` rule).
-- Targets: tabs 44px tall; switch radios 36px (44px at 639px and down, as `.a11y-radio`).
+- Targets: tabs 44px tall; switch radios 36px (44px at 640px and down, as `.a11y-radio`).
 
 ### 7.4 Images
 

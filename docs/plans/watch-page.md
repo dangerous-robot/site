@@ -17,23 +17,23 @@ Data comes from YouTube Data API v3. It is fetched at build time by a custom Ast
 
 ## Status
 
-- [ ] T0: Review, promote the plan and UI spec, register the work item
-- [ ] T1: Dev dependency and npm scripts (wave 1)
-- [ ] T2: Types, schemas, timings and UI contract (wave 1)
-- [ ] T3: Curated playlists and fixture curated list (wave 1)
-- [ ] T4: Duration parsing and text (wave 2, lane A) [parallel]
-- [ ] T5: YouTube API client with pagination, batching, retry, redaction, error mapping (wave 2, lane A) [parallel]
-- [ ] T6: Normalize and filter, including the non-embeddable drop (wave 2, lane A) [parallel]
-- [ ] T7: Build orchestration, mode resolution, log lines, fixture fetch (wave 2, lane A) [parallel]
-- [ ] T8: Client pure logic: URL state, preview gate and cycler, frames, popup placement (wave 2, lane B) [parallel]
-- [ ] T9: Privacy page and Base.astro comment (wave 2, lane C) [parallel]
-- [ ] T10: Content collection and loader wiring (wave 3)
-- [ ] T11: Page shell, EmptyState slot, stub components, client main, Playwright scaffold (wave 3)
-- [ ] T12: Playlist tabs (wave 4, lane D) [parallel]
-- [ ] T13: Player, including autoplay only when half on screen (wave 4, lane E) [parallel]
-- [ ] T14: Panels, thumbnails, card clicks and popup (wave 4, lane F) [parallel]
-- [ ] T15: Preview switch and frame cycling (wave 4, lane G) [parallel]
-- [ ] T16: Post-build dist check script (wave 4, lane H) [parallel]
+- [x] T0: Review, promote the plan and UI spec, register the work item
+- [x] T1: Dev dependency and npm scripts (wave 1)
+- [x] T2: Types, schemas, timings and UI contract (wave 1)
+- [x] T3: Curated playlists and fixture curated list (wave 1)
+- [x] T4: Duration parsing and text (wave 2, lane A) [parallel]
+- [x] T5: YouTube API client with pagination, batching, retry, redaction, error mapping (wave 2, lane A) [parallel]
+- [x] T6: Normalize and filter, including the non-embeddable drop (wave 2, lane A) [parallel]
+- [x] T7: Build orchestration, mode resolution, log lines, fixture fetch (wave 2, lane A) [parallel]
+- [x] T8: Client pure logic: URL state, preview gate and cycler, frames, popup placement (wave 2, lane B) [parallel]
+- [x] T9: Privacy page and Base.astro comment (wave 2, lane C) [parallel]
+- [x] T10: Content collection and loader wiring (wave 3)
+- [x] T11: Page shell, EmptyState slot, stub components, client main, Playwright scaffold (wave 3)
+- [x] T12: Playlist tabs (wave 4, lane D) [parallel]
+- [x] T13: Player, including autoplay only when half on screen (wave 4, lane E) [parallel]
+- [x] T14: Panels, thumbnails, card clicks and popup (wave 4, lane F) [parallel]
+- [x] T15: Preview switch and frame cycling (wave 4, lane G) [parallel]
+- [x] T16: Post-build dist check script (wave 4, lane H) [parallel]
 - [ ] T22: Cross-lane browser tests after the wave 4 merge (wave 5)
 - [ ] T17: Wire checks into npm, Invoke and CI; weekly scheduled deploy of main (wave 5)
 - [ ] T18: Architecture docs and roadmap (wave 5)
