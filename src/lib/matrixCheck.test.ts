@@ -10,6 +10,7 @@ import {
 import type { ClaimInfo } from './matrixEvidence';
 import { matrixDataSchema, type MatrixFeature } from './matrixSchema';
 import { activeCriteria, claim, pageData, researchClaims, researchSources } from './matrixTestFixtures';
+import { VALUES_POSITION_IDS } from './valuesPositions';
 
 const VOCABULARY = ['publicly-traded', 'privately-held', 'non-profit', 'B-corp', 'employee-owned', 'steward-ownership', 'cooperative'];
 
@@ -120,7 +121,7 @@ describe('matrixEvidenceProblems: passing data', () => {
   });
   test("today's page data passes against the real criteria and every claim and source file on disk", () => {
     const data = matrixDataSchema.parse(pageData());
-    const real = lookups({ claims: researchClaims(), sources: researchSources(), entities: new Map(), criteria: activeCriteria(), valuesPositions: [] });
+    const real = lookups({ claims: researchClaims(), sources: researchSources(), entities: new Map(), criteria: activeCriteria(), valuesPositions: VALUES_POSITION_IDS });
     assert.deepEqual(matrixEvidenceProblems(data, real), []);
   });
   test('validateMatrixEvidence throws once with every problem listed', () => {
