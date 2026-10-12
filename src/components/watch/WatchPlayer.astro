@@ -14,6 +14,9 @@ const { video, playlist } = Astro.props;
 // elements to fill.
 const title = video?.title ?? '';
 ---
+{/* Outside the section so it can show on its own when an unknown v
+    arrives on a playlist with no videos, which hides the player. */}
+<p class="watch-notice" data-testid={TESTID.notice} hidden>That video is no longer in this playlist.</p>
 <section
   class="watch-player"
   aria-labelledby="watch-player-title"
@@ -22,7 +25,6 @@ const title = video?.title ?? '';
   data-playlist={playlist?.slug}
   hidden={!video}
 >
-  <p class="watch-notice" data-testid={TESTID.notice} hidden>That video is no longer in this playlist.</p>
   <div class="watch-player__frame" data-testid={TESTID.playerFrame}>
     <button type="button" class="watch-player__poster" aria-label={`Play: ${title}`} data-testid={TESTID.play}>
       <img

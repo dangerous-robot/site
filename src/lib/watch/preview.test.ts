@@ -73,7 +73,7 @@ class FakeLoader {
 
 const URLS = frameUrls('aaaaaaaaaa1', 'sd');
 
-function run(loader: FrameLoader, urls: readonly string[] = URLS) {
+function run(loader: FrameLoader, urls: readonly string[] = URLS, elapsedMs?: number) {
   const clock = new FakeClock();
   const shown: { frame: number; at: number }[] = [];
   let restored = 0;
@@ -82,6 +82,7 @@ function run(loader: FrameLoader, urls: readonly string[] = URLS) {
     urls,
     clock,
     load: loader,
+    elapsedMs,
     onFrame: (frame) => shown.push({ frame, at: clock.now }),
     onRestore: () => restored++,
     onNoPreview: () => noPreview++,
@@ -135,6 +136,20 @@ describe('startFrameCycle with a fake clock (UI spec § 4.4)', () => {
     assert.deepEqual(loader.requests, []);
     clock.advanceTo(FRAME_LOAD_AT_MS);
     assert.deepEqual(loader.requests, URLS);
+  });
+
+  test('started at pointer rest (FRAME_LOAD_AT_MS already passed): requests at once, keeps the rest of the timeline', () => {
+    const loader = new FakeLoader((url) => url !== URLS[1]);
+    const { clock, shown } = run(loader.load, URLS, FRAME_LOAD_AT_MS);
+    assert.deepEqual(loader.requests, URLS);
+    const firstAt = FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS;
+    clock.advanceTo(firstAt - 1);
+    assert.deepEqual(shown, []);
+    clock.advanceTo(firstAt + FRAME_INTERVAL_MS);
+    assert.deepEqual(shown, [
+      { frame: 1, at: firstAt },
+      { frame: 3, at: firstAt + FRAME_INTERVAL_MS },
+    ]);
   });
 
   test('first frame shows at FRAME_FIRST_AT_MS, then advances every FRAME_INTERVAL_MS and loops', () => {

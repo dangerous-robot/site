@@ -2,20 +2,60 @@
 // `expect` from here, so each test runs offline: i.ytimg.com answers with
 // generated images, youtube-nocookie.com with a blank page, and any other
 // external request is blocked and fails the test at teardown.
-import { test as base, expect, type Route } from '@playwright/test';
+import { test as base, expect, type Locator, type Page, type Route } from '@playwright/test';
 import { deflateSync } from 'node:zlib';
+import { EMBED_ORIGIN, TESTID } from '../../src/lib/watch/contract';
+import { YTIMG_ORIGIN } from '../../src/lib/watch/frames';
 
 export { expect };
 
-export const YTIMG = 'https://i.ytimg.com';
-export const NOCOOKIE = 'https://www.youtube-nocookie.com';
+type TestId = (typeof TESTID)[keyof typeof TESTID];
+
+export function testid(id: TestId): string {
+  return `[data-testid="${id}"]`;
+}
+
+/** The page root. Base.astro renders a second role="status", so every query is scoped to it. */
+export function watchRoot(page: Page): Locator {
+  return page.getByTestId(TESTID.page);
+}
+
+export function card(page: Page, id: string, slug = 'alpha'): Locator {
+  return watchRoot(page).locator(`${testid(TESTID.thumb)}[data-playlist="${slug}"][data-video-id="${id}"]`);
+}
+
+export function panel(page: Page, slug: string): Locator {
+  return watchRoot(page).locator(`${testid(TESTID.panel)}[data-playlist="${slug}"]`);
+}
+
+export function tab(page: Page, slug: string): Locator {
+  return watchRoot(page).locator(`${testid(TESTID.tab)}[data-playlist="${slug}"]`);
+}
+
+/**
+ * Opens a /watch path with the page clock installed, and pauses it once
+ * client/main.ts has run, so only clock.runFor moves page time.
+ */
+export async function openWatch(page: Page, path = '/watch'): Promise<Locator> {
+  await page.clock.install();
+  await page.goto(path);
+  return pauseOnceStarted(page);
+}
+
+/** The second half of openWatch, for use after a reload. */
+export async function pauseOnceStarted(page: Page): Promise<Locator> {
+  // main.ts has run once the URL carries the tab.
+  await expect(page).toHaveURL(/[?&]list=/);
+  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
+  return watchRoot(page);
+}
 
 /** Hover-preview frames (sd1 to sd3, mq1 to mq3); covers such as mqdefault.jpg do not match. */
 export const FRAME_PATH_RE = /^\/vi\/[^/]+\/(sd|mq)([1-3])\.jpg$/;
 
 export function isFrameUrl(url: string): boolean {
   const parsed = new URL(url);
-  return parsed.origin === YTIMG && FRAME_PATH_RE.test(parsed.pathname);
+  return parsed.origin === YTIMG_ORIGIN && FRAME_PATH_RE.test(parsed.pathname);
 }
 
 /**
@@ -105,14 +145,14 @@ export const test = base.extend<WatchFixtures>({
     async ({ context, baseURL, missingFrames }, use) => {
       const local = new URL(baseURL ?? 'http://127.0.0.1').origin;
       const log: NetworkLog = { requests: [], blocked: [] };
-      // One handler for everything: separate routes would need care over
-      // which registration wins.
-      await context.route('**/*', (route) => {
+      context.on('request', (request) => log.requests.push(request.url()));
+      // Only external requests are routed, so the page's own files load
+      // without a round trip through the test. One handler for all of them:
+      // separate routes would need care over which registration wins.
+      await context.route((url) => url.origin !== local, (route) => {
         const url = new URL(route.request().url());
-        log.requests.push(url.href);
-        if (url.origin === local) return route.continue();
-        if (url.origin === YTIMG) return fulfillImage(route, url.pathname, missingFrames);
-        if (url.origin === NOCOOKIE) {
+        if (url.origin === YTIMG_ORIGIN) return fulfillImage(route, url.pathname, missingFrames);
+        if (url.origin === EMBED_ORIGIN) {
           return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>player</title>' });
         }
         log.blocked.push(url.href);

@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { placePopup, POPUP_EDGE_PX, type Rect } from './popup-position';
+import { placePopup, POPUP_EDGE_PX, rectsOverlap, type Rect } from './popup-position';
 
 const viewport = { width: 1440, height: 900 };
 const popup = { width: 360, height: 240 };
@@ -9,9 +9,14 @@ function rect(left: number, top: number, width: number, height: number): Rect {
   return { left, top, right: left + width, bottom: top + height };
 }
 
-function overlaps(a: Rect, b: Rect): boolean {
-  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
-}
+describe('rectsOverlap', () => {
+  test('shared area overlaps; touching edges and gaps do not', () => {
+    assert.equal(rectsOverlap(rect(0, 0, 10, 10), rect(5, 5, 10, 10)), true);
+    assert.equal(rectsOverlap(rect(0, 0, 10, 10), rect(10, 0, 10, 10)), false);
+    assert.equal(rectsOverlap(rect(0, 0, 10, 10), rect(0, 10, 10, 10)), false);
+    assert.equal(rectsOverlap(rect(0, 0, 10, 10), rect(20, 20, 5, 5)), false);
+  });
+});
 
 describe('placePopup (UI spec § 4.3)', () => {
   test('right of the card, top aligned, touching it, when width plus 16px fits', () => {
@@ -99,7 +104,7 @@ describe('placePopup (UI spec § 4.3)', () => {
               assert.ok(placed.top >= POPUP_EDGE_PX);
               if (player) {
                 const box = { left: placed.left, top: placed.top, right: placed.left + size.width, bottom: placed.top + size.height };
-                assert.equal(overlaps(box, player), false, JSON.stringify({ vp, player, card, size, placed }));
+                assert.equal(rectsOverlap(box, player), false, JSON.stringify({ vp, player, card, size, placed }));
               }
             }
           }

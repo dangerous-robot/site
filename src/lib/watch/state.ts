@@ -1,11 +1,13 @@
-// URL state for /watch (UI spec § 4.8, plan P3): ?list= is the curated slug
-// and ?v= the YouTube video ID. Pure so arrival rules are unit tested;
-// client/main.ts owns the live WatchState and calls history.replaceState.
-import type { WatchState } from './types';
+// URL state for /watch (UI spec § 4.8): ?list= is the curated slug and ?v=
+// the YouTube video ID. Pure so arrival rules are unit tested; client/main.ts
+// owns the live WatchState and calls history.replaceState.
+import { defaultPlaylist } from './defaultPlaylist';
+import type { PlaylistStatus, WatchState } from './types';
 
 /** The least of the client data parseUrl needs, so tests can pass bare objects. */
 export interface UrlPlaylist {
   slug: string;
+  status: PlaylistStatus;
   videos: readonly { id: string }[];
 }
 
@@ -19,9 +21,10 @@ function firstVideo(playlist: UrlPlaylist | undefined): WatchState['video'] {
 }
 
 /**
- * Arrival state from location.search. Playlists are in tab order; the first
- * is the server's default tab. Only a known v counts as loaded, so the
- * rewritten URL (toSearch) keeps it and drops anything unknown.
+ * Arrival state from location.search. Playlists are in tab order; with no
+ * known list the tab is the server's default (defaultPlaylist). Only a known
+ * v counts as loaded, so the rewritten URL (toSearch) keeps it and drops
+ * anything unknown. video is null when the selected playlist has none.
  */
 export function parseUrl(search: string, playlists: readonly UrlPlaylist[]): WatchState {
   const params = new URLSearchParams(search);
@@ -38,7 +41,7 @@ export function parseUrl(search: string, playlists: readonly UrlPlaylist[]): Wat
     }
   }
 
-  const selected = listed ?? playlists[0];
+  const selected = listed ?? defaultPlaylist(playlists);
   return {
     selectedSlug: selected?.slug ?? '',
     video: firstVideo(selected),

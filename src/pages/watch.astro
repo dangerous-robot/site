@@ -8,7 +8,7 @@ import VideoPopup from '../components/watch/VideoPopup.astro';
 import WatchPanel from '../components/watch/WatchPanel.astro';
 import WatchPlayer from '../components/watch/WatchPlayer.astro';
 import WatchPlaylistTabs from '../components/watch/WatchPlaylistTabs.astro';
-import { defaultPlaylist } from '../components/watch/defaultPlaylist';
+import { defaultPlaylist } from '../lib/watch/defaultPlaylist';
 import { jsonForScript } from '../lib/jsonForScript';
 import { TESTID, YOUTUBE_TERMS_URL } from '../lib/watch/contract';
 import type { WatchClientData, WatchMode, WatchPlaylistView } from '../lib/watch/types';
@@ -49,7 +49,7 @@ const payload: WatchClientData = { playlists };
         <noscript>
           <style is:inline>
             .watch-panel[hidden] { display: block !important; }
-            .watch-rail, .watch-player, .watch-switch { display: none !important; }
+            .watch-rail, .watch-player, .watch-notice, .watch-switch { display: none !important; }
             .watch-layout { display: block !important; }
           </style>
         </noscript>
@@ -103,13 +103,19 @@ const payload: WatchClientData = { playlists };
       gap: var(--space-xl);
     }
 
+    /* The sticky rail scrolls (overflow-y: auto), which clips anything drawn
+       outside it, including the global focus ring on the edge tabs. The
+       padding gives the ring room inside the scroll box and the equal
+       negative margin keeps the rail's content where it was. */
     .watch-rail {
+      --watch-ring-room: 5px; /* global focus ring: 2px outline plus 3px offset */
       position: sticky;
-      top: var(--space-lg);
+      top: calc(var(--space-lg) - var(--watch-ring-room));
       align-self: start;
-      max-height: calc(100vh - 2 * var(--space-lg));
+      max-height: calc(100vh - 2 * var(--space-lg) + 2 * var(--watch-ring-room));
       overflow-y: auto;
-      margin-bottom: 0;
+      padding: var(--watch-ring-room);
+      margin: calc(-1 * var(--watch-ring-room));
     }
   }
 

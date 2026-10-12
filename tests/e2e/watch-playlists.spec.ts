@@ -2,18 +2,21 @@
 // rewrites ?list= and announces; deep links pick the tab; the keyboard
 // follows the tabs pattern with manual activation.
 import type { Locator, Page } from '@playwright/test';
-import { expect, test } from './helpers';
+import { TESTID } from '../../src/lib/watch/contract';
+import { FIXTURE_PLAYLISTS, fixturePlaylist } from '../../src/lib/watch/fixtures/expected';
+import { expect, panel, tab, test, watchRoot } from './helpers';
 
-const SLUGS = ['alpha', 'bravo', 'charlie'] as const;
-type Slug = (typeof SLUGS)[number];
+const SLUGS = FIXTURE_PLAYLISTS.map((p) => p.slug);
+type Slug = string;
 
 function setup(page: Page) {
-  // Base.astro renders a second role="status", so every query is scoped.
-  const root = page.getByTestId('watch-page');
-  const tab = (slug: Slug) => root.locator(`[data-testid="watch-tab"][data-playlist="${slug}"]`);
-  const panel = (slug: Slug) => root.locator(`[data-testid="watch-panel"][data-playlist="${slug}"]`);
-  const status = root.getByTestId('watch-status');
-  return { root, tab, panel, status };
+  const root = watchRoot(page);
+  return {
+    root,
+    tab: (slug: Slug) => tab(page, slug),
+    panel: (slug: Slug) => panel(page, slug),
+    status: root.getByTestId(TESTID.status),
+  };
 }
 
 async function expectSelected(page: Page, selected: Slug, focusable: Slug = selected) {
@@ -26,8 +29,8 @@ async function expectSelected(page: Page, selected: Slug, focusable: Slug = sele
   }
 }
 
-async function tabName(tab: Locator): Promise<string> {
-  return (await tab.locator('.watch-tab__name').textContent())?.trim() ?? '';
+async function tabName(target: Locator): Promise<string> {
+  return (await target.locator('.watch-tab__name').textContent())?.trim() ?? '';
 }
 
 test('selecting a tab swaps the panel, sets ?list= and announces it', async ({ page }) => {
@@ -45,7 +48,8 @@ test('selecting a tab swaps the panel, sets ?list= and announces it', async ({ p
   await expect(tab('bravo')).toBeFocused();
 
   const alphaName = await tabName(tab('alpha'));
-  const n = await panel('alpha').getByTestId('watch-thumb').count();
+  const n = fixturePlaylist('alpha').videoIds.length;
+  await expect(panel('alpha').getByTestId(TESTID.thumb)).toHaveCount(n);
   expect(n).toBeGreaterThan(1);
   // A click on the description span still selects its tab.
   await tab('alpha').locator('.watch-tab__desc').click();

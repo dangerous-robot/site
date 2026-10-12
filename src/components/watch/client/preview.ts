@@ -1,16 +1,7 @@
 // Hover previews switch and frame cycling (UI spec § 4.4, § 4.5). Emits
-// watch:preview when the effective setting changes; stops any cycle on
-// watch:playlist and watch:video.
-import {
-  ATTR,
-  CLASS,
-  MQ_FINE_POINTER,
-  MQ_REDUCED_MOTION,
-  PREVIEWS_STORAGE_KEY,
-  TESTID,
-  emitWatch,
-  onWatch,
-} from '../../../lib/watch/contract';
+// watch:preview when the effective setting changes. When to start and stop
+// comes from the shared card intent, the same moments the popup uses.
+import { ATTR, CLASS, PREVIEWS_STORAGE_KEY, TESTID, emitWatch } from '../../../lib/watch/contract';
 import type { PreviewsStoredValue } from '../../../lib/watch/contract';
 import { frameUrls } from '../../../lib/watch/frames';
 import {
@@ -23,8 +14,9 @@ import {
   systemClock,
   type FrameCycle,
 } from '../../../lib/watch/preview';
-import { frameFadeMs } from '../../../lib/watch/timings';
-import type { FrameTier, WatchPlaylistView } from '../../../lib/watch/types';
+import type { WatchPlaylistView } from '../../../lib/watch/types';
+import { onCardIntent } from './cardIntent';
+import { byTestId, finePointer, osReduceMotion } from './dom';
 
 // Storage can throw in private modes or with site data blocked; previews
 // then just follow the reduce-motion settings for this visit.
@@ -44,31 +36,31 @@ function writeStored(value: PreviewsStoredValue): void {
   }
 }
 
-interface Active {
-  card: HTMLElement;
-  cycle: FrameCycle;
-  /** True once frames were requested; before that, pointer movement restarts the rest delay. */
-  requested: boolean;
-}
+type Layers = [lower: HTMLImageElement, upper: HTMLImageElement];
 
 export function initPreview(root: HTMLElement, bus: EventTarget, _data: WatchPlaylistView[]): void {
   const html = document.documentElement;
-  const finePointer = matchMedia(MQ_FINE_POINTER);
-  const osReduce = matchMedia(MQ_REDUCED_MOTION);
-  const switchEl = root.querySelector<HTMLElement>(`[data-testid="${TESTID.previewSwitch}"]`);
-  const hint = root.querySelector<HTMLElement>(`[data-testid="${TESTID.previewHint}"]`);
+  const fine = finePointer();
+  const osReduce = osReduceMotion();
+  const switchEl = byTestId(root, TESTID.previewSwitch);
+  const hint = byTestId(root, TESTID.previewHint);
   const radios = switchEl ? [...switchEl.querySelectorAll<HTMLButtonElement>('[role="radio"]')] : [];
-  const thumbSelector = `[data-testid="${TESTID.thumb}"]`;
   // One cache for the page, so a second hover on a card makes no new requests.
   const load = createFrameCache(imageFrameLoader(() => new Image()));
+  const layerCache = new WeakMap<HTMLElement, Layers>();
 
-  const reduceOn = () => osReduce.matches || html.dataset.motion === 'reduce';
+  /** Both reduce signals; A11yControl sets data-motion, but it may not have run yet. */
+  const reduce = () => ({ os: osReduce.matches, site: html.dataset.motion === 'reduce' });
+  const isEnabled = () => {
+    const { os, site } = reduce();
+    return previewsEnabled(stored, os, site);
+  };
+
   let stored = readStored();
-  let enabled = previewsEnabled(stored, osReduce.matches, html.dataset.motion === 'reduce');
-  let active: Active | null = null;
+  let enabled = isEnabled();
+  let active: { card: HTMLElement; cycle: FrameCycle } | null = null;
 
-  function render(): void {
-    const siteReduce = html.dataset.motion === 'reduce';
+  const render = () => {
     const checked = enabled ? 'on' : 'off';
     for (const radio of radios) {
       const on = radio.getAttribute(ATTR.value) === checked;
@@ -76,26 +68,27 @@ export function initPreview(root: HTMLElement, bus: EventTarget, _data: WatchPla
       // Roving tabindex: the group is one tab stop, arrows move within it.
       radio.tabIndex = on ? 0 : -1;
     }
-    if (hint) hint.hidden = !previewsHintShown(stored, osReduce.matches, siteReduce);
-    if (switchEl) switchEl.hidden = !finePointer.matches;
-  }
+    if (hint) {
+      const { os, site } = reduce();
+      hint.hidden = !previewsHintShown(stored, os, site);
+    }
+    if (switchEl) switchEl.hidden = !fine.matches;
+  };
 
-  function update(): void {
+  const update = () => {
     const previous = enabled;
-    enabled = previewsEnabled(stored, osReduce.matches, html.dataset.motion === 'reduce');
+    enabled = isEnabled();
     render();
     if (enabled === previous) return;
     if (!enabled) stop();
     emitWatch(bus, 'watch:preview', { enabled });
-  }
+  };
 
-  function layersFor(card: HTMLElement): [HTMLImageElement, HTMLImageElement] | null {
+  const layersFor = (card: HTMLElement): Layers | null => {
+    const cached = layerCache.get(card);
+    if (cached) return cached;
     const media = card.querySelector<HTMLElement>(`.${CLASS.thumbMedia}`);
     if (!media) return null;
-    const existing = media.querySelectorAll<HTMLImageElement>(`.${CLASS.thumbFrame}`);
-    if (existing.length === 2) return [existing[0], existing[1]];
-    // Right after the cover, so the duration badge still paints on top.
-    const anchor = media.querySelector('img');
     const made = [0, 1].map(() => {
       const img = document.createElement('img');
       img.className = CLASS.thumbFrame;
@@ -104,25 +97,22 @@ export function initPreview(root: HTMLElement, bus: EventTarget, _data: WatchPla
       img.referrerPolicy = 'no-referrer';
       img.decoding = 'async';
       return img;
-    }) as [HTMLImageElement, HTMLImageElement];
-    if (anchor) anchor.after(...made);
+    }) as Layers;
+    // Right after the cover, so the duration badge still paints on top.
+    const cover = media.querySelector('img');
+    if (cover) cover.after(...made);
     else media.prepend(...made);
+    layerCache.set(card, made);
     return made;
-  }
+  };
 
-  // The layer CSS fades every opacity change; restore must be instant and a
-  // reduce setting drops the crossfade, so duration is set per change.
-  function setShown(layer: HTMLImageElement, shown: boolean, fadeMs: number): void {
-    layer.style.transitionDuration = `${fadeMs}ms`;
-    layer.classList.toggle(CLASS.frameShown, shown);
-  }
-
-  function restore(card: HTMLElement): void {
+  // Removing data-previewing drops the layer transition (VideoThumb CSS),
+  // so the cover comes back at once.
+  const restore = (card: HTMLElement) => {
     card.removeAttribute(ATTR.previewing);
     card.removeAttribute(ATTR.frame);
-    const media = card.querySelector(`.${CLASS.thumbMedia}`);
-    media?.querySelectorAll<HTMLImageElement>(`.${CLASS.thumbFrame}`).forEach((layer) => setShown(layer, false, 0));
-  }
+    for (const layer of layerCache.get(card) ?? []) layer.classList.remove(CLASS.frameShown);
+  };
 
   function stop(): void {
     if (!active) return;
@@ -132,106 +122,60 @@ export function initPreview(root: HTMLElement, bus: EventTarget, _data: WatchPla
     restore(card);
   }
 
-  function start(card: HTMLElement): void {
+  const start = (card: HTMLElement, restedMs: number) => {
     stop();
     const id = card.getAttribute(ATTR.videoId);
     const tier = card.getAttribute(ATTR.frameTier);
-    if (!enabled || !finePointer.matches || !id || (tier !== 'sd' && tier !== 'mq')) return;
+    if (!enabled || !id || (tier !== 'sd' && tier !== 'mq')) return;
 
     let front: HTMLImageElement | null = null;
-    let hideBack: unknown = null;
-    const self: Active = {
-      card,
-      requested: false,
-      cycle: startFrameCycle({
-        urls: frameUrls(id, tier as FrameTier),
-        clock: systemClock,
-        load: (url, done) => {
-          self.requested = true;
-          return load(url, done);
-        },
-        onFrame: (frame, url) => {
-          const layers = layersFor(card);
-          if (!layers) return;
-          const [lower, upper] = layers;
-          const fade = frameFadeMs(reduceOn());
-          const back = front;
-          const next = back === lower ? upper : lower;
-          next.src = url;
-          // Layers keep their DOM order (moving a node would skip its
-          // transition), so the crossfade runs on whichever layer is on top.
-          if (!back || next === upper) {
-            setShown(next, true, fade);
-            if (back) hideBack = systemClock.setTimeout(() => setShown(back, false, 0), fade);
-          } else {
-            setShown(next, true, 0);
-            setShown(back, false, fade);
-          }
-          front = next;
-          card.setAttribute(ATTR.previewing, 'true');
-          card.setAttribute(ATTR.frame, String(frame));
-        },
-        onRestore: () => {
-          if (hideBack !== null) systemClock.clearTimeout(hideBack);
-        },
-        onNoPreview: () => {
-          if (active === self) active = null;
-        },
-      }),
-    };
-    active = self;
-  }
+    // onNoPreview can run inside startFrameCycle when every frame is a
+    // cached failure, before the cycle is assigned.
+    let ended = false;
+    const cycle = startFrameCycle({
+      urls: frameUrls(id, tier),
+      clock: systemClock,
+      load,
+      elapsedMs: restedMs,
+      onFrame: (frame, url) => {
+        const layers = layersFor(card);
+        if (!layers) return;
+        const [lower, upper] = layers;
+        // Only the upper layer fades (VideoThumb CSS): it fades in over the
+        // lower, or out to reveal a lower that took the new frame while
+        // hidden beneath it. Layers keep their DOM order, since moving a node
+        // would skip its transition.
+        const next = front === upper ? lower : upper;
+        next.src = url;
+        next.classList.add(CLASS.frameShown);
+        if (next === lower) upper.classList.remove(CLASS.frameShown);
+        front = next;
+        card.setAttribute(ATTR.previewing, 'true');
+        card.setAttribute(ATTR.frame, String(frame));
+      },
+      onNoPreview: () => {
+        ended = true;
+        if (active?.card === card) active = null;
+      },
+    });
+    if (!ended) active = { card, cycle };
+  };
 
-  function cardFrom(target: EventTarget | null): HTMLElement | null {
-    return target instanceof Element ? target.closest<HTMLElement>(thumbSelector) : null;
-  }
-
-  // Enter and leave do not bubble, but a capturing listener on root sees them.
-  root.addEventListener(
-    'pointerenter',
-    (event) => {
-      if (event.pointerType !== 'mouse' || !(event.target instanceof Element) || !event.target.matches(thumbSelector)) return;
-      start(event.target as HTMLElement);
+  onCardIntent(root, bus, {
+    rest: (card, _source, restedMs) => start(card, restedMs),
+    leave: (card) => {
+      if (active?.card === card) stop();
     },
-    true,
-  );
-  root.addEventListener(
-    'pointerleave',
-    (event) => {
-      if (active && event.target === active.card) stop();
-    },
-    true,
-  );
-  // Delays count from when the pointer comes to rest (UI spec § 4.1).
-  root.addEventListener('pointermove', (event) => {
-    if (!active || active.requested || event.pointerType !== 'mouse') return;
-    const card = cardFrom(event.target);
-    if (card === active.card) start(card);
+    cancel: stop,
   });
-  root.addEventListener('focusin', (event) => {
-    const card = cardFrom(event.target);
-    if (card && card === event.target && card.matches(':focus-visible')) start(card);
-  });
-  root.addEventListener('focusout', (event) => {
-    if (active && event.target === active.card) stop();
-  });
-  root.addEventListener('click', stop, true);
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') stop();
-  });
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') stop();
-  });
-  onWatch(bus, 'watch:playlist', stop);
-  onWatch(bus, 'watch:video', stop);
 
-  function choose(radio: HTMLButtonElement): void {
+  const choose = (radio: HTMLButtonElement) => {
     const value = parseStoredPreviews(radio.getAttribute(ATTR.value));
     if (!value) return;
     stored = value;
     writeStored(value);
     update();
-  }
+  };
 
   for (const radio of radios) radio.addEventListener('click', () => choose(radio));
   switchEl?.addEventListener('keydown', (event) => {
@@ -250,10 +194,8 @@ export function initPreview(root: HTMLElement, bus: EventTarget, _data: WatchPla
   // A11yControl changes data-motion without a reload.
   osReduce.addEventListener('change', update);
   new MutationObserver(update).observe(html, { attributes: true, attributeFilter: ['data-motion'] });
-  finePointer.addEventListener('change', () => {
-    if (!finePointer.matches) stop();
-    render();
-  });
+  // Card intent stops a running cycle on this change; the switch follows it.
+  fine.addEventListener('change', render);
 
   render();
 }

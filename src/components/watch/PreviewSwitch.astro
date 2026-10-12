@@ -69,7 +69,8 @@ import { TESTID } from '../../lib/watch/contract';
     color: var(--color-text-faint);
   }
 
-  @media (max-width: 639px) {
+  /* Literal breakpoint: BREAKPOINT_PHONE_PX in contract.ts (phone is 640px and down). */
+  @media (max-width: 640px) {
     .watch-switch__radio {
       min-height: 44px;
     }

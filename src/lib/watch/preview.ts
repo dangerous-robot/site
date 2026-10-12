@@ -11,7 +11,7 @@ export function parseStoredPreviews(raw: string | null | undefined): PreviewsSto
   return raw === 'on' || raw === 'off' ? raw : null;
 }
 
-/** An explicit choice wins; with none, either reduce-motion signal turns previews off (plan D8). */
+/** An explicit choice wins; with none, either reduce-motion signal turns previews off. */
 export function previewsEnabled(stored: PreviewsStoredValue | null, osReduce: boolean, siteReduce: boolean): boolean {
   if (stored !== null) return stored === 'on';
   return !(osReduce || siteReduce);
@@ -94,6 +94,12 @@ export function createFrameCache(load: FrameLoader): FrameLoader {
 export interface FrameCycleOptions {
   /** From frameUrls, in cycle order. */
   urls: readonly string[];
+  /**
+   * How long ago the reader came to rest, when the cycle starts late. A
+   * cycle started when the popup opens passes FRAME_LOAD_AT_MS and requests
+   * its frames at once. Default 0.
+   */
+  elapsedMs?: number;
   clock: Clock;
   load: FrameLoader;
   /** frame is 1-based, the value for data-frame. */
@@ -112,14 +118,14 @@ export interface FrameCycle {
 type FrameStatus = 'pending' | 'ok' | 'failed';
 
 /**
- * Timeline from start (pointer rest or keyboard focus): request every frame
+ * Timeline from rest (pointer rest or keyboard focus): request every frame
  * at FRAME_LOAD_AT_MS; show the first usable one at FRAME_FIRST_AT_MS, or
  * when it loads if later; then move to the next usable frame every
  * FRAME_INTERVAL_MS. Failed frames are skipped and a frame still loading at
  * a tick waits for the next lap.
  */
 export function startFrameCycle(options: FrameCycleOptions): FrameCycle {
-  const { urls, clock, load, onFrame, onRestore, onNoPreview } = options;
+  const { urls, clock, load, onFrame, onRestore, onNoPreview, elapsedMs = 0 } = options;
   const statuses: FrameStatus[] = urls.map(() => 'pending');
   const timers = new Set<unknown>();
   const cancels: (() => void)[] = [];
@@ -177,7 +183,7 @@ export function startFrameCycle(options: FrameCycleOptions): FrameCycle {
     if (statuses[index] === 'ok') show(index);
   }
 
-  after(FRAME_LOAD_AT_MS, () => {
+  function requestAll(): void {
     urls.forEach((url, index) => {
       const cancel = load(url, (ok) => {
         if (stopped || statuses[index] !== 'pending') return;
@@ -187,12 +193,18 @@ export function startFrameCycle(options: FrameCycleOptions): FrameCycle {
       if (cancel) cancels.push(cancel);
     });
     evaluateFirst();
-  });
+  }
 
-  after(FRAME_FIRST_AT_MS, () => {
+  function firstNowDue(): void {
     firstDue = true;
     evaluateFirst();
-  });
+  }
+
+  // A moment already past runs now, not on a zero timer: fake clocks push a
+  // zero delay scheduled inside a timer to the next millisecond.
+  const atOrNow = (at: number, fn: () => void) => (at <= elapsedMs ? fn() : after(at - elapsedMs, fn));
+  atOrNow(FRAME_LOAD_AT_MS, requestAll);
+  atOrNow(FRAME_FIRST_AT_MS, firstNowDue);
 
   return {
     stop() {

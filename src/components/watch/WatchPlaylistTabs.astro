@@ -70,7 +70,7 @@ const { playlists, selectedSlug } = Astro.props;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.15rem;
+    gap: var(--space-xs);
     width: 100%;
     min-height: 44px;
     padding: var(--space-sm) var(--space-md);
@@ -118,7 +118,8 @@ const { playlists, selectedSlug } = Astro.props;
     color: var(--color-text-muted);
   }
 
-  /* Tablet: the full-width rail has room for name and creator on one line. */
+  /* Tablet: the full-width rail has room for name and creator on one line.
+     Literal breakpoints: above BREAKPOINT_PHONE_PX, below BREAKPOINT_DESKTOP_PX. */
   @media (min-width: 641px) and (max-width: 1119px) {
     .watch-tab {
       flex-direction: row;
@@ -132,20 +133,9 @@ const { playlists, selectedSlug } = Astro.props;
     }
   }
 
-  /* Literal breakpoint: BREAKPOINT_DESKTOP_PX in contract.ts. */
+  /* Literal breakpoint: BREAKPOINT_DESKTOP_PX in contract.ts. The rail's
+     focus-ring room is set on the scroll box in watch.astro. */
   @media (min-width: 1120px) {
-    /* The sticky rail scrolls (overflow-y: auto), which clips anything
-       drawn outside it; the inset keeps the global focus ring (2px plus a
-       3px offset) visible on the edge tabs. */
-    .watch-rail__head,
-    .watch-tabs {
-      padding-inline: 5px;
-    }
-
-    .watch-tabs {
-      padding-bottom: 5px;
-    }
-
     .watch-tab__desc {
       -webkit-line-clamp: 3;
       line-clamp: 3;

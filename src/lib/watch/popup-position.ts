@@ -26,6 +26,11 @@ export interface PopupPlacement {
 
 export const POPUP_EDGE_PX = 16;
 
+/** True when the two rects share any area; touching edges do not count. */
+export function rectsOverlap(a: Rect, b: Rect): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
 export function placePopup(card: Rect, popupSize: Size, viewport: Size, playerRect: Rect | null): PopupPlacement {
   const { width, height } = popupSize;
   let side: PopupSide;

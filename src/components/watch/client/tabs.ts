@@ -1,9 +1,12 @@
-// Playlist tab behaviour (UI spec § 4.6). Contract: render aria-selected and
-// the roving tabindex from every watch:playlist (main.ts emits one at
-// startup for a deep-linked list); on a reader's Enter or Space, emit
-// watch:playlist. main.ts shows the panel, rewrites the URL and announces.
+// Playlist tab behaviour (UI spec § 4.6). Renders aria-selected and the
+// roving tabindex from every watch:playlist (main.ts emits one at startup).
+// A click on a tab that is not selected emits watch:playlist; Enter and
+// Space reach the same click. Arrows, Home and End move focus only, and
+// focus leaving the list puts the roving 0 back on the selected tab.
+// main.ts shows the panel, rewrites the URL and announces.
 import { ATTR, TESTID, emitWatch, onWatch } from '../../../lib/watch/contract';
 import type { WatchPlaylistView } from '../../../lib/watch/types';
+import { allByTestId, byTestId, closestByTestId } from './dom';
 
 function slugOf(tab: HTMLElement): string {
   return tab.getAttribute(ATTR.playlist) ?? '';
@@ -18,9 +21,9 @@ function setRoving(tabs: HTMLElement[], active: HTMLElement): void {
 }
 
 export function initTabs(root: HTMLElement, bus: EventTarget, _data: WatchPlaylistView[]): void {
-  const tablist = root.querySelector<HTMLElement>(`[data-testid="${TESTID.tablist}"]`);
+  const tablist = byTestId(root, TESTID.tablist);
   if (!tablist) return;
-  const tabs = [...tablist.querySelectorAll<HTMLElement>(`[data-testid="${TESTID.tab}"]`)];
+  const tabs = allByTestId(tablist, TESTID.tab);
   if (tabs.length === 0) return;
 
   onWatch(bus, 'watch:playlist', ({ slug }) => {
@@ -31,9 +34,9 @@ export function initTabs(root: HTMLElement, bus: EventTarget, _data: WatchPlayli
   });
 
   // Buttons turn Enter and Space into a click, so this one handler covers
-  // mouse, touch and keyboard selection.
+  // mouse, touch and keyboard selection. The selected tab emits nothing.
   tablist.addEventListener('click', (event) => {
-    const tab = (event.target as Element).closest<HTMLElement>(`[data-testid="${TESTID.tab}"]`);
+    const tab = closestByTestId(event.target, TESTID.tab);
     if (!tab || isSelected(tab)) return;
     emitWatch(bus, 'watch:playlist', { slug: slugOf(tab) });
   });

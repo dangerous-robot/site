@@ -88,11 +88,22 @@ const meta = [video.channel, video.durationSpoken, `published ${video.publishedT
 
   .watch-thumb__media :global(.watch-thumb__frame) {
     opacity: 0;
-    transition: opacity 0.2s;
   }
 
   .watch-thumb__media :global(.watch-thumb__frame.is-shown) {
     opacity: 1;
+  }
+
+  /* Only the upper of the two layers fades (FRAME_FADE_MS): in over the
+     lower one, or out to reveal it, so the cover never shows between
+     frames. client/preview.ts picks layers to match. */
+  .watch-thumb__media :global(.watch-thumb__frame + .watch-thumb__frame) {
+    transition: opacity 0.2s;
+  }
+
+  /* Putting the cover back is instant. */
+  .watch-thumb:not([data-previewing]) .watch-thumb__media :global(.watch-thumb__frame) {
+    transition: none;
   }
 
   /* Fixed colours: the badge sits on video imagery in every theme. Above
@@ -146,15 +157,16 @@ const meta = [video.channel, video.durationSpoken, `published ${video.publishedT
     color: var(--color-accent);
   }
 
+  /* Frames swap without the crossfade under either reduce setting. */
   @media (prefers-reduced-motion: reduce) {
     .watch-thumb__media,
-    .watch-thumb__media :global(.watch-thumb__frame) {
+    .watch-thumb__media :global(.watch-thumb__frame + .watch-thumb__frame) {
       transition: none;
     }
   }
 
   :global([data-motion="reduce"]) .watch-thumb__media,
-  :global([data-motion="reduce"]) .watch-thumb__media :global(.watch-thumb__frame) {
+  :global([data-motion="reduce"]) .watch-thumb__media :global(.watch-thumb__frame + .watch-thumb__frame) {
     transition: none;
   }
 </style>

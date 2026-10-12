@@ -9,10 +9,16 @@ const BRAVO_1 = 'bbbbbbbbbb1';
 const SHARED = 'sssssssssss';
 
 const playlists: UrlPlaylist[] = [
-  { slug: 'alpha', videos: [{ id: ALPHA_1 }, { id: ALPHA_2 }] },
-  { slug: 'bravo', videos: [{ id: BRAVO_1 }, { id: SHARED }] },
-  { slug: 'charlie', videos: [{ id: SHARED }] },
-  { slug: 'empty', videos: [] },
+  { slug: 'alpha', status: 'ok', videos: [{ id: ALPHA_1 }, { id: ALPHA_2 }] },
+  { slug: 'bravo', status: 'ok', videos: [{ id: BRAVO_1 }, { id: SHARED }] },
+  { slug: 'charlie', status: 'ok', videos: [{ id: SHARED }] },
+  { slug: 'empty', status: 'empty', videos: [] },
+];
+
+// The first tab has no videos, so the default tab is not the first one.
+const failedFirst: UrlPlaylist[] = [
+  { slug: 'failed', status: 'failed', videos: [] },
+  { slug: 'bravo', status: 'ok', videos: [{ id: BRAVO_1 }] },
 ];
 
 describe('parseUrl arrival rules (UI spec § 4.8)', () => {
@@ -112,6 +118,37 @@ describe('parseUrl arrival rules (UI spec § 4.8)', () => {
     const state = parseUrl('?list=bravo&v=', playlists);
     assert.equal(state.notice, false);
     assert.equal(state.loaded, false);
+  });
+
+  test('no query: the default tab is the first playlist with videos, not the first tab', () => {
+    assert.deepEqual(parseUrl('', failedFirst), {
+      selectedSlug: 'bravo',
+      video: { slug: 'bravo', id: BRAVO_1 },
+      loaded: false,
+      notice: false,
+    });
+  });
+
+  test('unknown list or unknown v without a list: the default tab, not the first tab', () => {
+    assert.equal(parseUrl('?list=nope', failedFirst).selectedSlug, 'bravo');
+    const state = parseUrl('?v=zzzzzzzzzzz', failedFirst);
+    assert.equal(state.selectedSlug, 'bravo');
+    assert.equal(state.notice, true);
+  });
+
+  test('a known list with no videos stays selected even when it is not the default', () => {
+    assert.deepEqual(parseUrl('?list=failed', failedFirst), {
+      selectedSlug: 'failed',
+      video: null,
+      loaded: false,
+      notice: false,
+    });
+  });
+
+  test('unknown v in a playlist with no videos: no poster, the notice, URL drops v', () => {
+    const state = parseUrl('?list=empty&v=zzzzzzzzzzz', playlists);
+    assert.deepEqual(state, { selectedSlug: 'empty', video: null, loaded: false, notice: true });
+    assert.equal(toSearch(state), '?list=empty');
   });
 
   test('no playlists at all does not throw', () => {

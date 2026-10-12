@@ -1,43 +1,32 @@
 // Page controller for /watch. It alone owns WatchState, the URL, the panel
 // shown and the live region; every other controller renders what the bus
-// says and keeps no copy of the selection (plan § 4, "Startup and ownership").
+// says and keeps no copy of the selection.
 import { ATTR, TESTID, emitWatch, onWatch } from '../../../lib/watch/contract';
+import { indexPlaylists } from '../../../lib/watch/index';
 import { parseUrl, toSearch } from '../../../lib/watch/state';
-import type { WatchClientData, WatchControllerInit, WatchPlaylistView, WatchState } from '../../../lib/watch/types';
-import { defaultPlaylist } from '../defaultPlaylist';
+import type { WatchClientData, WatchControllerInit, WatchPlaylistView } from '../../../lib/watch/types';
 import { initGrid } from './grid';
 import { initPlayer } from './player';
 import { initPopup } from './popup';
 import { initPreview } from './preview';
 import { initTabs } from './tabs';
+import { allByTestId, byTestId } from './dom';
 
 // Typed as the shared signature, so a controller that drifts from it fails
 // the type check here.
 const CONTROLLERS: WatchControllerInit[] = [initTabs, initPlayer, initGrid, initPopup, initPreview];
 
-function readPlaylists(root: HTMLElement): WatchPlaylistView[] | null {
+/** Parses the payload once and removes its element; nothing else reads it. */
+function takePlaylists(root: HTMLElement): WatchPlaylistView[] | null {
   const block = root.querySelector(`script[${ATTR.data}]`);
   if (!block?.textContent) return null;
   try {
     const data = JSON.parse(block.textContent) as WatchClientData;
+    block.remove();
     return Array.isArray(data.playlists) && data.playlists.length > 0 ? data.playlists : null;
   } catch {
     return null;
   }
-}
-
-/**
- * parseUrl falls back to the first playlist, but the server shows the first
- * one with videos; without this a URL with no list would swap panels on load.
- */
-function arrivalState(search: string, playlists: WatchPlaylistView[]): WatchState {
-  const state = parseUrl(search, playlists);
-  const list = new URLSearchParams(search).get('list');
-  if (state.loaded || playlists.some((p) => p.slug === list)) return state;
-  const fallback = defaultPlaylist(playlists);
-  if (!fallback) return state;
-  const first = fallback.videos[0];
-  return { ...state, selectedSlug: fallback.slug, video: first ? { slug: fallback.slug, id: first.id } : null };
 }
 
 function announcement(playlist: WatchPlaylistView): string {
@@ -46,30 +35,38 @@ function announcement(playlist: WatchPlaylistView): string {
 }
 
 export function initWatch(): void {
-  const root = document.querySelector<HTMLElement>(`[data-testid="${TESTID.page}"]`);
+  const root = byTestId(document, TESTID.page);
   // None mode renders no payload: there is nothing to control.
-  const playlists = root ? readPlaylists(root) : null;
+  const playlists = root ? takePlaylists(root) : null;
   if (!root || !playlists) return;
 
-  const bySlug = new Map(playlists.map((p) => [p.slug, p]));
-  const panels = [...root.querySelectorAll<HTMLElement>(`[data-testid="${TESTID.panel}"]`)];
-  const status = root.querySelector<HTMLElement>(`[data-testid="${TESTID.status}"]`);
-  const state = arrivalState(location.search, playlists);
+  const index = indexPlaylists(playlists);
+  const panels = allByTestId(root, TESTID.panel);
+  const status = byTestId(root, TESTID.status);
+  const state = parseUrl(location.search, playlists);
   const bus = new EventTarget();
   let starting = true;
 
+  // One history write per action, however many state changes it makes.
+  let urlQueued = false;
   const writeUrl = () => {
-    // A bare replaceState('') would keep the old query, so the path is explicit.
-    history.replaceState(history.state, '', `${location.pathname}${toSearch(state)}${location.hash}`);
+    if (urlQueued) return;
+    urlQueued = true;
+    queueMicrotask(() => {
+      urlQueued = false;
+      // A bare replaceState('') would keep the old query, so the path is explicit.
+      history.replaceState(history.state, '', `${location.pathname}${toSearch(state)}${location.hash}`);
+    });
   };
 
   for (const init of CONTROLLERS) init(root, bus, playlists);
 
   // Registered after the controllers, so a poster-follow watch:video emitted
-  // here reaches them after they have rendered the tab change.
+  // here reaches them after they have rendered the tab change. tabs.ts emits
+  // only for a tab that is not already selected.
   onWatch(bus, 'watch:playlist', ({ slug }) => {
-    const playlist = bySlug.get(slug);
-    if (!playlist || (!starting && slug === state.selectedSlug)) return;
+    const playlist = index.bySlug(slug);
+    if (!playlist) return;
     state.selectedSlug = slug;
     for (const panel of panels) panel.hidden = panel.getAttribute(ATTR.playlist) !== slug;
     if (!starting) {
@@ -98,7 +95,15 @@ export function initWatch(): void {
   });
 
   emitWatch(bus, 'watch:playlist', { slug: state.selectedSlug });
-  if (state.video) emitWatch(bus, 'watch:video', { ...state.video, play: false, notice: state.notice });
+  if (state.video) {
+    emitWatch(bus, 'watch:video', { ...state.video, play: false, notice: state.notice });
+  } else {
+    // Arrival on a playlist with no videos: no poster was ever set, so the
+    // player hides (UI spec § 5), and an unknown v still gets its notice.
+    const player = byTestId(root, TESTID.player);
+    const notice = byTestId(root, TESTID.notice);
+    if (player) player.hidden = true;
+    if (notice) notice.hidden = !state.notice;
+  }
   starting = false;
-  writeUrl();
 }

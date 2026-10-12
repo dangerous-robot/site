@@ -1,36 +1,16 @@
-// Cards and the hover popup against the fixture build. The player is another
-// component's job, so nothing here asserts an iframe; the card-to-player flow
-// is covered by the cross-component spec. Timers run on page.clock, paused
-// after load, so each delay is stepped exactly.
+// Cards and the hover popup against the fixture build. Timers run on
+// page.clock, paused after load, so each delay is stepped exactly.
 import type { Locator, Page } from '@playwright/test';
-import { MQ_FINE_POINTER } from '../../src/lib/watch/contract';
+import { MQ_FINE_POINTER, TESTID } from '../../src/lib/watch/contract';
+import { rectsOverlap, type Rect } from '../../src/lib/watch/popup-position';
 import { POPUP_CLOSE_DELAY_MS, POPUP_OPEN_DELAY_MS } from '../../src/lib/watch/timings';
-import { expect, test } from './helpers';
-
-interface Box {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-}
-
-async function openWatch(page: Page, path = '/watch'): Promise<void> {
-  await page.clock.install();
-  await page.goto(path);
-  // client/main.ts has run once the URL carries the tab.
-  await expect(page).toHaveURL(/[?&]list=/);
-  await page.clock.pauseAt(new Date(Date.now() + 60_000));
-}
-
-function card(page: Page, id: string, slug = 'alpha'): Locator {
-  return page.getByTestId('watch-page').locator(`[data-testid="watch-thumb"][data-playlist="${slug}"][data-video-id="${id}"]`);
-}
+import { card, expect, openWatch, test, testid, watchRoot } from './helpers';
 
 function popupOf(page: Page): Locator {
-  return page.getByTestId('watch-page').getByTestId('watch-popup');
+  return watchRoot(page).getByTestId(TESTID.popup);
 }
 
-async function rect(locator: Locator): Promise<Box> {
+async function rect(locator: Locator): Promise<Rect> {
   return locator.evaluate((el) => {
     const r = el.getBoundingClientRect();
     return { top: r.top, right: r.right, bottom: r.bottom, left: r.left };
@@ -153,7 +133,11 @@ test.describe('hover popup', () => {
     await expect(popup).toBeHidden();
   });
 
-  test('clicking a card closes it', async ({ page }) => {
+  test('clicking a card closes it, and moving within the card does not reopen it', async ({ page }) => {
+    // The player would scroll itself into view and move the card from under the pointer.
+    await page.addInitScript(() => {
+      Element.prototype.scrollIntoView = () => {};
+    });
     await openWatch(page);
     const first = card(page, 'fxAlpha0001');
     const popup = popupOf(page);
@@ -165,6 +149,12 @@ test.describe('hover popup', () => {
     await page.mouse.up();
     await expect(popup).toBeHidden();
     await expect(first).toHaveAttribute('aria-current', 'true');
+
+    // Only a new enter would reopen it.
+    const box = await rect(first);
+    await page.mouse.move(box.left + 20, box.top + 20, { steps: 3 });
+    await page.clock.runFor(POPUP_OPEN_DELAY_MS * 2);
+    await expect(popup).toBeHidden();
   });
 });
 
@@ -282,18 +272,18 @@ test.describe('touch device', () => {
   });
 });
 
-// E8: the popup never covers the player box. First-row cards are the ones
+// The popup never covers the player box. First-row cards are the ones
 // closest to it; sweep them through the viewport, with the player in view.
 for (const viewport of [
   { width: 1280, height: 720 },
   { width: 900, height: 600 },
   { width: 600, height: 800 },
 ]) {
-  test(`E8: first-row popups never intersect the player at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+  test(`first-row popups never intersect the player at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openWatch(page);
     const popup = popupOf(page);
-    const frame = page.getByTestId('watch-page').getByTestId('watch-player-frame');
+    const frame = watchRoot(page).getByTestId(TESTID.playerFrame);
     const firstRow = [card(page, 'fxAlpha0001'), card(page, 'fxAlpha0002')];
     // One column at 640px and down, so only the first card is in the first row.
     const cards = viewport.width <= 640 ? firstRow.slice(0, 1) : firstRow;
@@ -319,8 +309,7 @@ for (const viewport of [
         const p = await rect(popup);
         const f = await rect(frame);
         expect(f.bottom, 'player bottom edge is in the viewport').toBeGreaterThan(0);
-        const overlaps = p.left < f.right && p.right > f.left && p.top < f.bottom && p.bottom > f.top;
-        expect(overlaps, `popup ${JSON.stringify(p)} vs player ${JSON.stringify(f)}`).toBe(false);
+        expect(rectsOverlap(p, f), `popup ${JSON.stringify(p)} vs player ${JSON.stringify(f)}`).toBe(false);
         checked += 1;
       }
     }
@@ -332,16 +321,16 @@ for (const viewport of [
 test.describe('selecting a video', () => {
   test('a click or Enter plays in the page, updates ?v= and marks one card', async ({ page }) => {
     await openWatch(page);
-    const root = page.getByTestId('watch-page');
+    const root = watchRoot(page);
     const second = card(page, 'fxAlpha0002');
     const third = card(page, 'fxAlpha0003');
-    await expect(root.locator('[data-testid="watch-thumb"][aria-current]')).toHaveCount(0);
+    await expect(root.locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(0);
 
     await second.click();
     await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
     await expect(second).toHaveAttribute('aria-current', 'true');
     await expect(second.getByText('Playing', { exact: true })).toBeVisible();
-    await expect(root.locator('[data-testid="watch-thumb"][aria-current]')).toHaveCount(1);
+    await expect(root.locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(1);
 
     await third.focus();
     await page.keyboard.press('Enter');
@@ -349,13 +338,13 @@ test.describe('selecting a video', () => {
     await expect(third).toHaveAttribute('aria-current', 'true');
     await expect(second).not.toHaveAttribute('aria-current');
     await expect(second.getByText('Playing', { exact: true })).toBeHidden();
-    await expect(root.locator('[data-testid="watch-thumb"][aria-current]')).toHaveCount(1);
+    await expect(root.locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(1);
   });
 
   test('a deep-linked poster marks no card', async ({ page }) => {
     await openWatch(page, '/watch?list=alpha&v=fxAlpha0002');
     await expect(page).toHaveURL(/v=fxAlpha0002/);
-    await expect(page.getByTestId('watch-page').locator('[data-testid="watch-thumb"][aria-current]')).toHaveCount(0);
+    await expect(watchRoot(page).locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(0);
   });
 
   test('modified and middle clicks keep the YouTube link and do not play', async ({ page }) => {
@@ -385,6 +374,6 @@ test.describe('selecting a video', () => {
       { type: 'auxclick', prevented: false },
     ]);
     await expect(page).toHaveURL(/\/watch\?list=alpha$/);
-    await expect(page.getByTestId('watch-page').locator('[data-testid="watch-thumb"][aria-current]')).toHaveCount(0);
+    await expect(watchRoot(page).locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(0);
   });
 });

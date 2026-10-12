@@ -6,30 +6,7 @@ import type { Locator, Page } from '@playwright/test';
 import { MQ_FINE_POINTER, PREVIEWS_STORAGE_KEY } from '../../src/lib/watch/contract';
 import { frameUrls } from '../../src/lib/watch/frames';
 import { FRAME_FIRST_AT_MS, FRAME_INTERVAL_MS, FRAME_LOAD_AT_MS } from '../../src/lib/watch/timings';
-import { expect, isFrameUrl, test, type NetworkLog } from './helpers';
-
-const T0 = new Date('2026-01-05T10:00:00Z').getTime();
-let pausedAt = T0;
-
-/** Opens /watch with the clock paused, so only runFor moves page time. */
-async function openWatch(page: Page): Promise<Locator> {
-  await page.clock.install({ time: T0 });
-  pausedAt = T0;
-  await page.goto('/watch');
-  return settle(page);
-}
-
-async function settle(page: Page): Promise<Locator> {
-  // main.ts has run once the URL names the default tab.
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
-  pausedAt += 60_000;
-  await page.clock.pauseAt(pausedAt);
-  return page.getByTestId('watch-page');
-}
-
-function card(root: Locator, id: string): Locator {
-  return root.locator(`[data-testid="watch-thumb"][data-video-id="${id}"]`);
-}
+import { card, expect, isFrameUrl, openWatch, pauseOnceStarted, test, type NetworkLog } from './helpers';
 
 async function pointAt(page: Page, target: Locator): Promise<void> {
   const media = target.locator('.watch-thumb__media');
@@ -48,18 +25,13 @@ function frameRequests(network: NetworkLog, id?: string): string[] {
   return [...new Set(frames)].sort();
 }
 
-/**
- * Steps to FRAME_LOAD_AT_MS and waits until every frame response is in.
- * The short real-time pause lets the image load events run, since the
- * cycler skips a frame that is still loading when its turn comes.
- */
+/** Steps to FRAME_LOAD_AT_MS and waits until every frame response is in. */
 async function loadFrames(page: Page, urls: readonly string[]): Promise<void> {
   const finished = Promise.all(
     urls.map((url) => page.waitForEvent('requestfinished', { predicate: (request) => request.url() === url })),
   );
   await page.clock.runFor(FRAME_LOAD_AT_MS);
   await finished;
-  await page.waitForTimeout(100);
 }
 
 async function expectRestored(target: Locator): Promise<void> {
@@ -77,7 +49,7 @@ async function storedPreviews(page: Page): Promise<string | null> {
 }
 
 test.describe('on a mouse device', () => {
-  test('E3: an sd card cycles its sd frames 1, 2, 3 and leaving restores the cover', async ({ page, network }) => {
+  test('an sd card cycles its sd frames 1, 2, 3 and leaving restores the cover', async ({ page, network }) => {
     const referers: Promise<string | undefined>[] = [];
     const localReferers: Promise<string | undefined>[] = [];
     page.on('request', (request) => {
@@ -86,7 +58,7 @@ test.describe('on a mouse device', () => {
       else if (request.url().endsWith('.js')) localReferers.push(referer);
     });
     const root = await openWatch(page);
-    const sd = card(root, 'fxAlpha0001');
+    const sd = card(page, 'fxAlpha0001');
     await expect(sd).toHaveAttribute('data-frame-tier', 'sd');
     const urls = frameUrls('fxAlpha0001', 'sd');
 
@@ -96,7 +68,6 @@ test.describe('on a mouse device', () => {
     const finished = Promise.all(urls.map((url) => page.waitForEvent('requestfinished', { predicate: (r) => r.url() === url })));
     await page.clock.runFor(1);
     await finished;
-    await page.waitForTimeout(100);
     expect(frameRequests(network)).toEqual([...urls].sort());
 
     await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
@@ -123,9 +94,9 @@ test.describe('on a mouse device', () => {
     expect((await Promise.all(localReferers)).some(Boolean)).toBe(true);
   });
 
-  test('E3: an mq card requests its mq frames', async ({ page, network }) => {
+  test('an mq card requests its mq frames', async ({ page, network }) => {
     const root = await openWatch(page);
-    const mq = card(root, 'fxAlpha0002');
+    const mq = card(page, 'fxAlpha0002');
     await expect(mq).toHaveAttribute('data-frame-tier', 'mq');
     const urls = frameUrls('fxAlpha0002', 'mq');
 
@@ -145,14 +116,14 @@ test.describe('on a mouse device', () => {
     await page.clock.runFor(10_000);
     expect(frameRequests(network)).toEqual([]);
     // Positive control: the same filter sees frames once a card is hovered.
-    await pointAt(page, card(root, 'fxAlpha0002'));
+    await pointAt(page, card(page, 'fxAlpha0002'));
     await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
     expect(frameRequests(network)).toHaveLength(3);
   });
 
   test('keyboard focus on a card cycles too, and focus leaving restores it', async ({ page }) => {
     const root = await openWatch(page);
-    const first = card(root, 'fxAlpha0001');
+    const first = card(page, 'fxAlpha0001');
     // The switch sits just before the panels in tab order.
     await switchRadio(root, 'On').focus();
     await page.keyboard.press('Tab');
@@ -171,7 +142,7 @@ test.describe('on a mouse device', () => {
 
   test('a missing frame is skipped', async ({ page, network }) => {
     const root = await openWatch(page);
-    const target = card(root, 'fxAlpha0003');
+    const target = card(page, 'fxAlpha0003');
     const urls = frameUrls('fxAlpha0003', 'mq');
     await pointAt(page, target);
     await loadFrames(page, urls);
@@ -188,7 +159,7 @@ test.describe('on a mouse device', () => {
 
   test('Escape stops the cycle while the pointer stays on the card', async ({ page }) => {
     const root = await openWatch(page);
-    const target = card(root, 'fxAlpha0002');
+    const target = card(page, 'fxAlpha0002');
     await pointAt(page, target);
     await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
     await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
@@ -205,7 +176,7 @@ test.describe('on a mouse device', () => {
 
   test('the tab going hidden stops the cycle', async ({ page }) => {
     const root = await openWatch(page);
-    const target = card(root, 'fxAlpha0002');
+    const target = card(page, 'fxAlpha0002');
     await pointAt(page, target);
     await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
     await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
@@ -218,7 +189,7 @@ test.describe('on a mouse device', () => {
     await expectRestored(target);
   });
 
-  test('E4: Off stops a running cycle at once and persists across reload', async ({ page, network }) => {
+  test('Off stops a running cycle at once and persists across reload', async ({ page, network }) => {
     const root = await openWatch(page);
     const switchEl = root.getByTestId('watch-preview-switch');
     await expect(switchEl).toBeVisible();
@@ -228,7 +199,7 @@ test.describe('on a mouse device', () => {
     // Switch and first card on screen together, so focusing a radio
     // cannot scroll the card out from under the pointer (which also stops it).
     await switchEl.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
-    const target = card(root, 'fxAlpha0001');
+    const target = card(page, 'fxAlpha0001');
     await pointAt(page, target);
     const box = await target.boundingBox();
     await loadFrames(page, frameUrls('fxAlpha0001', 'sd'));
@@ -247,7 +218,7 @@ test.describe('on a mouse device', () => {
     await expectRestored(target);
 
     await page.reload();
-    const after = await settle(page);
+    const after = await pauseOnceStarted(page);
     await expect(switchRadio(after, 'Off')).toHaveAttribute('aria-checked', 'true');
     await expect(switchRadio(after, 'On')).toHaveAttribute('aria-checked', 'false');
     await expect(after.getByTestId('watch-preview-hint')).toBeHidden();
@@ -255,13 +226,13 @@ test.describe('on a mouse device', () => {
 
     const before = network.requests.filter(isFrameUrl).length;
     await pointAway(page);
-    await pointAt(page, card(after, 'fxAlpha0001'));
+    await pointAt(page, card(page, 'fxAlpha0001'));
     await page.clock.runFor(FRAME_FIRST_AT_MS + FRAME_INTERVAL_MS * 2);
-    await expectRestored(card(after, 'fxAlpha0001'));
+    await expectRestored(card(page, 'fxAlpha0001'));
     expect(network.requests.filter(isFrameUrl).length).toBe(before);
   });
 
-  test('E6: arrow keys move and select the switch radios', async ({ page }) => {
+  test('arrow keys move and select the switch radios', async ({ page }) => {
     const root = await openWatch(page);
     const on = switchRadio(root, 'On');
     const off = switchRadio(root, 'Off');
@@ -322,7 +293,7 @@ test.describe('on a mouse device', () => {
 
   test('a live reduce-motion change stops a running cycle', async ({ page }) => {
     const root = await openWatch(page);
-    const target = card(root, 'fxAlpha0002');
+    const target = card(page, 'fxAlpha0002');
     await pointAt(page, target);
     await loadFrames(page, frameUrls('fxAlpha0002', 'mq'));
     await page.clock.runFor(FRAME_FIRST_AT_MS - FRAME_LOAD_AT_MS);
@@ -340,7 +311,7 @@ async function expectReduceDefault(page: Page, network: NetworkLog): Promise<voi
   await expect(hint).toBeVisible();
   await expect(hint).toHaveText('Off because reduce motion is on.');
 
-  const target = card(root, 'fxAlpha0002');
+  const target = card(page, 'fxAlpha0002');
   await pointAt(page, target);
   await page.clock.runFor(FRAME_FIRST_AT_MS + FRAME_INTERVAL_MS);
   await expectRestored(target);
@@ -360,12 +331,12 @@ async function expectReduceDefault(page: Page, network: NetworkLog): Promise<voi
 }
 
 test.describe('with reduce motion', () => {
-  test('E5: the OS setting defaults previews to Off with the hint; On then cycles', async ({ page, network }) => {
+  test('the OS setting defaults previews to Off with the hint; On then cycles', async ({ page, network }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expectReduceDefault(page, network);
   });
 
-  test('E5: the site Motion setting (dr-motion=reduce) does the same', async ({ page, network }) => {
+  test('the site Motion setting (dr-motion=reduce) does the same', async ({ page, network }) => {
     await page.addInitScript(() => localStorage.setItem('dr-motion', 'reduce'));
     await expectReduceDefault(page, network);
   });
