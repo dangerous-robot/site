@@ -859,6 +859,15 @@ def test_fit_self_reported_lowered_to_claimed_replaces_the_stale_rationale() -> 
     assert verdict.cap_rationale == (
         "Confidence is capped at low: no source on this claim independently addresses Brave Browser."
     )
+    # The analyst gave a rationale, so the claim's own (an operator's) may
+    # still win at write time.
+    assert verdict_write_kwargs(verdict)["cap_rationale_fitted"] is False
+
+
+def test_fit_writing_the_only_rationale_is_marked_fitted() -> None:
+    verdict = _assessment("multiply-verified")
+    fit_verdict_to_written_pool(verdict, _pool(("a", "first-party", "report")), ["a"], "Brave Browser")
+    assert verdict.cap_rationale
     assert verdict_write_kwargs(verdict)["cap_rationale_fitted"] is True
 
 

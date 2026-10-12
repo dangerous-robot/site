@@ -1178,6 +1178,7 @@ class TestWriteClaimFile:
         assert self._seo_title(path) == "Brave renewable hosting claim"
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
             "title": self._TITLE, "seo_title": "Brave renewable hosting claim", "verdict": "true",
+            "cap_rationale": None,
         }
 
     def test_operator_seo_title_replaced_when_analyst_title_changes(self, tmp_path):
@@ -1199,6 +1200,7 @@ class TestWriteClaimFile:
 
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
             "title": self._TITLE, "seo_title": "Analyst seo title", "verdict": "true",
+            "cap_rationale": None,
         }
 
     def test_claim_written_before_first_sidecar_records_passed_titles(self, tmp_path):
@@ -1294,6 +1296,77 @@ class TestWriteClaimFile:
         )
 
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["takeaway"] == "Analyst takeaway."
+
+    # The record also holds the cap_rationale the pipeline last proposed, so
+    # the keep rule keeps an operator's reason and replaces the analyst's.
+
+    def _capped_run(
+        self, repo_root: Path, cap_rationale: str | None, verification_level: str = "claimed", **kwargs,
+    ):
+        return self._call(
+            repo_root, force=True, title=self._TITLE, seo_title="Analyst seo title",
+            confidence=Confidence.LOW, verification_level=verification_level,
+            cap_rationale=cap_rationale, **kwargs,
+        )
+
+    def _cap_rationale(self, path: Path) -> str | None:
+        return parse_frontmatter(path.read_text(encoding="utf-8"))[0].get("cap_rationale")
+
+    def test_operator_cap_rationale_kept_over_the_level_fit(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._capped_run(tmp_path, "Fit rationale.", cap_rationale_fitted=True)
+
+        assert self._cap_rationale(path) == "Operator rationale."
+
+    def test_operator_cap_rationale_kept_over_a_new_analyst_one(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._capped_run(tmp_path, "New analyst rationale.")
+
+        assert self._cap_rationale(path) == "Operator rationale."
+
+    def test_analyst_cap_rationale_replaced_by_the_new_one(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+
+        self._capped_run(tmp_path, "New analyst rationale.")
+
+        assert self._cap_rationale(path) == "New analyst rationale."
+        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        assert record["cap_rationale"] == "New analyst rationale."
+
+    def test_record_holds_the_proposed_cap_rationale_not_the_kept_one(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._capped_run(tmp_path, "New analyst rationale.")
+
+        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        assert record["cap_rationale"] == "New analyst rationale."
+
+    def test_operator_cap_rationale_replaced_when_the_level_changes(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._capped_run(tmp_path, "Self-reported rationale.", verification_level="self-reported")
+
+        assert self._cap_rationale(path) == "Self-reported rationale."
+
+    def test_blocked_write_keeps_the_cap_rationale_record(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        self._capped_run(tmp_path, "Analyst rationale.")
+
+        self._blocked(tmp_path)
+
+        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        assert record["cap_rationale"] == "Analyst rationale."
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
         path = self._call(tmp_path, narrative="original")

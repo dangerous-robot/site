@@ -372,7 +372,8 @@ def fit_verdict_to_written_pool(
     A capped result gets ``confidence: low`` and, when the verdict has none,
     a template ``cap_rationale``. A ``self-reported`` verdict lowered to
     ``claimed`` always gets the template: its own rationale describes the
-    first-party report that is no longer written.
+    first-party report that is no longer written. Either way, a rationale the
+    operator wrote on the claim is kept at write time (``_write_claim_file``).
 
     Returns a one-line note when the level changed, else None. Call it just
     before the claim (and its sidecar) is written, after the final
@@ -430,11 +431,14 @@ def fit_verdict_to_written_pool(
     if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
         verdict.confidence = Confidence.LOW
         if not verdict.cap_rationale or required is None:
+            # Marked fitted only when the analyst gave no rationale: then the
+            # template is all this run proposes. Otherwise a rationale the
+            # operator wrote on the claim still wins at write time.
+            verdict._cap_rationale_fitted = not verdict.cap_rationale
             verdict.cap_rationale = (
                 "Confidence is capped at low: no source on this claim independently "
                 f"addresses {shorten(entity_name, 200)}."
             )
-            verdict._cap_rationale_fitted = True
     note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
     if log:
         logger.info("Level fit: %s", note)
@@ -500,11 +504,13 @@ def _write_claim_file(
     the analyst's last title (ignoring case and spacing). The existing
     ``takeaway`` wins when the analyst gives none, and when an operator wrote
     it (it differs from the analyst's last one in the record) while the
-    verdict is the analyst's last verdict. The existing
-    ``cap_rationale`` wins while ``verification_level`` and ``confidence`` are
-    both unchanged and the level is a capped one (``claimed`` or
-    ``self-reported``), unless ``cap_rationale_fitted`` says the level fit
-    wrote the passed one. Otherwise the passed values are written.
+    verdict is the analyst's last verdict. The existing ``cap_rationale``
+    wins when an operator wrote it (it differs from the pipeline's last one in
+    the record) while ``verification_level`` and ``confidence`` are both
+    unchanged and the level is a capped one (``claimed`` or
+    ``self-reported``). With no recorded ``cap_rationale``, the existing one
+    wins under the same conditions unless ``cap_rationale_fitted`` says the
+    level fit wrote the passed one. Otherwise the passed values are written.
     """
     claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
 
@@ -516,9 +522,8 @@ def _write_claim_file(
     # On a forced overwrite, an operator may have edited these fields since
     # the last run. The analyst always writes a seo_title, so an operator's
     # seo_title is kept while the title it shortens is unchanged. A cap_rationale names
-    # the confidence cap, so it is kept only on a capped level, while the level and
-    # confidence it explains are both unchanged, and not over the level fit's
-    # rationale, which describes this run's written sources. A takeaway is kept when the analyst gives
+    # the confidence cap, so an operator's is kept only on a capped level, while the
+    # level and confidence it explains are both unchanged. A takeaway is kept when the analyst gives
     # none, and an operator's while the analyst's verdict is unchanged: it sits
     # under the verdict badge. Corrections (the public record of what changed) and tags (homepage
     # card picks) are operator-owned and always kept.
@@ -533,6 +538,7 @@ def _write_claim_file(
             ) from exc
     analyst_seo_title = seo_title
     analyst_takeaway = takeaway
+    analyst_cap_rationale = cap_rationale
     existing_takeaway = existing_fm.get("takeaway", "") or ""
     existing_seo_title = existing_fm.get("seo_title", "") or ""
     existing_corrections = existing_fm.get("corrections") or None
@@ -561,9 +567,16 @@ def _write_claim_file(
         takeaway = existing_takeaway
 
     existing_cap_rationale = existing_fm.get("cap_rationale") or ""
+    # With a record, a rationale that differs from the pipeline's last one is
+    # the operator's and wins even over the level fit's. Without one, the fit's
+    # rationale wins, since the text on disk may be a stale analyst one.
+    if "cap_rationale" in record:
+        operator_cap_rationale = existing_cap_rationale != record["cap_rationale"]
+    else:
+        operator_cap_rationale = not cap_rationale_fitted
     if (
         existing_cap_rationale
-        and not cap_rationale_fitted
+        and operator_cap_rationale
         and _enum_value(verification_level) in _CAPPED_LEVELS
         and _enum_value(verification_level) == _enum_value(existing_fm.get("verification_level"))
         and _enum_value(confidence) == _enum_value(existing_fm.get("confidence"))
@@ -598,7 +611,8 @@ def _write_claim_file(
     # Only an analyst's proposal updates the record; a blocked write keeps it.
     if _enum_value(status) != ClaimStatus.BLOCKED.value:
         record = analyst_titles_record(
-            title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway, previous=record,
+            title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway,
+            cap_rationale=analyst_cap_rationale, previous=record,
         )
     if record:
         _store_analyst_titles(claim_path, record)
@@ -611,6 +625,7 @@ def analyst_titles_record(
     *,
     verdict: object = None,
     takeaway: str | None = None,
+    cap_rationale: str | None = None,
     previous: dict | None = None,
 ) -> dict:
     """The sidecar ``analyst_titles`` block after an analyst's write.
@@ -619,6 +634,8 @@ def analyst_titles_record(
     disk, so the next write can tell the operator's text from the analyst's.
     A field the analyst left out keeps its ``previous`` value: title and
     seo_title change together, since the seo_title shortens that title.
+    ``cap_rationale`` is the value after the level fit, and None is recorded
+    too: on a capped level a claim then has no pipeline rationale to match.
     """
     record = dict(previous or {})
     if seo_title is not None:
@@ -628,6 +645,7 @@ def analyst_titles_record(
         record["verdict"] = _enum_value(verdict)
     if takeaway is not None:
         record["takeaway"] = takeaway
+    record["cap_rationale"] = cap_rationale
     return record
 
 
@@ -635,6 +653,7 @@ def analyst_record_for(verdict: "VerdictAssessment") -> dict:
     """``analyst_titles_record`` for a verdict as written, for a claim's first sidecar."""
     return analyst_titles_record(
         verdict.title, verdict.seo_title, verdict=verdict.verdict, takeaway=verdict.takeaway,
+        cap_rationale=verdict.cap_rationale,
     )
 
 

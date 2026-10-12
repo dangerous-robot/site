@@ -207,7 +207,8 @@ class VerdictAssessment(BaseModel):
     )
 
     # True when the write-time level fit wrote ``cap_rationale`` for a level
-    # it lowered, so a refresh writes it over the rationale on disk.
+    # it lowered and the analyst gave none. A claim with no record of the
+    # pipeline's last rationale then takes it over the one on disk.
     _cap_rationale_fitted: bool = PrivateAttr(default=False)
 
     @field_validator("narrative")
