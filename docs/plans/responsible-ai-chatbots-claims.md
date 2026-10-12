@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), with the free-tier trial cells waiting on Brandon (D18 in the handoff note), so not ticked; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; GreenPT's and Earthly Insight's agent cells also wait on D37, whether a user-switched search in chat counts as agent web search); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), with the free-tier trial cells waiting on Brandon (D18 in the handoff note), so not ticked; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -77,6 +77,10 @@ Post-S8 answers, Brandon 2026-10-09 (open questions from the S1 to S8 build and 
 - A6 (F12): Ecosia's ownership term is steward-ownership (cell text keeps "Non-profit, Steward-ownership"). Already on main.
 - A7: the two dead summary links (ChatGPTree's Evertreen criticism, a redmonitor Substack post; Euria's "environmental commitments", an infomaniak.com page) get replacement sources, ingested as source files. Where none is found, the link and the sentence it backs come out; the Evertreen allegation does not stand unsourced.
 - A8 (review F6): in the dark theme only, `--color-stance-bad` gets its own lighter red (about #e05555, 4.7:1 on `#19191b`; WCAG 1.4.11 asks 3:1) instead of `--color-verdict-false` (#b22222, 2.6:1). Verdict colors are unchanged, so "False" stays distinct from "Mostly false".
+
+Brandon, 2026-10-12:
+
+- D37 (does a user-switched web search in chat count as agent web search): yes. A chat where the user turns web search on counts, even if the chatbot does not choose when to search.
 
 Brandon, 2026-10-11:
 
@@ -526,9 +530,9 @@ Result (2026-10-12), web search rows, against D19 (normal: a search box that ret
 
 | Product | Row | Before | After | Source, or why not yet sourced |
 |---|---|---|---|---|
-| GreenPT | Agent | yes | yes | not yet sourced: its help page "Searching the web in Chat" (https://greenpt.com/help/searching-the-web-in-chat) has the user "Select Search the web near the composer" and then "let GreenPT gather information"; it does not say the chatbot decides when to search (D37) |
+| GreenPT | Agent | yes | yes | `2026/searching-the-web-in-greenpt-chat` (D37, `9509543`; no archived copy yet, archive.org 503 on 2026-10-12): the user selects Search the web near the composer; was not yet sourced: its help page "Searching the web in Chat" (https://greenpt.com/help/searching-the-web-in-chat) has the user "Select Search the web near the composer" and then "let GreenPT gather information"; it does not say the chatbot decides when to search (D37) |
 | GreenPT | Normal | no | **yes** | `2026/greenpt-search-fast-private-sustainable`: "GreenPT Search delivers instant web results"; "Type a query, get results, instantly." |
-| Ecosia AI | Agent | yes | yes | not yet sourced: its help article describes "Web Source Mode", which the user picks and which pulls from the live web "for all of your queries"; it does not say whether the chat searches on its own otherwise |
+| Ecosia AI | Agent | yes | yes | `2026/generative-ai-on-ecosia-search` (D37, `9509543`): "Web Source Mode" pulls from the live web for all queries; was not yet sourced: its help article describes "Web Source Mode", which the user picks and which pulls from the live web "for all of your queries"; it does not say whether the chat searches on its own otherwise |
 | Ecosia AI | Normal | yes | yes | `2026/generative-ai-on-ecosia-search`: "The standard web search results on Ecosia Search are provided by our search partners"; AI Search answers "instead of a search results page of links" |
 | Euria | Agent | yes | yes | `2025/euria-sovereign-ai-assistant-challenges-american-dominance`: "Euria automatically detects whether a web search is really needed" |
 | Euria | Normal | no | no | not yet sourced: no Infomaniak page found says either way (Euria page, launch post, getting-started guide) |
@@ -537,7 +541,7 @@ Result (2026-10-12), web search rows, against D19 (normal: a search box that ret
 | Viro AI | Agent | no | **yes** | `2026/viro-automatic-web-search-documentation`: "Viro searches the web on its own when a question needs current information" |
 | Viro AI | Normal | yes | yes | `2026/viro-search-web-tool-documentation`: "Viro Search is a regular web search inside Viro: you get a page of results to browse yourself" |
 | ChatGPTree | Agent, Normal | no, no | no, no | not yet sourced: its home page does not mention web search and a web search found nothing; absence is not a source |
-| Earthly Insight | Agent | no | no | not yet sourced: its App Store listing (already a source) says in version 1.7.0 "Web search is back under your control. Turn it on or off for any conversation", so the chat can search the web, but not whether the chatbot decides when (D37); nothing there supports "no" |
+| Earthly Insight | Agent | no | **yes** | `2026/earthly-insight-app-ai` (D37, `9509543`): version 1.7.0 "Web search is back under your control. Turn it on or off for any conversation"; was not yet sourced: its App Store listing (already a source) says in version 1.7.0 "Web search is back under your control. Turn it on or off for any conversation", so the chat can search the web, but not whether the chatbot decides when (D37); nothing there supports "no" |
 | Earthly Insight | Normal | no | no | not yet sourced: no page found mentions a search box with website results |
 
 D37, for Brandon: GreenPT and Earthly Insight both let the user switch web search on in a chat, and neither page says whether the chatbot then decides when to search (TreadLightlyAI's page does say so). Does a user-switched search in chat count as agent web search? Today GreenPT shows yes and Earthly Insight no on the same kind of evidence.
