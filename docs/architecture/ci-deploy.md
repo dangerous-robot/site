@@ -48,14 +48,16 @@ Three-job pipeline:
 
 `/watch` shows playlist and video data fetched from the YouTube Data API at build time. The YouTube API Services Developer Policies allow that data to be stored for at most 30 days, and nothing from the API is committed, so the page is rebuilt every week.
 
-A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e` or `lint-content`) also blocks the weekly refresh, and the last good deploy stays live.
+A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e` or `lint-content`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
+
+GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the Deploy workflow in the repository's Actions tab.
 
 ### YouTube API key
 
 `YOUTUBE_API_KEY` is a GitHub Actions repository secret. It is passed to two steps of the `build` job and to nothing else:
 
 - `npm run build`, with `WATCH_EXPECT_KEY: '1'`. The `/watch` content loader fetches live data with the key. If the key is missing it logs a warning (shown as a `Watch page` annotation) and the page renders its empty state; if the API fails, the build still succeeds and publishes the empty state.
-- `npm run check:watch`, with `WATCH_CHECK_CONTEXT: deploy`. The key lets the check scan `dist/` for its exact value; deploy context fails the step if `/watch` was built from fixture data.
+- `npm run check:watch`, with `WATCH_CHECK_CONTEXT: deploy`. The key lets the check scan `dist/` for its exact value, which fails the step in any file. The `AIza` prefix every Google key starts with fails it in any file but `/watch`, where it is only a warning, since YouTube titles and descriptions may contain one. Deploy context fails the step if `/watch` was built from fixture data.
 
 The loader never sets a `Referer` or `Origin` header. The key carries an API restriction (YouTube Data API v3) and no HTTP referrer restriction.
 

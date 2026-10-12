@@ -20,6 +20,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # No timeout-minutes here: a called workflow cannot take one, and each job
+  # in ci.yml sets its own.
   verify:
     uses: ./.github/workflows/ci.yml
     permissions:
@@ -28,6 +30,7 @@ jobs:
   build:
     needs: verify
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
@@ -60,6 +63,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       pages: write
       id-token: write

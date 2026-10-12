@@ -24,6 +24,9 @@ export default defineConfig({
   outputDir: `${cacheDir}/test-results`,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
+  // One flaky test must not skip a weekly data refresh; the github reporter
+  // still marks a test that passed only on retry as flaky.
+  retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
     baseURL,

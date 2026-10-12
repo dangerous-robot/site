@@ -3,6 +3,7 @@
 // carries the YouTube and Google policy links, and no API key reached dist/.
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { loadEnv } from 'vite';
 import { TESTID, ATTR, YOUTUBE_TERMS_URL, youtubePlaylistUrl, youtubeWatchUrl } from '../src/lib/watch/contract';
 import { FIXTURE_PLAYLISTS } from '../src/lib/watch/fixtures/expected';
 import type { WatchMode, PlaylistStatus } from '../src/lib/watch/types';
@@ -54,13 +55,23 @@ const linksTo = (all: Tag[], prefix: string) => all.some((t) => t.name === 'a' &
 // checked below keep their buffers, so they are read once.
 const files = allFiles(DIST);
 if (files.length === 0) errors.push(`no files in ${DIST}/; run \`npm run build\` first`);
-const key = process.env.YOUTUBE_API_KEY?.trim() ?? '';
 const contents = new Map<string, Buffer>();
+// tsx does not load .env, so without this a local run never checks the exact
+// key. The prefix keeps every other .env value out of this process, as in
+// content.config.ts; a key set in the environment (CI) wins.
+const key = (process.env.YOUTUBE_API_KEY ?? loadEnv('production', process.cwd(), 'YOUTUBE_API_KEY').YOUTUBE_API_KEY ?? '').trim();
 for (const file of files) {
   const buf = readFileSync(file);
   if (file === WATCH_PAGE || file === PRIVACY_PAGE) contents.set(file, buf);
-  if (buf.includes(KEY_PREFIX)) errors.push(`key leak: ${file} contains "${KEY_PREFIX}"`);
-  if (key && buf.includes(key)) errors.push(`key leak: ${file} contains the value of YOUTUBE_API_KEY`);
+  if (key && buf.includes(key)) {
+    errors.push(`key leak: ${file} contains the value of YOUTUBE_API_KEY`);
+  } else if (buf.includes(KEY_PREFIX)) {
+    // /watch holds YouTube titles and descriptions, where a creator may have
+    // pasted a URL with someone's key in it. Failing on that would stop every
+    // deploy and the weekly data refresh, so there it is only a warning.
+    if (file === WATCH_PAGE) warnings.push(`key prefix: ${file} contains "${KEY_PREFIX}" (likely YouTube text, not this site's key)`);
+    else errors.push(`key leak: ${file} contains "${KEY_PREFIX}"`);
+  }
 }
 const readPage = (file: string) => contents.get(file)?.toString('utf8');
 
