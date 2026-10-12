@@ -8,6 +8,7 @@ text, and the dry run must write nothing.
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -37,7 +38,12 @@ def _git(repo: Path, *args: str) -> str:
 
 
 @pytest.fixture
-def repo(tmp_path: Path) -> Path:
+def repo(tmp_path: Path, monkeypatch) -> Path:
+    # Under a git hook (the pre-commit run of this suite), GIT_INDEX_FILE and
+    # friends point at the outer repository; `git commit -- <paths>` uses a
+    # temporary index, so the scratch repo's commits would fail.
+    for name in [n for n in os.environ if n.startswith("GIT_")]:
+        monkeypatch.delenv(name)
     _git(tmp_path, "init", "-q")
     _git(tmp_path, "config", "user.email", "test@example.org")
     _git(tmp_path, "config", "user.name", "Test")
