@@ -98,7 +98,7 @@ if (!existsSync(WATCH_PAGE)) {
     // B4, none mode: one page-level empty state and no video markup.
     if (byTestId(all, TESTID.pageEmpty).length !== 1) errors.push(`B4: none mode without exactly one ${TESTID.pageEmpty}`);
     if (thumbs.length > 0) errors.push(`B4: none mode, but ${thumbs.length} ${TESTID.thumb} elements`);
-    notes.push('B4: skipped: no video data');
+    notes.push('skipped: no video data');
   } else if (mode) {
     // B4: thumbnails are plain links to YouTube, so they work without JavaScript.
     if (thumbs.length === 0) errors.push(`B4: ${mode} mode, but no ${TESTID.thumb} elements`);
