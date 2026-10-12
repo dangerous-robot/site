@@ -815,15 +815,16 @@ def _refresh_block(
 
 def mark_refreshed(
     claim_path: Path,
-    previous_publication: dict,
+    previous_publication: dict | None,
     current_source_ids: list[str] | None,
     ran_at: datetime.datetime,
 ) -> None:
-    """Record in the sidecar that a published claim is rewritten and awaits re-approval.
+    """Record in the sidecar that a claim is rewritten and awaits re-approval.
 
     For a rewrite that leaves the rest of the sidecar alone (``dr
-    step-analyze --write``): resets ``human_review`` and starts or carries
-    forward the ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
+    step-analyze --write``): resets ``human_review`` and, for a published
+    claim (``previous_publication``), starts or carries forward the
+    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
     claim-refresh``, so ``dr review --approve`` asks for a correction when the
     verdict changed. Call it before the claim write.
     """

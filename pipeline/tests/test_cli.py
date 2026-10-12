@@ -1562,6 +1562,25 @@ def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> Non
     assert after == before
 
 
+def test_step_analyze_write_returns_an_archived_claim_to_draft(tmp_path) -> None:
+    """Production builds archived claims too, so a rewrite of one waits for review."""
+    import yaml
+
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(serialize_frontmatter({**fm, "status": "archived"}, body), encoding="utf-8")
+
+    result = _step_analyze_write(tmp_path, "false")
+
+    assert result.exit_code == 0, result.output
+    assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar["human_review"]["reviewed_at"] is None
+    assert "refresh" not in sidecar
+
+
 def test_step_analyze_write_takes_the_analysts_seo_title_and_takeaway(tmp_path) -> None:
     """The keep rules decide, as on the other write paths: values the analyst
     last wrote are replaced, and the record follows the new run."""
