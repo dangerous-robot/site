@@ -282,13 +282,13 @@ data:
       label: "Agent Web search"
       group: product-access
       cells:
-        greenpt: { type: "yes" }
-        ecosia: { type: "yes" }
+        greenpt: { type: "yes", sources: [/research/sources/2026/searching-the-web-in-greenpt-chat] }
+        ecosia: { type: "yes", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
         euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "yes", sources: [/research/sources/2026/web-search-help-treadlightlyai] }
         viro: { type: "yes", sources: [/research/sources/2026/viro-automatic-web-search-documentation] }
         chatgptree: { type: "no" }
-        earthly-insight: { type: "no" }
+        earthly-insight: { type: "yes", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: web-search
       label: "Normal Web search"
       group: product-access
