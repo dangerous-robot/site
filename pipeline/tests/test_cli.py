@@ -1558,7 +1558,7 @@ def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> Non
     assert result.exit_code == 0, result.output
     assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
     after = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    after.pop("analyst_titles")  # the claim write's own record
+    after.pop("analyst_record")  # the claim write's own record
     assert after == before
 
 
@@ -1595,7 +1595,7 @@ def test_step_analyze_write_takes_the_analysts_seo_title_and_takeaway(tmp_path) 
         "seo_title": "Acme was green", "takeaway": "Acme was green last year.",
     }, body), encoding="utf-8")
     sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    sidecar["analyst_titles"] = {
+    sidecar["analyst_record"] = {
         "title": "Acme was green", "seo_title": "Acme was green", "verdict": "true",
         "takeaway": "Acme was green last year.", "cap_rationale": None,
     }
@@ -1607,7 +1607,7 @@ def test_step_analyze_write_takes_the_analysts_seo_title_and_takeaway(tmp_path) 
     fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     assert fm["seo_title"] == "Acme green claim"
     assert fm["takeaway"] == "Acme is no longer green."
-    record = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["analyst_titles"]
+    record = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["analyst_record"]
     assert record["title"] == "Acme is green"
     assert record["seo_title"] == "Acme green claim"
     assert record["takeaway"] == "Acme is no longer green."

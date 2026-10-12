@@ -1845,7 +1845,7 @@ async def research_claim(
                     result.sub_question_coverage,
                     result.queries_by_sub_question,
                 ),
-                analyst_titles=analyst_record_for(analyst_out.verdict),
+                analyst_record=analyst_record_for(analyst_out.verdict),
                 level_clamp=level_clamp,
             )
 
@@ -2948,7 +2948,7 @@ async def onboard_entity(
                             vr.sub_question_coverage,
                             vr.queries_by_sub_question,
                         ),
-                        analyst_titles=analyst_record_for(ao.verdict),
+                        analyst_record=analyst_record_for(ao.verdict),
                         level_clamp=level_clamp,
                     )
 

@@ -500,7 +500,7 @@ def _write_claim_file(
 
     On a forced overwrite, the existing ``seo_title`` wins when an operator
     wrote it (it differs from the analyst's last one, recorded as
-    ``analyst_titles`` in the audit sidecar) and the title is unchanged from
+    ``analyst_record`` in the audit sidecar) and the title is unchanged from
     the analyst's last title (ignoring case and spacing). The existing
     ``takeaway`` wins when the analyst gives none, and when an operator wrote
     it (it differs from the analyst's last one in the record) while the
@@ -546,7 +546,7 @@ def _write_claim_file(
 
     # Compared against the analyst's last title, not the file's: a blocked
     # write in between replaces the title with a placeholder.
-    record = _analyst_titles(claim_path, existing_fm)
+    record = _read_analyst_record(claim_path, existing_fm)
     recorded_title = record.get("title")
     if (
         existing_seo_title
@@ -610,16 +610,16 @@ def _write_claim_file(
 
     # Only an analyst's proposal updates the record; a blocked write keeps it.
     if _enum_value(status) != ClaimStatus.BLOCKED.value:
-        record = analyst_titles_record(
+        record = updated_analyst_record(
             title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway,
             cap_rationale=analyst_cap_rationale, previous=record,
         )
     if record:
-        _store_analyst_titles(claim_path, record)
+        _store_analyst_record(claim_path, record)
     return claim_path
 
 
-def analyst_titles_record(
+def updated_analyst_record(
     title: str,
     seo_title: str | None,
     *,
@@ -628,7 +628,7 @@ def analyst_titles_record(
     cap_rationale: str | None = None,
     previous: dict | None = None,
 ) -> dict:
-    """The sidecar ``analyst_titles`` block after an analyst's write.
+    """The sidecar ``analyst_record`` block after an analyst's write.
 
     It holds what the analyst proposed, never a value a keep rule left on
     disk, so the next write can tell the operator's text from the analyst's.
@@ -650,22 +650,22 @@ def analyst_titles_record(
 
 
 def analyst_record_for(verdict: "VerdictAssessment") -> dict:
-    """``analyst_titles_record`` for a verdict as written, for a claim's first sidecar."""
-    return analyst_titles_record(
+    """``updated_analyst_record`` for a verdict as written, for a claim's first sidecar."""
+    return updated_analyst_record(
         verdict.title, verdict.seo_title, verdict=verdict.verdict, takeaway=verdict.takeaway,
         cap_rationale=verdict.cap_rationale,
     )
 
 
-def _analyst_titles(claim_path: Path, existing_fm: dict) -> dict:
-    """What the analyst last wrote to this claim (``analyst_titles_record``).
+def _read_analyst_record(claim_path: Path, existing_fm: dict) -> dict:
+    """What the analyst last wrote to this claim (``updated_analyst_record``).
 
     Read from the audit sidecar. A claim written before the record existed
     gets its file title and verdict with no seo_title or takeaway, so any
     seo_title or takeaway on disk counts as the operator's; a blocked file
     gives neither, since it holds placeholders.
     """
-    recorded = (read_sidecar(claim_path) or {}).get("analyst_titles")
+    recorded = (read_sidecar(claim_path) or {}).get("analyst_record")
     if isinstance(recorded, dict):
         return recorded
     existing_title = existing_fm.get("title")
@@ -678,7 +678,7 @@ def _analyst_titles(claim_path: Path, existing_fm: dict) -> dict:
     return {}
 
 
-def _store_analyst_titles(claim_path: Path, record: dict) -> None:
+def _store_analyst_record(claim_path: Path, record: dict) -> None:
     # Only an existing sidecar is updated: one holding just this block would
     # fail the sidecar schema. Callers that write the claim before its first
     # sidecar pass the record to _write_audit_sidecar instead.
@@ -688,11 +688,11 @@ def _store_analyst_titles(claim_path: Path, record: dict) -> None:
     try:
         data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
     except yaml.YAMLError as exc:
-        logger.warning("Could not parse sidecar %s to record analyst titles: %s", sidecar_path, exc)
+        logger.warning("Could not parse sidecar %s to record the analyst record: %s", sidecar_path, exc)
         return
-    if not isinstance(data, dict) or data.get("analyst_titles") == record:
+    if not isinstance(data, dict) or data.get("analyst_record") == record:
         return
-    data["analyst_titles"] = record
+    data["analyst_record"] = record
     sidecar_path.write_text(
         yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
         encoding="utf-8",
@@ -858,7 +858,7 @@ def _write_audit_sidecar(
     failure: FailureInfo | None = None,
     previous_publication: dict | None = None,
     current_source_ids: list[str] | None = None,
-    analyst_titles: dict | None = None,
+    analyst_record: dict | None = None,
     level_clamp: str | None = None,
     keep_other_models: bool = False,
 ) -> Path:
@@ -870,8 +870,8 @@ def _write_audit_sidecar(
     ``previous_publication`` (from ``_read_published_snapshot``) starts a
     ``refresh`` block; ``current_source_ids`` recomputes its ``dropped_sources``.
 
-    The ``analyst_titles`` block is carried over from the existing sidecar;
-    ``_write_claim_file`` owns it. A passed ``analyst_titles`` is written only
+    The ``analyst_record`` block is carried over from the existing sidecar;
+    ``_write_claim_file`` owns it. A passed ``analyst_record`` is written only
     when the existing sidecar has none, as for a claim written before its
     first sidecar existed.
 
@@ -896,8 +896,8 @@ def _write_audit_sidecar(
 
     # The existing record wins: the claim write just merged this run into it,
     # and a passed record holds only this run's fields.
-    if isinstance(existing.get("analyst_titles"), dict):
-        analyst_titles = existing["analyst_titles"]
+    if isinstance(existing.get("analyst_record"), dict):
+        analyst_record = existing["analyst_record"]
 
     if comparison is not None:
         audit_block = {
@@ -1008,8 +1008,8 @@ def _write_audit_sidecar(
         sidecar_data["refresh"] = refresh
     sidecar_data["audit"] = audit_block
     sidecar_data["human_review"] = human_review
-    if analyst_titles is not None:
-        sidecar_data["analyst_titles"] = analyst_titles
+    if analyst_record is not None:
+        sidecar_data["analyst_record"] = analyst_record
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),

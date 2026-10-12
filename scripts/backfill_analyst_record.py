@@ -2,7 +2,7 @@
 
 A forced rewrite (dr claim-refresh, dr onboard --force) tells the operator's
 seo_title, takeaway and cap_rationale from the analyst's by comparing them with
-the sidecar's `analyst_titles` record. Sidecars written before that record
+the sidecar's `analyst_record`. Sidecars written before that record
 existed have none, so every value on disk counts as the operator's. This script
 writes the record from each claim's last pipeline-written version in git.
 
@@ -90,7 +90,7 @@ def _text(value: object) -> str:
 
 
 def record_from(fm: dict) -> dict:
-    """The record `analyst_titles_record` would have written for this version."""
+    """The record `updated_analyst_record` would have written for this version."""
     record: dict = {}
     if fm.get("seo_title") is not None:
         record["title"] = fm.get("title")
@@ -130,8 +130,8 @@ def plan(repo_root: Path) -> list[Row]:
         if not sidecar_path.exists():
             row.skip = "no sidecar on disk"
             continue
-        if "analyst_titles" in _yaml(sidecar_path.read_text(encoding="utf-8")):
-            row.skip = "sidecar already has an analyst_titles record"
+        if "analyst_record" in _yaml(sidecar_path.read_text(encoding="utf-8")):
+            row.skip = "sidecar already has an analyst_record"
             continue
         found = _pipeline_written(repo_root, claim_rel, sidecar_rel)
         if found is None:
@@ -162,7 +162,7 @@ def write(repo_root: Path, rows: list[Row]) -> int:
         if text and not text.endswith("\n"):
             text += "\n"
         sidecar_path.write_text(
-            text + yaml.safe_dump({"analyst_titles": row.record}, sort_keys=False, allow_unicode=True),
+            text + yaml.safe_dump({"analyst_record": row.record}, sort_keys=False, allow_unicode=True),
             encoding="utf-8",
         )
         written += 1

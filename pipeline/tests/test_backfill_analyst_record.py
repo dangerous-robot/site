@@ -148,7 +148,7 @@ def test_claim_with_no_pipeline_written_version_is_reported_and_skipped(repo):
 
 def test_claim_whose_sidecar_has_a_record_is_skipped(repo):
     sidecar = yaml.safe_load(_sidecar())
-    sidecar["analyst_titles"] = {"title": "Acme is green", "seo_title": "Analyst seo"}
+    sidecar["analyst_record"] = {"title": "Acme is green", "seo_title": "Analyst seo"}
     _commit(repo, "run", _claim(), yaml.safe_dump(sidecar))
 
     [row] = _rows(repo)
@@ -186,7 +186,7 @@ def test_write_adds_only_the_record(repo, monkeypatch):
     assert _load_script().main() == 0
 
     after = yaml.safe_load((repo / SIDECAR_REL).read_text(encoding="utf-8"))
-    assert after.pop("analyst_titles")["takeaway"] == "Analyst takeaway."
+    assert after.pop("analyst_record")["takeaway"] == "Analyst takeaway."
     assert after == before
 
 
@@ -200,7 +200,7 @@ def test_write_leaves_the_rest_of_the_sidecar_text_unchanged(repo, monkeypatch):
 
     text = (repo / SIDECAR_REL).read_text(encoding="utf-8")
     assert text.startswith(sidecar)
-    assert yaml.safe_load(text[len(sidecar):]) == {"analyst_titles": {
+    assert yaml.safe_load(text[len(sidecar):]) == {"analyst_record": {
         "title": "Acme is green", "seo_title": "Analyst seo", "verdict": "true",
         "takeaway": "Analyst takeaway.", "cap_rationale": "Analyst cap.",
     }}

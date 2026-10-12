@@ -25,7 +25,7 @@ from orchestrator.persistence import (
     _build_sources_consulted,
     _write_audit_sidecar,
     _write_claim_file,
-    analyst_titles_record,
+    updated_analyst_record,
     set_claim_status,
 )
 
@@ -1176,7 +1176,7 @@ class TestWriteClaimFile:
         )
 
         assert self._seo_title(path) == "Brave renewable hosting claim"
-        assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
+        assert yaml.safe_load(sidecar.read_text())["analyst_record"] == {
             "title": self._TITLE, "seo_title": "Brave renewable hosting claim", "verdict": "true",
             "cap_rationale": None,
         }
@@ -1198,7 +1198,7 @@ class TestWriteClaimFile:
 
         sidecar = self._add_sidecar(tmp_path)
 
-        assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
+        assert yaml.safe_load(sidecar.read_text())["analyst_record"] == {
             "title": self._TITLE, "seo_title": "Analyst seo title", "verdict": "true",
             "cap_rationale": None,
         }
@@ -1208,13 +1208,13 @@ class TestWriteClaimFile:
         sidecar = _write_audit_sidecar(
             claim_path=path, comparison=None, model="test", ran_at=FIXED_TS,
             sources_consulted=[], agents_run=["researcher"],
-            analyst_titles=analyst_titles_record(self._TITLE, "Analyst seo title"),
+            analyst_record=updated_analyst_record(self._TITLE, "Analyst seo title"),
         )
 
         self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
 
         assert self._seo_title(path) == "New analyst seo title"
-        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["seo_title"] == "New analyst seo title"
+        assert yaml.safe_load(sidecar.read_text())["analyst_record"]["seo_title"] == "New analyst seo title"
 
     # The record also holds the analyst's last takeaway and the verdict it
     # wrote, so a takeaway the operator edited survives a refresh.
@@ -1244,7 +1244,7 @@ class TestWriteClaimFile:
         self._analyst_run(tmp_path, "New analyst takeaway.")
 
         assert self._takeaway(path) == "New analyst takeaway."
-        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        record = yaml.safe_load(sidecar.read_text())["analyst_record"]
         assert record["takeaway"] == "New analyst takeaway."
         assert record["verdict"] == "true"
 
@@ -1264,7 +1264,7 @@ class TestWriteClaimFile:
         self._analyst_run(tmp_path, None)
 
         assert self._takeaway(path) == "Analyst takeaway."
-        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["takeaway"] == "Analyst takeaway."
+        assert yaml.safe_load(sidecar.read_text())["analyst_record"]["takeaway"] == "Analyst takeaway."
 
     def test_takeaway_without_a_record_counts_as_the_operators(self, tmp_path):
         path = self._analyst_run(tmp_path, "Takeaway of unknown origin.")
@@ -1292,10 +1292,10 @@ class TestWriteClaimFile:
         sidecar = _write_audit_sidecar(
             claim_path=path, comparison=None, model="test", ran_at=FIXED_TS,
             sources_consulted=[], agents_run=["researcher"],
-            analyst_titles=analyst_titles_record(self._TITLE, "Analyst seo title"),
+            analyst_record=updated_analyst_record(self._TITLE, "Analyst seo title"),
         )
 
-        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["takeaway"] == "Analyst takeaway."
+        assert yaml.safe_load(sidecar.read_text())["analyst_record"]["takeaway"] == "Analyst takeaway."
 
     # The record also holds the cap_rationale the pipeline last proposed, so
     # the keep rule keeps an operator's reason and replaces the analyst's.
@@ -1337,7 +1337,7 @@ class TestWriteClaimFile:
         self._capped_run(tmp_path, "New analyst rationale.")
 
         assert self._cap_rationale(path) == "New analyst rationale."
-        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        record = yaml.safe_load(sidecar.read_text())["analyst_record"]
         assert record["cap_rationale"] == "New analyst rationale."
 
     def test_record_holds_the_proposed_cap_rationale_not_the_kept_one(self, tmp_path):
@@ -1347,7 +1347,7 @@ class TestWriteClaimFile:
 
         self._capped_run(tmp_path, "New analyst rationale.")
 
-        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        record = yaml.safe_load(sidecar.read_text())["analyst_record"]
         assert record["cap_rationale"] == "New analyst rationale."
 
     def test_operator_cap_rationale_replaced_when_the_level_changes(self, tmp_path):
@@ -1365,7 +1365,7 @@ class TestWriteClaimFile:
 
         self._blocked(tmp_path)
 
-        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        record = yaml.safe_load(sidecar.read_text())["analyst_record"]
         assert record["cap_rationale"] == "Analyst rationale."
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
