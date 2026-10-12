@@ -648,7 +648,8 @@ def step_analyze(
     """Re-run the analyst on an existing claim using its already-ingested sources.
 
     Default: read-only (prints analyst output). Use --write (or --force) to
-    overwrite the claim file on disk.
+    overwrite the claim file on disk. A published claim returns to draft and
+    awaits re-approval, as with claim-refresh.
 
     Example:
         dr step-analyze --claim microsoft/corporate-structure
@@ -659,15 +660,20 @@ def step_analyze(
     analyst_model = ctx.obj.get("analyst_model") or ctx.obj["model"]
     _check_provider_api_keys(analyst_model)
 
+    import datetime
+
     from common.content_loader import load_entity, resolve_repo_root
     from common.frontmatter import parse_frontmatter
+    from common.models import ClaimStatus
     from common.templates import render_claim_text
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
+        _read_published_snapshot,
         _write_claim_file,
         fit_verdict_to_written_pool,
         load_source_dict,
+        mark_refreshed,
         verdict_write_kwargs,
     )
 
@@ -761,6 +767,20 @@ def step_analyze(
     entity_ref = fm["entity"]
     claim_slug = claim_path.stem
 
+    # A new verdict and narrative on a published claim must not go live
+    # without review: as in claim-refresh, the claim returns to draft and the
+    # sidecar keeps the published state, written first so a failed claim
+    # write leaves the claim published with the snapshot pending. Without
+    # --force the write below refuses, so nothing is reset.
+    status = fm.get("status", "draft")
+    previous_publication = _read_published_snapshot(claim_path)
+    if previous_publication is not None and force:
+        mark_refreshed(
+            claim_path, previous_publication, source_ids,
+            datetime.datetime.now(tz=datetime.timezone.utc),
+        )
+        status = ClaimStatus.DRAFT
+
     try:
         written_path = _write_claim_file(
             title=a.verdict.title,
@@ -774,7 +794,7 @@ def step_analyze(
             source_ids=source_ids,
             repo_root=root,
             force=force,
-            status=fm.get("status", "draft"),
+            status=status,
             criteria_slug=fm.get("criteria_slug"),
             **verdict_write_kwargs(a.verdict),
         )

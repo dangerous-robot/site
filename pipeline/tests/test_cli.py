@@ -1453,6 +1453,114 @@ def test_step_analyze_write_keeps_the_entity_match_override(tmp_path) -> None:
     assert fm["verification_level"] == "claimed"
 
 
+def _published_claim_repo(tmp_path):
+    """A published, signed-off claim (verdict true) with its sidecar."""
+    import yaml
+
+    research = tmp_path / "research"
+    (research / "entities" / "companies").mkdir(parents=True)
+    (research / "entities" / "companies" / "acme.md").write_text(
+        "---\nname: Acme\ntype: company\nwebsite: https://acme.com\n---\n", encoding="utf-8"
+    )
+    (research / "claims" / "acme").mkdir(parents=True)
+    claim_path = research / "claims" / "acme" / "green.md"
+    claim_path.write_text(
+        "---\ntitle: Acme is green\nentity: companies/acme\nverdict: 'true'\nconfidence: high\n"
+        "status: published\nas_of: '2026-10-01'\nsources:\n- 2026/report\n---\nBody.\n",
+        encoding="utf-8",
+    )
+    (research / "sources" / "2026").mkdir(parents=True)
+    (research / "sources" / "2026" / "report.md").write_text(
+        "---\nurl: https://acme.com/report\ntitle: Acme Report\npublisher: Acme\n"
+        "kind: report\nsummary: Acme says it is green.\n---\nAcme says it is green.\n",
+        encoding="utf-8",
+    )
+    sidecar_path = claim_path.with_name("green.audit.yaml")
+    sidecar_path.write_text(yaml.safe_dump({
+        "schema_version": 1,
+        "pipeline_run": {"ran_at": "2026-10-01T00:00:00+00:00", "model": "m", "agents": ["analyst"]},
+        "sources_consulted": [],
+        "audit": None,
+        "human_review": {
+            "reviewed_at": "2026-10-02", "reviewer": "reviewer@example.org",
+            "notes": None, "pr_url": None,
+        },
+    }), encoding="utf-8")
+    return claim_path, sidecar_path
+
+
+def _step_analyze_write(tmp_path, verdict: str):
+    from contextlib import nullcontext
+
+    from pydantic_ai.models.test import TestModel
+
+    from analyst.agent import verdict_only_agent
+
+    model = TestModel(custom_output_args={
+        "title": "Acme is green",
+        "verdict": verdict,
+        "confidence": "low",
+        "narrative": "Acme Report says so.",
+        "topics": ["environmental-impact"],
+        "verification_level": "self-reported",
+        "cap_rationale": "Only Acme says so.",
+        "seo_title": "Acme green claim",
+    })
+    with verdict_only_agent.override(model=model), patch(
+        "orchestrator.pipeline.verdict_only_agent.override",
+        side_effect=lambda **kw: nullcontext(),
+    ):
+        return CliRunner().invoke(
+            main,
+            [
+                "--model", "test", "--analyst-model", "test", "step-analyze", "--claim", "acme/green",
+                "--write", "--force", "--repo-root", str(tmp_path),
+            ],
+        )
+
+
+def test_step_analyze_write_resets_a_published_claim_to_draft(tmp_path) -> None:
+    """A new verdict and narrative must not go live without review, as with claim-refresh."""
+    import yaml
+
+    from common.frontmatter import parse_frontmatter
+    from orchestrator.review import refresh_verdict_change
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+
+    result = _step_analyze_write(tmp_path, "false")
+
+    assert result.exit_code == 0, result.output
+    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    assert fm["status"] == "draft"
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar["human_review"]["reviewed_at"] is None
+    assert sidecar["human_review"]["reviewer"] is None
+    assert sidecar["refresh"]["previous"]["verdict"] == "true"
+    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
+    # dr review --approve then asks for a public correction.
+    assert refresh_verdict_change(fm, sidecar) == ("true", "false")
+
+
+def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> None:
+    import yaml
+
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
+
+    claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(serialize_frontmatter({**fm, "status": "draft"}, body), encoding="utf-8")
+    before = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+
+    result = _step_analyze_write(tmp_path, "false")
+
+    assert result.exit_code == 0, result.output
+    assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
+    after = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    after.pop("analyst_titles")  # the claim write's own record
+    assert after == before
+
+
 class TestStepAnalyzeCriterion:
     SENTINEL = "SENTINEL-NOTES: mixed = offsets only"
 

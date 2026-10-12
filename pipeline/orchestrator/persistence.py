@@ -813,6 +813,36 @@ def _refresh_block(
     return block
 
 
+def mark_refreshed(
+    claim_path: Path,
+    previous_publication: dict,
+    current_source_ids: list[str] | None,
+    ran_at: datetime.datetime,
+) -> None:
+    """Record in the sidecar that a published claim is rewritten and awaits re-approval.
+
+    For a rewrite that leaves the rest of the sidecar alone (``dr
+    step-analyze --write``): resets ``human_review`` and starts or carries
+    forward the ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
+    claim-refresh``, so ``dr review --approve`` asks for a correction when the
+    verdict changed. Call it before the claim write.
+    """
+    sidecar_path = sidecar_path_for(claim_path)
+    if not sidecar_path.exists():
+        return
+    data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"cannot parse sidecar {sidecar_path}")
+    data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
+    refresh = _refresh_block(data, previous_publication, current_source_ids, ran_at)
+    if refresh is not None:
+        data["refresh"] = refresh
+    sidecar_path.write_text(
+        yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+
+
 def _write_audit_sidecar(
     claim_path: Path,
     comparison: ComparisonResult | None,
