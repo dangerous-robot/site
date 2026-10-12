@@ -188,3 +188,19 @@ def test_write_adds_only_the_record(repo, monkeypatch):
     after = yaml.safe_load((repo / SIDECAR_REL).read_text(encoding="utf-8"))
     assert after.pop("analyst_titles")["takeaway"] == "Analyst takeaway."
     assert after == before
+
+
+def test_write_leaves_the_rest_of_the_sidecar_text_unchanged(repo, monkeypatch):
+    # A re-dump would turn this block scalar into a quoted string.
+    sidecar = _sidecar() + "research:\n  scorer_rationale: |-\n    Line one.\n    Line two.\n"
+    _commit(repo, "run", _claim(), sidecar)
+    monkeypatch.setattr(sys, "argv", ["backfill_analyst_record.py", "--repo-root", str(repo), "--write"])
+
+    assert _load_script().main() == 0
+
+    text = (repo / SIDECAR_REL).read_text(encoding="utf-8")
+    assert text.startswith(sidecar)
+    assert yaml.safe_load(text[len(sidecar):]) == {"analyst_titles": {
+        "title": "Acme is green", "seo_title": "Analyst seo", "verdict": "true",
+        "takeaway": "Analyst takeaway.", "cap_rationale": "Analyst cap.",
+    }}

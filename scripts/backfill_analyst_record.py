@@ -155,10 +155,15 @@ def write(repo_root: Path, rows: list[Row]) -> int:
         if row.skip or row.record is None:
             continue
         sidecar_path = (repo_root / row.claim).with_name(Path(row.claim).stem + ".audit.yaml")
-        data = _yaml(sidecar_path.read_text(encoding="utf-8"))
-        data["analyst_titles"] = row.record
+        text = sidecar_path.read_text(encoding="utf-8")
+        # Appended rather than re-dumped, so the rest of the file keeps its
+        # YAML style and the diff shows only the record. plan() skipped any
+        # sidecar that already has the key.
+        if text and not text.endswith("\n"):
+            text += "\n"
         sidecar_path.write_text(
-            yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8",
+            text + yaml.safe_dump({"analyst_titles": row.record}, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
         )
         written += 1
     return written
