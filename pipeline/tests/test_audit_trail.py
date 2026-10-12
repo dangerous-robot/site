@@ -942,6 +942,7 @@ class TestWriteClaimFile:
         *,
         title: str = "Test Claim",
         confidence: Confidence = Confidence.HIGH,
+        verdict: Verdict = Verdict.TRUE,
         **kwargs,
     ):
         return _write_claim_file(
@@ -949,7 +950,7 @@ class TestWriteClaimFile:
             entity_name="Test Entity",
             entity_ref="companies/test-entity",
             topics=[Category.ENVIRONMENTAL_IMPACT],
-            verdict=Verdict.TRUE,
+            verdict=verdict,
             confidence=confidence,
             narrative=narrative,
             claim_slug="test-claim",
@@ -1176,7 +1177,7 @@ class TestWriteClaimFile:
 
         assert self._seo_title(path) == "Brave renewable hosting claim"
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
-            "title": self._TITLE, "seo_title": "Brave renewable hosting claim",
+            "title": self._TITLE, "seo_title": "Brave renewable hosting claim", "verdict": "true",
         }
 
     def test_operator_seo_title_replaced_when_analyst_title_changes(self, tmp_path):
@@ -1197,7 +1198,7 @@ class TestWriteClaimFile:
         sidecar = self._add_sidecar(tmp_path)
 
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"] == {
-            "title": self._TITLE, "seo_title": "Analyst seo title",
+            "title": self._TITLE, "seo_title": "Analyst seo title", "verdict": "true",
         }
 
     def test_claim_written_before_first_sidecar_records_passed_titles(self, tmp_path):
@@ -1212,6 +1213,87 @@ class TestWriteClaimFile:
 
         assert self._seo_title(path) == "New analyst seo title"
         assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["seo_title"] == "New analyst seo title"
+
+    # The record also holds the analyst's last takeaway and the verdict it
+    # wrote, so a takeaway the operator edited survives a refresh.
+
+    def _takeaway(self, path: Path) -> str:
+        return parse_frontmatter(path.read_text(encoding="utf-8"))[0]["takeaway"]
+
+    def _analyst_run(self, repo_root: Path, takeaway: str | None, verdict: Verdict = Verdict.TRUE, **kwargs):
+        return self._call(
+            repo_root, force=True, title=self._TITLE, seo_title="Analyst seo title",
+            verdict=verdict, takeaway=takeaway, **kwargs,
+        )
+
+    def test_operator_takeaway_kept_when_the_analyst_writes_a_new_one(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+        self._set_frontmatter(path, takeaway="Operator takeaway.")
+
+        self._analyst_run(tmp_path, "New analyst takeaway.")
+
+        assert self._takeaway(path) == "Operator takeaway."
+
+    def test_analyst_takeaway_replaced_by_the_analysts_new_one(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+
+        self._analyst_run(tmp_path, "New analyst takeaway.")
+
+        assert self._takeaway(path) == "New analyst takeaway."
+        record = yaml.safe_load(sidecar.read_text())["analyst_titles"]
+        assert record["takeaway"] == "New analyst takeaway."
+        assert record["verdict"] == "true"
+
+    def test_operator_takeaway_replaced_when_the_verdict_changes(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+        self._set_frontmatter(path, takeaway="Operator takeaway.")
+
+        self._analyst_run(tmp_path, "New analyst takeaway.", verdict=Verdict.FALSE)
+
+        assert self._takeaway(path) == "New analyst takeaway."
+
+    def test_analyst_without_a_takeaway_keeps_the_record(self, tmp_path):
+        sidecar = self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+
+        self._analyst_run(tmp_path, None)
+
+        assert self._takeaway(path) == "Analyst takeaway."
+        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["takeaway"] == "Analyst takeaway."
+
+    def test_takeaway_without_a_record_counts_as_the_operators(self, tmp_path):
+        path = self._analyst_run(tmp_path, "Takeaway of unknown origin.")
+
+        self._analyst_run(tmp_path, "New analyst takeaway.")
+
+        assert self._takeaway(path) == "Takeaway of unknown origin."
+
+    def test_blocked_write_between_runs_keeps_operator_takeaway(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+        self._set_frontmatter(path, takeaway="Operator takeaway.")
+
+        self._blocked(tmp_path)
+        self._analyst_run(tmp_path, "New analyst takeaway.")
+
+        assert self._takeaway(path) == "Operator takeaway."
+
+    def test_sidecar_written_after_the_claim_keeps_the_stored_takeaway(self, tmp_path):
+        # Verify and onboard write the claim, then the sidecar with the record
+        # for a claim that had none; an existing record must win over it.
+        self._add_sidecar(tmp_path)
+        path = self._analyst_run(tmp_path, "Analyst takeaway.")
+
+        sidecar = _write_audit_sidecar(
+            claim_path=path, comparison=None, model="test", ran_at=FIXED_TS,
+            sources_consulted=[], agents_run=["researcher"],
+            analyst_titles=analyst_titles_record(self._TITLE, "Analyst seo title"),
+        )
+
+        assert yaml.safe_load(sidecar.read_text())["analyst_titles"]["takeaway"] == "Analyst takeaway."
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
         path = self._call(tmp_path, narrative="original")

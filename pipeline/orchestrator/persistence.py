@@ -498,6 +498,9 @@ def _write_claim_file(
     wrote it (it differs from the analyst's last one, recorded as
     ``analyst_titles`` in the audit sidecar) and the title is unchanged from
     the analyst's last title (ignoring case and spacing). The existing
+    ``takeaway`` wins when the analyst gives none, and when an operator wrote
+    it (it differs from the analyst's last one in the record) while the
+    verdict is the analyst's last verdict. The existing
     ``cap_rationale`` wins while ``verification_level`` and ``confidence`` are
     both unchanged and the level is a capped one (``claimed`` or
     ``self-reported``), unless ``cap_rationale_fitted`` says the level fit
@@ -516,7 +519,8 @@ def _write_claim_file(
     # the confidence cap, so it is kept only on a capped level, while the level and
     # confidence it explains are both unchanged, and not over the level fit's
     # rationale, which describes this run's written sources. A takeaway is kept when the analyst gives
-    # none. Corrections (the public record of what changed) and tags (homepage
+    # none, and an operator's while the analyst's verdict is unchanged: it sits
+    # under the verdict badge. Corrections (the public record of what changed) and tags (homepage
     # card picks) are operator-owned and always kept.
     existing_fm: dict = {}
     if claim_path.exists() and force:
@@ -528,6 +532,7 @@ def _write_claim_file(
                 f"cannot parse existing claim {claim_path}; fix its frontmatter before re-running: {exc}"
             ) from exc
     analyst_seo_title = seo_title
+    analyst_takeaway = takeaway
     existing_takeaway = existing_fm.get("takeaway", "") or ""
     existing_seo_title = existing_fm.get("seo_title", "") or ""
     existing_corrections = existing_fm.get("corrections") or None
@@ -547,6 +552,14 @@ def _write_claim_file(
     elif seo_title is None:
         seo_title = existing_seo_title
 
+    # A takeaway with no record counts as the operator's (record.get gives None).
+    if takeaway is None or (
+        existing_takeaway
+        and existing_takeaway != record.get("takeaway")
+        and record.get("verdict") == _enum_value(verdict)
+    ):
+        takeaway = existing_takeaway
+
     existing_cap_rationale = existing_fm.get("cap_rationale") or ""
     if (
         existing_cap_rationale
@@ -565,7 +578,7 @@ def _write_claim_file(
         "confidence": confidence,
         "verification_level": verification_level,
         "cap_rationale": cap_rationale,
-        "takeaway": takeaway if takeaway is not None else existing_takeaway,
+        "takeaway": takeaway,
         "seo_title": seo_title,
         "criteria_slug": criteria_slug,
         "status": status,
@@ -582,39 +595,67 @@ def _write_claim_file(
     )
     logger.info("Wrote claim: %s (status=%s)", claim_path, status)
 
-    # Only an analyst's proposal updates the record; a blocked write (or one
-    # with no analyst seo_title) keeps it.
+    # Only an analyst's proposal updates the record; a blocked write keeps it.
     if _enum_value(status) != ClaimStatus.BLOCKED.value:
-        record = analyst_titles_record(title, analyst_seo_title) or record
+        record = analyst_titles_record(
+            title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway, previous=record,
+        )
     if record:
         _store_analyst_titles(claim_path, record)
     return claim_path
 
 
-def analyst_titles_record(title: str, seo_title: str | None) -> dict | None:
-    """The sidecar ``analyst_titles`` block for an analyst's title and seo_title.
+def analyst_titles_record(
+    title: str,
+    seo_title: str | None,
+    *,
+    verdict: object = None,
+    takeaway: str | None = None,
+    previous: dict | None = None,
+) -> dict:
+    """The sidecar ``analyst_titles`` block after an analyst's write.
 
-    None when the analyst gave no seo_title, so the previous record stands.
+    It holds what the analyst proposed, never a value a keep rule left on
+    disk, so the next write can tell the operator's text from the analyst's.
+    A field the analyst left out keeps its ``previous`` value: title and
+    seo_title change together, since the seo_title shortens that title.
     """
-    if seo_title is None:
-        return None
-    return {"title": title, "seo_title": seo_title}
+    record = dict(previous or {})
+    if seo_title is not None:
+        record["title"] = title
+        record["seo_title"] = seo_title
+    if verdict is not None:
+        record["verdict"] = _enum_value(verdict)
+    if takeaway is not None:
+        record["takeaway"] = takeaway
+    return record
+
+
+def analyst_record_for(verdict: "VerdictAssessment") -> dict:
+    """``analyst_titles_record`` for a verdict as written, for a claim's first sidecar."""
+    return analyst_titles_record(
+        verdict.title, verdict.seo_title, verdict=verdict.verdict, takeaway=verdict.takeaway,
+    )
 
 
 def _analyst_titles(claim_path: Path, existing_fm: dict) -> dict:
-    """The title and seo_title the analyst last wrote to this claim.
+    """What the analyst last wrote to this claim (``analyst_titles_record``).
 
     Read from the audit sidecar. A claim written before the record existed
-    gets its file title with no seo_title, so any seo_title on disk counts as
-    the operator's; a blocked file gives no title, since it holds a
-    placeholder.
+    gets its file title and verdict with no seo_title or takeaway, so any
+    seo_title or takeaway on disk counts as the operator's; a blocked file
+    gives neither, since it holds placeholders.
     """
     recorded = (read_sidecar(claim_path) or {}).get("analyst_titles")
     if isinstance(recorded, dict):
         return recorded
     existing_title = existing_fm.get("title")
     if isinstance(existing_title, str) and existing_fm.get("status") != ClaimStatus.BLOCKED.value:
-        return {"title": existing_title, "seo_title": None}
+        return {
+            "title": existing_title,
+            "seo_title": None,
+            "verdict": _enum_value(existing_fm.get("verdict")),
+        }
     return {}
 
 
@@ -780,8 +821,9 @@ def _write_audit_sidecar(
     ``refresh`` block; ``current_source_ids`` recomputes its ``dropped_sources``.
 
     The ``analyst_titles`` block is carried over from the existing sidecar;
-    ``_write_claim_file`` owns it. Pass ``analyst_titles`` only when the claim
-    was written before its first sidecar existed.
+    ``_write_claim_file`` owns it. A passed ``analyst_titles`` is written only
+    when the existing sidecar has none, as for a claim written before its
+    first sidecar existed.
 
     ``level_clamp`` is the note from ``fit_verdict_to_written_pool``; it
     explains why the claim's level differs from the analyst's.
@@ -802,7 +844,9 @@ def _write_audit_sidecar(
         except yaml.YAMLError as exc:
             logger.warning("Could not parse existing sidecar %s: %s", sidecar_path, exc)
 
-    if analyst_titles is None and isinstance(existing.get("analyst_titles"), dict):
+    # The existing record wins: the claim write just merged this run into it,
+    # and a passed record holds only this run's fields.
+    if isinstance(existing.get("analyst_titles"), dict):
         analyst_titles = existing["analyst_titles"]
 
     if comparison is not None:

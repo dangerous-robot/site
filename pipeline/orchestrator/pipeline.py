@@ -1636,7 +1636,7 @@ async def research_claim(
         _write_claim_file,
         _write_entity_file,
         _write_source_files,
-        analyst_titles_record,
+        analyst_record_for,
         fit_verdict_to_written_pool,
         verdict_write_kwargs,
     )
@@ -1845,9 +1845,7 @@ async def research_claim(
                     result.sub_question_coverage,
                     result.queries_by_sub_question,
                 ),
-                analyst_titles=analyst_titles_record(
-                    analyst_out.verdict.title, analyst_out.verdict.seo_title
-                ),
+                analyst_titles=analyst_record_for(analyst_out.verdict),
                 level_clamp=level_clamp,
             )
 
@@ -2311,7 +2309,7 @@ async def onboard_entity(
         _write_claim_file,
         _write_draft_entity_file,
         _write_entity_file,
-        analyst_titles_record,
+        analyst_record_for,
         entity_ref_for,
         fit_verdict_to_written_pool,
         verdict_write_kwargs,
@@ -2950,7 +2948,7 @@ async def onboard_entity(
                             vr.sub_question_coverage,
                             vr.queries_by_sub_question,
                         ),
-                        analyst_titles=analyst_titles_record(ao.verdict.title, ao.verdict.seo_title),
+                        analyst_titles=analyst_record_for(ao.verdict),
                         level_clamp=level_clamp,
                     )
 
