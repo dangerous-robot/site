@@ -59,6 +59,22 @@ async function restOn(page: Page, target: Locator): Promise<void> {
   await target.hover();
 }
 
+/** Waits in real time (the page clock is paused) until the page stops scrolling. */
+async function settleScroll(page: Page): Promise<void> {
+  let last = Number.NaN;
+  await expect
+    .poll(
+      async () => {
+        const y = await page.evaluate(() => window.scrollY);
+        const still = y === last;
+        last = y;
+        return still;
+      },
+      { intervals: [150] },
+    )
+    .toBe(true);
+}
+
 async function isFocusVisible(target: Locator): Promise<boolean> {
   return target.evaluate((el) => el.matches(':focus-visible'));
 }
@@ -170,9 +186,41 @@ test.describe('keyboard popup', () => {
     await page.keyboard.press('Tab');
     await expect(card(page, 'fxAlpha0003')).toBeFocused();
     await expect(popup).toHaveAttribute('data-video-id', 'fxAlpha0003');
-    // Real time, not the paused page clock: lets the late scroll event arrive.
-    await page.waitForTimeout(200);
+    await settleScroll(page);
     await expect(popup).toBeVisible();
+
+    // Once the focus scroll is over, a reader's scroll closes it as usual.
+    // Upwards: the last card may leave the page scrolled to the bottom.
+    await page.mouse.wheel(0, -120);
+    await expect(popup).toBeHidden();
+  });
+
+  test('survives an instant focus scroll under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await openWatch(page);
+    const popup = popupOf(page);
+    await card(page, 'fxAlpha0002').focus();
+    await settleScroll(page);
+    await page.keyboard.press('Tab');
+    await expect(card(page, 'fxAlpha0003')).toBeFocused();
+    await settleScroll(page);
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveAttribute('data-video-id', 'fxAlpha0003');
+  });
+
+  test("a reader's scroll closes a keyboard popup", async ({ page }) => {
+    await openWatch(page);
+    const popup = popupOf(page);
+    // First row already in view, so focusing scrolls nothing.
+    const first = card(page, 'fxAlpha0001');
+    await scrollToY(page, (await page.evaluate(() => window.scrollY)) + (await rect(first)).top - 80);
+    await first.focus();
+    await page.keyboard.press('Tab');
+    await expect(card(page, 'fxAlpha0002')).toBeFocused();
+    await expect(popup).toBeVisible();
+
+    await page.mouse.wheel(0, 120);
+    await expect(popup).toBeHidden();
   });
 
   test('Escape closes it and leaves focus on the card', async ({ page }) => {

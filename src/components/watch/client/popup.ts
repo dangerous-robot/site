@@ -36,11 +36,11 @@ export function initPopup(root: HTMLElement, bus: EventTarget, data: WatchPlayli
   }
 
   let openCard: HTMLElement | null = null;
-  // Focusing an off-screen card scrolls it into view (smoothly, under the
-  // site's scroll-behavior), and those scroll events arrive after focusin.
-  // A keyboard popup follows its focused card through them; a hover popup
-  // closes on any scroll.
-  let byKeyboard = false;
+  // Focusing a card that is not fully on screen scrolls it into view
+  // (smoothly, under the site's scroll-behavior), and those scroll events
+  // arrive after focusin. The popup follows its card until that scroll ends;
+  // any other scroll closes it.
+  let following = false;
   // Separate timers: crossing into a second card must neither cancel the
   // first one's close nor leave it open.
   let openTimer = 0;
@@ -88,7 +88,7 @@ export function initPopup(root: HTMLElement, bus: EventTarget, data: WatchPlayli
     return true;
   }
 
-  function open(card: HTMLElement, keyboard: boolean) {
+  function open(card: HTMLElement, follow: boolean) {
     window.clearTimeout(openTimer);
     window.clearTimeout(closeTimer);
     const slug = card.getAttribute(ATTR.playlist);
@@ -108,7 +108,7 @@ export function initPopup(root: HTMLElement, bus: EventTarget, data: WatchPlayli
     popup.hidden = false;
     if (!place(card)) return;
     openCard = card;
-    byKeyboard = keyboard;
+    following = follow;
   }
 
   // pointerover and pointerout bubble; a move between elements inside one
@@ -149,7 +149,8 @@ export function initPopup(root: HTMLElement, bus: EventTarget, data: WatchPlayli
   root.addEventListener('focusin', (event) => {
     const card = cardOf(event.target);
     if (!card || event.target !== card || !fine.matches || !card.matches(':focus-visible')) return;
-    open(card, true);
+    const { top, bottom } = card.getBoundingClientRect();
+    open(card, top < 0 || bottom > window.innerHeight);
   });
 
   // The popup never takes focus, so leaving the card is leaving the zone.
@@ -168,11 +169,14 @@ export function initPopup(root: HTMLElement, bus: EventTarget, data: WatchPlayli
     'scroll',
     () => {
       if (!openCard) return;
-      if (byKeyboard && document.activeElement === openCard) place(openCard);
+      if (following && document.activeElement === openCard) place(openCard);
       else close();
     },
     { capture: true, passive: true },
   );
+  window.addEventListener('scrollend', () => {
+    following = false;
+  });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') close();
   });
