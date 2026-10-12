@@ -326,7 +326,10 @@ test.describe('selecting a video', () => {
     const third = card(page, 'fxAlpha0003');
     await expect(root.locator(`${testid(TESTID.thumb)}[aria-current]`)).toHaveCount(0);
 
+    // ?v= follows the embed, not the click.
+    const embed = root.getByTestId(TESTID.iframe);
     await second.click();
+    await expect(embed).toHaveAttribute('src', /\/embed\/fxAlpha0002\?/);
     await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
     await expect(second).toHaveAttribute('aria-current', 'true');
     await expect(second.getByText('Playing', { exact: true })).toBeVisible();
@@ -334,6 +337,7 @@ test.describe('selecting a video', () => {
 
     await third.focus();
     await page.keyboard.press('Enter');
+    await expect(embed).toHaveAttribute('src', /\/embed\/fxAlpha0003\?/);
     await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0003$/);
     await expect(third).toHaveAttribute('aria-current', 'true');
     await expect(second).not.toHaveAttribute('aria-current');

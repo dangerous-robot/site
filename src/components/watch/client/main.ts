@@ -79,14 +79,16 @@ export function initWatch(): void {
     writeUrl();
   });
 
-  onWatch(bus, 'watch:video', ({ slug, id, play, notice }) => {
-    state.video = { slug, id };
+  // A pick does not load anything: the embed may wait on the half-in-view
+  // gate, or never get it, so ?v= moves only on watch:play. Once a video is
+  // loaded, the URL keeps naming it until another one starts.
+  onWatch(bus, 'watch:video', ({ slug, id, notice }) => {
+    if (!state.loaded) state.video = { slug, id };
     state.notice = notice;
-    // Only ever set: a deep-linked video stays loaded when its poster is shown.
-    if (play) state.loaded = true;
     writeUrl();
   });
 
+  // loaded is never cleared: a deep-linked video stays loaded while only its poster shows.
   onWatch(bus, 'watch:play', ({ slug, id }) => {
     state.video = { slug, id };
     state.notice = false;

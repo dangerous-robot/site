@@ -205,6 +205,7 @@ test.describe('picking a card far down the grid', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('iframe')).toHaveCount(0);
     expect(embedRequests(network)).toEqual([]);
+    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
 
     await scrollToY(page, 0);
     await expect(embeds(page)).toHaveCount(1);
@@ -223,6 +224,30 @@ test.describe('picking a card far down the grid', () => {
     await expect(embeds(page)).toHaveAttribute('src', new RegExp(`/embed/${THIRD}\\?`));
     expect(await frameRatio(page)).toBeGreaterThanOrEqual(PLAYER_MIN_VISIBLE_RATIO);
   });
+
+  // A pick moves ?v= only once its embed goes in, so the URL never names a
+  // picked video that did not start.
+  for (const [arrival, path, url] of [
+    ['nothing loaded', '/watch?list=alpha', /\/watch\?list=alpha$/],
+    ['a deep-linked poster', `/watch?list=alpha&v=${FIRST}`, new RegExp(`/watch\\?list=alpha&v=${FIRST}$`)],
+  ] as const) {
+    test(`a pick whose player never comes into view leaves ?v= alone (${arrival})`, async ({ page, network }) => {
+      await stubScrollIntoView(page);
+      await page.goto(path);
+      const third = card(page, THIRD);
+      await scrollTopTo(page, third, 40);
+      expect(await frameRatio(page)).toBeLessThan(PLAYER_MIN_VISIBLE_RATIO);
+
+      await third.click();
+      await expect(third).toHaveAttribute('aria-current', 'true');
+      // Proves something did not happen: give a wrongly early URL write or
+      // embed time to appear.
+      await page.waitForTimeout(300);
+      await expect(page.locator('iframe')).toHaveCount(0);
+      expect(embedRequests(network)).toEqual([]);
+      await expect(page).toHaveURL(url);
+    });
+  }
 
   test('a second pick while the first waits gives exactly one embed, of the second video', async ({ page, network }) => {
     await stubScrollIntoView(page);
@@ -438,7 +463,7 @@ test.describe('the popup and the frame preview together', () => {
   test.describe('with the player out of view', () => {
     test.use({ viewport: SHORT });
 
-    test('a card click mid-cycle stops the cycle and plays in the page', async ({ page }) => {
+    test('a card click mid-cycle stops the cycle and picks the video', async ({ page }) => {
       // The player would scroll itself into view and move the card from under the pointer.
       await stubScrollIntoView(page);
       await openWatch(page);
@@ -451,7 +476,8 @@ test.describe('the popup and the frame preview together', () => {
       await page.mouse.up();
       await expectRestored(first);
       await expect(first).toHaveAttribute('aria-current', 'true');
-      await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${FIRST}$`));
+      // The player is out of view and cannot scroll itself, so nothing has loaded.
+      await expect(page).toHaveURL(/\/watch\?list=alpha$/);
       // The pointer is still on the card; only a new enter would restart it.
       await page.clock.runFor(FRAME_FIRST_AT_MS + FRAME_INTERVAL_MS * 2);
       await expectRestored(first);
