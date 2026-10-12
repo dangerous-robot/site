@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Breadcrumb from '../components/Breadcrumb.astro';
+import { YOUTUBE_TERMS_URL } from '../lib/watch/contract';
 ---
 <Base title="Privacy" description="What Dangerous Robot keeps about you, who can read it, and how to remove it." layout="reading">
   <article class="reading">
@@ -16,7 +17,19 @@ import Breadcrumb from '../components/Breadcrumb.astro';
 
     <h2>Reading the site</h2>
     <p>
-      The site runs no analytics or tracking scripts. Display settings, such as theme and text size, are saved only in your browser.
+      The site runs no analytics or tracking scripts. The one exception is the <a href="#watch">Watch page</a>, which loads images and video from YouTube. Display settings, such as theme and text size, are saved only in your browser.
+    </p>
+
+    {/* Draft wording: Brandon to review the "Reading the site" exception sentence and this section. */}
+    <h2 id="watch">Watching videos</h2>
+    <p>
+      The <a href="/watch">Watch page</a> lists videos from YouTube. Its thumbnails and hover previews load from YouTube's image servers (i.ytimg.com), so YouTube (Google) receives your IP address when you open the page or hover over a video.
+    </p>
+    <p>
+      The video player loads only when you press Play or pick a video. It comes from youtube-nocookie.com, and once it loads, YouTube's own policies apply, including anything it stores in your browser. Your hover previews setting is saved only in your browser.
+    </p>
+    <p>
+      The video list comes from YouTube API Services. See the <a href="https://policies.google.com/privacy">Google Privacy Policy</a> and the <a href={YOUTUBE_TERMS_URL}>YouTube Terms of Service</a>.
     </p>
 
     <h2 id="petitions">Petitions</h2>
