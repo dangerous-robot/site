@@ -1661,11 +1661,15 @@ def step_audit(
                 sidecar_path = sidecar_path_for(path)
                 research_trace = None
                 sub_questions_block = None
+                level_clamp = None
                 if sidecar_path.exists():
                     try:
                         existing = _yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
                         research_trace = existing.get("research")
                         sub_questions_block = existing.get("sub_questions")
+                        # The claim is not rewritten, so the level fit's note
+                        # on it still holds.
+                        level_clamp = (existing.get("pipeline_run") or {}).get("level_clamp")
                         # Re-graft per-URL `acquisition` from the existing
                         # sidecar's `sources_consulted[]` back into the
                         # research_trace so _write_audit_sidecar can graft
@@ -1710,6 +1714,7 @@ def step_audit(
                     models_used={"auditor": auditor_model},
                     research_trace=research_trace,
                     sub_questions_block=sub_questions_block,
+                    level_clamp=level_clamp,
                     keep_other_models=True,
                 )
                 click.echo(f"Wrote {sidecar_path}")

@@ -1926,7 +1926,7 @@ def test_step_audit_write_keeps_the_archive_record(tmp_path) -> None:
     )
 
     result = CliRunner().invoke(main, [
-        "--model", "test", "step-audit", "--claim", "example/claim", "--write",
+        "--model", "test", "--auditor-model", "test", "step-audit", "--claim", "example/claim", "--write",
         "--repo-root", str(tmp_path),
     ])
 
@@ -1936,8 +1936,8 @@ def test_step_audit_write_keeps_the_archive_record(tmp_path) -> None:
     assert data["sources_consulted"][0]["archive"] == archive
 
 
-def test_step_audit_write_keeps_the_models_of_agents_it_did_not_run(tmp_path) -> None:
-    """A re-audit replaces only the Evaluator's model; the record of who wrote the claim stays."""
+def _step_audit_write(tmp_path, sidecar: dict) -> dict:
+    """Run dr step-audit --write on a one-claim repo with this sidecar; return the new sidecar."""
     import yaml
 
     from common.frontmatter import serialize_frontmatter
@@ -1960,16 +1960,7 @@ def test_step_audit_write_keeps_the_models_of_agents_it_did_not_run(tmp_path) ->
         encoding="utf-8",
     )
     (claim_dir / "claim.audit.yaml").write_text(
-        yaml.safe_dump({
-            "schema_version": 1,
-            "models_used": {
-                "researcher": "infomaniak:researcher-model",
-                "ingestor": "infomaniak:ingestor-model",
-                "analyst": "infomaniak:analyst-model",
-                "auditor": "infomaniak:old-auditor-model",
-            },
-            "sources_consulted": [],
-        }),
+        yaml.safe_dump({"schema_version": 1, "sources_consulted": [], **sidecar}),
         encoding="utf-8",
     )
 
@@ -1984,12 +1975,37 @@ def test_step_audit_write_keeps_the_models_of_agents_it_did_not_run(tmp_path) ->
     assert result.exit_code == 0, result.output
     data = yaml.safe_load((claim_dir / "claim.audit.yaml").read_text(encoding="utf-8"))
     assert data["pipeline_run"]["agents"] == ["auditor"]
+    return data
+
+
+def test_step_audit_write_keeps_the_models_of_agents_it_did_not_run(tmp_path) -> None:
+    """A re-audit replaces only the Evaluator's model; the record of who wrote the claim stays."""
+    data = _step_audit_write(tmp_path, {
+        "models_used": {
+            "researcher": "infomaniak:researcher-model",
+            "ingestor": "infomaniak:ingestor-model",
+            "analyst": "infomaniak:analyst-model",
+            "auditor": "infomaniak:old-auditor-model",
+        },
+    })
+
     assert data["models_used"] == {
         "researcher": "infomaniak:researcher-model",
         "ingestor": "infomaniak:ingestor-model",
         "analyst": "infomaniak:analyst-model",
         "auditor": "test",
     }
+
+
+def test_step_audit_write_keeps_the_level_fit_note(tmp_path) -> None:
+    """The claim is not rewritten, so the note on why its level differs from the analyst's still holds."""
+    note = "verification_level independently-verified lowered to claimed: the written sources include 0"
+    data = _step_audit_write(tmp_path, {
+        "pipeline_run": {"ran_at": "2026-10-01T00:00:00+00:00", "model": "m",
+                         "agents": ["analyst"], "level_clamp": note},
+    })
+
+    assert data["pipeline_run"]["level_clamp"] == note
 
 
 def test_claim_probe_never_captures_on_archive_org(monkeypatch) -> None:
