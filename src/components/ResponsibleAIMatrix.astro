@@ -18,12 +18,12 @@ const ICONS: Record<
 };
 
 // Visually hidden text that says in words what the stance color shows (WCAG
-// 1.4.1): "Yes, what we prefer." / "No. Not what we prefer." / "Partly what
-// we prefer." Unknown, n/a and feature-row cells read only the answer.
+// 1.4.1): "Yes, preferred." / "No. Not preferred." / "Partly preferred."
+// Unknown, n/a and feature-row cells read only the answer.
 const STANCE_PHRASE: Record<Stance, string> = {
-  good: ', what we prefer.',
-  bad: '. Not what we prefer.',
-  mixed: '. Partly what we prefer.',
+  good: ', preferred.',
+  bad: '. Not preferred.',
+  mixed: '. Partly preferred.',
   neutral: '.',
 };
 
@@ -33,8 +33,8 @@ const LEGEND: { label: string; aria: string; items: { stance?: Stance; mark?: 'c
     label: 'Color:',
     aria: 'Color legend',
     items: [
-      { stance: 'good', Icon: Check, text: 'What we prefer' },
-      { stance: 'bad', Icon: X, text: 'Not what we prefer' },
+      { stance: 'good', Icon: Check, text: 'Preferred' },
+      { stance: 'bad', Icon: X, text: 'Not preferred' },
       { stance: 'mixed', Icon: Minus, text: 'Partly' },
     ],
   },
@@ -206,7 +206,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
           </ul>
         </div>
       ))}
-      <p class="legend-note">Rows without a “We prefer” line compare facts only; we take no position on them.</p>
+      <p class="legend-note">Rows without a “Prefer” line compare facts only; the page takes no position on them.</p>
     </div>
   </section>
 </div>
@@ -467,7 +467,7 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
 
   .cell--stance-neutral .detail::before { display: none; }
 
-  /* DR2: the "We prefer" line reuses the legend's former text style. */
+  /* DR2: the "Prefer" line reuses the legend's former text style. */
   .we-prefer {
     margin-top: 0.15rem;
     font-size: var(--font-size-xs);

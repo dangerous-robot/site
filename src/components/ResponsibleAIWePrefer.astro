@@ -1,5 +1,5 @@
 ---
-// "We prefer:" followed by the preferred answer: the answer's icon in the good
+// "Prefer:" followed by the preferred answer: the answer's icon in the good
 // stance color (with the word visually hidden) on yes/no rows, a few words on
 // text rows. Used under the row label and at the top of each Evidence entry.
 import { Check, X } from 'lucide-astro';
@@ -14,7 +14,7 @@ const prefer = preferLine(Astro.props.ideal)!;
 const Icon = prefer.value === 'yes' ? Check : X;
 ---
 <span class="we-prefer-line">
-  We prefer:
+  Prefer:
   {prefer.value && <Icon size={16} aria-hidden="true" />}
   <span class={prefer.value ? 'sr-only' : undefined}>{prefer.word}</span>
 </span>

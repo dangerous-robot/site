@@ -148,7 +148,7 @@ export function cellTier<T extends Cited>(cited: T, product: ProductRef, lookups
   return cellEvidence(cited, product, lookups).tier;
 }
 
-/** The "We prefer" line under a stance row: an icon's answer (yes/no rows) or a few words (text rows). */
+/** The "Prefer" line under a stance row: an icon's answer (yes/no rows) or a few words (text rows). */
 export function preferLine(ideal: MatrixIdeal | undefined): { value?: 'yes' | 'no'; word: string } | null {
   if (!ideal) return null;
   if ('value' in ideal) return { value: ideal.value, word: ideal.value === 'yes' ? 'Yes' : 'No' };
