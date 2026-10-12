@@ -136,18 +136,36 @@ interface ApiErrorBody {
   error?: { message?: unknown; errors?: { reason?: unknown }[] };
 }
 
+// Reasons that mean the key or the project is unusable, so every call fails.
+const KEY_REASONS = new Set(['keyInvalid', 'keyExpired', 'ipRefererBlocked', 'accessNotConfigured']);
+// Rate limits clear within seconds, so they are retried like a 5xx; the
+// project-wide quota does not.
+const RATE_REASONS = new Set(['rateLimitExceeded', 'userRateLimitExceeded']);
+const QUOTA_REASONS = new Set(['quotaExceeded', 'dailyLimitExceeded', ...RATE_REASONS]);
+
+const retryable = (status: number, reason: string | null) =>
+  status >= 500 || status === 429 || (reason !== null && RATE_REASONS.has(reason));
+
+// A failed batched call leaves every playlist without data. Anything that
+// is not a key or quota error from playlistItems.list is about that one
+// playlist: a bad page token, a 5xx or a timeout there must not blank the page.
+function scopeOf(call: ApiCall): YouTubeErrorScope {
+  return call === 'playlistItems.list' ? 'playlist' : 'global';
+}
+
+// Key and quota errors are global whatever the call: every other call would
+// fail the same way.
 function classify(call: ApiCall, status: number, reason: string | null, message: string | null): { kind: YouTubeErrorKind; scope: YouTubeErrorScope } {
   // Reason before status: an invalid key can come back as 400, not 403.
-  if (reason === 'keyInvalid') return { kind: 'key', scope: 'global' };
-  if (status === 403 && message && /referer/i.test(message)) return { kind: 'key', scope: 'global' };
-  if (reason === 'quotaExceeded' || reason === 'dailyLimitExceeded') return { kind: 'quota', scope: 'global' };
-  // Only playlistItems.list is about one playlist; a failed batched call
-  // leaves every playlist without data.
-  const scope: YouTubeErrorScope = call === 'playlistItems.list' ? 'playlist' : 'global';
+  if (reason !== null && KEY_REASONS.has(reason)) return { kind: 'key', scope: 'global' };
+  // A key restricted by referer, IP or API comes back as a plain 403 forbidden.
+  if (status === 403 && message && /referer|are blocked/i.test(message)) return { kind: 'key', scope: 'global' };
+  if ((reason !== null && QUOTA_REASONS.has(reason)) || status === 429) return { kind: 'quota', scope: 'global' };
+  const scope = scopeOf(call);
   if (status === 404) return { kind: 'not-found', scope };
   if (status === 401 || status === 403) return { kind: 'forbidden', scope };
-  if (status >= 500) return { kind: 'network', scope: 'global' };
-  return { kind: 'malformed', scope: 'global' };
+  if (status >= 500) return { kind: 'network', scope };
+  return { kind: 'malformed', scope };
 }
 
 export function createYouTubeClient(options: YouTubeClientOptions): YouTubeClient {
@@ -178,13 +196,15 @@ export function createYouTubeClient(options: YouTubeClientOptions): YouTubeClien
         networkError = err instanceof Error ? err.message : String(err);
       }
 
-      if ((networkError !== null || status >= 500) && attempt < RETRIES) {
-        await sleep(RETRY_BASE_MS * 2 ** attempt);
-        continue;
-      }
       // Network error text can include the request URL, so it is redacted
       // and never kept as a cause.
-      if (networkError !== null) throw fail('network', 'global', 0, null, networkError);
+      if (networkError !== null) {
+        if (attempt < RETRIES) {
+          await sleep(RETRY_BASE_MS * 2 ** attempt);
+          continue;
+        }
+        throw fail('network', scopeOf(call), 0, null, networkError);
+      }
 
       let body: unknown;
       try {
@@ -195,7 +215,7 @@ export function createYouTubeClient(options: YouTubeClientOptions): YouTubeClien
 
       if (status >= 200 && status < 300) {
         if (!body || typeof body !== 'object' || !Array.isArray((body as { items?: unknown }).items)) {
-          throw fail('malformed', 'global', status, null, 'response is not JSON with an items list');
+          throw fail('malformed', scopeOf(call), status, null, 'response is not JSON with an items list');
         }
         return body as T;
       }
@@ -203,6 +223,10 @@ export function createYouTubeClient(options: YouTubeClientOptions): YouTubeClien
       const apiError = (body as ApiErrorBody | undefined)?.error;
       const rawReason = apiError?.errors?.[0]?.reason;
       const reason = typeof rawReason === 'string' ? rawReason : null;
+      if (retryable(status, reason) && attempt < RETRIES) {
+        await sleep(RETRY_BASE_MS * 2 ** attempt);
+        continue;
+      }
       const message = typeof apiError?.message === 'string' ? apiError.message : null;
       const { kind, scope } = classify(call, status, reason, message);
       throw fail(kind, scope, status, reason, message);

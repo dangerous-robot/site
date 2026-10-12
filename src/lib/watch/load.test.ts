@@ -139,6 +139,37 @@ describe('per-playlist failures', () => {
     assert.deepEqual(result.playlists.map((p) => [p.slug, p.status]), [['alpha', 'failed'], ['bravo', 'empty'], ['charlie', 'failed']]);
     assert.match(con.warnings()[0], /playlistItems\.list failed for PLfixtureAlpha01 \(403 forbidden\): The fixture playlist is private\. Showing the playlist as failed\./);
   });
+
+  const alphaPage2 = (url: URL) =>
+    url.pathname.endsWith('/playlistItems') && url.searchParams.get('playlistId') === 'PLfixtureAlpha01' && url.searchParams.has('pageToken');
+
+  for (const [name, failure, status] of [
+    ['a 400 invalidPageToken', { status: 400, body: { error: { code: 400, message: 'The request specifies an invalid page token.', errors: [{ reason: 'invalidPageToken' }] } } }, '400 invalidPageToken'],
+    ['a 5xx after the retries', { status: 503, body: 'busy' }, '503 network'],
+  ] as const) {
+    test(`${name} on one playlist's second page marks only that playlist failed`, async () => {
+      const fetch = overriding((url) => (alphaPage2(url) ? failure : null));
+      const con = recordingConsole();
+      const result = await loadWatchData({ curated: fixtureCurated, client: createYouTubeClient({ key: KEY, fetch, sleep }), env: fixtureEnv, log: con.log });
+      assert.equal(result.mode, 'fixture');
+      assert.deepEqual(result.playlists.map((p) => [p.slug, p.status, p.videos.length]), [['alpha', 'failed', 0], ['bravo', 'empty', 0], ['charlie', 'failed', 0]]);
+      assert.match(con.warnings()[0], new RegExp(`playlistItems\\.list failed for PLfixtureAlpha01 \\(${status}\\).* Showing the playlist as failed\\.$`));
+      assert.deepEqual(con.info(), [
+        '[watch loader] fetched PLfixtureBravo02: 0 videos (dropped: 2, not embeddable: 1)',
+        '[watch loader] skipped PLfixtureDelta04: not returned by playlists.list',
+        '[watch loader] mode=fixture playlists=3 videos=0',
+      ]);
+    });
+  }
+
+  test('a quota error on one playlist\'s second page is still global', async () => {
+    const fetch = overriding((url) => (alphaPage2(url) ? { status: 403, body: { error: { code: 403, message: 'Quota gone.', errors: [{ reason: 'quotaExceeded' }] } } } : null));
+    const con = recordingConsole();
+    const result = await loadWatchData({ curated: fixtureCurated, client: createYouTubeClient({ key: KEY, fetch, sleep }), env: fixtureEnv, log: con.log });
+    assert.equal(result.mode, 'none');
+    assert.deepEqual(result.playlists, []);
+    assert.match(result.warnings[0], /^playlistItems\.list failed for PLfixtureAlpha01 \(403 quotaExceeded\): Quota gone\. Rendering the empty state\.$/);
+  });
 });
 
 describe('global errors', () => {

@@ -190,6 +190,58 @@ describe('error mapping', () => {
     assert.equal(err.scope, 'global');
   });
 
+  test('any other playlistItems failure is about one playlist too', async () => {
+    const badToken = { error: { code: 400, message: 'The request specifies an invalid page token.', errors: [{ reason: 'invalidPageToken' }] } };
+    const unsupported = { error: { code: 400, message: 'The request is not supported for the specified playlist.', errors: [{ reason: 'playlistOperationUnsupported' }] } };
+    const cases: [string, (url: URL, n: number) => Reply, string, number][] = [
+      ['400 invalidPageToken', () => ({ status: 400, body: badToken }), 'malformed', 1],
+      ['400 playlistOperationUnsupported', () => ({ status: 400, body: unsupported }), 'malformed', 1],
+      ['5xx after the retries', () => ({ status: 503, body: 'busy' }), 'network', 3],
+      ['a timeout after the retries', () => new DOMException('The operation was aborted due to timeout', 'TimeoutError'), 'network', 3],
+      ['a 200 without an items list', () => ok({ noItems: true }), 'malformed', 1],
+    ];
+    for (const [name, handler, kind, attempts] of cases) {
+      const { yt, calls } = client(handler);
+      const err = await caught(yt.listPlaylistItemsPage('PLfixtureAlpha01', 'tokenPage2'));
+      assert.equal(err.scope, 'playlist', name);
+      assert.equal(err.kind, kind, name);
+      assert.equal(err.playlistId, 'PLfixtureAlpha01', name);
+      assert.equal(calls.length, attempts, name);
+    }
+  });
+
+  test('key and quota errors on playlistItems stay global', async () => {
+    const body = (status: number, reason: string, message = 'Fixture message.') => ({ status, body: { error: { code: status, message, errors: [{ reason }] } } });
+    const cases: [string, Reply, string][] = [
+      ['quotaExceeded', { status: 403, body: quotaBody }, 'quota'],
+      ['dailyLimitExceeded', body(403, 'dailyLimitExceeded'), 'quota'],
+      ['keyExpired', body(400, 'keyExpired'), 'key'],
+      ['ipRefererBlocked', body(403, 'ipRefererBlocked'), 'key'],
+      ['accessNotConfigured', body(403, 'accessNotConfigured', 'YouTube Data API v3 has not been used in this project.'), 'key'],
+      ['API-restricted key', body(403, 'forbidden', 'Requests to this API youtube method are blocked.'), 'key'],
+    ];
+    for (const [name, reply, kind] of cases) {
+      const { yt, calls } = client(() => reply);
+      const err = await caught(yt.listPlaylistItemsPage('PLfixtureAlpha01'));
+      assert.equal(err.scope, 'global', name);
+      assert.equal(err.kind, kind, name);
+      assert.equal(calls.length, 1, name);
+    }
+  });
+
+  test('a rate limit is retried like a 5xx, then a global quota error', async () => {
+    const limited = { status: 403, body: { error: { code: 403, message: 'Slow down.', errors: [{ reason: 'rateLimitExceeded' }] } } };
+    const { yt, calls, sleeps } = client(() => limited);
+    const err = await caught(yt.listPlaylistItemsPage('PLfixtureAlpha01'));
+    assert.equal(err.kind, 'quota');
+    assert.equal(err.scope, 'global');
+    assert.equal(calls.length, 3);
+    assert.deepEqual(sleeps, [1000, 2000]);
+
+    const recovers = client((_url, n) => (n === 1 ? limited : ok({ items: [] })));
+    assert.deepEqual(await recovers.yt.listPlaylistItemsPage('PLfixtureAlpha01'), { items: [], nextPageToken: null });
+  });
+
   test('5xx is retried twice with backoff, then succeeds', async () => {
     const { yt, calls, sleeps } = client((_url, n) => (n <= 2 ? { status: 503, body: 'busy' } : ok({ items: [{ id: 'x' }] })));
     const result = await yt.listPlaylists(['PLfixtureAlpha01']);
