@@ -6,7 +6,7 @@ Decisions made before 2026-10-04 (mission, audience, positioning, trust model, c
 
 ## 2026-10-11
 
-- **Operator's cap reason survives refresh.** When `fit_verdict_to_written_pool` lowers a claim's evidence level, it writes a `cap_rationale` only when the claim has none; a reason the operator wrote is kept (RE-AK, Published fields survive the pipeline). *(Final)*
+- **Operator's cap reason survives refresh.** When `fit_verdict_to_written_pool` lowers a claim's evidence level, it writes a `cap_rationale` only when the claim has none; a reason the operator wrote is kept on every later refresh, even when the level or confidence changes, until the operator changes it (confirmed 2026-10-11; RE-AK, Published fields survive the pipeline). *(Final)*
 - **Criterion notes bind the analyst and the Evaluator.** When a criterion note in `research/templates.yaml` maps evidence to a verdict ("mixed = offsets only"), that mapping wins for its criterion; `pipeline/common/verdict-scale.md` governs everything the note does not name. The Evaluator receives the same notes, so a verdict that follows one is not flagged as a scale mismatch. Grading rules move to their own per-criterion field in beta.8 (RE-AL (Source pool and coverage quality)); `notes` then stays reader-facing. *(Final)*
 - **An entity's own post survives the blocklist.** A URL on `research/blocklist.yaml` is kept when it is the entity's own profile post and its page text was fetched (RE-AE (Source pool independence)); the blocklist entry stays. *(Final)*
 - **Archive refresh rules.** A capture older than 90 days is replaced by a fresh checked capture; when the fresh save fails or does not replay with 200, the old 200 capture is kept and the reason is logged (RE-AI (Archive snapshot correctness)). *(Final)*
