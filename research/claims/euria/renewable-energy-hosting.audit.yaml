@@ -197,3 +197,10 @@ human_review:
   notes: null
   pr_url: null
   verdict_override: null
+analyst_record:
+  title: Euria is hosted on renewable energy
+  seo_title: Euria is hosted on renewable energy
+  verdict: 'true'
+  takeaway: Euria runs on renewable energy per company and independent reports, but
+    third‑party verification is absent.
+  cap_rationale: null

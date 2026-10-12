@@ -208,3 +208,10 @@ human_review:
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+analyst_record:
+  title: Most major AI Model Producers score D or worse on FLI's 2025 AI Safety Index
+    for Existential Threat
+  seo_title: AI Models score D on existential threats
+  verdict: 'true'
+  takeaway: ''
+  cap_rationale: null

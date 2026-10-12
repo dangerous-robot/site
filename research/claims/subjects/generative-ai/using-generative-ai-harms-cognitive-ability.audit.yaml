@@ -194,3 +194,11 @@ human_review:
   reviewer: brandon@dangerousrobot.org
   notes: null
   pr_url: null
+analyst_record:
+  title: Using generative AI can harm cognitive ability
+  seo_title: Generative AI can harm cognition
+  verdict: 'true'
+  takeaway: Independent studies document reduced mental effort and a ‘cognitive debt’
+    from AI‑assisted tasks, though other research shows memory benefits, highlighting
+    nuanced cognitive impacts.
+  cap_rationale: null

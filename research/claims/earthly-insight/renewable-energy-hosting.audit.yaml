@@ -198,3 +198,9 @@ human_review:
   notes: null
   pr_url: null
   verdict_override: null
+analyst_record:
+  title: Earthly Insight is hosted on renewable energy
+  seo_title: Earthly Insight hosted on renewable energy
+  verdict: unverified
+  takeaway: ''
+  cap_rationale: null

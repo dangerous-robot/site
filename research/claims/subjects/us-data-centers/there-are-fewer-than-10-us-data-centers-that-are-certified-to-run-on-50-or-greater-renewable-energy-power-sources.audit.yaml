@@ -190,3 +190,10 @@ human_review:
   reviewer: null
   notes: null
   pr_url: null
+analyst_record:
+  title: There are fewer than 10 US data centers that are certified to run on 50%
+    or greater renewable energy power sources.
+  seo_title: Under 10 US data centers 50%+ renewable
+  verdict: unverified
+  takeaway: ''
+  cap_rationale: null

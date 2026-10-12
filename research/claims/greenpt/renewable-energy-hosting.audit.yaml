@@ -205,3 +205,9 @@ human_review:
   notes: null
   pr_url: null
   verdict_override: null
+analyst_record:
+  title: GreenPT is hosted on renewable energy
+  seo_title: GreenPT is hosted on renewable energy
+  verdict: 'true'
+  takeaway: ''
+  cap_rationale: null

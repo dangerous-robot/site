@@ -209,3 +209,10 @@ human_review:
   reviewer: null
   notes: null
   pr_url: null
+analyst_record:
+  title: Answering a generative AI prompt uses roughly ten times the electricity of
+    a web search
+  seo_title: AI prompt uses ~10× web search electricity
+  verdict: unverified
+  takeaway: ''
+  cap_rationale: null
