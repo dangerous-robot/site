@@ -17,6 +17,8 @@ from common.markdown_links import wrap_bare_links
 from common.sidecar import read_sidecar, sidecar_path_for
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from analyst.agent import VerdictAssessment
     from orchestrator.entity_resolution import SearchHints
 from common.models import (
@@ -818,35 +820,21 @@ def _refresh_block(
     return block
 
 
-def mark_refreshed(
-    claim_path: Path,
-    previous_publication: dict | None,
-    current_source_ids: list[str] | None,
-    ran_at: datetime.datetime,
-) -> None:
-    """Record in the sidecar that a claim is rewritten and awaits re-approval.
-
-    For a rewrite that leaves the rest of the sidecar alone (``dr
-    step-analyze --write``): resets ``human_review`` and, for a published
-    claim (``previous_publication``), starts or carries forward the
-    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
-    claim-refresh``, so ``dr review --approve`` asks for a correction when the
-    verdict changed. Call it before the claim write.
-    """
+def _edit_sidecar(claim_path: Path, edit: Callable[[dict], bool]) -> None:
+    """Apply ``edit`` to the claim's existing sidecar, writing it back when
+    ``edit`` returns True. A claim with no sidecar is left alone; an
+    unparseable sidecar raises, so the claim write after it does not run."""
     sidecar_path = sidecar_path_for(claim_path)
     if not sidecar_path.exists():
         return
     data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise ValueError(f"cannot parse sidecar {sidecar_path}")
-    data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
-    refresh = _refresh_block(data, previous_publication, current_source_ids, ran_at)
-    if refresh is not None:
-        data["refresh"] = refresh
-    sidecar_path.write_text(
-        yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
-    )
+    if edit(data):
+        sidecar_path.write_text(
+            yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
+            encoding="utf-8",
+        )
 
 
 def clear_audit(claim_path: Path) -> None:
@@ -860,19 +848,13 @@ def clear_audit(claim_path: Path) -> None:
     Evaluator check as unavailable until ``dr step-audit --write``, as for a
     blocked claim. Call it before the claim write.
     """
-    sidecar_path = sidecar_path_for(claim_path)
-    if not sidecar_path.exists():
-        return
-    data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        raise ValueError(f"cannot parse sidecar {sidecar_path}")
-    if data.get("audit") is None:
-        return
-    data["audit"] = None
-    sidecar_path.write_text(
-        yaml.safe_dump(data, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
-    )
+    def edit(data: dict) -> bool:
+        if data.get("audit") is None:
+            return False
+        data["audit"] = None
+        return True
+
+    _edit_sidecar(claim_path, edit)
 
 
 def mark_forced_rewrite(
@@ -885,19 +867,34 @@ def mark_forced_rewrite(
     A rewrite must not go live without review (production builds archived
     claims as well as published ones), and a blocked claim with a verdict is
     no longer blocked, so a published, archived or blocked claim is written
-    back as a draft (or blocked) with its sign-off reset and, when published,
-    its published state kept (``mark_refreshed``), as ``dr claim-refresh``
-    does. Call it before the claim write: the sidecar is written first, so a
-    failed claim write leaves the claim unchanged with the snapshot pending.
-    Returns True when the claim was not a draft; a missing claim or a draft
-    is left alone.
+    back as a draft (or blocked) and its sidecar's ``human_review`` is reset.
+    For a published claim the sidecar also starts or carries forward the
+    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
+    claim-refresh``, so ``dr review --approve`` asks for a correction when
+    the verdict changed. Call it before the claim write: the sidecar is
+    written first, so a failed claim write leaves the claim unchanged with
+    the snapshot pending.
+
+    Returns True when the claim was not a draft. A missing claim or a draft
+    is left alone, and so is an unparseable claim, which the forced claim
+    write then refuses with its own message.
     """
-    if not claim_path.exists():
+    try:
+        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, ValueError, yaml.YAMLError):
         return False
-    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     if fm.get("status", ClaimStatus.DRAFT.value) == ClaimStatus.DRAFT.value:
         return False
-    mark_refreshed(claim_path, _read_published_snapshot(claim_path), current_source_ids, ran_at)
+    previous_publication = _read_published_snapshot(claim_path)
+
+    def edit(data: dict) -> bool:
+        data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
+        refresh = _refresh_block(data, previous_publication, current_source_ids, ran_at)
+        if refresh is not None:
+            data["refresh"] = refresh
+        return True
+
+    _edit_sidecar(claim_path, edit)
     return True
 
 

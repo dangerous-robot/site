@@ -1826,3 +1826,13 @@ class TestOnboardForceRewritesKeepTheRefreshTrail:
         sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
         assert sidecar["human_review"]["reviewer"] == "reviewer@example.org"
         assert "refresh" not in sidecar
+
+    @pytest.mark.asyncio
+    async def test_unparseable_claim_is_refused_by_the_claim_write(self, tmp_path: Path, monkeypatch) -> None:
+        claim_path, _sidecar_path = self._setup(tmp_path, "published")
+        claim_path.write_text("---\ntitle: [unclosed\n---\nBody.\n", encoding="utf-8")
+
+        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
+
+        assert result.claims_failed == [self.SLUG]
+        assert any("cannot parse existing claim" in e for e in result.errors), result.errors
