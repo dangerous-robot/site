@@ -34,6 +34,22 @@ async function loadFrames(page: Page, urls: readonly string[]): Promise<void> {
   await finished;
 }
 
+/**
+ * The frame a reader sees once any fade ends: the upper layer when shown,
+ * else the lower. Also each layer's crossfade length.
+ */
+function topLayer(target: Locator): Promise<{ src: string | null; lowerFade: string; upperFade: string }> {
+  return target.evaluate((el) => {
+    const [lower, upper] = [...el.querySelectorAll<HTMLImageElement>('img.watch-thumb__frame')];
+    const top = upper.classList.contains('is-shown') ? upper : lower.classList.contains('is-shown') ? lower : null;
+    return {
+      src: top?.getAttribute('src') ?? null,
+      lowerFade: getComputedStyle(lower).transitionDuration,
+      upperFade: getComputedStyle(upper).transitionDuration,
+    };
+  });
+}
+
 async function expectRestored(target: Locator): Promise<void> {
   await expect(target).not.toHaveAttribute('data-previewing');
   await expect(target).not.toHaveAttribute('data-frame');
@@ -80,10 +96,13 @@ test.describe('on a mouse device', () => {
       await expect(layer).toHaveAttribute('alt', '');
     }
     await expect(sd.locator('img.watch-thumb__frame.is-shown')).toHaveAttribute('src', urls[0]);
+    expect(await topLayer(sd)).toEqual({ src: urls[0], lowerFade: '0s', upperFade: '0.2s' });
 
-    for (const frame of ['2', '3', '1']) {
+    // Every frame change fades the upper layer, so the frame on top is always the newest.
+    for (const frame of [2, 3, 1]) {
       await page.clock.runFor(FRAME_INTERVAL_MS);
-      await expect(sd).toHaveAttribute('data-frame', frame);
+      await expect(sd).toHaveAttribute('data-frame', String(frame));
+      expect(await topLayer(sd)).toEqual({ src: urls[frame - 1], lowerFade: '0s', upperFade: '0.2s' });
     }
 
     await pointAway(page);
