@@ -508,11 +508,11 @@ def _write_claim_file(
     it (it differs from the analyst's last one in the record) while the
     verdict is the analyst's last verdict. The existing ``cap_rationale``
     wins when an operator wrote it (it differs from the pipeline's last one in
-    the record) and the new level is a capped one (``claimed`` or
-    ``self-reported``), even when the level or confidence changed. With no
-    recorded ``cap_rationale``, the existing one wins only on a capped level
-    while ``verification_level`` and ``confidence`` are both unchanged, and
-    not when ``cap_rationale_fitted`` says the level fit wrote the passed one.
+    the record), whatever the new level or confidence, and on a blocked
+    write. With no recorded ``cap_rationale``, the existing one wins only on
+    a capped level (``claimed`` or ``self-reported``) while
+    ``verification_level`` and ``confidence`` are both unchanged, and not
+    when ``cap_rationale_fitted`` says the level fit wrote the passed one.
     Otherwise the passed values are written.
     """
     claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
@@ -524,9 +524,8 @@ def _write_claim_file(
 
     # On a forced overwrite, an operator may have edited these fields since
     # the last run. The analyst always writes a seo_title, so an operator's
-    # seo_title is kept while the title it shortens is unchanged. A cap_rationale names
-    # the confidence cap, so an operator's is kept only while a cap applies: on an
-    # uncapped claim it would state a cap the claim does not have. A takeaway is kept when the analyst gives
+    # seo_title is kept while the title it shortens is unchanged. An operator's
+    # cap_rationale is kept until the operator edits it. A takeaway is kept when the analyst gives
     # none, and an operator's while the analyst's verdict is unchanged: it sits
     # under the verdict badge. Corrections (the public record of what changed) and tags (homepage
     # card picks) are operator-owned and always kept.
@@ -571,23 +570,22 @@ def _write_claim_file(
 
     existing_cap_rationale = existing_fm.get("cap_rationale") or ""
     # With a record, a rationale that differs from the pipeline's last one is
-    # the operator's and wins over any new one, whatever the level or
-    # confidence, until the operator edits it. Without a record the text on
-    # disk may be a stale analyst one, so it is kept only while the level and
-    # confidence it explains hold, and never over the level fit's.
+    # the operator's and wins over any new one until the operator edits it,
+    # on every write: the claim page shows it only on a capped level, so on an
+    # uncapped or blocked claim it waits unseen for the next capped run.
+    # Without a record the text on disk may be a stale analyst one, so it is
+    # kept only on a capped level while the level and confidence it explains
+    # hold, and never over the level fit's.
     if "cap_rationale" in record:
         keep_cap_rationale = existing_cap_rationale != record["cap_rationale"]
     else:
         keep_cap_rationale = (
             not cap_rationale_fitted
+            and _enum_value(verification_level) in _CAPPED_LEVELS
             and _enum_value(verification_level) == _enum_value(existing_fm.get("verification_level"))
             and _enum_value(confidence) == _enum_value(existing_fm.get("confidence"))
         )
-    if (
-        existing_cap_rationale
-        and keep_cap_rationale
-        and _enum_value(verification_level) in _CAPPED_LEVELS
-    ):
+    if existing_cap_rationale and keep_cap_rationale:
         cap_rationale = existing_cap_rationale
 
     fm = {

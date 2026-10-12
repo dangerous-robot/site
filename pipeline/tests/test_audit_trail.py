@@ -1381,9 +1381,9 @@ class TestWriteClaimFile:
         self._capped_run(tmp_path, "Newer analyst rationale.")
         assert self._cap_rationale(path) == "Newer analyst rationale."
 
-    def test_operator_cap_rationale_dropped_when_no_cap_applies(self, tmp_path):
-        # A cap reason on an uncapped claim would state a cap the claim does
-        # not have, so the keep rule holds only while a cap applies.
+    def test_operator_cap_rationale_kept_when_no_cap_applies(self, tmp_path):
+        # The claim page shows a cap reason only on a capped level, so the
+        # operator's text waits there unseen for the next capped run.
         self._add_sidecar(tmp_path)
         path = self._capped_run(tmp_path, "Analyst rationale.")
         self._set_frontmatter(path, cap_rationale="Operator rationale.")
@@ -1392,8 +1392,21 @@ class TestWriteClaimFile:
             tmp_path, force=True, title=self._TITLE, seo_title="Analyst seo title",
             confidence=Confidence.MEDIUM, verification_level="partially-verified",
         )
+        assert self._cap_rationale(path) == "Operator rationale."
 
-        assert self._cap_rationale(path) is None
+        self._capped_run(tmp_path, "New analyst rationale.")
+        assert self._cap_rationale(path) == "Operator rationale."
+
+    def test_operator_cap_rationale_survives_a_blocked_run(self, tmp_path):
+        self._add_sidecar(tmp_path)
+        path = self._capped_run(tmp_path, "Analyst rationale.")
+        self._set_frontmatter(path, cap_rationale="Operator rationale.")
+
+        self._blocked(tmp_path)
+        assert self._cap_rationale(path) == "Operator rationale."
+
+        self._capped_run(tmp_path, "New analyst rationale.")
+        assert self._cap_rationale(path) == "Operator rationale."
 
     def test_blocked_write_keeps_the_cap_rationale_record(self, tmp_path):
         sidecar = self._add_sidecar(tmp_path)
