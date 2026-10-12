@@ -46,6 +46,9 @@ export function initWatch(): void {
   const state = parseUrl(location.search, playlists);
   const bus = new EventTarget();
   let starting = true;
+  // A card pick keeps the poster from following the tab, as a loaded video
+  // does, even while its embed still waits to go in.
+  let picked = false;
 
   // One history write per action, however many state changes it makes.
   let urlQueued = false;
@@ -71,10 +74,10 @@ export function initWatch(): void {
     for (const panel of panels) panel.hidden = panel.getAttribute(ATTR.playlist) !== slug;
     if (!starting) {
       if (status) status.textContent = announcement(playlist);
-      // The poster follows the tab until something is loaded; an empty
+      // The poster follows the tab until something is picked or loaded; an empty
       // playlist leaves the previous poster in place.
       const first = playlist.videos[0];
-      if (!state.loaded && first) emitWatch(bus, 'watch:video', { slug, id: first.id, play: false, notice: false });
+      if (!state.loaded && !picked && first) emitWatch(bus, 'watch:video', { slug, id: first.id, play: false, notice: false });
     }
     writeUrl();
   });
@@ -82,7 +85,8 @@ export function initWatch(): void {
   // A pick does not load anything: the embed may wait on the half-in-view
   // gate, or never get it, so ?v= moves only on watch:play. Once a video is
   // loaded, the URL keeps naming it until another one starts.
-  onWatch(bus, 'watch:video', ({ slug, id, notice }) => {
+  onWatch(bus, 'watch:video', ({ slug, id, play, notice }) => {
+    if (play) picked = true;
     if (!state.loaded) state.video = { slug, id };
     state.notice = notice;
     writeUrl();

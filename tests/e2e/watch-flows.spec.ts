@@ -249,6 +249,32 @@ test.describe('picking a card far down the grid', () => {
     });
   }
 
+  test('a tab change while a pick waits keeps its poster, then the URL names it once it plays', async ({ page }) => {
+    await stubScrollIntoView(page);
+    await page.goto('/watch?list=alpha');
+    const third = card(page, THIRD);
+    await scrollTopTo(page, third, 40);
+    expect(await frameRatio(page)).toBeLessThan(PLAYER_MIN_VISIBLE_RATIO);
+
+    await third.click();
+    await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
+    // dispatchEvent, not click(): click() would scroll the tabs, and with
+    // them the player, into view and let the pick play.
+    await tab(page, 'bravo').dispatchEvent('click');
+    await expect(tab(page, 'bravo')).toHaveAttribute('aria-selected', 'true');
+    await expect(page).toHaveURL(/\/watch\?list=bravo$/);
+    await tab(page, 'alpha').dispatchEvent('click');
+    await expect(tab(page, 'alpha')).toHaveAttribute('aria-selected', 'true');
+    await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
+    await expect(third).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('iframe')).toHaveCount(0);
+    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+
+    await scrollToY(page, 0);
+    await expect(embeds(page)).toHaveAttribute('src', new RegExp(`/embed/${THIRD}\\?`));
+    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+  });
+
   test('a second pick while the first waits gives exactly one embed, of the second video', async ({ page, network }) => {
     await stubScrollIntoView(page);
     await page.goto('/watch?list=alpha');

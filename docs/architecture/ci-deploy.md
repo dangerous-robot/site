@@ -50,7 +50,7 @@ Three-job pipeline:
 
 A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e` or `lint-content`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
 
-GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the Deploy workflow in the repository's Actions tab.
+GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the "Deploy to GitHub Pages" workflow in the repository's Actions tab.
 
 ### YouTube API key
 
