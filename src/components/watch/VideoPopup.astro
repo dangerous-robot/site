@@ -1,8 +1,7 @@
 ---
 // The one shared hover popup (UI spec § 3.3, § 4.3). Visual only: every
 // field also reaches screen readers through the card, so it is aria-hidden
-// and never takes focus. client/popup.ts fills, places and shows it. Stub:
-// final markup; styles still to come.
+// and never takes focus. client/popup.ts fills, places and shows it.
 import { TESTID } from '../../lib/watch/contract';
 ---
 <div class="watch-popup" aria-hidden="true" data-testid={TESTID.popup} hidden>
@@ -10,3 +9,76 @@ import { TESTID } from '../../lib/watch/contract';
   <p class="watch-popup__meta"><span class="watch-popup__channel"></span> <span class="watch-popup__duration"></span> <span class="watch-popup__date"></span></p>
   <p class="watch-popup__desc"></p>
 </div>
+<style>
+  /* Declarations copied from .ev-popup (ResponsibleAIEvidenceMark.astro),
+     fixed instead of absolute because one popup serves every card. */
+  .watch-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 4;
+    width: min(20rem, calc(100vw - 32px));
+    box-sizing: border-box;
+    padding: 0.6rem 0.75rem;
+    background: var(--color-popover-bg);
+    border: 1px solid var(--color-popover-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-popover);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+    text-align: left;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .watch-popup:not([hidden]) {
+      animation: watch-popup-in 0.15s ease;
+    }
+
+    @keyframes watch-popup-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  }
+
+  :global([data-motion="reduce"]) .watch-popup:not([hidden]) {
+    animation: none;
+  }
+
+  .watch-popup__title {
+    margin: 0 0 var(--space-xs);
+    font-family: var(--font-heading);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-heading);
+    color: var(--color-text);
+  }
+
+  .watch-popup__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--space-sm);
+    margin: 0;
+    color: var(--color-text-muted);
+  }
+
+  .watch-popup__duration,
+  .watch-popup__date {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    align-self: center;
+  }
+
+  .watch-popup__desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    overflow: hidden;
+    margin: var(--space-xs) 0 0;
+    color: var(--color-text-muted);
+    white-space: pre-line;
+  }
+</style>

@@ -1,7 +1,8 @@
 ---
-// Click-to-load player (UI spec § 3.3, § 4.7). Stub: final markup, hooks and
-// the frame sizing other components measure; client/player.ts adds the
-// iframe, Show more and Back to video list behaviour.
+// Click-to-load player (UI spec § 3.3, § 4.7). The server renders the poster
+// only; client/player.ts swaps videos, inserts the YouTube embed on Play and
+// runs Show more and Back to video list. No embed markup here: the post-build
+// check fails if the built page contains one.
 import { CirclePlay } from 'lucide-astro';
 import { TESTID, youtubeWatchUrl } from '../../lib/watch/contract';
 import { coverSrcset } from '../../lib/watch/frames';
@@ -40,10 +41,11 @@ const title = video?.title ?? '';
   <h2 class="watch-player__title" id="watch-player-title" tabindex="-1" data-testid={TESTID.playerTitle}>{title}</h2>
   <p class="watch-player__meta" data-testid={TESTID.playerMeta}>
     <span class="watch-player__channel">{video?.channel}</span>
-    <span class="watch-player__duration">{video?.durationText}</span>
+    <span class="watch-player__duration" hidden={!video?.durationText}>{video?.durationText}</span>
     <time class="watch-player__date" datetime={video?.publishedIso}>{video?.publishedText}</time>
   </p>
   <p class="watch-player__desc" id="watch-player-desc">{video?.description}</p>
+  {/* Shown by the script only when the description overflows its clamp; without JS the player is hidden. */}
   <button type="button" class="watch-player__more" aria-expanded="false" aria-controls="watch-player-desc" hidden>Show more</button>
   <p class="watch-player__links">
     <a href={video && playlist ? youtubeWatchUrl(video.id, playlist.youtubeId) : undefined} data-testid={TESTID.youtubeLink}>Watch on YouTube</a>
@@ -51,6 +53,12 @@ const title = video?.title ?? '';
   </p>
 </section>
 <style>
+  .watch-notice {
+    margin: 0 0 var(--space-sm);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
   /* Sizing other components' tests measure (popup overlap, 200x200 minimum). */
   .watch-player__frame {
     position: relative;
@@ -62,23 +70,128 @@ const title = video?.title ?? '';
     overflow: hidden;
   }
 
-  /* Out of flow, so a tall image cannot stretch the 16:9 box. */
+  /* Out of flow, so a tall image cannot stretch the 16:9 box. The embed is
+     inserted by JS, outside Astro's scoping, hence :global(). */
   .watch-player__poster,
-  .watch-player__img {
+  .watch-player__img,
+  .watch-player__frame :global(.watch-player__iframe) {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
   }
 
+  .watch-player__frame :global(.watch-player__iframe) {
+    border: 0;
+  }
+
   .watch-player__poster {
+    display: grid;
+    place-items: center;
     padding: 0;
     border: 0;
     background: none;
     cursor: pointer;
   }
 
+  /* The frame clips overflow, so the global ring would be cut off outside it. */
+  .watch-player__poster:focus-visible {
+    outline-offset: -4px;
+  }
+
   .watch-player__img {
     object-fit: cover;
+  }
+
+  /* Fixed colours: the pill sits on video imagery in every theme. */
+  .watch-player__play {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-xs);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-full);
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+
+  .watch-player__poster:hover .watch-player__play {
+    background: rgba(0, 0, 0, 0.9);
+  }
+
+  :global([data-contrast="high"]) .watch-player__play {
+    border: 1px solid #fff;
+  }
+
+  .watch-player__title {
+    margin: var(--space-md) 0 var(--space-xs);
+    font-size: 1.25rem;
+  }
+
+  .watch-player__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-md);
+    margin: 0 0 var(--space-sm);
+  }
+
+  .watch-player__channel {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* As .post-date (src/pages/writing/index.astro). */
+  .watch-player__duration,
+  .watch-player__date {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+  }
+
+  .watch-player__desc {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+    white-space: pre-line;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .watch-player__desc[data-expanded] {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+
+  /* As .petition-roll__toggle (src/components/PetitionSign.astro). */
+  .watch-player__more {
+    margin-top: var(--space-xs);
+    padding: var(--space-xs) 0;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font-family: var(--font-body);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+  }
+
+  .watch-player__more:hover {
+    text-decoration: underline;
+  }
+
+  .watch-player__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+    margin: var(--space-sm) 0 0;
+    font-size: var(--font-size-sm);
   }
 </style>
