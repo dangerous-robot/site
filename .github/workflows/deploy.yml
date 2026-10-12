@@ -3,6 +3,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # YouTube API data may be stored for at most 30 days, so /watch is rebuilt
+  # weekly. A scheduled run checks out main's latest commit, which a push
+  # deploy has already shipped, so only the YouTube data changes.
+  schedule:
+    - cron: '17 6 * * 1'
 
 # Jobs that install packages (verify, build) hold no write rights; only the
 # deploy job can publish to Pages. A called workflow inherits the caller's
@@ -34,7 +39,18 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The key goes to this step and the check below only. WATCH_EXPECT_KEY
+      # makes a missing key a warning annotation; the build still succeeds
+      # and publishes the /watch empty state.
       - run: npm run build
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          WATCH_EXPECT_KEY: '1'
+      # Needs the key to scan dist/ for its exact value.
+      - run: npm run check:watch
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          WATCH_CHECK_CONTEXT: deploy
       # The CMS admin page is for local editing only; keep it off the live site.
       - run: rm -rf dist/admin && test ! -e dist/admin
       - uses: actions/upload-pages-artifact@v5
