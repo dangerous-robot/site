@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done, its copy (stance sentences, intro) waits on Brandon; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), with the free-tier trial cells waiting on Brandon (D18 in the handoff note), so not ticked; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done and its copy applied (D1, D2), 7 of the 9 stance sentences await Brandon's read; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), free-tier trial cells set to No (D18); not ticked because stance-row cells with no page stating the answer stay not yet sourced; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -26,7 +26,7 @@ Honest labels (no new research)
 - [x] S8a: apply the post-S8 answers (A1 to A8 under Decisions; 5 launch dates and GPT-OSS's source left for S10, see S8a)
 
 Sources for every stance row
-- [ ] S9: stance sentences and their evidence (code done; copy pending Brandon)
+- [ ] S9: stance sentences and their evidence (code done; copy applied 2026-10-12, Brandon to confirm the 7 sentences he did not write)
 - [ ] S10: one source per stance-row cell, then feature rows and the summary
 - [x] S11: the research linter counts sources the page cites
 
@@ -81,6 +81,8 @@ Post-S8 answers, Brandon 2026-10-09 (open questions from the S1 to S8 build and 
 Brandon, 2026-10-12:
 
 - D37 (does a user-switched web search in chat count as agent web search): yes. A chat where the user turns web search on counts, even if the chatbot does not choose when to search.
+- D18 (does a free trial count as a free tier): no. GreenPT and ChatGPTree free-tier cells read No, detail "Trial"; GreenPT's cites the Fello AI review ("There is no permanent free plan, but every plan includes a 14-day free trial"), ChatGPTree's stays not yet sourced (no ingested page names its trial).
+- D1 and D2 (stance sentences and page intro): the approach stands, with two changes. The page says "Prefer", never "We prefer" (row label, color legend, legend note, screen-reader phrases, intro). Each stance sentence states a fact about the attribute ("X is Y") instead of opening with a preference; Brandon wrote the models and accessibility sentences. Positions are linked only where the draft named a firm fit (renewable hosting, energy display, models, open-weight models, ownership).
 
 Brandon, 2026-10-11:
 
@@ -199,8 +201,8 @@ No totals, no per-product counts, no sorting by color. That keeps to "no composi
 ### Display (D1 plus a popup)
 
 - **Cell**: icon colored by stance, optional detail text, then a small evidence mark: a scale icon (lucide `scale`) for "Reviewed claim" (not a check, which would read as a Yes answer; the site's claim icon in `ObjectTypeIcon.astro` becomes the same scale, SITE-AA (Scale claim icon)), a link icon for "Source", nothing for "Not yet sourced". Adds roughly 1.5rem per cell (estimate, check in S6); the table already extends past the page at 640px (`ResponsibleAIMatrix.astro:540-576`).
-- **Row label**: stance rows get a second line, "We prefer:" then the preferred answer's icon (check or x) in the good stance color, with the word ("Yes", "No") as visually hidden text; text rows keep words (e.g. "We prefer: no large models"), kept to a few words because the label column is 7rem on phones (`ResponsibleAIMatrix.astro:546`); the full rule goes in the stance sentence and the Evidence entry. Feature rows get no second line.
-- **Legend**: the icons, the two evidence marks, "No mark: not yet sourced", and one sentence: "Rows without a “We prefer” line compare facts only; we take no position on them." Legend text at `--font-size-sm` with 18px icons (up from `--font-size-xs` and 14px).
+- **Row label**: stance rows get a second line, "Prefer:" then the preferred answer's icon (check or x) in the good stance color, with the word ("Yes", "No") as visually hidden text; text rows keep words (e.g. "Prefer: no large models"), kept to a few words because the label column is 7rem on phones (`ResponsibleAIMatrix.astro:546`); the full rule goes in the stance sentence and the Evidence entry. Feature rows get no second line.
+- **Legend**: the icons, the two evidence marks, "No mark: not yet sourced", and one sentence: "Rows without a “Prefer” line compare facts only; the page takes no position on them." Legend text at `--font-size-sm` with 18px icons (up from `--font-size-xs` and 14px).
 - **Evidence section** below the table: one collapsed entry per row. The entry opens with the stance sentence and its evidence (stance rows), then one item per product (id `ev-<row>-<product>`) showing the claim's `VerdictBadge` (size `sm`), confidence and as-of date, or each source with publisher, accessed date and archived copy, or the check record, or "Not yet sourced". The models entry also shows the dated large-model list with its sources. A last group covers the summary table (ids `ev-summary-<field>-<product>`, `<field>` being the summary key such as `environmental`). It lists every product whatever the product filter hides, since the filter (`ResponsibleAIFilters.astro`) acts on the table only.
 - **Popup on the mark**: small detail without leaving the table.
 
@@ -217,7 +219,7 @@ No totals, no per-product counts, no sorting by color. That keeps to "no composi
 | Without JavaScript | Marks do nothing; the Evidence section (in the pill nav) holds the same detail. |
 
 **Accessibility and themes**:
-- Not color only: the "We prefer" line repeats in text what the color shows (WCAG 1.4.1). Each cell's hidden text reads, for example, "Yes, what we prefer." or "<cell text>. Not what we prefer."; mixed reads "Partly what we prefer."; unknown and feature-row cells read only the answer. A cell with no mark adds "Not yet sourced." so screen reader users get what the missing mark shows. Fixes F4.
+- Not color only: the "Prefer" line repeats in text what the color shows (WCAG 1.4.1). Each cell's hidden text reads, for example, "Yes, preferred." or "<cell text>. Not preferred."; mixed reads "Partly preferred."; unknown and feature-row cells read only the answer. A cell with no mark adds "Not yet sourced." so screen reader users get what the missing mark shows. Fixes F4.
 - Marks are distinct shapes (scale vs link) with accessible names, and a 32 by 32 px hit area by padding (WCAG 2.2, 2.5.8 asks for at least 24).
 - Colors come from tokens that already have dark, light and both high-contrast values (`src/styles/tokens.css:190-243`).
 
@@ -226,7 +228,7 @@ No totals, no per-product counts, no sorting by color. That keeps to "no composi
 | Id | Drift | Standards-consistent choice |
 |---|---|---|
 | DR1 | Verdict color tokens (`--color-verdict-true/false/mixed`) are used to mean "good/bad for responsibility", as today (`ResponsibleAIMatrix.astro:459-466`). Next to `VerdictBadge` chips in the popup and Evidence section, green would mean two things on one page. | Add alias tokens `--color-stance-good`, `--color-stance-bad`, `--color-stance-mixed` in `tokens.css`, set to the verdict values, so the meaning is named and can diverge later. No visual change. |
-| DR2 | The "We prefer" line under each row label is a new text style. | Use `--font-size-xs` and `--color-text-faint` (the legend's style before this plan, `ResponsibleAIMatrix.astro:521-527`). |
+| DR2 | The "Prefer" line under each row label is a new text style. | Use `--font-size-xs` and `--color-text-faint` (the legend's style before this plan, `ResponsibleAIMatrix.astro:521-527`). |
 | DR3 | The Evidence section is a new long list. | Collapsed `<details>` per row with `DisclosureIndicator.astro`, and the hash-opens-details script pattern from `src/pages/research/index.astro:395-407`, changed in two ways: it opens `el.closest('details')`, because the `ev-` ids sit on items inside the row's `<details>`, not on the `<details>` itself; and it also runs on a click of an in-page `#ev-` link, because following the same hash twice fires no `hashchange`. Targets get `scroll-margin-top: 5rem` like the page's other sections (`ResponsibleAIMatrix.astro:285`), so the stuck pill nav does not cover them. Heading style matches the Comparison table's `h2` with the return-to-top link. |
 | DR4 | The site's hover help today is the native `title` attribute (`VerdictBadge.astro:14`; `src/pages/research/sources/[...slug].astro:67`), which keyboard and touch users cannot open. A non-modal popup is new. | Do not reuse `title`. Reuse `A11yControl`'s button, `aria-expanded`, `aria-controls` and `hidden` pattern and its popover tokens; leave out its modal parts (`role="dialog"`, `aria-modal`, focus trap, backdrop, phone bottom sheet). |
 
@@ -236,8 +238,8 @@ No drift: `VerdictBadge` size `sm`; lucide icons at the existing 14px and 18px s
 
 - Each stance row's `ideal` gets a one-sentence stance (`ideal.note`, already in the schema) and its own evidence (`ideal.sources`, new): sources for why the attribute matters (for example, why image generation costs more energy; the note at `templates.yaml:86` has no source today).
 - A stance may link a Values position instead (Q11), shown as "Position: <heading>", never in the source list. Candidates: "AI is fueling environmental destruction" (`src/pages/values.astro:32`, whose text names "Frontier AI models") for the models and energy rows; "AI outcomes are being decided by a small group of people" (`:40`) for ownership. The Values headings have no ids today; S9 adds them.
-- Rendered: the "We prefer" line in the row label, and the full stance sentence with its evidence at the top of the row's Evidence entry.
-- The intro gets one or two sentences saying the page takes positions and where to find the reasons. Copy: TBD, Brandon to write. Copy rules apply (`docs/decisions.md:47`).
+- Rendered: the "Prefer" line in the row label, and the full stance sentence with its evidence at the top of the row's Evidence entry.
+- The intro gets one or two sentences saying the page takes positions and where to find the reasons: "This page takes positions. A row with a “Prefer” line names the more responsible answer, and the Evidence section below the table gives each position and its reasons." Copy rules apply (`docs/decisions.md:47`).
 - The stance evidence is checked by the same build check as cell evidence.
 
 ### Data model

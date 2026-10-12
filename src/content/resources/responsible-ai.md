@@ -127,7 +127,10 @@ data:
       label: "Hosted on renewable energy"
       group: environmental
       criterion: renewable-energy-hosting
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "The electricity behind each answer is the part of AI's footprint a chatbot can choose most directly."
+        position: "/values#ai-is-fueling-environmental-destruction"
       cells:
         greenpt: { type: "yes", claim: /research/claims/greenpt/renewable-energy-hosting, sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
         ecosia: { type: "partial", detail: "Company-wide only", claim: /research/claims/ecosia-ai/renewable-energy-hosting }
@@ -140,7 +143,10 @@ data:
       label: "Real-time energy display"
       group: environmental
       criterion: realtime-energy-display
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "A per-conversation energy display makes a hidden cost visible, so you can weigh it."
+        position: "/values#ai-is-fueling-environmental-destruction"
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/how-energy-indicator-works] }
         ecosia: { type: "no" }
@@ -153,7 +159,9 @@ data:
       label: "No image generation"
       group: environmental
       criterion: excludes-image-generation
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "Making an image takes much more energy than answering in text."
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "no", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
@@ -165,7 +173,9 @@ data:
     - key: financial-transparency
       label: "Published financials"
       group: business
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "Published finances show who pays for a product and where the money goes."
       cells:
         greenpt: { type: "no" }
         ecosia: { type: "yes", sources: [/research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts] }
@@ -179,6 +189,8 @@ data:
       group: models-safety
       ideal:
         answer: "no large models"
+        note: "Large models, a lab's most capable tier, cost the most energy per answer and often represent the apex of the larger AI 'race'."
+        position: "/values#ai-is-fueling-environmental-destruction"
         # Sorted under P5 and R2 (a model is large if it was its lab's most
         # capable tier when released). Each lab's model page is cited below;
         # GPT-OSS still has none, so the list carries no last_checked date.
@@ -205,7 +217,9 @@ data:
       group: privacy-data
       criterion: no-training-on-user-data
       polarity: inverted
-      ideal: { value: "no" }
+      ideal:
+        value: "no"
+        note: "A chatbot that does not train on your conversations uses what you type only to answer your request."
       cells:
         greenpt: { type: "no", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
         ecosia: { type: "no" }
@@ -220,6 +234,8 @@ data:
       criterion: corporate-structure
       ideal:
         answer: "non-profit or similar"
+        note: "Non-profits, steward-owned companies, cooperatives, B Corps and employee-owned companies answer to more than shareholders."
+        position: "/values#ai-outcomes-are-being-decided-by-a-small-group-of-people"
         terms:
           good: [non-profit, steward-ownership, cooperative, B-corp, employee-owned]
           mixed: [privately-held]
@@ -236,12 +252,12 @@ data:
       label: "Free tier"
       group: business
       cells:
-        greenpt: { type: "yes" }
+        greenpt: { type: "no", detail: "Trial", sources: [/research/sources/2026/greenpt] }
         ecosia: { type: "yes", detail: "Ad supported"}
         euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightly-ai-pricing] }
         viro: { type: "yes", detail: "Ad supported", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
-        chatgptree: { type: "yes" }
+        chatgptree: { type: "no", detail: "Trial" }
         earthly-insight: { type: "yes", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: pricing-paid-tier
       label: "Pricing"
@@ -304,7 +320,9 @@ data:
       label: "Accessibility"
       group: product-access
       answers: ["yes", partial, unknown]
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "WCAG 2.x Level AA support helps ensure that people who use assistive technology can use the chatbot too."
       # No product publishes an accessibility statement (searched
       # 2026-10-10). A cell is Partial where a Lighthouse 13.5.0
       # accessibility audit of the product's public page found a scored
@@ -333,7 +351,10 @@ data:
     - key: open-source-models-only
       label: "Open-weight models"
       group: models-safety
-      ideal: { value: "yes" }
+      ideal:
+        value: "yes"
+        note: "Open-weight models can be inspected, run and hosted by anyone, so no single company controls them."
+        position: "/values#ai-outcomes-are-being-decided-by-a-small-group-of-people"
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
         ecosia: { type: "no" }
@@ -352,5 +373,7 @@ data:
 ---
 
 "Green AI" gets thrown around a lot. This page lays out what each product actually offers, side-by-side, so you can compare. If you spot an error or omission, [let us know](/corrections).
+
+This page takes positions. A row with a “Prefer” line names the more responsible answer, and the Evidence section below the table gives each position and its reasons.
 
 <p class="resource-matrix__disclosure">TreadLightlyAI is made by the same person who makes Dangerous Robot. It is listed under the same criteria and sources as every other product, and we publish no verdict on claims about it.</p>
