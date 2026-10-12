@@ -1,6 +1,6 @@
 ---
-// Playlist rail (UI spec § 3.3). Stub: final markup and hooks; keyboard
-// behaviour lives in client/tabs.ts and the rail styles still to come.
+// Playlist rail (UI spec § 3.3, § 7.2). Keyboard and selection behaviour
+// live in client/tabs.ts; the sticky rail itself is styled in watch.astro.
 import { TESTID } from '../../lib/watch/contract';
 import type { WatchPlaylistTabsProps } from '../../lib/watch/types';
 
@@ -35,3 +35,120 @@ const { playlists, selectedSlug } = Astro.props;
     );
   })}
 </div>
+
+<style>
+  .watch-rail__head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-sm);
+  }
+
+  .watch-rail__label {
+    font-size: var(--font-size-xs);
+    color: var(--color-section-label);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .watch-rail__line {
+    flex: 1 1 auto;
+    height: 1px;
+    background: var(--color-text-faint);
+    opacity: 0.5;
+  }
+
+  .watch-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+  }
+
+  .watch-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+    border: 0;
+    border-left: 3px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .watch-tab:hover {
+    background: var(--color-radio-selected-bg);
+  }
+
+  .watch-tab[aria-selected="true"] {
+    border-left-color: var(--color-accent);
+  }
+
+  .watch-tab__name {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    line-height: var(--line-height-heading);
+    color: var(--color-text-muted);
+  }
+
+  .watch-tab[aria-selected="true"] .watch-tab__name {
+    color: var(--color-text-heading);
+    font-weight: 600;
+  }
+
+  .watch-tab__creator {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .watch-tab__desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+
+  /* Tablet: the full-width rail has room for name and creator on one line. */
+  @media (min-width: 641px) and (max-width: 1119px) {
+    .watch-tab {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      column-gap: var(--space-md);
+    }
+
+    .watch-tab__desc {
+      flex-basis: 100%;
+    }
+  }
+
+  /* Literal breakpoint: BREAKPOINT_DESKTOP_PX in contract.ts. */
+  @media (min-width: 1120px) {
+    /* The sticky rail scrolls (overflow-y: auto), which clips anything
+       drawn outside it; the inset keeps the global focus ring (2px plus a
+       3px offset) visible on the edge tabs. */
+    .watch-rail__head,
+    .watch-tabs {
+      padding-inline: 5px;
+    }
+
+    .watch-tabs {
+      padding-bottom: 5px;
+    }
+
+    .watch-tab__desc {
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+    }
+  }
+</style>
