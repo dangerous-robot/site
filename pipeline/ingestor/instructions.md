@@ -32,6 +32,9 @@ You must return a SourceFile with these fields:
 2. Call `wayback_check` only to recover a page `web_fetch` could not load,
    never just to fill archived_url.
 3. Key quotes must be EXACT text from the source -- never fabricate quotes.
+   Store each quote as the bare page text: no surrounding quotation marks
+   and no attribution after it (the site adds the marks itself). Marks
+   inside the quote stay as the page has them.
 
 ## What NOT to do:
 - Do not make claims or verdicts about the source content.

@@ -107,7 +107,8 @@ def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
     """Remove key quotes whose text is not on the page; return the dropped ones.
 
     Sets ``key_quotes`` to the kept quotes, or None when none are kept. A kept
-    quote is stored unchanged; only the text it is matched by is derived.
+    quote wrapped in quotation marks, with or without an attribution after the
+    closing mark, is stored as the text inside the marks (see ``_unwrapped``).
     """
     quotes = source.frontmatter.key_quotes or []
     if not quotes:
@@ -116,13 +117,81 @@ def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
     kept: list[str] = []
     dropped: list[str] = []
     for quote in quotes:
-        (kept if _quote_on_page(quote, page) else dropped).append(quote)
+        if _quote_on_page(quote, page):
+            kept.append(_unwrapped(quote, page))
+        else:
+            dropped.append(quote)
     source.frontmatter.key_quotes = kept or None
     return dropped
 
 
+def _unwrapped(quote: str, normalized_page: str) -> str:
+    """The text inside a quote's wrapping marks, or the quote unchanged.
+
+    The source page shows each quote in a blockquote, so wrapping marks would
+    show twice, and an attribution is not page text. The marks stay when they
+    belong to the page text itself, or when the inner text alone is not on
+    the page.
+    """
+    text = quote.strip()
+    end = _wrapping_end(text)
+    if end is None:
+        return quote
+    inner = text[1:end].strip()
+    folded = _fold(inner)
+    if not _inner_marks_pair(folded, _fold(text[0])):
+        return quote
+    if not _text_on_page(folded, normalized_page):
+        return quote
+    return inner
+
+
+def _wrapping_end(text: str) -> int | None:
+    """Index of the mark closing a quote that opens with a quotation mark.
+
+    None when the text does not open with a mark, has no closing mark of the
+    same kind, or has something other than an attribution after it. Each
+    character is folded on its own, so the index points into ``text`` as given
+    even when folding the whole string would change its length.
+    """
+    marks = [_fold(ch) for ch in text]
+    if not marks or marks[0] not in _QUOTE_MARKS:
+        return None
+    for end in range(len(text) - 1, 0, -1):
+        if marks[end] == marks[0]:
+            return end if _AFTER_CLOSING_MARK.match(_fold(text[end + 1:])) else None
+    return None
+
+
+def _inner_marks_pair(text: str, mark: str) -> bool:
+    """Whether every ``mark`` inside a wrapped quote's text pairs within it.
+
+    In page text such as ``"Green" is our motto, they say "always"`` the first
+    and last marks are not a pair: a closing mark comes before any opening
+    one. A mark between two word characters is an apostrophe, not a mark.
+    """
+    depth = 0
+    for i, ch in enumerate(text):
+        if ch != mark:
+            continue
+        before = text[i - 1] if i else " "
+        after = text[i + 1] if i + 1 < len(text) else " "
+        if before.isspace() or before in "([{-":
+            depth += 1
+        elif not _WORD.match(after):
+            if depth == 0:
+                return False
+            depth -= 1
+    return depth == 0
+
+
 def _quote_on_page(quote: str, normalized_page: str) -> bool:
-    text = _strip_markup(_match_text(_fold(quote)))
+    return _text_on_page(_match_text(_fold(quote)), normalized_page)
+
+
+def _text_on_page(text: str, normalized_page: str) -> bool:
+    """Whether folded quote text, taken as is, appears on the normalized page."""
+    text = _strip_markup(text)
     fragments = [
         f for f in _ELISION.split(" ".join(text.split())) if _WORD.search(f)
     ]
@@ -172,17 +241,12 @@ def _fragment_pattern(fragment: str) -> re.Pattern[str]:
 def _match_text(quote: str) -> str:
     """The part of a folded quote that must appear on the page.
 
-    Stored quotes are often wrapped in quotation marks, sometimes with an
-    attribution after the closing mark; neither is page text.
+    Quotes from the model are often wrapped in quotation marks, sometimes with
+    an attribution after the closing mark; neither is page text.
     """
     text = quote.strip()
-    mark = text[:1]
-    if mark not in _QUOTE_MARKS:
-        return text
-    end = text.rfind(mark, 1)
-    if end == -1 or not _AFTER_CLOSING_MARK.match(text[end + 1:]):
-        return text
-    return text[1:end]
+    end = _wrapping_end(text)
+    return text if end is None else text[1:end]
 
 
 def _fold(text: str) -> str:

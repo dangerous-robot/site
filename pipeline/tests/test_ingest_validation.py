@@ -60,21 +60,30 @@ def test_no_quotes_is_a_no_op() -> None:
     assert source.frontmatter.key_quotes is None
 
 
+_GOOGLE = "Google will reach 100% renewable energy for its data centers by 2030."
+_BRAVE = "Brave publishes a transparency report."
+
+
 @pytest.mark.parametrize(
-    "quote",
+    "quote, stored",
     [
-        '"Google will reach 100% renewable energy for its data centers by 2030."',
-        "“Google will reach 100% renewable energy for its data centers by 2030.”",
-        "'Brave publishes a transparency report.'",
-        '"Brave publishes a transparency report".',
-        '"Life is about making things" — Boris',
-        '"Life is about making things" - Boris, interview',
-        "«Brave publishes a transparency report.»",
+        (f'"{_GOOGLE}"', _GOOGLE),
+        (f"\u201c{_GOOGLE}\u201d", _GOOGLE),
+        (f"'{_BRAVE}'", _BRAVE),
+        (f"\u2018{_BRAVE}\u2019", _BRAVE),
+        ('"Brave publishes a transparency report".', "Brave publishes a transparency report"),
+        ('"Life is about making things" \u2014 Boris', "Life is about making things"),
+        ('"Life is about making things" - Boris, interview', "Life is about making things"),
+        (f"\u00ab{_BRAVE}\u00bb", _BRAVE),
+        (f'  "{_BRAVE}"  ', _BRAVE),
     ],
-    ids=["straight", "curly", "single", "trailing-period", "em-dash-tail", "hyphen-tail", "guillemets"],
+    ids=[
+        "straight", "curly", "single", "single-curly", "trailing-period", "em-dash-tail",
+        "hyphen-tail", "guillemets", "surrounding-space",
+    ],
 )
-def test_wrapped_verbatim_quote_kept(quote: str) -> None:
-    assert _kept([quote]) == [quote]
+def test_wrapped_verbatim_quote_stored_bare(quote: str, stored: str) -> None:
+    assert _kept([quote]) == [stored]
 
 
 def test_attribution_tail_dropped_when_inner_text_missing() -> None:
@@ -135,9 +144,16 @@ def test_quote_with_no_text_dropped(quote: str) -> None:
     assert _kept([quote]) is None
 
 
-def test_kept_quote_string_unchanged() -> None:
-    quote = '  "Brave publishes a transparency report."  '
+def test_bare_kept_quote_string_unchanged() -> None:
+    quote = "  Brave publishes a transparency report.  "
     assert _kept([quote]) == [quote]
+
+
+def test_unwrapped_quote_keeps_its_original_characters() -> None:
+    # Folding turns the ellipsis into three periods; the stored text must not.
+    assert _kept(["\u201cGoogle will reach 100%\u2026by 2030.\u201d"]) == [
+        "Google will reach 100%\u2026by 2030."
+    ]
 
 
 @pytest.mark.parametrize(
@@ -202,7 +218,7 @@ def test_more_normalized_matches_kept(quote: str, page: str) -> None:
     ids=["curly-open-straight-close", "german-low-9", "single-curly-open-straight-close"],
 )
 def test_mismatched_or_unlisted_quotation_marks_unwrapped(quote: str) -> None:
-    assert _kept([quote]) == [quote]
+    assert _kept([quote]) == [quote[1:-1]]
 
 
 @pytest.mark.parametrize(
@@ -212,3 +228,44 @@ def test_mismatched_or_unlisted_quotation_marks_unwrapped(quote: str) -> None:
 )
 def test_quote_does_not_match_across_or_inside_words(quote: str, page: str) -> None:
     assert _kept([quote], page) is None
+
+
+def test_inner_quoted_phrase_does_not_block_unwrapping() -> None:
+    page = 'They sell the so-called "green" cloud to buyers.'
+    assert _kept(['"The so-called "green" cloud"'], page) == ['The so-called "green" cloud']
+
+
+def test_apostrophe_does_not_block_unwrapping() -> None:
+    page = "We're talking about it. So said Alex."
+    assert _kept(["'We're talking about it.' \u2014 Alex"], page) == ["We're talking about it."]
+
+
+@pytest.mark.parametrize(
+    "quote, page",
+    [
+        ('"Green" is our motto, they say "always"', 'Our line: "Green" is our motto, they say "always".'),
+        ("\u201cGreen\u201d is our motto, they say \u201calways\u201d", 'Our line: "Green" is our motto, they say "always".'),
+        ('"Silent diffusion" of AI energy use', 'The "Silent diffusion" of AI energy use grows.'),
+        ('"Brave publishes', 'Text: "Brave publishes a report.'),
+    ],
+    ids=["outer-marks-belong-to-page-text", "curly-outer-marks-belong-to-page-text", "no-closing-pair", "opening-mark-only"],
+)
+def test_quote_whose_page_text_starts_with_a_mark_kept_as_is(quote: str, page: str) -> None:
+    assert _kept([quote], page) == [quote]
+
+
+def test_quote_kept_as_is_when_its_characters_hold_no_mark_pair() -> None:
+    # The entity-encoded marks fold to a pair, so the quote matches on its
+    # inner text, but the stored characters hold no mark to strip.
+    quote = "&quot;Brave publishes a transparency report.&quot;"
+    assert _kept([quote]) == [quote]
+
+
+def test_instructions_ask_for_bare_quotes() -> None:
+    from ingestor.agent import _SYSTEM_PROMPT
+
+    text = " ".join(_SYSTEM_PROMPT.split())
+    assert (
+        "Store each quote as the bare page text: no surrounding quotation marks "
+        "and no attribution after it" in text
+    )

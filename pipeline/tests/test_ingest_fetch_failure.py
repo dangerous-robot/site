@@ -411,7 +411,7 @@ async def test_quote_checked_against_archive_copy_text(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_straight_quote_wrapped_verbatim_quote_is_kept_end_to_end(tmp_path) -> None:
+async def test_straight_quote_wrapped_verbatim_quote_is_stored_bare_end_to_end(tmp_path) -> None:
     url = "https://brave.com/transparency/"
     wrapped = f'"{_VERBATIM}"'
     with respx.mock:
@@ -420,7 +420,7 @@ async def test_straight_quote_wrapped_verbatim_quote_is_kept_end_to_end(tmp_path
             url, _scripted_model([url], _source_args(url, key_quotes=[wrapped])), tmp_path
         )
     assert isinstance(outcome, tuple)
-    assert outcome[1].frontmatter.key_quotes == [wrapped]
+    assert outcome[1].frontmatter.key_quotes == [_VERBATIM]
 
 
 # ---------------------------------------------------------------------------

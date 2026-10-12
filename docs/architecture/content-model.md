@@ -97,7 +97,7 @@ The Markdown body contains the claim narrative -- the human-readable explanation
 | `source_type` | enum | no | Classification of source authority: `primary`, `secondary`, `tertiary` |
 | `independence` | enum | no | Whether the source is authored by the covered entity or independently of it: `first-party`, `independent`, `unknown`. Feeds claim-level `verification_level`. See [source-quality.md](source-quality.md) |
 | `summary` | string | yes | Max 200 characters; must not paraphrase beyond 30 words |
-| `key_quotes` | string[] | no | Notable direct quotes from the source |
+| `key_quotes` | string[] | no | Notable direct quotes from the source, as bare page text (no wrapping quotation marks or attribution) |
 
 The Markdown body provides additional context or analysis of the source.
 
