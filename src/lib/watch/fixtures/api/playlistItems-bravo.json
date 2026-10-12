@@ -1,0 +1,20 @@
+{
+  "items": [
+    {
+      "snippet": {
+        "position": 0,
+        "resourceId": {
+          "videoId": "fxBravoPriv"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 1,
+        "resourceId": {
+          "videoId": "fxBravoNoEm"
+        }
+      }
+    }
+  ]
+}

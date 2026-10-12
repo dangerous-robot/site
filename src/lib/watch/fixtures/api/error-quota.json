@@ -1,0 +1,9 @@
+{
+  "error": {
+    "code": 403,
+    "message": "The request cannot be completed because the fixture project has exceeded its quota.",
+    "errors": [
+      { "message": "The request cannot be completed because the fixture project has exceeded its quota.", "domain": "youtube.quota", "reason": "quotaExceeded" }
+    ]
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "nextPageToken": "fxAlphaPage2",
+  "items": [
+    {
+      "snippet": {
+        "position": 0,
+        "resourceId": {
+          "videoId": "fxAlpha0001"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 1,
+        "resourceId": {
+          "videoId": "fxAlphaDel1"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 2,
+        "resourceId": {
+          "videoId": "fxAlphaPriv"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 3,
+        "resourceId": {
+          "videoId": "fxAlphaLive"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 4,
+        "resourceId": {
+          "videoId": "fxAlphaNoEm"
+        }
+      }
+    }
+  ]
+}

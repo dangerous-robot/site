@@ -1,0 +1,36 @@
+{
+  "items": [
+    {
+      "snippet": {
+        "position": 7,
+        "resourceId": {
+          "videoId": "fxAlpha0003"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 5,
+        "resourceId": {
+          "videoId": "fxAlpha0002"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 6,
+        "resourceId": {
+          "videoId": "fxAlpha0001"
+        }
+      }
+    },
+    {
+      "snippet": {
+        "position": 8,
+        "resourceId": {
+          "videoId": "fxAlphaProc"
+        }
+      }
+    }
+  ]
+}

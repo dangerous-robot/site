@@ -1,0 +1,281 @@
+{
+  "items": [
+    {
+      "id": "fxAlpha0001",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlpha0001",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0001/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0001/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          },
+          "standard": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0001/sddefault.jpg",
+            "width": 640,
+            "height": 480
+          },
+          "maxres": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0001/maxresdefault.jpg",
+            "width": 1280,
+            "height": 720
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT22M58S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxAlpha0002",
+      "snippet": {
+        "publishedAt": "2024-02-29T08:30:00.000Z",
+        "title": "Fixture video fxAlpha0002",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0002/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0002/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel Three",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT1H2M3S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "unlisted",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxAlpha0003",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlpha0003",
+        "description": "Invented paragraph 1 exists only to push this fixture description past the five hundred character cut. Invented paragraph 2 exists only to push this fixture description past the five hundred character cut. Invented paragraph 3 exists only to push this fixture description past the five hundred character cut. Invented paragraph 4 exists only to push this fixture description past the five hundred character cut. Invented paragraph 5 exists only to push this fixture description past the five hundred character cut. Invented paragraph 6 exists only to push this fixture description past the five hundred character cut. Invented paragraph 7 exists only to push this fixture description past the five hundred character cut. Invented paragraph 8 exists only to push this fixture description past the five hundred character cut.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0003/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlpha0003/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxAlphaPriv",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlphaPriv",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlphaPriv/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlphaPriv/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT10M5S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "private",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxAlphaLive",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlphaLive",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlphaLive/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlphaLive/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "upcoming"
+      },
+      "contentDetails": {
+        "duration": "P0D"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxAlphaNoEm",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlphaNoEm",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlphaNoEm/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlphaNoEm/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT10M5S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": false
+      }
+    },
+    {
+      "id": "fxAlphaProc",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxAlphaProc",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxAlphaProc/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxAlphaProc/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT10M5S"
+      },
+      "status": {
+        "uploadStatus": "uploaded",
+        "privacyStatus": "public",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxBravoPriv",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxBravoPriv",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxBravoPriv/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxBravoPriv/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT10M5S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "private",
+        "embeddable": true
+      }
+    },
+    {
+      "id": "fxBravoNoEm",
+      "snippet": {
+        "publishedAt": "2025-11-03T17:00:00Z",
+        "title": "Fixture video fxBravoNoEm",
+        "description": "An invented description for a fixture video.\nSecond line.",
+        "thumbnails": {
+          "medium": {
+            "url": "https://i.ytimg.com/vi/fxBravoNoEm/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/fxBravoNoEm/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Fixture Channel One",
+        "liveBroadcastContent": "none"
+      },
+      "contentDetails": {
+        "duration": "PT10M5S"
+      },
+      "status": {
+        "uploadStatus": "processed",
+        "privacyStatus": "public",
+        "embeddable": false
+      }
+    }
+  ]
+}

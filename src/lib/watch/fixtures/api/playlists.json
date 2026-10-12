@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "id": "PLfixtureAlpha01",
+      "snippet": {
+        "title": "Alpha fixture playlist",
+        "description": "Invented API description for Alpha.",
+        "channelTitle": "Fixture Channel One"
+      }
+    },
+    {
+      "id": "PLfixtureBravo02",
+      "snippet": {
+        "title": "Bravo fixture playlist",
+        "description": "This invented playlist description is longer than two hundred characters, so the loader has to cut it at a word boundary and add a single ellipsis character. It keeps going past the limit with extraordinarily long invented words.",
+        "channelTitle": "Fixture Channel Two"
+      }
+    },
+    {
+      "id": "PLfixtureCharlie3",
+      "snippet": {
+        "title": "Charlie fixture playlist",
+        "description": "",
+        "channelTitle": ""
+      }
+    }
+  ]
+}
