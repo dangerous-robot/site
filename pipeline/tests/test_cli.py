@@ -1562,20 +1562,28 @@ def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> Non
     assert after == before
 
 
-def test_step_analyze_write_returns_an_archived_claim_to_draft(tmp_path) -> None:
-    """Production builds archived claims too, so a rewrite of one waits for review."""
+@pytest.mark.parametrize(
+    "previous",
+    [{"status": "archived"}, {"status": "blocked", "blocked_reason": "insufficient_sources"}],
+    ids=["archived", "blocked"],
+)
+def test_step_analyze_write_returns_a_non_draft_claim_to_draft(tmp_path, previous) -> None:
+    """Production builds archived claims too, so a rewrite of one waits for
+    review; a blocked claim with a verdict is no longer blocked."""
     import yaml
 
     from common.frontmatter import parse_frontmatter, serialize_frontmatter
 
     claim_path, sidecar_path = _published_claim_repo(tmp_path)
     fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-    claim_path.write_text(serialize_frontmatter({**fm, "status": "archived"}, body), encoding="utf-8")
+    claim_path.write_text(serialize_frontmatter({**fm, **previous}, body), encoding="utf-8")
 
     result = _step_analyze_write(tmp_path, "false")
 
     assert result.exit_code == 0, result.output
-    assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
+    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    assert fm["status"] == "draft"
+    assert "blocked_reason" not in fm
     sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
     assert sidecar["human_review"]["reviewed_at"] is None
     assert "refresh" not in sidecar
