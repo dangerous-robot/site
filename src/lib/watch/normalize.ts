@@ -46,7 +46,7 @@ export function cutAtWord(text: string, max: number): string {
 // Nominal widths, used when the API leaves a width out. The order is the
 // preference for the cover src: 480w is the card's largest common size.
 const COVER_SIZES: [ApiThumbnailKey, number][] = [['high', 480], ['medium', 320], ['standard', 640], ['maxres', 1280]];
-// D6: every image on the page comes from i.ytimg.com. No whitespace or comma,
+// Every image on the page comes from i.ytimg.com. No whitespace or comma,
 // which would break the srcset list.
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const YTIMG_RE = new RegExp(`^${escapeRegExp(YTIMG_ORIGIN)}/[^\\s,]+$`);

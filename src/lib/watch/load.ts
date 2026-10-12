@@ -1,6 +1,6 @@
 // Build-time orchestration for /watch: curated list in, normalized playlists
-// out (plan § 2). It never throws: the deploy must stay green whatever the
-// API does (D4), so a global failure becomes mode 'none' with one warning.
+// out. It never throws: the deploy must stay green whatever the
+// API does, so a global failure becomes mode 'none' with one warning.
 //
 // Log lines carry playlist IDs, counts and API error text only, never API
 // titles, so CI logs hold no YouTube API data.

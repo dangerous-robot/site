@@ -53,7 +53,7 @@ const ok = (body: unknown): Reply => ({ status: 200, body });
 const items = (prefix: string, n: number) =>
   Array.from({ length: n }, (_, i) => ({ snippet: { position: i, resourceId: { videoId: `${prefix}${i}` } } }));
 
-describe('listPlaylistItemsPage pagination (U2)', () => {
+describe('listPlaylistItemsPage pagination', () => {
   test('passes the page token and returns the next one, null on the last page', async () => {
     const pages: Record<string, Reply> = {
       '': ok({ items: items('a', 2), nextPageToken: 'p2' }),
@@ -85,7 +85,7 @@ describe('listPlaylistItemsPage pagination (U2)', () => {
   });
 });
 
-describe('batched calls (U3)', () => {
+describe('batched calls', () => {
   test('listPlaylists makes one call for all IDs', async () => {
     const ids = ['PLfixtureAlpha01', 'PLfixtureBravo02', 'PLfixtureCharlie3'];
     const { yt, calls } = client(() => ok({ items: [{ id: 'PLfixtureAlpha01' }] }));
@@ -126,7 +126,7 @@ describe('batched calls (U3)', () => {
   });
 });
 
-describe('no headers on any request (U18)', () => {
+describe('no headers on any request', () => {
   test('fetch gets the URL and an AbortSignal only', async () => {
     const { yt, calls } = client(() => ok({ items: [], nextPageToken: '' }));
     await yt.listPlaylists(['PLfixtureAlpha01']);
@@ -141,8 +141,8 @@ describe('no headers on any request (U18)', () => {
   });
 });
 
-describe('error mapping (U5, U19)', () => {
-  test('a 403 quotaExceeded is global and not retried (U5)', async () => {
+describe('error mapping', () => {
+  test('a 403 quotaExceeded is global and not retried', async () => {
     const { yt, calls, sleeps } = client(() => ({ status: 403, body: quotaBody }));
     const err = await caught(yt.listPlaylists(['PLfixtureAlpha01']));
     assert.equal(err.kind, 'quota');
@@ -152,7 +152,7 @@ describe('error mapping (U5, U19)', () => {
     assert.deepEqual(sleeps, []);
   });
 
-  test('a 403 referer-blocked body is a global key error with the verbatim message (U19)', async () => {
+  test('a 403 referer-blocked body is a global key error with the verbatim message', async () => {
     const { yt } = client(() => ({ status: 403, body: refererBody }));
     const err = await caught(yt.listPlaylists(['PLfixtureAlpha01']));
     assert.equal(err.kind, 'key');
@@ -163,7 +163,7 @@ describe('error mapping (U5, U19)', () => {
     assert.equal(err.message, 'playlists.list failed (403 forbidden): Requests from referer <empty> are blocked.');
   });
 
-  test('a 400 keyInvalid is a key error by reason, whatever the status (U19)', async () => {
+  test('a 400 keyInvalid is a key error by reason, whatever the status', async () => {
     const { yt } = client(() => ({ status: 400, body: keyInvalidBody }));
     const err = await caught(yt.listPlaylistItemsPage('PLfixtureAlpha01'));
     assert.equal(err.kind, 'key');
@@ -227,7 +227,7 @@ describe('error mapping (U5, U19)', () => {
   });
 });
 
-describe('key redaction (U6)', () => {
+describe('key redaction', () => {
   function assertNoKey(err: YouTubeError) {
     for (const text of [err.message, err.apiMessage ?? '', err.reason ?? '', err.url, String(err), err.stack ?? '', JSON.stringify(err)]) {
       assert.equal(text.includes(KEY), false, text);

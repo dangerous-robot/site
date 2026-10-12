@@ -383,7 +383,7 @@ const actions = defineCollection({
 });
 
 /**
- * /watch playlists, fetched from the YouTube Data API at build (plan § 2).
+ * /watch playlists, fetched from the YouTube Data API at build.
  * No API data is committed: the 30-day storage limit is met by rebuilding.
  */
 const watchPlaylists = defineCollection({

@@ -46,7 +46,7 @@ function overriding(match: (url: URL) => { status: number; body: unknown } | nul
   };
 }
 
-describe('fixture load (U12, U13, U21)', async () => {
+describe('fixture load', async () => {
   const con = recordingConsole();
   const result = await loadWatchData({
     curated: fixtureCurated,
@@ -55,7 +55,7 @@ describe('fixture load (U12, U13, U21)', async () => {
     log: con.log,
   });
 
-  test('info lines in the fixed format, in curated order (U21)', () => {
+  test('info lines in the fixed format, in curated order', () => {
     assert.deepEqual(con.info(), [
       '[watch loader] fetched PLfixtureAlpha01: 3 videos (dropped: 6, not embeddable: 1)',
       '[watch loader] fetched PLfixtureBravo02: 0 videos (dropped: 2, not embeddable: 1)',
@@ -77,13 +77,13 @@ describe('fixture load (U12, U13, U21)', async () => {
     }
   });
 
-  test('Charlie 404 gives a warning with call, ID, status, reason and the API message (U13)', () => {
+  test('Charlie 404 gives a warning with call, ID, status, reason and the API message', () => {
     const charlie = con.warnings().filter((w) => w.includes('PLfixtureCharlie3'));
     assert.equal(charlie.length, 1);
     assert.match(charlie[0], /^\[watch loader\] warning: playlistItems\.list failed for PLfixtureCharlie3 \(404 playlistNotFound\): The playlist identified/);
   });
 
-  test('Delta missing from playlists.list gives a warning and a skipped line (U12)', () => {
+  test('Delta missing from playlists.list gives a warning and a skipped line', () => {
     assert.equal(con.warnings().filter((w) => w.includes('PLfixtureDelta04')).length, 1);
     assert.equal(result.warnings.length, 2);
   });
@@ -119,7 +119,7 @@ describe('API calls (quota)', () => {
     ]);
   });
 
-  test('a playlist that reaches max_videos on its first page fetches no more pages (U2)', async () => {
+  test('a playlist that reaches max_videos on its first page fetches no more pages', async () => {
     const { calls, client } = recordingFixture();
     const curated = fixtureCurated.map((c) => (c.slug === 'alpha' ? { ...c, max_videos: 1 } : c));
     const result = await loadWatchData({ curated, client, env: fixtureEnv, log: recordingConsole().log });
@@ -128,7 +128,7 @@ describe('API calls (quota)', () => {
   });
 });
 
-describe('per-playlist failures (U13)', () => {
+describe('per-playlist failures', () => {
   test('a playlistItems 403 that is not a key error marks only that playlist failed', async () => {
     const forbidden = { error: { code: 403, message: 'The fixture playlist is private.', errors: [{ reason: 'forbidden' }] } };
     const fetch = overriding((url) =>
@@ -141,8 +141,8 @@ describe('per-playlist failures (U13)', () => {
   });
 });
 
-describe('global errors (U5, U20)', () => {
-  test('a 403 quotaExceeded gives mode none and one warning, and nothing throws (U5)', async () => {
+describe('global errors', () => {
+  test('a 403 quotaExceeded gives mode none and one warning, and nothing throws', async () => {
     const con = recordingConsole();
     const result = await loadWatchData({ curated: fixtureCurated, client: fixtureClient('quota'), env: fixtureEnv, log: con.log });
     assert.deepEqual(result, { mode: 'none', playlists: [], warnings: result.warnings });
@@ -154,7 +154,7 @@ describe('global errors (U5, U20)', () => {
     ['key-invalid', 400, 'keyInvalid', 'API key not valid. Please pass a valid API key.'],
     ['referer', 403, 'forbidden', 'Requests from referer <empty> are blocked.'],
   ] as const) {
-    test(`a ${reason} key rejection: one warning, skipped lines, mode=none, no key text (U20)`, async () => {
+    test(`a ${reason} key rejection: one warning, skipped lines, mode=none, no key text`, async () => {
       const con = recordingConsole(true);
       const result = await loadWatchData({ curated: fixtureCurated, client: fixtureClient(mode), env: liveEnv, log: con.log });
       assert.equal(result.mode, 'none');
@@ -172,7 +172,7 @@ describe('global errors (U5, U20)', () => {
     });
   }
 
-  test('an API message with a newline and % comes out as one annotation line (U20)', async () => {
+  test('an API message with a newline and % comes out as one annotation line', async () => {
     const body = { error: { code: 403, message: 'Requests from referer <empty> are blocked.\n100% sure.', errors: [{ reason: 'forbidden' }] } };
     const con = recordingConsole(true);
     const client = createYouTubeClient({ key: KEY, fetch: overriding(() => ({ status: 403, body })), sleep });
@@ -201,7 +201,7 @@ describe('global errors (U5, U20)', () => {
     assert.equal(con.info().at(-1), '[watch loader] mode=none playlists=0 videos=0');
   });
 
-  test('a network failure that quotes the URL leaks no key into warnings (U6)', async () => {
+  test('a network failure that quotes the URL leaks no key into warnings', async () => {
     const fetch: FetchLike = async (url) => { throw new Error(`request to ${url} failed`); };
     const con = recordingConsole(true);
     const result = await loadWatchData({ curated: fixtureCurated, client: createYouTubeClient({ key: KEY, fetch, sleep }), env: liveEnv, log: con.log });
@@ -224,7 +224,7 @@ describe('global errors (U5, U20)', () => {
   });
 });
 
-describe('none mode (U15)', () => {
+describe('none mode', () => {
   test('with WATCH_EXPECT_KEY=1: the missing-key warning, then the summary', async () => {
     const con = recordingConsole();
     const env = resolveMode({ WATCH_EXPECT_KEY: '1', YOUTUBE_API_KEY: '' });

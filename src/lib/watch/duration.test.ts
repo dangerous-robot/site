@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatDuration, parseIsoDuration, spokenDuration } from './duration';
 
-describe('parseIsoDuration (U1)', () => {
+describe('parseIsoDuration', () => {
   test('minutes and seconds', () => {
     assert.equal(parseIsoDuration('PT22M58S'), 22 * 60 + 58);
   });
@@ -26,7 +26,7 @@ describe('parseIsoDuration (U1)', () => {
   });
 });
 
-describe('formatDuration (U1)', () => {
+describe('formatDuration', () => {
   test('m:ss under an hour', () => {
     assert.equal(formatDuration(1378), '22:58');
     assert.equal(formatDuration(65), '1:05');
@@ -40,7 +40,7 @@ describe('formatDuration (U1)', () => {
   });
 });
 
-describe('spokenDuration (U1)', () => {
+describe('spokenDuration', () => {
   test('plurals', () => {
     assert.equal(spokenDuration(1378), '22 minutes 58 seconds');
     assert.equal(spokenDuration(7322), '2 hours 2 minutes 2 seconds');

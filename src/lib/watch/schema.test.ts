@@ -22,7 +22,7 @@ function messages(result: { success: boolean; error?: { issues: { message: strin
   return (result.error?.issues ?? []).map((i) => i.message).join(' | ');
 }
 
-describe('curatedFileSchema (U7)', () => {
+describe('curatedFileSchema', () => {
   test('control: a valid list parses and max_videos defaults', () => {
     const result = curatedFileSchema.safeParse({ playlists: [entry(), second({ max_videos: 10, creator: 'Someone' })] });
     assert.equal(result.success, true, messages(result));
@@ -121,7 +121,7 @@ const playlist = (overrides: Partial<WatchPlaylist> = {}): WatchPlaylist => ({
   ...overrides,
 });
 
-describe('watchPlaylistSchema (U7)', () => {
+describe('watchPlaylistSchema', () => {
   test('accepts normalized output', () => {
     const result = watchPlaylistSchema.safeParse(playlist());
     assert.equal(result.success, true, messages(result));

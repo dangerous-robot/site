@@ -1,4 +1,4 @@
-// Resolves the /watch data mode from the build environment (plan P6) and
+// Resolves the /watch data mode from the build environment and
 // builds the matching API client.
 import type { WatchMode } from './types';
 import { createYouTubeClient, type FetchLike, type YouTubeClient } from './youtube';

@@ -26,7 +26,7 @@ const item = (position: number, videoId: string): ApiPlaylistItem => ({ snippet:
 const template = videos.find((v) => v.id === 'fxAlpha0002')!;
 const apiVideo = (id: string): ApiVideo => ({ ...template, id });
 
-describe('normalizeVideos filters and order (U4, U22)', () => {
+describe('normalizeVideos filters and order', () => {
   const result = normalizeVideos(alphaItems, videos, 50);
 
   test('keeps public and unlisted, processed, not live, embeddable videos in position order', () => {
@@ -44,7 +44,7 @@ describe('normalizeVideos filters and order (U4, U22)', () => {
     });
   });
 
-  test('a non-embeddable video is dropped and counted as not embeddable (U22)', () => {
+  test('a non-embeddable video is dropped and counted as not embeddable', () => {
     const r = normalizeVideos([item(0, 'fxAlphaNoEm'), item(1, 'fxAlpha0001')], videos, 50);
     assert.deepEqual(r.videos.map((v) => v.id), ['fxAlpha0001']);
     assert.deepEqual(r.droppedBy, { 'not-embeddable': 1 });
@@ -85,7 +85,7 @@ describe('normalizeVideos filters and order (U4, U22)', () => {
   });
 });
 
-describe('normalizeVideo fields (U4)', () => {
+describe('normalizeVideo fields', () => {
   const byId = (id: string) => normalizeVideo(videos.find((v) => v.id === id)!)!;
 
   test('frame tier is sd only when the API returned standard', () => {
@@ -119,7 +119,7 @@ describe('normalizeVideo fields (U4)', () => {
   });
 });
 
-describe('coverFrom (U4)', () => {
+describe('coverFrom', () => {
   test('srcset is sorted by width and src prefers the 480w image', () => {
     const cover = coverFrom({
       maxres: { url: 'https://i.ytimg.com/vi/x/maxresdefault.jpg', width: 1280 },
@@ -151,7 +151,7 @@ describe('coverFrom (U4)', () => {
   });
 });
 
-describe('cutAtWord (U4)', () => {
+describe('cutAtWord', () => {
   test('short text is only trimmed', () => {
     assert.equal(cutAtWord('  short text \r\n', 200), 'short text');
   });
@@ -172,7 +172,7 @@ describe('cutAtWord (U4)', () => {
   });
 });
 
-describe('normalizePlaylist (U4)', () => {
+describe('normalizePlaylist', () => {
   test('alpha: editor description, API name and creator, ok status, valid entry', () => {
     const r = normalizePlaylist({ curated: curated(), api: apiPlaylist('PLfixtureAlpha01'), items: alphaItems, videos, dataMode: 'fixture' });
     assert.equal(r.playlist.status, 'ok');

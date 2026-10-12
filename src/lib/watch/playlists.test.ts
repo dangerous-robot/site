@@ -15,7 +15,7 @@ function pairs(result: ReturnType<typeof parse>) {
     .map((p) => [p.slug, p.playlist_id]);
 }
 
-describe('curated playlist files (U17)', () => {
+describe('curated playlist files', () => {
   test('src/content/watch/playlists.yaml validates and keeps the seed order', () => {
     const result = parse('../../content/watch/playlists.yaml');
     assert.equal(result.success, true, result.error?.message);

@@ -1,4 +1,4 @@
-// Image URLs for /watch cards (UI spec § 4.4, plan D6). Every image on the
+// Image URLs for /watch cards (UI spec § 4.4). Every image on the
 // page comes from i.ytimg.com. Frame URLs are undocumented, so the tier is
 // picked at build from the API's thumbnails (sd only when `standard` exists)
 // and the client still checks each frame (isPlaceholder).

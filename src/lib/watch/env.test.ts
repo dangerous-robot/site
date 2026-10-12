@@ -6,7 +6,7 @@ import type { FetchLike } from './youtube';
 
 const KEY = 'zzTestKeyMarker-7Q2';
 
-describe('resolveMode (U15)', () => {
+describe('resolveMode', () => {
   test('no key and no fixture flag is none', () => {
     assert.deepEqual(resolveMode({}), { mode: 'none', key: null, expectKey: false, githubActions: false });
   });
@@ -45,7 +45,7 @@ describe('resolveMode (U15)', () => {
   });
 });
 
-describe('missingKeyWarning (U15)', () => {
+describe('missingKeyWarning', () => {
   test('warns only in none mode when a key is expected', () => {
     assert.match(missingKeyWarning(resolveMode({ WATCH_EXPECT_KEY: '1' })) ?? '', /YOUTUBE_API_KEY is not set/);
     assert.match(missingKeyWarning(resolveMode({ WATCH_EXPECT_KEY: '1', YOUTUBE_API_KEY: '' })) ?? '', /not set/);
