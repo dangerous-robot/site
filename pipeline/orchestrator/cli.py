@@ -1686,6 +1686,7 @@ def step_audit(
                     models_used={"auditor": auditor_model},
                     research_trace=research_trace,
                     sub_questions_block=sub_questions_block,
+                    keep_other_models=True,
                 )
                 click.echo(f"Wrote {sidecar_path}")
 

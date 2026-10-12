@@ -386,6 +386,24 @@ class TestWriteAuditSidecar:
             "auditor": "anthropic:claude-sonnet-4-6",
         }
 
+    def test_models_used_drops_agents_this_run_did_not_invoke_by_default(self, tmp_path):
+        # A blocked write runs fewer agents; the old analyst model must not
+        # stay on a sidecar whose claim is now a placeholder.
+        claim_path = tmp_path / "test-claim.md"
+        claim_path.touch()
+        _write_audit_sidecar(
+            claim_path=claim_path, comparison=None, model="m1", ran_at=FIXED_TS,
+            sources_consulted=[], agents_run=["researcher", "ingestor", "analyst", "auditor"],
+        )
+
+        sidecar_path = _write_audit_sidecar(
+            claim_path=claim_path, comparison=None, model="m2", ran_at=FIXED_TS,
+            sources_consulted=[], agents_run=["researcher", "ingestor"],
+        )
+
+        data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+        assert data["models_used"] == {"researcher": "m2", "ingestor": "m2"}
+
     def test_comparison_none_writes_audit_null(self, tmp_path):
         claim_path = tmp_path / "test-claim.md"
         claim_path.touch()

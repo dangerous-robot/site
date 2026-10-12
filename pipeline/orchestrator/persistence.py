@@ -769,6 +769,7 @@ def _write_audit_sidecar(
     current_source_ids: list[str] | None = None,
     analyst_titles: dict | None = None,
     level_clamp: str | None = None,
+    keep_other_models: bool = False,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -784,6 +785,10 @@ def _write_audit_sidecar(
 
     ``level_clamp`` is the note from ``fit_verdict_to_written_pool``; it
     explains why the claim's level differs from the analyst's.
+
+    ``keep_other_models`` keeps the existing ``models_used`` entries of agents
+    this run did not invoke, for a run that rewrites the sidecar without
+    rewriting what those agents produced (``dr step-audit --write``).
 
     Returns the sidecar path.
     """
@@ -843,6 +848,15 @@ def _write_audit_sidecar(
         # the default model. Drop any extras so the recorded dict mirrors the
         # agents this run actually invoked.
         models_used = {agent: models_used.get(agent, model) for agent in agents_run}
+    # Off by default: a blocked write runs fewer agents and replaces the
+    # claim with a placeholder, so an older analyst model would name output
+    # that is no longer on disk.
+    prior_models = existing.get("models_used")
+    if keep_other_models and isinstance(prior_models, dict):
+        models_used = {
+            **{a: m for a, m in prior_models.items() if a not in models_used},
+            **models_used,
+        }
 
     # Graft `research_trace["acquisition"]` (url -> dict) onto matching
     # `sources_consulted[]` entries where the schema declares `acquisition`,

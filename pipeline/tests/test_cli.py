@@ -1776,6 +1776,62 @@ def test_step_audit_write_keeps_the_archive_record(tmp_path) -> None:
     assert data["sources_consulted"][0]["archive"] == archive
 
 
+def test_step_audit_write_keeps_the_models_of_agents_it_did_not_run(tmp_path) -> None:
+    """A re-audit replaces only the Evaluator's model; the record of who wrote the claim stays."""
+    import yaml
+
+    from common.frontmatter import serialize_frontmatter
+
+    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
+    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
+        serialize_frontmatter(
+            {"name": "Example", "type": "company", "description": "A company."}, "Body.\n"
+        ),
+        encoding="utf-8",
+    )
+    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir.mkdir(parents=True)
+    (claim_dir / "claim.md").write_text(
+        serialize_frontmatter(
+            {"title": "Example claim", "entity": "companies/example", "verdict": "unverified",
+             "confidence": "low", "topics": ["environmental-impact"], "sources": []},
+            "Body.\n",
+        ),
+        encoding="utf-8",
+    )
+    (claim_dir / "claim.audit.yaml").write_text(
+        yaml.safe_dump({
+            "schema_version": 1,
+            "models_used": {
+                "researcher": "infomaniak:researcher-model",
+                "ingestor": "infomaniak:ingestor-model",
+                "analyst": "infomaniak:analyst-model",
+                "auditor": "infomaniak:old-auditor-model",
+            },
+            "sources_consulted": [],
+        }),
+        encoding="utf-8",
+    )
+
+    # --auditor-model is explicit so a DR_AUDITOR_MODEL in the developer's
+    # .env cannot send this test to a live model.
+    result = CliRunner().invoke(main, [
+        "--model", "test", "--auditor-model", "test",
+        "step-audit", "--claim", "example/claim", "--write",
+        "--repo-root", str(tmp_path),
+    ])
+
+    assert result.exit_code == 0, result.output
+    data = yaml.safe_load((claim_dir / "claim.audit.yaml").read_text(encoding="utf-8"))
+    assert data["pipeline_run"]["agents"] == ["auditor"]
+    assert data["models_used"] == {
+        "researcher": "infomaniak:researcher-model",
+        "ingestor": "infomaniak:ingestor-model",
+        "analyst": "infomaniak:analyst-model",
+        "auditor": "test",
+    }
+
+
 def test_claim_probe_never_captures_on_archive_org(monkeypatch) -> None:
     """claim-probe writes nothing, so it must not ask archive.org to capture pages."""
     from orchestrator.pipeline import VerificationResult
