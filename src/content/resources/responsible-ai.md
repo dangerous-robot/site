@@ -284,9 +284,9 @@ data:
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "yes" }
-        euria: { type: "yes" }
-        treadlightly: { type: "yes" }
-        viro: { type: "no" }
+        euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
+        treadlightly: { type: "yes", sources: [/research/sources/2026/web-search-help-treadlightlyai] }
+        viro: { type: "yes", sources: [/research/sources/2026/viro-automatic-web-search-documentation] }
         chatgptree: { type: "no" }
         earthly-insight: { type: "no" }
     - key: web-search
