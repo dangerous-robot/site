@@ -317,7 +317,7 @@ function invalidLink(petition: Petition): Response {
     'Link not valid',
     [
       `This link does not match a signature. Usually a newer email from us has replaced it: the reminder we send ${REMINDER_AFTER_DAYS} days after signing, or the email sent when you signed again.`,
-      `To fix it, use the link in our most recent email. If you cannot find it, sign the petition again with the same email address and we will send you a new link. Your signature still counts only once. We send at most one email to an address every ${RESEND_WINDOW_MS / 60_000} minutes, so if you just signed, wait a few minutes first.`,
+      `To fix it, use the link in our most recent email. If you cannot find it, sign the petition again with the same email address and we will send you a new email with a link to confirm your signature and a link to remove it. Your signature still counts only once. We send at most one email to an address every ${RESEND_WINDOW_MS / 60_000} minutes, so if you just signed, wait a few minutes first.`,
       'If you already confirmed or removed your signature, there is nothing more to do.',
     ],
     petition.post_url,
