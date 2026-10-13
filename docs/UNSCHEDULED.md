@@ -253,7 +253,7 @@ Goal: Move from one-CLI-call-at-a-time to a queue + batch + error-file flow, and
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Source-triggered reassessment | (no plan yet) | v2; add a source, related claims re-evaluate. Operator confirmed v2. |
-
+| Petition job run history | (none) | A `job_runs` table in D1 recording each cron run of the petition Worker (start, finish, reminders sent, rows cleaned, error), plus an `inv` command listing recent runs. Workers Logs (on since `7b6cc43`) keep runs only a few days; this keeps them permanently. One migration, about 40 lines around `scheduled()`, tests. Prompted by the 2026-10-13 18:17 UTC run that left no trace. Research jobs are planned as GitHub Actions (`plans/deferred/wayback-archive-job.md`), whose run logs already persist, so this is for the Worker only. Triage: Simplicity and clarity; keep; 2026-10-13 |
 ---
 
 ## Canonical verdict artifact (LLM-as-judge framing)
