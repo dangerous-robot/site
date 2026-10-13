@@ -210,7 +210,7 @@ Step-by-step authoring instructions, by CMS or by hand, are in [`docs/runbook.md
 
 ### Watch page data
 
-`/watch` (`src/pages/watch.astro`) shows curated YouTube playlists: playlist tabs, a thumbnail grid per playlist, hover popups, hover frame previews, and a click-to-load `youtube-nocookie.com` player. It is not in the nav.
+`/watch` (`src/pages/watch.astro`) shows curated YouTube playlists in a full-height two-column layout (Base layout `app`): a resizable left column with a playlist switcher and the selected playlist's video list, and a click-to-load `youtube-nocookie.com` player on the right. At 860px wide and below the columns stack (player first) and the page scrolls. It is not in the nav.
 
 The curated list is `src/content/watch/playlists.yaml` (playlist ID, slug, order, editor description, optional creator and `max_videos`), validated by `curatedFileSchema` in `src/lib/watch/schema.ts`. Everything else comes from the YouTube Data API v3 at build time, through the `watch-youtube` loader in `src/content.config.ts`. No API data is committed, and the loader clears its store on every build, so the live page holds data no older than its last deploy (see [ci-deploy.md](ci-deploy.md#weekly-scheduled-deploy)).
 
@@ -222,7 +222,7 @@ Each `watchPlaylists` entry is one normalized playlist with its videos embedded.
 |------|------|------|
 | `fixture` | `WATCH_DATA=fixture`, even when a key is set | Invented responses in `src/lib/watch/fixtures/api/`, for `src/lib/watch/fixtures/playlists.fixture.yaml`. No network. CI's `check` job and the browser tests use it. |
 | `live` | `YOUTUBE_API_KEY` is set | The YouTube Data API |
-| `none` | Neither | No data. The page renders one page-level empty state and no tabs, player or grid. |
+| `none` | Neither | No data. The page renders one page-level empty state and no switcher, player or list. |
 
 The key is read through Vite's `loadEnv`, limited to `YOUTUBE_API_KEY`, so a key in the root `.env` reaches the loader and no other `.env` value does. A global API failure (quota, a rejected key) falls back to `none` with a warning, and the build still succeeds. A playlist whose videos the API cannot list is shown as failed; one missing from the API's playlist lookup is left out, with a `skipped` line.
 
@@ -239,28 +239,25 @@ Under GitHub Actions each warning is also printed as a `::warning title=Watch pa
 
 ### Watch page client
 
-Client code is one controller per component in `src/components/watch/client/`. `main.ts` reads the JSON block, calls every controller's `init<Name>(root, bus, playlists)`, and owns the page state: the selected playlist, the video in the player, and whether a video has been loaded. It alone writes the URL (`?list=<slug>&v=<video ID>`, through `history.replaceState`), shows the selected panel and announces tab changes.
+Client code is one controller per component in `src/components/watch/client/`. `main.ts` reads the JSON block, calls every controller's `init<Name>(root, bus, playlists)`, and owns the page state: the selected playlist, the video in the player, and whether a video has been loaded. It alone writes the URL (`?list=<slug>&v=<video ID>`, through `history.replaceState`), shows the selected playlist's panel, keeps each playlist's list scroll position, and announces playlist changes. Switching playlists never changes the video in the player.
 
 Controllers talk only through one `EventTarget` bus, with the event names in `WATCH_EVENTS` (`src/lib/watch/contract.ts`):
 
 | Event | Detail | Sent by |
 |-------|--------|---------|
-| `watch:playlist` | `{slug}` | `tabs.ts` on a tab click; `main.ts` at startup |
-| `watch:video` | `{slug, id, play, notice}` | `grid.ts` on a card click (`play: true`); `main.ts` for the arrival poster and for a poster that follows a tab change (`play: false`) |
+| `watch:playlist` | `{slug}` | `switcher.ts` on a menu pick or a "Back to now playing" click; `main.ts` at startup |
+| `watch:video` | `{slug, id, play, notice}` | `list.ts` on a row click (`play: true`); `main.ts` for the arrival poster (`play: false`) |
 | `watch:play` | `{slug, id}` | `player.ts` when the embed goes in |
-| `watch:preview` | `{enabled}` | `preview.ts` when the previews setting changes |
 
 | Module | Role |
 |--------|------|
-| `tabs.ts` | Tab selection; arrow keys, Home and End move focus only |
-| `player.ts` | Poster, details and the embed. The embed goes in only once the player frame is at least half on screen (YouTube rule); a pick made further down scrolls the player into view first. Also Show more and Back to video list. |
-| `grid.ts` | Plays a card in the page on a plain click (cards are YouTube links without JavaScript) and marks the playing card |
-| `popup.ts` | The shared hover popup, placed by `placePopup` (`src/lib/watch/popup-position.ts`) so it never covers the player |
-| `preview.ts` | The hover previews switch (stored as `dr-watch-previews`; on by default, off by default under either reduce-motion setting) and frame cycling on cards |
-| `cardIntent.ts` | Which card the reader rests on, shared by the popup and the preview, so both start at the same moment (300ms after the pointer comes to rest, or at once on keyboard focus) and stop on the same events |
-| `dom.ts` | DOM and media-query helpers |
+| `switcher.ts` | The playlist menu (a disclosure button over a scrim; Escape or a scrim click closes it and returns focus to the trigger), the "N of M" count, and the one-line now-playing status, which scrolls to the current row or switches back to its playlist first |
+| `player.ts` | Poster, details and the embed. The embed goes in only once the player frame is at least half on screen (YouTube rule); a pick made further down scrolls the player into view first. Also Show more. |
+| `list.ts` | Plays a row in the page on a plain click (rows are YouTube links without JavaScript) and marks the row of the video in the player, from first load |
+| `resizer.ts` | Drag handle between the columns (`role="separator"`), 300 to 560px, also by arrow keys |
+| `dom.ts` | DOM helpers |
 
-Pure logic (URL state, the preview cycler, frame URLs, popup placement) lives in `src/lib/watch/` with unit tests. Thumbnails and frames load from `i.ytimg.com` with no referrer; `/privacy` records the `/watch` exception to the site's no-third-party-requests rule.
+Pure logic (URL state, the list width limits, the now-playing line) lives in `src/lib/watch/` with unit tests. Thumbnails load from `i.ytimg.com` with no referrer; `/privacy` records the `/watch` exception to the site's no-third-party-requests rule and links the YouTube Terms of Service, which the dist check requires.
 
 ### How dynamic routes work
 
@@ -360,8 +357,8 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 
 | Layer | Command | What it covers |
 |-------|---------|----------------|
-| Unit | `npm run test:site` (`node:test`, `src/lib/**/*.test.ts`) | Duration parsing, the API client (paging, batching, retry, error mapping, key redaction, no `Referer` header), normalizing and dropping, mode resolution and log lines, URL state, the preview cycler, frame URLs and popup placement |
-| Browser | `npm run test:e2e` (Playwright, Chromium, `tests/e2e/`) | Tabs, player, grid and popup, previews, and flows across them, against a fixture build served on its own port (`WATCH_E2E_PORT`, default 4329, not the 4321 that `inv dev` uses). See [ci-deploy.md](ci-deploy.md#watch-page-checks). |
+| Unit | `npm run test:site` (`node:test`, `src/lib/**/*.test.ts`) | Duration parsing, the API client (paging, batching, retry, error mapping, key redaction, no `Referer` header), normalizing and dropping, mode resolution and log lines, URL state, list width limits and the now-playing line |
+| Browser | `npm run test:e2e` (Playwright, Chromium, `tests/e2e/`) | Playlist switcher, video list, resizer, player, layout at each breakpoint, and flows across them, against a fixture build served on its own port (`WATCH_E2E_PORT`, default 4329, not the 4321 that `inv dev` uses). See [ci-deploy.md](ci-deploy.md#watch-page-checks). |
 | Dist | `npm run check:watch` after a build | The built `/watch` page matches its data mode, and no API key reached `dist/` |
 
 `inv check` and the pre-commit hook run the unit tests and the dist check; browser tests run in CI's `e2e` job and on demand.

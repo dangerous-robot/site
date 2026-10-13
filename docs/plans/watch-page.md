@@ -41,22 +41,44 @@ Data comes from YouTube Data API v3. It is fetched at build time by a custom Ast
 - [ ] T21: Manual-dispatch deploy verification of the per-playlist fetch log lines (wave 6, ask Brandon first)
 - [ ] T20: Manual browser check and first deploy (wave 6, ask Brandon first)
 
+## Redesign (two-column switcher layout)
+
+Source: Design canvas artboard `project/WatchSwitcher.dc.html` (https://claude.ai/code/artifact/f999538d-53b8-48f2-bd7c-b26a49c04269). It replaces the tabs, thumbnail grid, popups and frame previews. Brandon's decisions, 2026-10-12:
+
+| ID | Decision |
+|----|----------|
+| RD1 | Desktop: one viewport tall (600px minimum, then the page scrolls). Standard nav, then a resizable list column (380px, 300 to 560px by drag or arrow keys) beside the player column, then a one-line footer. At 860px and below the columns stack, player first. |
+| RD2 | Playlist switcher at the top of the list column: "Playlist  N of M", the current playlist's card as a disclosure button, a menu of the other playlists over a scrim (Escape or scrim click closes it), and an always-present one-line status ("Now playing: <title>" or "Back to now playing in <playlist>"). Each playlist keeps its own list scroll position. |
+| RD3 | Rows: 128px thumbnail with duration, two-line title, channel and date. The video in the player (poster or playing) is current from first load: accent bar, highlighted background and a Playing badge over the thumbnail. No indicator changes layout. |
+| RD4 | Hover popups, frame previews and the preview switch are removed. No autoplay of the next video. |
+| RD5 | /watch stays out of the nav. Visually hidden h1 "Watch"; the video title stays an h2; no breadcrumb or visible intro. |
+| RD6 | The YouTube attribution line under the player is removed. The YouTube Terms link lives on /privacy (D9), and the dist check requires it there. |
+| RD7 | Scrollbars site-wide: `color-scheme` per theme; page scrollbars keep their normal width with theme colours; lists and menus get thin scrollbars whose thumb always shows. Thumbs are 3:1 against the page background. |
+| RD8 | `?list=&v=` deep links stay as built; extending them is undecided. |
+
+- [x] RD-T1: Base `app` layout, tokens (menu, scrim, scrollbar in all four themes), scrollbar rules
+- [x] RD-T2: Switcher, list, player and resizer markup and client; popup and preview code removed
+- [x] RD-T3: Dist check: menu options replace tabs; Terms link checked on /privacy
+- [x] RD-T4: Unit tests for width limits and the now-playing line
+- [x] RD-T5: Browser tests rewritten for the new layout
+- [x] RD-T6: Browser check at 1280x800, 600px tall, 860px wide and phone width, in dark, light and high contrast; /simplify and review
+
 ## Decisions (final, from Brandon, 2026-10-12)
 
 | ID | Decision |
 |----|----------|
-| D1 | Route `/watch`, one page: playlist list, thumbnail grid, embedded viewer. Hover popups. Titles under thumbnails. |
+| D1 | Route `/watch`, one page: playlist switcher, video list, embedded viewer, laid out per § Redesign. No hover popups. |
 | D2 | Build-time fetch in CI through a custom content loader. The curated list `src/content/watch/playlists.yaml` holds playlist ID, slug, editor description and order. No committed API snapshot. |
 | D3 | Key is in env var `YOUTUBE_API_KEY`, set as a GitHub repository secret. If there is no key, the page renders the empty state. Tests use fixture data. |
 | D4 | If the API fails during a deploy build, publish the empty state and keep the deploy green. Log a clear warning. There is no failing `required` mode, which overrides the architecture research's DEC-3. |
 | D5 | Weekly scheduled deploy (cron) in `.github/workflows/deploy.yml`. A scheduled run rebuilds the default branch exactly like a push deploy, `verify` included. Every push to main already deploys, so production is `origin/main` HEAD and a scheduled run ships only refreshed YouTube data. |
-| D6 | Images come from `i.ytimg.com`. Hover cycles `sd1..sd3` when the API returned `thumbnails.standard` for that video, else `mq1..mq3`. The tier is chosen at build time (UI spec CF-4). |
+| D6 | Images come from `i.ytimg.com`. There are no hover frame previews (§ Redesign); the loader still records a frame tier, which nothing reads. |
 | D7 | Player: click-to-load `youtube-nocookie.com/embed/<id>` iframe. No IFrame API, no play-next. Autoplay waits until the player box is at least half on screen (UI spec § 4.7). |
-| D8 | The preview switch is on by default and stored in `localStorage`. `prefers-reduced-motion: reduce` defaults it to off. This plan also treats the site's Motion setting (`html[data-motion="reduce"]`, `src/layouts/Base.astro:130`) as a reduce signal, per design DEC-7 and UI spec § 4.5. Confirm with Brandon (Q2). |
+| D8 | No preview switch: hover previews are removed (§ Redesign). |
 | D9 | The privacy page gets a `/watch` exception and links YouTube Terms of Service and the Google Privacy Policy where policy requires (Developer Policies III.A.1, III.A.2). |
 | D10 | Playwright browser tests (new dev dependency) and node:test unit tests use fixtures. There is no network in tests. |
 | D11 | Seed order: `PLXFc9I7KsRUk` ("Dangerous Robot"), FAR.AI "AI Safety - Research Highlights" `PLpvkFqYJXcreU5HqW6aUYeppYPG8aBRZ_`, Oxford Institute for Ethics in AI "Colloquia and Lectures" `PLf4lTwFHevBuvTDX4m8N5WVAX62IkhXJ7`. |
-| D12 | Not in nav. Intro copy is stubbed for Brandon. |
+| D12 | Not in nav. The intro is the meta description only; the page shows a visually hidden h1. |
 | D13 | All three seed playlists are public and readable with the API key (Brandon checked: `PLXFc9I7KsRUk` 4 videos, FAR.AI 63, Oxford 53). There is no editor fallback list. A playlist the API cannot read produces a per-playlist warning and is shown as failed, or omitted when even its title is unknown (§ 2). |
 | D14 | `YOUTUBE_API_KEY` is a GitHub Actions repository secret. The key carries an API restriction (YouTube Data API v3) and no HTTP referrer restriction, and it works from Brandon's machine. The loader never sets or spoofs a `Referer` or `Origin` header to get around a key restriction. |
 | D15 | Remote actions (git push, PRs, `workflow_dispatch`, deploys) are Brandon's call. There is no PR workflow before beta: work lands on local main, checks run locally, and CI runs after Brandon pushes. |

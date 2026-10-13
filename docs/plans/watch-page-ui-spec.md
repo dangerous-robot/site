@@ -1,6 +1,8 @@
 # Watch page: UI spec
 Status: reviewed, 2026-10-12. Roadmap item SITE-AM (Watch page), `docs/v1.0.0-roadmap.md`. Inputs: `docs/plans/drafts/watch-page-research-design.md` (design research, "DR doc" below) and `docs/plans/drafts/watch-page-research-architecture.md` (architecture research, "arch doc" below). Brandon's decisions are in the Decisions table of `docs/plans/watch-page.md`. The research docs are local drafts (gitignored); the plan and this spec carry everything implementers need. This spec covers the page's UI only; data loading, the loader modes and CI live in the architecture plan.
 
+**Replaced in part by the two-column redesign.** The layout, components and interactions are now set by the Design canvas artboard `project/WatchSwitcher.dc.html` (https://claude.ai/code/artifact/f999538d-53b8-48f2-bd7c-b26a49c04269) and `docs/plans/watch-page.md` § Redesign. Superseded here: § 2 Layout, § 3.1 and § 3.3 (files and markup), § 4.1 to § 4.6 (timings, card states, popup, frame cycling, previews switch, tabs), § 4.10 (no-JS), § 7.2 (classes) and § 8 (test hooks; `src/lib/watch/contract.ts` is the source). Still in force: § 4.7 player, § 4.8 URL sync, § 4.9 live region, § 5 empty and error states, § 6 privacy, § 7.4 images.
+
 ## 1. Where the research docs disagreed, and what this spec uses
 
 | ID | Topic | DR doc | Arch doc | This spec | Why |
