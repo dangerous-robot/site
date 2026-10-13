@@ -59,7 +59,7 @@ data:
           sources:
             - /research/sources/2025/ecosias-green-ai-alternative
             - /research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts
-        environmental: "Conventional cloud hosting; funds tree planting projects worldwide"
+        environmental: "Conventional cloud hosting; funds tree planting projects worldwide."
         notes: "Free, ad-supported."
     - key: euria
       name: Euria
@@ -73,7 +73,7 @@ data:
           text: "Infomaniak data center (PUE 1.06, waste heat to district heating). 100% renewable energy."
           sources: [/research/sources/2026/infomaniaks-environmental-certificates-and-awards]
         notes:
-          text: "Bold environmental commitments. Offsets 200% of its CO2 emissions through myclimate.org."
+          text: "Offsets 200% of its CO2 emissions through myclimate.org."
           sources:
             - /research/sources/2026/infomaniak-environmental-reducing-cloud-footprint
             - /research/sources/2026/infomaniaks-environmental-certificates-and-awards
@@ -107,14 +107,14 @@ data:
           sources: [/research/sources/2026/about-treadlightly-ai]
         financial_transparency: "Sole proprietorship; no published financials."
         environmental: "Infomaniak (PUE 1.06, waste heat to district heating) + Anthropic conventional cloud."
-        notes: "Beta product from same founder as Dangerous Robot."
+        notes: "Beta."
     - key: viro
       name: Viro AI
       url: https://ai.viro.app/
       entity: products/viro-ai
       status: active
       summary:
-        ai_ethics: "Proprietary models (US) and open weight models (US, CN)."
+        ai_ethics: "Proprietary models (US) and open-weight models (US, CN)."
         financial_transparency: "Solo-founder LLC; Viro Climate Action, Inc; no public disclosure."
         environmental:
           text: "Conventional cloud hosting; offsets via [Terrapass](https://en.wikipedia.org/wiki/TerraPass) RECs; methodology published."
@@ -191,7 +191,7 @@ data:
       group: models-safety
       ideal:
         answer: "no large models"
-        note: "Large models, a lab's most capable tier, cost the most energy per answer and often represent the apex of the larger AI 'race'."
+        note: "Large models, a lab's most capable tier, cost the most energy per answer, and choosing them rewards the companies racing to build ever more powerful AI. Smaller models are better for the planet and for AI safety."
         position: "/values#ai-is-fueling-environmental-destruction"
         # Sorted under P5 and R2 (a model is large if it was its lab's most
         # capable tier when released). Each lab's model page is cited below;
@@ -298,7 +298,7 @@ data:
         chatgptree: { type: "no" }
         earthly-insight: { type: "yes", detail: "Images", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: agent-web-search
-      label: "Agent Web search"
+      label: "Agent web search"
       group: product-access
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/searching-the-web-in-greenpt-chat] }
@@ -309,7 +309,7 @@ data:
         chatgptree: { type: "no" }
         earthly-insight: { type: "yes", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: web-search
-      label: "Normal Web search"
+      label: "Normal web search"
       group: product-access
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-search-fast-private-sustainable] }
@@ -370,13 +370,9 @@ data:
   footnotes:
     - subject: "Ecosia energy display"
       text: "Shows a tree counter (how many trees your searches have funded) rather than per-query energy data. This is an engagement metric, not energy transparency."
-    - subject: "Euria Chinese-origin models"
-      text: "DeepSeek R1 and Qwen 3 have documented censorship of topics politically sensitive to the CCP. Running open-weight versions on Swiss infrastructure avoids sending data to China, but training biases are baked into the model weights."
-    - subject: "GreenPT green claims"
-      text: "Cover inference-time energy only. Mistral models were trained on conventional infrastructure. This tension between green hosting and non-green training applies across the industry."
 ---
 
-"Green AI" gets thrown around a lot. This page lays out what each product actually offers, side-by-side, so you can compare. If you spot an error or omission, [let us know](/corrections).
+Many chatbots call themselves green or ethical. This page sets out what each one actually offers, side by side. If you spot an error or omission, [let us know](/corrections).
 
 This page takes positions. A row with a “Prefer” line names the more responsible answer, and the Evidence section below the table gives each position and its reasons.
 
