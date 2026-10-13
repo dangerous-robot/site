@@ -160,7 +160,7 @@ export async function loadWatchData({ curated, client, env, log }: LoadWatchData
   try {
     const apiPlaylists = await client.listPlaylists(curated.map((c) => c.playlist_id));
     const byId = new Map(apiPlaylists.map((p) => [p.id, p]));
-    // A tab needs a name, and the API title is the only source (UI spec § 3.2).
+    // A playlist needs a name, and the API title is the only source (UI spec § 3.2).
     const readable = curated.flatMap((c) => {
       const api = byId.get(c.playlist_id);
       return api?.snippet?.title?.trim() ? [{ curated: c, api }] : [];

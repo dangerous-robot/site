@@ -1,6 +1,7 @@
 // Checks built HTML, so run after `astro build`. /watch matches its data mode,
 // renders thumbnails that link to YouTube without any iframe before Play,
-// carries the YouTube and Google policy links, and no API key reached dist/.
+// /privacy carries the YouTube and Google policy links, and no API key
+// reached dist/.
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadEnv } from 'vite';
@@ -75,10 +76,16 @@ for (const file of files) {
 }
 const readPage = (file: string) => contents.get(file)?.toString('utf8');
 
-// Privacy link, the half that does not depend on /watch data.
+// YouTube API Services terms: the site's own terms (here, /privacy) must
+// link the YouTube Terms of Service and the Google Privacy Policy.
 const privacy = readPage(PRIVACY_PAGE);
 if (privacy === undefined) errors.push(`privacy link: missing ${PRIVACY_PAGE}`);
-else if (!hasLink(tags(privacy), GOOGLE_PRIVACY_URL)) errors.push(`privacy link: ${PRIVACY_PAGE} does not link ${GOOGLE_PRIVACY_URL}`);
+else {
+  const privacyTags = tags(privacy);
+  for (const href of [GOOGLE_PRIVACY_URL, YOUTUBE_TERMS_URL]) {
+    if (!hasLink(privacyTags, href)) errors.push(`privacy link: ${PRIVACY_PAGE} does not link ${href}`);
+  }
+}
 
 let mode: WatchMode | undefined;
 let thumbCount = 0;
@@ -127,32 +134,29 @@ if (raw === undefined) {
       }
     }
 
-    // YouTube API Services terms require the attribution link.
-    if (!hasLink(all, YOUTUBE_TERMS_URL)) errors.push(`terms link: ${WATCH_PAGE} does not link ${YOUTUBE_TERMS_URL}`);
-
     // Read each playlist's status and count from its rendered panel.
-    const tabSlugs = byTestId(all, TESTID.tab).map((t) => t.attrs.get(ATTR.playlist) ?? '');
+    const optionSlugs = byTestId(all, TESTID.option).map((t) => t.attrs.get(ATTR.playlist) ?? '');
     const panelStarts = all.flatMap((t, i) => (t.attrs.get('data-testid') === TESTID.panel ? [i] : []));
     const rendered = panelStarts.map((start, n) => {
       const seg = all.slice(start, panelStarts[n + 1] ?? all.length);
       const count = byTestId(seg, TESTID.thumb).length;
-      const hasGrid = byTestId(seg, TESTID.grid).length > 0;
+      const hasList = byTestId(seg, TESTID.list).length > 0;
       const hasEmpty = byTestId(seg, TESTID.empty).length > 0;
       let status: PlaylistStatus | 'unknown' = 'unknown';
-      if (hasGrid && !hasEmpty) status = 'ok';
-      else if (hasEmpty && !hasGrid) status = linksTo(seg, PLAYLIST_URL_PREFIX) ? 'failed' : 'empty';
+      if (hasList && !hasEmpty) status = 'ok';
+      else if (hasEmpty && !hasList) status = linksTo(seg, PLAYLIST_URL_PREFIX) ? 'failed' : 'empty';
       return { slug: all[start].attrs.get(ATTR.playlist) ?? '', status, count };
     });
 
     const panelSlugs = rendered.map((r) => r.slug);
-    if (panelSlugs.join() !== tabSlugs.join()) errors.push(`tabs/panels mismatch: tabs [${tabSlugs.join(', ')}] do not match panels [${panelSlugs.join(', ')}]`);
+    if (panelSlugs.join() !== optionSlugs.join()) errors.push(`menu/panels mismatch: menu options [${optionSlugs.join(', ')}] do not match panels [${panelSlugs.join(', ')}]`);
     const outside = thumbs.length - rendered.reduce((n, r) => n + r.count, 0);
     if (outside > 0) errors.push(`panels: ${outside} ${TESTID.thumb} elements sit outside any ${TESTID.panel}`);
-    for (const r of rendered) if (r.status === 'unknown') errors.push(`panels: panel ${r.slug} has neither a ${TESTID.grid} nor a ${TESTID.empty}, or both`);
+    for (const r of rendered) if (r.status === 'unknown') errors.push(`panels: panel ${r.slug} has neither a ${TESTID.list} nor a ${TESTID.empty}, or both`);
 
     if (mode === 'fixture') {
       const want = FIXTURE_PLAYLISTS.map((e) => e.slug);
-      if (tabSlugs.join() !== want.join()) errors.push(`fixture: tabs are [${tabSlugs.join(', ')}], expected [${want.join(', ')}]`);
+      if (optionSlugs.join() !== want.join()) errors.push(`fixture: menu options are [${optionSlugs.join(', ')}], expected [${want.join(', ')}]`);
       for (const e of FIXTURE_PLAYLISTS) {
         const r = rendered.find((x) => x.slug === e.slug);
         if (r && (r.status !== e.status || r.count !== e.videoIds.length)) {

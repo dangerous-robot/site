@@ -1,11 +1,11 @@
 ---
-// Click-to-load player (UI spec § 3.3, § 4.7). The server renders the poster
+// Click-to-load player (UI spec § 4.7). The server renders the poster
 // only; client/player.ts swaps videos, inserts the YouTube embed on Play and
-// runs Show more and Back to video list. No embed markup here: the post-build
+// runs Show more. Its width is set by the stage in watch.astro. No embed markup here: the post-build
 // check fails if the built page contains one.
 import { CirclePlay } from 'lucide-astro';
 import { TESTID, youtubeWatchUrl } from '../../lib/watch/contract';
-import { coverSrcset } from '../../lib/watch/frames';
+import { coverSrcset } from '../../lib/watch/images';
 import type { WatchPlayerProps } from '../../lib/watch/types';
 
 type Props = WatchPlayerProps;
@@ -31,7 +31,7 @@ const title = video?.title ?? '';
         class="watch-player__img"
         src={video?.cover.src}
         srcset={video ? coverSrcset(video.cover) : undefined}
-        sizes="(max-width: 1119px) 100vw, 1080px"
+        sizes="(max-width: 860px) 100vw, 75vw"
         alt=""
         fetchpriority="high"
         decoding="async"
@@ -45,13 +45,13 @@ const title = video?.title ?? '';
     <span class="watch-player__channel">{video?.channel}</span>
     <span class="watch-player__duration" hidden={!video?.durationText}>{video?.durationText}</span>
     <time class="watch-player__date" datetime={video?.publishedIso}>{video?.publishedText}</time>
+    <span class="watch-player__from">from <span data-testid={TESTID.playerFrom}>{playlist?.name}</span></span>
   </p>
   <p class="watch-player__desc" id="watch-player-desc">{video?.description}</p>
-  {/* Shown by the script only when the description overflows its clamp; without JS the player is hidden. */}
-  <button type="button" class="watch-player__more" aria-expanded="false" aria-controls="watch-player-desc" hidden>Show more</button>
   <p class="watch-player__links">
+    {/* Shown by the script only when the description overflows its clamp; without JS the player is hidden. */}
+    <button type="button" class="watch-player__more" aria-expanded="false" aria-controls="watch-player-desc" hidden>Show more</button>
     <a href={video && playlist ? youtubeWatchUrl(video.id, playlist.youtubeId) : undefined} data-testid={TESTID.youtubeLink}>Watch on YouTube</a>
-    <a href={playlist ? `#watch-panel-${playlist.slug}` : undefined} class="watch-player__back" data-testid={TESTID.backLink}>Back to video list</a>
   </p>
 </section>
 <style>
@@ -61,11 +61,11 @@ const title = video?.title ?? '';
     color: var(--color-text-muted);
   }
 
-  /* Sizing other components' tests measure (popup overlap, 200x200 minimum). */
+  /* YouTube's smallest embed is 200x200. */
   .watch-player__frame {
     position: relative;
     aspect-ratio: 16 / 9;
-    width: min(100%, calc(70vh * 16 / 9));
+    width: 100%;
     min-height: 200px;
     background: #000;
     border-radius: var(--radius-md);
@@ -130,14 +130,14 @@ const title = video?.title ?? '';
 
   .watch-player__title {
     margin: var(--space-md) 0 var(--space-xs);
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
 
   .watch-player__meta {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: var(--space-md);
+    gap: var(--space-xs) var(--space-md);
     margin: 0 0 var(--space-sm);
   }
 
@@ -156,13 +156,22 @@ const title = video?.title ?? '';
     color: var(--color-text-faint);
   }
 
+  .watch-player__from {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-faint);
+  }
+
+  .watch-player__from span {
+    color: var(--color-text-muted);
+  }
+
   .watch-player__desc {
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-text-muted);
     white-space: pre-line;
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -175,7 +184,6 @@ const title = video?.title ?? '';
 
   /* As .petition-roll__toggle (src/components/PetitionSign.astro). */
   .watch-player__more {
-    margin-top: var(--space-xs);
     padding: var(--space-xs) 0;
     border: 0;
     background: none;
@@ -192,8 +200,9 @@ const title = video?.title ?? '';
   .watch-player__links {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-lg);
-    margin: var(--space-sm) 0 0;
+    margin: var(--space-xs) 0 0;
     font-size: var(--font-size-sm);
   }
 </style>

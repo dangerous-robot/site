@@ -1,17 +1,16 @@
 // Player behaviour against the fixture build: deep-linked posters, the
-// click-to-load embed, the autoplay gate on the poster path, sizing, Show
-// more and Back to video list.
+// click-to-load embed, the autoplay gate on the poster path, sizing and
+// Show more.
 import type { Page } from '@playwright/test';
 import { EMBED_ORIGIN, PLAYER_MIN_VISIBLE_RATIO, TESTID } from '../../src/lib/watch/contract';
 import { fixturePlaylist } from '../../src/lib/watch/fixtures/expected';
-import { card, expect, tab, test, watchRoot } from './helpers';
+import { card, currentRows, expect, nowPlaying, pickPlaylist, player, playlistName, test, watchRoot } from './helpers';
 
 const [SHORT, , LONG] = fixturePlaylist('alpha').videoIds; // two short lines; a 500-character description
 const EMPTY = 'bravo'; // a playlist with no videos
 
-function player(page: Page) {
-  return watchRoot(page).getByTestId(TESTID.player);
-}
+/** Stacked columns with the player on top, short enough that the window scrolls it away. */
+const STACKED_SHORT = { width: 800, height: 500 };
 
 function notice(page: Page) {
   return watchRoot(page).getByTestId(TESTID.notice);
@@ -30,17 +29,35 @@ function frameRatio(page: Page): Promise<number> {
   });
 }
 
-test('a deep link shows that poster and no embed', async ({ page, network }) => {
+/** Waits until the window stops scrolling (a smooth scroll can take a few hundred ms). */
+async function settleScroll(page: Page): Promise<void> {
+  let last = Number.NaN;
+  await expect
+    .poll(
+      async () => {
+        const y = await page.evaluate(() => window.scrollY);
+        const still = y === last;
+        last = y;
+        return still;
+      },
+      { intervals: [150] },
+    )
+    .toBe(true);
+}
+
+test('a deep link shows that poster, from its playlist, and no embed', async ({ page, network }) => {
   await page.goto('/watch?list=alpha&v=fxAlpha0002');
   const p = player(page);
   await expect(p).toHaveAttribute('data-video-id', 'fxAlpha0002');
   await expect(p).toHaveAttribute('data-playlist', 'alpha');
-  await expect(p.getByTestId('watch-player-title')).toHaveText('Fixture video fxAlpha0002');
+  await expect(p.getByTestId(TESTID.playerTitle)).toHaveText('Fixture video fxAlpha0002');
+  await expect(p.getByTestId(TESTID.playerFrom)).toHaveText(await playlistName(page, 'alpha'));
   await expect(p.getByRole('button', { name: 'Play: Fixture video fxAlpha0002' })).toBeVisible();
   await expect(p.getByRole('link', { name: 'Watch on YouTube' })).toHaveAttribute(
     'href',
     'https://www.youtube.com/watch?v=fxAlpha0002&list=PLfixtureAlpha01',
   );
+  await expect(p.getByRole('link', { name: 'Back to video list' })).toHaveCount(0);
   await expect(notice(page)).toBeHidden();
   // A known deep-linked v counts as loaded, so the URL keeps it.
   await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
@@ -67,17 +84,25 @@ test('an unknown v shows the notice and drops v from the URL', async ({ page }) 
   await expect(page).toHaveURL(/\/watch\?list=alpha$/);
 });
 
-test('arriving on a playlist with no videos hides the player until a tab with videos is chosen', async ({ page }) => {
+test('arriving on a playlist with no videos hides the player and marks no row', async ({ page }) => {
   await page.goto(`/watch?list=${EMPTY}`);
   await expect(page).toHaveURL(new RegExp(`/watch\\?list=${EMPTY}$`));
   await expect(player(page)).toBeHidden();
   await expect(notice(page)).toBeHidden();
+  await expect(nowPlaying(page)).toBeDisabled();
+  // Nothing is in the player, so no row anywhere is current.
+  await expect(currentRows(page)).toHaveCount(0);
+});
 
-  await tab(page, 'alpha').click();
+test('after arriving on an empty playlist, switching to one with videos poses its first video', async ({ page }) => {
+  await page.goto(`/watch?list=${EMPTY}`);
+  await expect(player(page)).toBeHidden();
+  await pickPlaylist(page, 'alpha');
   await expect(player(page)).toBeVisible();
   await expect(player(page)).toHaveAttribute('data-video-id', SHORT);
-  await expect(player(page).getByTestId(TESTID.playerTitle)).toHaveText(`Fixture video ${SHORT}`);
-  await expect(notice(page)).toBeHidden();
+  await expect(page.locator('iframe')).toHaveCount(0);
+  await expect(currentRows(page)).toHaveCount(1);
+  await expect(nowPlaying(page)).toBeEnabled();
 });
 
 test('an unknown v on a playlist with no videos still shows the notice and drops v', async ({ page }) => {
@@ -86,10 +111,6 @@ test('an unknown v on a playlist with no videos still shows the notice and drops
   await expect(notice(page)).toBeVisible();
   await expect(notice(page)).toHaveText('That video is no longer in this playlist.');
   await expect(player(page)).toBeHidden();
-
-  await tab(page, 'alpha').click();
-  await expect(player(page)).toHaveAttribute('data-video-id', SHORT);
-  await expect(notice(page)).toBeHidden();
 });
 
 test('Play loads one nocookie embed, focuses the title and names the video in the URL', async ({ page, network }) => {
@@ -100,7 +121,7 @@ test('Play loads one nocookie embed, focuses the title and names the video in th
   const p = player(page);
   await p.getByRole('button', { name: /^Play: / }).click();
 
-  const iframe = p.getByTestId('watch-iframe');
+  const iframe = p.getByTestId(TESTID.iframe);
   await expect(iframe).toHaveCount(1);
   await expect(page.locator('iframe')).toHaveCount(1);
   const src = new URL((await iframe.getAttribute('src')) ?? '');
@@ -113,8 +134,8 @@ test('Play loads one nocookie embed, focuses the title and names the video in th
   await expect(iframe).toHaveAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
   await expect(iframe).toHaveAttribute('allowfullscreen', '');
 
-  await expect(p.getByTestId('watch-play')).toBeHidden();
-  await expect(p.getByTestId('watch-player-title')).toBeFocused();
+  await expect(p.getByTestId(TESTID.play)).toBeHidden();
+  await expect(p.getByTestId(TESTID.playerTitle)).toBeFocused();
   // watch:play reached the page controller: the video now counts as loaded.
   await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SHORT}$`));
   // Positive control for the empty request list above.
@@ -122,15 +143,15 @@ test('Play loads one nocookie embed, focuses the title and names the video in th
 });
 
 test.describe('poster Play with the frame less than half in view', () => {
-  test.use({ viewport: { width: 1280, height: 600 } });
+  test.use({ viewport: STACKED_SHORT });
 
   async function scrollFrameMostlyOut(page: Page): Promise<void> {
     await page.goto(`/watch?list=alpha`);
-    await page.getByTestId('watch-player-frame').evaluate((el) => {
+    await page.getByTestId(TESTID.playerFrame).evaluate((el) => {
       const r = el.getBoundingClientRect();
       window.scrollTo({ top: window.scrollY + r.top + r.height * 0.8, behavior: 'instant' });
     });
-    expect(await frameRatio(page)).toBeLessThan(PLAYER_MIN_VISIBLE_RATIO);
+    await expect.poll(() => frameRatio(page)).toBeLessThan(PLAYER_MIN_VISIBLE_RATIO);
   }
 
   test('waits for the frame to be half in view before inserting the embed', async ({ page }) => {
@@ -140,15 +161,15 @@ test.describe('poster Play with the frame less than half in view', () => {
     });
     await scrollFrameMostlyOut(page);
     // dispatchEvent, not click(): click() would scroll the poster into view first.
-    await page.getByTestId('watch-play').dispatchEvent('click');
+    await page.getByTestId(TESTID.play).dispatchEvent('click');
     // Proves something did not happen, so there is no event to wait for:
     // give a wrongly ungated embed time to appear.
     await page.waitForTimeout(300);
-    await expect(page.getByTestId('watch-iframe')).toHaveCount(0);
+    await expect(page.getByTestId(TESTID.iframe)).toHaveCount(0);
     await expect(page).toHaveURL(/\/watch\?list=alpha$/);
 
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
-    await expect(page.getByTestId('watch-iframe')).toHaveCount(1);
+    await expect(page.getByTestId(TESTID.iframe)).toHaveCount(1);
     await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SHORT}$`));
   });
 
@@ -166,12 +187,12 @@ test.describe('poster Play with the frame less than half in view', () => {
     const calls = () => page.evaluate(() => (window as unknown as { scrollCalls: unknown[] }).scrollCalls);
 
     await scrollFrameMostlyOut(page);
-    await page.getByTestId('watch-play').dispatchEvent('click');
+    await page.getByTestId(TESTID.play).dispatchEvent('click');
     expect(await calls()).toEqual([{ option: null, css: 'smooth' }]);
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await scrollFrameMostlyOut(page);
-    await page.getByTestId('watch-play').dispatchEvent('click');
+    await page.getByTestId(TESTID.play).dispatchEvent('click');
     expect(await calls()).toEqual([{ option: null, css: 'auto' }]);
 
     // The site's Motion setting, without the OS setting.
@@ -180,14 +201,14 @@ test.describe('poster Play with the frame less than half in view', () => {
     await page.evaluate(() => {
       document.documentElement.dataset.motion = 'reduce';
     });
-    await page.getByTestId('watch-play').dispatchEvent('click');
+    await page.getByTestId(TESTID.play).dispatchEvent('click');
     expect(await calls()).toEqual([{ option: null, css: 'auto' }]);
   });
 
   test('scrolls the frame into view, then inserts the embed', async ({ page }) => {
     await scrollFrameMostlyOut(page);
-    await page.getByTestId('watch-play').dispatchEvent('click');
-    await expect(page.getByTestId('watch-iframe')).toHaveCount(1);
+    await page.getByTestId(TESTID.play).dispatchEvent('click');
+    await expect(page.getByTestId(TESTID.iframe)).toHaveCount(1);
     expect(await frameRatio(page)).toBeGreaterThanOrEqual(PLAYER_MIN_VISIBLE_RATIO);
   });
 });
@@ -197,13 +218,13 @@ test.describe('at a 320px viewport', () => {
 
   test('the player frame and embed are at least 200x200', async ({ page }) => {
     await page.goto('/watch?list=alpha');
-    const frame = page.getByTestId('watch-player-frame');
+    const frame = page.getByTestId(TESTID.playerFrame);
     const box = await frame.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(200);
     expect(box?.height).toBeGreaterThanOrEqual(200);
 
-    await page.getByTestId('watch-play').click();
-    const iframeBox = await page.getByTestId('watch-iframe').boundingBox();
+    await page.getByTestId(TESTID.play).click();
+    const iframeBox = await page.getByTestId(TESTID.iframe).boundingBox();
     expect(iframeBox?.width).toBeGreaterThanOrEqual(200);
     expect(iframeBox?.height).toBeGreaterThanOrEqual(200);
   });
@@ -212,7 +233,7 @@ test.describe('at a 320px viewport', () => {
 test('Show more appears only for an overflowing description and toggles', async ({ page }) => {
   await page.goto(`/watch?list=alpha&v=${SHORT}`);
   const p = player(page);
-  await expect(p.getByTestId('watch-player-title')).toHaveText(`Fixture video ${SHORT}`);
+  await expect(p.getByTestId(TESTID.playerTitle)).toHaveText(`Fixture video ${SHORT}`);
   await expect(p.locator('.watch-player__more')).toBeHidden();
 
   await page.goto(`/watch?list=alpha&v=${LONG}`);
@@ -221,7 +242,10 @@ test('Show more appears only for an overflowing description and toggles', async 
   await expect(more).toHaveAttribute('aria-expanded', 'false');
   await expect(more).toHaveAttribute('aria-controls', 'watch-player-desc');
   const desc = p.locator('#watch-player-desc');
+  // Clamped to two lines.
+  const lineHeight = await desc.evaluate((el) => parseFloat(getComputedStyle(el).lineHeight));
   const clamped = (await desc.boundingBox())?.height ?? 0;
+  expect(clamped).toBeLessThanOrEqual(lineHeight * 2 + 1);
 
   await more.click();
   const less = p.getByRole('button', { name: 'Show less' });
@@ -233,41 +257,39 @@ test('Show more appears only for an overflowing description and toggles', async 
   expect((await desc.boundingBox())?.height ?? 0).toBe(clamped);
 });
 
-test('Back to video list focuses the first card of the selected panel when nothing is playing', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
-  await player(page).getByRole('link', { name: 'Back to video list' }).click();
-  const first = card(page, SHORT);
-  await expect(first).toBeFocused();
-  // Handled in page: no hash navigation.
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
-});
+test.describe('in the stacked layout', () => {
+  test.use({ viewport: { width: 800, height: 600 } });
 
-test('picking the video that is already playing keeps its embed and only brings the player back', async ({ page, network }) => {
-  await page.goto('/watch?list=alpha');
-  const second = card(page, 'fxAlpha0002');
-  await second.click();
-  const iframe = page.getByTestId(TESTID.iframe);
-  await expect(iframe).toHaveCount(1);
-  await expect(iframe).toHaveAttribute('src', /\/embed\/fxAlpha0002\?/);
-  await page.evaluate((sel) => {
-    (window as unknown as { firstEmbed: Element | null }).firstEmbed = document.querySelector(sel);
-  }, `[data-testid="${TESTID.iframe}"]`);
-  await expect.poll(() => embedRequests(network.requests).length).toBeGreaterThan(0);
-  const requestsBefore = embedRequests(network.requests).length;
-
-  // Away from the player, so bringing it back is visible.
-  await second.scrollIntoViewIfNeeded();
-  await second.focus();
-  await page.keyboard.press('Enter');
-  await expect(player(page).getByTestId(TESTID.playerTitle)).toBeFocused();
-  await expect.poll(() => frameRatio(page)).toBeGreaterThanOrEqual(PLAYER_MIN_VISIBLE_RATIO);
-  await second.click();
-  expect(
+  test('picking the video that is already playing keeps its embed and only brings the player back', async ({ page, network }) => {
+    await page.goto('/watch?list=alpha');
+    const second = card(page, 'fxAlpha0002');
+    await second.click();
+    const iframe = page.getByTestId(TESTID.iframe);
+    await expect(iframe).toHaveCount(1);
+    await expect(iframe).toHaveAttribute('src', /\/embed\/fxAlpha0002\?/);
     await page.evaluate((sel) => {
-      const now = document.querySelectorAll(sel);
-      return now.length === 1 && now[0] === (window as unknown as { firstEmbed: Element | null }).firstEmbed;
-    }, `[data-testid="${TESTID.iframe}"]`),
-  ).toBe(true);
-  expect(embedRequests(network.requests)).toHaveLength(requestsBefore);
-  await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
+      (window as unknown as { firstEmbed: Element | null }).firstEmbed = document.querySelector(sel);
+    }, `[data-testid="${TESTID.iframe}"]`);
+    await expect.poll(() => embedRequests(network.requests).length).toBeGreaterThan(0);
+    const requestsBefore = embedRequests(network.requests).length;
+
+    // Away from the player, so bringing it back is visible. The pick's own
+    // smooth scroll must finish first, or it would carry on over this one.
+    await settleScroll(page);
+    await second.evaluate((el) => el.scrollIntoView({ block: 'start', behavior: 'instant' }));
+    await expect.poll(() => frameRatio(page)).toBeLessThan(PLAYER_MIN_VISIBLE_RATIO);
+    await second.focus();
+    await page.keyboard.press('Enter');
+    await expect(player(page).getByTestId(TESTID.playerTitle)).toBeFocused();
+    await expect.poll(() => frameRatio(page)).toBeGreaterThanOrEqual(PLAYER_MIN_VISIBLE_RATIO);
+    await second.click();
+    expect(
+      await page.evaluate((sel) => {
+        const now = document.querySelectorAll(sel);
+        return now.length === 1 && now[0] === (window as unknown as { firstEmbed: Element | null }).firstEmbed;
+      }, `[data-testid="${TESTID.iframe}"]`),
+    ).toBe(true);
+    expect(embedRequests(network.requests)).toHaveLength(requestsBefore);
+    await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
+  });
 });

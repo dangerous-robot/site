@@ -25,6 +25,19 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Page scrollbars keep their normal width (easier to grab) and take the
+   theme's colours; color-scheme in tokens.css themes the rest. */
+html {
+  scrollbar-color: var(--color-scrollbar) var(--color-bg);
+}
+
+/* Inner scroll boxes (lists, menus): thin, but the thumb always shows, so
+   the box reads as scrollable without a hover. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
 /* ---------------------------------------------------------
    Body
    --------------------------------------------------------- */

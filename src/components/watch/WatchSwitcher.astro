@@ -1,0 +1,214 @@
+---
+// Playlist switcher at the top of the list column: a "Playlist  N of M"
+// label, the current playlist's card as a disclosure button, a menu of the
+// other playlists, and the one-line now-playing status. client/switcher.ts
+// runs the menu and the status line. Every playlist's card is rendered in
+// both the trigger and the menu, and the script only flips hidden, so no
+// API text is ever built into markup on the client.
+import { ChevronDown } from 'lucide-astro';
+import { TESTID } from '../../lib/watch/contract';
+import { switcherPos, triggerLabel } from '../../lib/watch/layout';
+import type { WatchSwitcherProps } from '../../lib/watch/types';
+import WatchPlaylistCard from './WatchPlaylistCard.astro';
+
+type Props = WatchSwitcherProps;
+const { playlists, selectedSlug } = Astro.props;
+const selectedIndex = Math.max(0, playlists.findIndex((p) => p.slug === selectedSlug));
+const selected = playlists[selectedIndex];
+---
+<div class="watch-switcher" data-testid={TESTID.switcher}>
+  <div class="watch-switcher__label-row">
+    <span class="watch-switcher__label" id="watch-switcher-label">Playlist</span>
+    <span class="watch-switcher__pos" data-testid={TESTID.switcherPos}>{switcherPos(selectedIndex, playlists.length)}</span>
+  </div>
+  <div class="watch-switcher__anchor">
+    <button
+      type="button"
+      class="watch-switcher__trigger"
+      aria-expanded="false"
+      aria-controls="watch-menu"
+      aria-label={triggerLabel(selected?.name ?? '')}
+      data-testid={TESTID.trigger}
+    >
+      {playlists.map((p) => (
+        <span class="watch-switcher__card" data-playlist={p.slug} hidden={p.slug !== selectedSlug}>
+          <WatchPlaylistCard playlist={p} eager={p.slug === selectedSlug} />
+        </span>
+      ))}
+      <ChevronDown class="watch-switcher__chevron" size={18} aria-hidden="true" />
+    </button>
+    <ul class="watch-menu scroll-thin" id="watch-menu" role="list" aria-label="Other playlists" data-testid={TESTID.menu} hidden>
+      {playlists.map((p) => (
+        <li hidden={p.slug === selectedSlug} data-playlist={p.slug}>
+          <button type="button" class="watch-option" data-testid={TESTID.option} data-playlist={p.slug}>
+            <WatchPlaylistCard playlist={p} inMenu />
+          </button>
+        </li>
+      ))}
+    </ul>
+  </div>
+  <button type="button" class="watch-np" data-testid={TESTID.nowPlaying}>
+    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>
+    <span class="watch-np__text"></span>
+  </button>
+</div>
+<style>
+  .watch-switcher {
+    flex: none;
+    padding: var(--space-md) var(--space-md) var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .watch-switcher__label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .watch-switcher__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--color-section-label);
+  }
+
+  .watch-switcher__pos {
+    font-family: var(--font-mono);
+    font-size: var(--font-size-2xs);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-faint);
+  }
+
+  /* Above the scrim, which covers the rest of the column while the menu is open. */
+  .watch-switcher__anchor {
+    position: relative;
+    z-index: 11;
+  }
+
+  .watch-switcher__trigger,
+  .watch-option {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .watch-switcher__trigger {
+    border: 1px solid var(--color-radio-selected-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .watch-switcher__trigger:hover {
+    border-color: var(--color-accent);
+  }
+
+  .watch-switcher__card {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+  }
+
+  .watch-switcher__chevron {
+    flex: none;
+    margin-top: 2px;
+    color: var(--color-text-muted);
+    transition: transform 0.15s ease;
+  }
+
+  .watch-switcher__trigger[aria-expanded="true"] .watch-switcher__chevron {
+    transform: rotate(180deg);
+  }
+
+  .watch-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 6px);
+    max-height: max(120px, calc(100vh - 330px));
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    padding: var(--space-xs);
+    list-style: none;
+    background: var(--color-menu-bg);
+    border: 1px solid var(--color-menu-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-menu);
+  }
+
+  /* Room for the chevron the trigger has, so text lines up with it. */
+  .watch-option {
+    padding-right: calc(var(--space-sm) + 18px);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+  }
+
+  .watch-option:hover,
+  .watch-option:focus-visible {
+    background: var(--color-menu-hover);
+  }
+
+  .watch-option :global(.pl-card__thumb) {
+    border-color: var(--color-menu-border);
+    background: var(--color-bg);
+  }
+
+  .watch-option:hover :global(.pl-card__name) {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: 2px;
+  }
+
+  /* One line at a fixed height, present even when empty, so the list below never moves. */
+  .watch-np {
+    width: 100%;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: var(--space-xs);
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--color-accent);
+    font: 500 var(--font-size-xs) var(--font-body);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .watch-np:disabled {
+    visibility: hidden;
+  }
+
+  .watch-np svg {
+    flex: none;
+  }
+
+  .watch-np__text {
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .watch-np:hover .watch-np__text {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-underline-offset: 2px;
+  }
+</style>

@@ -6,7 +6,7 @@ import type { WatchCover, WatchMode, WatchPlaylist, WatchVideo } from './types';
 import type { CuratedPlaylist } from './schema';
 import { DESCRIPTION_ELLIPSIS, PLAYLIST_DESCRIPTION_MAX, VIDEO_DESCRIPTION_MAX, VIDEO_ID_RE, watchVideoSchema } from './schema';
 import { formatDuration, parseIsoDuration, spokenDuration } from './duration';
-import { YTIMG_ORIGIN } from './frames';
+import { YTIMG_ORIGIN } from './images';
 
 export type DropReason =
   | 'missing'          // not returned by videos.list: deleted, private to the owner, or no video ID

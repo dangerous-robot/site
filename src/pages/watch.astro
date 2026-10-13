@@ -1,29 +1,27 @@
 ---
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import Breadcrumb from '../components/Breadcrumb.astro';
 import EmptyState from '../components/EmptyState.astro';
-import PreviewSwitch from '../components/watch/PreviewSwitch.astro';
-import VideoPopup from '../components/watch/VideoPopup.astro';
 import WatchPanel from '../components/watch/WatchPanel.astro';
 import WatchPlayer from '../components/watch/WatchPlayer.astro';
-import WatchPlaylistTabs from '../components/watch/WatchPlaylistTabs.astro';
+import WatchSwitcher from '../components/watch/WatchSwitcher.astro';
 import { defaultPlaylist } from '../lib/watch/defaultPlaylist';
 import { jsonForScript } from '../lib/jsonForScript';
-import { TESTID, YOUTUBE_TERMS_URL } from '../lib/watch/contract';
+import { LIST_WIDTH, TESTID } from '../lib/watch/contract';
 import type { WatchClientData, WatchMode, WatchPlaylistView } from '../lib/watch/types';
 import { formatPostDate } from '../lib/writing';
 
-// Also the page's meta description.
-// TODO(Brandon): review this draft intro before the first deploy.
+// The page's meta description; the page itself shows no intro.
+// TODO(Brandon): review this draft before the first deploy.
 const WATCH_LEDE = 'Talks and lectures on AI safety and AI ethics.';
 
 const entries = (await getCollection('watchPlaylists')).sort((a, b) => a.data.order - b.data.order);
 // formatPostDate imports astro:content, so dates are formatted here and
 // never in client code.
+// frameTier is left out: nothing on the page reads it since hover previews went.
 const playlists: WatchPlaylistView[] = entries.map(({ data }) => ({
   ...data,
-  videos: data.videos.map((video) => ({ ...video, publishedText: formatPostDate(new Date(video.publishedIso)) })),
+  videos: data.videos.map(({ frameTier: _unused, ...video }) => ({ ...video, publishedText: formatPostDate(new Date(video.publishedIso)) })),
 }));
 // No entries means no key, a global API error, or every playlist omitted.
 const mode: WatchMode = playlists.length > 0 ? playlists[0].dataMode : 'none';
@@ -32,43 +30,57 @@ const selectedSlug = selected?.slug ?? '';
 const initialVideo = selected?.videos[0] ?? null;
 const payload: WatchClientData = { playlists };
 ---
-<Base title="Watch" description={WATCH_LEDE} layout="wide">
+<Base title="Watch" description={WATCH_LEDE} layout="app">
   <div class="watch" data-testid={TESTID.page} data-watch-mode={mode}>
-    <Breadcrumb crumbs={[{ label: 'Home', href: '/' }, { label: 'Watch' }]} />
-    <h1>Watch</h1>
-    <p class="lede" data-testid={TESTID.lede}>{WATCH_LEDE}</p>
+    <h1 class="sr-only">Watch</h1>
 
     {mode === 'none' ? (
-      <div data-testid={TESTID.pageEmpty}>
+      <div class="watch-page-empty" data-testid={TESTID.pageEmpty}>
         <EmptyState message="These videos could not be loaded." />
       </div>
     ) : (
       <>
         {/* Unscoped on purpose: it reaches other components' classes. Without
-            JavaScript every panel shows and the controls that need it hide. */}
+            JavaScript every playlist's list shows, each under its name, and
+            the controls that need a script hide. */}
         <noscript>
           <style is:inline>
             .watch-panel[hidden] { display: block !important; }
-            .watch-rail, .watch-player, .watch-notice, .watch-switch { display: none !important; }
-            .watch-layout { display: block !important; }
+            .watch-panel__title { position: static !important; width: auto !important; height: auto !important; clip: auto !important; white-space: normal !important; margin: var(--space-md) var(--space-md) var(--space-xs) !important; font-size: 1.1rem; }
+            .watch-switcher, .watch-resizer, .watch-stage-col, .watch-notice { display: none !important; }
+            .watch-list-col { width: auto; flex: 1 1 auto; border-right: 0; }
           </style>
         </noscript>
-        <div class="watch-layout">
-          <div class="watch-rail">
-            <WatchPlaylistTabs playlists={playlists} selectedSlug={selectedSlug} />
-          </div>
-          <div class="watch-main">
-            <WatchPlayer video={initialVideo} playlist={selected ?? null} />
-            <div class="watch-toolbar">
-              <p class="watch-attribution">Videos and images from YouTube. <a href={YOUTUBE_TERMS_URL}>YouTube Terms of Service</a></p>
-              <PreviewSwitch />
+        <div class="watch-shell">
+          <aside class="watch-list-col" id="watch-list-col" aria-label="Playlist videos" data-testid={TESTID.listCol} style={`--watch-list-w: ${LIST_WIDTH.initial}px`}>
+            <div class="watch-scrim" data-testid={TESTID.scrim} hidden></div>
+            <WatchSwitcher playlists={playlists} selectedSlug={selectedSlug} />
+            <div class="watch-lists scroll-thin" data-testid={TESTID.lists}>
+              {playlists.map((p) => (
+                <WatchPanel playlist={p} selected={p.slug === selectedSlug} />
+              ))}
             </div>
-            {playlists.map((p) => (
-              <WatchPanel playlist={p} selected={p.slug === selectedSlug} eagerFirstRow={p.slug === selectedSlug} />
-            ))}
+          </aside>
+          <div
+            class="watch-resizer"
+            role="separator"
+            tabindex="0"
+            aria-orientation="vertical"
+            aria-label="Resize video list"
+            aria-controls="watch-list-col"
+            aria-valuemin={LIST_WIDTH.min}
+            aria-valuemax={LIST_WIDTH.max}
+            aria-valuenow={LIST_WIDTH.initial}
+            data-testid={TESTID.resizer}
+          >
+            <span class="watch-resizer__line" aria-hidden="true"></span>
+          </div>
+          <div class="watch-stage-col scroll-thin">
+            <div class="watch-stage">
+              <WatchPlayer video={initialVideo} playlist={selected ?? null} />
+            </div>
           </div>
         </div>
-        <VideoPopup />
         <p class="sr-only" role="status" aria-live="polite" data-testid={TESTID.status}></p>
         <script type="application/json" data-watch-data set:html={jsonForScript(payload)}></script>
       </>
@@ -82,57 +94,125 @@ const payload: WatchClientData = { playlists };
 </script>
 
 <style>
-  .lede {
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-lg);
-  }
-
-  .watch-main {
-    min-width: 0;
-  }
-
-  .watch-rail {
-    margin-bottom: var(--space-lg);
-  }
-
-  /* Literal breakpoint: BREAKPOINT_DESKTOP_PX in contract.ts. */
-  @media (min-width: 1120px) {
-    .watch-layout {
-      display: grid;
-      grid-template-columns: 15rem minmax(0, 1fr);
-      gap: var(--space-xl);
-    }
-
-    /* The sticky rail scrolls (overflow-y: auto), which clips anything drawn
-       outside it, including the global focus ring on the edge tabs. The
-       padding gives the ring room inside the scroll box and the equal
-       negative margin keeps the rail's content where it was. */
-    .watch-rail {
-      --watch-ring-room: 5px; /* global focus ring: 2px outline plus 3px offset */
-      position: sticky;
-      top: calc(var(--space-lg) - var(--watch-ring-room));
-      align-self: start;
-      max-height: calc(100vh - 2 * var(--space-lg) + 2 * var(--watch-ring-room));
-      overflow-y: auto;
-      padding: var(--watch-ring-room);
-      margin: calc(-1 * var(--watch-ring-room));
-    }
-  }
-
-  .watch-toolbar {
+  .watch {
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
-    justify-content: space-between;
-    align-items: end;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    margin-top: var(--space-xl);
-    padding-top: var(--space-lg);
-    border-top: 1px solid var(--color-border);
+    flex-direction: column;
   }
 
-  .watch-attribution {
-    margin: 0;
-    font-size: var(--font-size-xs);
-    color: var(--color-text-faint);
+  .watch-page-empty {
+    padding: var(--space-xl) var(--space-lg);
+  }
+
+  .watch-shell {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+
+  /* client/resizer.ts moves --watch-list-w; the server sets LIST_WIDTH.initial. */
+  .watch-list-col {
+    position: relative;
+    flex: none;
+    width: var(--watch-list-w);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+  }
+
+  /* Covers the column under the open playlist menu, which sits above it. */
+  .watch-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    background: var(--color-scrim);
+  }
+
+  .watch-lists {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* A 10px grab area centred on the column border, drawn as a line on hover and focus. */
+  .watch-resizer {
+    flex: none;
+    position: relative;
+    z-index: 3;
+    width: 10px;
+    margin: 0 -5px;
+    display: flex;
+    justify-content: center;
+    cursor: col-resize;
+    touch-action: none;
+  }
+
+  .watch-resizer:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .watch-resizer__line {
+    width: 1px;
+    height: 100%;
+    background: transparent;
+  }
+
+  .watch-resizer:hover .watch-resizer__line,
+  .watch-resizer:focus-visible .watch-resizer__line {
+    width: 3px;
+    background: var(--color-accent);
+  }
+
+  /* A size container, so the player can fit its column's height whatever
+     the nav, footer and text size are. */
+  .watch-stage-col {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow-y: auto;
+    padding: var(--space-lg);
+    container-type: size;
+  }
+
+  /* 16:9 player plus about 8.5rem of title, meta, description and links
+     below it. cqh is the column's content box, so its padding is already out. */
+  .watch-stage {
+    width: min(100%, calc((100cqh - 8.5rem) * 16 / 9));
+    min-width: min(100%, 360px);
+    margin: 0 auto;
+  }
+
+  /* Literal breakpoint: BREAKPOINT_STACK_PX in contract.ts. Player first,
+     then the switcher and list; the page scrolls instead of the columns. */
+  @media (max-width: 860px) {
+    .watch-shell {
+      flex-direction: column;
+    }
+
+    .watch-list-col {
+      width: auto;
+      border-right: 0;
+    }
+
+    .watch-lists {
+      overflow: visible;
+    }
+
+    .watch-resizer {
+      display: none;
+    }
+
+    .watch-stage-col {
+      order: -1;
+      overflow: visible;
+      container-type: normal;
+    }
+
+    .watch-stage {
+      width: 100%;
+      min-width: 0;
+    }
   }
 </style>

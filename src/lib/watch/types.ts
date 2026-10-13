@@ -42,7 +42,7 @@ export interface WatchPlaylist {
 
 // publishedText comes from formatPostDate, which only runs at build time
 // (src/lib/writing.ts imports astro:content), so the page adds it.
-export type WatchVideoView = WatchVideo & { publishedText: string };
+export type WatchVideoView = Omit<WatchVideo, 'frameTier'> & { publishedText: string };
 export type WatchPlaylistView = Omit<WatchPlaylist, 'videos'> & { videos: WatchVideoView[] };
 
 export interface WatchBuildResult {
@@ -51,9 +51,9 @@ export interface WatchBuildResult {
   warnings: string[];
 }
 
-/** Owned by client/main.ts; controllers render bus events and keep no copy. */
+/** Owned by client/main.ts, the only writer of the URL; controllers render bus events. */
 export interface WatchState {
-  /** Tab shown. */
+  /** Playlist shown in the list column. */
   selectedSlug: string;
   /** Video in the player. */
   video: { slug: string; id: string } | null;
@@ -73,7 +73,7 @@ export interface WatchPlaylistEventDetail {
   slug: string;
 }
 
-/** play: false shows the poster only; only play: true marks a card playing. */
+/** play: false shows the poster only; either way its row becomes the current one. */
 export interface WatchVideoEventDetail {
   slug: string;
   id: string;
@@ -86,22 +86,17 @@ export interface WatchPlayEventDetail {
   id: string;
 }
 
-export interface WatchPreviewEventDetail {
-  enabled: boolean;
-}
-
 export interface WatchEventDetailMap {
   'watch:playlist': WatchPlaylistEventDetail;
   'watch:video': WatchVideoEventDetail;
   'watch:play': WatchPlayEventDetail;
-  'watch:preview': WatchPreviewEventDetail;
 }
 
 /** Every src/components/watch/client/<name>.ts exports one of these as init<Name>. */
 export type WatchControllerInit = (root: HTMLElement, bus: EventTarget, data: WatchPlaylistView[]) => void;
 
-// Component props (UI spec § 3.3).
-export interface WatchPlaylistTabsProps {
+// Component props.
+export interface WatchSwitcherProps {
   playlists: WatchPlaylistView[];
   selectedSlug: string;
 }
@@ -114,11 +109,9 @@ export interface WatchPlayerProps {
 export interface WatchPanelProps {
   playlist: WatchPlaylistView;
   selected: boolean;
-  eagerFirstRow: boolean;
 }
 
-export interface VideoThumbProps {
+export interface VideoRowProps {
   video: WatchVideoView;
   playlist: WatchPlaylistView;
-  eager: boolean;
 }

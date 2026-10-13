@@ -1,4 +1,4 @@
-// The /watch UI contract (UI spec § 7 and § 8, plan § 4). Components, client
+// The /watch UI contract (plan § 4 and § Redesign). Components, client
 // controllers, browser tests and the dist check all read these names, so a
 // rename here is a rename everywhere. Nothing at module level may touch DOM
 // globals: unit tests and the build import this file outside a browser.
@@ -6,27 +6,36 @@ import type { WatchEventDetailMap } from './types';
 
 export const TESTID = {
   page: 'watch-page',
-  lede: 'watch-lede',
-  tablist: 'watch-tablist',
-  tab: 'watch-tab',
+  /** The column holding the playlist switcher and the video lists. */
+  listCol: 'watch-list-col',
+  switcher: 'watch-switcher',
+  /** "N of M" beside the Playlist label. */
+  switcherPos: 'watch-switcher-pos',
+  /** The current-playlist card that opens the menu. */
+  trigger: 'watch-trigger',
+  menu: 'watch-menu',
+  /** One menu entry per playlist; the selected one is hidden. */
+  option: 'watch-option',
+  scrim: 'watch-scrim',
+  /** The always-present "Now playing" / "Back to now playing" line. */
+  nowPlaying: 'watch-now-playing',
+  /** The scroll box holding every playlist's panel. */
+  lists: 'watch-lists',
   panel: 'watch-panel',
-  panelCount: 'watch-panel-count',
-  grid: 'watch-grid',
+  list: 'watch-list',
   thumb: 'watch-thumb',
   thumbTitle: 'watch-thumb-title',
   thumbDuration: 'watch-thumb-duration',
-  popup: 'watch-popup',
+  resizer: 'watch-resizer',
   player: 'watch-player',
   playerFrame: 'watch-player-frame',
   play: 'watch-play',
   iframe: 'watch-iframe',
   playerTitle: 'watch-player-title',
   playerMeta: 'watch-player-meta',
+  playerFrom: 'watch-player-from',
   youtubeLink: 'watch-youtube-link',
-  backLink: 'watch-back-link',
   notice: 'watch-notice',
-  previewSwitch: 'watch-preview-switch',
-  previewHint: 'watch-preview-hint',
   status: 'watch-status',
   /** Per-panel empty or failed state. */
   empty: 'watch-empty',
@@ -37,18 +46,10 @@ export const TESTID = {
 export const ATTR = {
   /** On the watch-page root: live, fixture or none. */
   mode: 'data-watch-mode',
-  /** Curated slug, on tab, panel, thumb and player. */
+  /** Curated slug, on switcher cards, menu options, panel, thumb and player. */
   playlist: 'data-playlist',
-  /** On thumb, player and popup. */
+  /** On thumb and player. */
   videoId: 'data-video-id',
-  /** sd or mq, on each thumb. */
-  frameTier: 'data-frame-tier',
-  /** "true" on a thumb while it cycles frames. */
-  previewing: 'data-previewing',
-  /** 1, 2 or 3 on a cycling thumb. */
-  frame: 'data-frame',
-  /** on or off, on the preview switch radios. */
-  value: 'data-value',
   /** On the JSON payload script element. */
   data: 'data-watch-data',
 } as const;
@@ -56,22 +57,16 @@ export const ATTR = {
 // Only the classes JS adds, creates or queries. Elements JS inserts are
 // outside Astro's scoping, so their owners style them with :global().
 export const CLASS = {
-  thumbMedia: 'watch-thumb__media',
-  thumbFrame: 'watch-thumb__frame',
-  frameShown: 'is-shown',
   thumbPlaying: 'watch-thumb__playing',
   playerIframe: 'watch-player__iframe',
+  /** On a menu option whose playlist holds the video in the player. */
+  optionPlaying: 'watch-option__playing',
 } as const;
-
-/** Written only on an explicit choice, so an unset value can follow reduce-motion settings. */
-export const PREVIEWS_STORAGE_KEY = 'dr-watch-previews';
-export type PreviewsStoredValue = 'on' | 'off';
 
 export const WATCH_EVENTS = {
   playlist: 'watch:playlist',
   video: 'watch:video',
   play: 'watch:play',
-  preview: 'watch:preview',
 } as const satisfies Record<string, keyof WatchEventDetailMap>;
 
 export type WatchEventName = keyof WatchEventDetailMap;
@@ -107,15 +102,12 @@ export function embedTitle(videoTitle: string): string {
 /** YouTube rule: no autoplay until the player is more than half on screen. */
 export const PLAYER_MIN_VISIBLE_RATIO = 0.5;
 
-// CSS repeats these as literals in media queries; keep both in step.
-/** Rail beside the main column at this width and up. */
-export const BREAKPOINT_DESKTOP_PX = 1120;
-/** One grid column at this width and down. */
-export const BREAKPOINT_PHONE_PX = 640;
+// CSS repeats this as a literal in media queries; keep both in step.
+/** At this width and down the columns stack and the page scrolls. */
+export const BREAKPOINT_STACK_PX = 860;
 
-/** Popups and previews are for mouse devices only. */
-export const MQ_FINE_POINTER = '(hover: hover) and (pointer: fine)';
-export const MQ_REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
+/** The video list column: default, drag limits and arrow-key steps (Shift for the big one). */
+export const LIST_WIDTH = { initial: 380, min: 300, max: 560, step: 16, bigStep: 48 } as const;
 
 export const YOUTUBE_TERMS_URL = 'https://www.youtube.com/t/terms';
 

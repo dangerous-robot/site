@@ -5,7 +5,7 @@
 import { test as base, expect, type Locator, type Page, type Route } from '@playwright/test';
 import { deflateSync } from 'node:zlib';
 import { EMBED_ORIGIN, TESTID } from '../../src/lib/watch/contract';
-import { YTIMG_ORIGIN } from '../../src/lib/watch/frames';
+import { YTIMG_ORIGIN } from '../../src/lib/watch/images';
 
 export { expect };
 
@@ -20,56 +20,62 @@ export function watchRoot(page: Page): Locator {
   return page.getByTestId(TESTID.page);
 }
 
+/** A video row in a playlist's list. */
 export function card(page: Page, id: string, slug = 'alpha'): Locator {
   return watchRoot(page).locator(`${testid(TESTID.thumb)}[data-playlist="${slug}"][data-video-id="${id}"]`);
+}
+
+/** Every row marked as holding the video in the player. */
+export function currentRows(page: Page): Locator {
+  return watchRoot(page).locator(`${testid(TESTID.thumb)}[aria-current="true"]`);
 }
 
 export function panel(page: Page, slug: string): Locator {
   return watchRoot(page).locator(`${testid(TESTID.panel)}[data-playlist="${slug}"]`);
 }
 
-export function tab(page: Page, slug: string): Locator {
-  return watchRoot(page).locator(`${testid(TESTID.tab)}[data-playlist="${slug}"]`);
+export function trigger(page: Page): Locator {
+  return watchRoot(page).getByTestId(TESTID.trigger);
 }
 
-/**
- * Opens a /watch path with the page clock installed, and pauses it once
- * client/main.ts has run, so only clock.runFor moves page time.
- */
-export async function openWatch(page: Page, path = '/watch'): Promise<Locator> {
-  await page.clock.install();
-  await page.goto(path);
-  return pauseOnceStarted(page);
+export function menu(page: Page): Locator {
+  return watchRoot(page).getByTestId(TESTID.menu);
 }
 
-/** The second half of openWatch, for use after a reload. */
-export async function pauseOnceStarted(page: Page): Promise<Locator> {
-  // main.ts has run once the URL carries the tab.
-  await expect(page).toHaveURL(/[?&]list=/);
-  await page.clock.pauseAt(await page.evaluate(() => Date.now() + 60_000));
-  return watchRoot(page);
+export function option(page: Page, slug: string): Locator {
+  return watchRoot(page).locator(`${testid(TESTID.option)}[data-playlist="${slug}"]`);
 }
 
-/** Hover-preview frames (sd1 to sd3, mq1 to mq3); covers such as mqdefault.jpg do not match. */
-export const FRAME_PATH_RE = /^\/vi\/[^/]+\/(sd|mq)([1-3])\.jpg$/;
-
-export function isFrameUrl(url: string): boolean {
-  const parsed = new URL(url);
-  return parsed.origin === YTIMG_ORIGIN && FRAME_PATH_RE.test(parsed.pathname);
+/** The status line under the switcher ("Now playing: ..." or "Back to now playing in ..."). */
+export function nowPlaying(page: Page): Locator {
+  return watchRoot(page).getByTestId(TESTID.nowPlaying);
 }
 
-/**
- * Frame paths answered the way YouTube answers a missing frame: HTTP 404
- * with a 120x90 grey image. Override per test with test.use({ missingFrames }).
- */
-export const DEFAULT_MISSING_FRAMES: readonly string[] = ['/vi/fxAlpha0003/mq2.jpg'];
+/** The scroll box holding every playlist's panel. */
+export function lists(page: Page): Locator {
+  return watchRoot(page).getByTestId(TESTID.lists);
+}
 
-const SIZES = {
-  cover: [480, 270],
-  sd: [640, 480],
-  mq: [320, 180],
-  missing: [120, 90],
-} as const;
+export function player(page: Page): Locator {
+  return watchRoot(page).getByTestId(TESTID.player);
+}
+
+/** A playlist's display name, read from its card in the trigger (rendered for every playlist). */
+export async function playlistName(page: Page, slug: string): Promise<string> {
+  const name = await trigger(page).locator(`[data-playlist="${slug}"] .pl-card__name`).textContent();
+  if (!name?.trim()) throw new Error(`no name rendered for playlist ${slug}`);
+  return name.trim();
+}
+
+/** Opens the switcher menu and picks a playlist with real clicks. */
+export async function pickPlaylist(page: Page, slug: string): Promise<void> {
+  await trigger(page).click();
+  await expect(menu(page)).toBeVisible();
+  await option(page, slug).click();
+  await expect(panel(page, slug)).toBeVisible();
+}
+
+const COVER_SIZE = [480, 270] as const;
 
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
   let c = n;
@@ -92,39 +98,30 @@ function chunk(type: string, data: Buffer): Buffer {
   return Buffer.concat([len, body, crc]);
 }
 
-const pngCache = new Map<string, Buffer>();
+let coverPng: Buffer | undefined;
 
-/** A solid grey PNG; the browser sniffs the type, so a .jpg URL can carry it. */
-export function solidPng(width: number, height: number, shade = 128): Buffer {
-  const key = `${width}x${height}:${shade}`;
-  const hit = pngCache.get(key);
-  if (hit) return hit;
+/** One solid grey 480x270 PNG, built once; the browser sniffs the type, so a .jpg URL can carry it. */
+function cover(): Buffer {
+  if (coverPng) return coverPng;
+  const [width, height] = COVER_SIZE;
   const header = Buffer.alloc(13);
   header.writeUInt32BE(width, 0);
   header.writeUInt32BE(height, 4);
   header[8] = 8; // bit depth
   header[9] = 0; // greyscale
-  const row = Buffer.alloc(width + 1, shade);
+  const row = Buffer.alloc(width + 1, 128);
   row[0] = 0; // filter: none
-  const png = Buffer.concat([
+  coverPng = Buffer.concat([
     Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
     chunk('IHDR', header),
     chunk('IDAT', deflateSync(Buffer.concat(Array.from({ length: height }, () => row)))),
     chunk('IEND', Buffer.alloc(0)),
   ]);
-  pngCache.set(key, png);
-  return png;
+  return coverPng;
 }
 
-function fulfillImage(route: Route, pathname: string, missingFrames: readonly string[]): Promise<void> {
-  const frame = FRAME_PATH_RE.exec(pathname);
-  if (frame && missingFrames.includes(pathname)) {
-    return route.fulfill({ status: 404, contentType: 'image/png', body: solidPng(...SIZES.missing) });
-  }
-  // Frames get distinct shades so a screenshot shows the cycle moving.
-  const [width, height] = frame ? SIZES[frame[1] as 'sd' | 'mq'] : SIZES.cover;
-  const shade = frame ? 60 + Number(frame[2]) * 50 : 128;
-  return route.fulfill({ status: 200, contentType: 'image/png', body: solidPng(width, height, shade) });
+function fulfillImage(route: Route): Promise<void> {
+  return route.fulfill({ status: 200, contentType: 'image/png', body: cover() });
 }
 
 export interface NetworkLog {
@@ -135,14 +132,12 @@ export interface NetworkLog {
 }
 
 interface WatchFixtures {
-  missingFrames: readonly string[];
   network: NetworkLog;
 }
 
 export const test = base.extend<WatchFixtures>({
-  missingFrames: [DEFAULT_MISSING_FRAMES, { option: true }],
   network: [
-    async ({ context, baseURL, missingFrames }, use) => {
+    async ({ context, baseURL }, use) => {
       const local = new URL(baseURL ?? 'http://127.0.0.1').origin;
       const log: NetworkLog = { requests: [], blocked: [] };
       context.on('request', (request) => log.requests.push(request.url()));
@@ -151,7 +146,7 @@ export const test = base.extend<WatchFixtures>({
       // separate routes would need care over which registration wins.
       await context.route((url) => url.origin !== local, (route) => {
         const url = new URL(route.request().url());
-        if (url.origin === YTIMG_ORIGIN) return fulfillImage(route, url.pathname, missingFrames);
+        if (url.origin === YTIMG_ORIGIN) return fulfillImage(route);
         if (url.origin === EMBED_ORIGIN) {
           return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>player</title>' });
         }

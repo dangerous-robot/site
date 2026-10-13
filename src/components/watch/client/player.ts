@@ -14,10 +14,10 @@ import {
   onWatch,
   youtubeWatchUrl,
 } from '../../../lib/watch/contract';
-import { coverSrcset } from '../../../lib/watch/frames';
+import { coverSrcset } from '../../../lib/watch/images';
 import { indexPlaylists, type VideoEntry } from '../../../lib/watch/index';
 import type { WatchPlaylistView } from '../../../lib/watch/types';
-import { byTestId, isPlainClick, setText, testid } from './dom';
+import { byTestId, setText } from './dom';
 
 type Entry = VideoEntry<WatchPlaylistView>;
 
@@ -47,7 +47,7 @@ export function initPlayer(root: HTMLElement, bus: EventTarget, data: WatchPlayl
   const desc = player.querySelector<HTMLElement>('.watch-player__desc');
   const more = player.querySelector<HTMLButtonElement>('.watch-player__more');
   const youtubeLink = byTestId<HTMLAnchorElement>(player, TESTID.youtubeLink);
-  const backLink = byTestId<HTMLAnchorElement>(player, TESTID.backLink);
+  const from = byTestId(player, TESTID.playerFrom);
   const index = indexPlaylists(data);
 
   // What the player shows, starting with what the server rendered.
@@ -68,7 +68,7 @@ export function initPlayer(root: HTMLElement, bus: EventTarget, data: WatchPlayl
     poster.hidden = false;
   };
 
-  // Clamp the description to three lines and offer Show more only when it
+  // Clamp the description to two lines and offer Show more only when it
   // overflows. Measured, not counted: line count depends on text and width.
   const capDescription = () => {
     if (!desc || !more) return;
@@ -101,8 +101,8 @@ export function initPlayer(root: HTMLElement, bus: EventTarget, data: WatchPlayl
     setText(desc, video.description);
     more?.setAttribute('aria-expanded', 'false');
     capDescription();
+    if (from) from.textContent = playlist.name;
     if (youtubeLink) youtubeLink.href = youtubeWatchUrl(video.id, playlist.youtubeId);
-    if (backLink) backLink.href = `#watch-panel-${playlist.slug}`;
   };
 
   const insertEmbed = ({ playlist, video }: Entry) => {
@@ -199,15 +199,4 @@ export function initPlayer(root: HTMLElement, bus: EventTarget, data: WatchPlayl
     }).observe(desc);
     document.fonts?.ready.then(capDescription);
   }
-
-  // Cards in a hidden panel cannot take focus, so look only in the panel shown.
-  backLink?.addEventListener('click', (event) => {
-    if (!isPlainClick(event)) return;
-    const panel = root.querySelector<HTMLElement>(`${testid(TESTID.panel)}:not([hidden])`);
-    const thumb = testid(TESTID.thumb);
-    const card = panel?.querySelector<HTMLElement>(`${thumb}[aria-current="true"]`) ?? panel?.querySelector<HTMLElement>(thumb);
-    if (!card) return;
-    event.preventDefault();
-    card.focus({ preventScroll: false });
-  });
 }

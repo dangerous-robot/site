@@ -1,0 +1,166 @@
+---
+// One row in a playlist's video list. An anchor to YouTube, so it works
+// without JavaScript; client/list.ts turns a plain click into in-page play
+// and moves the current-video mark. Nothing in a row changes size when it
+// becomes current: the accent bar is always there (transparent) and the
+// Playing badge sits over the thumbnail.
+import { CLASS, TESTID, youtubeWatchUrl } from '../../lib/watch/contract';
+import { coverSrcset } from '../../lib/watch/images';
+import type { VideoRowProps } from '../../lib/watch/types';
+
+type Props = VideoRowProps;
+const { video, playlist } = Astro.props;
+// The same video can sit in two playlists, so ids carry the slug.
+const idBase = `watch-thumb-${playlist.slug}-${video.id}`;
+const meta = [video.channel, video.durationSpoken, `published ${video.publishedText}`].filter(Boolean).join(', ');
+---
+<a
+  class="watch-thumb"
+  href={youtubeWatchUrl(video.id, playlist.youtubeId)}
+  id={idBase}
+  aria-labelledby={`${idBase}-title`}
+  aria-describedby={`${idBase}-meta`}
+  data-testid={TESTID.thumb}
+  data-video-id={video.id}
+  data-playlist={playlist.slug}
+>
+  <span class="watch-thumb__media">
+    <img
+      class="watch-thumb__cover"
+      src={video.cover.src}
+      srcset={coverSrcset(video.cover)}
+      sizes="128px"
+      alt=""
+      loading="lazy"
+      decoding="async"
+      referrerpolicy="no-referrer"
+      width="480"
+      height="270"
+    />
+    <span class={CLASS.thumbPlaying} hidden>
+      <svg xmlns="http://www.w3.org/2000/svg" width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4v16l13-8z"></path></svg>Playing
+    </span>
+    {video.durationText && <span class="watch-thumb__duration" aria-hidden="true" data-testid={TESTID.thumbDuration}>{video.durationText}</span>}
+  </span>
+  <span class="watch-thumb__text">
+    <span class="watch-thumb__title" id={`${idBase}-title`} data-testid={TESTID.thumbTitle}>{video.title}</span>
+    <span class="watch-thumb__meta" aria-hidden="true">{video.channel} · {video.publishedText}</span>
+  </span>
+  <span class="sr-only" id={`${idBase}-meta`}>{meta}</span>
+</a>
+<style>
+  .watch-thumb {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+    border-left: 3px solid transparent;
+    color: inherit;
+    text-decoration: none;
+    scroll-margin-top: var(--space-xs);
+  }
+
+  .watch-thumb:hover {
+    background: var(--color-radio-selected-bg);
+    text-decoration: none;
+  }
+
+  .watch-thumb[aria-current="true"] {
+    border-left-color: var(--color-accent);
+    background: var(--color-radio-selected-bg);
+  }
+
+  /* Inside the row, so the global ring would be clipped by the list's scroll box. */
+  .watch-thumb:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .watch-thumb__media {
+    position: relative;
+    flex: none;
+    width: 128px;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+  }
+
+  .watch-thumb__cover {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Fixed colours: the badge sits on video imagery in every theme. */
+  .watch-thumb__duration {
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    padding: 0 0.3em;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    line-height: 1.5;
+  }
+
+  /* Page background on accent: white on the dark theme's accent is under 4.5:1. */
+  .watch-thumb__playing {
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0 0.35em;
+    border-radius: 2px;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.6;
+  }
+
+  :global([data-contrast="high"]) .watch-thumb__duration,
+  :global([data-contrast="high"]) .watch-thumb__playing {
+    border: 1px solid #fff;
+  }
+
+  .watch-thumb__text {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .watch-thumb__title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
+    font-family: var(--font-heading);
+    font-size: 0.95rem;
+    line-height: var(--line-height-heading);
+    color: var(--color-text);
+  }
+
+  .watch-thumb:hover .watch-thumb__title {
+    text-decoration: underline;
+    text-decoration-color: var(--color-accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+  }
+
+  .watch-thumb__meta {
+    font-size: var(--font-size-2xs);
+    color: var(--color-text-faint);
+  }
+</style>

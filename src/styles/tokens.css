@@ -82,6 +82,16 @@
   --color-radio-text-selected: #e8e8ea;
   --color-section-label: #5e5e6e;
   --color-backdrop: rgba(0, 0, 0, 0.5);
+
+  /* Menus that open over content (the /watch playlist menu), the scrim
+     behind them, and scrollbar thumbs (3:1 on the page background) */
+  --color-menu-bg: #2c2d34;
+  --color-menu-border: #4c4d5a;
+  --color-menu-hover: #36373f;
+  --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --color-scrim: rgba(8, 8, 10, 0.62);
+  --color-scrollbar: #6a6a78;
+  color-scheme: dark;
 }
 
 /* Light theme */
@@ -121,6 +131,14 @@
   --color-radio-text-selected: #18181c;
   --color-section-label: #9090a0;
   --color-backdrop: rgba(0, 0, 0, 0.25);
+
+  --color-menu-bg: #ffffff;
+  --color-menu-border: #bdbcb3;
+  --color-menu-hover: #f0eeea;
+  --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --color-scrim: rgba(40, 40, 46, 0.34);
+  --color-scrollbar: #8a8980;
+  color-scheme: light;
 }
 
 /* High-contrast — dark base */
@@ -151,6 +169,12 @@
   --color-radio-text: #cccccc;
   --color-radio-text-selected: #ffffff;
   --color-section-label: #999999;
+
+  --color-menu-bg: #111111;
+  --color-menu-border: #cccccc;
+  --color-menu-hover: #222222;
+  --color-scrim: rgba(0, 0, 0, 0.75);
+  --color-scrollbar: #999999;
 }
 
 /* High-contrast — light base */
@@ -181,6 +205,12 @@
   --color-radio-text: #333333;
   --color-radio-text-selected: #000000;
   --color-section-label: #555555;
+
+  --color-menu-bg: #ffffff;
+  --color-menu-border: #000000;
+  --color-menu-hover: #e8e8e8;
+  --color-scrim: rgba(0, 0, 0, 0.45);
+  --color-scrollbar: #555555;
 }
 
 /* Verdict + source-kind semantic colors.

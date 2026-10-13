@@ -21,8 +21,8 @@ function firstVideo(playlist: UrlPlaylist | undefined): WatchState['video'] {
 }
 
 /**
- * Arrival state from location.search. Playlists are in tab order; with no
- * known list the tab is the server's default (defaultPlaylist). Only a known
+ * Arrival state from location.search. Playlists are in menu order; with no
+ * known list the playlist shown is the server's default (defaultPlaylist). Only a known
  * v counts as loaded, so the rewritten URL (toSearch) keeps it and drops
  * anything unknown. video is null when the selected playlist has none.
  */
@@ -50,7 +50,7 @@ export function parseUrl(search: string, playlists: readonly UrlPlaylist[]): Wat
   };
 }
 
-/** Before a video is loaded the URL follows the tab; after, it names the loaded video and stays put on tab changes. */
+/** Before a video is loaded the URL follows the playlist shown; after, it names the loaded video and stays put on playlist changes. */
 export function toSearch(state: WatchState): string {
   const params = new URLSearchParams();
   if (state.loaded && state.video) {

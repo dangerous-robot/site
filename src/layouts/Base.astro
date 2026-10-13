@@ -25,8 +25,8 @@ interface Props {
   /** Overrides og:title and twitter:title. Defaults to the same text as <title>. */
   socialTitle?: string;
   description?: string;
-  /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. 'bare': no constraints, for bespoke layouts. */
-  layout?: 'reading' | 'wide' | 'bare';
+  /** 'reading' (default): narrow centered column. 'wide': expanded list/matrix width. 'bare': no constraints, for bespoke layouts. 'app': the page fills the viewport between the nav and a one-line footer, and lays out its own columns. */
+  layout?: 'reading' | 'wide' | 'bare' | 'app';
   /** 'standard' (default): render the top site-nav. 'minimal': page provides its own chrome. */
   chrome?: 'standard' | 'minimal';
   ogImage?: string;
@@ -131,7 +131,7 @@ const orgSchema = {
       })();
     </script>
   </head>
-  <body>
+  <body class={layout === 'app' ? 'layout-app' : undefined}>
     {releaseLabel && (
       <div class="alpha-banner" role="status">
         <span class="alpha-tag">{releaseLabel}</span>
@@ -325,7 +325,7 @@ const orgSchema = {
     </main>
 
     <footer class="site-footer">
-      <p>A community project from the maker of <a href="https://treadlightly.ai">TreadLightlyAI</a>.</p>
+      <p>A community project from the maker of <a href="https://treadlightly.ai">TreadLightlyAI</a>{layout === 'app' ? '' : '.'}</p>
       <p>
         {FOOTER_LINKS.map((l, i) => (
           <Fragment>{i > 0 && footerSeparator}{l.external
@@ -563,6 +563,63 @@ const orgSchema = {
 
       .site-footer p {
         margin: var(--space-xs) 0;
+      }
+
+      /* App layout: the body is one viewport tall (600px at least, so a short
+         window scrolls the page instead of crushing it) and the page's own
+         columns scroll inside main. No overflow on body: it would pass to the
+         viewport and stop that page scroll. */
+      .layout-app {
+        height: 100vh;
+        min-height: 600px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .layout-app .site-nav,
+      .layout-app .site-footer {
+        flex: none;
+      }
+
+      /* Two classes, so the narrow-screen .content gutter further down cannot pad it. */
+      .content.content--app {
+        flex: 1 1 auto;
+        min-height: 0;
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .layout-app .site-footer {
+        padding: var(--space-xs) var(--space-lg);
+      }
+
+      /* One line: the two paragraphs run on, joined by the footer separator. */
+      .layout-app .site-footer p {
+        display: inline;
+        margin: 0;
+      }
+
+      .layout-app .site-footer p + p::before {
+        content: "\a0\a0·\a0\a0";
+      }
+
+      /* Narrow windows: the app layout stacks its columns and the page
+         scrolls. Literal breakpoint: BREAKPOINT_STACK_PX in
+         src/lib/watch/contract.ts, the only page using this layout. */
+      @media (max-width: 860px) {
+        .layout-app {
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .content.content--app {
+          overflow: visible;
+        }
       }
 
       .site-footer a {

@@ -1,30 +1,32 @@
 // Page-level smoke test against the fixture build: the shell renders, nothing
-// from YouTube's player or frame servers loads before the reader asks, and
-// the page still works without JavaScript.
+// from YouTube's player loads before the reader asks, and the page still
+// works without JavaScript.
 import { EMBED_ORIGIN, TESTID } from '../../src/lib/watch/contract';
 import { FIXTURE_OMITTED_SLUGS, FIXTURE_PLAYLISTS, fixturePlaylist } from '../../src/lib/watch/fixtures/expected';
-import { YTIMG_ORIGIN } from '../../src/lib/watch/frames';
-import { expect, isFrameUrl, panel, test, watchRoot } from './helpers';
+import { YTIMG_ORIGIN } from '../../src/lib/watch/images';
+import { expect, panel, test, watchRoot } from './helpers';
 
 const SLUGS = FIXTURE_PLAYLISTS.map((p) => p.slug);
 
-test('loads the fixture playlists without player or frame requests', async ({ page, network }) => {
+test('loads the fixture playlists without player requests', async ({ page, network }) => {
   const response = await page.goto('/watch');
   expect(response?.status()).toBe(200);
   const root = watchRoot(page);
   await expect(root).toHaveAttribute('data-watch-mode', 'fixture');
-  // client/main.ts ran: the URL names the server's default tab.
+  // client/main.ts ran: the URL names the server's default playlist.
   await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Watch' })).toHaveCount(1);
 
-  const tabSlugs = await root.getByTestId(TESTID.tab).evaluateAll((tabs) => tabs.map((t) => t.getAttribute('data-playlist')));
-  expect(tabSlugs).toEqual(SLUGS);
+  const optionSlugs = await root.getByTestId(TESTID.option).evaluateAll((els) => els.map((e) => e.getAttribute('data-playlist')));
+  expect(optionSlugs).toEqual(SLUGS);
+  const panelSlugs = await root.getByTestId(TESTID.panel).evaluateAll((els) => els.map((e) => e.getAttribute('data-playlist')));
+  expect(panelSlugs).toEqual(SLUGS);
   for (const slug of FIXTURE_OMITTED_SLUGS) await expect(root.locator(`[data-playlist="${slug}"]`)).toHaveCount(0);
 
   await page.waitForLoadState('networkidle');
   await expect(page.locator('iframe')).toHaveCount(0);
   expect(network.requests.filter((url) => url.startsWith(EMBED_ORIGIN))).toEqual([]);
-  expect(network.requests.filter(isFrameUrl)).toEqual([]);
-  // Positive control for the two filters above: covers do come through the route.
+  // Positive control for the filter above: covers do come through the route.
   expect(network.requests.some((url) => url.startsWith(`${YTIMG_ORIGIN}/vi/`))).toBe(true);
   // Startup does not announce.
   await expect(root.getByTestId(TESTID.status)).toHaveText('');
@@ -43,12 +45,19 @@ test('a failed playlist links to YouTube from its empty state', async ({ page })
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('every panel shows and every card links to YouTube', async ({ page }) => {
+  test('every panel shows under its heading and every row links to YouTube', async ({ page }) => {
     await page.goto('/watch');
     const root = watchRoot(page);
     const panels = root.getByTestId(TESTID.panel);
     await expect(panels).toHaveCount(FIXTURE_PLAYLISTS.length);
-    for (const p of await panels.all()) await expect(p).toBeVisible();
+    for (const p of await panels.all()) {
+      await expect(p).toBeVisible();
+      const heading = p.getByRole('heading', { level: 2 });
+      await expect(heading).toBeVisible();
+      await expect(heading).not.toHaveText('');
+      // The sr-only clip is undone, so the heading has a real box.
+      expect((await heading.boundingBox())?.width ?? 0).toBeGreaterThan(20);
+    }
 
     const thumbs = root.getByTestId(TESTID.thumb);
     const alpha = fixturePlaylist('alpha');
@@ -57,7 +66,8 @@ test.describe('without JavaScript', () => {
       await expect(thumb).toBeVisible();
       await expect(thumb).toHaveAttribute('href', new RegExp(`^https://www\\.youtube\\.com/watch\\?v=[\\w-]{11}&list=${alpha.youtubeId}$`));
     }
-    await expect(root.getByTestId(TESTID.tablist)).toBeHidden();
+    await expect(root.getByTestId(TESTID.switcher)).toBeHidden();
+    await expect(root.getByTestId(TESTID.resizer)).toBeHidden();
     await expect(root.getByTestId(TESTID.player)).toBeHidden();
     await expect(root.getByTestId(TESTID.notice)).toBeHidden();
   });

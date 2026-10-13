@@ -1,84 +1,53 @@
 ---
-// One tab panel per playlist (UI spec § 3.3, § 5). client/main.ts shows and
-// hides panels; the grid and popup behaviour live in client/grid.ts and
-// client/popup.ts.
+// One playlist's video list. client/main.ts shows one panel at a time and
+// keeps each playlist's scroll position; row clicks live in client/list.ts.
+// The heading is for screen readers and the no-JavaScript page, where every
+// panel shows and the switcher does not.
 import EmptyState from '../EmptyState.astro';
-import VideoThumb from './VideoThumb.astro';
+import VideoRow from './VideoRow.astro';
 import { TESTID, youtubePlaylistUrl } from '../../lib/watch/contract';
 import type { WatchPanelProps } from '../../lib/watch/types';
 
 type Props = WatchPanelProps;
-const { playlist, selected, eagerFirstRow } = Astro.props;
-const n = playlist.videos.length;
+const { playlist, selected } = Astro.props;
 ---
-<div
+<section
   class="watch-panel"
-  role="tabpanel"
   id={`watch-panel-${playlist.slug}`}
   aria-labelledby={`watch-panel-${playlist.slug}-title`}
   data-testid={TESTID.panel}
   data-playlist={playlist.slug}
   hidden={!selected}
 >
-  <div class="watch-panel__head">
-    <h2 class="watch-panel__title" id={`watch-panel-${playlist.slug}-title`}>{playlist.name}</h2>
-    {n > 0 && <span class="watch-panel__count" data-testid={TESTID.panelCount}>{n} {n === 1 ? 'video' : 'videos'}</span>}
-  </div>
+  <h2 class="watch-panel__title sr-only" id={`watch-panel-${playlist.slug}-title`}>{playlist.name}</h2>
   {playlist.status === 'ok' ? (
-    <ul class="watch-grid" data-testid={TESTID.grid}>
-      {playlist.videos.map((video, index) => (
-        <li><VideoThumb video={video} playlist={playlist} eager={eagerFirstRow && index < 2} /></li>
+    <ul class="watch-list" role="list" data-testid={TESTID.list}>
+      {playlist.videos.map((video) => (
+        <li><VideoRow video={video} playlist={playlist} /></li>
       ))}
     </ul>
   ) : playlist.status === 'failed' ? (
-    <div data-testid={TESTID.empty}>
+    <div class="watch-panel__empty" data-testid={TESTID.empty}>
       <EmptyState message="These videos could not be loaded.">
         <p class="watch-panel__link"><a href={youtubePlaylistUrl(playlist.youtubeId)}>See the playlist on YouTube</a></p>
       </EmptyState>
     </div>
   ) : (
-    <div data-testid={TESTID.empty}>
+    <div class="watch-panel__empty" data-testid={TESTID.empty}>
       <EmptyState message="This playlist has no public videos right now." />
     </div>
   )}
-</div>
+</section>
 <style>
-  .watch-panel__head {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: var(--space-md);
-    margin: var(--space-lg) 0 var(--space-md);
-  }
-
-  .watch-panel__title {
-    margin: 0;
-    font-size: 1.2rem;
-  }
-
-  /* As .post-date (writing/index.astro). */
-  .watch-panel__count {
-    font-family: var(--font-mono);
-    font-size: var(--font-size-2xs);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--color-text-faint);
-  }
-
-  .watch-grid {
+  /* The bottom room lets the last row scroll clear of the floating accessibility button. */
+  .watch-list {
     list-style: none;
     margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-xl) var(--space-lg);
+    padding: var(--space-xs) 0 4rem;
   }
 
-  /* Literal breakpoint: BREAKPOINT_PHONE_PX in contract.ts. */
-  @media (max-width: 640px) {
-    .watch-grid {
-      grid-template-columns: minmax(0, 1fr);
-    }
+  .watch-panel__empty {
+    padding: 0 var(--space-md);
   }
 
   /* Slotted into EmptyState, whose scoped p rule does not reach it. */
