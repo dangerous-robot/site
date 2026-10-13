@@ -6,7 +6,7 @@ import { VALUES_POSITIONS } from '../lib/valuesPositions';
 
 const op = operator();
 // Headings and ids come from the list the Responsible AI matrix links into.
-const [safety, environment, power, human] = VALUES_POSITIONS;
+const [safety, environment, power, informed, human] = VALUES_POSITIONS;
 ---
 <Base title="Values" description="Dangerous Robot's editorial position, plainly stated." layout="reading">
   <article class="reading">
@@ -46,6 +46,12 @@ const [safety, environment, power, human] = VALUES_POSITIONS;
       built, how fast it ships, and which risks are acceptable. Most of the
       people who will live with those choices have no say in them. This site
       exists to help more people have a say while they still can.
+    </p>
+
+    <h2 id={informed.id}>{informed.heading}</h2>
+    <p>
+      That means AI companies have a responsibility to be transparent, and to
+      operate in support of the general welfare of humanity.
     </p>
 
     <h2 id={human.id}>{human.heading}</h2>

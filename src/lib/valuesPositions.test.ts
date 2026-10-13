@@ -4,11 +4,12 @@ import { matrixEvidenceProblems, type CheckLookups, type MatrixDataForCheck } fr
 import { VALUES_POSITIONS, VALUES_POSITION_IDS, positionHeading } from './valuesPositions';
 
 describe('VALUES_POSITIONS', () => {
-  test('lists the four position headings of the Values page, each id the slug of its heading', () => {
+  test('lists the five position headings of the Values page, each id the slug of its heading', () => {
     assert.deepEqual(VALUES_POSITIONS.map((p) => p.id), [
       'ai-safety-is-unsolved',
       'ai-is-fueling-environmental-destruction',
       'ai-outcomes-are-being-decided-by-a-small-group-of-people',
+      'people-have-a-right-to-informed-choices-about-ai',
       'staying-human-and-connected-to-each-other-will-be-essential',
     ]);
     assert.deepEqual(VALUES_POSITION_IDS, VALUES_POSITIONS.map((p) => p.id));

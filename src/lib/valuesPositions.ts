@@ -18,6 +18,7 @@ export const VALUES_POSITIONS: readonly ValuesPosition[] = [
   'AI safety is unsolved',
   'AI is fueling environmental destruction',
   'AI outcomes are being decided by a small group of people',
+  'People have a right to informed choices about AI',
   'Staying human and connected to each other will be essential',
 ].map((heading) => ({ id: slug(heading), heading }));
 
