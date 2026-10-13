@@ -37,7 +37,7 @@ Data comes from YouTube Data API v3. It is fetched at build time by a custom Ast
 - [x] T22: Cross-lane browser tests after the wave 4 merge (wave 5)
 - [x] T17: Wire checks into npm, Invoke and CI; weekly scheduled deploy of main (wave 5)
 - [x] T18: Architecture docs and roadmap (wave 5)
-- [ ] T19: Live key verification on Brandon's machine (wave 6)
+- [x] T19: Live key verification on Brandon's machine (wave 6)
 - [ ] T21: Manual-dispatch deploy verification of the per-playlist fetch log lines (wave 6, ask Brandon first)
 - [ ] T20: Manual browser check and first deploy (wave 6, ask Brandon first)
 
