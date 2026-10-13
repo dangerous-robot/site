@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 code done and its copy applied (D1, D2), 7 of the 9 stance sentences await Brandon's read; S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), free-tier trial cells set to No (D18); not ticked because stance-row cells with no page stating the answer stay not yet sourced; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 done (stance sentences, intro, every stance row backed by a source or a Values position); S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), free-tier trial cells set to No (D18); not ticked because stance-row cells with no page stating the answer stay not yet sourced; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -26,7 +26,7 @@ Honest labels (no new research)
 - [x] S8a: apply the post-S8 answers (A1 to A8 under Decisions; 5 launch dates and GPT-OSS's source left for S10, see S8a)
 
 Sources for every stance row
-- [ ] S9: stance sentences and their evidence (code done; copy applied 2026-10-12, Brandon to confirm the 7 sentences he did not write)
+- [x] S9: stance sentences and their evidence (copy final 2026-10-12)
 - [ ] S10: one source per stance-row cell, then feature rows and the summary
 - [x] S11: the research linter counts sources the page cites
 
@@ -84,6 +84,7 @@ Brandon, 2026-10-12:
 - D18 (does a free trial count as a free tier): no. GreenPT and ChatGPTree free-tier cells read No, detail "Trial"; GreenPT's cites the Fello AI review ("There is no permanent free plan, but every plan includes a 14-day free trial"), ChatGPTree's stays not yet sourced (no ingested page names its trial).
 - D1 and D2 (stance sentences and page intro): the approach stands, with two changes. The page says "Prefer", never "We prefer" (row label, color legend, legend note, screen-reader phrases, intro). Each stance sentence states a fact about the attribute ("X is Y") instead of opening with a preference; Brandon wrote the models and accessibility sentences. Positions are linked only where the draft named a firm fit (renewable hosting, energy display, models, open-weight models, ownership).
 - Image energy source and a fifth Values position: the no-image-generation sentence cites USC Libraries' "Hidden Costs of AI" (`2025/hidden-costs-of-ai-practical-steps-to-reduce-energy-and-water-use`: image generation 2.9 kWh per thousand queries against 0.002 kWh for text classification, "a 1,450-fold difference"). New Values position "People have a right to informed choices about AI" (Brandon's wording, rough draft) backs published financials and data used for training.
+- S9 copy final: Brandon left the final edit of the agent-written sentences to the agent (2026-10-12); three were tightened (training, open-weight, ownership), the accessibility sentence cites the W3C WCAG 2 overview (`2026/web-content-accessibility-guidelines-wcag-overview`, no archived copy yet: archive.org 429), and the informed-choice Values paragraph was written out (`2e7e56a`).
 
 Brandon, 2026-10-11:
 

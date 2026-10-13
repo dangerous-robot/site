@@ -221,7 +221,7 @@ data:
       polarity: inverted
       ideal:
         value: "no"
-        note: "A chatbot that does not train on your conversations uses what you type only to answer your request."
+        note: "Training on your conversations uses what you type for purposes beyond your request."
         position: "/values#people-have-a-right-to-informed-choices-about-ai"
       cells:
         greenpt: { type: "no", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
@@ -237,7 +237,7 @@ data:
       criterion: corporate-structure
       ideal:
         answer: "non-profit or similar"
-        note: "Non-profits, steward-owned companies, cooperatives, B Corps and employee-owned companies answer to more than shareholders."
+        note: "Non-profits, steward-owned companies, cooperatives, B Corps and employee-owned companies answer to more than shareholder returns."
         position: "/values#ai-outcomes-are-being-decided-by-a-small-group-of-people"
         terms:
           good: [non-profit, steward-ownership, cooperative, B-corp, employee-owned]
@@ -326,6 +326,7 @@ data:
       ideal:
         value: "yes"
         note: "WCAG 2.x Level AA support helps ensure that people who use assistive technology can use the chatbot too."
+        sources: [/research/sources/2026/web-content-accessibility-guidelines-wcag-overview]
       # No product publishes an accessibility statement (searched
       # 2026-10-10). A cell is Partial where a Lighthouse 13.5.0
       # accessibility audit of the product's public page found a scored
@@ -356,7 +357,7 @@ data:
       group: models-safety
       ideal:
         value: "yes"
-        note: "Open-weight models can be inspected, run and hosted by anyone, so no single company controls them."
+        note: "Open-weight models can be inspected, run and hosted by anyone, so no single company controls where they run."
         position: "/values#ai-outcomes-are-being-decided-by-a-small-group-of-people"
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
