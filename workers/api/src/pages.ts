@@ -48,6 +48,8 @@ export function actionPage(heading: string, text: string, action: string, token:
 ${backLink(postUrl)}`);
 }
 
-export function messagePage(heading: string, text: string, postUrl: string | null, status = 200): Response {
-  return page(heading, `<h1>${escapeHtml(heading)}</h1><p>${escapeHtml(text)}</p>${postUrl ? backLink(postUrl) : ''}`, status);
+/** `text` is one paragraph, or several. */
+export function messagePage(heading: string, text: string | string[], postUrl: string | null, status = 200): Response {
+  const paragraphs = (Array.isArray(text) ? text : [text]).map((p) => `<p>${escapeHtml(p)}</p>`).join('');
+  return page(heading, `<h1>${escapeHtml(heading)}</h1>${paragraphs}${postUrl ? backLink(postUrl) : ''}`, status);
 }

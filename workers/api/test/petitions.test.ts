@@ -465,7 +465,9 @@ describe('confirmation reminder', () => {
     expect(sentEmails).toHaveLength(2);
     const stale = await post('confirm', oldToken);
     expect(stale.status).toBe(400);
-    expect(await stale.text()).toContain('A newer email from us may have replaced it');
+    const page = await stale.text();
+    expect(page).toContain('a newer email from us has replaced it');
+    expect(page).toContain('sign the petition again with the same email address');
     expect((await post('confirm', lastToken('confirm'))).status).toBe(200);
   });
 
