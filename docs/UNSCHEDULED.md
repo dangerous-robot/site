@@ -105,8 +105,9 @@ The dependency advisories below were deferred when the high and critical fixes l
 | Work Item | Notes |
 |-----------|-------|
 | ~~Deeper security analysis~~ | **Done** 2026-10-06 (local-only, `security/`): a full review of the site, Workers, pipeline and agent tooling. Its known security issues are SEC-X (Known security issues) in the roadmap. The remaining hardening workstreams stay out of this public file until each is fixed or written up exploit-free; the next public pass adds one line per workstream. Triage: Security; in SEC-X; 2026-10-09 |
-| `astro` AVIF advisory and `sharp` (libvips) advisory | The fix needs the Astro 7 major upgrade. The site does not use Astro's image optimizer. Target: after 1.0.0 (Astro 7 upgrade deferred until then). Triage: Security; keep (operator); 2026-10-07 |
-| `markdownlint-cli2` (bundled `js-yaml` advisory) | The fix is a breaking major bump of a dev-only lint tool. Triage: Security; keep; 2026-10-07 |
+| `markdownlint-cli2` advisory chain (`braces`, `micromatch`, `globby`, `katex`, `smol-toml` and others) | Accepted 2026-10-13: dev-only lint of our own Markdown; even the latest 0.23.3 is still flagged (checked in a scratch lockfile), so upgrading clears nothing. Recheck when a release clears them. Triage: Security; keep (operator); 2026-10-13 |
+| Worker test tooling advisories (`wrangler`, `miniflare`, `undici`, `sharp`, via `@cloudflare/vitest-pool-workers`) | Accepted 2026-10-13: local test and deploy tools only; the deployed Worker runs on Cloudflare's runtime. The latest `wrangler` 4.150.0 and pool 0.23.0 are still flagged; npm's suggested fix is a downgrade to 0.8.30. Recheck when Cloudflare releases a fix. Triage: Security; keep (operator); 2026-10-13 |
+| ~~`astro` and `sharp` advisories~~ | Scheduled 2026-10-13 as SEC-AP (Astro 7 upgrade), beta.8. |
 | ~~Medium-severity Python advisories~~ | **Done** as SEC-M in the roadmap (beta.6). |
 
 ---
