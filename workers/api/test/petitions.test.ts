@@ -48,6 +48,8 @@ interface SignOpts {
   email?: string;
   /** true sends a checked box; a string sends that raw show_name value. */
   consent?: boolean | string;
+  /** true sends a checked updates box. */
+  updates?: boolean;
   honeypot?: string;
   elapsed?: number;
   json?: boolean;
@@ -64,6 +66,7 @@ function sign(o: SignOpts = {}): Promise<Response> {
   });
   if (typeof o.consent === 'string') body.set('show_name', o.consent);
   else if (o.consent) body.set('show_name', 'on');
+  if (o.updates) body.set('updates', 'on');
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'CF-Connecting-IP': o.ip ?? `10.0.0.${++ipCounter}`,
@@ -206,6 +209,32 @@ describe('signing and consent', () => {
     await sign({ name: 'Alan Turing' });
     expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no');
     expect(sentEmails.at(-1)!.text).toContain('a newer email replaces');
+  });
+});
+
+describe('email updates opt-in', () => {
+  const updatesConsent = async (email: string) =>
+    (await env.DB.prepare('SELECT updates_consent AS u FROM signatures WHERE email = ?').bind(email).first<{ u: number }>())!.u;
+
+  it('records the choice only for a checked box', async () => {
+    await sign({ email: 'yes@example.org', updates: true });
+    await sign({ email: 'no@example.org' });
+    expect(await updatesConsent('yes@example.org')).toBe(1);
+    expect(await updatesConsent('no@example.org')).toBe(0);
+  });
+
+  it('states the choice in the confirmation email', async () => {
+    await sign({ updates: true });
+    expect(sentEmails.at(-1)!.text).toContain('Email updates about this campaign: yes');
+    await sign();
+    expect(sentEmails.at(-1)!.text).toContain('Email updates about this campaign: no');
+  });
+
+  it('takes the newer choice when an unconfirmed signer signs again', async () => {
+    await sign({ email: 'again@example.org', updates: true });
+    await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
+    await sign({ email: 'again@example.org' });
+    expect(await updatesConsent('again@example.org')).toBe(0);
   });
 });
 
@@ -390,7 +419,7 @@ describe('schema', () => {
   it('holds no IP or user agent column on signatures', async () => {
     const cols = await env.DB.prepare('PRAGMA table_info(signatures)').all<{ name: string }>();
     const names = cols.results.map((c) => c.name);
-    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash']);
+    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash', 'updates_consent']);
   });
 
   it('logs email sends by time alone', async () => {
@@ -425,5 +454,15 @@ describe('daily cleanup', () => {
     const row = await env.DB.prepare('SELECT name, email FROM signatures').first();
     expect(row).toEqual({ name: 'Kept Name', email: null });
     expect((await publicJson()).body.count).toBe(1);
+  });
+
+  it('keeps the email of a confirmed signer who asked for updates when the petition closes', async () => {
+    await signAndConfirm({ email: 'updates@example.org', updates: true });
+    await signAndConfirm({ email: 'quiet@example.org' });
+    await sign({ email: 'unconfirmed@example.org', updates: true });
+    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await cleanup(env);
+    const { results } = await env.DB.prepare('SELECT email FROM signatures WHERE email IS NOT NULL').all();
+    expect(results).toEqual([{ email: 'updates@example.org' }]);
   });
 });

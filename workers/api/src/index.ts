@@ -52,8 +52,11 @@ export async function cleanup(env: Env, now = new Date()): Promise<void> {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM signatures WHERE confirmed_at IS NULL AND created_at < ?').bind(cutoff),
     env.DB.prepare('DELETE FROM email_sends WHERE sent_at < ?').bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString()),
+    // Confirmed signers who asked for updates keep their email until they opt out.
     env.DB.prepare(
-      "UPDATE signatures SET email = NULL WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')",
+      `UPDATE signatures SET email = NULL
+       WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')
+         AND NOT (confirmed_at IS NOT NULL AND updates_consent = 1)`,
     ),
   ]);
 }
@@ -129,6 +132,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   }
   // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
   const showName = form.get('show_name') === 'on';
+  const wantsUpdates = form.get('updates') === 'on';
 
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
   const now = Date.now();
@@ -144,21 +148,21 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   // unless one went out within RESEND_WINDOW_MS. A confirmed address is left
   // alone. Every case gets the same reply, so the form never reveals who has signed.
   const row = await env.DB.prepare(
-    `INSERT INTO signatures (petition_slug, name, email, display_consent, created_at, token_hash)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO signatures (petition_slug, name, email, display_consent, updates_consent, created_at, token_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (petition_slug, email) DO UPDATE SET
-       name = excluded.name, display_consent = excluded.display_consent,
+       name = excluded.name, display_consent = excluded.display_consent, updates_consent = excluded.updates_consent,
        created_at = excluded.created_at, token_hash = excluded.token_hash
      WHERE signatures.confirmed_at IS NULL AND signatures.created_at < ?
      RETURNING id`,
   )
-    .bind(slug, name, email, showName ? 1 : 0, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
+    .bind(slug, name, email, showName ? 1 : 0, wantsUpdates ? 1 : 0, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
     .first<{ id: number }>();
 
   if (row) {
     const base = `${new URL(request.url).origin}/petitions/${slug}`;
     try {
-      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
+      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, wantsUpdates, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
     } catch (err) {
       console.error(err);
       // Drop the row so an immediate retry is not swallowed by the resend window.

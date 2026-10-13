@@ -36,11 +36,12 @@ export interface ConfirmationDetails {
   title: string;
   name: string;
   showName: boolean;
+  wantsUpdates: boolean;
   confirmUrl: string;
   removeUrl: string;
 }
 
-export function confirmationEmail({ to, title, name, showName, confirmUrl, removeUrl }: ConfirmationDetails): Email {
+export function confirmationEmail({ to, title, name, showName, wantsUpdates, confirmUrl, removeUrl }: ConfirmationDetails): Email {
   return {
     to,
     subject: `Confirm your signature: ${title}`,
@@ -49,6 +50,7 @@ export function confirmationEmail({ to, title, name, showName, confirmUrl, remov
       '',
       `Name: ${name}`,
       `Shown on the public list: ${showName ? 'yes' : 'no'}`,
+      `Email updates about this campaign: ${wantsUpdates ? 'yes' : 'no'}`,
       '',
       'Confirm your signature:',
       confirmUrl,
