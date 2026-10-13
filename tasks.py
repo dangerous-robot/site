@@ -67,7 +67,7 @@ def worker_deploy(ctx):
 
 # --- Petition email lists (read from D1 with your wrangler login; no public endpoint) ---
 
-# Matches the Worker's sign check. It also keeps an address safe inside a SQL
+# Matches the Worker's sign check (workers/api/src/index.ts); keep the two in step. It also keeps an address safe inside a SQL
 # string literal, which matters because `wrangler d1 execute` takes no bind values.
 _PLAIN_EMAIL = re.compile(r"^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$")
 _SLUG = re.compile(r"^[a-z0-9-]+$")
@@ -89,7 +89,7 @@ def _d1(ctx, sql, local):
 @task(
     help={
         "kind": "unconfirmed (not yet confirmed) or updates (confirmed and asked for updates)",
-        "petition": "Only this petition's slug (default: all petitions)",
+        "petition": "The petition's slug; required for updates, since each signer opted in to one campaign",
         "local": "Read the local dev database instead of the live one",
     }
 )
@@ -97,9 +97,11 @@ def petition_emails(ctx, kind, petition="", local=False):
     """Print petition signers' email addresses, one per line, from the live database."""
     if kind not in _PETITION_LISTS:
         raise SystemExit(f"--kind must be one of: {', '.join(_PETITION_LISTS)}")
+    if kind == "updates" and not petition:
+        raise SystemExit("--petition is required for updates: each signer asked for one campaign's updates")
     where = f"email IS NOT NULL AND {_PETITION_LISTS[kind]}"
     if petition:
-        if not _SLUG.match(petition):
+        if not _SLUG.fullmatch(petition):
             raise SystemExit("--petition must be a petition slug (a-z, 0-9, -)")
         where += f" AND petition_slug = '{petition}'"
     rows = _d1(ctx, f"SELECT DISTINCT email FROM signatures WHERE {where} ORDER BY email", local)
@@ -112,7 +114,7 @@ def petition_emails(ctx, kind, petition="", local=False):
 def petition_stop_updates(ctx, email, local=False):
     """Stop campaign updates for an address. The signature stays; a closed petition's cleanup then deletes the address."""
     email = email.strip().lower()
-    if not _PLAIN_EMAIL.match(email):
+    if not _PLAIN_EMAIL.fullmatch(email):
         raise SystemExit("Not a plain email address.")
     rows = _d1(
         ctx,

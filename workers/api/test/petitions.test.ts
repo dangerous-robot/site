@@ -230,6 +230,24 @@ describe('email updates opt-in', () => {
     expect(sentEmails.at(-1)!.text).toContain('Email updates about this campaign: no');
   });
 
+  it('treats only a checked box as consent to updates', async () => {
+    for (const [i, raw] of ['1', 'true', 'yes', ''].entries()) {
+      const body = new URLSearchParams({ name: 'Raw', email: `raw${i}@example.org`, website: '', elapsed: '10000', updates: raw });
+      await call(`/petitions/${SLUG}/sign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'CF-Connecting-IP': `10.9.0.${i}`, Origin: SITE, Accept: 'application/json' },
+        body,
+      });
+      expect(await updatesConsent(`raw${i}@example.org`)).toBe(0);
+    }
+  });
+
+  it('keeps a confirmed signer\'s choice when they sign again', async () => {
+    await signAndConfirm({ email: 'kept@example.org', updates: true });
+    await sign({ email: 'kept@example.org' });
+    expect(await updatesConsent('kept@example.org')).toBe(1);
+  });
+
   it('takes the newer choice when an unconfirmed signer signs again', async () => {
     await sign({ email: 'again@example.org', updates: true });
     await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
@@ -454,6 +472,14 @@ describe('daily cleanup', () => {
     const row = await env.DB.prepare('SELECT name, email FROM signatures').first();
     expect(row).toEqual({ name: 'Kept Name', email: null });
     expect((await publicJson()).body.count).toBe(1);
+  });
+
+  it('deletes the email at close once an opted-in signer has asked to stop', async () => {
+    await signAndConfirm({ email: 'stopped@example.org', updates: true });
+    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await env.DB.prepare("UPDATE signatures SET updates_consent = 0 WHERE email = 'stopped@example.org'").run();
+    await cleanup(env);
+    expect(await env.DB.prepare('SELECT email FROM signatures').first()).toEqual({ email: null });
   });
 
   it('keeps the email of a confirmed signer who asked for updates when the petition closes', async () => {
