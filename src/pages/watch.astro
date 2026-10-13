@@ -14,9 +14,9 @@ import { TESTID, YOUTUBE_TERMS_URL } from '../lib/watch/contract';
 import type { WatchClientData, WatchMode, WatchPlaylistView } from '../lib/watch/types';
 import { formatPostDate } from '../lib/writing';
 
-// TODO(Brandon): write the intro. It ships visibly as is, and the same text
-// should become the page description below.
-const WATCH_LEDE = 'Intro: TBD, Brandon to write.';
+// Also the page's meta description.
+// TODO(Brandon): review this draft intro before the first deploy.
+const WATCH_LEDE = 'Talks and lectures on AI safety and AI ethics.';
 
 const entries = (await getCollection('watchPlaylists')).sort((a, b) => a.data.order - b.data.order);
 // formatPostDate imports astro:content, so dates are formatted here and
@@ -32,7 +32,7 @@ const selectedSlug = selected?.slug ?? '';
 const initialVideo = selected?.videos[0] ?? null;
 const payload: WatchClientData = { playlists };
 ---
-<Base title="Watch" layout="wide">
+<Base title="Watch" description={WATCH_LEDE} layout="wide">
   <div class="watch" data-testid={TESTID.page} data-watch-mode={mode}>
     <Breadcrumb crumbs={[{ label: 'Home', href: '/' }, { label: 'Watch' }]} />
     <h1>Watch</h1>
