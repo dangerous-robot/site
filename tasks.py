@@ -5,7 +5,6 @@ Setup: uv tool install invoke  (once, globally)
 """
 
 import json
-import re
 import shlex
 import sys
 
@@ -67,22 +66,23 @@ def worker_deploy(ctx):
 
 # --- Petition email lists (read from D1 with your wrangler login; no public endpoint) ---
 
-# Matches the Worker's sign check (workers/api/src/index.ts); keep the two in step. It also keeps an address safe inside a SQL
-# string literal, which matters because `wrangler d1 execute` takes no bind values.
-_PLAIN_EMAIL = re.compile(r"^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$")
-_SLUG = re.compile(r"^[a-z0-9-]+$")
 _PETITION_LISTS = {
     # Pending confirmation; the daily cleanup deletes these after 7 days.
-    "unconfirmed": "confirmed_at IS NULL",
-    # Double opt-in: ticked the updates box and confirmed the signature.
-    "updates": "confirmed_at IS NOT NULL AND updates_consent = 1",
+    "unconfirmed": "signatures WHERE confirmed_at IS NULL",
+    # Double opt-in, defined once in migration 0004 and shared with the Worker's cleanup.
+    "updates": "update_recipients WHERE 1",
 }
 
 
+def _sql_str(value):
+    """A SQL string literal; `wrangler d1 execute` takes no bind values."""
+    return "'" + value.replace("'", "''") + "'"
+
+
 def _d1(ctx, sql, local):
-    where = "--local" if local else "--remote"
+    target = "--local" if local else "--remote"
     with ctx.cd("workers/api"):
-        result = ctx.run(f"npx wrangler d1 execute dr-api {where} --json --command {shlex.quote(sql)}", hide=True)
+        result = ctx.run(f"npx wrangler d1 execute dr-api {target} --json --command {shlex.quote(sql)}", hide=True)
     return json.loads(result.stdout)[0]["results"]
 
 
@@ -99,12 +99,10 @@ def petition_emails(ctx, kind, petition="", local=False):
         raise SystemExit(f"--kind must be one of: {', '.join(_PETITION_LISTS)}")
     if kind == "updates" and not petition:
         raise SystemExit("--petition is required for updates: each signer asked for one campaign's updates")
-    where = f"email IS NOT NULL AND {_PETITION_LISTS[kind]}"
+    sql = f"SELECT DISTINCT email FROM {_PETITION_LISTS[kind]} AND email IS NOT NULL"
     if petition:
-        if not _SLUG.fullmatch(petition):
-            raise SystemExit("--petition must be a petition slug (a-z, 0-9, -)")
-        where += f" AND petition_slug = '{petition}'"
-    rows = _d1(ctx, f"SELECT DISTINCT email FROM signatures WHERE {where} ORDER BY email", local)
+        sql += f" AND petition_slug = {_sql_str(petition)}"
+    rows = _d1(ctx, sql + " ORDER BY email", local)
     for row in rows:
         print(row["email"])
     print(f"{len(rows)} {kind} address(es)", file=sys.stderr)
@@ -113,12 +111,9 @@ def petition_emails(ctx, kind, petition="", local=False):
 @task(help={"email": "The address that asked to stop updates", "local": "Use the local dev database"})
 def petition_stop_updates(ctx, email, local=False):
     """Stop campaign updates for an address. The signature stays; a closed petition's cleanup then deletes the address."""
-    email = email.strip().lower()
-    if not _PLAIN_EMAIL.fullmatch(email):
-        raise SystemExit("Not a plain email address.")
     rows = _d1(
         ctx,
-        f"UPDATE signatures SET updates_consent = 0 WHERE email = '{email}' AND updates_consent = 1 RETURNING petition_slug",
+        f"UPDATE signatures SET updates_consent = 0 WHERE email = {_sql_str(email.strip().lower())} AND updates_consent = 1 RETURNING petition_slug",
         local,
     )
     print(f"Updates stopped on {len(rows)} signature(s): {', '.join(r['petition_slug'] for r in rows) or 'none matched'}")

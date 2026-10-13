@@ -52,11 +52,11 @@ export async function cleanup(env: Env, now = new Date()): Promise<void> {
   await env.DB.batch([
     env.DB.prepare('DELETE FROM signatures WHERE confirmed_at IS NULL AND created_at < ?').bind(cutoff),
     env.DB.prepare('DELETE FROM email_sends WHERE sent_at < ?').bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString()),
-    // Confirmed signers who asked for updates keep their email until they opt out.
+    // Update recipients (migration 0004) keep their email until they opt out.
     env.DB.prepare(
       `UPDATE signatures SET email = NULL
        WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')
-         AND NOT (confirmed_at IS NOT NULL AND updates_consent = 1)`,
+         AND id NOT IN (SELECT id FROM update_recipients)`,
     ),
   ]);
 }

@@ -48,8 +48,8 @@ interface SignOpts {
   email?: string;
   /** true sends a checked box; a string sends that raw show_name value. */
   consent?: boolean | string;
-  /** true sends a checked updates box. */
-  updates?: boolean;
+  /** true sends a checked updates box; a string sends that raw updates value. */
+  updates?: boolean | string;
   honeypot?: string;
   elapsed?: number;
   json?: boolean;
@@ -66,7 +66,8 @@ function sign(o: SignOpts = {}): Promise<Response> {
   });
   if (typeof o.consent === 'string') body.set('show_name', o.consent);
   else if (o.consent) body.set('show_name', 'on');
-  if (o.updates) body.set('updates', 'on');
+  if (typeof o.updates === 'string') body.set('updates', o.updates);
+  else if (o.updates) body.set('updates', 'on');
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'CF-Connecting-IP': o.ip ?? `10.0.0.${++ipCounter}`,
@@ -98,6 +99,10 @@ async function signAndConfirm(o: SignOpts = {}): Promise<Response> {
 async function publicJson() {
   const res = await call(`/petitions/${SLUG}`, { headers: { Origin: SITE } });
   return { res, body: (await res.json()) as { status: string; count: number; names: string[] } };
+}
+
+function closePetition() {
+  return env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
 }
 
 async function rowCount(): Promise<number> {
@@ -204,10 +209,10 @@ describe('signing and consent', () => {
 
   it('shows the signer the name and display choice they are confirming', async () => {
     // A re-sign can change both, so the address owner must see what the link will confirm.
-    await sign({ name: 'Grace Hopper', consent: true });
-    expect(sentEmails.at(-1)!.text).toContain('Name: Grace Hopper\nShown on the public list: yes');
+    await sign({ name: 'Grace Hopper', consent: true, updates: true });
+    expect(sentEmails.at(-1)!.text).toContain('Name: Grace Hopper\nShown on the public list: yes\nEmail updates about this campaign: yes');
     await sign({ name: 'Alan Turing' });
-    expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no');
+    expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no\nEmail updates about this campaign: no');
     expect(sentEmails.at(-1)!.text).toContain('a newer email replaces');
   });
 });
@@ -223,22 +228,10 @@ describe('email updates opt-in', () => {
     expect(await updatesConsent('no@example.org')).toBe(0);
   });
 
-  it('states the choice in the confirmation email', async () => {
-    await sign({ updates: true });
-    expect(sentEmails.at(-1)!.text).toContain('Email updates about this campaign: yes');
-    await sign();
-    expect(sentEmails.at(-1)!.text).toContain('Email updates about this campaign: no');
-  });
-
   it('treats only a checked box as consent to updates', async () => {
-    for (const [i, raw] of ['1', 'true', 'yes', ''].entries()) {
-      const body = new URLSearchParams({ name: 'Raw', email: `raw${i}@example.org`, website: '', elapsed: '10000', updates: raw });
-      await call(`/petitions/${SLUG}/sign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'CF-Connecting-IP': `10.9.0.${i}`, Origin: SITE, Accept: 'application/json' },
-        body,
-      });
-      expect(await updatesConsent(`raw${i}@example.org`)).toBe(0);
+    for (const raw of ['1', 'true', 'yes', '']) {
+      expect((await sign({ email: `raw-${raw || 'empty'}@example.org`, updates: raw })).status).toBe(200);
+      expect(await updatesConsent(`raw-${raw || 'empty'}@example.org`)).toBe(0);
     }
   });
 
@@ -405,7 +398,7 @@ describe('spam layers', () => {
 
 describe('closed petitions', () => {
   it('refuses new signatures and reports closed status', async () => {
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await closePetition();
     const res = await sign();
     expect(res.status).toBe(409);
     expect(((await res.json()) as { error: string }).error).toContain('closed on 2026-12-01');
@@ -467,26 +460,20 @@ describe('daily cleanup', () => {
 
   it('deletes emails on closed petitions but keeps the signature', async () => {
     await signAndConfirm({ consent: true, name: 'Kept Name' });
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await closePetition();
     await cleanup(env);
     const row = await env.DB.prepare('SELECT name, email FROM signatures').first();
     expect(row).toEqual({ name: 'Kept Name', email: null });
     expect((await publicJson()).body.count).toBe(1);
   });
 
-  it('deletes the email at close once an opted-in signer has asked to stop', async () => {
-    await signAndConfirm({ email: 'stopped@example.org', updates: true });
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
-    await env.DB.prepare("UPDATE signatures SET updates_consent = 0 WHERE email = 'stopped@example.org'").run();
-    await cleanup(env);
-    expect(await env.DB.prepare('SELECT email FROM signatures').first()).toEqual({ email: null });
-  });
-
-  it('keeps the email of a confirmed signer who asked for updates when the petition closes', async () => {
+  it('keeps the email at close only for confirmed signers still asking for updates', async () => {
     await signAndConfirm({ email: 'updates@example.org', updates: true });
     await signAndConfirm({ email: 'quiet@example.org' });
     await sign({ email: 'unconfirmed@example.org', updates: true });
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await signAndConfirm({ email: 'stopped@example.org', updates: true });
+    await env.DB.prepare("UPDATE signatures SET updates_consent = 0 WHERE email = 'stopped@example.org'").run();
+    await closePetition();
     await cleanup(env);
     const { results } = await env.DB.prepare('SELECT email FROM signatures WHERE email IS NOT NULL').all();
     expect(results).toEqual([{ email: 'updates@example.org' }]);
