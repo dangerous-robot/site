@@ -6,6 +6,7 @@ import {
   cellTier,
   checkRecordLine,
   citedId,
+  lowerLabel,
   popupContent,
   rowKind,
   tierCounts,
@@ -301,5 +302,15 @@ describe('tierCounts', () => {
       ],
     };
     assert.deepEqual(tierCounts(data, lookups([claim()], [source('2026/a')])), { claim: 1, source: 1, none: 1 });
+  });
+});
+
+describe('lowerLabel', () => {
+  test('lowercases the first word of a row label for running text', () => {
+    assert.equal(lowerLabel('Hosted on renewable energy'), 'hosted on renewable energy');
+  });
+
+  test('keeps a leading acronym', () => {
+    assert.equal(lowerLabel('AI ethics'), 'AI ethics');
   });
 });

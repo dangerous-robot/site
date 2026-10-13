@@ -237,8 +237,13 @@ export interface PopupContent {
   link?: PopupLink;
 }
 
-/** Row label in running text: "Hosted on renewable energy" becomes "hosted on renewable energy". */
+/**
+ * Row label in running text: "Hosted on renewable energy" becomes "hosted
+ * on renewable energy". A label that opens with an acronym ("AI ethics")
+ * keeps it.
+ */
 export function lowerLabel(label: string): string {
+  if (/^[A-Z]{2}/.test(label)) return label;
   return label.charAt(0).toLowerCase() + label.slice(1);
 }
 
