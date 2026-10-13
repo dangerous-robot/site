@@ -172,6 +172,20 @@ describe('signing and consent', () => {
     expect(await rowCount()).toBe(0);
   });
 
+  it('accepts only a plain address, so a wrapped address cannot route mail elsewhere', async () => {
+    // A mail API may parse `Name <addr>` or `<addr>` and deliver to the inner
+    // address, which lets one inbox be targeted under many distinct "emails".
+    // Shell metacharacters are refused so the runbook's removal command stays safe.
+    for (const email of ['"x"<victim@example.org>', '<victim@example.org>', 'x$(id)@example.com', "o'b@example.com", 'a@b']) {
+      expect((await sign({ email })).status, email).toBe(400);
+    }
+    expect(await rowCount()).toBe(0);
+    expect(sentEmails).toHaveLength(0);
+    // Control: a plus tag is an ordinary address and must still work.
+    expect((await sign({ email: 'a+b@example.com' })).status).toBe(200);
+    expect(sentEmails.at(-1)!.to).toEqual(['a+b@example.com']);
+  });
+
   it('sends a plain text email through Resend with confirm and remove links on the API host', async () => {
     await sign({ email: 'Mixed@Example.org' });
     const mail = sentEmails.at(-1)!;
