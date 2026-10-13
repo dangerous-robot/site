@@ -83,6 +83,7 @@ Brandon, 2026-10-12:
 - D37 (does a user-switched web search in chat count as agent web search): yes. A chat where the user turns web search on counts, even if the chatbot does not choose when to search.
 - D18 (does a free trial count as a free tier): no. GreenPT and ChatGPTree free-tier cells read No, detail "Trial"; GreenPT's cites the Fello AI review ("There is no permanent free plan, but every plan includes a 14-day free trial"), ChatGPTree's stays not yet sourced (no ingested page names its trial).
 - D1 and D2 (stance sentences and page intro): the approach stands, with two changes. The page says "Prefer", never "We prefer" (row label, color legend, legend note, screen-reader phrases, intro). Each stance sentence states a fact about the attribute ("X is Y") instead of opening with a preference; Brandon wrote the models and accessibility sentences. Positions are linked only where the draft named a firm fit (renewable hosting, energy display, models, open-weight models, ownership).
+- Image energy source and a fifth Values position: the no-image-generation sentence cites USC Libraries' "Hidden Costs of AI" (`2025/hidden-costs-of-ai-practical-steps-to-reduce-energy-and-water-use`: image generation 2.9 kWh per thousand queries against 0.002 kWh for text classification, "a 1,450-fold difference"). New Values position "People have a right to informed choices about AI" (Brandon's wording, rough draft) backs published financials and data used for training.
 
 Brandon, 2026-10-11:
 

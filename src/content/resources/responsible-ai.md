@@ -162,6 +162,7 @@ data:
       ideal:
         value: "yes"
         note: "Making an image takes much more energy than answering in text."
+        sources: [/research/sources/2025/hidden-costs-of-ai-practical-steps-to-reduce-energy-and-water-use]
       cells:
         greenpt: { type: "yes" }
         ecosia: { type: "no", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
@@ -176,6 +177,7 @@ data:
       ideal:
         value: "yes"
         note: "Published finances show who pays for a product and where the money goes."
+        position: "/values#people-have-a-right-to-informed-choices-about-ai"
       cells:
         greenpt: { type: "no" }
         ecosia: { type: "yes", sources: [/research/sources/2020/ecosia-financial-reports-and-tree-planting-receipts] }
@@ -220,6 +222,7 @@ data:
       ideal:
         value: "no"
         note: "A chatbot that does not train on your conversations uses what you type only to answer your request."
+        position: "/values#people-have-a-right-to-informed-choices-about-ai"
       cells:
         greenpt: { type: "no", sources: [/research/sources/2026/privacy-policy-greenpt-eu-hosted-no-training-on-your-data] }
         ecosia: { type: "no" }
