@@ -12,6 +12,8 @@ const RESEND_WINDOW_MS = 10 * 60_000;
 export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
+const REMINDER_AFTER_DAYS = 4;
+const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
 
@@ -44,11 +46,12 @@ export default {
 
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     await cleanup(env);
+    await sendReminders(env);
   },
 };
 
 export async function cleanup(env: Env, now = new Date()): Promise<void> {
-  const cutoff = new Date(now.getTime() - UNCONFIRMED_TTL_DAYS * 86_400_000).toISOString();
+  const cutoff = new Date(now.getTime() - UNCONFIRMED_TTL_DAYS * DAY_MS).toISOString();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM signatures WHERE confirmed_at IS NULL AND created_at < ?').bind(cutoff),
     env.DB.prepare('DELETE FROM email_sends WHERE sent_at < ?').bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString()),
@@ -59,6 +62,77 @@ export async function cleanup(env: Env, now = new Date()): Promise<void> {
          AND id NOT IN (SELECT id FROM update_recipients)`,
     ),
   ]);
+}
+
+interface DueReminder {
+  id: number;
+  petition_slug: string;
+  title: string;
+  name: string;
+  email: string;
+  display_consent: number;
+  updates_consent: number;
+  created_at: string;
+  token_hash: string;
+}
+
+/**
+ * One reminder per unconfirmed signature, REMINDER_AFTER_DAYS after signing.
+ * Tokens are stored hashed, so the reminder carries fresh links, which replace
+ * the first email's. Reminders count toward the hourly cap; any left over go
+ * out on the next daily run.
+ */
+export async function sendReminders(env: Env, now = new Date()): Promise<void> {
+  const sent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends WHERE sent_at > ?')
+    .bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString())
+    .first<{ n: number }>();
+  const budget = HOURLY_EMAIL_CAP - sent!.n;
+  if (budget <= 0) return;
+  const { results } = await env.DB.prepare(
+    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.created_at, s.token_hash
+     FROM signatures s JOIN petitions p ON p.slug = s.petition_slug
+     WHERE s.confirmed_at IS NULL AND s.reminded_at IS NULL AND s.email IS NOT NULL
+       AND p.status = 'open' AND s.created_at < ?
+     ORDER BY s.created_at LIMIT ?`,
+  )
+    .bind(new Date(now.getTime() - REMINDER_AFTER_DAYS * DAY_MS).toISOString(), budget)
+    .all<DueReminder>();
+
+  for (const row of results) {
+    const token = newToken();
+    const tokenHash = await sha256(token);
+    // Claim the row first, so a concurrent confirm or re-sign wins and no one gets two reminders.
+    const claimed = await env.DB.prepare(
+      'UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL RETURNING id',
+    )
+      .bind(tokenHash, now.toISOString(), row.id, row.token_hash)
+      .first();
+    if (!claimed) continue;
+    const links = linkBase(env, row.petition_slug);
+    try {
+      await sendEmail(
+        env,
+        confirmationEmail({
+          to: row.email,
+          title: row.title,
+          name: row.name,
+          showName: row.display_consent === 1,
+          wantsUpdates: row.updates_consent === 1,
+          confirmUrl: `${links}/confirm?t=${token}`,
+          removeUrl: `${links}/remove?t=${token}`,
+          reminderDeleteBy: new Date(Date.parse(row.created_at) + UNCONFIRMED_TTL_DAYS * DAY_MS).toISOString().slice(0, 10),
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      // Put the first email's links back, and leave the row for the next run.
+      await env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = NULL WHERE id = ? AND token_hash = ?')
+        .bind(row.token_hash, row.id, tokenHash)
+        .run();
+      continue;
+    }
+    await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(now.toISOString()).run();
+  }
 }
 
 async function getPetition(request: Request, env: Env, slug: string): Promise<Response> {
@@ -143,7 +217,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     return reply(request, env, 429, 'A lot of people are signing right now. Please try again in an hour.', petition.post_url);
   }
 
-  const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
+  const token = newToken();
   // A repeat signature from an unconfirmed address gets a fresh token and email,
   // unless one went out within RESEND_WINDOW_MS. A confirmed address is left
   // alone. Every case gets the same reply, so the form never reveals who has signed.
@@ -152,7 +226,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
      VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (petition_slug, email) DO UPDATE SET
        name = excluded.name, display_consent = excluded.display_consent, updates_consent = excluded.updates_consent,
-       created_at = excluded.created_at, token_hash = excluded.token_hash
+       created_at = excluded.created_at, token_hash = excluded.token_hash, reminded_at = NULL
      WHERE signatures.confirmed_at IS NULL AND signatures.created_at < ?
      RETURNING id`,
   )
@@ -160,7 +234,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     .first<{ id: number }>();
 
   if (row) {
-    const base = `${new URL(request.url).origin}/petitions/${slug}`;
+    const base = linkBase(env, slug);
     try {
       await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, wantsUpdates, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
     } catch (err) {
@@ -287,6 +361,14 @@ function reply(request: Request, env: Env, status: number, message: string, post
     return json(request, env, status === 200 ? { ok: true, message } : { ok: false, error: message }, status);
   }
   return messagePage(heading ?? (status === 200 ? 'Thank you' : 'Something went wrong'), message, postUrl, status);
+}
+
+function linkBase(env: Env, slug: string): string {
+  return `${env.API_ORIGIN}/petitions/${slug}`;
+}
+
+function newToken(): string {
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 function toHex(bytes: Uint8Array): string {

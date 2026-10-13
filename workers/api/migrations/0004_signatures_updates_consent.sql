@@ -2,6 +2,9 @@
 -- campaign".
 ALTER TABLE signatures ADD COLUMN updates_consent INTEGER NOT NULL DEFAULT 0 CHECK (updates_consent IN (0, 1));
 
+-- When the one confirmation reminder went out; a re-sign clears it.
+ALTER TABLE signatures ADD COLUMN reminded_at TEXT;
+
 -- Who may be sent updates: ticked the box and confirmed (double opt-in). The
 -- closing cleanup keeps these addresses and `inv petition-emails` reads them,
 -- so the rule lives here once.

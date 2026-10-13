@@ -1,6 +1,6 @@
 import { applyD1Migrations, env, reset } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker, { cleanup, HOURLY_EMAIL_CAP } from '../src/index';
+import worker, { cleanup, HOURLY_EMAIL_CAP, sendReminders } from '../src/index';
 
 const SITE = 'https://dangerousrobot.org';
 const API = 'https://api.dangerousrobot.org';
@@ -430,12 +430,82 @@ describe('schema', () => {
   it('holds no IP or user agent column on signatures', async () => {
     const cols = await env.DB.prepare('PRAGMA table_info(signatures)').all<{ name: string }>();
     const names = cols.results.map((c) => c.name);
-    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash', 'updates_consent']);
+    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash', 'updates_consent', 'reminded_at']);
   });
 
   it('logs email sends by time alone', async () => {
     const cols = await env.DB.prepare('PRAGMA table_info(email_sends)').all<{ name: string }>();
     expect(cols.results.map((c) => c.name)).toEqual(['sent_at']);
+  });
+});
+
+describe('confirmation reminder', () => {
+  const days = (n: number) => new Date(Date.now() + n * 86_400_000);
+
+  it('sends one reminder after 4 days whose new link confirms and whose old link no longer does', async () => {
+    await sign({ name: 'Late Signer', updates: true });
+    const oldToken = lastToken('confirm');
+    await sendReminders(env, days(3.9));
+    expect(sentEmails).toHaveLength(1);
+    await sendReminders(env, days(4.1));
+    expect(sentEmails).toHaveLength(2);
+    const mail = sentEmails.at(-1)!;
+    expect(mail.subject).toBe('Reminder: confirm your signature: The Pledge');
+    expect(mail.text).toMatch(/If it is not confirmed by \d{4}-\d{2}-\d{2}, it will be deleted/);
+    expect(mail.text).toContain('Name: Late Signer\nShown on the public list: no\nEmail updates about this campaign: yes');
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(2);
+    expect((await post('confirm', oldToken)).status).toBe(400);
+    expect((await post('confirm', lastToken('confirm'))).status).toBe(200);
+  });
+
+  it('skips confirmed signatures and closed petitions', async () => {
+    await signAndConfirm();
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(1);
+    await sign();
+    await closePetition();
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(2);
+  });
+
+  it('starts the 4 days again when an unconfirmed signer signs again', async () => {
+    await sign({ email: 'again@example.org' });
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+    await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
+    await sign({ email: 'again@example.org' });
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+  });
+
+  it('keeps the first link working and retries next run when the reminder cannot be sent', async () => {
+    await sign();
+    const firstToken = lastToken('confirm');
+    resendStatus = 500;
+    await sendReminders(env, days(5));
+    resendStatus = 200;
+    expect((await post('confirm', firstToken)).status).toBe(200);
+  });
+
+  it('retries a failed reminder on the next run', async () => {
+    await sign();
+    resendStatus = 500;
+    await sendReminders(env, days(5));
+    resendStatus = 200;
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+  });
+
+  it('counts reminders toward the hourly cap', async () => {
+    for (let i = 0; i < 3; i++) await sign();
+    const later = days(5);
+    for (let i = 0; i < HOURLY_EMAIL_CAP - 1; i++) {
+      await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(later.toISOString()).run();
+    }
+    await sendReminders(env, later);
+    expect(sentEmails.filter((m) => m.subject.startsWith('Reminder'))).toHaveLength(1);
   });
 });
 
