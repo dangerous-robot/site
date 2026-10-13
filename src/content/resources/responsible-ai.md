@@ -107,7 +107,11 @@ data:
           sources: [/research/sources/2026/about-treadlightly-ai]
         financial_transparency: "Sole proprietorship; no published financials."
         environmental: "Infomaniak (PUE 1.06, waste heat to district heating) + Anthropic conventional cloud."
-        notes: "Shares 10% of revenue with the Future of Life Institute."
+        notes:
+          text: "Has free tier. Displays energy usage."
+          sources:
+            - /research/sources/2026/treadlightly-ai-pricing
+            - /research/sources/2026/treadlightlyai-think-for-yourself-prompt-light
     - key: viro
       name: Viro AI
       url: https://ai.viro.app/
