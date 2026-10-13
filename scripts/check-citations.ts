@@ -10,7 +10,7 @@
 
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
-import matter from "gray-matter";
+import { parseMarkdownFrontmatter } from "../src/lib/frontmatter";
 
 const CLAIMS_DIR = "research/claims";
 const SOURCES_DIR = "research/sources";
@@ -40,7 +40,7 @@ let broken = 0;
 
 for (const file of claimFiles) {
   const raw = readFileSync(file, "utf-8");
-  const { data } = matter(raw);
+  const { data } = parseMarkdownFrontmatter(raw);
   const sources: unknown = data.sources;
 
   if (!Array.isArray(sources)) continue;

@@ -3,7 +3,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import matter from 'gray-matter';
+import { parseMarkdownFrontmatter } from './frontmatter';
 import yaml from 'js-yaml';
 import type { CriterionInfo } from './matrixCheck';
 import type { ClaimInfo, SourceInfo } from './matrixEvidence';
@@ -29,9 +29,9 @@ export function claim(over: Partial<ClaimInfo> = {}): ClaimInfo {
 const PAGE = new URL('../content/resources/responsible-ai.md', import.meta.url);
 const TEMPLATES = new URL('../../research/templates.yaml', import.meta.url);
 
-/** The page's `data:` payload, a fresh copy each call: gray-matter caches parses made with no options. */
+/** The page's `data:` payload, a fresh copy each call. */
 export function pageData(): unknown {
-  return (matter(readFileSync(PAGE, 'utf-8'), {}).data as { data: unknown }).data;
+  return (parseMarkdownFrontmatter(readFileSync(PAGE, 'utf-8')).data as { data: unknown }).data;
 }
 
 const SOURCES_DIR = fileURLToPath(new URL('../../research/sources/', import.meta.url));
@@ -45,7 +45,7 @@ export function researchSources(): Map<string, SourceInfo> {
     for (const file of readdirSync(dir)) {
       if (!file.endsWith('.md')) continue;
       const id = `${year}/${file.slice(0, -3)}`;
-      const data = matter(readFileSync(join(dir, file), 'utf-8'), {}).data as Record<string, unknown>;
+      const data = parseMarkdownFrontmatter(readFileSync(join(dir, file), 'utf-8')).data as Record<string, unknown>;
       out.set(id, {
         id,
         title: String(data.title),
@@ -79,7 +79,7 @@ export function researchClaims(): Map<string, ClaimInfo> {
   const out = new Map<string, ClaimInfo>();
   for (const path of claimFiles(CLAIMS_DIR)) {
     const id = relative(CLAIMS_DIR, path).slice(0, -3);
-    const data = matter(readFileSync(path, 'utf-8'), {}).data as Record<string, unknown>;
+    const data = parseMarkdownFrontmatter(readFileSync(path, 'utf-8')).data as Record<string, unknown>;
     const sidecar = path.replace(/\.md$/, '.audit.yaml');
     let audit: { human_review?: { reviewer?: string | null } } | undefined;
     // The claims loader skips a malformed sidecar with a warning; do the same, so a peer's half-written file cannot crash the suite.

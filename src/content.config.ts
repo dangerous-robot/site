@@ -2,6 +2,7 @@ import { defineCollection, type SchemaContext } from 'astro:content';
 import { z } from 'astro/zod';
 import { glob, file } from 'astro/loaders';
 import yaml from 'js-yaml';
+import { parseMarkdownFrontmatter } from './lib/frontmatter';
 import fs from 'node:fs/promises';
 import nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -93,16 +94,6 @@ const auditSchema = z.object({
   }),
 });
 
-/** Parse YAML frontmatter from a Markdown string. Returns { data, body }. */
-function parseMarkdownFrontmatter(content: string): { data: Record<string, unknown>; body: string } {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-  if (!match) {
-    return { data: {}, body: content };
-  }
-  const data = yaml.load(match[1]) as Record<string, unknown>;
-  const body = match[2];
-  return { data, body };
-}
 
 /** Recursively collect all .md files under a directory (Node 18+ compatible). */
 async function walkMdFiles(dir: string, base: string = dir): Promise<string[]> {

@@ -26,7 +26,7 @@
     "@fontsource/orbitron": "^5.3.0",
     "@fontsource/space-grotesk": "^5.3.0",
     "astro": "^6.4.8",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.3.2",
     "lucide-astro": "^0.556.0"
   },
   "devDependencies": {
@@ -41,7 +41,6 @@
     "d3-shape": "^3.2.0",
     "d3-zoom": "^3.0.0",
     "esbuild": "^0.28.1",
-    "gray-matter": "^4.0.3",
     "markdownlint-cli2": "^0.17.2",
     "tsx": "^4.19.4",
     "typescript": "^6.0.3"
