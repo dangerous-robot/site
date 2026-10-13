@@ -26,6 +26,8 @@ crons = ["17 11 * * *"]
 # Secret (set with `wrangler secret put`): RESEND_API_KEY.
 # Local overrides live in .dev.vars (see .dev.vars.example).
 [vars]
+# Base of the confirm and remove links. The daily reminder has no request to read it from.
+API_ORIGIN = "https://api.dangerousrobot.org"
 ALLOWED_ORIGINS = "https://dangerousrobot.org"
 MAIL_FROM = "Dangerous Robot <no-reply@dangerousrobot.org>"
 MAIL_REPLY_TO = "contact@dangerousrobot.org"

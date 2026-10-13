@@ -4,6 +4,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   /** Comma-separated origins allowed to call the API from a browser. */
   ALLOWED_ORIGINS: string;
+  /** Base of the links in emails, e.g. https://api.dangerousrobot.org. */
+  API_ORIGIN: string;
   MAIL_FROM: string;
   MAIL_REPLY_TO: string;
   /** "log" prints emails instead of sending them (wrangler dev). */

@@ -12,6 +12,11 @@ const RESEND_WINDOW_MS = 10 * 60_000;
 export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
+const REMINDER_AFTER_DAYS = 4;
+// Each reminder is one Resend call; the Workers Free plan allows 50 outside calls per run.
+// Leftovers go out on the next daily run.
+const REMINDERS_PER_RUN = 20;
+const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
 
@@ -44,18 +49,80 @@ export default {
 
   async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
     await cleanup(env);
+    await sendReminders(env);
   },
 };
 
 export async function cleanup(env: Env, now = new Date()): Promise<void> {
-  const cutoff = new Date(now.getTime() - UNCONFIRMED_TTL_DAYS * 86_400_000).toISOString();
+  const cutoff = new Date(now.getTime() - UNCONFIRMED_TTL_DAYS * DAY_MS).toISOString();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM signatures WHERE confirmed_at IS NULL AND created_at < ?').bind(cutoff),
     env.DB.prepare('DELETE FROM email_sends WHERE sent_at < ?').bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString()),
+    // Update recipients (migration 0004) keep their email until they opt out.
     env.DB.prepare(
-      "UPDATE signatures SET email = NULL WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')",
+      `UPDATE signatures SET email = NULL
+       WHERE email IS NOT NULL AND petition_slug IN (SELECT slug FROM petitions WHERE status = 'closed')
+         AND id NOT IN (SELECT id FROM update_recipients)`,
     ),
   ]);
+}
+
+interface DueReminder {
+  id: number;
+  petition_slug: string;
+  title: string;
+  name: string;
+  email: string;
+  display_consent: number;
+  updates_consent: number;
+  created_at: string;
+  token_hash: string;
+}
+
+/**
+ * Reminds each unconfirmed signer once, REMINDER_AFTER_DAYS after signing. Tokens are stored
+ * hashed, so the reminder carries fresh links; they are saved only after the send, so a failed
+ * or interrupted run leaves the first links working. Each reminder follows a sign-up that
+ * already passed the hourly cap, so the cap does not apply here.
+ */
+export async function sendReminders(env: Env, now = new Date()): Promise<void> {
+  const { results } = await env.DB.prepare(
+    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.created_at, s.token_hash
+     FROM signatures s JOIN petitions p ON p.slug = s.petition_slug
+     WHERE s.confirmed_at IS NULL AND s.reminded_at IS NULL AND s.email IS NOT NULL
+       AND p.status = 'open' AND s.created_at < ?
+     ORDER BY s.created_at LIMIT ?`,
+  )
+    .bind(new Date(now.getTime() - REMINDER_AFTER_DAYS * DAY_MS).toISOString(), REMINDERS_PER_RUN)
+    .all<DueReminder>();
+
+  const saves: D1PreparedStatement[] = [];
+  for (const row of results) {
+    const token = newToken();
+    try {
+      await sendEmail(
+        env,
+        confirmationEmail({
+          to: row.email,
+          title: row.title,
+          name: row.name,
+          showName: row.display_consent === 1,
+          wantsUpdates: row.updates_consent === 1,
+          ...tokenLinks(env, row.petition_slug, token),
+          reminderDaysLeft: UNCONFIRMED_TTL_DAYS - Math.floor((now.getTime() - Date.parse(row.created_at)) / DAY_MS),
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      continue;
+    }
+    // Matching the old hash means a confirm or re-sign since the SELECT wins; its links stay.
+    saves.push(
+      env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL')
+        .bind(await sha256(token), now.toISOString(), row.id, row.token_hash),
+    );
+  }
+  if (saves.length > 0) await env.DB.batch(saves);
 }
 
 async function getPetition(request: Request, env: Env, slug: string): Promise<Response> {
@@ -129,6 +196,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   }
   // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
   const showName = form.get('show_name') === 'on';
+  const wantsUpdates = form.get('updates') === 'on';
 
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
   const now = Date.now();
@@ -139,26 +207,25 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     return reply(request, env, 429, 'A lot of people are signing right now. Please try again in an hour.', petition.post_url);
   }
 
-  const token = toHex(crypto.getRandomValues(new Uint8Array(32)));
+  const token = newToken();
   // A repeat signature from an unconfirmed address gets a fresh token and email,
   // unless one went out within RESEND_WINDOW_MS. A confirmed address is left
   // alone. Every case gets the same reply, so the form never reveals who has signed.
   const row = await env.DB.prepare(
-    `INSERT INTO signatures (petition_slug, name, email, display_consent, created_at, token_hash)
-     VALUES (?, ?, ?, ?, ?, ?)
+    `INSERT INTO signatures (petition_slug, name, email, display_consent, updates_consent, created_at, token_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT (petition_slug, email) DO UPDATE SET
-       name = excluded.name, display_consent = excluded.display_consent,
-       created_at = excluded.created_at, token_hash = excluded.token_hash
+       name = excluded.name, display_consent = excluded.display_consent, updates_consent = excluded.updates_consent,
+       created_at = excluded.created_at, token_hash = excluded.token_hash, reminded_at = NULL
      WHERE signatures.confirmed_at IS NULL AND signatures.created_at < ?
      RETURNING id`,
   )
-    .bind(slug, name, email, showName ? 1 : 0, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
+    .bind(slug, name, email, showName ? 1 : 0, wantsUpdates ? 1 : 0, new Date(now).toISOString(), await sha256(token), new Date(now - RESEND_WINDOW_MS).toISOString())
     .first<{ id: number }>();
 
   if (row) {
-    const base = `${new URL(request.url).origin}/petitions/${slug}`;
     try {
-      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
+      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, wantsUpdates, ...tokenLinks(env, slug, token) }));
     } catch (err) {
       console.error(err);
       // Drop the row so an immediate retry is not swallowed by the resend window.
@@ -246,7 +313,7 @@ function notFoundPage(): Response {
 }
 
 function invalidLink(petition: Petition): Response {
-  return messagePage('Link not valid', 'This link does not match a signature. It may already have been removed.', petition.post_url, 400);
+  return messagePage('Link not valid', 'This link does not match a signature. A newer email from us may have replaced it, or the signature was removed.', petition.post_url, 400);
 }
 
 function closedText(p: Petition): string {
@@ -283,6 +350,15 @@ function reply(request: Request, env: Env, status: number, message: string, post
     return json(request, env, status === 200 ? { ok: true, message } : { ok: false, error: message }, status);
   }
   return messagePage(heading ?? (status === 200 ? 'Thank you' : 'Something went wrong'), message, postUrl, status);
+}
+
+function tokenLinks(env: Env, slug: string, token: string): { confirmUrl: string; removeUrl: string } {
+  const base = `${env.API_ORIGIN}/petitions/${slug}`;
+  return { confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` };
+}
+
+function newToken(): string {
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 function toHex(bytes: Uint8Array): string {

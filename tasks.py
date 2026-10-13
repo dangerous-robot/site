@@ -4,6 +4,10 @@ Usage: inv <task>
 Setup: uv tool install invoke  (once, globally)
 """
 
+import json
+import shlex
+import sys
+
 from invoke import Collection, task
 
 
@@ -60,6 +64,61 @@ def worker_deploy(ctx):
         ctx.run("npm test", pty=True)
         ctx.run("npx wrangler d1 migrations apply dr-api --remote", pty=True)
         ctx.run("npx wrangler deploy", pty=True)
+
+
+# --- Petition email lists (read from D1 with your wrangler login; no public endpoint) ---
+
+_PETITION_LISTS = {
+    # Pending confirmation; the daily cleanup deletes these after 7 days.
+    "unconfirmed": "signatures WHERE confirmed_at IS NULL",
+    # Double opt-in, defined once in migration 0004 and shared with the Worker's cleanup.
+    "updates": "update_recipients WHERE 1",
+}
+
+
+def _sql_str(value):
+    """A SQL string literal; `wrangler d1 execute` takes no bind values."""
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _d1(ctx, sql, local):
+    target = "--local" if local else "--remote"
+    with ctx.cd("workers/api"):
+        result = ctx.run(f"npx wrangler d1 execute dr-api {target} --json --command {shlex.quote(sql)}", hide=True)
+    return json.loads(result.stdout)[0]["results"]
+
+
+@task(
+    help={
+        "kind": "unconfirmed (not yet confirmed) or updates (confirmed and asked for updates)",
+        "petition": "The petition's slug; required for updates, since each signer opted in to one campaign",
+        "local": "Read the local dev database instead of the live one",
+    }
+)
+def petition_emails(ctx, kind, petition="", local=False):
+    """Print petition signers' email addresses, one per line, from the live database."""
+    if kind not in _PETITION_LISTS:
+        raise SystemExit(f"--kind must be one of: {', '.join(_PETITION_LISTS)}")
+    if kind == "updates" and not petition:
+        raise SystemExit("--petition is required for updates: each signer asked for one campaign's updates")
+    sql = f"SELECT DISTINCT email FROM {_PETITION_LISTS[kind]} AND email IS NOT NULL"
+    if petition:
+        sql += f" AND petition_slug = {_sql_str(petition)}"
+    rows = _d1(ctx, sql + " ORDER BY email", local)
+    for row in rows:
+        print(row["email"])
+    print(f"{len(rows)} {kind} address(es)", file=sys.stderr)
+
+
+@task(help={"email": "The address that asked to stop updates", "local": "Use the local dev database"})
+def petition_stop_updates(ctx, email, local=False):
+    """Stop campaign updates for an address. The signature stays; a closed petition's cleanup then deletes the address."""
+    rows = _d1(
+        ctx,
+        f"UPDATE signatures SET updates_consent = 0 WHERE email = {_sql_str(email.strip().lower())} AND updates_consent = 1 RETURNING petition_slug",
+        local,
+    )
+    print(f"Updates stopped on {len(rows)} signature(s): {', '.join(r['petition_slug'] for r in rows) or 'none matched'}")
 
 
 @task
@@ -196,5 +255,7 @@ ns.add_task(lint)
 ns.add_task(check)
 ns.add_task(clean)
 ns.add_task(worker_deploy)
+ns.add_task(petition_emails)
+ns.add_task(petition_stop_updates)
 ns.add_collection(test_ns)
 ns.add_collection(audit_ns)

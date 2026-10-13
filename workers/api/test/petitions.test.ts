@@ -1,6 +1,6 @@
 import { applyD1Migrations, env, reset } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker, { cleanup, HOURLY_EMAIL_CAP } from '../src/index';
+import worker, { cleanup, HOURLY_EMAIL_CAP, sendReminders } from '../src/index';
 
 const SITE = 'https://dangerousrobot.org';
 const API = 'https://api.dangerousrobot.org';
@@ -48,6 +48,8 @@ interface SignOpts {
   email?: string;
   /** true sends a checked box; a string sends that raw show_name value. */
   consent?: boolean | string;
+  /** true sends a checked updates box; a string sends that raw updates value. */
+  updates?: boolean | string;
   honeypot?: string;
   elapsed?: number;
   json?: boolean;
@@ -64,6 +66,8 @@ function sign(o: SignOpts = {}): Promise<Response> {
   });
   if (typeof o.consent === 'string') body.set('show_name', o.consent);
   else if (o.consent) body.set('show_name', 'on');
+  if (typeof o.updates === 'string') body.set('updates', o.updates);
+  else if (o.updates) body.set('updates', 'on');
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded',
     'CF-Connecting-IP': o.ip ?? `10.0.0.${++ipCounter}`,
@@ -95,6 +99,20 @@ async function signAndConfirm(o: SignOpts = {}): Promise<Response> {
 async function publicJson() {
   const res = await call(`/petitions/${SLUG}`, { headers: { Origin: SITE } });
   return { res, body: (await res.json()) as { status: string; count: number; names: string[] } };
+}
+
+/** Moves every signature out of the resend window. */
+function ageSignatures() {
+  return env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+}
+
+/** N days from now. */
+function days(n: number): Date {
+  return new Date(Date.now() + n * 86_400_000);
+}
+
+function closePetition() {
+  return env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
 }
 
 async function rowCount(): Promise<number> {
@@ -201,11 +219,43 @@ describe('signing and consent', () => {
 
   it('shows the signer the name and display choice they are confirming', async () => {
     // A re-sign can change both, so the address owner must see what the link will confirm.
-    await sign({ name: 'Grace Hopper', consent: true });
-    expect(sentEmails.at(-1)!.text).toContain('Name: Grace Hopper\nShown on the public list: yes');
+    await sign({ name: 'Grace Hopper', consent: true, updates: true });
+    expect(sentEmails.at(-1)!.text).toContain('Name: Grace Hopper\nShown on the public list: yes\nEmail updates about this campaign: yes');
     await sign({ name: 'Alan Turing' });
-    expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no');
+    expect(sentEmails.at(-1)!.text).toContain('Name: Alan Turing\nShown on the public list: no\nEmail updates about this campaign: no');
     expect(sentEmails.at(-1)!.text).toContain('a newer email replaces');
+  });
+});
+
+describe('email updates opt-in', () => {
+  const updatesConsent = async (email: string) =>
+    (await env.DB.prepare('SELECT updates_consent AS u FROM signatures WHERE email = ?').bind(email).first<{ u: number }>())!.u;
+
+  it('records the choice only for a checked box', async () => {
+    await sign({ email: 'yes@example.org', updates: true });
+    await sign({ email: 'no@example.org' });
+    expect(await updatesConsent('yes@example.org')).toBe(1);
+    expect(await updatesConsent('no@example.org')).toBe(0);
+  });
+
+  it('treats only a checked box as consent to updates', async () => {
+    for (const raw of ['1', 'true', 'yes', '']) {
+      expect((await sign({ email: `raw-${raw || 'empty'}@example.org`, updates: raw })).status).toBe(200);
+      expect(await updatesConsent(`raw-${raw || 'empty'}@example.org`)).toBe(0);
+    }
+  });
+
+  it('keeps a confirmed signer\'s choice when they sign again', async () => {
+    await signAndConfirm({ email: 'kept@example.org', updates: true });
+    await sign({ email: 'kept@example.org' });
+    expect(await updatesConsent('kept@example.org')).toBe(1);
+  });
+
+  it('takes the newer choice when an unconfirmed signer signs again', async () => {
+    await sign({ email: 'again@example.org', updates: true });
+    await ageSignatures();
+    await sign({ email: 'again@example.org' });
+    expect(await updatesConsent('again@example.org')).toBe(0);
   });
 });
 
@@ -213,7 +263,7 @@ describe('repeat signatures', () => {
   it('re-sends with a fresh token while unconfirmed, keeping one row', async () => {
     await sign({ email: 'again@example.org' });
     const first = lastToken('confirm');
-    await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+    await ageSignatures();
     await sign({ email: 'again@example.org' });
     expect(sentEmails).toHaveLength(2);
     expect(await rowCount()).toBe(1);
@@ -341,7 +391,7 @@ describe('spam layers', () => {
   it('counts re-sends to one address toward the hourly cap', async () => {
     for (let i = 0; i <= HOURLY_EMAIL_CAP; i++) {
       // Age the row past the resend window so each POST is due a fresh email.
-      await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+      await ageSignatures();
       const res = await sign({ email: 'target@example.org' });
       expect(res.status).toBe(i < HOURLY_EMAIL_CAP ? 200 : 429);
     }
@@ -358,7 +408,7 @@ describe('spam layers', () => {
 
 describe('closed petitions', () => {
   it('refuses new signatures and reports closed status', async () => {
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await closePetition();
     const res = await sign();
     expect(res.status).toBe(409);
     expect(((await res.json()) as { error: string }).error).toContain('closed on 2026-12-01');
@@ -390,7 +440,7 @@ describe('schema', () => {
   it('holds no IP or user agent column on signatures', async () => {
     const cols = await env.DB.prepare('PRAGMA table_info(signatures)').all<{ name: string }>();
     const names = cols.results.map((c) => c.name);
-    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash']);
+    expect(names).toEqual(['id', 'petition_slug', 'name', 'email', 'display_consent', 'created_at', 'confirmed_at', 'token_hash', 'updates_consent', 'reminded_at']);
   });
 
   it('logs email sends by time alone', async () => {
@@ -399,13 +449,89 @@ describe('schema', () => {
   });
 });
 
+describe('confirmation reminder', () => {
+  it('sends one reminder after 4 days whose new link confirms and whose old link no longer does', async () => {
+    await sign({ name: 'Late Signer', updates: true });
+    const oldToken = lastToken('confirm');
+    await sendReminders(env, days(3.9));
+    expect(sentEmails).toHaveLength(1);
+    await sendReminders(env, days(4.1));
+    expect(sentEmails).toHaveLength(2);
+    const mail = sentEmails.at(-1)!;
+    expect(mail.subject).toBe('Reminder: confirm your signature: The Pledge');
+    expect(mail.text).toContain('If it is not confirmed within 3 days, it will be deleted.');
+    expect(mail.text).toContain('Name: Late Signer\nShown on the public list: no\nEmail updates about this campaign: yes');
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(2);
+    const stale = await post('confirm', oldToken);
+    expect(stale.status).toBe(400);
+    expect(await stale.text()).toContain('A newer email from us may have replaced it');
+    expect((await post('confirm', lastToken('confirm'))).status).toBe(200);
+  });
+
+  it('skips confirmed signatures and closed petitions', async () => {
+    await signAndConfirm();
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(1);
+    await sign();
+    await closePetition();
+    await sendReminders(env, days(5));
+    expect(sentEmails).toHaveLength(2);
+  });
+
+  it('starts the 4 days again when an unconfirmed signer signs again', async () => {
+    await sign({ email: 'again@example.org' });
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+    await ageSignatures();
+    await sign({ email: 'again@example.org' });
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
+    await sendReminders(env, days(3));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+  });
+
+  it('counts the days left from the signing date when a reminder is a day late', async () => {
+    await sign();
+    await sendReminders(env, days(5.5));
+    expect(sentEmails.at(-1)!.text).toContain('If it is not confirmed within 2 days, it will be deleted.');
+  });
+
+  it('keeps the first link working when a reminder fails', async () => {
+    await sign();
+    const firstToken = lastToken('confirm');
+    resendStatus = 500;
+    await sendReminders(env, days(5));
+    resendStatus = 200;
+    expect((await post('confirm', firstToken)).status).toBe(200);
+  });
+
+  it('retries a failed reminder on the next run', async () => {
+    await sign();
+    resendStatus = 500;
+    await sendReminders(env, days(5));
+    resendStatus = 200;
+    await sendReminders(env, days(5));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
+  });
+
+  it('leaves the form\'s hourly cap alone', async () => {
+    await sign();
+    await sendReminders(env, days(5));
+    const sends = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends').first<{ n: number }>();
+    expect(sends!.n).toBe(1);
+  });
+
+});
+
 describe('daily cleanup', () => {
   it('purges unconfirmed rows after 7 days and keeps confirmed ones', async () => {
     await signAndConfirm();
     await sign();
-    await cleanup(env, new Date(Date.now() + 6 * 86_400_000));
+    await cleanup(env, days(6));
     expect(await rowCount()).toBe(2);
-    await cleanup(env, new Date(Date.now() + 8 * 86_400_000));
+    await cleanup(env, days(8));
     expect(await rowCount()).toBe(1);
   });
 
@@ -420,10 +546,22 @@ describe('daily cleanup', () => {
 
   it('deletes emails on closed petitions but keeps the signature', async () => {
     await signAndConfirm({ consent: true, name: 'Kept Name' });
-    await env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
+    await closePetition();
     await cleanup(env);
     const row = await env.DB.prepare('SELECT name, email FROM signatures').first();
     expect(row).toEqual({ name: 'Kept Name', email: null });
     expect((await publicJson()).body.count).toBe(1);
+  });
+
+  it('keeps the email at close only for confirmed signers still asking for updates', async () => {
+    await signAndConfirm({ email: 'updates@example.org', updates: true });
+    await signAndConfirm({ email: 'quiet@example.org' });
+    await sign({ email: 'unconfirmed@example.org', updates: true });
+    await signAndConfirm({ email: 'stopped@example.org', updates: true });
+    await env.DB.prepare("UPDATE signatures SET updates_consent = 0 WHERE email = 'stopped@example.org'").run();
+    await closePetition();
+    await cleanup(env);
+    const { results } = await env.DB.prepare('SELECT email FROM signatures WHERE email IS NOT NULL').all();
+    expect(results).toEqual([{ email: 'updates@example.org' }]);
   });
 });

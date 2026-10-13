@@ -1,3 +1,4 @@
 # Copy to .dev.vars for `wrangler dev`. "log" prints emails instead of sending them.
 EMAIL_MODE=log
+API_ORIGIN=http://localhost:8787
 ALLOWED_ORIGINS=https://dangerousrobot.org,http://localhost:4321

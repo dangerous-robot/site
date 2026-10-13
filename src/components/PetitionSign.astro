@@ -65,6 +65,10 @@ const names = state?.names ?? [];
           <input type="checkbox" name="show_name" />
           <span>Show my name on the public list of signers</span>
         </label>
+        <label class="petition-consent">
+          <input type="checkbox" name="updates" />
+          <span>Send me occasional email updates about this campaign</span>
+        </label>
         <div class="petition-trap" aria-hidden="true">
           <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </div>
@@ -79,7 +83,7 @@ const names = state?.names ?? [];
       </dialog>
 
       <p class="petition-privacy">
-        We use your email only to confirm your signature. We never show it, share it, or send you anything else. <a href="/privacy#petitions">How we handle signatures</a>
+        We use your email to confirm your signature, and to send updates only if you ask for them. We never show it or share it. <a href="/privacy#petitions">How we handle signatures</a>
       </p>
     </div>
   </div>
