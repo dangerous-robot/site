@@ -115,7 +115,7 @@ npx wrangler d1 execute dr-api --remote --command "INSERT INTO petitions (slug, 
 npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET post_url = 'https://dangerousrobot.org/petitions/<slug>' WHERE slug = '<slug>'"
 ```
 
-**Close a petition.** Export first if you need the emails: the daily cleanup deletes the email column for closed petitions (names, consent and dates stay).
+**Close a petition.** Export first if you need the emails: the daily cleanup deletes the email column for closed petitions (names, consent and dates stay), except for confirmed signers who asked for updates, whose emails stay until they opt out.
 
 ```bash
 npx wrangler d1 execute dr-api --remote --command "UPDATE petitions SET status = 'closed', closed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE slug = '<slug>'"
@@ -135,7 +135,15 @@ npx wrangler d1 execute dr-api --remote --json --command "SELECT name, email, di
 npx wrangler d1 execute dr-api --remote --command "DELETE FROM signatures WHERE email = lower('<address>')"
 ```
 
-After a petition closes the email is gone, so match on `name` and `petition_slug` instead.
+After a petition closes the email is gone (unless the signer asked for updates), so match on `name` and `petition_slug` instead.
+
+**List emails.** `inv petition-emails --kind unconfirmed` prints addresses still waiting to confirm (add `--petition <slug>` for one petition); `inv petition-emails --kind updates --petition <slug>` prints the update list for one petition: signers who ticked "Send me occasional email updates about this campaign" and confirmed. Both read the live database through your wrangler login and print one address per line, so redirect to a file outside the repo (`~/dr-exports/`) and delete it when done.
+
+**Send an update.** From a petition author's Gmail, with every address in BCC (the privacy page promises addresses are hidden from other recipients). Say in each update that replying or writing to `contact@dangerousrobot.org` stops them.
+
+**Stop updates on request.** `inv petition-stop-updates <address>` turns updates off on every petition that address signed; the signature stays. On a closed petition, the next daily cleanup then deletes the address.
+
+**Confirmation reminders.** The daily cron (11:17 UTC) emails unconfirmed signers once, 4 days after signing, at most 20 a run, with fresh links that replace the first email's. Nothing to run; reminders count against Resend's daily quota but not the form's hourly cap.
 
 **Then rebuild the site.** The petition page carries the signer list as it stood at the last build (`src/components/PetitionSign.astro` reads it from the Worker at build time). Readers with JavaScript load the live list, so the name leaves their view at once; readers without JavaScript and search crawlers keep seeing it until the next deploy. Check the row count above first, because the build reads the live database. A deploy runs on a push to `main` or a manual run of the "Deploy to GitHub Pages" workflow (`docs/architecture/ci-deploy.md`); with nothing to push, start one from the repository's Actions tab or with `gh workflow run deploy.yml --ref main`.
 
