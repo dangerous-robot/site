@@ -13,6 +13,8 @@ export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
 const REMINDER_AFTER_DAYS = 4;
+// Leftovers go out on the next daily run.
+const REMINDERS_PER_RUN = 50;
 const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
@@ -72,42 +74,30 @@ interface DueReminder {
   email: string;
   display_consent: number;
   updates_consent: number;
-  created_at: string;
   token_hash: string;
 }
 
 /**
- * One reminder per unconfirmed signature, REMINDER_AFTER_DAYS after signing.
+ * A reminder to each unconfirmed signature, REMINDER_AFTER_DAYS after signing.
  * Tokens are stored hashed, so the reminder carries fresh links, which replace
- * the first email's. Reminders count toward the hourly cap; any left over go
- * out on the next daily run.
+ * the first email's. The new token is saved only after the send succeeds: a
+ * failed or interrupted send leaves the first links working and the row due
+ * again next run. Reminders skip the form's hourly cap: each one follows a
+ * sign-up that already passed it.
  */
 export async function sendReminders(env: Env, now = new Date()): Promise<void> {
-  const sent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends WHERE sent_at > ?')
-    .bind(new Date(now.getTime() - CAP_WINDOW_MS).toISOString())
-    .first<{ n: number }>();
-  const budget = HOURLY_EMAIL_CAP - sent!.n;
-  if (budget <= 0) return;
   const { results } = await env.DB.prepare(
-    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.created_at, s.token_hash
+    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.token_hash
      FROM signatures s JOIN petitions p ON p.slug = s.petition_slug
      WHERE s.confirmed_at IS NULL AND s.reminded_at IS NULL AND s.email IS NOT NULL
        AND p.status = 'open' AND s.created_at < ?
      ORDER BY s.created_at LIMIT ?`,
   )
-    .bind(new Date(now.getTime() - REMINDER_AFTER_DAYS * DAY_MS).toISOString(), budget)
+    .bind(new Date(now.getTime() - REMINDER_AFTER_DAYS * DAY_MS).toISOString(), REMINDERS_PER_RUN)
     .all<DueReminder>();
 
   for (const row of results) {
     const token = newToken();
-    const tokenHash = await sha256(token);
-    // Claim the row first, so a concurrent confirm or re-sign wins and no one gets two reminders.
-    const claimed = await env.DB.prepare(
-      'UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL RETURNING id',
-    )
-      .bind(tokenHash, now.toISOString(), row.id, row.token_hash)
-      .first();
-    if (!claimed) continue;
     const links = linkBase(env, row.petition_slug);
     try {
       await sendEmail(
@@ -120,18 +110,17 @@ export async function sendReminders(env: Env, now = new Date()): Promise<void> {
           wantsUpdates: row.updates_consent === 1,
           confirmUrl: `${links}/confirm?t=${token}`,
           removeUrl: `${links}/remove?t=${token}`,
-          reminderDeleteBy: new Date(Date.parse(row.created_at) + UNCONFIRMED_TTL_DAYS * DAY_MS).toISOString().slice(0, 10),
+          reminderDaysLeft: UNCONFIRMED_TTL_DAYS - REMINDER_AFTER_DAYS,
         }),
       );
     } catch (err) {
       console.error(err);
-      // Put the first email's links back, and leave the row for the next run.
-      await env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = NULL WHERE id = ? AND token_hash = ?')
-        .bind(row.token_hash, row.id, tokenHash)
-        .run();
       continue;
     }
-    await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(now.toISOString()).run();
+    // Matching the old hash means a confirm or re-sign since the SELECT wins; its links stay.
+    await env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL')
+      .bind(await sha256(token), now.toISOString(), row.id, row.token_hash)
+      .run();
   }
 }
 
@@ -324,7 +313,7 @@ function notFoundPage(): Response {
 }
 
 function invalidLink(petition: Petition): Response {
-  return messagePage('Link not valid', 'This link does not match a signature. It may already have been removed.', petition.post_url, 400);
+  return messagePage('Link not valid', 'This link does not match a signature. A newer email from us may have replaced it, or the signature was removed.', petition.post_url, 400);
 }
 
 function closedText(p: Petition): string {

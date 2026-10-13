@@ -39,18 +39,18 @@ export interface ConfirmationDetails {
   wantsUpdates: boolean;
   confirmUrl: string;
   removeUrl: string;
-  /** Set on the reminder: the date (YYYY-MM-DD) an unconfirmed signature is deleted. */
-  reminderDeleteBy?: string;
+  /** Set on the reminder: days until an unconfirmed signature is deleted. */
+  reminderDaysLeft?: number;
 }
 
-export function confirmationEmail({ to, title, name, showName, wantsUpdates, confirmUrl, removeUrl, reminderDeleteBy }: ConfirmationDetails): Email {
+export function confirmationEmail({ to, title, name, showName, wantsUpdates, confirmUrl, removeUrl, reminderDaysLeft }: ConfirmationDetails): Email {
   return {
     to,
-    subject: `${reminderDeleteBy ? 'Reminder: c' : 'C'}onfirm your signature: ${title}`,
+    subject: `${reminderDaysLeft ? 'Reminder: c' : 'C'}onfirm your signature: ${title}`,
     text: [
       `Someone, hopefully you, signed "${title}" on dangerousrobot.org with this email address.`,
-      ...(reminderDeleteBy
-        ? [`The signature is not confirmed yet. If it is not confirmed by ${reminderDeleteBy}, it will be deleted. These links replace the ones in the earlier email.`]
+      ...(reminderDaysLeft
+        ? [`The signature is not confirmed yet. If it is not confirmed within ${reminderDaysLeft} days, it will be deleted. These links replace the ones in the earlier email.`]
         : []),
       '',
       `Name: ${name}`,

@@ -451,7 +451,7 @@ describe('confirmation reminder', () => {
     expect(sentEmails).toHaveLength(2);
     const mail = sentEmails.at(-1)!;
     expect(mail.subject).toBe('Reminder: confirm your signature: The Pledge');
-    expect(mail.text).toMatch(/If it is not confirmed by \d{4}-\d{2}-\d{2}, it will be deleted/);
+    expect(mail.text).toContain('If it is not confirmed within 3 days, it will be deleted.');
     expect(mail.text).toContain('Name: Late Signer\nShown on the public list: no\nEmail updates about this campaign: yes');
     await sendReminders(env, days(5));
     expect(sentEmails).toHaveLength(2);
@@ -476,6 +476,8 @@ describe('confirmation reminder', () => {
     await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
     await sign({ email: 'again@example.org' });
     expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
+    await sendReminders(env, days(3));
+    expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
     await sendReminders(env, days(5));
     expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
   });
@@ -498,14 +500,18 @@ describe('confirmation reminder', () => {
     expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
   });
 
-  it('counts reminders toward the hourly cap', async () => {
-    for (let i = 0; i < 3; i++) await sign();
-    const later = days(5);
-    for (let i = 0; i < HOURLY_EMAIL_CAP - 1; i++) {
-      await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(later.toISOString()).run();
-    }
-    await sendReminders(env, later);
-    expect(sentEmails.filter((m) => m.subject.startsWith('Reminder'))).toHaveLength(1);
+  it('leaves the form\'s hourly cap alone', async () => {
+    await sign();
+    await sendReminders(env, days(5));
+    const sends = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends').first<{ n: number }>();
+    expect(sends!.n).toBe(1);
+  });
+
+  it('tells a signer with a replaced link to use the newer email', async () => {
+    await sign();
+    const oldToken = lastToken('confirm');
+    await sendReminders(env, days(5));
+    expect(await (await post('confirm', oldToken)).text()).toContain('A newer email from us may have replaced it');
   });
 });
 
