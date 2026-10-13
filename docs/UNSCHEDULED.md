@@ -256,6 +256,7 @@ Goal: Move from one-CLI-call-at-a-time to a queue + batch + error-file flow, and
 |-----------|------|-------|
 | Source-triggered reassessment | (no plan yet) | v2; add a source, related claims re-evaluate. Operator confirmed v2. |
 | Petition job run history | (none) | A `job_runs` table in D1 recording each cron run of the petition Worker (start, finish, reminders sent, rows cleaned, error), plus an `inv` command listing recent runs. Workers Logs (on since `7b6cc43`) keep runs only a few days; this keeps them permanently. One migration, about 40 lines around `scheduled()`, tests. Prompted by the 2026-10-13 18:17 UTC run that left no trace. Research jobs are planned as GitHub Actions (`plans/deferred/wayback-archive-job.md`), whose run logs already persist, so this is for the Worker only. Triage: Simplicity and clarity; keep; 2026-10-13 |
+| Petition unconfirmed limit back to 7 days | (none) | `UNCONFIRMED_TTL_DAYS` in `workers/api/src/index.ts` is 10 (was 7) since 2026-10-13, because Cloudflare incident cbvocc87nsne (cron trigger activation) stopped the Worker's job after its schedule changed, so no 4-day reminders went out. Change it back once the job runs again and the waiting reminders have gone out (`reminded_at` set on the unconfirmed rows); update the 7 tests in `workers/api/test/petitions.test.ts` that the change moved, and deploy. /privacy still says 7 days throughout. Triage: Security; keep; 2026-10-13 |
 ---
 
 ## Canonical verdict artifact (LLM-as-judge framing)

@@ -422,7 +422,7 @@ describe('no-JS path', () => {
     expect(res.headers.get('Content-Type')).toContain('text/html');
     const html = await res.text();
     expect(html).toContain('Check your email');
-    expect(html).toContain('within 7 days, your signature will be deleted');
+    expect(html).toContain('within 10 days, your signature will be deleted');
     expect(html).toContain(`href="${SITE}/writing/pledge"`);
   });
 });
@@ -431,7 +431,7 @@ describe('sign reply', () => {
   it('says an unconfirmed signature is deleted after the cleanup window', async () => {
     const res = await sign();
     expect(((await res.json()) as { message: string }).message).toBe(
-      "Check your email for a link to confirm your signature. If you don't confirm within 7 days, your signature will be deleted.",
+      "Check your email for a link to confirm your signature. If you don't confirm within 10 days, your signature will be deleted.",
     );
   });
 });
@@ -459,7 +459,7 @@ describe('confirmation reminder', () => {
     expect(sentEmails).toHaveLength(2);
     const mail = sentEmails.at(-1)!;
     expect(mail.subject).toBe('Reminder: confirm your signature: The Pledge');
-    expect(mail.text).toContain('If it is not confirmed within 3 days, it will be deleted.');
+    expect(mail.text).toContain('If it is not confirmed within 6 days, it will be deleted.');
     expect(mail.text).toContain('Name: Late Signer\nShown on the public list: no\nEmail updates about this campaign: yes');
     await sendReminders(env, days(5));
     expect(sentEmails).toHaveLength(2);
@@ -497,7 +497,7 @@ describe('confirmation reminder', () => {
   it('counts the days left from the signing date when a reminder is a day late', async () => {
     await sign();
     await sendReminders(env, days(5.5));
-    expect(sentEmails.at(-1)!.text).toContain('If it is not confirmed within 2 days, it will be deleted.');
+    expect(sentEmails.at(-1)!.text).toContain('If it is not confirmed within 5 days, it will be deleted.');
   });
 
   it('keeps the first link working when a reminder fails', async () => {
@@ -528,12 +528,12 @@ describe('confirmation reminder', () => {
 });
 
 describe('daily cleanup', () => {
-  it('purges unconfirmed rows after 7 days and keeps confirmed ones', async () => {
+  it('purges unconfirmed rows after 10 days and keeps confirmed ones', async () => {
     await signAndConfirm();
     await sign();
-    await cleanup(env, days(6));
+    await cleanup(env, days(9));
     expect(await rowCount()).toBe(2);
-    await cleanup(env, days(8));
+    await cleanup(env, days(11));
     expect(await rowCount()).toBe(1);
   });
 

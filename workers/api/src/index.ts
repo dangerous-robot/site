@@ -11,7 +11,8 @@ const RESEND_WINDOW_MS = 10 * 60_000;
 // connections slips past it; this cap bounds how much mail the form can send.
 export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
-const UNCONFIRMED_TTL_DAYS = 7;
+// 10 rather than 7 while runs missed during a Cloudflare cron outage catch up (UNSCHEDULED.md).
+const UNCONFIRMED_TTL_DAYS = 10;
 const REMINDER_AFTER_DAYS = 4;
 // Each reminder is one Resend call; the Workers Free plan allows 50 outside calls per run.
 // Leftovers go out on the next daily run.
