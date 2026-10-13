@@ -1,10 +1,12 @@
-1.0.0-beta.6
+1.0.0-beta.6.1
 
 Pre-release stage (toward 1.0.0):
 - `beta.N`: a deployed release before 1.0.0. Content, features and schema may still change. Each deploy bumps N.
 - `1.0.0`: the beta label is dropped, by Brandon's call. There are no alpha or rc stages in this line.
 
 Use dotted numeric identifiers (`beta.3`, `beta.4`) so they sort numerically. Tag each deploy (`v1.0.0-beta.3`).
+
+A patch deployed while the next beta is still in progress takes a fourth number (`beta.6.1`), which sorts between `beta.6` and `beta.7`, so the planned beta keeps its name.
 
 History: 1.0.0 did not ship. `1.0.0-beta.2` was the last build deployed before the refocus; the repo briefly used `1.1.0-alpha.1` (2026-10-02 to 2026-10-04) and was reset to `1.0.0-beta.3`.
 
