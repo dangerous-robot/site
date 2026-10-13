@@ -13,8 +13,9 @@ export const HOURLY_EMAIL_CAP = 30;
 const CAP_WINDOW_MS = 60 * 60_000;
 const UNCONFIRMED_TTL_DAYS = 7;
 const REMINDER_AFTER_DAYS = 4;
+// Each reminder is one Resend call; the Workers Free plan allows 50 outside calls per run.
 // Leftovers go out on the next daily run.
-const REMINDERS_PER_RUN = 50;
+const REMINDERS_PER_RUN = 20;
 const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
@@ -74,20 +75,19 @@ interface DueReminder {
   email: string;
   display_consent: number;
   updates_consent: number;
+  created_at: string;
   token_hash: string;
 }
 
 /**
- * A reminder to each unconfirmed signature, REMINDER_AFTER_DAYS after signing.
- * Tokens are stored hashed, so the reminder carries fresh links, which replace
- * the first email's. The new token is saved only after the send succeeds: a
- * failed or interrupted send leaves the first links working and the row due
- * again next run. Reminders skip the form's hourly cap: each one follows a
- * sign-up that already passed it.
+ * Reminds each unconfirmed signer once, REMINDER_AFTER_DAYS after signing. Tokens are stored
+ * hashed, so the reminder carries fresh links; they are saved only after the send, so a failed
+ * or interrupted run leaves the first links working. Each reminder follows a sign-up that
+ * already passed the hourly cap, so the cap does not apply here.
  */
 export async function sendReminders(env: Env, now = new Date()): Promise<void> {
   const { results } = await env.DB.prepare(
-    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.token_hash
+    `SELECT s.id, s.petition_slug, p.title, s.name, s.email, s.display_consent, s.updates_consent, s.created_at, s.token_hash
      FROM signatures s JOIN petitions p ON p.slug = s.petition_slug
      WHERE s.confirmed_at IS NULL AND s.reminded_at IS NULL AND s.email IS NOT NULL
        AND p.status = 'open' AND s.created_at < ?
@@ -96,9 +96,9 @@ export async function sendReminders(env: Env, now = new Date()): Promise<void> {
     .bind(new Date(now.getTime() - REMINDER_AFTER_DAYS * DAY_MS).toISOString(), REMINDERS_PER_RUN)
     .all<DueReminder>();
 
+  const saves: D1PreparedStatement[] = [];
   for (const row of results) {
     const token = newToken();
-    const links = linkBase(env, row.petition_slug);
     try {
       await sendEmail(
         env,
@@ -108,9 +108,8 @@ export async function sendReminders(env: Env, now = new Date()): Promise<void> {
           name: row.name,
           showName: row.display_consent === 1,
           wantsUpdates: row.updates_consent === 1,
-          confirmUrl: `${links}/confirm?t=${token}`,
-          removeUrl: `${links}/remove?t=${token}`,
-          reminderDaysLeft: UNCONFIRMED_TTL_DAYS - REMINDER_AFTER_DAYS,
+          ...tokenLinks(env, row.petition_slug, token),
+          reminderDaysLeft: UNCONFIRMED_TTL_DAYS - Math.floor((now.getTime() - Date.parse(row.created_at)) / DAY_MS),
         }),
       );
     } catch (err) {
@@ -118,10 +117,12 @@ export async function sendReminders(env: Env, now = new Date()): Promise<void> {
       continue;
     }
     // Matching the old hash means a confirm or re-sign since the SELECT wins; its links stay.
-    await env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL')
-      .bind(await sha256(token), now.toISOString(), row.id, row.token_hash)
-      .run();
+    saves.push(
+      env.DB.prepare('UPDATE signatures SET token_hash = ?, reminded_at = ? WHERE id = ? AND token_hash = ? AND confirmed_at IS NULL')
+        .bind(await sha256(token), now.toISOString(), row.id, row.token_hash),
+    );
   }
+  if (saves.length > 0) await env.DB.batch(saves);
 }
 
 async function getPetition(request: Request, env: Env, slug: string): Promise<Response> {
@@ -223,9 +224,8 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     .first<{ id: number }>();
 
   if (row) {
-    const base = linkBase(env, slug);
     try {
-      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, wantsUpdates, confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` }));
+      await sendEmail(env, confirmationEmail({ to: email, title: petition.title, name, showName, wantsUpdates, ...tokenLinks(env, slug, token) }));
     } catch (err) {
       console.error(err);
       // Drop the row so an immediate retry is not swallowed by the resend window.
@@ -352,8 +352,9 @@ function reply(request: Request, env: Env, status: number, message: string, post
   return messagePage(heading ?? (status === 200 ? 'Thank you' : 'Something went wrong'), message, postUrl, status);
 }
 
-function linkBase(env: Env, slug: string): string {
-  return `${env.API_ORIGIN}/petitions/${slug}`;
+function tokenLinks(env: Env, slug: string, token: string): { confirmUrl: string; removeUrl: string } {
+  const base = `${env.API_ORIGIN}/petitions/${slug}`;
+  return { confirmUrl: `${base}/confirm?t=${token}`, removeUrl: `${base}/remove?t=${token}` };
 }
 
 function newToken(): string {

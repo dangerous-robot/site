@@ -101,6 +101,16 @@ async function publicJson() {
   return { res, body: (await res.json()) as { status: string; count: number; names: string[] } };
 }
 
+/** Moves every signature out of the resend window. */
+function ageSignatures() {
+  return env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+}
+
+/** N days from now. */
+function days(n: number): Date {
+  return new Date(Date.now() + n * 86_400_000);
+}
+
 function closePetition() {
   return env.DB.prepare("UPDATE petitions SET status = 'closed', closed_at = '2026-12-01T00:00:00.000Z'").run();
 }
@@ -243,7 +253,7 @@ describe('email updates opt-in', () => {
 
   it('takes the newer choice when an unconfirmed signer signs again', async () => {
     await sign({ email: 'again@example.org', updates: true });
-    await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
+    await ageSignatures();
     await sign({ email: 'again@example.org' });
     expect(await updatesConsent('again@example.org')).toBe(0);
   });
@@ -253,7 +263,7 @@ describe('repeat signatures', () => {
   it('re-sends with a fresh token while unconfirmed, keeping one row', async () => {
     await sign({ email: 'again@example.org' });
     const first = lastToken('confirm');
-    await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+    await ageSignatures();
     await sign({ email: 'again@example.org' });
     expect(sentEmails).toHaveLength(2);
     expect(await rowCount()).toBe(1);
@@ -381,7 +391,7 @@ describe('spam layers', () => {
   it('counts re-sends to one address toward the hourly cap', async () => {
     for (let i = 0; i <= HOURLY_EMAIL_CAP; i++) {
       // Age the row past the resend window so each POST is due a fresh email.
-      await env.DB.prepare("UPDATE signatures SET created_at = '2000-01-01T00:00:00.000Z'").run();
+      await ageSignatures();
       const res = await sign({ email: 'target@example.org' });
       expect(res.status).toBe(i < HOURLY_EMAIL_CAP ? 200 : 429);
     }
@@ -440,8 +450,6 @@ describe('schema', () => {
 });
 
 describe('confirmation reminder', () => {
-  const days = (n: number) => new Date(Date.now() + n * 86_400_000);
-
   it('sends one reminder after 4 days whose new link confirms and whose old link no longer does', async () => {
     await sign({ name: 'Late Signer', updates: true });
     const oldToken = lastToken('confirm');
@@ -455,7 +463,9 @@ describe('confirmation reminder', () => {
     expect(mail.text).toContain('Name: Late Signer\nShown on the public list: no\nEmail updates about this campaign: yes');
     await sendReminders(env, days(5));
     expect(sentEmails).toHaveLength(2);
-    expect((await post('confirm', oldToken)).status).toBe(400);
+    const stale = await post('confirm', oldToken);
+    expect(stale.status).toBe(400);
+    expect(await stale.text()).toContain('A newer email from us may have replaced it');
     expect((await post('confirm', lastToken('confirm'))).status).toBe(200);
   });
 
@@ -473,7 +483,7 @@ describe('confirmation reminder', () => {
     await sign({ email: 'again@example.org' });
     await sendReminders(env, days(5));
     expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
-    await env.DB.prepare("UPDATE signatures SET created_at = '2026-01-01T00:00:00.000Z'").run();
+    await ageSignatures();
     await sign({ email: 'again@example.org' });
     expect(sentEmails.at(-1)!.subject).toMatch(/^Confirm/);
     await sendReminders(env, days(3));
@@ -482,7 +492,13 @@ describe('confirmation reminder', () => {
     expect(sentEmails.at(-1)!.subject).toMatch(/^Reminder/);
   });
 
-  it('keeps the first link working and retries next run when the reminder cannot be sent', async () => {
+  it('counts the days left from the signing date when a reminder is a day late', async () => {
+    await sign();
+    await sendReminders(env, days(5.5));
+    expect(sentEmails.at(-1)!.text).toContain('If it is not confirmed within 2 days, it will be deleted.');
+  });
+
+  it('keeps the first link working when a reminder fails', async () => {
     await sign();
     const firstToken = lastToken('confirm');
     resendStatus = 500;
@@ -507,21 +523,15 @@ describe('confirmation reminder', () => {
     expect(sends!.n).toBe(1);
   });
 
-  it('tells a signer with a replaced link to use the newer email', async () => {
-    await sign();
-    const oldToken = lastToken('confirm');
-    await sendReminders(env, days(5));
-    expect(await (await post('confirm', oldToken)).text()).toContain('A newer email from us may have replaced it');
-  });
 });
 
 describe('daily cleanup', () => {
   it('purges unconfirmed rows after 7 days and keeps confirmed ones', async () => {
     await signAndConfirm();
     await sign();
-    await cleanup(env, new Date(Date.now() + 6 * 86_400_000));
+    await cleanup(env, days(6));
     expect(await rowCount()).toBe(2);
-    await cleanup(env, new Date(Date.now() + 8 * 86_400_000));
+    await cleanup(env, days(8));
     expect(await rowCount()).toBe(1);
   });
 

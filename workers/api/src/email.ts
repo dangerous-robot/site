@@ -46,10 +46,10 @@ export interface ConfirmationDetails {
 export function confirmationEmail({ to, title, name, showName, wantsUpdates, confirmUrl, removeUrl, reminderDaysLeft }: ConfirmationDetails): Email {
   return {
     to,
-    subject: `${reminderDaysLeft ? 'Reminder: c' : 'C'}onfirm your signature: ${title}`,
+    subject: reminderDaysLeft === undefined ? `Confirm your signature: ${title}` : `Reminder: confirm your signature: ${title}`,
     text: [
       `Someone, hopefully you, signed "${title}" on dangerousrobot.org with this email address.`,
-      ...(reminderDaysLeft
+      ...(reminderDaysLeft !== undefined
         ? [`The signature is not confirmed yet. If it is not confirmed within ${reminderDaysLeft} days, it will be deleted. These links replace the ones in the earlier email.`]
         : []),
       '',
