@@ -1,4 +1,4 @@
-1.0.0-beta.6.1
+1.0.0-beta.6.2
 
 Pre-release stage (toward 1.0.0):
 - `beta.N`: a deployed release before 1.0.0. Content, features and schema may still change. Each deploy bumps N.
