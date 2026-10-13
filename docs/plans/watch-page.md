@@ -53,7 +53,7 @@ Source: Design canvas artboard `project/WatchSwitcher.dc.html` (https://claude.a
 | RD4 | Hover popups, frame previews and the preview switch are removed. No autoplay of the next video. |
 | RD5 | /watch stays out of the nav. Visually hidden h1 "Watch"; the video title stays an h2; no breadcrumb or visible intro. |
 | RD6 | The YouTube attribution line under the player is removed. The YouTube Terms link lives on /privacy (D9), and the dist check requires it there. |
-| RD7 | Scrollbars site-wide: `color-scheme` per theme; page scrollbars keep their normal width with theme colours; lists and menus get thin scrollbars whose thumb always shows. Thumbs are 3:1 against the page background. |
+| RD7 | Scrollbars site-wide: `color-scheme` per theme; page scrollbars keep their normal width with theme colours; lists and menus get thin scrollbars whose thumb always shows. Thumbs are at least 3:1 against the page, list and menu backgrounds in all four themes. |
 | RD8 | `?list=&v=` deep links stay as built; extending them is undecided. |
 
 - [x] RD-T1: Base `app` layout, tokens (menu, scrim, scrollbar in all four themes), scrollbar rules
@@ -675,16 +675,16 @@ Cross-lane coupling between F and G: lane F owns the thumb markup (G tests again
 | Manual `workflow_dispatch` deploy (T21) | Green. The build log shows a `fetched ... videos` line with n > 0 for each seed playlist and `mode=live playlists=3`. No watch warning annotation. `check:watch` runs with `WATCH_CHECK_CONTEXT=deploy`. |
 | First scheduled run (T20) | Builds main HEAD; `verify`, `build` and `deploy` green; `mode=live playlists=3` |
 
-**Manual browser check** (live build, then production), at 375px (phone), 900px (tablet) and 1280px (desktop), plus the 1119px/1120px rail switch:
+**Manual browser check** (live build, then production), at 375px (phone), 860px (stacked) and 1280x800 (desktop), plus a window under 600px tall:
 
-- [ ] All three seed playlists appear in D11 order, with name, creator and editor description.
-- [ ] Thumbnails show a two-line title caption and a duration badge. There is no horizontal scroll at 375px.
+- [ ] All three seed playlists appear in the switcher menu in D11 order, with name, creator, video count and description.
+- [ ] Rows show a thumbnail with duration badge, a two-line title, and channel and date. There is no horizontal scroll at 375px.
 - [ ] No iframe and no `youtube-nocookie.com` request before Play (DevTools Network).
-- [ ] No frame request before the first hover. Frames cycle on hover and stop on leave. A card with `data-frame-tier="sd"` requests `sd*.jpg`; others request `mq*.jpg`.
-- [ ] The switch: Off persists across reload. With OS reduce motion on, the default is Off with the hint. Site Motion: Reduce behaves the same.
-- [ ] Popups: 300ms hover delay, open on keyboard focus, Escape closes them, they never cover the player (also on first-row cards), and none appear on a touch device.
-- [ ] Clicking a card far down the grid scrolls the player into view and starts playback only once the player is at least half on screen.
-- [ ] Keyboard only: skip link, then tabs (arrows plus Enter), then Play, then "Watch on YouTube", then the switch, then thumbnails. Focus is always visible.
+- [ ] The menu opens over a scrim, Escape and a scrim click close it, and focus returns to the playlist card. Switching playlists keeps each list's scroll position and never changes the video in the player.
+- [ ] The status line reads "Now playing: ..." or "Back to now playing in ..." and takes you to the current row. Nothing shifts when the current video changes.
+- [ ] The resize handle drags between 300 and 560px and answers arrow keys; it is gone when the columns stack.
+- [ ] At 1280x800 the page itself does not scroll; under 600px tall it does. On a phone, picking a row far down scrolls the player into view and starts playback only once it is at least half on screen.
+- [ ] Keyboard only: skip link, playlist card, menu (arrows, Escape), status line, rows, resize handle, Play, "Show more", "Watch on YouTube". Focus is always visible.
 - [ ] Deep links: `?list=far-ai-research-highlights&v=<id>` opens that poster. A bogus `v` shows the notice. A bogus `list` falls back.
 - [ ] Copying the URL after playing a video and opening it in a new tab shows the same poster, without autoplay.
 - [ ] All four themes (dark, light, both high-contrast). The player box stays black and text contrast holds.

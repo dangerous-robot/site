@@ -112,11 +112,11 @@ Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-lin
 **Dist check** (`npm run check:watch`, `scripts/check-watch-page.ts`). Run after a build. It reads `dist/`, or the directory in `WATCH_CHECK_DIST`. It fails when:
 
 - any file in `dist/` contains `AIza` (the prefix of every Google API key), or the exact value of `YOUTUBE_API_KEY` when that variable is set in the step's environment;
-- `/privacy` does not link the Google Privacy Policy;
 - `/watch` has no single page root with `data-watch-mode` of `live`, `fixture` or `none`, or contains an `<iframe>` before Play;
 - in `none` mode, the page-level empty state is missing or any thumbnail renders;
-- in `live` or `fixture` mode, a thumbnail is not a link to youtube.com, the YouTube Terms of Service link is missing, tabs and panels do not match, or a panel has neither a grid nor an empty state;
-- in `fixture` mode, tabs, statuses and video counts differ from `src/lib/watch/fixtures/expected.ts`;
+- `/privacy` does not link the YouTube Terms of Service and the Google Privacy Policy;
+- in `live` or `fixture` mode, a thumbnail is not a link to youtube.com, the switcher's playlists and the panels do not match, or a panel has neither a video list nor an empty state;
+- in `fixture` mode, the switcher's playlists, statuses and video counts differ from `src/lib/watch/fixtures/expected.ts`;
 - with `WATCH_CHECK_CONTEXT=deploy`, the page was built from fixture data.
 
 An empty or failed playlist, and live mode with no thumbnails, print GitHub `::warning::` lines and do not fail the check. A keyless build (`none` mode) passes, in deploy context too, so a missing key never fails a deploy.

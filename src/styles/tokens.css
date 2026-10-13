@@ -84,13 +84,14 @@
   --color-backdrop: rgba(0, 0, 0, 0.5);
 
   /* Menus that open over content (the /watch playlist menu), the scrim
-     behind them, and scrollbar thumbs (3:1 on the page background) */
+     behind them, and scrollbar thumbs (at least 3:1 on the page, list and
+     menu backgrounds of each theme) */
   --color-menu-bg: #2c2d34;
   --color-menu-border: #4c4d5a;
   --color-menu-hover: #36373f;
   --shadow-menu: 0 12px 32px rgba(0, 0, 0, 0.6);
   --color-scrim: rgba(8, 8, 10, 0.62);
-  --color-scrollbar: #6a6a78;
+  --color-scrollbar: #787886;
   color-scheme: dark;
 }
 
