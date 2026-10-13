@@ -1,6 +1,6 @@
 # Plan: Responsible AI chatbots, backed by claims
 
-**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 done (stance sentences, intro, every stance row backed by a source or a Values position); S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), free-tier trial cells set to No (D18); not ticked because stance-row cells with no page stating the answer stay not yet sourced; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S16 not started.
+**Status**: in progress. S1 to S8, S8a, S11 to S13 and S13a done; S9 done (stance sentences, intro, every stance row backed by a source or a Values position); S10 sourced as far as the products' own pages allow (all 9 stance rows, the feature rows and the summary; page tier counts 6 / 51 / 55), free-tier trial cells set to No (D18); cells with no page stating the answer stay not yet sourced, with their reasons recorded; the web search rows are sourced against D19 as far as the products' pages allow (7 of 14 cells; 10 of 14 cells after D37, `9509543`; the other 4 have no page that states the answer); S15 done: all 6 renewable-hosting cells cite a reviewed claim (ChatGPTree, Earthly Insight and Viro AI Unverified, cells unknown; Ecosia AI Mixed, cell partial; Euria and GreenPT True, cells yes); S13a fixed the onboarding defects RF29 to RF31; S10 ticked 2026-10-13 (Brandon: unsourced cells keep their recorded reasons); S16 left out of SITE-J (backlog).
 **Last updated**: 2026-10-10
 **Serves**: SITE-J (Responsible AI chatbots) in `docs/v1.0.0-roadmap.md:143`; decided in `docs/decisions.md:26` (2026-10-06, "Next large effort")
 **Page**: `src/content/resources/responsible-ai.md` (layout `matrix`), rendered by `src/pages/resources/[...slug].astro:75-93` and `src/components/ResponsibleAI*.astro`
@@ -27,7 +27,7 @@ Honest labels (no new research)
 
 Sources for every stance row
 - [x] S9: stance sentences and their evidence (copy final 2026-10-12)
-- [ ] S10: one source per stance-row cell, then feature rows and the summary
+- [x] S10: one source per stance-row cell, then feature rows and the summary (cells no page states stay "Not yet sourced", each with its reason in the S10 results; Brandon 2026-10-13)
 - [x] S11: the research linter counts sources the page cites
 
 Claims, row by row
@@ -35,7 +35,7 @@ Claims, row by row
 - [x] S13: entities for the page's products and companies
 - [x] S13a: fix the onboarding defects found in S15 (RF29, RF30, RF31)
 - [x] S15: first row backed by published claims (renewable hosting)
-- [ ] S16: remaining claim rows, one at a time
+- S16: remaining claim rows, one at a time. Not in SITE-J: the page ships in beta.7 without it (Brandon 2026-10-13); backlog row "Claims for the remaining stance rows" in `docs/UNSCHEDULED.md`
 
 S14 and S17 (indexing) are not part of SITE-J and have no checkbox; their notes stay under "Steps" for reference.
 

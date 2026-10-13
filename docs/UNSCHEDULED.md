@@ -198,6 +198,7 @@ Carry-forward items from [responsible-ai-overhaul.md](plans/completed/responsibl
 | Work Item | Notes |
 |-----------|-------|
 | Ideal column tint in light theme | `--color-surface` is too close to `--color-bg` in light theme; needs a `--color-surface-subtle` (or similar) token. Deferred by the no-new-tokens constraint |
+| Claims for the remaining stance rows | SITE-J (Responsible AI chatbots) plan step S16, left out of beta.7 (Brandon 2026-10-13): claims, as S15 did for renewable hosting, for real-time energy display, image generation, published financials, data used for training, open-weight models and ownership (company rows: `companies/<slug>` with `--only financial-transparency` or `--only corporate-structure`). Steps and verification: [plan](plans/responsible-ai-chatbots-claims.md) S16. Triage: Responsible AI chatbots; keep; 2026-10-13 |
 | Filter chip `aria-pressed` semantics | Filled accent chip currently means "this product is hidden", not "selected"; flip the model to "visible by default, clicking removes" or rename the toggle |
 
 ---
