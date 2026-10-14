@@ -8,7 +8,6 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 | [content-model.md](content-model.md) | Content types (entities, claims, sources, criteria, plus the editorial `writing` collection), Zod schemas, relationships, directory conventions |
 | [ci-deploy.md](ci-deploy.md) | CI/CD workflows, quality checks, citation validation, npm scripts |
 | [research-workflow.md](research-workflow.md) | Content lifecycle, agent roles, content rules, review cadence, quality gates |
-| [onboarding.md](onboarding.md) | `dr onboard` flow, template screening, checkpoint protocol, company/product relationships |
 | [glossary.md](glossary.md) | Canonical vocabulary: research objects, roles, pipeline terms, governance rules |
 | [research-flow.md](research-flow.md) | Mermaid flow diagrams: initiation paths, pipeline, sign-off, rejection, publish, recheck |
 | [source-quality.md](source-quality.md) | Verification scale, independence proxy + restatement failure mode, confidence cap, source overrides |

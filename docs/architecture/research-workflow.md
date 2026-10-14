@@ -8,7 +8,7 @@ dangerousrobot.org is a research hub that publishes structured, citable fact-che
 
 ## Content Model
 
-Research content lives under `research/` as Markdown with YAML frontmatter, defined as Zod schemas in `src/content.config.ts` and enforced at build time. Three on-disk types -- **Entity**, **Source**, **Claim** -- plus reusable claim templates (criteria) in `research/templates.yaml`. Claims reference sources by slug (e.g., `2025/fli-safety-index`), never by raw URL, so one source can back many claims. Full schema and directory conventions: [content-model.md](content-model.md).
+Research content lives under `research/` as Markdown with YAML frontmatter, defined as Zod schemas in `src/content.config.ts` and enforced at build time. Three on-disk types -- **Entity**, **Source**, **Claim** -- plus the criteria registry in `research/templates.yaml`: each criterion is a claim sentence with a `grading_rule` that both the Analyst and the Evaluator receive. Claims reference sources by slug (e.g., `2025/fli-safety-index`), never by raw URL, so one source can back many claims. Full schema and directory conventions: [content-model.md](content-model.md).
 
 ## Content Lifecycle
 
@@ -16,7 +16,7 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 
 1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
-3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
+3. **Claim** -- `dr draft` runs the loop on a sentence (typed, or a criterion's sentence for an entity) and stores it as the claim's `statement`. The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
 6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
@@ -30,7 +30,7 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 | Role | Current status |
 |------|----------------|
 | **Research Lead** | Manual |
-| **Orchestrator** | `pipeline/orchestrator/` (`pipeline.py`, `cli.py`, `persistence.py` (the one place that writes claim, source and sidecar files), `checkpoints.py`) |
+| **Orchestrator** | `pipeline/orchestrator/` (`cli.py`, `persistence.py` (the one place that writes claim, source and sidecar files), `checkpoints.py`) |
 | **Research loop** | `pipeline/loop/` (`run`, `rerun`, `ClaimSpec`, `VerifyConfig`, `StepError`); returns a result and writes nothing |
 | **Router** | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`, full implementation tracked in `docs/UNSCHEDULED.md` § Router |
 | **Researcher** | Automated -- `pipeline/researcher/` |
@@ -78,7 +78,7 @@ Operator-visible fields on `VerifyConfig` (`pipeline/loop/spec.py`) controlling 
 - **`max_initial_queries`** -- cap on how many search queries the Researcher dispatches per claim. The query planner's output is hard-truncated to this count before searches run (default: 7). Lower values reduce API cost and latency; higher values improve recall.
 - **`research_origins`** -- list of dispatch types attempted per claim (default: `["tavily", "arxiv"]`). Web origins always fire; academic origins (`arxiv` today; `s2` and `openalex` planned for Tier 2) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`).
 - **`search_backend`** -- which API powers the web leg: `tavily` (default) or `brave`. Read from the `RESEARCH_SEARCH_BACKEND` env var at `VerifyConfig` construction; tests can override directly. Orthogonal to `research_origins`.
-- **`llm_concurrency`** -- cap on concurrent LLM calls across the pipeline (default: 8), enforced via `asyncio.Semaphore`. Relevant during `dr onboard`, which runs multiple claim templates concurrently.
+- **`llm_concurrency`** -- cap on concurrent LLM calls across the pipeline (default: 8), enforced via `asyncio.Semaphore`.
 
 ## Quality Gates
 

@@ -187,11 +187,9 @@ class TestCanonicalEntityKeysLockstep:
     def test_canonical_entity_keys_lockstep(self) -> None:
         from linter.checks import CANONICAL_ENTITY_KEYS
 
-        # Keys this plan adds (legal_name, verification_status) plus the
-        # drive-by fixes (sec_cik shipped via source-pool-expansion-tier1.md;
-        # status emitted by _entity_frontmatter for drafts). `founded` lands
-        # via docs/plans/entity-onboarding-research.md.
-        for key in ("legal_name", "verification_status", "sec_cik", "status", "founded"):
+        # The set is derived from the writer's ENTITY_FRONTMATTER_KEYS; these
+        # are the keys most likely to drift from the Zod schema.
+        for key in ("legal_name", "verification_status", "sec_cik", "founded"):
             assert key in CANONICAL_ENTITY_KEYS, (
                 f"{key!r} missing from CANONICAL_ENTITY_KEYS — drift from "
                 f"writer / Zod schema. See docs/plans/completed/entity-metadata-surface_completed.md."

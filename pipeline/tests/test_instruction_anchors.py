@@ -117,8 +117,8 @@ class TestAuditClaimSendsTheClaim:
 
     @pytest.mark.asyncio
     async def test_audit_claim_grades_the_statement_it_is_given(self) -> None:
-        """The caller picks the statement (_graded_statement); _audit_claim never swaps it,
-        even for text containing the vocabulary hint prefix."""
+        """The caller passes the claim's statement; audit_claim grades it as given and
+        never swaps in the analyst's title, even for text that reads like a hint."""
         from loop import VerifyConfig, audit_claim
 
         captured: list[str] = []

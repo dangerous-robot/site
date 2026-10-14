@@ -51,7 +51,7 @@ Facts behind each node, checked 2026-10-06:
 | Analyst → Auditor | Draft verdict, confidence, narrative |
 | Auditor → Human review | Draft claim file plus audit sidecar (both verdicts, `needs_review`) |
 | Human review → Published verdict | `status: published`, `human_review` block filled |
-| Human review → revise | Notes; likely a re-run (`dr claim-refresh`) or a hand edit before approval |
+| Human review → revise | Notes; likely a re-run (`dr draft --claim <ref> --force`) or a hand edit before approval |
 
 ## Visual treatment
 

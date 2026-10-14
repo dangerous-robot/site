@@ -56,7 +56,7 @@ def test_refresh_with_unchanged_verdict_stays_draft_and_unsigned(tmp_path, monke
     log_path = tmp_path / "rerun-log.jsonl"
 
     def fake_claim_refresh(cmd, **kwargs):
-        # What dr claim-refresh does to these files: same verdict, status
+        # What dr draft --claim --force does to these files: same verdict, status
         # draft, sign-off reset. No model or network call.
         claim.write_text(CLAIM.format(status="draft"), encoding="utf-8")
         sidecar.write_text(yaml.safe_dump({"human_review": dict(RESET)}), encoding="utf-8")

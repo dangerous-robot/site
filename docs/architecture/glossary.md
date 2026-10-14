@@ -4,7 +4,7 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 
 ## How the system works
 
-The system tracks four object types: **criteria** (reusable claim templates), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
+The system tracks four object types: **criteria** (a registry of claim sentences, each with a `grading_rule`), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
 
 For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
@@ -15,7 +15,7 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 | **Entity** | A stable subject (company, product, or subject) that claims are about | `research/entities/{type}/{slug}.md` |
 | **Claim** | A single factual assertion with a verdict, confidence, evidence links, and recheck schedule | `research/claims/{entity-slug}/{claim-id}.md` |
 | **Source** | A citable reference -- "cite once, reference many" | `research/sources/{yyyy}/{slug}.md` |
-| **Criterion** | A reusable claim template applied uniformly across entities | `research/templates.yaml` |
+| **Criterion** | A registry entry in `research/templates.yaml`: a claim sentence applied uniformly across entities, with a `grading_rule` that the Analyst and the Evaluator both receive | `research/templates.yaml` |
 
 ## Research Object Fields
 
@@ -25,15 +25,16 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 | **Confidence** | Claim | Certainty level: high, medium, low |
 | **Topics** | Claim, Criterion | Taxonomy array (1 to 3 slugs): ai-safety, environmental-impact, product-comparison, etc. (8 total). Field name is `topics` (renamed from singular `category` per `docs/plans/completed/multi-topic.md`). |
 | **Takeaway** | Claim | Optional reader-facing one-liner (≤200 chars) rendered under the verdict badge. Operators add this by hand during review in v1. |
-| **seo_title** | Claim | Short title for the rendered page's `<title>` tag (≤42 chars, leaving room for ` - Dangerous Robot`). The Analyst writes one on every generated claim; a forced rewrite (`dr claim-refresh`, `--force`) keeps an operator's `seo_title` (one that differs from the analyst's last, recorded in the audit sidecar's `analyst_record`) while the analyst's title is unchanged, and keeps an operator's `cap_rationale` (likewise told apart through `analyst_record`) until the operator edits it, even when `verification_level` or `confidence` changes. The schema marks it optional so hand-written legacy claims still validate. Falls back to `title` when absent. |
+| **seo_title** | Claim | Short title for the rendered page's `<title>` tag (≤42 chars, leaving room for ` - Dangerous Robot`). The Analyst writes one on every generated claim; a forced rewrite (`dr draft --claim --force`) keeps an operator's `seo_title` (one that differs from the analyst's last, recorded in the audit sidecar's `analyst_record`, whose `title` records the claim's statement) while the claim's statement is unchanged, and keeps an operator's `cap_rationale` (likewise told apart through `analyst_record`) until the operator edits it, even when `verification_level` or `confidence` changes. The schema marks it optional so hand-written legacy claims still validate. Falls back to `title` when absent. |
 | **Phase** | Claim | Optional pipeline-progress field, set by the Orchestrator while a claim is in flight; absent on terminal states. Enum: `researching`, `ingesting`, `analyzing`, `evaluating`. |
 | **blocked_reason** | Claim | Optional reason field paired with `status: blocked`. Enum: `insufficient_sources`, `terminal_fetch_error`, `analyst_error`. |
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index, paper |
 | **source_type** | Source | Optional authority classification: `primary`, `secondary`, `tertiary`. Set by `pipeline/common/source_classification.py` during ingest. |
 | **as_of** | Claim | Date when verdict was last evaluated |
 | **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
-| **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion template it was generated from |
-| **founded** | Entity (company, product) | Year the entity was founded (companies) or first launched (products). Optional integer (1800–current year). Subjects ignore this field. Populated by `dr onboard` / `dr entity-enrich` via the `entity_enricher` agent; surfaced on the entity page's Facts subsection and threaded into analyst and scorer prompts. |
+| **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion it was drafted from (`dr draft --criterion`) or had attached (`dr draft --claim --criterion`); the publish gate |
+| **statement** | Claim | The sentence the loop re-runs and the Evaluator grades; `title` equals it. For a criterion-backed claim, the criterion's text rendered once with the entity name; for an ad hoc claim, the operator's sentence. |
+| **founded** | Entity (company, product) | Year the entity was founded (companies) or first launched (products). Optional integer (1800–current year). Subjects ignore this field. Hand-written in the entity file; surfaced on the entity page's Facts subsection and threaded into analyst and scorer prompts. |
 
 ## Verdict definitions
 
@@ -58,10 +59,10 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Research Lead** | (human; no agent) | — |
 | **Orchestrator** | `pipeline/orchestrator/` (commands and the one writer); the research run itself is `pipeline/loop/` | the `dr` CLI itself; entry point for every pipeline command |
 | **Router** | planned (`pipeline/router/`); v1 surface shipped via [`triage-agent.md`](../plans/completed/triage-agent.md), full implementation tracked in `docs/UNSCHEDULED.md` § Router | — |
-| **Researcher** | `pipeline/researcher/` (also hosts the entity verifier/enricher agents) | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-research`; enricher via `dr entity-enrich` |
-| **Ingestor** | `pipeline/ingestor/` | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
-| **Analyst** | `pipeline/analyst/` | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-analyze` |
-| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
+| **Researcher** | `pipeline/researcher/` | invoked by `dr draft`; standalone via `dr step-research` |
+| **Ingestor** | `pipeline/ingestor/` | invoked by `dr draft`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr draft`; standalone via `dr step-analyze` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
 | (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates) |
 
@@ -78,7 +79,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, stops a run on threshold breach (nothing is written), manages queue (`pipeline/orchestrator/`) |
 | **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router) |
-| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. During `dr onboard` / `dr entity-enrich`, the package also hosts two agent-internal helpers — `entity_verifier` (gates against name collisions) and `entity_enricher` (drafts `founded`, tightened `description`, and `history_markdown`) — both tool-free, both consuming the same `LightResearchBundle`. |
+| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Grades the claim statement against the sources, independent of the analyst's verdict |
@@ -101,10 +102,10 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the Analyst's. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
 | **Threshold gate** | Post-ingest check in the loop: if fewer than four usable sources are available, the run stops with a `blocked_reason`, the Analyst is not invoked, and nothing is written (no claim, no source file, no sidecar). (`pipeline/loop/run.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
-| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_disagreement`, `review_onboard`, `review_entity_enrichment`, `review_entity_disambiguation`, `review_verification_status`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
+| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_disagreement`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
 | **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. Default: 7. |
-| **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`run` in `pipeline/loop/`, `onboard_entity`; `rerun` creates none). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
+| **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`run` in `pipeline/loop/`; `rerun` creates none). Bounds peak LLM parallelism within one claim run. |
 | **`publisher_quality`** | Pre-ingest domain quality label on `SearchCandidate`: `primary`, `secondary`, `tertiary`, or `forum`. Classified from the URL hostname by `pipeline/common/publisher_quality.py` during `execute_searches`; injected into the scorer prompt as a tiebreaker signal. Not persisted. Contrast with `source_type` (post-ingest, written to source frontmatter). |
 | **`research_origins`** | List of dispatch types the Researcher attempts for a claim. Default: `["tavily", "arxiv"]`. Web origins (`tavily`) always fire; academic origins (`arxiv`, and later `s2`/`openalex`) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (see row below). Mirrors the schema enum on `audit.sources_consulted[].acquisition.origin`. Distinct from `search_backend`, which selects the API powering the web origin. |
 | **`search_backend`** | Which API powers the web (non-academic) leg of `research_origins`. Today `tavily` (default) or `brave`. Read once at `VerifyConfig` construction from `RESEARCH_SEARCH_BACKEND`; unknown values fall back to `brave` with a warning. Distinct from `research_origins`, which lists dispatch types. |
@@ -154,11 +155,11 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 |---|---|
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
 | **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr step-ingest` (`dr ingest` is a hidden deprecated alias). |
-| **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then runs the loop (`run`) per applicable template. See [onboarding.md](onboarding.md) |
 | **Draft dry run** | Run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim; no disk writes and no archive.org capture. CLI: `dr draft --dry-run --entity <ref> "<sentence>"`. |
-| **Draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. A blocked or analyst-failed run writes nothing. CLI: `dr draft --entity <ref> "<sentence>"`. |
-| **Claim-refresh** | Re-run the full pipeline on an existing template-backed claim file (requires `criteria_slug`). CLI: `dr claim-refresh`. |
-| **Claim-promote** | Promote an ad-hoc claim draft to a reusable template entry in `research/templates.yaml`. Edits only the templates file; does not invoke any pipeline agent. CLI: `dr claim-promote`. |
+| **Draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. A blocked or analyst-failed run writes nothing. CLI: `dr draft --entity <ref> "<sentence>"` or `dr draft --subject <slug> "<sentence>"` (which also writes the subject record when missing). |
+| **Draft from a criterion** | Render a criterion's sentence once with the entity name, store it as `statement`, and run the loop; the claim takes `criteria_slug` and the criterion's topics and is written to `<entity-dir>/<criteria_slug>.md`. CLI: `dr draft --criterion <slug> --entity <ref>`. |
+| **Forced rerun** | Re-run an existing claim's stored `statement` and write back to the same path, keeping `criteria_slug`. CLI: `dr draft --claim <ref> --force`. |
+| **Attach a criterion** | Add a new criterion to `research/templates.yaml` from an ad hoc draft and set the draft's `criteria_slug`. Runs no pipeline agent and moves no file. CLI: `dr draft --claim <ref> --criterion <new-slug>`. |
 | **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias). |
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
 | **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). Every mode needs a person at a terminal: stdin must be a tty and the claim slug is typed back before the write. |
@@ -173,7 +174,7 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 
 ## Criterion vocabularies
 
-Some criterion templates use controlled vocabularies for substitutions in their `text` (e.g. `STRUCTURE`, `JURISDICTION`). The authoritative lists live alongside each template in `research/templates.yaml` under `vocabulary:`. Definitions below are for terms whose meaning is not self-evident from the value list.
+Some criteria carry controlled vocabularies (e.g. `STRUCTURE`, `JURISDICTION`) in `research/templates.yaml` under `vocabulary:`. They are site-only: the home page bolds their terms and the matrix check reads them, and the pipeline ignores them (no slot is rendered into a claim's `statement`). Definitions below are for terms whose meaning is not self-evident from the value list.
 
 ### Frontier-scale
 

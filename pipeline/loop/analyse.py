@@ -16,7 +16,6 @@ from analyst.agent import (
     EntityResolution,
     SourceOverride,
     VerdictAssessment,
-    analyst_agent,
     build_analyst_prompt,
     verdict_only_agent,
 )
@@ -32,7 +31,6 @@ from common.source_classification import (
     publisher_named_in_claim,
     source_engages_entity,
 )
-from common.templates import TemplateRecord, validate_analyst_title
 from common.utils import url_host
 from loop.spec import VerificationResult, VerifyConfig, _cfg_repo_root
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for
@@ -218,11 +216,11 @@ async def _run_with_null_retry(
 
 
 async def analyse_claim(
-    entity_name: str | None,
+    entity_name: str,
     claim_text: str,
     sources: list[dict],
     cfg: VerifyConfig,
-    resolved_entity: ResolvedEntity | None = None,
+    resolved_entity: ResolvedEntity,
     sub_questions: list[SubQuestion] | None = None,
     repo_root: Path | None = None,
     criterion_notes: str | None = None,
@@ -231,15 +229,13 @@ async def analyse_claim(
     only when output is None, so callers can persist structured failure
     detail into the audit sidecar and progress line.
 
-    With a ``resolved_entity``, ``_apply_entity_match`` relabels ``sources``
-    in place (so the auditor and sidecar see the same labels) and the
-    changes are recorded on the verdict's ``source_overrides``.
+    ``apply_entity_match`` relabels ``sources`` in place (so the auditor and
+    sidecar see the same labels) and the changes are recorded on the
+    verdict's ``source_overrides``.
     """
-    entity_overrides: list[SourceOverride] = []
-    if resolved_entity is not None:
-        entity_overrides = apply_entity_match(
-            sources, resolved_entity, repo_root or _cfg_repo_root(cfg), claim_text
-        )
+    entity_overrides = apply_entity_match(
+        sources, resolved_entity, repo_root or _cfg_repo_root(cfg), claim_text
+    )
     prompt = build_analyst_prompt(
         entity_name,
         claim_text,
@@ -258,29 +254,21 @@ async def analyse_claim(
             model=model_spec, timeout_s=cfg.analyst_timeout_s,
         )
 
-    if resolved_entity is not None:
-        with verdict_only_agent.override(model=resolve_model(model_spec)):
-            verdict_assessment, _, exc = await _run_with_null_retry(
-                verdict_only_agent, prompt, cfg.analyst_timeout_s
-            )
-        if verdict_assessment is None:
-            return None, _analyst_failure(exc)
-        _merge_entity_overrides(verdict_assessment, entity_overrides)
-        _clean_verdict_citations(verdict_assessment, sources)
-        entity_resolution = EntityResolution(
-            entity_name=resolved_entity.entity_name,
-            entity_type=resolved_entity.entity_type,
-            entity_description=resolved_entity.entity_description,
-            aliases=resolved_entity.aliases,
+    with verdict_only_agent.override(model=resolve_model(model_spec)):
+        verdict_assessment, _, exc = await _run_with_null_retry(
+            verdict_only_agent, prompt, cfg.analyst_timeout_s
         )
-        return AnalystOutput(entity=entity_resolution, verdict=verdict_assessment), None
-
-    with analyst_agent.override(model=resolve_model(model_spec)):
-        output, _, exc = await _run_with_null_retry(analyst_agent, prompt, cfg.analyst_timeout_s)
-    if output is None:
+    if verdict_assessment is None:
         return None, _analyst_failure(exc)
-    _clean_verdict_citations(output.verdict, sources)
-    return output, None
+    _merge_entity_overrides(verdict_assessment, entity_overrides)
+    _clean_verdict_citations(verdict_assessment, sources)
+    entity_resolution = EntityResolution(
+        entity_name=resolved_entity.entity_name,
+        entity_type=resolved_entity.entity_type,
+        entity_description=resolved_entity.entity_description,
+        aliases=resolved_entity.aliases,
+    )
+    return AnalystOutput(entity=entity_resolution, verdict=verdict_assessment), None
 
 
 def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) -> None:
@@ -293,28 +281,6 @@ def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) ->
     verdict.narrative, unresolved = clean_citations(verdict.narrative, sources)
     if unresolved:
         logger.warning("Analyst output has unresolved citation references: %s", unresolved)
-
-
-def _graded_statement(
-    template: TemplateRecord | None,
-    entity_name: str,
-    claim_text: str,
-    analyst_title: str,
-) -> str | None:
-    """The claim statement the auditor grades, or None to skip the audit.
-
-    A template-backed claim is written under the analyst's title, and a title
-    that fails the template blocks the claim; auditing it would spend an
-    auditor call, and possibly an operator prompt, on a claim that never
-    ships. A passing title also resolves any vocabulary slot that the
-    rendered ``claim_text`` holds as a "one of (...)" hint. Without a
-    template (``dr claim-probe``, which writes nothing) the operator's text
-    is graded.
-    """
-    if template is None:
-        return claim_text
-    title_ok, _ = validate_analyst_title(template, entity_name, analyst_title)
-    return analyst_title if title_ok else None
 
 
 async def audit_claim(

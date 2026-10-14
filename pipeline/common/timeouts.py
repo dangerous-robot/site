@@ -12,7 +12,7 @@ without hunting across files. Values were chosen for a fail-fast POC:
 
 The four user-facing wall-clock budgets (ingest/research/analyst/auditor) are
 NOT defined here; they live as fields on ``VerifyConfig`` in
-``orchestrator/pipeline.py`` so callers can override them per-run.
+``loop/spec.py`` so callers can override them per-run.
 """
 
 from __future__ import annotations

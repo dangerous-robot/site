@@ -10,6 +10,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Environmental analog of financial transparency"
+    grading_rule: "Environmental analog of financial transparency"  # TODO Brandon: rewrite as a grading rule
 
   - slug: corporate-structure
     text: "COMPANY has STRUCTURE corporate structure"
@@ -17,6 +18,7 @@ templates:
     topics: [industry-analysis]
     core: true
     notes: "Controlled vocabulary; ownership determines incentives"
+    grading_rule: "Controlled vocabulary; ownership determines incentives"  # TODO Brandon: rewrite as a grading rule
     vocabulary:
       STRUCTURE:
         - publicly-traded
@@ -33,6 +35,7 @@ templates:
     topics: [ai-safety]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
 
   - slug: contributes-to-environmental-causes
     text: "COMPANY contributes to environmental causes"
@@ -40,6 +43,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
 
   - slug: financial-transparency
     text: "COMPANY provides financial transparency"
@@ -47,6 +51,7 @@ templates:
     topics: [industry-analysis]
     core: true
     notes: "Public financials, revenue breakdowns, cost disclosures"
+    grading_rule: "Public financials, revenue breakdowns, cost disclosures"  # TODO Brandon: rewrite as a grading rule
 
   # --- Product ---
 
@@ -56,6 +61,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Verdict encodes degree: true = 100%, mostly-true = significant with gaps, mixed = offsets only"
+    grading_rule: "Verdict encodes degree: true = 100%, mostly-true = significant with gaps, mixed = offsets only"  # TODO Brandon: rewrite as a grading rule
 
   - slug: no-training-on-user-data
     text: "PRODUCT does not use user data for training"
@@ -63,6 +69,7 @@ templates:
     topics: [data-privacy]
     core: true
     notes: "Covers default behavior; opt-out options noted in narrative"
+    grading_rule: "Covers default behavior; opt-out options noted in narrative"  # TODO Brandon: rewrite as a grading rule
 
   - slug: discloses-models-used
     text: "PRODUCT discloses which models it uses"
@@ -70,6 +77,7 @@ templates:
     topics: [ai-safety]
     core: true
     notes: "Some products don't say what's running behind the API"
+    grading_rule: "Some products don't say what's running behind the API"  # TODO Brandon: rewrite as a grading rule
 
   - slug: discloses-energy-sourcing
     text: "PRODUCT discloses its energy sourcing"
@@ -77,6 +85,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Transparency meta-claim: does the company say where its energy comes from?"
+    grading_rule: "Transparency meta-claim: does the company say where its energy comes from?"  # TODO Brandon: rewrite as a grading rule
 
   - slug: realtime-energy-display
     text: "PRODUCT displays real-time energy consumption to user"
@@ -84,6 +93,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Binary: the feature exists or it doesn't"
+    grading_rule: "Binary: the feature exists or it doesn't"  # TODO Brandon: rewrite as a grading rule
 
   - slug: excludes-image-generation
     text: "PRODUCT excludes image generation feature"
@@ -91,6 +101,7 @@ templates:
     topics: [environmental-impact]
     core: true
     notes: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"
+    grading_rule: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"  # TODO Brandon: rewrite as a grading rule
 
   - slug: excludes-frontier-models
     text: "PRODUCT excludes frontier-scale models"
@@ -98,6 +109,7 @@ templates:
     topics: [ai-safety, environmental-impact]
     core: true
     notes: "See controlled vocabulary for frontier-scale definition"
+    grading_rule: "See controlled vocabulary for frontier-scale definition"  # TODO Brandon: rewrite as a grading rule
 
   - slug: open-source-models-only
     text: "PRODUCT uses only open-weight models"
@@ -105,6 +117,7 @@ templates:
     topics: [ai-safety]
     core: true
     notes: "Auditability: weights and architecture are publicly available"
+    grading_rule: "Auditability: weights and architecture are publicly available"  # TODO Brandon: rewrite as a grading rule
 
   # --- AI Model Producers (Subject) ---
 

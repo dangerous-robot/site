@@ -667,7 +667,7 @@ class TestVerdictSidecarMismatch:
         assert len(issues) == 1
         assert issues[0].check_id == "verdict-sidecar-mismatch"
         assert issues[0].severity == "error"
-        assert "dr claim-refresh" in issues[0].hint and "dr review" in issues[0].hint
+        assert "dr draft --claim" in issues[0].hint and "dr review" in issues[0].hint
 
     def test_matching_override_accepted(self):
         override = {"from": "unverified", "to": "false"}

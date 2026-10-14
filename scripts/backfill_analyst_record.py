@@ -1,6 +1,6 @@
 """Backfill each claim sidecar's analyst record from git, once.
 
-A forced rewrite (dr claim-refresh, dr onboard --force) tells the operator's
+A forced rewrite (dr draft --claim <ref> --force) tells the operator's
 seo_title, takeaway and cap_rationale from the analyst's by comparing them with
 the sidecar's `analyst_record`. Sidecars written before that record
 existed have none, so every value on disk counts as the operator's. This script

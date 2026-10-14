@@ -1,30 +1,30 @@
 # Research Flow Diagrams
 
-Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: queue handling, pipeline execution, onboarding of new entities, and the sign-off path from PR open to merged and deployed.
+Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: queue handling, pipeline execution, the draft commands that start a claim, and the sign-off path from PR open to merged and deployed.
 
 Sections:
 
 1. Claim lifecycle (state machine)
 2. Queue lifecycle
 3. Pipeline execution (sequence)
-4. Onboard pipeline
+4. Draft commands
 5. Sign-off: before and after PR
 
 ---
 
 ## 1. Claim lifecycle
 
-Every claim moves through the same set of states regardless of how it was initiated (`dr draft`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
+Every claim moves through the same set of states regardless of how it was initiated (`dr draft` or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft: dr draft / dr claim-refresh / dr onboard / manual edit
+    [*] --> draft: dr draft / dr draft --claim --force / manual edit
     blocked --> archived: dr review --archive
     draft --> under_review: PR opened
     under_review --> draft: PR closed without merge
     under_review --> published: dr review --approve (status flip) + PR merged
     published --> stale: recheck_cadence_days elapsed
-    stale --> under_review: dr claim-refresh, PR opened
+    stale --> under_review: dr draft --claim --force, PR opened
     published --> archived: dr review --archive (entity retired or claim superseded)
     archived --> [*]
 ```
@@ -32,7 +32,7 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), whose analyst fails, or whose analyst title fails the claim's template writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
+- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
 - Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
@@ -49,10 +49,10 @@ flowchart LR
     B -->|operator picks item| C{Item type}
     C -->|URL| D[dr step-ingest URL]
     C -->|claim text| E[dr draft --entity ref claim-text]
-    C -->|new entity| F[dr onboard entity type]
+    C -->|criterion for an entity| F[dr draft --criterion slug --entity ref]
     D --> G[Source file written to research/sources/]
     E --> H[Source + claim files written]
-    F --> I[Entity + claim files written per template]
+    F --> I[Source + claim files written]
     G --> J[Remove item from QUEUE.md]
     H --> J
     I --> J
@@ -63,7 +63,7 @@ flowchart LR
 
 ## 3. Pipeline execution
 
-The core four-step pipeline as a sequence of messages between agents and the human checkpoint. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the statement the claim file carries as its title: the analyst's title, which for a template-backed claim must pass the template (vocabulary slot resolved). A title that fails the template skips the Evaluator, and the run writes nothing. `dr draft` (with or without `--dry-run`) has no template and grades the operator's text. For a template-backed claim the analyst and the Evaluator both get the criterion's `notes` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a note's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the note does not name.
+The core four-step pipeline as a sequence of messages between agents and the human checkpoint. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the claim's `statement`, and the claim's `title` equals it: for `dr draft --criterion` the criterion's sentence rendered once with the entity name, otherwise the operator's sentence as typed. The analyst's title is not written. For a criterion-backed claim the analyst and the Evaluator both get the criterion's `grading_rule` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a rule's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the rule does not name. The criteria's `vocabulary` lists are site-only: the pipeline ignores them.
 
 Ingest order and the listed sources:
 
@@ -103,7 +103,7 @@ sequenceDiagram
         Operator->>Analyst: sources
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
-        Operator->>Evaluator: claim title, analyst narrative, listed sources
+        Operator->>Evaluator: claim statement, analyst narrative, listed sources
         Evaluator-->>Operator: ComparisonResult (independent, open-loop)
 
         alt needs_review
@@ -117,51 +117,34 @@ sequenceDiagram
 
 ---
 
-## 4. Onboard pipeline
+## 4. Draft commands
 
-New entity path. Runs light research, screens templates, then loops the core pipeline once per applicable template.
+Every claim reaches the loop through `dr draft`. The loop runs once per claim and the one writer (`write_claim_run`) writes it; an abandoned run leaves no claim, no source file and no subject record.
 
 ```mermaid
 flowchart TD
-    IN([dr onboard entity-name type]) --> LR
-
-    LR["Light research
-    — ingest seed URL or search for homepage
-    — extract entity description"]
-    LR --> TS
-
-    TS["Template screening
-    — load templates for entity type
-    — filter to applicable slugs
-    — MVP: all core templates pass"]
-    TS --> CP
-
-    CP{"`**Checkpoint**
-    review_onboard`"}
-    CP -->|reject| DRAFT["Write draft entity file
-    — status: draft
-    — no claims created"]
-    CP -->|accept| WE
-    CP -->|edit template list| WE
-
-    WE["Write entity file
-    research/entities/{type}/{slug}.md"]
-    WE --> LOOP
-
-    LOOP["For each template slug
-    — render claim text
-    — run the loop (run)
-    — write source files, claim file and
-      audit sidecar (write_claim_run)"]
-
-    LOOP -->|template succeeded| NEXT{More templates?}
-    LOOP -->|template blocked or failed: nothing written| FERR[Log error, continue]
-    FERR --> NEXT
-    NEXT -->|yes| LOOP
-    NEXT -->|no| DONE
-
-    DONE([OnboardResult: claims_created, claims_blocked, claims_failed])
-    DRAFT --> DONE2([OnboardResult: status=rejected])
+    A([dr draft]) --> M{Mode flag}
+    M -->|--entity ref SENTENCE| R1[Ad hoc claim at entity-dir/slugified-sentence.md]
+    M -->|--criterion slug --entity ref| R2["Render the criterion sentence once with the entity name:
+    statement, criteria_slug and topics from the criterion;
+    file at entity-dir/criteria_slug.md"]
+    M -->|--subject slug SENTENCE| R3["Ad hoc subject claim:
+    subject record written with the claim when none exists"]
+    M -->|--claim ref --force| R4["Re-run the stored statement:
+    same path, criteria_slug kept"]
+    M -->|--claim ref --criterion new-slug| R5["Attach a criterion to a draft:
+    appends to research/templates.yaml, sets criteria_slug;
+    no model call, no file moved"]
+    R1 --> LOOP
+    R2 --> LOOP
+    R3 --> LOOP
+    R4 --> LOOP
+    LOOP["Loop (run): research, ingest, analyse, evaluate;
+    blocked or failed: nothing written, exit 1"]
+    LOOP --> W["write_claim_run:
+    source files, claim file, audit sidecar"]
+    R5 --> DONE([Draft claim on disk])
+    W --> DONE
 ```
 
 ---
@@ -178,11 +161,7 @@ flowchart TD
         PG2{"review_disagreement
         (pipeline checkpoint)"}
         PG2 -->|flag for human review| START
-        PG2 -->|accept| PG3
-        PG3{"review_onboard
-        (onboard only)"}
-        PG3 -->|reject: draft only| START
-        PG3 -->|accept| LOCAL
+        PG2 -->|accept| LOCAL
         LOCAL["Local checks
         — inv check
         — dr lint"]
@@ -228,7 +207,7 @@ Notes:
 
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 - A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. It skips a draft whose verdict differs from the analyst verdict in its sidecar unless `human_review.verdict_override` records that change, because only `dr review` records an override (with its reviewer).
-- `dr claim-refresh` (and the forced rewrites `dr step-analyze --write --force`, `dr draft --force` and `dr onboard --force`) on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
+- The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force` on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 

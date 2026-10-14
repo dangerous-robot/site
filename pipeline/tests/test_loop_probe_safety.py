@@ -47,6 +47,7 @@ PUBLIC_LOOP_NAMES = frozenset({
     "VerificationResult",
     "StepError",
     "check_ingested_source",
+    "blocked_reason_label",
 })
 
 

@@ -14,7 +14,7 @@ from loop.ingest import check_ingested_source, ingest_one, ingest_urls, merge_ac
 from loop.analyse import analyse_claim, apply_entity_match, audit_claim
 # Last: importing the ``loop.run`` submodule binds ``loop.run`` to the module;
 # this line rebinds the name to the function.
-from loop.run import rerun, run
+from loop.run import blocked_reason_label, rerun, run
 
 __all__ = [
     "ClaimSpec",
@@ -24,6 +24,7 @@ __all__ = [
     "analyse_claim",
     "apply_entity_match",
     "audit_claim",
+    "blocked_reason_label",
     "check_ingested_source",
     "ingest_one",
     "ingest_urls",

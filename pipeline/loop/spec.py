@@ -13,7 +13,6 @@ from auditor.models import ComparisonResult
 from common.content_loader import resolve_repo_root
 from common.logging_setup import new_run_id, run_id_var
 from common.models import DEFAULT_MODEL, AgentName, BlockedReason, FailureInfo, SubQuestion
-from common.templates import TemplateRecord
 from common.timeouts import ingest_budget_with_wayback_s
 from ingestor.models import SourceFile
 from orchestrator.entity_resolution import ResolvedEntity
@@ -24,10 +23,8 @@ class ClaimSpec:
     """What one claim run checks: a sentence about an entity.
 
     ``statement`` is the sentence the Analyst assesses and the Evaluator
-    grades (through ``_graded_statement`` while ``template`` is set).
-    ``criteria_slug``, ``topics`` and ``grading_rule`` come from a criterion
-    when the claim has one; ``grading_rule`` reaches both agents.
-    ``template`` is the criterion record the statement was rendered from.
+    grades. ``criteria_slug``, ``topics`` and ``grading_rule`` come from a
+    criterion when the claim has one; ``grading_rule`` reaches both agents.
     """
 
     statement: str
@@ -35,7 +32,6 @@ class ClaimSpec:
     criteria_slug: str | None = None
     topics: list[str] = field(default_factory=list)
     grading_rule: str | None = None
-    template: TemplateRecord | None = None
 
 
 # Timeout chain invariant: the ingestor agent wrapper (``ingest_timeout_s``)
@@ -60,7 +56,7 @@ class VerifyConfig:
     # until that job lands we want primary sources behind paywalls/blocks
     # rescued via web.archive.org during the synchronous run.
     skip_wayback: bool = False
-    # False when the run writes nothing (``dr claim-probe``): archive lookups
+    # False when the run writes nothing (``dr draft --dry-run``): archive lookups
     # check TimeGate only and never ask Save Page Now to capture a page.
     allow_save: bool = True
     # Per-claim list of acquisition origins to attempt during research.
@@ -85,20 +81,17 @@ class VerifyConfig:
     research_timeout_s: float = 120.0
     analyst_timeout_s: float = 120.0
     auditor_timeout_s: float = 120.0
-    force_overwrite: bool = False
     # Effort lever for decomposed researcher: more queries = wider net.
     max_initial_queries: int = 7
     # Integer cap for the shared asyncio.Semaphore created at each call site.
     # Never store the Semaphore itself here — it is loop-bound.
     llm_concurrency: int = 8
-    # When True, verify_claim emits stderr progress lines at step boundaries
-    # via progress(). Off for onboard (which has its own per-claim progress);
-    # on for single-claim CLI paths (claim-refresh, claim-probe) where the
-    # run otherwise looks hung.
+    # When True, ``run`` emits stderr progress lines at step boundaries via
+    # progress(). On for ``dr draft``, where the run otherwise looks hung.
     show_progress: bool = False
     # Correlates every log record (and future token-usage record) emitted
     # during one top-level pipeline invocation. Inherits a CLI-bound id if
-    # set; onboard's per-template loop overrides via dataclasses.replace.
+    # set.
     run_id: str = field(default_factory=lambda: run_id_var.get() or new_run_id())
 
     def __post_init__(self) -> None:
@@ -132,15 +125,11 @@ class VerificationResult(BaseModel):
     analyst_output: AnalystOutput | None = None
     consistency: ComparisonResult | None = None
     errors: list[str] = field(default_factory=list)
-    # Set when the Orchestrator halts the claim post-ingest because fewer
-    # than two usable sources were obtained. Callers that persist claim
-    # files (research_claim, onboard_entity) inspect this to write a
-    # blocked claim file instead of skipping.
+    # Set when the run halts post-ingest because fewer than four usable
+    # sources were obtained. A command that sees it writes nothing.
     blocked_reason: BlockedReason | None = None
-    # Repo-relative path of the written claim file (e.g.
-    # "research/claims/microsoft/renewable-energy-pledges.md"). Set by
-    # research_claim after the claim file lands; left None for in-memory
-    # verify_claim runs that don't persist.
+    # Repo-relative path of a written claim file; the loop itself writes
+    # nothing and leaves it None.
     claim_path: str | None = None
     source_files: list[tuple[str, SourceFile]] = Field(default_factory=list, exclude=True)
     # Cache-hit sources reused via URL dedup; without these the audit sidecar's

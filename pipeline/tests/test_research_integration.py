@@ -26,6 +26,7 @@ import yaml
 from click.testing import CliRunner
 
 from common.frontmatter import parse_frontmatter
+from common.utils import slugify
 from tests.loop_harness import (
     ENTITY_REF,
     SENTENCE,
@@ -44,7 +45,8 @@ from tests.loop_harness import (
     written_sources,
 )
 
-CLAIM_STEM = "probe-subject-used-over-four-percent-of-us-electricity"
+# An ad hoc claim's stem is its statement, slugified (RE-AS, One claim path).
+CLAIM_STEM = slugify(SENTENCE)
 EXPECTED_SOURCE_IDS = ["2026/report", "2026/second-report", "2026/third-report", "2026/fourth-report"]
 
 
@@ -190,11 +192,11 @@ def test_draft_refuses_an_existing_claim_without_force(tmp_path) -> None:
 
 
 def _publish(tmp_path, status: str = "published", verdict: str = "true") -> tuple[Path, Path]:
-    """A claim at the stem the scripted analyst title yields, signed off by a reviewer."""
+    """A claim at the stem its statement yields, signed off by a reviewer."""
     claim_path, sidecar_path = _claim_and_sidecar(tmp_path)
     claim_path.parent.mkdir(parents=True, exist_ok=True)
     claim_path.write_text(
-        f"---\ntitle: Probe Subject used over four percent of US electricity\n"
+        f"---\ntitle: {SENTENCE}\n"
         f"entity: {ENTITY_REF}\ntopics: [environmental-impact]\n"
         f"verdict: '{verdict}'\nconfidence: high\n"
         f"status: {status}\nas_of: '2026-10-01'\nsources:\n- 2026/old\n---\nBody.\n",

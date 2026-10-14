@@ -14,11 +14,9 @@ Resolved and moved to plans:
 
 ## 1. Template screening: what makes a template "applicable"?
 
-**Where**: `pipeline/orchestrator/pipeline.py` `_screen_templates()` (locate by function name; line numbers drift)
+**Where**: `dr draft --criterion <slug> --entity <ref>` (`pipeline/orchestrator/cli.py`)
 
-`_screen_templates()` is a pass-through stub that marks every core template as applicable for any entity. The architecture doc describes this as a real filtering step: "load templates for entity type -- filter to applicable slugs."
-
-The stub is labeled "MVP" but there is no design for what applicability means. Some concrete cases:
+No step screens criteria: the operator chooses which criterion to draft for which entity, one `dr draft --criterion` per claim. The command refuses a criterion whose entity type does not match the entity, but nothing yet decides whether an applicable criterion makes sense for a given entity. Some concrete cases:
 
 - A hardware company has no "data retention policy" template result to evaluate
 - A product entity has no "existential safety score" because that concept applies at the subject or company level
@@ -27,9 +25,9 @@ The stub is labeled "MVP" but there is no design for what applicability means. S
 **The question**: What rule determines whether a template applies to a given entity? Options include:
 - Entity-type restrictions defined statically in `templates.yaml` (e.g., `applies_to: [company]`)
 - LLM-based screening (ask an agent whether the claim text makes sense for this entity's description)
-- Operator-driven: `dr onboard --only slug1,slug2` is the escape hatch today; maybe screening stays manual
+- Operator-driven: screening stays manual, `dr draft --criterion` per criterion (today's behaviour)
 
-Until this is decided, `_screen_templates` should stay a stub and the `--only` flag is the workaround for operators who need selective onboarding.
+Until this is decided, screening is the operator's call.
 
 ---
 
@@ -53,6 +51,6 @@ The recheck loop is described architecturally but has no operational owner. With
 
 **Where**: `pipeline/loop/` (the run) and `pipeline/orchestrator/persistence.py` (the writer)
 
-Resolved by RE-AR (One loop, one writer). `dr draft`, `dr claim-refresh` and the per-template loop in `onboard_entity()` all call `loop.run`, which writes nothing, and then the one write function `write_claim_run`. No module under `pipeline/loop/` imports a writer, so a dry run cannot write by a flipped conditional.
+Resolved by RE-AR (One loop, one writer). `dr draft` in every form (including `--claim --force`) calls `loop.run`, which writes nothing, and then the one write function `write_claim_run`. No module under `pipeline/loop/` imports a writer, so a dry run cannot write by a flipped conditional.
 
 Two tests pin the dry-run guarantee in `pipeline/tests/test_loop_probe_safety.py`: `test_dry_run_reaches_no_writer_and_no_archive_save` (no `_write_*` function, no `persist_sources`, no archive save is reached, and `allow_save` is `False`) and `test_dry_run_with_wayback_on_never_asks_for_a_capture`. `test_loop_package_imports_no_writer` in the same file pins the import rule.

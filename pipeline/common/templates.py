@@ -1,14 +1,12 @@
-"""Load and query claim templates from research/templates.yaml.
+"""Load and query criteria (claim templates) from research/templates.yaml.
 
-Templates define repeatable research questions that can be evaluated across
-multiple entities. Each template has a stable slug used for claim filenames
-and a text pattern with a placeholder (PRODUCT or COMPANY) that gets replaced
-with the entity name to produce a concrete claim statement.
-
-A template may also carry a `vocabulary` mapping that defines controlled-value
-slots (e.g. STRUCTURE, JURISDICTION). At render time each slot is replaced
-with a "one of (...)" hint so the researcher/analyst picks a value from the
-approved set.
+A criterion is a sentence asked of many entities. Each has a stable slug
+(the claim file stem) and a text with the entity type's placeholder
+(``PRODUCT``, ``COMPANY`` or ``ENTITY``) that ``render_statement`` replaces
+with the entity name. ``grading_rule`` is the per-criterion text both the
+Analyst and the Evaluator get; ``notes`` is reader-facing and the pipeline
+does not send it. A ``vocabulary`` map in the YAML is read by the site only
+(home page bolding, the matrix check); the pipeline ignores it.
 """
 
 from __future__ import annotations
@@ -16,13 +14,19 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import yaml
 
-# Prefix used when rendering vocabulary slots into claim text. The analyst is
-# expected to replace this entire phrase with the specific option it supports.
-# pipeline.py checks for this prefix to detect unresolved titles post-analysis.
-VOCABULARY_HINT_PREFIX = "one of "
+if TYPE_CHECKING:
+    from orchestrator.entity_resolution import ResolvedEntity
+
+# The placeholder a criterion's text uses for each entity type.
+ENTITY_TYPE_PLACEHOLDERS: dict[str, str] = {
+    "company": "COMPANY",
+    "product": "PRODUCT",
+    "subject": "ENTITY",
+}
 
 
 _SUBJECT_REF_RE = re.compile(r"^subjects/[a-z0-9-]+$")
@@ -38,7 +42,7 @@ class TemplateRecord:
     topics: list[str]  # 1-3 kebab-case topic slugs
     core: bool
     notes: str = ""
-    vocabulary: dict[str, list[str]] = field(default_factory=dict)
+    grading_rule: str = ""
     # For entity_type == "subject", the list of subject refs (e.g. "subjects/ai-model-producers")
     # this template applies to. Required and non-empty for subject templates; forbidden for
     # company/product templates. Each entry must match ^subjects/[a-z0-9-]+$.
@@ -76,7 +80,7 @@ def load_templates(repo_root: Path) -> list[TemplateRecord]:
             topics=list(entry["topics"]),
             core=entry["core"],
             notes=entry.get("notes") or "",
-            vocabulary=entry.get("vocabulary") or {},
+            grading_rule=entry.get("grading_rule") or "",
             subjects=list(entry.get("subjects") or []),
         )
         for entry in data["templates"]
@@ -117,35 +121,37 @@ def get_template(
     return None
 
 
-def _substitute_entity(template: TemplateRecord, entity_name: str) -> str:
-    text = template.text
-    if template.entity_type == "product":
-        return text.replace("PRODUCT", entity_name)
-    if template.entity_type == "company":
-        return text.replace("COMPANY", entity_name)
-    if template.entity_type == "subject":
-        return text.replace("ENTITY", entity_name)
-    return text
+def render_statement(template: TemplateRecord, entity_name: str) -> str:
+    """The criterion's sentence for one entity: its placeholder replaced, nothing else."""
+    placeholder = ENTITY_TYPE_PLACEHOLDERS.get(template.entity_type)
+    return template.text.replace(placeholder, entity_name) if placeholder else template.text
 
 
-def render_claim_text(template: TemplateRecord, entity_name: str) -> str:
-    """Replace PRODUCT/COMPANY placeholder with entity_name and expand any
-    controlled-vocabulary slots to a "one of (...)" hint."""
-    text = _substitute_entity(template, entity_name)
-    for placeholder, values in template.vocabulary.items():
-        hint = f"{VOCABULARY_HINT_PREFIX}({', '.join(values)})"
-        text = text.replace(placeholder, hint)
-    return text
+def criterion_entry_for(
+    statement: str, entity: "ResolvedEntity", slug: str, topics: list[str]
+) -> dict:
+    """The ``research/templates.yaml`` entry that attaches a new criterion to a drafted claim.
 
-
-def render_blocked_title(template: TemplateRecord, entity_name: str) -> str:
-    """Render with entity name substituted but vocabulary slots left unexpanded.
-
-    Used for blocked claim titles where the analyst never resolved the
-    vocabulary. Produces e.g. "Microsoft has STRUCTURE corporate structure"
-    instead of "Microsoft has one of (publicly-traded, ...) corporate structure".
+    ``text`` is ``statement`` with its first mention of the entity (its name
+    or an alias, longest first, any case, as a whole word) replaced by the
+    entity type's placeholder; a statement that names neither is kept
+    verbatim. A subject criterion names the one subject it was drafted for.
     """
-    return _substitute_entity(template, entity_name)
+    entity_type = entity.entity_type.value
+    placeholder = ENTITY_TYPE_PLACEHOLDERS[entity_type]
+    text = statement
+    names = sorted({n for n in (entity.entity_name, *entity.aliases) if n}, key=len, reverse=True)
+    for name in names:
+        match = re.search(rf"(?<!\w){re.escape(name)}(?!\w)", statement, flags=re.IGNORECASE)
+        if match:
+            text = statement[:match.start()] + placeholder + statement[match.end():]
+            break
+    entry: dict = {"slug": slug, "text": text, "entity_type": entity_type}
+    if entity_type == "subject":
+        entry["subjects"] = [entity.entity_ref]
+    entry["topics"] = list(topics)
+    entry["core"] = False
+    return entry
 
 
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -153,78 +159,3 @@ _WHITESPACE_RE = re.compile(r"\s+")
 
 def normalize_title(text: str) -> str:
     return _WHITESPACE_RE.sub(" ", text.strip()).lower()
-
-
-def _build_title_pattern(template: TemplateRecord, entity_name: str) -> "re.Pattern[str]":
-    """Compile a regex matching any legal analyst title for this template.
-
-    Each vocabulary placeholder becomes `(?:a |an )?(value1|value2|...)`; everything
-    else is literal. Operates on the normalized (lowercased, whitespace-collapsed)
-    text so the matcher tolerates casing and spacing variation only.
-    """
-    template_text = normalize_title(_substitute_entity(template, entity_name))
-    pattern_parts: list[str] = []
-    cursor = 0
-    placeholder_spans = sorted(
-        (template_text.find(p.lower()), p.lower(), values)
-        for p, values in template.vocabulary.items()
-        if template_text.find(p.lower()) != -1
-    )
-    for start, placeholder, values in placeholder_spans:
-        if start < cursor:
-            continue
-        pattern_parts.append(re.escape(template_text[cursor:start]))
-        alternation = "|".join(re.escape(v.lower()) for v in values)
-        pattern_parts.append(f"(?:a |an )?(?:{alternation})")
-        cursor = start + len(placeholder)
-    pattern_parts.append(re.escape(template_text[cursor:]))
-    return re.compile("".join(pattern_parts))
-
-
-def validate_analyst_title(
-    template: TemplateRecord, entity_name: str, analyst_title: str
-) -> tuple[bool, str | None]:
-    """Returns (True, None) if `analyst_title` is reachable from the template by
-    entity substitution + per-vocab-slot value choice + optional 'a'/'an' before
-    each resolved value. Otherwise (False, reason). Case- and whitespace-insensitive.
-    """
-    actual = normalize_title(analyst_title)
-    template_text = _substitute_entity(template, entity_name)
-
-    if not template.vocabulary:
-        if actual == normalize_title(template_text):
-            return True, None
-        return False, f"title diverges from template; expected {template_text!r}"
-
-    if _build_title_pattern(template, entity_name).fullmatch(actual):
-        return True, None
-    return False, (
-        f"title diverges from template; expected {template_text!r} "
-        f"with vocabulary slots resolved to one allowed value (optional 'a'/'an')"
-    )
-
-
-def blocked_title_message(
-    template: TemplateRecord,
-    analyst_title: str,
-    title_reason: str | None,
-    blocked_reason_value: str,
-) -> tuple[str, str]:
-    """Returns (narrative_body, short_label) for the two title-validation
-    failure modes. Used by both the onboard pipeline and the single-claim CLI
-    refresh path so the operator-facing wording stays consistent.
-    """
-    if template.vocabulary and VOCABULARY_HINT_PREFIX in analyst_title:
-        body = (
-            f"This claim is blocked: `{blocked_reason_value}`. "
-            f"The Analyst did not resolve the vocabulary placeholder in the title. "
-            f"Re-run the pipeline with better sources, or resolve the vocabulary manually.\n"
-        )
-        return body, "unresolved vocabulary"
-    body = (
-        f"This claim is blocked: `{blocked_reason_value}`. "
-        f"The Analyst rewrote the claim title outside the allowed transforms "
-        f"(entity substitution, vocabulary resolution, optional article). "
-        f"Analyst title: {analyst_title!r}. Reason: {title_reason}\n"
-    )
-    return body, "title rewritten"

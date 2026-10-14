@@ -87,6 +87,15 @@ def has_criterion(fm: dict) -> bool:
     return True
 
 
+def claim_statement(fm: dict) -> str:
+    """The sentence a claim's runs check: ``statement``, else ``title``.
+
+    Claims written before ``statement`` existed carry only ``title``; for
+    them the title is the sentence the pipeline last graded.
+    """
+    return fm.get("statement") or fm.get("title") or ""
+
+
 def _clean_for_serialize(obj: Any) -> Any:
     """Recursively remove keys with None values from dicts.
 

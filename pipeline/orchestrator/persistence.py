@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import logging
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
     from analyst.agent import VerdictAssessment
     from common.models import SubQuestion
     from loop import ClaimSpec, VerificationResult, VerifyConfig
-    from orchestrator.entity_resolution import SearchHints
+    from orchestrator.entity_resolution import ResolvedEntity, SearchHints
 from common.models import (
     INDEPENDENT_SOURCES_REQUIRED,
     SELF_REPORT_KINDS,
@@ -57,13 +58,21 @@ _ENTITY_TYPE_DIR = {
 }
 
 
+# Every frontmatter key an entity file may carry: the keys
+# ``_entity_frontmatter`` writes plus the hand-written ``parent_company`` and
+# ``sec_cik``. The linter's ``CANONICAL_ENTITY_KEYS`` is this set.
+ENTITY_FRONTMATTER_KEYS: tuple[str, ...] = (
+    "name", "type", "website", "aliases", "description", "parent_company",
+    "search_hints", "sec_cik", "legal_name", "verification_status", "founded",
+)
+
+
 def _entity_frontmatter(
     entity_name: str,
     entity_type: EntityType,
     entity_description: str,
     website: str | None = None,
     aliases: list[str] | None = None,
-    status: str | None = None,
     search_hints: "SearchHints | None" = None,
     legal_name: str | None = None,
     verification_status: str | None = None,
@@ -80,7 +89,6 @@ def _entity_frontmatter(
         "legal_name": legal_name,
         "description": description,
         "founded": founded,
-        "status": status,
         "search_hints": _search_hints_dict(search_hints),
     }
 
@@ -313,6 +321,22 @@ def _write_entity_file(
     return entity_ref
 
 
+def write_subject_record(entity: "ResolvedEntity", repo_root: Path) -> Path | None:
+    """Write ``research/entities/<entity_ref>.md`` (name, type, description) when it is missing.
+
+    Returns the written path, or None when the file exists: an existing
+    record is never rewritten, so an operator's edits survive.
+    """
+    entity_path = repo_root / "research" / "entities" / f"{entity.entity_ref}.md"
+    if entity_path.exists():
+        return None
+    entity_path.parent.mkdir(parents=True, exist_ok=True)
+    fm = _entity_frontmatter(entity.entity_name, entity.entity_type, entity.entity_description)
+    entity_path.write_text(serialize_frontmatter(fm, ""), encoding="utf-8")
+    logger.info("Wrote subject record: %s", entity_path)
+    return entity_path
+
+
 def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) -> Path:
     """Return the claims directory for an entity.
 
@@ -328,11 +352,16 @@ def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) ->
     return repo_root / "research" / "claims" / slugify(entity_name)
 
 
+def planned_claim_path(entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path) -> Path:
+    """Return the path ``_write_claim_file`` writes for these arguments, creating nothing."""
+    return _claim_dir_for(entity_ref, entity_name, repo_root) / f"{slugify(claim_slug)}.md"
+
+
 def _claim_path_for(entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path) -> Path:
     """Return the path ``_write_claim_file`` writes for these arguments, creating its directory."""
-    claim_dir = _claim_dir_for(entity_ref, entity_name, repo_root)
-    claim_dir.mkdir(parents=True, exist_ok=True)
-    return claim_dir / f"{slugify(claim_slug)}.md"
+    claim_path = planned_claim_path(entity_ref, entity_name, claim_slug, repo_root)
+    claim_path.parent.mkdir(parents=True, exist_ok=True)
+    return claim_path
 
 
 def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
@@ -468,7 +497,7 @@ _CAPPED_LEVELS = frozenset({VerificationLevel.CLAIMED.value, VerificationLevel.S
 # the site schema declares. The linter's ``CANONICAL_CLAIM_KEYS`` is this set,
 # so a key the writer starts writing cannot be flagged as unknown.
 CLAIM_FRONTMATTER_KEYS: tuple[str, ...] = (
-    "title", "entity", "topics", "verdict", "confidence",
+    "title", "statement", "entity", "topics", "verdict", "confidence",
     "verification_level", "cap_rationale", "takeaway", "seo_title",
     "criteria_slug", "status", "phase", "blocked_reason", "as_of", "sources",
     "source_overrides", "corrections", "tags",
@@ -497,6 +526,7 @@ def _write_claim_file(
     cap_rationale: str | None = None,
     source_overrides: list[dict] | None = None,
     cap_rationale_fitted: bool = False,
+    statement: str | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -505,10 +535,11 @@ def _write_claim_file(
     ``status: published`` flip made by ``dr review --approve``.
 
     ``claim_slug`` becomes the filename stem; ``criteria_slug`` is the
-    optional template back-reference written into frontmatter. Onboard
-    passes the same value for both (filename derives from the template
-    slug); the standalone verify path passes only ``claim_slug`` (a
-    slugified verdict title with no template association).
+    optional criterion back-reference written into frontmatter. A claim
+    drafted from a criterion passes the same value for both; an ad hoc
+    claim passes only ``claim_slug`` (the slugified statement).
+    ``statement`` is the sentence the loop re-runs; the pipeline passes the
+    same text as ``title``.
 
     Pass ``status='blocked'`` plus a ``blocked_reason`` for the
     threshold-blocked variant; the caller supplies a placeholder
@@ -605,6 +636,7 @@ def _write_claim_file(
 
     fm = {
         "title": title,
+        "statement": statement,
         "entity": entity_ref,
         "topics": FlowList(topics),
         "verdict": verdict,
@@ -882,8 +914,8 @@ def mark_forced_rewrite(
     no longer blocked, so a published, archived or blocked claim is written
     back as a draft (or blocked) and its sidecar's ``human_review`` is reset.
     For a published claim the sidecar also starts or carries forward the
-    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr
-    claim-refresh``, so ``dr review --approve`` asks for a correction when
+    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr draft
+    --claim --force``, so ``dr review --approve`` asks for a correction when
     the verdict changed. Call it before the claim write: the sidecar is
     written first, so a failed claim write leaves the claim unchanged with
     the snapshot pending.
@@ -1189,13 +1221,20 @@ def write_claim_run(
     url_index: dict[str, str] | None = None,
     ran_at: datetime.datetime | None = None,
     status: str = "draft",
+    create_entity: bool = False,
 ) -> Path:
     """Write one claim run to disk, in the one write order; return the claim path.
 
     The order is the same on every path: ``mark_forced_rewrite`` when
     ``force`` (the source ids are known before any write, because ingest
-    settled every slug), then the cited source files (``persist_sources``),
-    then the claim, then the full sidecar. The level fit runs once here,
+    settled every slug), then the subject record when ``create_entity`` and
+    none exists (``write_subject_record``), then the cited source files
+    (``persist_sources``), then the claim, then the full sidecar. A run that
+    never reaches the writer leaves no record, no source and no claim.
+
+    The claim's ``title`` and ``statement`` are both ``spec.statement``, and
+    the sidecar's ``analyst_record.title`` records it, so the ``seo_title``
+    keep rule compares like with like on the next write. The level fit runs once here,
     after the final source ids, and its note lands in
     ``pipeline_run.level_clamp``.
 
@@ -1229,6 +1268,8 @@ def write_claim_run(
             for url, sf in result.source_files if url not in result.uncited_urls
         })
         mark_forced_rewrite(claim_path, planned_ids, ran_at)
+    if create_entity:
+        write_subject_record(spec.entity, repo_root)
     source_ids = persist_sources(result, repo_root, url_index)
 
     topics = list(ao.verdict.topics)
@@ -1241,7 +1282,8 @@ def write_claim_run(
                            spec.criteria_slug, exc)
     level_clamp = fit_verdict_to_written_pool(ao.verdict, result.sources, source_ids, entity_name)
     written = _write_claim_file(
-        title=ao.verdict.title,
+        title=spec.statement,
+        statement=spec.statement,
         entity_name=entity_name,
         entity_ref=entity_ref,
         topics=topics,
@@ -1273,7 +1315,7 @@ def write_claim_run(
             result.sub_question_coverage,
             result.queries_by_sub_question,
         ),
-        analyst_record=analyst_record_for(ao.verdict),
+        analyst_record={**analyst_record_for(ao.verdict), "title": spec.statement},
         level_clamp=level_clamp,
         run_id=config.run_id,
     )
@@ -1422,79 +1464,77 @@ def set_claim_corrections(claim_path: Path, entries: list[dict]) -> None:
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 
-def _write_draft_entity_file(
-    entity_name: str,
-    entity_type: EntityType,
-    entity_description: str,
-    repo_root: Path,
-    website: str | None = None,
-    aliases: list[str] | None = None,
-    search_hints: "SearchHints | None" = None,
-    legal_name: str | None = None,
-    verification_status: str = "verified",
-    founded: int | None = None,
-    history_markdown: str | None = None,
-) -> str:
-    """Write entity file to research/entities/drafts/{type-dir}/{slug}.md."""
-    entity_slug = slugify(entity_name)
-    type_dir = _ENTITY_TYPE_DIR.get(entity_type, f"{entity_type.value}s")
+def set_claim_criterion(claim_path: Path, slug: str) -> None:
+    """Add a ``criteria_slug`` line to a claim's frontmatter; every other byte is unchanged.
 
-    draft_dir = repo_root / "research" / "entities" / "drafts" / type_dir
-    draft_dir.mkdir(parents=True, exist_ok=True)
-    draft_path = draft_dir / f"{entity_slug}.md"
-    entity_ref = f"drafts/{type_dir}/{entity_slug}"
+    The line goes before ``status:`` (the writer's key order), else at the end
+    of the frontmatter. Inserting text rather than re-serialising keeps the
+    operator's formatting (flow lists, quoting) as it was.
+    """
+    text = claim_path.read_text(encoding="utf-8")
+    lines = text.splitlines(keepends=True)
+    if not lines or lines[0].strip() != "---":
+        raise ValueError(f"{claim_path} has no frontmatter")
+    end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
+    if end is None:
+        raise ValueError(f"{claim_path} has no closing frontmatter fence")
+    at = next((i for i in range(1, end) if lines[i].startswith("status:")), end)
+    lines.insert(at, yaml.safe_dump({"criteria_slug": slug}, sort_keys=False, allow_unicode=True))
+    claim_path.write_text("".join(lines), encoding="utf-8")
 
-    fm = _entity_frontmatter(
-        entity_name, entity_type, entity_description, website, aliases,
-        status="draft", search_hints=search_hints,
-        legal_name=legal_name,
-        verification_status=verification_status,
-        founded=founded,
+
+_TOP_LEVEL_KEY_RE = re.compile(r"^[A-Za-z_][\w-]*:")
+
+
+def append_template_entry(repo_root: Path, entry: dict) -> None:
+    """Add ``entry`` as the last item of the ``templates:`` list in ``research/templates.yaml``.
+
+    Raises ``ValueError`` when the slug is already in ``templates:`` or
+    ``inactive_templates:``. The entry is inserted as indented text after the
+    last active entry and before the comment block that opens the next
+    top-level key, so the file's comments and every existing entry keep
+    their bytes. Appending at the end of the file would put the entry under
+    ``inactive_templates:``, where the pipeline and the site never read it.
+    """
+    path = repo_root / "research" / "templates.yaml"
+    text = path.read_text(encoding="utf-8")
+    data = yaml.safe_load(text) or {}
+    slug = entry["slug"]
+    for key in ("templates", "inactive_templates"):
+        if any(isinstance(e, dict) and e.get("slug") == slug for e in data.get(key) or []):
+            raise ValueError(f"criterion slug {slug!r} already exists in {key}: of {path}")
+
+    dumped = yaml.safe_dump(
+        [entry], sort_keys=False, default_flow_style=None, allow_unicode=True, width=10**6,
     )
-    body = _entity_body(history_markdown)
-    draft_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
-    logger.info("Wrote draft entity: %s", draft_path)
-    return entity_ref
+    fragment = "".join(f"  {line}" for line in dumped.splitlines(keepends=True))
+
+    lines = text.splitlines(keepends=True)
+    start = next((i for i, line in enumerate(lines) if line.startswith("templates:")), None)
+    if start is None:
+        raise ValueError(f"{path} has no top-level templates: key")
+    next_key = next(
+        (i for i in range(start + 1, len(lines)) if _TOP_LEVEL_KEY_RE.match(lines[i])), len(lines),
+    )
+    # Back over the blank lines and column-0 comments that introduce the next key.
+    insert_at = next_key
+    while insert_at > start + 1 and (not lines[insert_at - 1].strip() or lines[insert_at - 1].startswith("#")):
+        insert_at -= 1
+    head = "".join(lines[:insert_at])
+    if head and not head.endswith("\n"):
+        head += "\n"
+    tail = "".join(lines[insert_at:])
+    path.write_text(f"{head}\n{fragment}{tail}", encoding="utf-8")
+    logger.info("Appended criterion %s to %s", slug, path)
 
 
 def _entity_body(history_markdown: str | None) -> str:
     """Normalize the history markdown to a body string with a trailing newline.
 
     Strips trailing whitespace per-line so markdownlint MD009 doesn't fire on
-    stray spaces the enricher LLM sometimes emits at paragraph ends.
+    stray spaces at paragraph ends.
     """
     if not history_markdown:
         return ""
     cleaned = "\n".join(line.rstrip() for line in history_markdown.splitlines())
     return cleaned.rstrip() + "\n"
-
-
-def update_entity_enrichment(
-    entity_path: Path,
-    description: str | None = None,
-    founded: int | None = None,
-    history_markdown: str | None = None,
-) -> None:
-    """Splice enricher output into an existing entity file in place.
-
-    Preserves every other frontmatter field. ``description`` is overwritten
-    only when a non-empty value is supplied — an empty string from the
-    enricher means "the inputs did not describe the entity," in which case
-    the prior description should win over a worse rewrite. The body is
-    overwritten when ``history_markdown`` is non-empty; an empty value
-    leaves the existing body alone.
-    """
-    has_description = bool(description and description.strip())
-    has_history = bool(history_markdown and history_markdown.strip())
-    if not has_description and founded is None and not has_history:
-        return
-
-    text = entity_path.read_text(encoding="utf-8")
-    fm, existing_body = parse_frontmatter(text)
-    if has_description:
-        fm["description"] = description.strip()
-    if founded is not None:
-        fm["founded"] = founded
-    body = _entity_body(history_markdown) if has_history else existing_body
-    entity_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
-    logger.info("Updated entity enrichment: %s", entity_path)

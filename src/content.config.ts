@@ -165,6 +165,7 @@ const claims = defineCollection({
   },
   schema: z.object({
     title: z.string(),
+    statement: z.string().optional(),
     entity: z.string(),
     topics: z.array(z.enum([
       'ai-safety',
@@ -279,6 +280,7 @@ const criteria = defineCollection({
     ])).min(1).max(3),
     core: z.boolean().default(false),
     notes: z.string().optional(),
+    grading_rule: z.string().optional(),
     subjects: z.array(z.string().regex(/^subjects\/[a-z0-9-]+$/)).optional(),
     vocabulary: z.record(z.string(), z.array(z.string())).optional(),
   }).superRefine((data, ctx) => {

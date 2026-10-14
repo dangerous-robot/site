@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Remove all research artifacts for OpenAI (company) and ChatGPT (product).
-# Pair with scripts/onboard-openai.sh for iterate-and-clear development cycles.
+# Pair with `dr draft --criterion <slug> --entity products/chatgpt` runs for iterate-and-clear cycles.
 #
 # Usage:
 #   bash scripts/clear-openai.sh           # live run

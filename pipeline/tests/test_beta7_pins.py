@@ -18,6 +18,7 @@ from common.models import BlockedReason
 from tests.loop_harness import (
     ENTITY_REF,
     ENTITY_NAME,
+    SENTENCE,
     URLS,
     analyst_args,
     claim_spec,
@@ -143,47 +144,28 @@ async def test_nothing_cited_keeps_every_source(tmp_path) -> None:
     assert result.uncited_urls == set()
 
 
-# --- Title fails the template: Evaluator skipped, every source kept (test_orchestrator.py:955, 1384; RE-AD) ---
-
-
-def _template():
-    from common.templates import TemplateRecord
-
-    return TemplateRecord(
-        slug="uses-renewable-energy", text="ENTITY uses renewable energy", entity_type="subject",
-        topics=["environmental-impact"], core=False, subjects=[ENTITY_REF],
-    )
+# --- The Evaluator grades the statement, whatever the analyst titles (RE-AD, one rule) ---
 
 
 @pytest.mark.asyncio
-async def test_title_failing_the_template_skips_the_evaluator_and_keeps_every_source(tmp_path) -> None:
-    """From ``TestAuditorGradedStatement.test_verify_claim_skips_auditor_and_review_on_failing_title``
-    and ``TestTitleBlockedClaimKeepsEverySource``."""
-    write_entity(tmp_path)
-    with scripted_agents(analyst=analyst_args(cited_sources=["2026/report"])):
-        result = await _run(tmp_path, template=_template(), criteria_slug="uses-renewable-energy")
-
-    assert result.analyst_output is not None, result.errors
-    assert result.consistency is None
-    assert result.uncited_urls == set()
-
-
-@pytest.mark.asyncio
-async def test_passing_title_is_the_statement_the_evaluator_grades(tmp_path) -> None:
-    """From ``TestAuditorGradedStatement.test_verify_claim_grades_the_resolved_title``."""
+async def test_the_evaluator_grades_the_statement_not_the_analysts_title(tmp_path) -> None:
+    """From ``TestAuditorGradedStatement.test_verify_claim_grades_the_resolved_title``,
+    rewritten to the one rule: a criterion-backed run grades ``spec.statement``."""
     from tests.loop_harness import auditor_args, capturing_model
 
     write_entity(tmp_path)
     prompts: list[str] = []
-    title = f"{ENTITY_NAME} uses renewable energy"
     with scripted_agents(
-        analyst=analyst_args(title=title),
+        analyst=analyst_args(title=f"{ENTITY_NAME} uses renewable energy"),
         auditor_model=capturing_model(prompts, auditor_args()),
     ):
-        result = await _run(tmp_path, template=_template(), criteria_slug="uses-renewable-energy")
+        result = await _run(
+            tmp_path, criteria_slug="uses-renewable-energy", grading_rule="mixed = offsets only",
+        )
 
     assert result.consistency is not None, result.errors
-    assert any(f"## Claim\n{title}" in p for p in prompts)
+    assert any(f"## Claim\n{SENTENCE}\n" in p for p in prompts)
+    assert not any(f"## Claim\n{ENTITY_NAME} uses renewable energy" in p for p in prompts)
 
 
 # --- URL dedup: cache hits (test_source_url_dedup.py:342-400) ---
@@ -1088,7 +1070,7 @@ def test_draft_writes_the_entity_overrides_and_keeps_the_file_label(tmp_path) ->
         ])
 
     assert result.exit_code == 0, result.output
-    claim_path = tmp_path / "research" / "claims" / "brave-browser" / "brave-hosts-on-renewable-energy.md"
+    claim_path = tmp_path / "research" / "claims" / "brave-browser" / "brave-is-hosted-on-renewable-energy.md"
     claim_fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     written = {o["source"]: o["independence"] for o in claim_fm["source_overrides"]}
     assert written == {
@@ -1121,7 +1103,7 @@ def test_draft_writes_the_fitted_level_and_its_note(tmp_path) -> None:
         ])
 
     assert result.exit_code == 0, result.output
-    claim_path = tmp_path / "research" / "claims" / "brave-browser" / "brave-hosts-on-renewable-energy.md"
+    claim_path = tmp_path / "research" / "claims" / "brave-browser" / "brave-is-hosted-on-renewable-energy.md"
     claim_fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     # One written source (the AWS page naming Brave) is independent.
     assert claim_fm["verification_level"] == "independently-verified"

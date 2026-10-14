@@ -8,7 +8,7 @@ This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot
 
 ## How the system works
 
-The system tracks four object types: **criteria** (reusable claim templates, intake-only), **entities** (companies and products in v1; subjects exist but aren't yet an intake; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: a **criterion** generates a claim for each entity it applies to; a **company** or **product** generates a claim for each active criterion; a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (open-loop: disagreements surface to the operator and are not auto-resolved, so the Evaluator does not feed back into the Analyst in v1). The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
+The system tracks four object types: **criteria** (a registry of claim sentences in `research/templates.yaml`, each with a `grading_rule`; intake-only), **entities** (companies and products in v1, hand-written; subjects, hand-written or written by `dr draft --subject`; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: the operator drafts a claim from a **criterion** for one entity (`dr draft --criterion <slug> --entity <ref>`); a **company** or **product** gains a claim for each criterion the operator drafts for it; a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (open-loop: disagreements surface to the operator and are not auto-resolved, so the Evaluator does not feed back into the Analyst in v1). The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
 
 For the generalized vision, see `docs/architecture/glossary.md` § How the system works.
 
@@ -43,7 +43,7 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 ## Claim Topic Taxonomy
 
 Each claim and each criterion carries a `topics:` array of 1 to 3 slugs from
-this set. The slugs themselves did not change; only the field name (`category`
+this set. A claim drafted from a criterion takes the criterion's topics; an ad hoc claim takes the analyst's. The slugs themselves did not change; only the field name (`category`
 to `topics`) and cardinality (single value to array) were changed. See
 `docs/plans/completed/multi-topic.md` for context.
 
@@ -144,12 +144,8 @@ Each agent package contains an `instructions.md` file that is loaded at import t
 The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` protocol:
 
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
-- `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
-- `review_entity_disambiguation` -- fires during `dr onboard` when the entity resolver finds ambiguous candidates
-- `review_verification_status` -- fires during `dr onboard` when the verifier finds no strong public signal for the entity; the operator picks the `verification_status` label (`unverified-startup` or `unverified-other`) or aborts
-- `review_entity_enrichment` -- fires during `dr onboard` after the enricher proposes entity metadata
 
-Pass `--interactive` to `dr draft`, `dr claim-refresh`, `dr onboard`, or `dr entity-enrich` to enable CLI prompts (only the checkpoints above that the command reaches fire). Tests use `AutoApproveCheckpointHandler`.
+Pass `--interactive` to `dr draft` to enable the CLI prompt. Tests use `AutoApproveCheckpointHandler`.
 
 ### Tooling: dr vs inv
 
@@ -157,7 +153,7 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: draft, claim-refresh, claim-promote, onboard, step-* commands |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: draft, review, step-* commands |
 | `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
@@ -167,7 +163,8 @@ uv run dr draft --dry-run --entity products/chatgpt "ChatGPT excludes frontier m
 uv run dr draft --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
 uv run dr step-audit --entity ecosia
 uv run dr step-ingest https://example.com/article
-uv run dr onboard "Ecosia AI" --type product
+uv run dr draft --criterion renewable-energy-hosting --entity products/chatgpt
+uv run dr draft --claim subjects/generative-ai/<stem> --criterion <new-slug>
 uv run dr lint --entity ecosia
 uv run dr review --claim ecosia/renewable-energy-hosting
 ```
@@ -176,13 +173,14 @@ Commands:
 
 - `dr draft --dry-run --entity <ref> "<sentence>"` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
 - `dr draft --entity <ref> "<sentence>"` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). `--entity` names an existing entity file (for example `products/chatgpt`); there is no entity inference. A blocked run, or one where the analyst fails, writes nothing and exits 1. `--force` overwrites an existing claim.
-- `dr claim-refresh` -- Re-run the full pipeline on an existing template-backed claim file (must have `criteria_slug`; use `dr claim-promote` first for ad-hoc drafts)
-- `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
+- `dr draft --criterion <slug> --entity <ref>` -- Draft the criterion's sentence for the entity: the text is rendered once with the entity name and stored as `statement`, the claim takes `criteria_slug` and the criterion's topics, and it is written to `<entity-dir>/<criteria_slug>.md`. The criterion's `grading_rule` reaches the Analyst and the Evaluator.
+- `dr draft --subject <slug> "<sentence>"` -- Draft an ad hoc subject claim at `<entity-dir>/<slugified sentence>.md`; writes `research/entities/subjects/<slug>.md` with the claim when none exists.
+- `dr draft --claim <ref> --force` -- Re-run the claim's stored `statement` and write back to the same path, keeping `criteria_slug`. A claim that is not a draft returns to draft and awaits re-approval (until RE-AW (Recheck) refuses non-drafts). Without `--force` or `--dry-run` it is a usage error.
+- `dr draft --claim <ref> --criterion <new-slug>` -- Attach a new criterion to an ad hoc draft: appends the entry to `research/templates.yaml` and sets `criteria_slug`. Runs no model call and moves no file. It is refused when the slug exists, the claim already has `criteria_slug`, the claim is not a draft, or the entity is a company. A claim needs `criteria_slug` before `dr review --approve` publishes it.
 - `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr reassess` and `dr ingest` remain as hidden deprecated aliases for the last two)
-- `dr onboard` -- Onboard an entity using claim templates
 - `dr wayback-backfill` -- Add an archive.org link (`archived_url`) to existing source files that lack one; `--recheck` also checks existing links and replaces or removes a bad one; exits 1 if any could not be archived
 
-Archive.org captures (Save Page Now): `dr draft`, `dr claim-refresh`, `dr onboard`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered); `dr entity-enrich` and onboard's light research capture only when the ingest model recovers a failed fetch. `dr draft --dry-run`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
+Archive.org captures (Save Page Now): `dr draft`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered). `dr draft --dry-run`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar. It needs a person at a terminal: stdin must be a tty and the claim slug is typed back before anything is written, so a piped command cannot sign off (`dr review-queue`'s `a` action has the same check). Agents: do not run it, and do not wrap it in a pty (`script`, `expect`, Python `pty`) or edit a sidecar's `human_review` by hand; a sign-off is Brandon's
 
@@ -211,7 +209,7 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 | `RESEARCH_SEARCH_BACKEND` | No (default `tavily`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
 | `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
 
-**arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; on by default since 2026-05-09 (commit `74c1512`; default `["tavily", "arxiv"]` in `pipeline/orchestrator/pipeline.py`). Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
+**arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; on by default since 2026-05-09 (commit `74c1512`; default `["tavily", "arxiv"]` in `pipeline/loop/spec.py`). Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
 
 **Tavily data-handling note.** With Tavily as the default backend (flipped 2026-05-08), claim text and entity names are sent to Tavily on each query. The published research is already public; the evaluation that gated the default flip is recorded in `docs/plans/completed/source-pool-expansion-tier1-search-backend.md`.
 

@@ -1,4 +1,4 @@
-"""Re-run v1 launch claims via dr claim-refresh and log what changed.
+"""Re-run v1 launch claims via dr draft --claim --force and log what changed.
 
 Written for the v1 source-quality backfill (2026-05-05), which landed
 verification_level + cap_rationale onto the v1 launch claims. Per-claim deltas
@@ -7,7 +7,7 @@ are written to docs/plans/source-quality-rerun-log.jsonl.
 - Re-run only claims with status=published and a criteria_slug.
 - Skip status=draft and status=blocked (out of v1 scope, would risk
   unblocking or producing speculative verdicts).
-- claim-refresh writes status: draft, resets the sidecar's human_review and
+- dr draft --claim --force writes status: draft, resets the sidecar's human_review and
   keeps the prior published state in the sidecar's refresh block. This script
   leaves all of that as written: every refreshed claim leaves the published
   list until a person approves it in `dr review-queue`, even when the verdict
@@ -67,7 +67,7 @@ def collect_v1_claims() -> list[Path]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", help="Process a single claim (entity/slug)", default=None)
-    ap.add_argument("--dry-run", action="store_true", help="List candidates and skips; do not run claim-refresh")
+    ap.add_argument("--dry-run", action="store_true", help="List candidates and skips; do not run dr draft")
     ap.add_argument("--force", action="store_true", help="Re-run even if verification_level is already populated")
     args = ap.parse_args()
 
@@ -129,7 +129,7 @@ def main() -> int:
         started = time.time()
         print(f"\n[{i}/{len(runnable)}] {ref} -- pre: verdict={pre_verdict} confidence={pre_confidence}")
 
-        cmd = ["uv", "run", "dr", "claim-refresh", ref]
+        cmd = ["uv", "run", "dr", "draft", "--claim", ref, "--force"]
         proc = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
         duration = time.time() - started
 

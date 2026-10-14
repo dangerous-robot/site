@@ -1,0 +1,156 @@
+{
+  "claim_body": "The evidence is mixed.\n",
+  "claim_fm": {
+    "as_of": "DATE",
+    "confidence": "medium",
+    "criteria_slug": "uses-renewable-energy",
+    "entity": "subjects/probe-subject",
+    "seo_title": "Probe Subject electricity share",
+    "sources": [
+      "2026/report",
+      "2026/second-report",
+      "2026/third-report",
+      "2026/fourth-report"
+    ],
+    "status": "draft",
+    "tags": [],
+    "takeaway": "",
+    "title": "Probe Subject uses renewable energy",
+    "topics": [
+      "ai-safety",
+      "environmental-impact"
+    ],
+    "verdict": "mixed",
+    "verification_level": "partially-verified"
+  },
+  "sidecar": {
+    "analyst_record": {
+      "cap_rationale": null,
+      "seo_title": "Probe Subject electricity share",
+      "title": "Probe Subject uses renewable energy",
+      "verdict": "mixed"
+    },
+    "audit": {
+      "analyst_confidence": "medium",
+      "analyst_verdict": "mixed",
+      "auditor_confidence": "medium",
+      "auditor_reasoning": "Independent assessment.",
+      "auditor_verdict": "mixed",
+      "confidence_agrees": true,
+      "evidence_gaps": [],
+      "needs_review": false,
+      "needs_review_reasons": [],
+      "verdict_agrees": true
+    },
+    "human_review": {
+      "notes": null,
+      "pr_url": null,
+      "reviewed_at": null,
+      "reviewer": null
+    },
+    "models_used": {
+      "analyst": "MODEL",
+      "auditor": "MODEL",
+      "ingestor": "MODEL",
+      "researcher": "MODEL"
+    },
+    "pipeline_run": {
+      "agents": [
+        "researcher",
+        "ingestor",
+        "analyst",
+        "auditor"
+      ],
+      "model": "test",
+      "ran_at": "TS",
+      "run_id": "RUNID"
+    },
+    "research": {
+      "candidates_seen": 4,
+      "mode": "decomposed",
+      "planner_rationale": "two axes",
+      "queries": [
+        "probe subject energy report",
+        "probe subject energy independent"
+      ],
+      "scorer_rationale": "all relevant",
+      "tool_outcomes": [],
+      "urls_after_blocklist": 4,
+      "urls_dropped": 0,
+      "urls_kept": 4
+    },
+    "schema_version": 1,
+    "sources_consulted": [
+      {
+        "archive": {
+          "status": "not-attempted"
+        },
+        "id": "2026/fourth-report",
+        "ingested": true,
+        "title": "Report at fourth-report",
+        "url": "https://example.org/fourth-report"
+      },
+      {
+        "archive": {
+          "status": "not-attempted"
+        },
+        "id": "2026/report",
+        "ingested": true,
+        "title": "Report at report",
+        "url": "https://example.org/report"
+      },
+      {
+        "archive": {
+          "status": "not-attempted"
+        },
+        "id": "2026/second-report",
+        "ingested": true,
+        "title": "Report at second-report",
+        "url": "https://example.org/second-report"
+      },
+      {
+        "archive": {
+          "status": "not-attempted"
+        },
+        "id": "2026/third-report",
+        "ingested": true,
+        "title": "Report at third-report",
+        "url": "https://example.org/third-report"
+      }
+    ],
+    "sub_questions": [
+      {
+        "citations": [
+          "2026/report",
+          "2026/second-report",
+          "2026/fourth-report"
+        ],
+        "id": "sq1",
+        "queries": [
+          "probe subject energy report"
+        ],
+        "question": "Does the subject publish energy data?",
+        "rationale": "first-party axis"
+      },
+      {
+        "citations": [
+          "2026/second-report",
+          "2026/third-report"
+        ],
+        "id": "sq2",
+        "queries": [
+          "probe subject energy independent"
+        ],
+        "question": "Do third parties confirm it?",
+        "rationale": "independent axis"
+      }
+    ]
+  },
+  "sources": {
+    "2026/fourth-report.md": "---\nurl: https://example.org/fourth-report\ntitle: Report at fourth-report\npublisher: Example Publisher\naccessed_date: '2026-10-14'\nkind: article\nindependence: independent\nsummary: A factual summary of the report.\nsource_type: secondary\n---\nBody of the report.\n",
+    "2026/report.md": "---\nurl: https://example.org/report\ntitle: Report at report\npublisher: Example Publisher\naccessed_date: '2026-10-14'\nkind: article\nindependence: independent\nsummary: A factual summary of the report.\nsource_type: secondary\n---\nBody of the report.\n",
+    "2026/second-report.md": "---\nurl: https://example.org/second-report\ntitle: Report at second-report\npublisher: Example Publisher\naccessed_date: '2026-10-14'\nkind: article\nindependence: independent\nsummary: A factual summary of the report.\nsource_type: secondary\n---\nBody of the report.\n",
+    "2026/third-report.md": "---\nurl: https://example.org/third-report\ntitle: Report at third-report\npublisher: Example Publisher\naccessed_date: '2026-10-14'\nkind: article\nindependence: independent\nsummary: A factual summary of the report.\nsource_type: secondary\n---\nBody of the report.\n"
+  },
+  "stem": "uses-renewable-energy"
+}

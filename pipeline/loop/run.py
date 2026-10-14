@@ -12,8 +12,8 @@ import httpx
 from analyst.agent import AnalystOutput
 from auditor.compare import needs_review_reasons
 from common.logging_setup import bind_run_id, progress
-from common.models import BlockedReason
-from loop.analyse import _apply_cited_filter, _graded_statement, analyse_claim, audit_claim
+from common.models import BlockedReason, FailureInfo
+from loop.analyse import _apply_cited_filter, analyse_claim, audit_claim
 from loop.errors import StepError
 from loop.ingest import _addresses_with_aliases, _build_source_dict, _ingest_claim_sources
 from loop.research import _apply_url_dedup, _invert_addresses, _research, _warn_uncovered
@@ -80,6 +80,40 @@ def _record_threshold_block(
 _NO_URLS_ERR = "Researcher agent found no relevant URLs"
 
 
+def blocked_reason_label(
+    reason_value: str,
+    vr_errors: list[str],
+    extra: str | None = None,
+    failure: FailureInfo | None = None,
+) -> str:
+    """Format a BlockedReason value with the most informative upstream cause.
+
+    When a structured ``failure`` is available it dominates, producing a
+    triage-friendly label that names the error class, the model that ran,
+    and the timeout budget it was given:
+
+        analyst_error: TimeoutError on infomaniak:openai/gpt-oss-120b after 120.0s
+
+    Otherwise prefers ``extra`` if provided, then the first non-noise
+    message from ``vr_errors``, then the first error, then the bare
+    reason. The "no relevant URLs" string is treated as noise because it
+    is downstream of the real cause (planner timeout, search failure,
+    etc.) and obscures it.
+    """
+    if failure is not None:
+        parts = [failure.error_class]
+        if failure.model:
+            parts.append(f"on {failure.model}")
+        if failure.timeout_s is not None and failure.error_class == "TimeoutError":
+            parts.append(f"after {failure.timeout_s:g}s")
+        return f"{reason_value}: " + " ".join(parts)
+    cause = extra
+    if cause is None:
+        non_noise = [e for e in vr_errors if not e.startswith(_NO_URLS_ERR)]
+        cause = non_noise[0] if non_noise else (vr_errors[0] if vr_errors else None)
+    return f"{reason_value}: {cause}" if cause else reason_value
+
+
 async def run(
     spec: ClaimSpec,
     config: VerifyConfig,
@@ -96,9 +130,8 @@ async def run(
     4. Auditor: independently assess the claim
     5. [Checkpoint on disagreement] Review conflict
 
-    ``spec.template`` is the criterion a template-backed caller rendered
-    ``spec.statement`` from; it decides which statement the auditor grades
-    (``_graded_statement``). ``spec.grading_rule`` reaches both agents.
+    The auditor grades ``spec.statement``; ``spec.grading_rule`` reaches
+    both agents.
 
     Returns a VerificationResult with all intermediate outputs.
     """
@@ -106,7 +139,6 @@ async def run(
     claim_text = spec.statement
     resolved_entity = spec.entity
     topics = spec.topics
-    template = spec.template
     cfg = config or VerifyConfig()
     gate = checkpoint or AutoApproveCheckpointHandler()
     # Semaphore MUST be created inside the coroutine driven by asyncio.run (loop-bound).
@@ -247,23 +279,13 @@ async def run(
                 return result
 
             # Step 4: Auditor
-            statement = _graded_statement(
-                template, entity_name, claim_text, analyst_out.verdict.title
+            cited_sources = _apply_cited_filter(result, analyst_out, entity_name)
+            say("  › Auditing")
+            logger.info("Step 4/4: Running auditor check...")
+            comparison = await audit_claim(
+                entity_name, claim_text, analyst_out, cited_sources, cfg,
+                criterion_notes=criterion_notes,
             )
-            if statement is None:
-                # The caller blocks this claim, and a blocked claim lists every
-                # ingested source: no cited filter from a rejected analyst output.
-                say("  › Auditor skipped: the title fails the template, so the claim will be blocked")
-                logger.info("Step 4/4: Auditor skipped; analyst title fails template %s", template.slug)
-                comparison = None
-            else:
-                cited_sources = _apply_cited_filter(result, analyst_out, entity_name)
-                say("  › Auditing")
-                logger.info("Step 4/4: Running auditor check...")
-                comparison = await audit_claim(
-                    entity_name, statement, analyst_out, cited_sources, cfg,
-                    criterion_notes=criterion_notes,
-                )
             result.consistency = comparison
 
             # Checkpoint: review disagreement
@@ -295,7 +317,7 @@ async def rerun(
     ``agent`` is ``"analyst"`` (assess ``spec.statement`` from ``sources``;
     ``consistency`` stays None) or ``"evaluator"`` (grade ``analyst_output``
     against ``sources``). Each agent goes through the same null retry as in
-    ``run``. A title that fails its template is not graded, as in ``run``.
+    ``run``. The Evaluator grades ``spec.statement``, as in ``run``.
     """
     if agent not in ("analyst", "evaluator"):
         raise ValueError(f"rerun agent must be 'analyst' or 'evaluator', not {agent!r}")
@@ -329,12 +351,7 @@ async def rerun(
             return result
 
         result.analyst_output = analyst_output
-        statement = _graded_statement(
-            spec.template, entity_name, spec.statement, analyst_output.verdict.title
-        )
-        if statement is None:
-            logger.info("Auditor skipped; the title fails template %s", spec.template.slug)
-            return result
+        statement = spec.statement
         comparison = await audit_claim(
             entity_name, statement, analyst_output, result.sources, config,
             criterion_notes=spec.grading_rule,

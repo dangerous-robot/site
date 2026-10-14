@@ -34,14 +34,6 @@ def _safe_repo_root() -> Path | None:
     return None
 
 
-_ENTITY_TYPE_CHOICES: tuple[str, ...] = ("company", "product", "subject")
-_ENTITY_TYPE_PLACEHOLDERS: dict[str, str] = {
-    "company": "COMPANY",
-    "product": "PRODUCT",
-    "subject": "ENTITY",
-}
-
-
 _PROVIDER_ENV: dict[str, tuple[str, ...]] = {
     "infomaniak": ("INFOMANIAK_API_KEY", "INFOMANIAK_PRODUCT_ID"),
     "greenpt": ("GREENPT_API_KEY",),
@@ -132,42 +124,10 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Read-only (dry run, no files written)",
      ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit"]),
     ("Creates or overwrites claim files (dr draft --dry-run writes nothing)",
-     ["draft", "onboard", "claim-refresh", "claim-promote"]),
+     ["draft"]),
     ("Modifies existing files in place",
-     ["entity-enrich", "publish", "review", "review-queue"]),
+     ["publish", "review", "review-queue"]),
 ]
-
-
-_TIMEOUT_SOURCES: tuple[tuple[str, str], ...] = (
-    ("research planner timed out", "research planner"),
-    ("url scorer timed out", "url scorer"),
-    ("ingest timed out", "ingest"),
-)
-
-
-def _summarize_timeouts(errors: list[str]) -> str:
-    """Return a one-line summary of timeout errors, or "" if none.
-
-    Scans onboard ``result.errors`` for known timeout phrases and groups
-    by source. Output forms:
-      - single source: ``"3 (research planner)"``
-      - multiple:      ``"5 (research planner: 3, ingest: 2)"``
-    """
-    counts: dict[str, int] = {}
-    for err in errors:
-        lowered = err.lower()
-        for needle, label in _TIMEOUT_SOURCES:
-            if needle in lowered:
-                counts[label] = counts.get(label, 0) + 1
-                break
-    if not counts:
-        return ""
-    total = sum(counts.values())
-    if len(counts) == 1:
-        (label,) = counts
-        return f"{total} ({label})"
-    parts = ", ".join(f"{label}: {n}" for label, n in counts.items())
-    return f"{total} ({parts})"
 
 
 class _CategorizedGroup(click.Group):
@@ -662,7 +622,9 @@ def step_analyze(
     Default: read-only (prints analyst output). Use --write (or --force) to
     overwrite the claim file on disk. A claim that is not a draft (published,
     archived or blocked) returns to draft and awaits re-approval, as with
-    claim-refresh. The sidecar's Evaluator comparison (``audit``) is cleared,
+    ``dr draft --claim --force``. The analyst assesses the claim's stored
+    ``statement`` (``title`` for a claim written before it existed), and
+    --write writes that sentence as both. The sidecar's Evaluator comparison (``audit``) is cleared,
     since it graded the old analysis; run ``dr step-audit --write`` after.
 
     Example:
@@ -677,9 +639,8 @@ def step_analyze(
     import datetime
 
     from common.content_loader import load_entity, resolve_repo_root
-    from common.frontmatter import parse_frontmatter
+    from common.frontmatter import claim_statement, parse_frontmatter
     from common.models import ClaimStatus
-    from common.templates import render_claim_text
     from loop import ClaimSpec, VerifyConfig, rerun
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.persistence import (
@@ -706,18 +667,15 @@ def step_analyze(
     entity_fm, _ = load_entity(fm["entity"], root)
     entity_name = entity_fm["name"]
     # With the resolved entity the analyst sees the entity-match labels, and
-    # --write keeps their overrides, as claim-refresh does. The loop runs on a
+    # --write keeps their overrides, as dr draft does. The loop runs on a
     # resolved entity, so a missing entity file is a usage error.
     try:
         resolved_entity = parse_entity_ref(fm["entity"], root)
     except ValueError as exc:
         raise click.UsageError(f"could not load entity '{fm['entity']}': {exc}") from exc
 
-    # Reconstruct claim text: prefer re-rendering the template; fall back to title
-    claim_text = fm["title"]
+    claim_text = claim_statement(fm)
     template = _claim_template(fm, root)
-    if template is not None:
-        claim_text = render_claim_text(template, entity_name)
 
     # Load sources
     # Same shape the main pipeline gives the analyst: ``source_id`` lets
@@ -736,8 +694,7 @@ def step_analyze(
         statement=claim_text,
         entity=resolved_entity,
         criteria_slug=fm.get("criteria_slug"),
-        grading_rule=template.notes if template else None,
-        template=template,
+        grading_rule=template.grading_rule or None if template else None,
     )
     rerun_result = asyncio.run(rerun(spec, cfg, source_dicts, agent="analyst"))
     analyst_out, analyst_failure = rerun_result.analyst_output, rerun_result.failure
@@ -792,7 +749,8 @@ def step_analyze(
 
     try:
         written_path = _write_claim_file(
-            title=a.verdict.title,
+            title=claim_text,
+            statement=claim_text,
             entity_name=entity_fm["name"],
             entity_ref=entity_ref,
             topics=a.verdict.topics,
@@ -894,6 +852,9 @@ def _print_verify_result(result) -> None:
 @main.command("draft")
 @click.argument("sentence", required=False)
 @click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
+@click.option("--subject", "subject_slug", default=None, metavar="SLUG", help="Subject the sentence is about; the subject record is written with the claim when none exists")
+@click.option("--criterion", "criterion_slug", default=None, metavar="SLUG", help="Draft the criterion's sentence for --entity, or attach it to --claim")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run the claim's stored statement in place (needs --force or --dry-run), or attach a criterion with --criterion")
 @click.option("--dry-run", is_flag=True, help="Run the loop and print the result; write nothing and never ask archive.org to capture a page")
 @click.option("--force", is_flag=True, help="Overwrite the claim file if present; a claim that is not a draft returns to draft and awaits re-approval")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
@@ -908,6 +869,9 @@ def draft(
     ctx: click.Context,
     sentence: str | None,
     entity_ref: str | None,
+    subject_slug: str | None,
+    criterion_slug: str | None,
+    claim_ref: str | None,
     dry_run: bool,
     force: bool,
     repo_root: str | None,
@@ -920,37 +884,185 @@ def draft(
 ) -> None:
     """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
-    SENTENCE is the claim to check; --entity names the entity file it is
-    about. The claim is written with status=draft and no criteria_slug, at
-    the entity's claims directory under the slugified analyst title. A run
-    that is blocked or whose analyst fails writes nothing and exits 1.
+    Exactly one of --entity, --subject or --claim names what the claim is
+    about. The claim stores the sentence it checks as its statement (and as
+    its title). A run that is blocked or whose analyst fails writes nothing
+    and exits 1.
+
+    \b
+    --entity REF SENTENCE        an ad hoc claim at <entity-dir>/<slugified sentence>.md
+    --criterion SLUG --entity REF
+                                 the criterion's sentence for the entity, at
+                                 <entity-dir>/<SLUG>.md, with criteria_slug and the
+                                 criterion's topics
+    --subject SLUG SENTENCE      an ad hoc subject claim; writes
+                                 research/entities/subjects/SLUG.md with the claim
+                                 when it is missing
+    --claim REF --force          re-runs the claim's stored statement and writes back
+                                 to the same path (--dry-run prints the run instead)
+    --claim REF --criterion SLUG attaches a new criterion to a draft: appends it to
+                                 research/templates.yaml and sets criteria_slug; no
+                                 model call
 
     \b
     Examples:
         dr draft --dry-run --entity subjects/generative-ai "Generative AI assistants answer most questions without browsing"
-        dr draft --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
+        dr draft --criterion renewable-energy-hosting --entity products/chatgpt
+        dr draft --subject us-data-centers "US data centers used more than 4% of US electricity in 2024"
+        dr draft --claim chatgpt/renewable-energy-hosting --force
+        dr draft --claim subjects/us-data-centers/<stem> --criterion data-centers-electricity-share
     """
+    import re
+
     from common.content_loader import resolve_repo_root
+    from common.frontmatter import claim_statement, parse_frontmatter
+    from common.models import EntityType
     from common.sidecar import sidecar_path_for
+    from common.templates import get_template, load_templates, render_statement
     from common.utils import slugify
     from loop import ClaimSpec, VerifyConfig, run
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.persistence import write_claim_run
+    from orchestrator.entity_resolution import ResolvedEntity, parse_entity_ref
+    from orchestrator.persistence import planned_claim_path, write_claim_run
 
-    logger.info("dr draft: entity=%s sentence=%s dry_run=%s force=%s", entity_ref, sentence, dry_run, force)
+    logger.info(
+        "dr draft: entity=%s subject=%s criterion=%s claim=%s sentence=%s dry_run=%s force=%s",
+        entity_ref, subject_slug, criterion_slug, claim_ref, sentence, dry_run, force,
+    )
 
-    # Click cannot make SENTENCE conditionally required, so the mode flag and
-    # the sentence are checked here, before any model call.
-    if entity_ref is None:
-        raise click.UsageError("--entity <ref> is required (e.g. --entity products/chatgpt)")
-    if not sentence or not sentence.strip():
-        raise click.UsageError("SENTENCE is required with --entity")
+    # Click cannot express this grammar, so it is checked here, before any
+    # model call: every failure is a usage error (exit 2) naming the flag.
+    modes = [flag for flag, value in (
+        ("--entity", entity_ref), ("--subject", subject_slug), ("--claim", claim_ref),
+    ) if value is not None]
+    if not modes:
+        raise click.UsageError("one of --entity <ref>, --subject <slug> or --claim <ref> is required")
+    if len(modes) > 1:
+        raise click.UsageError(f"{' and '.join(modes)} cannot be combined; pass exactly one")
+    has_sentence = bool(sentence and sentence.strip())
+    attach = claim_ref is not None and criterion_slug is not None
+    if criterion_slug is not None:
+        if subject_slug is not None:
+            raise click.UsageError(
+                "--criterion goes with --entity (draft the criterion) or --claim (attach it), not --subject"
+            )
+        if sentence is not None:
+            raise click.UsageError("SENTENCE is not taken with --criterion: the criterion's text is the sentence")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", criterion_slug):
+            raise click.UsageError(f"--criterion {criterion_slug}: a slug is lowercase words joined by hyphens")
+        if attach and (force or dry_run):
+            raise click.UsageError("--claim with --criterion runs no loop and writes no claim run; drop --force and --dry-run")
+    elif claim_ref is not None:
+        if sentence is not None:
+            raise click.UsageError("SENTENCE is not taken with --claim: the claim's stored statement is re-run")
+        if not (force or dry_run):
+            raise click.UsageError(
+                f"--claim {claim_ref} writes over the existing claim: pass --force to write it, "
+                "--dry-run to print the run, or --criterion <slug> to attach a criterion"
+            )
+    elif not has_sentence:
+        raise click.UsageError(f"SENTENCE is required with {modes[0]}")
+    if subject_slug is not None and not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", subject_slug):
+        raise click.UsageError(f"--subject {subject_slug}: a slug is lowercase words joined by hyphens")
+
     root = Path(repo_root) if repo_root else resolve_repo_root()
-    try:
-        resolved_entity = parse_entity_ref(entity_ref, root)
-    except ValueError as exc:
-        raise click.UsageError(f"--entity {entity_ref}: {exc}") from exc
+
+    if attach:
+        _attach_criterion(claim_ref, criterion_slug, root)
+        return
+
+    claim_path: Path | None = None
+    create_entity = False
+    if claim_ref is not None:
+        claim_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
+        if not claim_path.exists():
+            click.echo(f"Error: claim file not found: {claim_ref} ({claim_path})", err=True)
+            sys.exit(1)
+        fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        claim_entity = fm.get("entity", "")
+        try:
+            resolved_entity = parse_entity_ref(claim_entity, root)
+        except ValueError as exc:
+            raise click.UsageError(f"--claim {claim_ref}: could not load entity {claim_entity!r}: {exc}") from exc
+        template = _claim_template(fm, root)
+        spec = ClaimSpec(
+            statement=claim_statement(fm),
+            entity=resolved_entity,
+            criteria_slug=fm.get("criteria_slug"),
+            topics=list(template.topics) if template else [],
+            grading_rule=template.grading_rule or None if template else None,
+        )
+        claim_slug = claim_path.stem
+        force = True
+        ref_label = claim_ref
+    elif subject_slug is not None:
+        ref_label = f"subjects/{subject_slug}"
+        if (root / "research" / "entities" / f"{ref_label}.md").exists():
+            try:
+                resolved_entity = parse_entity_ref(ref_label, root)
+            except ValueError as exc:
+                raise click.UsageError(f"--subject {subject_slug}: {exc}") from exc
+        else:
+            # A minimal record, written with the claim; the operator edits it afterwards.
+            resolved_entity = ResolvedEntity(
+                entity_ref=ref_label,
+                entity_name=subject_slug.replace("-", " ").title(),
+                entity_type=EntityType.SUBJECT,
+                entity_description=sentence.strip(),
+            )
+            create_entity = True
+        spec = ClaimSpec(statement=sentence, entity=resolved_entity)
+        claim_slug = slugify(sentence)
+    else:
+        ref_label = entity_ref
+        try:
+            resolved_entity = parse_entity_ref(entity_ref, root)
+        except ValueError as exc:
+            raise click.UsageError(f"--entity {entity_ref}: {exc}") from exc
+        if criterion_slug is not None:
+            try:
+                template = get_template(load_templates(root), criterion_slug)
+            except Exception as exc:
+                raise click.UsageError(f"--criterion {criterion_slug}: could not read research/templates.yaml: {exc}") from exc
+            if template is None:
+                raise click.UsageError(
+                    f"--criterion {criterion_slug}: no active criterion with that slug in research/templates.yaml"
+                )
+            entity_type = resolved_entity.entity_type.value
+            if template.entity_type != entity_type:
+                raise click.UsageError(
+                    f"--criterion {criterion_slug} is a {template.entity_type} criterion; "
+                    f"{entity_ref} is a {entity_type}"
+                )
+            if template.entity_type == "subject" and resolved_entity.entity_ref not in template.subjects:
+                raise click.UsageError(
+                    f"--criterion {criterion_slug} does not list {entity_ref} in its subjects"
+                )
+            spec = ClaimSpec(
+                statement=render_statement(template, resolved_entity.entity_name),
+                entity=resolved_entity,
+                criteria_slug=criterion_slug,
+                topics=list(template.topics),
+                grading_rule=template.grading_rule or None,
+            )
+            claim_slug = criterion_slug
+        else:
+            spec = ClaimSpec(statement=sentence, entity=resolved_entity)
+            claim_slug = slugify(sentence)
+
+    if not dry_run:
+        # Refused before the paid loop; the writer checks the same two things again.
+        planned = planned_claim_path(resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root)
+        if claim_path is not None and planned.resolve() != claim_path.resolve():
+            click.echo(
+                f"Error: {claim_ref} is at {claim_path}, but its entity {resolved_entity.entity_ref} "
+                f"writes to {planned}. Nothing was run.",
+                err=True,
+            )
+            sys.exit(1)
+        if not force and planned.exists():
+            click.echo(f"Error: claim file already exists: {planned}. Use --force to overwrite it.", err=True)
+            sys.exit(1)
 
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
@@ -959,7 +1071,6 @@ def draft(
         model=ctx.obj["model"],
         skip_wayback=skip_wayback,
         repo_root=str(root),
-        force_overwrite=force,
         # A dry run writes nothing, so archive lookups check TimeGate only.
         allow_save=not dry_run,
         show_progress=True,
@@ -968,10 +1079,9 @@ def draft(
     )
     _check_search_key(config)
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-    spec = ClaimSpec(statement=sentence, entity=resolved_entity)
 
     click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
-    progress("Drafting claim: %s (%s)%s", sentence, entity_ref, " [dry run]" if dry_run else "")
+    progress("Drafting claim: %s (%s)%s", spec.statement, ref_label, " [dry run]" if dry_run else "")
     result = asyncio.run(run(spec, config, checkpoint=checkpoint))
 
     if dry_run:
@@ -982,11 +1092,14 @@ def draft(
         sys.exit(1)
 
     try:
-        claim_path = write_claim_run(
+        written_path = write_claim_run(
             result, spec, config,
             repo_root=root,
-            claim_slug=slugify(result.analyst_output.verdict.title),
+            claim_slug=claim_slug,
             force=force,
+            # --claim writes back to the file it read, whatever its stem.
+            target=claim_path,
+            create_entity=create_entity,
         )
     except FileExistsError as exc:
         click.echo(f"Error: {exc}. Use --force to overwrite it.", err=True)
@@ -996,9 +1109,9 @@ def draft(
         sys.exit(1)
 
     try:
-        claim_rel = claim_path.relative_to(root)
+        claim_rel = written_path.relative_to(root)
     except ValueError:
-        claim_rel = claim_path
+        claim_rel = written_path
 
     hr()
     click.echo("Draft Report")
@@ -1010,7 +1123,7 @@ def draft(
 
     a = result.analyst_output
     click.echo(f"Verdict:    {a.verdict.verdict.value} ({a.verdict.confidence.value})")
-    click.echo(f"Title:      {a.verdict.title}")
+    click.echo(f"Analyst title: {a.verdict.title}")
     click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
     click.echo("")
     click.echo(f"Claim:   {claim_rel}")
@@ -1020,6 +1133,59 @@ def draft(
         for e in result.errors:
             click.echo(f"  ! {e}")
     hr()
+    if claim_path is not None:
+        click.echo(f"Refreshed: {written_path}")
+        if result.consistency and result.consistency.needs_review:
+            from auditor.compare import needs_review_reasons
+
+            reasons = ", ".join(needs_review_reasons(result.consistency))
+            click.echo(f"Note: flagged for human review ({reasons}).")
+
+
+def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
+    """``dr draft --claim <ref> --criterion <slug>``: attach a new criterion to a draft claim.
+
+    Appends the criterion built from the claim's stored statement to
+    ``research/templates.yaml`` and writes ``criteria_slug`` into the claim.
+    Runs no loop and calls no model. Each refusal exits 1 and changes nothing.
+    """
+    from common.frontmatter import claim_statement, parse_frontmatter
+    from common.templates import criterion_entry_for
+    from orchestrator.entity_resolution import parse_entity_ref
+    from orchestrator.persistence import append_template_entry, set_claim_criterion
+
+    def refuse(message: str) -> None:
+        click.echo(f"Error: {message}", err=True)
+        sys.exit(1)
+
+    claim_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
+    if not claim_path.exists():
+        refuse(f"claim file not found: {claim_ref} ({claim_path})")
+    fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    if fm.get("criteria_slug"):
+        refuse(f"{claim_ref} already has criteria_slug {fm['criteria_slug']!r}; nothing to attach")
+    status = fm.get("status", "draft")
+    if status != "draft":
+        refuse(f"{claim_ref} is {status}, not a draft; a criterion is attached before sign-off")
+    claim_entity = fm.get("entity", "")
+    if claim_entity.startswith("companies/"):
+        refuse(f"{claim_ref} is about a company ({claim_entity}); claims are drafted for products and subjects")
+    try:
+        resolved = parse_entity_ref(claim_entity, root)
+    except ValueError as exc:
+        refuse(f"{claim_ref}: could not load entity {claim_entity!r}: {exc}")
+    entry = criterion_entry_for(claim_statement(fm), resolved, slug, list(fm.get("topics") or []))
+    # The claim is written first and restored if the registry write fails, so no
+    # failure leaves a registry entry that no claim carries.
+    claim_before = claim_path.read_bytes()
+    try:
+        set_claim_criterion(claim_path, slug)
+        append_template_entry(root, entry)
+    except (ValueError, OSError) as exc:
+        claim_path.write_bytes(claim_before)
+        refuse(str(exc))
+    click.echo(f"Criterion {slug}: {entry['text']}")
+    click.echo(f"Attached to {claim_path}")
 
 
 def _report_unwritable_run(result) -> bool:
@@ -1029,7 +1195,7 @@ def _report_unwritable_run(result) -> bool:
     placeholder claim and no source file.
     """
     from common.models import BlockedReason
-    from orchestrator.pipeline import blocked_reason_label
+    from loop import blocked_reason_label
 
     for err in result.errors:
         click.echo(f"Warning: {err}", err=True)
@@ -1050,322 +1216,6 @@ def _report_unwritable_run(result) -> bool:
             click.echo(f"Error: analyst agent failed ({label}). Nothing was written.", err=True)
         return False
     return True
-
-
-# --------------------------------------------------------------------------- #
-# dr claim-refresh                                                               #
-# --------------------------------------------------------------------------- #
-
-@main.command("claim-refresh")
-@click.argument("claim_ref")
-@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
-@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
-@click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
-@click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
-@click.pass_context
-def claim_refresh(
-    ctx: click.Context,
-    claim_ref: str,
-    max_sources: int | None,
-    candidate_pool_size: int | None,
-    skip_wayback: bool,
-    repo_root: str | None,
-    interactive: bool,
-    max_initial_queries: int | None,
-    llm_concurrency: int | None,
-) -> None:
-    """Re-run the full pipeline on an existing template-backed claim and overwrite it in place.
-
-    CLAIM_REF is entity/claim-slug (e.g. microsoft/publishes-sustainability-report).
-    The claim must already exist and must have a criteria_slug. The output is always
-    written with status=draft regardless of the previous status; this signals that
-    human review is needed after a pipeline re-run. A blocked or failed run writes
-    nothing and exits 1, so the claim on disk is left as it was.
-
-    \b
-    Examples:
-        dr claim-refresh microsoft/publishes-sustainability-report
-        dr claim-refresh subjects/ai-model-producers/signed-ai-safety-commitments
-    """
-    logger.info("dr claim-refresh: claim_ref=%s", claim_ref)
-    _check_provider_api_keys(_agent_models_from_ctx(ctx))
-
-    from common.content_loader import resolve_repo_root
-    from common.frontmatter import parse_frontmatter
-    from common.models import BlockedReason
-    from common.templates import (
-        blocked_title_message,
-        get_template,
-        load_templates,
-        render_claim_text,
-        validate_analyst_title,
-    )
-    from loop import ClaimSpec, VerifyConfig, run
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.persistence import write_claim_run
-    from orchestrator.pipeline import blocked_reason_label
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-
-    claim_path = _resolve_claim_path(claim_ref, claims_dir)
-    if not claim_path.exists():
-        click.echo(
-            f"Error: claim file not found: {claim_path}. "
-            "Use dr onboard --only to create it.",
-            err=True,
-        )
-        sys.exit(1)
-
-    raw_text = claim_path.read_text(encoding="utf-8")
-    fm, _narrative = parse_frontmatter(raw_text)
-    criteria_slug = fm.get("criteria_slug")
-    if not criteria_slug:
-        click.echo(
-            "Error: cannot refresh an ad-hoc draft claim. "
-            "Run dr claim-promote first to create a template, "
-            "then dr onboard --only to create a template-backed claim.",
-            err=True,
-        )
-        sys.exit(1)
-
-    # The loop runs on a resolved entity, so a claim whose entity file is
-    # missing cannot be refreshed.
-    entity_ref = fm.get("entity", "")
-    try:
-        resolved_entity = parse_entity_ref(entity_ref, root)
-    except ValueError as exc:
-        raise click.UsageError(f"could not load entity {entity_ref!r} of {claim_ref}: {exc}") from exc
-    entity_name = resolved_entity.entity_name
-
-    try:
-        templates = load_templates(root)
-        template = get_template(templates, criteria_slug)
-    except Exception as exc:
-        logger.warning("Could not load templates (falling back to title): %s", exc)
-        template = None
-    if template is not None:
-        claim_text = render_claim_text(template, entity_name)
-    else:
-        claim_text = fm.get("title") or fm.get("claim") or claim_path.stem
-
-    model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
-    cfg = VerifyConfig(
-        model=model,
-        skip_wayback=skip_wayback,
-        repo_root=str(root),
-        force_overwrite=True,
-        show_progress=True,
-        **overrides,
-        **_ctx_per_agent_kwargs(ctx),
-    )
-    _check_search_key(cfg)
-    gate = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-    spec = ClaimSpec(
-        statement=claim_text,
-        entity=resolved_entity,
-        criteria_slug=criteria_slug,
-        topics=list(template.topics or []) if template else [],
-        grading_rule=template.notes if template else None,
-        template=template,
-    )
-
-    progress("Refreshing %s (model=%s)...", claim_ref, model)
-    vr = asyncio.run(run(spec, cfg, checkpoint=gate))
-
-    # A blocked or failed run writes nothing: the claim on disk, published or
-    # not, stays as it was.
-    if not _report_unwritable_run(vr):
-        sys.exit(1)
-    ao = vr.analyst_output
-    if template is not None:
-        title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
-        if not title_ok:
-            _body, extra_label = blocked_title_message(
-                template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
-            )
-            label = blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, extra=extra_label)
-            click.echo(f"Blocked ({BlockedReason.ANALYST_ERROR.value}): {label}. Nothing was written.", err=True)
-            sys.exit(1)
-
-    claim_path_written = write_claim_run(
-        vr, spec, cfg, repo_root=root, claim_slug=claim_path.stem, force=True,
-    )
-
-    click.echo(f"Refreshed: {claim_path_written}")
-    if vr.consistency and vr.consistency.needs_review:
-        from auditor.compare import needs_review_reasons
-
-        reasons = ", ".join(needs_review_reasons(vr.consistency))
-        click.echo(f"Note: flagged for human review ({reasons}).")
-
-
-# --------------------------------------------------------------------------- #
-# dr claim-promote                                                               #
-# --------------------------------------------------------------------------- #
-
-@main.command("claim-promote")
-@click.argument("claim_ref")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def claim_promote(
-    ctx: click.Context,
-    claim_ref: str,
-    repo_root: str | None,
-) -> None:
-    """Interactively generate a template from an ad-hoc draft claim and append it to research/templates.yaml.
-
-    CLAIM_REF is entity/claim-slug (e.g. microsoft/some-ad-hoc-claim).
-
-    Use this to promote a one-off claim to a repeatable template. After running,
-    use dr onboard <entity> --only <template-slug> to create a proper template-backed claim.
-
-    \b
-    Example:
-        dr claim-promote microsoft/some-ad-hoc-claim
-    """
-    logger.info("dr claim-promote: claim_ref=%s", claim_ref)
-
-    from common.content_loader import resolve_repo_root
-    from common.frontmatter import parse_frontmatter
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-
-    claim_path = _resolve_claim_path(claim_ref, claims_dir)
-    if not claim_path.exists():
-        click.echo(f"Error: claim file not found: {claim_path}", err=True)
-        sys.exit(1)
-
-    raw_text = claim_path.read_text(encoding="utf-8")
-    fm, _narrative = parse_frontmatter(raw_text)
-
-    existing_criteria = fm.get("criteria_slug")
-    if existing_criteria:
-        click.echo(
-            f"Error: claim is already template-backed (criteria_slug: {existing_criteria}). Nothing to promote.",
-            err=True,
-        )
-        sys.exit(1)
-
-    # Best-effort entity resolution; falls back to directory name.
-    entity_ref = fm.get("entity", "")
-    entity_name: str | None = None
-    if entity_ref:
-        try:
-            from orchestrator.entity_resolution import parse_entity_ref
-            resolved = parse_entity_ref(entity_ref, root)
-            entity_name = resolved.entity_name
-        except ValueError:
-            pass
-
-    if entity_name is None:
-        # Fall back to title-casing the entity directory name.
-        entity_name = claim_path.parent.name.replace("-", " ").title()
-
-    claim_title = fm.get("title") or fm.get("claim") or ""  # 'claim' is the legacy key
-
-    click.echo("")
-    click.echo("Proposed template fields:")
-    click.echo(f"  Entity name:  {entity_name}")
-    click.echo(f"  Claim title:  {claim_title}")
-    click.echo(f"  Topics:       {fm.get('topics', [])}")
-    click.echo("")
-
-    template_slug = click.prompt("Template slug (e.g. publishes-sustainability-report)")
-    entity_type_input = click.prompt(
-        "Entity type",
-        type=click.Choice(list(_ENTITY_TYPE_CHOICES)),
-    )
-    topics_input = click.prompt("Topics (comma-separated, e.g. environmental-impact,ai-safety)")
-    core_input = click.prompt("Core template?", default="Y", show_default=True)
-    notes_input = click.prompt(
-        "Notes (optional; public, and sent to the analyst as grading guidance)",
-        default="", show_default=False,
-    )
-
-    placeholder = _ENTITY_TYPE_PLACEHOLDERS[entity_type_input]
-    template_text = claim_title.replace(entity_name, placeholder) if entity_name and entity_name in claim_title else claim_title
-
-    topics_list = [t.strip() for t in topics_input.split(",") if t.strip()]
-    core_bool = core_input.strip().lower() not in ("n", "no", "false", "0")
-
-    # Handle both dict-under-"templates:" format (production) and bare-list format
-    # (test fixtures). Detect format here for the write step so appending stays valid.
-    import yaml as _yaml
-
-    templates_path = root / "research" / "templates.yaml"
-    is_dict_format = False  # True for production {"templates": [...]} files
-    if templates_path.exists():
-        try:
-            raw = _yaml.safe_load(templates_path.read_text(encoding="utf-8"))
-            if isinstance(raw, dict) and "templates" in raw:
-                existing_entries = raw["templates"] or []
-                is_dict_format = True
-            elif isinstance(raw, list):
-                existing_entries = raw
-            else:
-                existing_entries = []
-            existing_slugs = {e.get("slug") for e in existing_entries if isinstance(e, dict)}
-            if template_slug in existing_slugs:
-                click.echo(
-                    f"Error: template slug '{template_slug}' already exists in templates.yaml.",
-                    err=True,
-                )
-                sys.exit(1)
-        except Exception as exc:
-            click.echo(f"Warning: could not validate slug uniqueness: {exc}", err=True)
-            existing_entries = []
-
-    # For dict-format (production) files, append as a text fragment to preserve
-    # comments and field ordering. For bare-list-format files (test fixtures),
-    # do a read-modify-write so the YAML stays valid.
-    topics_yaml = "[" + ", ".join(topics_list) + "]"
-    # Subject templates require a non-empty subjects: list (Template validator);
-    # operators can hand-edit later to add cross-subject pairings.
-    subjects_line = ""
-    if entity_type_input == "subject":
-        subject_slug = (
-            entity_ref.split("/", 1)[1] if entity_ref and "/" in entity_ref
-            else claim_path.parent.name
-        )
-        subjects_line = f"  subjects: [subjects/{subject_slug}]\n"
-    entry_fragment = (
-        f"- slug: {template_slug}\n"
-        f'  text: "{template_text}"\n'
-        f"  entity_type: {entity_type_input}\n"
-        + subjects_line
-        + f"  topics: {topics_yaml}\n"
-        f"  core: {'true' if core_bool else 'false'}\n"
-        + (f'  notes: "{notes_input}"\n' if notes_input else "")
-    )
-
-    if is_dict_format:
-        # Text-fragment append under "templates:": preserves comments and
-        # field order of existing entries (2-space indent under the key).
-        indented = "\n" + "".join(f"  {line}" for line in entry_fragment.splitlines(keepends=True))
-        with open(templates_path, "a", encoding="utf-8") as f:
-            f.write(indented)
-    else:
-        # Bare-list format (test fixtures): rebuild as a list YAML file.
-        existing_text = templates_path.read_text(encoding="utf-8") if templates_path.exists() else ""
-        # Normalise: strip any trailing empty-list marker `[]` and write entries.
-        existing_stripped = existing_text.strip()
-        if existing_stripped in ("", "[]"):
-            new_content = entry_fragment
-        else:
-            # Existing entries already in list format; append after last entry.
-            new_content = existing_stripped.rstrip("\n") + "\n" + entry_fragment
-        templates_path.write_text(new_content, encoding="utf-8")
-
-    click.echo(f"\nTemplate written to {templates_path}")
-    entity_ref_for_cmd = entity_ref or claim_path.parent.name
-    click.echo(f"Run: dr onboard {entity_ref_for_cmd} --only {template_slug} --force")
 
 
 # --------------------------------------------------------------------------- #
@@ -1408,10 +1258,9 @@ def step_audit(
     from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
     from auditor.report import format_json_report, format_text_report
     from common.content_loader import list_claims, load_entity, resolve_repo_root
-    from common.frontmatter import parse_frontmatter
+    from common.frontmatter import claim_statement, parse_frontmatter
     from common.models import Category, Confidence, Verdict, VerificationLevel
     from common.sidecar import sidecar_path_for
-    from common.templates import render_claim_text
     from loop import ClaimSpec, VerifyConfig, rerun
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.persistence import load_source_dict, write_evaluator_rerun
@@ -1484,20 +1333,17 @@ def step_audit(
                 ),
             )
             template = _claim_template(fm, root)
-            # The title is the statement the pipeline graded when it wrote
-            # this claim; blocked claims were skipped above.
             spec = ClaimSpec(
-                statement=render_claim_text(template, entity_fm["name"]) if template else fm["title"],
+                statement=claim_statement(fm),
                 entity=parse_entity_ref(fm["entity"], root),
                 criteria_slug=fm.get("criteria_slug"),
-                grading_rule=template.notes if template else None,
-                template=template,
+                grading_rule=template.grading_rule or None if template else None,
             )
 
             progress("Auditing: %s ...", claim_id)
             graded = await rerun(spec, cfg, sources, agent="evaluator", analyst_output=analysis)
             if graded.consistency is None:
-                reason = "; ".join(graded.errors) or "the title fails its criterion"
+                reason = "; ".join(graded.errors) or "the Evaluator produced no assessment"
                 click.echo(f"Skipped (not graded): {claim_id}: {reason}", err=True)
                 continue
             result = graded.consistency.model_copy(
@@ -1557,292 +1403,6 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
     click.echo("Note: `dr ingest` is deprecated; use `dr step-ingest`.", err=True)
     ctx.invoke(step_ingest, url=url, do_write=not dry_run, force=force,
                skip_wayback=skip_wayback, repo_root=repo_root)
-
-
-# --------------------------------------------------------------------------- #
-# dr onboard                                                                    #
-# --------------------------------------------------------------------------- #
-
-@main.command()
-@click.argument("entity_name")
-@click.argument("homepage_url", required=False, default=None)
-@click.option("--type", "entity_type", required=False, default=None, type=click.Choice(list(_ENTITY_TYPE_CHOICES)), help="Entity type (required for bare names; inferred from ref when entity_name is a type/slug ref)")
-@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst per template (default: VerifyConfig.max_sources)")
-@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
-@click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--only", default=None, help="Comma-separated template slugs to run (subset of core templates for the entity type)")
-@click.option("--force", is_flag=True, help="Overwrite existing claim files and re-run the enricher on the entity")
-@click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
-@click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
-@click.option(
-    "--search-hint-include",
-    multiple=True,
-    metavar="TERM",
-    help="Term to prefer in researcher queries; persisted to entity frontmatter (repeatable)",
-)
-@click.option(
-    "--search-hint-exclude",
-    multiple=True,
-    metavar="TERM_OR_DOMAIN",
-    help="Term or domain to avoid in research; persisted to entity frontmatter. Domains (e.g. 'treadlightly.org') also drive a deterministic post-scorer filter (repeatable)",
-)
-@click.pass_context
-def onboard(
-    ctx: click.Context,
-    entity_name: str,
-    homepage_url: str | None,
-    entity_type: str | None,
-    max_sources: int | None,
-    candidate_pool_size: int | None,
-    skip_wayback: bool,
-    repo_root: str | None,
-    interactive: bool,
-    only: str | None,
-    force: bool,
-    max_initial_queries: int | None,
-    llm_concurrency: int | None,
-    search_hint_include: tuple[str, ...],
-    search_hint_exclude: tuple[str, ...],
-) -> None:
-    """Generate stub claim files for a new entity, one per applicable template in research/templates.yaml.
-
-    ENTITY_NAME can be a bare display name (requires --type) or a type/slug ref like
-    subjects/ai-model-producers (type inferred; skips entity-file creation).
-    Subject claims are gated by templates' ``subjects:`` field — onboarding a
-    subject not referenced by any template queues zero claims.
-
-    HOMEPAGE_URL is optional. If provided, it is used directly for entity
-    light research instead of searching for the homepage.
-
-    Example:
-        dr onboard "Ecosia AI" --type product
-        dr onboard "TreadLightlyAI" treadlightly.ai --type company --interactive
-        dr onboard subjects/ai-model-producers
-    """
-    resolved_entity_ref: str | None = None
-    if "/" in entity_name:
-        from common.content_loader import resolve_repo_root as _resolve_repo_root
-        from orchestrator.entity_resolution import parse_entity_ref
-        repo_root_path = Path(repo_root) if repo_root else _resolve_repo_root()
-        try:
-            resolved = parse_entity_ref(entity_name, repo_root_path)
-        except ValueError as exc:
-            raise click.UsageError(str(exc)) from exc
-        resolved_entity_ref = entity_name
-        entity_name = resolved.entity_name
-        entity_type = resolved.entity_type.value
-    elif entity_type is None:
-        raise click.UsageError("--type is required when ENTITY_NAME is not a type/slug ref")
-
-    logger.info(
-        "dr onboard: name=%s type=%s ref=%s seed_url=%s only=%s",
-        entity_name,
-        entity_type,
-        resolved_entity_ref,
-        homepage_url,
-        only,
-    )
-    _check_provider_api_keys(_agent_models_from_ctx(ctx))
-
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from loop import VerifyConfig
-    from orchestrator.pipeline import onboard_entity
-
-    model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
-    config = VerifyConfig(
-        model=model,
-        skip_wayback=skip_wayback,
-        repo_root=repo_root or "",
-        force_overwrite=force,
-        **overrides,
-        **_ctx_per_agent_kwargs(ctx),
-    )
-    _check_search_key(config)
-    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-
-    only_slugs = [s.strip() for s in only.split(",") if s.strip()] if only else None
-    result = asyncio.run(onboard_entity(
-        entity_name, entity_type, config, checkpoint,
-        seed_url=homepage_url, only=only_slugs, entity_ref=resolved_entity_ref,
-        search_hints_include=list(search_hint_include) or None,
-        search_hints_exclude=list(search_hint_exclude) or None,
-    ))
-
-    hr()
-    click.echo("Onboard Report")
-    hr()
-    click.echo(f"Entity:  {result.entity_name} ({result.entity_type})")
-    click.echo(f"Status:  {result.status}")
-
-    if result.entity_ref:
-        click.echo(f"Ref:     {result.entity_ref}")
-
-    if result.status == "rejected":
-        click.echo("")
-        click.echo("Onboarding rejected.")
-        if result.entity_ref and "drafts/" in result.entity_ref:
-            click.echo(f"Draft entity file: research/entities/{result.entity_ref}.md")
-    else:
-        click.echo("")
-        click.echo(f"Templates applied: {len(result.templates_applied)}")
-        click.echo(f"Claims created:    {len(result.claims_created)}")
-        click.echo(f"Claims blocked:    {len(result.claims_blocked)}")
-        click.echo(f"Claims skipped:    {len(result.claims_skipped)}")
-        click.echo(f"Claims failed:     {len(result.claims_failed)}")
-
-        timeout_summary = _summarize_timeouts(result.errors)
-        if timeout_summary:
-            click.echo(f"Timeouts:          {timeout_summary}")
-
-        if result.claims_created:
-            click.echo("")
-            click.echo("Created:")
-            for path in result.claims_created:
-                click.echo(f"  ✓ {path}")
-
-        if result.claims_blocked:
-            click.echo("")
-            click.echo("Blocked:")
-            for path, reason in result.claims_blocked:
-                click.echo(f"  ! {path} ({reason})")
-
-        if result.claims_skipped:
-            click.echo("")
-            click.echo("Skipped (already exist):")
-            for path in result.claims_skipped:
-                click.echo(f"  - {path}")
-
-    if result.templates_excluded:
-        click.echo("")
-        click.echo("Excluded templates:")
-        for slug, reason in result.templates_excluded:
-            click.echo(f"  - {slug}: {reason}")
-
-    # Non-fatal advisories surface above errors so the operator sees
-    # them even when the run otherwise looks clean.
-    if result.warnings:
-        click.echo("")
-        click.echo("Warnings:")
-        for warning in result.warnings:
-            click.echo(f"  ~ {warning}")
-
-    # Full error stream; "Blocked:" above already shows the top-line cause per claim.
-    if result.errors:
-        click.echo("")
-        click.echo("Errors:")
-        for err in result.errors:
-            click.echo(f"  ! {err}")
-
-    hr()
-
-    # ``onboard_entity`` already runs Phase C (the enricher) on every
-    # call and, when ``--force`` is set, splices the draft into an
-    # existing entity file via ``update_entity_enrichment``. So no extra
-    # ``enrich_entity`` call is needed here — the CLI report stops at the
-    # OnboardReport above.
-
-
-def _render_enrichment_outcome(result) -> None:
-    """Render an EnrichmentResult to stdout for ``dr entity-enrich``."""
-    hr()
-    click.echo("Enrichment Report")
-    hr()
-    click.echo(f"Entity:  {result.entity_name}")
-    click.echo(f"Ref:     {result.entity_ref}")
-    click.echo(f"Status:  {result.status}")
-    if result.status == "accepted":
-        if result.founded is not None:
-            click.echo(f"Founded: {result.founded}")
-        if result.description:
-            click.echo(f"Description: {result.description}")
-        if result.history_markdown:
-            paragraphs = [
-                p for p in result.history_markdown.split("\n\n") if p.strip()
-            ]
-            click.echo(f"History: {len(paragraphs)} paragraph(s) written")
-    if result.errors:
-        click.echo("")
-        click.echo("Errors:")
-        for err in result.errors:
-            click.echo(f"  ! {err}")
-    hr()
-
-
-# --------------------------------------------------------------------------- #
-# dr entity-enrich                                                              #
-# --------------------------------------------------------------------------- #
-
-@main.command(name="entity-enrich")
-@click.argument("entity_ref")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--force", is_flag=True, help="Re-enrich even when the entity already has a non-empty history body")
-@click.pass_context
-def entity_enrich(
-    ctx: click.Context,
-    entity_ref: str,
-    repo_root: str | None,
-    interactive: bool,
-    force: bool,
-) -> None:
-    """Re-run the enricher on an existing entity. Splices founded, description, and history into the file.
-
-    ENTITY_REF is a type/slug ref like ``companies/anthropic`` or
-    ``products/claude``. The enricher reads the entity, runs light
-    research, drafts the new fields, and (with the interactive
-    checkpoint) prompts before writing.
-
-    Refuses without ``--force`` when the entity's body already has a
-    non-empty history block — operator edits should not be silently
-    overwritten.
-
-    Example:
-        dr entity-enrich companies/anthropic
-        dr entity-enrich products/claude --force --interactive
-    """
-    from common.content_loader import resolve_repo_root as _resolve_repo_root
-    from common.frontmatter import parse_frontmatter
-
-    _check_provider_api_keys(_agent_models_from_ctx(ctx))
-
-    repo_root_path = Path(repo_root) if repo_root else _resolve_repo_root()
-    entity_path = repo_root_path / "research" / "entities" / f"{entity_ref}.md"
-
-    if not entity_path.exists():
-        raise click.UsageError(f"Entity file not found: {entity_path}")
-
-    if not force:
-        try:
-            _fm, body = parse_frontmatter(entity_path.read_text(encoding="utf-8"))
-        except Exception as exc:
-            raise click.UsageError(
-                f"Could not read entity file {entity_path}: {exc}"
-            ) from exc
-        if body.strip():
-            raise click.ClickException(
-                f"{entity_ref} already has a non-empty history body. "
-                f"Pass --force to re-run the enricher and overwrite it."
-            )
-
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from loop import VerifyConfig
-    from orchestrator.pipeline import enrich_entity
-
-    model = ctx.obj["model"]
-    config = VerifyConfig(
-        model=model,
-        repo_root=str(repo_root_path),
-        **_ctx_per_agent_kwargs(ctx),
-    )
-    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-
-    result = asyncio.run(enrich_entity(entity_ref, config=config, checkpoint=checkpoint))
-    _render_enrichment_outcome(result)
-    if result.status == "failed":
-        ctx.exit(1)
 
 
 # --------------------------------------------------------------------------- #
@@ -2035,7 +1595,8 @@ def _claim_template(fm: dict, root: Path):
     """The template named by the claim's ``criteria_slug``, or None.
 
     None also covers an unknown slug and an unreadable ``templates.yaml``, so a
-    claim-file command degrades to the title and no notes instead of failing.
+    claim-file command degrades to no criterion topics and no grading rule
+    instead of failing.
     """
     from common.templates import get_template, load_templates
 

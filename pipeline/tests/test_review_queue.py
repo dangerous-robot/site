@@ -81,7 +81,7 @@ def _write_sidecar(
 ) -> Path:
     """Write a `.audit.yaml` sidecar next to the claim. Returns its Path.
 
-    ``previous_verdict`` adds a `refresh` block, as `dr claim-refresh` writes
+    ``previous_verdict`` adds a `refresh` block, as `dr draft --claim --force` writes
     for a claim that was published before the refresh.
     """
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")

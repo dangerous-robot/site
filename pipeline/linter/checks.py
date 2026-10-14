@@ -11,23 +11,12 @@ from urllib.parse import urlparse
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
 from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, Confidence, Independence, VerificationLevel
 from common.source_classification import effective_independence
-from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS
+from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS, ENTITY_FRONTMATTER_KEYS
 
 from .models import LintIssue
 
 REQUIRED_CLAIM_FIELDS = {"title", "entity", "topics", "verdict", "confidence", "as_of", "sources"}
-CANONICAL_ENTITY_KEYS = {
-    "name", "type", "website", "aliases", "description", "parent_company", "search_hints",
-    # `sec_cik` shipped via source-pool-expansion-tier1.md without a linter add;
-    # `status` is emitted by _entity_frontmatter for drafts but was missing here.
-    "sec_cik", "status",
-    # Entity-metadata-surface plan: legal_name (COI/disambiguation) and
-    # verification_status (analyst-weighting + render badge).
-    "legal_name", "verification_status",
-    # Entity-onboarding-research plan: `founded` (1800..current year) for
-    # company / product entities; rendered in the entity Facts subsection.
-    "founded",
-}
+CANONICAL_ENTITY_KEYS = set(ENTITY_FRONTMATTER_KEYS)
 CANONICAL_CLAIM_KEYS = set(CLAIM_FRONTMATTER_KEYS)
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
 CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}
@@ -61,8 +50,9 @@ def check_orphaned_claims(
                 severity="error",
                 message=f'entity "{entity_ref}" has no matching file in research/entities/',
                 hint=(
-                    f'if the entity is missing, run `dr onboard "{entity_ref}" --type <type>`; '
-                    f'if it exists under a different path, correct the `entity:` field'
+                    'if the entity is missing, write the entity file by hand (products) or run '
+                    '`dr draft --subject <slug> "<sentence>"` (subjects); '
+                    'if it exists under a different path, correct the `entity:` field'
                 ),
             ))
     return issues
@@ -94,7 +84,7 @@ def check_published_criterion(
     """Published claims must declare a `criteria_slug`.
 
     A criterion is the join key for cross-entity comparison, criterion-driven
-    re-evaluation, and onboard-time propagation. Drafts may carry no criterion
+    re-evaluation, and drafting from a criterion. Drafts may carry no criterion
     (operator may still be exploring); published claims may not.
     """
     from common.frontmatter import has_criterion
@@ -184,7 +174,7 @@ def check_verdict_sidecar_mismatch(
                 f'published verdict "{verdict}" differs from the pipeline verdict '
                 f'"{analyst}" and no reviewer override is recorded'
             ),
-            hint="re-run `dr claim-refresh`, or approve with `dr review` to record the override",
+            hint="re-run `dr draft --claim <ref> --force`, or approve with `dr review` to record the override",
         ))
     return issues
 
