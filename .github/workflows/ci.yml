@@ -107,3 +107,29 @@ jobs:
         run: |
           echo "dr lint reported errors; see annotations above."
           exit 1
+
+  pipeline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          version: "0.10.0"
+
+      - name: Sync pipeline dependencies
+        run: uv sync --locked
+
+      # Acceptance tests call live APIs and need keys, so CI runs the unit
+      # tests only. Run from pipeline/ so pytest reads that pyproject.toml.
+      - name: Run pipeline unit tests
+        run: uv run python -m pytest -m 'not acceptance'
+        working-directory: pipeline

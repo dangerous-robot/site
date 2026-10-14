@@ -14,6 +14,9 @@ from common.throttle import Throttle
 # we use 150ms to keep CI noise from flaking.
 TOL = 0.15
 
+# The async classes carry an explicit asyncio mark so they also run when
+# pytest starts from the repo root, whose pyproject.toml sets no asyncio_mode.
+
 
 class TestRegister:
     def test_register_then_is_registered(self) -> None:
@@ -58,6 +61,7 @@ class TestRegister:
         assert bucket.tokens == 1.0
 
 
+@pytest.mark.asyncio
 class TestAcquireBasic:
     async def test_unregistered_raises(self) -> None:
         t = Throttle()
@@ -90,6 +94,7 @@ class TestAcquireBasic:
             await t.acquire("a", tokens=6.0)
 
 
+@pytest.mark.asyncio
 class TestSerialization:
     async def test_concurrent_acquires_serialize(self) -> None:
         # 5 acquires on a 20/sec, burst=1 bucket: first is instant,
@@ -113,6 +118,7 @@ class TestSerialization:
             assert finishes[i] >= finishes[i - 1] - 1e-3
 
 
+@pytest.mark.asyncio
 class TestIndependence:
     async def test_buckets_dont_interfere(self) -> None:
         # Bucket A is slow (will take ~200ms total). Bucket B is fast
@@ -142,6 +148,7 @@ class TestIndependence:
         assert slow_elapsed > 0.15, f"slow bucket finished too fast: {slow_elapsed}"
 
 
+@pytest.mark.asyncio
 class TestBurst:
     async def test_burst_capacity_allows_immediate_acquires(self) -> None:
         # rate=1/sec, burst=5: 5 instant acquires, 6th must wait.
@@ -203,6 +210,7 @@ class TestBurst:
         assert wait_elapsed > 0.005, f"tokens were not clamped: {wait_elapsed}"
 
 
+@pytest.mark.asyncio
 class TestCancellation:
     async def test_cancelled_acquire_releases_lock(self) -> None:
         # Set up: bucket with a slow refill. One acquirer drains the
@@ -283,6 +291,7 @@ class TestReset:
         t.reset("never-registered")  # no raise
 
 
+@pytest.mark.asyncio
 class TestModuleLevelSingleton:
     """Smoke-test the module-level convenience functions."""
 
