@@ -259,20 +259,20 @@ data:
       label: "Free tier"
       group: business
       cells:
-        greenpt: { type: "no", detail: "Trial", sources: [/research/sources/2026/greenpt] }
+        greenpt: { type: "no", sources: [/research/sources/2026/greenpt] }
         ecosia: { type: "yes", detail: "Ad supported"}
         euria: { type: "yes", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "yes", sources: [/research/sources/2026/treadlightly-ai-pricing] }
         viro: { type: "yes", detail: "Ad supported", sources: [/research/sources/2026/viro-eco-friendly-ai-app] }
-        chatgptree: { type: "no", detail: "Trial" }
+        chatgptree: { type: "no" }
         earthly-insight: { type: "yes", sources: [/research/sources/2026/earthly-insight-app-ai] }
     - key: pricing-paid-tier
       label: "Pricing"
       group: business
       cells:
         greenpt: { type: "text", detail: "€ 4.50 | 17.50 /mo", sources: [/research/sources/2026/greenpt-privacy-first-ai-with-measured-energy-and-carbon] }
-        ecosia: { type: "text", detail: "n/a" }
-        euria: { type: "text", detail: "€ 1.58 /mo ([kSuite Pro](https://www.infomaniak.com/en/ksuite))" }
+        ecosia: { type: "text", detail: "Free" }
+        euria: { type: "text", detail: "€ 1.58 /mo (kSuite Pro)" }
         treadlightly: { type: "text", detail: "$ 3 | 8 | 20 /mo", sources: [/research/sources/2026/treadlightly-ai-pricing] }
         viro: { type: "text", detail: "$ 1 | 10 /mo" }
         chatgptree: { type: "text", detail: "$ 11 /mo", sources: [/research/sources/2025/eco-friendly-chatgptree-sustainable-ai-chatbot] }
@@ -284,9 +284,9 @@ data:
       # one the cell says so rather than guessing.
       cells:
         greenpt: { type: "text", detail: "Not yet sourced" }
-        ecosia: { type: "text", detail: "Launched Oct 2023 (beta)", sources: [/research/sources/2023/new-ecosia-search-features] }
+        ecosia: { type: "text", detail: "Launched Oct 2023", sources: [/research/sources/2023/new-ecosia-search-features] }
         euria: { type: "text", detail: "Launched Dec 2025", sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
-        treadlightly: { type: "text", detail: "Not yet sourced" }
+        treadlightly: { type: "text", detail: "Launched Jul 2026" }
         viro: { type: "text", detail: "Not yet sourced" }
         chatgptree: { type: "text", detail: "Not yet sourced" }
         earthly-insight: { type: "text", detail: "Not yet sourced" }
@@ -315,6 +315,10 @@ data:
     - key: web-search
       label: "Normal web search"
       group: product-access
+      ideal:
+        value: "yes"
+        note: "A normal web search built into the chatbot gives easy access to a lower-energy tool than an AI answer."
+        position: "/values#ai-is-fueling-environmental-destruction"
       cells:
         greenpt: { type: "yes", sources: [/research/sources/2026/greenpt-search-fast-private-sustainable] }
         ecosia: { type: "yes", sources: [/research/sources/2026/generative-ai-on-ecosia-search] }
