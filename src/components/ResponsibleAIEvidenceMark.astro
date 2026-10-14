@@ -38,7 +38,7 @@ const Icon = content.tier === 'claim' ? Scale : Link;
       aria-controls={popId}
       data-ev-mark
     >
-      <Icon size={18} aria-hidden="true" />
+      <Icon size={content.tier === 'claim' ? 26 : 18} aria-hidden="true" />
       <span class="sr-only">Evidence for {content.forWhom}: {content.tierName.toLowerCase()}</span>
     </button>
     <div class="ev-popup" id={popId} role="group" aria-label={`Evidence detail for ${content.forWhom}`} hidden>
@@ -165,7 +165,8 @@ const Icon = content.tier === 'claim' ? Scale : Link;
     vertical-align: middle;
   }
 
-  /* 32px hit area around an 18px icon (WCAG 2.5.8 asks for 24). */
+  /* 32px hit area around the icon (WCAG 2.5.8 asks for 24). The scale draws
+     thin and small in its box, so it runs at 26px; the link reads right at 18. */
   .ev-mark {
     display: inline-flex;
     align-items: center;

@@ -9,12 +9,14 @@ import { cellStance, TIER_NAMES, type EvidenceLookups, type Stance } from '../li
 
 const ICONS: Record<
   Exclude<CellType, 'text' | 'na'>,
-  { Icon: AstroComponentFactory; srLabel: string }
+  { Icon: AstroComponentFactory; srLabel: string; size: number }
 > = {
-  yes: { Icon: Check, srLabel: 'Yes' },
-  no: { Icon: X, srLabel: 'No' },
-  partial: { Icon: Minus, srLabel: 'Partial' },
-  unknown: { Icon: HelpCircle, srLabel: 'Unknown' },
+  // The help circle fills more of its box than the strokes do, so it runs
+  // smaller to look the same size.
+  yes: { Icon: Check, srLabel: 'Yes', size: 28 },
+  no: { Icon: X, srLabel: 'No', size: 28 },
+  partial: { Icon: Minus, srLabel: 'Partial', size: 28 },
+  unknown: { Icon: HelpCircle, srLabel: 'Unknown', size: 26 },
 };
 
 // Visually hidden text that says in words what the stance color shows (WCAG
@@ -159,20 +161,24 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                     const stance = cellStance(cell, feature);
                     return (
                       <td class={`cell cell--${cell.type} cell--stance-${stance}`} data-product-key={p.key}>
-                        {icon && (
-                          <span class="cell-inline">
-                            <icon.Icon size={18} aria-hidden="true" />
-                            <span class="sr-only">{icon.srLabel}</span>
-                            {cell.detail && <span class="detail"><Fragment set:html={renderDetail(cell.detail)} /></span>}<span class="sr-only">{STANCE_PHRASE[stance]}</span>
-                          </span>
+                        <div class="cell-marks">
+                          {icon && (
+                            <>
+                              <icon.Icon size={icon.size} aria-hidden="true" />
+                              <span class="sr-only">{icon.srLabel}{STANCE_PHRASE[stance]}</span>
+                            </>
+                          )}
+                          {cell.type === 'na' && (
+                            <span class="na" aria-label="Not applicable">&ndash;</span>
+                          )}
+                          <ResponsibleAIEvidenceMark cited={cell} product={p} subject={feature} lookups={lookups} />
+                        </div>
+                        {icon && cell.detail && (
+                          <div class="detail"><Fragment set:html={renderDetail(cell.detail)} /></div>
                         )}
                         {cell.type === 'text' && (
-                          <span class="detail"><Fragment set:html={renderDetail(cell.detail ?? '')} /><span class="sr-only">{STANCE_PHRASE[stance]}</span></span>
+                          <div class="detail"><Fragment set:html={renderDetail(cell.detail ?? '')} /><span class="sr-only">{STANCE_PHRASE[stance]}</span></div>
                         )}
-                        {cell.type === 'na' && (
-                          <span class="na" aria-label="Not applicable">&ndash;</span>
-                        )}
-                        <ResponsibleAIEvidenceMark cited={cell} product={p} subject={feature} lookups={lookups} />
                       </td>
                     );
                   })}
@@ -309,9 +315,6 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     border-right: 1px solid var(--color-border);
   }
 
-  .matrix-table td {
-    vertical-align: middle;
-  }
 
   .matrix-table th:last-child,
   .matrix-table td:last-child {
@@ -429,10 +432,17 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     word-break: break-word;
   }
 
-  .cell-inline {
-    display: inline-flex;
+  /* Every cell starts with one line of marks (answer, then evidence) at the
+     same height, so the icons line up across a row and the text sits below. */
+  .cell-marks {
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.25rem;
+    min-height: 32px;
+  }
+
+  .cell-marks + .detail {
+    margin-top: 0.25rem;
   }
 
   .detail {
