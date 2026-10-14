@@ -7,6 +7,9 @@ import remarkResearchMarkup from "./src/lib/remarkResearchMarkup";
 export default defineConfig({
   site: "https://dangerousrobot.org",
   trailingSlash: "never",
+  // Astro 7's default ('jsx') drops whitespace between inline elements, which
+  // would glue adjacent links, badges and spans together across the site.
+  compressHTML: true,
   markdown: {
     // Research Markdown is LLM-written: no raw HTML, no script-scheme links.
     // Set on the processor itself; a plugin passed via `remarkPlugins` is
