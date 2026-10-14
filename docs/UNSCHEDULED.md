@@ -245,6 +245,7 @@ From architectural review (2026-04-18) and TODO.md:
 - **Claim Updater instruction quality** -- Consider adversarial review, inter-rater consistency validation, and forbidden-combination gates (CI rejection of nonsensical confidence-verdict pairs).
 - **Source freshness** -- confirm the ingestor reliably populates the optional `published_date` source field (`src/content.config.ts`); wire it if not. (Folded in from a scratch note, 2026-07-03.)
 - **Least invasive anonymous analytics (2026-10-06)** -- consider adding page-view counts from the least invasive anonymous option available (no cookies, no personal data, no cross-site tracking). Today the site has none. Two promises would need updating: `src/pages/privacy.astro` ("Reading the site") says the site runs no analytics or tracking scripts, and `src/layouts/Base.astro:2` keeps pages free of third-party requests. A self-hosted or server-side counter keeps the second promise; a hosted script breaks it.
+- **treadlightly.ai keeps the Wayback Machine toolbar (2026-10-13)** -- work in the treadlightly.ai Next.js app, not this repo. On a web.archive.org capture (e.g. `https://web.archive.org/web/20261012151656/https://treadlightly.ai/help/web-search/`) the archive's toolbar shows, then disappears; likely the app's client render replaces nodes it did not create. Update the app wrapper so it does not remove or hide the toolbar when served from web.archive.org. Matters here because this site links archived copies of treadlightly.ai sources. Triage: Brandon 2026-10-13; keep.
 
 ---
 
