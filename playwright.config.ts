@@ -35,7 +35,11 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `${reuseBuild ? '' : build}npm run preview -- --outDir ${outDir} --port ${port} --host 127.0.0.1`,
+    // --ignore-lock keeps the server in the foreground: when Astro detects an
+    // AI agent it backgrounds `astro preview` and returns, which Playwright
+    // reads as the server exiting. It also skips Astro's one-preview lock,
+    // which would block parallel runs on other ports.
+    command: `${reuseBuild ? '' : build}npm run preview -- --ignore-lock --outDir ${outDir} --port ${port} --host 127.0.0.1`,
     url: `${baseURL}/watch`,
     // Fixture data keeps the run offline even when a key is in .env.
     env: { WATCH_DATA: 'fixture' },
