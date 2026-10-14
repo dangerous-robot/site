@@ -55,7 +55,7 @@ Plain Python, standard library only. Add `docs/mockups/*/project/tokens.css` to 
 | `ingest <plan> <saved-file>...` | Copies files saved by an Artifact read (scratchpad) into the mockup folder at their `project/` paths; prints `git diff --stat` for the folder. |
 | `prepare <plan>` | Reads the canvas URL from the plan, copies `tokens.css` in, fails on any color value (`#hex`, `rgb()`, `rgba()`, `hsl()`) inside a `style` attribute or `<style>` block of an artboard, and prints the Artifact publish arguments (`url`, `root`, `file_path`, `files`) as JSON. Every file is sent each time; a mockup has few files. |
 
-Verify: `python3 -m pytest scripts/design/test_mockup.py`, added to `inv check`. Fixture plans in `scripts/design/fixtures/`: `page-no-mockup.md` fails; `page-with-mockup.md` and `no-page.md` pass. `prepare` rejects `color:#4e4e5a` and `rgba(0,0,0,0.5)` in a style, accepts `href="#add"` and `&#160;`, and prints valid JSON. `ingest` maps a saved path to the right `project/` path. Positive control: `check-plan docs/plans/responsible-ai-chatbots-claims.md` passes.
+Verify: `python3 -m pytest scripts/design/test_mockup.py`, added to `inv check`. Fixture plans in `scripts/design/fixtures/`: `page-no-mockup.md` fails; `page-with-mockup.md` and `no-page.md` pass. `prepare` rejects `color:#4e4e5a` and `rgba(0,0,0,0.5)` in a style, accepts `href="#add"` and `&#160;`, and prints valid JSON. `ingest` maps a saved path to the right `project/` path. Positive control: `check-plan docs/plans/completed/responsible-ai-chatbots-claims.md` passes.
 
 ### M3: gate check
 `work_item.py start` runs `check-plan` on `--plan`, and on `--section` too when the roadmap item links a plan file. On failure it refuses and prints: "This plan changes a page and has no Mockup line. Run: design-mockup new <plan>." Hotfixes skip it.
@@ -85,7 +85,7 @@ Fixed choices, so the skill never asks:
 Verify: run `new` on `scripts/design/fixtures/page-no-mockup.md` (copied to a scratch plan) in a fresh session; it finishes with zero questions to Brandon and a committed mockup folder. Then edit the canvas by hand and run `push`; the edit lands in the repo and the plan.
 
 ### M5: first real use
-Replace the color values in `docs/mockups/responsible-ai-chatbots-claims/project/Main.dc.html` with token names (nearest token where none matches: `#4e4e5a`, `#5fb3a8`, `#1c2120` and one `rgba()` today), then `design-mockup push docs/plans/responsible-ai-chatbots-claims.md`.
+Replace the color values in `docs/mockups/responsible-ai-chatbots-claims/project/Main.dc.html` with token names (nearest token where none matches: `#4e4e5a`, `#5fb3a8`, `#1c2120` and one `rgba()` today), then `design-mockup push docs/plans/completed/responsible-ai-chatbots-claims.md`.
 
 Verify: `prepare` passes the color check, and a script check confirms each replaced exact-match value equals its token's dark value.
 

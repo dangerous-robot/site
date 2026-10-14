@@ -1,6 +1,6 @@
 // Evidence tiers, stances and verdict agreement for the Responsible AI matrix.
 // Plain types only (no astro:content), so the unit tests run under tsx.
-// The rules are specified in docs/plans/responsible-ai-chatbots-claims.md
+// The rules are specified in docs/plans/completed/responsible-ai-chatbots-claims.md
 // § Design.
 
 import { isoDate } from './dates';
