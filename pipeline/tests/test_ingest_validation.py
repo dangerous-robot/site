@@ -259,13 +259,3 @@ def test_quote_kept_as_is_when_its_characters_hold_no_mark_pair() -> None:
     # inner text, but the stored characters hold no mark to strip.
     quote = "&quot;Brave publishes a transparency report.&quot;"
     assert _kept([quote]) == [quote]
-
-
-def test_instructions_ask_for_bare_quotes() -> None:
-    from ingestor.agent import _SYSTEM_PROMPT
-
-    text = " ".join(_SYSTEM_PROMPT.split())
-    assert (
-        "Store each quote as the bare page text: no surrounding quotation marks "
-        "and no attribution after it" in text
-    )

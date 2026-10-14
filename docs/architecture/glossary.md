@@ -56,12 +56,12 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | Role | Pipeline agent | CLI surface |
 |---|---|---|
 | **Research Lead** | (human; no agent) | — |
-| **Orchestrator** | `pipeline/orchestrator/` | the `dr` CLI itself; entry point for every pipeline command |
+| **Orchestrator** | `pipeline/orchestrator/` (commands and the one writer); the research run itself is `pipeline/loop/` | the `dr` CLI itself; entry point for every pipeline command |
 | **Router** | planned (`pipeline/router/`); v1 surface shipped via [`triage-agent.md`](../plans/completed/triage-agent.md), full implementation tracked in `docs/UNSCHEDULED.md` § Router | — |
-| **Researcher** | `pipeline/researcher/` (also hosts the entity verifier/enricher agents) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-research`; enricher via `dr entity-enrich` |
-| **Ingestor** | `pipeline/ingestor/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
-| **Analyst** | `pipeline/analyst/` | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-analyze` |
-| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr claim-draft`, `dr claim-probe`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
+| **Researcher** | `pipeline/researcher/` (also hosts the entity verifier/enricher agents) | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-research`; enricher via `dr entity-enrich` |
+| **Ingestor** | `pipeline/ingestor/` | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
+| **Analyst** | `pipeline/analyst/` | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-analyze` |
+| **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`, `dr claim-refresh`, `dr onboard`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
 | (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates) |
 
@@ -76,7 +76,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | Role | Responsibility |
 |---|---|
 | **Research Lead** | Assigns tasks, never edits claims directly |
-| **Orchestrator** | Owns the claim lifecycle: advances `phase`, routes to `blocked` on threshold breach, manages queue (`pipeline/orchestrator/`) |
+| **Orchestrator** | Owns the claim lifecycle: advances `phase`, stops a run on threshold breach (nothing is written), manages queue (`pipeline/orchestrator/`) |
 | **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router) |
 | **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. During `dr onboard` / `dr entity-enrich`, the package also hosts two agent-internal helpers — `entity_verifier` (gates against name collisions) and `entity_enricher` (drafts `founded`, tightened `description`, and `history_markdown`) — both tool-free, both consuming the same `LightResearchBundle`. |
 | **Ingestor** | Converts a URL into a source file |
@@ -99,12 +99,12 @@ Implementation-level concepts that surface in operator workflows and audit artif
 |---|---|
 | **Audit sidecar** / `.audit.yaml` | Paired YAML file at the same path as a claim `.md`. Records the pipeline run (model, agents), sources consulted, analyst/evaluator verdicts, and human review state. Merged into the claim's `audit` field by the `claims-with-audit` content loader. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
 | **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the Analyst's. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
-| **Threshold gate** | Post-ingest check in the orchestrator: if fewer than four usable sources are available, the claim is halted with `status: blocked` and a `blocked_reason`, and the Analyst is not invoked. (`pipeline/orchestrator/pipeline.py`) |
+| **Threshold gate** | Post-ingest check in the loop: if fewer than four usable sources are available, the run stops with a `blocked_reason`, the Analyst is not invoked, and nothing is written (no claim, no source file, no sidecar). (`pipeline/loop/run.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
-| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_sources`, `review_disagreement`, `review_onboard`, `review_entity_enrichment`, `review_entity_disambiguation`, `review_verification_status`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
+| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_disagreement`, `review_onboard`, `review_entity_enrichment`, `review_entity_disambiguation`, `review_verification_status`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
 | **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. Default: 7. |
-| **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`verify_claim`, `research_claim`, `onboard_entity`). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
+| **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`run` in `pipeline/loop/`, `onboard_entity`; `rerun` creates none). Bounds peak LLM parallelism during `dr onboard`, which runs multiple claim templates concurrently. |
 | **`publisher_quality`** | Pre-ingest domain quality label on `SearchCandidate`: `primary`, `secondary`, `tertiary`, or `forum`. Classified from the URL hostname by `pipeline/common/publisher_quality.py` during `execute_searches`; injected into the scorer prompt as a tiebreaker signal. Not persisted. Contrast with `source_type` (post-ingest, written to source frontmatter). |
 | **`research_origins`** | List of dispatch types the Researcher attempts for a claim. Default: `["tavily", "arxiv"]`. Web origins (`tavily`) always fire; academic origins (`arxiv`, and later `s2`/`openalex`) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (see row below). Mirrors the schema enum on `audit.sources_consulted[].acquisition.origin`. Distinct from `search_backend`, which selects the API powering the web origin. |
 | **`search_backend`** | Which API powers the web (non-academic) leg of `research_origins`. Today `tavily` (default) or `brave`. Read once at `VerifyConfig` construction from `RESEARCH_SEARCH_BACKEND`; unknown values fall back to `brave` with a warning. Distinct from `research_origins`, which lists dispatch types. |
@@ -115,7 +115,7 @@ Implementation-level concepts that surface in operator workflows and audit artif
 
 | Agent | Tasks |
 |---|---|
-| **Orchestrator** | Advance claim through `phase`; route to `blocked` on threshold breach; manage queue |
+| **Orchestrator** | Advance claim through `phase`; stop a run on threshold breach (nothing is written); manage queue |
 | **Router** | (Documented; implementation deferred) Match new sources back to criteria/claims; small classification calls; threshold-trigger to blocked; stale flagging |
 | **Researcher** | Find sources for a claim |
 | **Ingestor** | Fetch URL; extract content; classify source kind; produce source file |
@@ -141,7 +141,7 @@ Claim states. Schema source of truth: `src/content.config.ts` § claims (`status
 |---|---|---|---|
 | **queued** | Intake recorded, pipeline not yet run | `QUEUE.md` | (no schema field; `QUEUE.md` only) |
 | **in-progress** | Pipeline is working it | (transient frontmatter) | `phase` ∈ {researching, ingesting, analyzing, evaluating} |
-| **blocked** | Pipeline halted: insufficient sources, terminal fetch error, or an analyst-step failure | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error, analyst_error} |
+| **blocked** | Pipeline halted: insufficient sources, terminal fetch error, or an analyst-step failure (the pipeline no longer writes this status; it stays valid for files already on disk) | `status: blocked` + `blocked_reason` | `status: blocked`, `blocked_reason` ∈ {insufficient_sources, terminal_fetch_error, analyst_error} |
 | **draft** | Pipeline produced a draft verdict; awaiting review | `status: draft` | `status: draft` |
 | **published** | Operator approved | `status: published` | `status: published` |
 | **archived** | Retired | `status: archived` | `status: archived` |
@@ -154,9 +154,9 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 |---|---|
 | **Queue** | Intake list of URLs/topics to process (`QUEUE.md`) |
 | **Ingest** | Fetching a URL, archiving it, producing a source file. CLI: `dr step-ingest` (`dr ingest` is a hidden deprecated alias). |
-| **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then loops `verify_claim` per applicable template. See [onboarding.md](onboarding.md) |
-| **Claim-probe** | Dry-run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim; no disk writes. CLI: `dr claim-probe`. |
-| **Claim-draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. CLI: `dr claim-draft`. |
+| **Onboard** | Adding a new entity to the archive via `dr onboard`; runs light research, screens templates, then runs the loop (`run`) per applicable template. See [onboarding.md](onboarding.md) |
+| **Draft dry run** | Run the full pipeline (Researcher → Ingestor → Analyst → Evaluator) for a single claim; no disk writes and no archive.org capture. CLI: `dr draft --dry-run --entity <ref> "<sentence>"`. |
+| **Draft** | Run the full pipeline and write outputs to disk (sources, claim file with `status: draft`, audit sidecar); no `criteria_slug`. A blocked or analyst-failed run writes nothing. CLI: `dr draft --entity <ref> "<sentence>"`. |
 | **Claim-refresh** | Re-run the full pipeline on an existing template-backed claim file (requires `criteria_slug`). CLI: `dr claim-refresh`. |
 | **Claim-promote** | Promote an ad-hoc claim draft to a reusable template entry in `research/templates.yaml`. Edits only the templates file; does not invoke any pipeline agent. CLI: `dr claim-promote`. |
 | **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias). |

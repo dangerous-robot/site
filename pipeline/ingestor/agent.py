@@ -45,7 +45,7 @@ class IngestorDeps:
     requested_url: str
     skip_wayback: bool = False
     # False for commands that write nothing (read-only ``dr step-ingest``,
-    # ``dr claim-probe``): archive lookups then use existing captures only
+    # ``dr draft --dry-run``): archive lookups then use existing captures only
     # and never ask Save Page Now to capture a page.
     allow_save: bool = True
     today: datetime.date = field(default_factory=datetime.date.today)
@@ -80,6 +80,11 @@ class IngestorDeps:
 # Any timestamp segment (including suffixes like "id_") or none at all, then
 # the archived page's own URL, with or without its scheme.
 _ARCHIVE_COPY = re.compile(r"https?://web\.archive\.org/web/(?:[0-9*]+[a-z_]*/)?(.+)")
+# A GET to archive.org's /save/ path asks Save Page Now to capture a page.
+# The model can name such a URL on its own (seen in a live dry run), and the
+# only sanctioned capture path is ``wayback._save_and_check``, which honours
+# ``allow_save``.
+_ARCHIVE_SAVE = re.compile(r"https?://(?:[a-z0-9-]+\.)*archive\.org(?::\d+)?/save(?:[/?#]|$)", re.IGNORECASE)
 
 
 def _is_page_or_archive_copy(fetched: str, url: str) -> bool:
@@ -151,6 +156,14 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     if not url.startswith(("http://", "https://")):
         return {"error": f"Invalid URL: {url!r} (must start with http:// or https://)", "url": url}
     deps = ctx.deps
+    if _ARCHIVE_SAVE.match(url):
+        logger.warning("Refused an archive.org capture request from web_fetch: %s", url)
+        deps.fetch_errors.append(f"{url}: refused, an archive.org /save/ URL asks for a capture")
+        return {
+            "error": "Refused: a web.archive.org/save/ URL asks archive.org to capture a page. "
+            "Fetch the page itself, or use wayback_check to find an archived copy.",
+            "url": url,
+        }
     is_requested = _is_page_or_archive_copy(url, deps.requested_url)
 
     def record_text(text: str) -> None:

@@ -23,7 +23,7 @@ from pydantic_ai.usage import RunUsage
 from ingestor.agent import IngestorDeps, ingestor_agent, web_fetch
 from ingestor.tools import wayback as wayback_module
 from ingestor.tools.web_fetch import TERMINAL_STATUS_CODES, TerminalFetchError
-from orchestrator.pipeline import VerifyConfig, _ingest_one
+from loop import VerifyConfig, ingest_one
 
 
 def _make_ctx(client: httpx.AsyncClient) -> RunContext[IngestorDeps]:
@@ -251,11 +251,11 @@ class TestOrchestratorMapping:
                 # Neutralize the orchestrator's inner override of model="test"
                 # so our FunctionModel stays in place.
                 with ingestor_agent.override(model=_make_web_fetch_caller_model(url)):
-                    with patch(
-                        "orchestrator.pipeline.ingestor_agent.override",
+                    with patch.object(
+                        ingestor_agent, "override",
                         side_effect=lambda **kw: nullcontext(),
                     ):
-                        outcome = await _ingest_one(
+                        outcome = await ingest_one(
                             client, url, cfg, datetime.date(2026, 4, 19), asyncio.Semaphore(8)
                         )
         # StepError (not a success tuple)
@@ -282,11 +282,11 @@ class TestNoArchiveLookupAfterFailedIngest:
             )
             async with httpx.AsyncClient() as client:
                 with ingestor_agent.override(model=_make_web_fetch_caller_model(url)):
-                    with patch(
-                        "orchestrator.pipeline.ingestor_agent.override",
+                    with patch.object(
+                        ingestor_agent, "override",
                         side_effect=lambda **kw: nullcontext(),
                     ):
-                        outcome = await _ingest_one(
+                        outcome = await ingest_one(
                             client, url, cfg, datetime.date(2026, 4, 19), asyncio.Semaphore(8)
                         )
         assert outcome.error_type == "http_403"

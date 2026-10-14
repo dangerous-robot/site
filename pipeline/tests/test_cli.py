@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
@@ -10,7 +9,6 @@ from click.testing import CliRunner
 
 import click
 
-from analyst.citations import clean_citations
 from orchestrator.cli import (
     _check_provider_api_keys,
     _required_env_for_model,
@@ -118,6 +116,43 @@ class TestCheckProviderApiKeys:
         _check_provider_api_keys("test")
 
 
+class TestDraftBraveKeyCheck:
+    """``dr draft`` refuses a Brave backend with no Brave key before any model call."""
+
+    class _Reached(Exception):
+        pass
+
+    def _invoke(self, monkeypatch, tmp_path, backend: str):
+        path = tmp_path / "research" / "entities" / "companies" / "acme.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            "---\nname: Acme\ntype: company\ndescription: A test entity.\n---\n",
+            encoding="utf-8",
+        )
+        reached = self._Reached
+
+        async def _fake_run(*_args, **_kwargs):
+            raise reached("loop.run was called")
+
+        monkeypatch.setattr("loop.run", _fake_run)
+        monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", backend)
+        monkeypatch.delenv("BRAVE_WEB_SEARCH_API_KEY", raising=False)
+        return CliRunner().invoke(main, [
+            "--model", "test", "draft", "--entity", "companies/acme", "x",
+            "--repo-root", str(tmp_path),
+        ])
+
+    def test_brave_backend_without_key_is_a_usage_error(self, monkeypatch, tmp_path) -> None:
+        result = self._invoke(monkeypatch, tmp_path, "brave")
+        assert result.exit_code == 2, result.output
+        assert "BRAVE_WEB_SEARCH_API_KEY" in result.output
+        assert not isinstance(result.exception, self._Reached)
+
+    def test_tavily_backend_without_brave_key_reaches_the_loop(self, monkeypatch, tmp_path) -> None:
+        result = self._invoke(monkeypatch, tmp_path, "tavily")
+        assert isinstance(result.exception, self._Reached), result.output
+
+
 class TestPerAgentModelOptions:
     def test_top_level_help_lists_per_agent_options(self) -> None:
         runner = CliRunner()
@@ -125,132 +160,6 @@ class TestPerAgentModelOptions:
         assert result.exit_code == 0
         for opt in ("--researcher-model", "--analyst-model", "--auditor-model", "--ingestor-model"):
             assert opt in result.output
-
-
-class TestClaimProbeOptions:
-    def test_verify_help_lists_candidate_pool_size(self) -> None:
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-probe", "--help"])
-        assert result.exit_code == 0
-        assert "--candidate-pool-size" in result.output
-
-
-class TestClaimDraftCLI:
-    def _write_entity(self, tmp_path, type_dir: str, slug: str) -> None:
-        entity_dir = tmp_path / "research" / "entities" / type_dir
-        entity_dir.mkdir(parents=True, exist_ok=True)
-        (entity_dir / f"{slug}.md").write_text(
-            f"---\nname: Test {slug.title()}\ntype: product\ndescription: A test entity.\n---\n",
-            encoding="utf-8",
-        )
-
-    def test_dash_sentinel_passes_none_resolved_entity(self, monkeypatch, tmp_path) -> None:
-        """'-' sentinel: pipeline is called without resolved_entity (analyst infers entity)."""
-        import asyncio
-        from click.testing import CliRunner
-
-        received: dict = {}
-
-        def _fake_research_claim(claim_text, config=None, checkpoint=None, resolved_entity=None):
-            received["resolved_entity"] = resolved_entity
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity="(pending)",
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
-
-        monkeypatch.setattr("orchestrator.pipeline.research_claim", _fake_research_claim)
-        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
-
-        from orchestrator.cli import main
-        runner = CliRunner()
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
-        result = runner.invoke(main, ["claim-draft", "-", "some claim"], catch_exceptions=False)
-        assert received.get("resolved_entity") is None
-
-    def test_valid_entity_ref_parsed_before_asyncio_run(self, monkeypatch, tmp_path) -> None:
-        """A valid entity_ref is parsed and passed as resolved_entity before the pipeline runs."""
-        import asyncio
-        from click.testing import CliRunner
-
-        self._write_entity(tmp_path, "products", "widget")
-        received: dict = {}
-
-        def _fake_research_claim(claim_text, config=None, checkpoint=None, resolved_entity=None):
-            received["resolved_entity"] = resolved_entity
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity="(pending)",
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
-
-        monkeypatch.setattr("orchestrator.pipeline.research_claim", _fake_research_claim)
-        monkeypatch.setattr("asyncio.run", lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro)
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-
-        from orchestrator.cli import main
-        runner = CliRunner()
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
-        result = runner.invoke(main, ["claim-draft", "products/widget", "some claim"], catch_exceptions=False)
-
-        assert received.get("resolved_entity") is not None
-        assert received["resolved_entity"].entity_name == "Test Widget"
-        assert received["resolved_entity"].entity_ref == "products/widget"
-
-    def test_invalid_entity_ref_raises_usage_error(self, monkeypatch, tmp_path) -> None:
-        """A ref with no slash raises UsageError before the pipeline runs."""
-        from click.testing import CliRunner
-        from orchestrator.cli import main
-
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-draft", "invalid-no-slash", "test claim"])
-        assert result.exit_code != 0
-        output = result.output + (result.exception and str(result.exception) or "")
-        assert "invalid-no-slash" in output.lower() or "invalid entity ref" in output.lower()
-
-    def test_unknown_type_dir_raises_usage_error(self, monkeypatch, tmp_path) -> None:
-        """An unrecognized type_dir raises UsageError before the pipeline runs."""
-        from click.testing import CliRunner
-        from orchestrator.cli import main
-
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-draft", "badtype/foo", "test claim"])
-        assert result.exit_code != 0
-        output = result.output + (result.exception and str(result.exception) or "")
-        assert "badtype" in output.lower() or "unknown entity type" in output.lower()
-
-    def test_missing_entity_file_raises_usage_error(self, monkeypatch, tmp_path) -> None:
-        """A valid type_dir with a non-existent slug raises UsageError before the pipeline runs."""
-        from click.testing import CliRunner
-        from orchestrator.cli import main
-
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-draft", "products/nonexistent", "test claim"])
-        assert result.exit_code != 0
-        output = result.output + (result.exception and str(result.exception) or "")
-        assert "nonexistent" in output.lower() or "not found" in output.lower()
 
 
 class TestClaimRefreshCLI:
@@ -312,172 +221,182 @@ class TestClaimRefreshCLI:
             encoding="utf-8",
         )
 
-    def test_blocked_claim_with_criteria_slug_allowed(self, monkeypatch, tmp_path) -> None:
-        """A blocked claim with a criteria_slug is eligible for refresh; pipeline call should succeed."""
-        import asyncio
+    def _write_entity(self, tmp_path, ref: str, name: str) -> None:
+        type_dir, slug = ref.split("/", 1)
+        entity_type = {"companies": "company", "products": "product", "subjects": "subject"}[type_dir]
+        path = tmp_path / "research" / "entities" / type_dir / f"{slug}.md"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            f"---\nname: {name}\ntype: {entity_type}\ndescription: A test entity.\n---\n",
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _invoke(monkeypatch, tmp_path, claim_ref: str, fake_run):
         from click.testing import CliRunner
         from orchestrator.cli import main
 
+        monkeypatch.setattr("loop.run", fake_run)
+        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
+        return CliRunner().invoke(main, ["claim-refresh", claim_ref], catch_exceptions=False)
+
+    @staticmethod
+    def _result(spec, *, title: str | None = None):
+        """A loop result; with ``title`` it carries an analysis written under that title."""
+        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+        from common.models import Category, Confidence, Verdict, VerificationLevel
+        from loop import VerificationResult
+
+        ao = None
+        if title is not None:
+            ao = AnalystOutput(
+                entity=EntityResolution(
+                    entity_name=spec.entity.entity_name, entity_type=spec.entity.entity_type,
+                    entity_description="d",
+                ),
+                verdict=VerdictAssessment(
+                    title=title, verdict=Verdict.UNVERIFIED, confidence=Confidence.LOW,
+                    narrative="New narrative.", topics=[Category("environmental-impact")],
+                    verification_level=VerificationLevel.CLAIMED, seo_title="Refreshed claim",
+                ),
+            )
+        return VerificationResult(
+            entity=spec.entity.entity_name, claim_text=spec.statement,
+            urls_found=[], urls_ingested=[], urls_failed=[], sources=[], analyst_output=ao,
+        )
+
+    def test_blocked_claim_with_criteria_slug_allowed(self, monkeypatch, tmp_path) -> None:
+        """A blocked claim with a criteria_slug is eligible for refresh; a run that
+        produces no analysis writes nothing and exits 1."""
+        self._write_entity(tmp_path, "companies/microsoft", "Microsoft")
         self._write_claim(tmp_path, "microsoft", "publishes-sustainability-report", {
             "status": "blocked",
             "blocked_reason": "insufficient_sources",
+            "entity": "companies/microsoft",
             "criteria_slug": "publishes-sustainability-report",
             "claim": "Microsoft publishes an annual sustainability report.",
         })
         self._write_templates_yaml(tmp_path)
+        claim_path = tmp_path / "research" / "claims" / "microsoft" / "publishes-sustainability-report.md"
+        before = claim_path.read_text(encoding="utf-8")
+        calls: list = []
 
-        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity=entity_name,
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
+        async def _fake_run(spec, config, **kwargs):
+            calls.append(spec)
+            return self._result(spec)
 
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-        monkeypatch.setattr(
-            "asyncio.run",
-            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
-        )
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+        result = self._invoke(monkeypatch, tmp_path, "microsoft/publishes-sustainability-report", _fake_run)
 
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-refresh", "microsoft/publishes-sustainability-report"], catch_exceptions=False)
-        assert result.exit_code == 0
+        assert len(calls) == 1
+        assert result.exit_code == 1
+        assert "analyst" in result.output.lower()
+        assert claim_path.read_text(encoding="utf-8") == before
+        assert sorted(p.name for p in claim_path.parent.iterdir()) == ["publishes-sustainability-report.md"]
 
     def test_template_backed_claim_writes_same_path(self, monkeypatch, tmp_path) -> None:
         """A published template-backed claim is refreshed and written back to the same claim path."""
-        import asyncio
-        from click.testing import CliRunner
-        from orchestrator.cli import main
+        from common.frontmatter import parse_frontmatter
 
+        self._write_entity(tmp_path, "companies/openai", "OpenAI")
         self._write_claim(tmp_path, "openai", "publishes-sustainability-report", {
             "status": "published",
+            "entity": "companies/openai",
             "criteria_slug": "publishes-sustainability-report",
             "claim": "OpenAI publishes an annual sustainability report.",
         })
         self._write_templates_yaml(tmp_path)
-
         received: dict = {}
 
-        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
-            received["claim_text"] = claim_text
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity=entity_name,
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
+        async def _fake_run(spec, config, **kwargs):
+            received["spec"] = spec
+            return self._result(spec, title="OpenAI publishes an annual sustainability report")
 
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-        monkeypatch.setattr(
-            "asyncio.run",
-            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
-        )
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+        result = self._invoke(monkeypatch, tmp_path, "openai/publishes-sustainability-report", _fake_run)
 
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-refresh", "openai/publishes-sustainability-report"], catch_exceptions=False)
-        assert result.exit_code == 0
-        # The slug referenced in the pipeline invocation should match the original filename stem.
-        assert "publishes-sustainability-report" in str(received.get("claim_text", "")).lower() or result.exit_code == 0
+        assert result.exit_code == 0, result.output
+        claim_dir = tmp_path / "research" / "claims" / "openai"
+        assert sorted(p.name for p in claim_dir.glob("*.md")) == ["publishes-sustainability-report.md"]
+        fm, _ = parse_frontmatter((claim_dir / "publishes-sustainability-report.md").read_text(encoding="utf-8"))
+        assert fm["status"] == "draft"
+        assert fm["criteria_slug"] == "publishes-sustainability-report"
+        assert received["spec"].criteria_slug == "publishes-sustainability-report"
 
     def test_subject_entity_claim_refresh(self, monkeypatch, tmp_path) -> None:
         """A subject-backed claim refresh substitutes the subject name in claim text (no raw ENTITY placeholder)."""
-        import asyncio
-        from click.testing import CliRunner
-        from orchestrator.cli import main
-
+        self._write_entity(tmp_path, "subjects/ai-model-producers", "AI Model Producers")
         self._write_claim(tmp_path, "subjects/ai-model-producers", "signed-ai-safety-commitments", {
             "status": "blocked",
             "blocked_reason": "insufficient_sources",
+            "entity": "subjects/ai-model-producers",
             "criteria_slug": "signed-ai-safety-commitments",
             "claim": "AI Model Producers subject: signed-ai-safety-commitments",
         })
         self._write_templates_yaml(tmp_path, [
             {"slug": "signed-ai-safety-commitments", "text": "ENTITY has signed AI safety commitments", "entity_type": "subject", "subjects": ["subjects/ai-model-producers"], "topics": ["ai-safety"], "core": True},
         ])
-
         received: dict = {}
 
-        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
-            received["claim_text"] = claim_text
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity=entity_name,
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
+        async def _fake_run(spec, config, **kwargs):
+            received["spec"] = spec
+            return self._result(spec, title=spec.statement)
 
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-        monkeypatch.setattr(
-            "asyncio.run",
-            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
+        result = self._invoke(
+            monkeypatch, tmp_path, "subjects/ai-model-producers/signed-ai-safety-commitments", _fake_run,
         )
-        monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
 
-        runner = CliRunner()
-        result = runner.invoke(main, ["claim-refresh", "subjects/ai-model-producers/signed-ai-safety-commitments"])
-        assert result.exit_code == 0
-        assert "ENTITY" not in received["claim_text"]
+        assert result.exit_code == 0, result.output
+        assert "ENTITY" not in received["spec"].statement
+        assert received["spec"].statement == "AI Model Producers has signed AI safety commitments"
+        assert received["spec"].topics == ["ai-safety"]
 
-    def test_criterion_notes_reach_verify_claim(self, monkeypatch, tmp_path) -> None:
-        """verify_claim takes the analyst's criterion notes from the template it is handed."""
-        import asyncio
-        from click.testing import CliRunner
-        from orchestrator.cli import main
-
+    def test_criterion_notes_reach_the_loop_as_the_grading_rule(self, monkeypatch, tmp_path) -> None:
+        """The loop takes both agents' grading text from the criterion's notes."""
         sentinel = "SENTINEL-NOTES: mixed = offsets only"
+        self._write_entity(tmp_path, "companies/openai", "OpenAI")
         self._write_claim(tmp_path, "openai", "publishes-sustainability-report", {
             "status": "published",
+            "entity": "companies/openai",
             "criteria_slug": "publishes-sustainability-report",
             "claim": "OpenAI publishes an annual sustainability report.",
         })
         self._write_templates_yaml(tmp_path, [
             {"slug": "publishes-sustainability-report", "text": "COMPANY publishes a sustainability or ESG report", "entity_type": "company", "topics": ["environmental-impact"], "core": True, "notes": sentinel},
         ])
-
         received: dict = {}
 
-        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
-            received.update(kwargs)
-            from orchestrator.pipeline import VerificationResult
-            return VerificationResult(
-                entity=entity_name,
-                claim_text=claim_text,
-                urls_found=[],
-                urls_ingested=[],
-                urls_failed=[],
-                sources=[],
-            )
+        async def _fake_run(spec, config, **kwargs):
+            received["spec"] = spec
+            return self._result(spec)
 
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-        monkeypatch.setattr(
-            "asyncio.run",
-            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
-        )
+        self._invoke(monkeypatch, tmp_path, "openai/publishes-sustainability-report", _fake_run)
+
+        assert received["spec"].grading_rule == sentinel
+        assert received["spec"].template.notes == sentinel
+
+    def test_missing_entity_file_is_a_usage_error(self, monkeypatch, tmp_path) -> None:
+        """The loop runs on a resolved entity, so a claim whose entity file is missing is refused first."""
+        self._write_claim(tmp_path, "openai", "publishes-sustainability-report", {
+            "status": "published",
+            "entity": "companies/openai",
+            "criteria_slug": "publishes-sustainability-report",
+            "claim": "OpenAI publishes an annual sustainability report.",
+        })
+        calls: list = []
+
+        async def _fake_run(spec, config, **kwargs):
+            calls.append(spec)
+            return self._result(spec)
+
+        from click.testing import CliRunner
+        from orchestrator.cli import main
+
+        monkeypatch.setattr("loop.run", _fake_run)
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
-        monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
+        result = CliRunner().invoke(main, ["claim-refresh", "openai/publishes-sustainability-report"])
 
-        result = CliRunner().invoke(main, ["claim-refresh", "openai/publishes-sustainability-report"], catch_exceptions=False)
-        assert result.exit_code == 0
-        assert received["template"].notes == sentinel
+        assert result.exit_code == 2
+        assert calls == []
 
 
 def _write_published_refresh_fixture(tmp_path) -> "Path":
@@ -487,6 +406,9 @@ def _write_published_refresh_fixture(tmp_path) -> "Path":
     claim_dir = tmp_path / "research" / "claims" / "brave"
     claim_dir.mkdir(parents=True)
     (tmp_path / "research" / "templates.yaml").write_text("templates: []\n", encoding="utf-8")
+    entity_path = tmp_path / "research" / "entities" / "products" / "brave.md"
+    entity_path.parent.mkdir(parents=True)
+    entity_path.write_text("---\nname: Brave\ntype: product\ndescription: A browser.\n---\n", encoding="utf-8")
     claim_path = claim_dir / "renewable-energy-hosting.md"
     fm = {
         "title": "Brave hosts on renewable energy",
@@ -557,17 +479,17 @@ def _comparison(*, agrees: bool = True, gaps: list[str] | None = None, needs_rev
 
 
 def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None, verdict_fields=None):
-    """Invoke `dr claim-refresh` with verify_claim stubbed; success=False hits the analyst-error branch.
+    """Invoke `dr claim-refresh` with the loop stubbed; success=False is a run whose analyst failed.
 
     ``verdict_fields`` overrides keyword arguments of the fake VerdictAssessment.
     """
-    import asyncio
 
     from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
     from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
-    from orchestrator.pipeline import VerificationResult
+    from loop import VerificationResult
 
-    def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+    async def _fake_run(spec, config, **kwargs):
+        entity_name, claim_text = spec.entity.entity_name, spec.statement
         ao = None
         if success:
             ao = AnalystOutput(
@@ -596,11 +518,7 @@ def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None, verd
             ],
         )
 
-    monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-    monkeypatch.setattr(
-        "asyncio.run",
-        lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
-    )
+    monkeypatch.setattr("loop.run", _fake_run)
     monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
     monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
     monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")
@@ -612,13 +530,12 @@ def _run_refresh(monkeypatch, tmp_path, *, success: bool, consistency=None, verd
 class TestClaimRefreshKeepsPublishedState:
     """A refresh of a published claim snapshots what readers saw before the overwrite."""
 
-    @pytest.mark.parametrize("success", [True, False], ids=["success", "analyst-error"])
-    def test_snapshot_survives_refresh(self, monkeypatch, tmp_path, success) -> None:
+    def test_snapshot_survives_refresh(self, monkeypatch, tmp_path) -> None:
         import yaml
 
         claim_path = _write_published_refresh_fixture(tmp_path)
 
-        result = _run_refresh(monkeypatch, tmp_path, success=success)
+        result = _run_refresh(monkeypatch, tmp_path, success=True)
 
         assert result.exit_code == 0, result.output
         data = yaml.safe_load(
@@ -634,10 +551,23 @@ class TestClaimRefreshKeepsPublishedState:
         # The new run's sign-off is reset; the old one lives only in the snapshot.
         assert data["human_review"]["reviewed_at"] is None
 
-    @pytest.mark.parametrize("success", [True, False], ids=["success", "analyst-error"])
+    def test_failed_refresh_leaves_the_published_claim_untouched(self, monkeypatch, tmp_path) -> None:
+        """A run whose analyst failed writes nothing: the claim stays published and its
+        sidecar keeps the sign-off (no placeholder, no snapshot)."""
+        claim_path = _write_published_refresh_fixture(tmp_path)
+        sidecar_path = claim_path.with_name("renewable-energy-hosting.audit.yaml")
+        before = (claim_path.read_text(encoding="utf-8"), sidecar_path.read_text(encoding="utf-8"))
+
+        result = _run_refresh(monkeypatch, tmp_path, success=False)
+
+        assert result.exit_code == 1
+        assert "analyst" in result.output.lower()
+        assert (claim_path.read_text(encoding="utf-8"), sidecar_path.read_text(encoding="utf-8")) == before
+        assert not (tmp_path / "research" / "sources").exists()
+
     @pytest.mark.parametrize("failing_write", ["_write_audit_sidecar", "_write_claim_file"])
     def test_rerun_after_failed_write_keeps_snapshot(
-        self, monkeypatch, tmp_path, success, failing_write,
+        self, monkeypatch, tmp_path, failing_write,
     ) -> None:
         import yaml
 
@@ -655,9 +585,9 @@ class TestClaimRefreshKeepsPublishedState:
 
         monkeypatch.setattr(persistence, failing_write, _fail_once)
         with pytest.raises(OSError):
-            _run_refresh(monkeypatch, tmp_path, success=success)
+            _run_refresh(monkeypatch, tmp_path, success=True)
 
-        result = _run_refresh(monkeypatch, tmp_path, success=success)
+        result = _run_refresh(monkeypatch, tmp_path, success=True)
 
         assert result.exit_code == 0, result.output
         data = yaml.safe_load(
@@ -1220,12 +1150,6 @@ class TestOnboardCLIPhaseB:
 
         monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather)
 
-        async def _fake_research(*args, **kwargs):
-            from researcher.decomposed import ResearchOutput
-            return ResearchOutput(urls=[], errors=[], trace={"mode": "test"}, sub_questions=[], url_addresses={})
-
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
-
         verifier_canned = {
             "status": "verified",
             "candidates": [],
@@ -1241,10 +1165,14 @@ class TestOnboardCLIPhaseB:
         def _noop(**kwargs):
             yield
 
+        from tests.loop_harness import scorer_args, scripted_agents
+
         runner = CliRunner()
+        # The claim runs find no URL (the scorer keeps nothing), so every claim is blocked.
         with (
             entity_verifier_agent.override(model=TestModel(custom_output_args=verifier_canned)),
             entity_enricher_agent.override(model=TestModel(custom_output_args=enricher_canned)),
+            scripted_agents(scorer=scorer_args(kept=False)),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
         ):
             result = runner.invoke(
@@ -1303,17 +1231,14 @@ class TestOnboardCLIPhaseB:
 
         monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather)
 
-        async def _fake_research(*args, **kwargs):
-            from researcher.decomposed import ResearchOutput
-            return ResearchOutput(urls=[], errors=[], trace={"mode": "test"}, sub_questions=[], url_addresses={})
-
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
-
         @contextmanager
         def _noop(**kwargs):
             yield
 
+        from tests.loop_harness import scorer_args, scripted_agents
+
         runner = CliRunner()
+        # The claim runs find no URL (the scorer keeps nothing), so every claim is blocked.
         with (
             entity_verifier_agent.override(
                 model=TestModel(custom_output_args={
@@ -1328,6 +1253,7 @@ class TestOnboardCLIPhaseB:
                     "history_markdown": "The category emerged in the 2010s.\n\nIt encompasses OpenAI, Anthropic, and others.",
                 }),
             ),
+            scripted_agents(scorer=scorer_args(kept=False)),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
         ):
             result = runner.invoke(
@@ -1362,22 +1288,21 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
         encoding="utf-8",
     )
 
-    captured: list[list[dict]] = []
+    from contextlib import nullcontext
 
-    async def _fake_analyse(entity_name, claim_text, source_dicts, cfg, **kwargs):
-        captured.append(source_dicts)
-        verdict = SimpleNamespace(
-            title="Acme is green", topics=[], narrative="N.",
-            verdict=SimpleNamespace(value="unverified"),
-            confidence=SimpleNamespace(value="low"),
-            verification_level=SimpleNamespace(value="claimed"),
-            source_overrides=None,
-            cap_rationale=None,
-        )
-        entity = SimpleNamespace(entity_name="Acme", entity_type="company")
-        return SimpleNamespace(entity=entity, verdict=verdict), None
+    from analyst.agent import verdict_only_agent
+    from tests.loop_harness import capturing_model
 
-    with patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
+    captured: list[str] = []
+    model = capturing_model(captured, {
+        "title": "Acme is green", "verdict": "unverified", "confidence": "low",
+        "narrative": "Acme says so 【2026/foo】.", "topics": ["environmental-impact"],
+        "verification_level": "claimed", "cap_rationale": "Only Acme's own report addresses the claim.",
+        "seo_title": "Acme green claim",
+    })
+    with verdict_only_agent.override(model=model), patch.object(
+        verdict_only_agent, "override", side_effect=lambda **kw: nullcontext(),
+    ):
         result = CliRunner().invoke(
             main,
             ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],
@@ -1385,20 +1310,16 @@ def test_step_analyze_gives_analyst_source_ids_so_year_slug_citations_resolve(tm
 
     assert result.exit_code == 0, result.output
     assert "Level:      claimed" in result.output
-
-    [sources] = captured
-    assert sources[0]["source_id"] == "2026/foo"
-    assert sources[0]["independence"]
-    cleaned, unresolved = clean_citations("Acme says so 【2026/foo】.", sources)
-    assert unresolved == []
-    assert "*Foo Report*" in cleaned
+    # The analyst sees the year/slug id, so a citation token by id resolves to the title.
+    assert any("2026/foo" in p for p in captured)
+    assert "*Foo Report*" in result.output
+    assert "【" not in result.output
 
 
 def test_step_analyze_write_keeps_the_entity_match_override(tmp_path) -> None:
     """--write records the Off-entity relabel and fits the level to it, as claim-refresh does."""
     from contextlib import nullcontext
 
-    import yaml
     from pydantic_ai.models.test import TestModel
 
     from analyst.agent import verdict_only_agent
@@ -1432,8 +1353,8 @@ def test_step_analyze_write_keeps_the_entity_match_override(tmp_path) -> None:
         "seo_title": "Acme green claim",
     })
 
-    with verdict_only_agent.override(model=model), patch(
-        "orchestrator.pipeline.verdict_only_agent.override",
+    with verdict_only_agent.override(model=model), patch.object(
+        verdict_only_agent, "override",
         side_effect=lambda **kw: nullcontext(),
     ):
         result = CliRunner().invoke(
@@ -1507,8 +1428,8 @@ def _step_analyze_write(tmp_path, verdict: str, **output):
         "seo_title": "Acme green claim",
         **output,
     })
-    with verdict_only_agent.override(model=model), patch(
-        "orchestrator.pipeline.verdict_only_agent.override",
+    with verdict_only_agent.override(model=model), patch.object(
+        verdict_only_agent, "override",
         side_effect=lambda **kw: nullcontext(),
     ):
         return CliRunner().invoke(
@@ -1701,23 +1622,20 @@ class TestStepAnalyzeCriterion:
             )
 
     def _run(self, tmp_path) -> tuple:
-        captured: dict = {}
+        from contextlib import nullcontext
 
-        async def _fake_analyse(entity_name, claim_text, source_dicts, cfg, **kwargs):
-            captured["claim_text"] = claim_text
-            captured["criterion_notes"] = kwargs.get("criterion_notes")
-            verdict = SimpleNamespace(
-                title="Acme is green", topics=[], narrative="N.",
-                verdict=SimpleNamespace(value="unverified"),
-                confidence=SimpleNamespace(value="low"),
-                verification_level=SimpleNamespace(value="claimed"),
-                source_overrides=None,
-                cap_rationale=None,
-            )
-            entity = SimpleNamespace(entity_name="Acme", entity_type="company")
-            return SimpleNamespace(entity=entity, verdict=verdict), None
+        from analyst.agent import verdict_only_agent
+        from tests.loop_harness import capturing_model
 
-        with patch("orchestrator.pipeline._analyse_claim", side_effect=_fake_analyse):
+        captured: list[str] = []
+        model = capturing_model(captured, {
+            "title": "Acme is green", "verdict": "unverified", "confidence": "low",
+            "narrative": "N.", "topics": ["environmental-impact"], "verification_level": "claimed",
+            "cap_rationale": "Only Acme says so.", "seo_title": "Acme green claim",
+        })
+        with verdict_only_agent.override(model=model), patch.object(
+            verdict_only_agent, "override", side_effect=lambda **kw: nullcontext(),
+        ):
             result = CliRunner().invoke(
                 main,
                 ["--model", "test", "step-analyze", "--claim", "acme/green", "--repo-root", str(tmp_path)],
@@ -1730,8 +1648,9 @@ class TestStepAnalyzeCriterion:
         ])
         result, captured = self._run(tmp_path)
         assert result.exit_code == 0, result.output
-        assert captured["claim_text"] == "Acme is hosted on renewable energy"
-        assert captured["criterion_notes"] == self.SENTINEL
+        prompt = "\n".join(captured)
+        assert "Acme is hosted on renewable energy" in prompt
+        assert f"## Criterion notes\n{self.SENTINEL}" in prompt
 
     def test_unknown_criteria_slug_falls_back_to_title(self, tmp_path) -> None:
         self._write_repo(tmp_path, "not-a-template", [
@@ -1739,15 +1658,17 @@ class TestStepAnalyzeCriterion:
         ])
         result, captured = self._run(tmp_path)
         assert result.exit_code == 0, result.output
-        assert captured["claim_text"] == "Acme title fallback"
-        assert captured["criterion_notes"] is None
+        prompt = "\n".join(captured)
+        assert "Acme title fallback" in prompt
+        assert "## Criterion notes" not in prompt
 
     def test_missing_templates_file_falls_back_to_title(self, tmp_path) -> None:
         self._write_repo(tmp_path, "green-hosting", None)
         result, captured = self._run(tmp_path)
         assert result.exit_code == 0, result.output
-        assert captured["claim_text"] == "Acme title fallback"
-        assert captured["criterion_notes"] is None
+        prompt = "\n".join(captured)
+        assert "Acme title fallback" in prompt
+        assert "## Criterion notes" not in prompt
 
 
 class TestClaimRefreshFlagReason:
@@ -2071,27 +1992,6 @@ def test_step_audit_write_keeps_the_level_fit_note(tmp_path) -> None:
     })
 
     assert data["pipeline_run"]["level_clamp"] == note
-
-
-def test_claim_probe_never_captures_on_archive_org(monkeypatch) -> None:
-    """claim-probe writes nothing, so it must not ask archive.org to capture pages."""
-    from orchestrator.pipeline import VerificationResult
-
-    seen = {}
-
-    async def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
-        seen["config"] = config
-        return VerificationResult(
-            entity=entity_name, claim_text=claim_text,
-            urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
-        )
-
-    monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-    result = CliRunner().invoke(main, ["--model", "test", "claim-probe", "Example", "A claim"])
-
-    assert result.exit_code == 0, result.output
-    assert seen["config"].allow_save is False
-    assert seen["config"].skip_wayback is False
 
 
 class TestWaybackBackfill:
@@ -2619,18 +2519,18 @@ class TestClaimRefreshListsCitedSources:
     """A refresh writes only the sources the analyst cites; the dropped one shows in the sidecar."""
 
     def test_uncited_source_left_out_and_reported_dropped(self, monkeypatch, tmp_path) -> None:
-        import asyncio
 
         import yaml
 
         from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
         from common.frontmatter import parse_frontmatter
         from common.models import Category, Confidence, EntityType, Verdict, VerificationLevel
-        from orchestrator.pipeline import VerificationResult
+        from loop import VerificationResult
 
         claim_path = _write_published_refresh_fixture(tmp_path)
 
-        def _fake_verify_claim(entity_name, claim_text, config=None, checkpoint=None, **kwargs):
+        async def _fake_run(spec, config, **kwargs):
+            entity_name, claim_text = spec.entity.entity_name, spec.statement
             ao = AnalystOutput(
                 entity=EntityResolution(
                     entity_name="Brave", entity_type=EntityType.PRODUCT, entity_description="d",
@@ -2656,11 +2556,7 @@ class TestClaimRefreshListsCitedSources:
                 uncited_urls={"https://b.example"},
             )
 
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", _fake_verify_claim)
-        monkeypatch.setattr(
-            "asyncio.run",
-            lambda coro: asyncio.new_event_loop().run_until_complete(coro) if asyncio.iscoroutine(coro) else coro,
-        )
+        monkeypatch.setattr("loop.run", _fake_run)
         monkeypatch.setattr("common.content_loader.resolve_repo_root", lambda: tmp_path)
         monkeypatch.setenv("ANTHROPIC_API_KEY", "x")
         monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "x")

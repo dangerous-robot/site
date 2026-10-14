@@ -21,7 +21,7 @@ from common.logging_setup import (
     progress,
     run_id_var,
 )
-from orchestrator.pipeline import VerifyConfig
+from loop import VerifyConfig
 
 
 def _read_jsonl(path: Path) -> list[dict]:

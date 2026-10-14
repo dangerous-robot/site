@@ -13,7 +13,7 @@ from analyst.agent import VerdictAssessment, verdict_only_agent
 from analyst.citations import clean_citations
 from common.models import EntityType
 from orchestrator.entity_resolution import ResolvedEntity
-from orchestrator.pipeline import VerifyConfig, _analyse_claim
+from loop import VerifyConfig, analyse_claim
 
 NBSP = " "
 
@@ -181,11 +181,11 @@ async def test_analyse_claim_returns_clean_narrative(tmp_path) -> None:
 
     with verdict_only_agent.override(model=model):
         # Keep our TestModel: neutralize the orchestrator's own override.
-        with patch(
-            "orchestrator.pipeline.verdict_only_agent.override",
+        with patch.object(
+            verdict_only_agent, "override",
             side_effect=lambda **kw: nullcontext(),
         ):
-            out, failure = await _analyse_claim(
+            out, failure = await analyse_claim(
                 "Brave Browser", "Brave is hosted on renewable energy", sources, cfg,
                 resolved_entity=resolved,
             )

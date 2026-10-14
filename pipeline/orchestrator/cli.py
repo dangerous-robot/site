@@ -98,6 +98,18 @@ def _check_provider_api_keys(models: str | Iterable[str]) -> None:
         sys.exit(2)
 
 
+def _check_search_key(config) -> None:
+    """Fail before any model call when the Brave backend has no key.
+
+    The researcher only discovers a missing key at search time, after the
+    planner's paid model call has already run.
+    """
+    if config.search_backend == "brave" and not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
+        raise click.UsageError(
+            "BRAVE_WEB_SEARCH_API_KEY is not set and RESEARCH_SEARCH_BACKEND is brave"
+        )
+
+
 def _agent_models_from_ctx(ctx: click.Context) -> list[str]:
     """All resolved model specs for the four agents in this CLI run."""
     base = ctx.obj["model"]
@@ -118,9 +130,9 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
 # New commands not listed here fall into the "Other" bucket so they stay visible.
 _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Read-only (dry run, no files written)",
-     ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit", "claim-probe"]),
-    ("Creates or overwrites claim files",
-     ["onboard", "claim-draft", "claim-refresh", "claim-promote"]),
+     ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit"]),
+    ("Creates or overwrites claim files (dr draft --dry-run writes nothing)",
+     ["draft", "onboard", "claim-refresh", "claim-promote"]),
     ("Modifies existing files in place",
      ["entity-enrich", "publish", "review", "review-queue"]),
 ]
@@ -265,7 +277,7 @@ def _print_research_trace(
         for i, url in enumerate(urls, 1):
             click.echo(f"  {i}. {url}")
         click.echo("")
-        click.echo("  (blocklist not applied — use `dr claim-probe` for production results)")
+        click.echo("  (blocklist not applied — use `dr draft --dry-run` for production results)")
     else:
         click.echo("No URLs returned.")
 
@@ -294,7 +306,7 @@ def step_research(ctx: click.Context, entity: str, claim: str, llm_concurrency: 
     logger.info("dr step-research: entity=%s claim=%s", entity, claim)
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
-    from orchestrator.pipeline import VerifyConfig
+    from loop import VerifyConfig
     from researcher.decomposed import decomposed_research
 
     config = VerifyConfig(
@@ -302,6 +314,7 @@ def step_research(ctx: click.Context, entity: str, claim: str, llm_concurrency: 
         llm_concurrency=llm_concurrency,
         **_ctx_per_agent_kwargs(ctx),
     )
+    _check_search_key(config)
 
     async def _run():
         import httpx
@@ -349,9 +362,8 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
     from common.content_loader import resolve_repo_root
     from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
     from ingestor.arxiv_affiliation import arxiv_corporate_lab
-    from orchestrator.checkpoints import StepError
+    from loop import StepError, check_ingested_source
     from orchestrator.persistence import resolve_source_slugs, source_markdown
-    from orchestrator.pipeline import _check_ingested_source
 
     root_str: str
     try:
@@ -382,7 +394,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
                 return 1
 
             corporate_lab = await arxiv_corporate_lab(client, url)
-            checked = _check_ingested_source(
+            checked = check_ingested_source(
                 url, res.output, deps, Path(root_str), corporate_lab
             )
             if isinstance(checked, StepError):
@@ -668,8 +680,8 @@ def step_analyze(
     from common.frontmatter import parse_frontmatter
     from common.models import ClaimStatus
     from common.templates import render_claim_text
+    from loop import ClaimSpec, VerifyConfig, rerun
     from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.pipeline import VerifyConfig, _analyse_claim
     from orchestrator.persistence import (
         _write_claim_file,
         clear_audit,
@@ -694,12 +706,12 @@ def step_analyze(
     entity_fm, _ = load_entity(fm["entity"], root)
     entity_name = entity_fm["name"]
     # With the resolved entity the analyst sees the entity-match labels, and
-    # --write keeps their overrides, as claim-refresh does.
-    resolved_entity = None
+    # --write keeps their overrides, as claim-refresh does. The loop runs on a
+    # resolved entity, so a missing entity file is a usage error.
     try:
         resolved_entity = parse_entity_ref(fm["entity"], root)
     except ValueError as exc:
-        click.echo(f"Warning: could not load entity '{fm['entity']}': {exc}", err=True)
+        raise click.UsageError(f"could not load entity '{fm['entity']}': {exc}") from exc
 
     # Reconstruct claim text: prefer re-rendering the template; fall back to title
     claim_text = fm["title"]
@@ -718,17 +730,17 @@ def step_analyze(
             continue
         source_dicts.append(sd)
 
-    cfg = VerifyConfig(model=ctx.obj["model"], **_ctx_per_agent_kwargs(ctx))
+    cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
 
-    async def _run():
-        return await _analyse_claim(
-            entity_name, claim_text, source_dicts, cfg,
-            resolved_entity=resolved_entity,
-            repo_root=root,
-            criterion_notes=template.notes if template else None,
-        )
-
-    analyst_out, analyst_failure = asyncio.run(_run())
+    spec = ClaimSpec(
+        statement=claim_text,
+        entity=resolved_entity,
+        criteria_slug=fm.get("criteria_slug"),
+        grading_rule=template.notes if template else None,
+        template=template,
+    )
+    rerun_result = asyncio.run(rerun(spec, cfg, source_dicts, agent="analyst"))
+    analyst_out, analyst_failure = rerun_result.analyst_output, rerun_result.failure
 
     if analyst_out is None:
         if analyst_failure is not None:
@@ -804,7 +816,7 @@ def step_analyze(
 
 
 # --------------------------------------------------------------------------- #
-# dr claim-probe  (formerly verify)                                             #
+# Run report, shared by dr draft --dry-run                                      #
 # --------------------------------------------------------------------------- #
 
 def _print_verify_result(result) -> None:
@@ -875,155 +887,169 @@ def _print_verify_result(result) -> None:
     hr()
 
 
-@main.command("claim-probe")
-@click.argument("entity")
-@click.argument("claim")
+# --------------------------------------------------------------------------- #
+# dr draft                                                                      #
+# --------------------------------------------------------------------------- #
+
+@main.command("draft")
+@click.argument("sentence", required=False)
+@click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
+@click.option("--dry-run", is_flag=True, help="Run the loop and print the result; write nothing and never ask archive.org to capture a page")
+@click.option("--force", is_flag=True, help="Overwrite the claim file if present; a claim that is not a draft returns to draft and awaits re-approval")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
+@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.pass_context
-def claim_probe(ctx: click.Context, entity: str, claim: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, interactive: bool, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
-    """Run the full pipeline in memory and print the verdict; nothing is written to disk.
+def draft(
+    ctx: click.Context,
+    sentence: str | None,
+    entity_ref: str | None,
+    dry_run: bool,
+    force: bool,
+    repo_root: str | None,
+    max_sources: int | None,
+    candidate_pool_size: int | None,
+    skip_wayback: bool,
+    max_initial_queries: int | None,
+    llm_concurrency: int | None,
+    interactive: bool,
+) -> None:
+    """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
-    Example:
-        dr claim-probe "Ecosia" "Ecosia's AI chat runs on renewable energy"
+    SENTENCE is the claim to check; --entity names the entity file it is
+    about. The claim is written with status=draft and no criteria_slug, at
+    the entity's claims directory under the slugified analyst title. A run
+    that is blocked or whose analyst fails writes nothing and exits 1.
+
+    \b
+    Examples:
+        dr draft --dry-run --entity subjects/generative-ai "Generative AI assistants answer most questions without browsing"
+        dr draft --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
     """
-    logger.info("dr claim-probe: entity=%s claim=%s", entity, claim)
+    from common.content_loader import resolve_repo_root
+    from common.sidecar import sidecar_path_for
+    from common.utils import slugify
+    from loop import ClaimSpec, VerifyConfig, run
+    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
+    from orchestrator.entity_resolution import parse_entity_ref
+    from orchestrator.persistence import write_claim_run
+
+    logger.info("dr draft: entity=%s sentence=%s dry_run=%s force=%s", entity_ref, sentence, dry_run, force)
+
+    # Click cannot make SENTENCE conditionally required, so the mode flag and
+    # the sentence are checked here, before any model call.
+    if entity_ref is None:
+        raise click.UsageError("--entity <ref> is required (e.g. --entity products/chatgpt)")
+    if not sentence or not sentence.strip():
+        raise click.UsageError("SENTENCE is required with --entity")
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+    try:
+        resolved_entity = parse_entity_ref(entity_ref, root)
+    except ValueError as exc:
+        raise click.UsageError(f"--entity {entity_ref}: {exc}") from exc
+
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.pipeline import VerifyConfig, verify_claim
-
-    model = ctx.obj["model"]
     overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
     config = VerifyConfig(
-        model=model,
+        model=ctx.obj["model"],
         skip_wayback=skip_wayback,
-        # Nothing is written, so archive lookups check TimeGate only.
-        allow_save=False,
+        repo_root=str(root),
+        force_overwrite=force,
+        # A dry run writes nothing, so archive lookups check TimeGate only.
+        allow_save=not dry_run,
         show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
+    _check_search_key(config)
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
+    spec = ClaimSpec(statement=sentence, entity=resolved_entity)
 
-    resolved_entity = None
-    if "/" in entity:
-        from orchestrator.entity_resolution import parse_entity_ref
-        from common.content_loader import resolve_repo_root
-        try:
-            resolved_entity = parse_entity_ref(entity, resolve_repo_root())
-        except ValueError:
-            pass  # fall back to bare name hint; not an error for claim-probe
+    click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
+    progress("Drafting claim: %s (%s)%s", sentence, entity_ref, " [dry run]" if dry_run else "")
+    result = asyncio.run(run(spec, config, checkpoint=checkpoint))
 
-    progress("Probing claim: %s (%s)", claim, entity)
+    if dry_run:
+        _print_verify_result(result)
+        return
 
-    result = asyncio.run(verify_claim(entity, claim, config, checkpoint, resolved_entity=resolved_entity))
-    _print_verify_result(result)
+    if not _report_unwritable_run(result):
+        sys.exit(1)
 
+    try:
+        claim_path = write_claim_run(
+            result, spec, config,
+            repo_root=root,
+            claim_slug=slugify(result.analyst_output.verdict.title),
+            force=force,
+        )
+    except FileExistsError as exc:
+        click.echo(f"Error: {exc}. Use --force to overwrite it.", err=True)
+        sys.exit(1)
+    except (ValueError, OSError) as exc:
+        click.echo(f"Error: the claim was not written: {exc}", err=True)
+        sys.exit(1)
 
-# --------------------------------------------------------------------------- #
-# dr claim-draft  (formerly verify-claim)                                       #
-# --------------------------------------------------------------------------- #
-
-@main.command("claim-draft")
-@click.argument("entity_ref")
-@click.argument("claim_text")
-@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
-@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
-@click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
-@click.option("--force", is_flag=True, help="Overwrite existing claim file if present")
-@click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
-@click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
-@click.pass_context
-def claim_draft(ctx: click.Context, entity_ref: str, claim_text: str, max_sources: int | None, candidate_pool_size: int | None, skip_wayback: bool, repo_root: str | None, interactive: bool, force: bool, max_initial_queries: int | None, llm_concurrency: int | None) -> None:
-    """Run the full pipeline for a claim and write it to disk with status=draft and no criteria_slug.
-
-    ENTITY_REF is required. Use 'products/chatgpt' to pre-resolve entity from disk
-    (deterministic claim path, skips LLM entity inference), or '-' to let the analyst
-    infer and create the entity.
-
-    Note: claims written by this command are not template-backed (no criteria_slug).
-    Use dr claim-promote to generate a template, then dr onboard --only to create a
-    template-backed claim.
-
-    \b
-    Examples:
-        dr claim-draft products/chatgpt "ChatGPT excludes frontier models from user data training"
-        dr claim-draft - "Some AI company makes a sustainability claim"
-    """
-    logger.info("dr claim-draft: entity_ref=%s claim=%s", entity_ref, claim_text)
-    _check_provider_api_keys(_agent_models_from_ctx(ctx))
-
-    if not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
-        click.echo("Error: BRAVE_WEB_SEARCH_API_KEY not set.", err=True)
-        sys.exit(2)
-
-    click.echo(
-        "Warning: this claim will not be template-backed (no criteria_slug). "
-        "Use dr claim-promote to promote it to a template, then dr onboard --only to re-create it.",
-        err=True,
-    )
-
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.pipeline import VerifyConfig, research_claim
-
-    resolved_entity = None
-    if entity_ref != "-":
-        from orchestrator.entity_resolution import parse_entity_ref
-        from common.content_loader import resolve_repo_root
-        repo_root_path = Path(repo_root) if repo_root else resolve_repo_root()
-        try:
-            resolved_entity = parse_entity_ref(entity_ref, repo_root_path)
-        except ValueError as exc:
-            raise click.UsageError(str(exc)) from exc
-
-    if resolved_entity is not None:
-        click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
-
-    model = ctx.obj["model"]
-    overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
-    config = VerifyConfig(
-        model=model,
-        skip_wayback=skip_wayback,
-        repo_root=repo_root or "",
-        force_overwrite=force,
-        **overrides,
-        **_ctx_per_agent_kwargs(ctx),
-    )
-    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-
-    result = asyncio.run(research_claim(claim_text, config, checkpoint, resolved_entity=resolved_entity))
+    try:
+        claim_rel = claim_path.relative_to(root)
+    except ValueError:
+        claim_rel = claim_path
 
     hr()
-    click.echo("Claim-Draft Report")
+    click.echo("Draft Report")
     hr()
     click.echo(f"Entity:  {result.entity}")
     click.echo(f"Claim:   {result.claim_text}")
     click.echo(f"URLs found: {len(result.urls_found)} | ingested: {len(result.urls_ingested)} | failed: {len(result.urls_failed)}")
     click.echo("")
 
-    if result.analyst_output:
-        a = result.analyst_output
-        click.echo(f"Verdict:    {a.verdict.verdict.value} ({a.verdict.confidence.value})")
-        click.echo(f"Title:      {a.verdict.title}")
-        click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
-    if result.claim_path:
-        from common.sidecar import sidecar_path_for
-        sidecar_rel = str(sidecar_path_for(Path(result.claim_path)))
-        click.echo("")
-        click.echo(f"Claim:   {result.claim_path}")
-        click.echo(f"Audit:   {sidecar_rel}")
+    a = result.analyst_output
+    click.echo(f"Verdict:    {a.verdict.verdict.value} ({a.verdict.confidence.value})")
+    click.echo(f"Title:      {a.verdict.title}")
+    click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
+    click.echo("")
+    click.echo(f"Claim:   {claim_rel}")
+    click.echo(f"Audit:   {sidecar_path_for(Path(claim_rel))}")
     if result.errors:
         click.echo("Errors:")
         for e in result.errors:
             click.echo(f"  ! {e}")
     hr()
+
+
+def _report_unwritable_run(result) -> bool:
+    """Print why a run cannot be written and return False, or return True.
+
+    A blocked run and a run whose analyst failed write nothing: no
+    placeholder claim and no source file.
+    """
+    from common.models import BlockedReason
+    from orchestrator.pipeline import blocked_reason_label
+
+    for err in result.errors:
+        click.echo(f"Warning: {err}", err=True)
+    if result.blocked_reason is not None:
+        label = blocked_reason_label(result.blocked_reason.value, result.errors, failure=result.failure)
+        click.echo(f"Blocked ({result.blocked_reason.value}): {label}. Nothing was written.", err=True)
+        return False
+    if result.analyst_output is None:
+        failure = result.failure
+        if failure is not None:
+            click.echo(
+                f"Error: analyst agent failed: {failure.error_class}: {failure.error_message} "
+                f"(model={failure.model}, timeout_s={failure.timeout_s}). Nothing was written.",
+                err=True,
+            )
+        else:
+            label = blocked_reason_label(BlockedReason.ANALYST_ERROR.value, result.errors)
+            click.echo(f"Error: analyst agent failed ({label}). Nothing was written.", err=True)
+        return False
+    return True
 
 
 # --------------------------------------------------------------------------- #
@@ -1056,40 +1082,32 @@ def claim_refresh(
     CLAIM_REF is entity/claim-slug (e.g. microsoft/publishes-sustainability-report).
     The claim must already exist and must have a criteria_slug. The output is always
     written with status=draft regardless of the previous status; this signals that
-    human review is needed after a pipeline re-run.
+    human review is needed after a pipeline re-run. A blocked or failed run writes
+    nothing and exits 1, so the claim on disk is left as it was.
 
     \b
     Examples:
         dr claim-refresh microsoft/publishes-sustainability-report
         dr claim-refresh subjects/ai-model-producers/signed-ai-safety-commitments
     """
-    import datetime
-
     logger.info("dr claim-refresh: claim_ref=%s", claim_ref)
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     from common.content_loader import resolve_repo_root
     from common.frontmatter import parse_frontmatter
-    from common.models import BlockedReason, Category, ClaimStatus, Confidence, Verdict
+    from common.models import BlockedReason
     from common.templates import (
         blocked_title_message,
         get_template,
         load_templates,
-        render_blocked_title,
         render_claim_text,
         validate_analyst_title,
     )
+    from loop import ClaimSpec, VerifyConfig, run
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.persistence import (
-        _claim_path_for,
-        _write_audit_sidecar,
-        _read_published_snapshot,
-        _write_claim_file,
-        fit_verdict_to_written_pool,
-        verdict_write_kwargs,
-    )
-    from orchestrator.pipeline import VerifyConfig, _build_sub_questions_block, verify_claim
+    from orchestrator.persistence import write_claim_run
+    from orchestrator.pipeline import blocked_reason_label
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -1115,33 +1133,25 @@ def claim_refresh(
         )
         sys.exit(1)
 
+    # The loop runs on a resolved entity, so a claim whose entity file is
+    # missing cannot be refreshed.
     entity_ref = fm.get("entity", "")
-    resolved_entity = None
-    if entity_ref:
-        try:
-            resolved_entity = parse_entity_ref(entity_ref, root)
-        except ValueError as exc:
-            click.echo(f"Warning: could not load entity '{entity_ref}': {exc}", err=True)
-
-    entity_name = (
-        resolved_entity.entity_name
-        if resolved_entity
-        else claim_path.parent.name.replace("-", " ").title()
-    )
+    try:
+        resolved_entity = parse_entity_ref(entity_ref, root)
+    except ValueError as exc:
+        raise click.UsageError(f"could not load entity {entity_ref!r} of {claim_ref}: {exc}") from exc
+    entity_name = resolved_entity.entity_name
 
     try:
         templates = load_templates(root)
         template = get_template(templates, criteria_slug)
     except Exception as exc:
         logger.warning("Could not load templates (falling back to title): %s", exc)
-        templates = []
         template = None
     if template is not None:
         claim_text = render_claim_text(template, entity_name)
     else:
         claim_text = fm.get("title") or fm.get("claim") or claim_path.stem
-
-    claim_slug_for_write = claim_path.stem
 
     model = ctx.obj["model"]
     overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
@@ -1154,190 +1164,37 @@ def claim_refresh(
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
+    _check_search_key(cfg)
     gate = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
-
-    # Read before verify_claim: every branch below overwrites the claim and
-    # resets human_review, which would erase the published verdict and sign-off.
-    previous_publication = _read_published_snapshot(claim_path)
-
-    progress("Refreshing %s (model=%s)...", claim_ref, model)
-
-    # Run full pipeline; writes are handled below per branch.
-    refresh_topics = list(template.topics or []) if template else []
-    vr = asyncio.run(
-        verify_claim(
-            entity_name, claim_text, cfg, gate,
-            resolved_entity=resolved_entity, topics=refresh_topics,
-            template=template,
-        )
+    spec = ClaimSpec(
+        statement=claim_text,
+        entity=resolved_entity,
+        criteria_slug=criteria_slug,
+        topics=list(template.topics or []) if template else [],
+        grading_rule=template.notes if template else None,
+        template=template,
     )
 
-    if vr.errors:
-        for err in vr.errors:
-            click.echo(f"Warning: {err}", err=True)
+    progress("Refreshing %s (model=%s)...", claim_ref, model)
+    vr = asyncio.run(run(spec, cfg, checkpoint=gate))
 
-    ran_at = datetime.datetime.now(tz=datetime.timezone.utc)
-
-    # Determine the entity_ref to pass to _write_claim_file; fall back to the
-    # directory path relative to claims_dir if frontmatter entity is absent.
-    write_entity_ref = entity_ref or str(claim_path.parent.relative_to(claims_dir))
-
-    # Mirror onboard's write pattern (four branches), except that each branch
-    # writes the sidecar before the claim. The sidecar carries the published
-    # snapshot; if the claim write then fails, the claim is still published and
-    # a rerun carries the pending snapshot forward (see _refresh_block).
-    source_ids = vr.persist_sources(root)
-    target_path = _claim_path_for(write_entity_ref, entity_name, claim_slug_for_write, root)
-
-    def _write_sidecar(agents_run: list[str], comparison=None, level_clamp: str | None = None) -> None:
-        _write_audit_sidecar(
-            claim_path=target_path,
-            comparison=comparison,
-            model=model,
-            ran_at=ran_at,
-            sources_consulted=vr.sources_consulted(),
-            agents_run=agents_run,
-            models_used={a: cfg.model_for(a) for a in agents_run},
-            research_trace=vr.research_trace,
-            sub_questions_block=_build_sub_questions_block(
-                vr.sub_questions,
-                vr.sub_question_coverage,
-                vr.queries_by_sub_question,
-            ),
-            reset_review=True,
-            previous_publication=previous_publication,
-            current_source_ids=source_ids,
-            level_clamp=level_clamp,
-        )
-
-    # Branch A: threshold-blocked.
-    if vr.blocked_reason is not None:
-        try:
-            inherited_topics = [Category(t) for t in template.topics] if template else []
-        except ValueError:
-            inherited_topics = []
-        blocked_body = (
-            f"This claim is blocked: `{vr.blocked_reason.value}`. "
-            f"The pipeline halted before the Analyst could produce a verdict. "
-            f"Re-run once more usable sources are available, or archive this claim.\n"
-        )
-        blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
-        _write_sidecar(["researcher", "ingestor"])
-        blocked_path = _write_claim_file(
-            title=blocked_title,
-            entity_name=entity_name,
-            entity_ref=write_entity_ref,
-            topics=inherited_topics,
-            verdict=Verdict.UNVERIFIED,
-            confidence=Confidence.LOW,
-            narrative=blocked_body,
-            claim_slug=claim_slug_for_write,
-            source_ids=source_ids,
-            repo_root=root,
-            force=True,
-            status=ClaimStatus.BLOCKED,
-            blocked_reason=vr.blocked_reason,
-            criteria_slug=criteria_slug,
-        )
-        click.echo(f"Blocked ({vr.blocked_reason.value}): {blocked_path}")
-        return
-
-    # Branch B: analyst failed (no blocked_reason, no analyst_output).
-    if vr.analyst_output is None:
-        try:
-            inherited_topics = [Category(t) for t in template.topics] if template else []
-        except ValueError:
-            inherited_topics = []
-        blocked_body = (
-            f"This claim is blocked: `{BlockedReason.ANALYST_ERROR.value}`. "
-            f"The Analyst agent failed to produce a valid assessment after exhausting retries. "
-            f"Re-run the pipeline to attempt again, or archive this claim if it consistently fails.\n"
-        )
-        blocked_title = render_blocked_title(template, entity_name) if template else fm.get("title", claim_slug_for_write)
-        _write_sidecar(["researcher", "ingestor", "analyst"])
-        blocked_path = _write_claim_file(
-            title=blocked_title,
-            entity_name=entity_name,
-            entity_ref=write_entity_ref,
-            topics=inherited_topics,
-            verdict=Verdict.UNVERIFIED,
-            confidence=Confidence.LOW,
-            narrative=blocked_body,
-            claim_slug=claim_slug_for_write,
-            source_ids=source_ids,
-            repo_root=root,
-            force=True,
-            status=ClaimStatus.BLOCKED,
-            blocked_reason=BlockedReason.ANALYST_ERROR,
-            criteria_slug=criteria_slug,
-        )
-        click.echo(f"Blocked (analyst_error): {blocked_path}")
-        return
-
+    # A blocked or failed run writes nothing: the claim on disk, published or
+    # not, stays as it was.
+    if not _report_unwritable_run(vr):
+        sys.exit(1)
     ao = vr.analyst_output
-
-    # Branch C: title fails template-derivation rules (raw vocab placeholder, value
-    # outside vocabulary, paraphrase, question form, etc.).
-    if template:
+    if template is not None:
         title_ok, title_reason = validate_analyst_title(template, entity_name, ao.verdict.title)
-    else:
-        title_ok, title_reason = True, None
-    if not title_ok:
-        try:
-            inherited_topics = [Category(t) for t in template.topics]
-        except ValueError:
-            inherited_topics = []
-        blocked_body, echo_label = blocked_title_message(
-            template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
-        )
-        _write_sidecar(["researcher", "ingestor", "analyst"])
-        blocked_path = _write_claim_file(
-            title=render_blocked_title(template, entity_name),
-            entity_name=entity_name,
-            entity_ref=write_entity_ref,
-            topics=inherited_topics,
-            verdict=Verdict.UNVERIFIED,
-            confidence=Confidence.LOW,
-            narrative=blocked_body,
-            claim_slug=claim_slug_for_write,
-            source_ids=source_ids,
-            repo_root=root,
-            force=True,
-            status=ClaimStatus.BLOCKED,
-            blocked_reason=BlockedReason.ANALYST_ERROR,
-            criteria_slug=criteria_slug,
-        )
-        click.echo(f"Blocked ({echo_label}): {blocked_path}")
-        return
+        if not title_ok:
+            _body, extra_label = blocked_title_message(
+                template, ao.verdict.title, title_reason, BlockedReason.ANALYST_ERROR.value
+            )
+            label = blocked_reason_label(BlockedReason.ANALYST_ERROR.value, vr.errors, extra=extra_label)
+            click.echo(f"Blocked ({BlockedReason.ANALYST_ERROR.value}): {label}. Nothing was written.", err=True)
+            sys.exit(1)
 
-    # Branch D: success.
-    try:
-        inherited_topics = [Category(t) for t in template.topics] if template else list(ao.verdict.topics)
-    except ValueError as exc:
-        logger.warning("Template %s has invalid topic; falling back to analyst topics: %s", criteria_slug, exc)
-        inherited_topics = list(ao.verdict.topics)
-
-    level_clamp = fit_verdict_to_written_pool(ao.verdict, vr.sources, source_ids, entity_name)
-    if level_clamp:
-        click.echo(f"Level fit: {level_clamp}")
-    _write_sidecar(["researcher", "ingestor", "analyst", "auditor"], vr.consistency, level_clamp)
-    claim_path_written = _write_claim_file(
-        title=ao.verdict.title,
-        entity_name=entity_name,
-        entity_ref=write_entity_ref,
-        topics=inherited_topics,
-        verdict=ao.verdict.verdict,
-        confidence=ao.verdict.confidence,
-        narrative=ao.verdict.narrative,
-        claim_slug=claim_slug_for_write,
-        source_ids=source_ids,
-        repo_root=root,
-        force=True,
-        status=ClaimStatus.DRAFT,
-        criteria_slug=criteria_slug,
-        seo_title=ao.verdict.seo_title,
-        takeaway=ao.verdict.takeaway,
-        **verdict_write_kwargs(ao.verdict),
+    claim_path_written = write_claim_run(
+        vr, spec, cfg, repo_root=root, claim_slug=claim_path.stem, force=True,
     )
 
     click.echo(f"Refreshed: {claim_path_written}")
@@ -1544,20 +1401,20 @@ def step_audit(
         dr step-audit --claim ecosia/renewable-energy-hosting
         dr step-audit --claim ecosia/renewable-energy-hosting --write
     """
-    import datetime
-    import yaml as _yaml
-
     logger.info(
         "dr step-audit: claim=%s entity=%s topic=%s dry_run=%s do_write=%s",
         claim, entity, topic, dry_run, do_write,
     )
-    from common.content_loader import list_claims, load_entity, load_source, resolve_repo_root
-    from common.frontmatter import parse_frontmatter
-    from common.models import Category, Confidence, Verdict
-    from auditor.agent import auditor_agent, build_auditor_prompt
-    from auditor.compare import compare
-    from auditor.models import ClaimBundle, EntityContext, SourceContext
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
     from auditor.report import format_json_report, format_text_report
+    from common.content_loader import list_claims, load_entity, resolve_repo_root
+    from common.frontmatter import parse_frontmatter
+    from common.models import Category, Confidence, Verdict, VerificationLevel
+    from common.sidecar import sidecar_path_for
+    from common.templates import render_claim_text
+    from loop import ClaimSpec, VerifyConfig, rerun
+    from orchestrator.entity_resolution import parse_entity_ref
+    from orchestrator.persistence import load_source_dict, write_evaluator_rerun
 
     auditor_model = ctx.obj.get("auditor_model") or ctx.obj["model"]
     _check_provider_api_keys(auditor_model)
@@ -1574,9 +1431,9 @@ def step_audit(
         click.echo("No claims found.", err=True)
         sys.exit(0)
 
+    cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
+
     async def _run():
-        from auditor.compare import compare as _compare
-        from orchestrator.persistence import _write_audit_sidecar
         results = []
         for path in claim_paths:
             text = path.read_text(encoding="utf-8")
@@ -1588,60 +1445,64 @@ def step_audit(
             if fm.get("status") == "blocked":
                 click.echo(f"Skipped (blocked): {claim_id}", err=True)
                 continue
-            actual_verdict = Verdict(fm["verdict"])
-            actual_confidence = Confidence(fm["confidence"])
 
             entity_fm, _ = load_entity(fm["entity"], root)
-            ent = EntityContext(
-                name=entity_fm["name"],
-                type=entity_fm["type"],
-                description=entity_fm["description"],
-            )
-
-            source_contexts = []
-            sources_consulted = []
+            sources = []
             for sid in fm.get("sources", []):
-                try:
-                    src_fm, src_body = load_source(sid, root)
-                    source_contexts.append(SourceContext(
-                        id=sid,
-                        title=src_fm["title"],
-                        publisher=src_fm["publisher"],
-                        summary=src_fm["summary"],
-                        key_quotes=src_fm.get("key_quotes", []) or [],
-                        body=src_body,
-                    ))
-                    sources_consulted.append({
-                        "id": sid,
-                        "url": src_fm.get("url", ""),
-                        "title": src_fm["title"],
-                        "ingested": True,
-                    })
-                except FileNotFoundError:
+                sd = load_source_dict(sid, root)
+                if sd is None:
                     click.echo(f"Warning: source '{sid}' not found", err=True)
-
-            template = _claim_template(fm, root)
-            bundle = ClaimBundle(
-                claim_id=claim_id,
-                # The title is the statement the pipeline graded when it wrote
-                # this claim; blocked claims were skipped above.
-                claim_text=fm["title"],
-                entity=ent,
-                topics=[Category(t) for t in fm["topics"]],
-                narrative=body,
-                sources=source_contexts,
-                criterion_notes=template.notes if template else None,
-            )
+                    continue
+                sources.append(sd)
 
             if dry_run:
                 click.echo(f"[dry-run] Would audit: {claim_id}")
                 continue
 
+            # The claim file is the analysis the Evaluator grades. Built
+            # without validation: a claim written before seo_title existed
+            # does not validate as a VerdictAssessment.
+            level = fm.get("verification_level")
+            analysis = AnalystOutput.model_construct(
+                entity=EntityResolution(
+                    entity_name=entity_fm["name"],
+                    entity_type=entity_fm["type"],
+                    entity_description=entity_fm["description"],
+                ),
+                verdict=VerdictAssessment.model_construct(
+                    title=fm["title"],
+                    verdict=Verdict(fm["verdict"]),
+                    confidence=Confidence(fm["confidence"]),
+                    narrative=body,
+                    topics=[Category(t) for t in fm["topics"]],
+                    verification_level=VerificationLevel(level) if level else None,
+                    seo_title=fm.get("seo_title") or "",
+                    takeaway=fm.get("takeaway"),
+                    cap_rationale=fm.get("cap_rationale"),
+                    source_overrides=None,
+                    cited_sources=[],
+                ),
+            )
+            template = _claim_template(fm, root)
+            # The title is the statement the pipeline graded when it wrote
+            # this claim; blocked claims were skipped above.
+            spec = ClaimSpec(
+                statement=render_claim_text(template, entity_fm["name"]) if template else fm["title"],
+                entity=parse_entity_ref(fm["entity"], root),
+                criteria_slug=fm.get("criteria_slug"),
+                grading_rule=template.notes if template else None,
+                template=template,
+            )
+
             progress("Auditing: %s ...", claim_id)
-            prompt = build_auditor_prompt(bundle)
-            with auditor_agent.override(model=resolve_model(auditor_model)):
-                res = await auditor_agent.run(prompt)
-            result = _compare(actual_verdict, actual_confidence, res.output, claim_id, str(path.relative_to(root)))
+            graded = await rerun(spec, cfg, sources, agent="evaluator", analyst_output=analysis)
+            if graded.consistency is None:
+                reason = "; ".join(graded.errors) or "the title fails its criterion"
+                click.echo(f"Skipped (not graded): {claim_id}: {reason}", err=True)
+                continue
+            result = graded.consistency.model_copy(
+                update={"claim_id": claim_id, "claim_file": str(path.relative_to(root))}
+            )
 
             if verbose or result.needs_review:
                 click.echo(
@@ -1652,67 +1513,8 @@ def step_audit(
             results.append(result)
 
             if do_write:
-                from common.sidecar import sidecar_path_for
-                sidecar_path = sidecar_path_for(path)
-                research_trace = None
-                sub_questions_block = None
-                level_clamp = None
-                if sidecar_path.exists():
-                    try:
-                        existing = _yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
-                        research_trace = existing.get("research")
-                        sub_questions_block = existing.get("sub_questions")
-                        # The claim is not rewritten, so the level fit's note
-                        # on it still holds.
-                        level_clamp = (existing.get("pipeline_run") or {}).get("level_clamp")
-                        # Re-graft per-URL `acquisition` from the existing
-                        # sidecar's `sources_consulted[]` back into the
-                        # research_trace so _write_audit_sidecar can graft
-                        # it again on this rewrite. Without this, a re-audit
-                        # silently drops the acquisition data the original
-                        # research run produced (the auditor doesn't re-run
-                        # research).
-                        existing_sources = existing.get("sources_consulted") or []
-                        prior_acquisition = {
-                            s["url"]: s["acquisition"]
-                            for s in existing_sources
-                            if isinstance(s, dict)
-                            and s.get("url")
-                            and isinstance(s.get("acquisition"), dict)
-                        }
-                        if prior_acquisition and isinstance(research_trace, dict):
-                            research_trace = {
-                                **research_trace,
-                                "acquisition": prior_acquisition,
-                            }
-                        # The archive lookup outcome lives on the entries
-                        # themselves, so it is carried over by URL directly.
-                        prior_archive = {
-                            s["url"]: s["archive"]
-                            for s in existing_sources
-                            if isinstance(s, dict)
-                            and s.get("url")
-                            and isinstance(s.get("archive"), dict)
-                        }
-                        for entry in sources_consulted:
-                            if entry["url"] in prior_archive:
-                                entry["archive"] = prior_archive[entry["url"]]
-                    except _yaml.YAMLError:
-                        pass
-                _write_audit_sidecar(
-                    claim_path=path,
-                    comparison=result,
-                    model=auditor_model,
-                    ran_at=datetime.datetime.now(tz=datetime.timezone.utc),
-                    sources_consulted=sources_consulted,
-                    agents_run=["auditor"],
-                    models_used={"auditor": auditor_model},
-                    research_trace=research_trace,
-                    sub_questions_block=sub_questions_block,
-                    level_clamp=level_clamp,
-                    keep_other_models=True,
-                )
-                click.echo(f"Wrote {sidecar_path}")
+                write_evaluator_rerun(path, graded, cfg)
+                click.echo(f"Wrote {sidecar_path_for(path)}")
 
         if results:
             if output_format == "json":
@@ -1845,7 +1647,8 @@ def onboard(
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.pipeline import OnboardResult, VerifyConfig, onboard_entity
+    from loop import VerifyConfig
+    from orchestrator.pipeline import onboard_entity
 
     model = ctx.obj["model"]
     overrides = {k: v for k, v in {"max_sources": max_sources, "candidate_pool_size": candidate_pool_size, "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency}.items() if v is not None}
@@ -1857,6 +1660,7 @@ def onboard(
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
+    _check_search_key(config)
     checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     only_slugs = [s.strip() for s in only.split(",") if s.strip()] if only else None
@@ -2024,7 +1828,8 @@ def entity_enrich(
             )
 
     from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
-    from orchestrator.pipeline import VerifyConfig, enrich_entity
+    from loop import VerifyConfig
+    from orchestrator.pipeline import enrich_entity
 
     model = ctx.obj["model"]
     config = VerifyConfig(

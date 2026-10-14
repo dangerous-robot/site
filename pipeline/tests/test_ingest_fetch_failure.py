@@ -23,7 +23,7 @@ from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
 from ingestor.agent import IngestorDeps, fetch_failure_reason, ingestor_agent, web_fetch
-from orchestrator.pipeline import VerifyConfig, _ingest_one
+from loop import VerifyConfig, ingest_one
 
 _TODAY = datetime.date(2026, 10, 4)
 _DNS_ERROR = "[Errno 8] nodename nor servname provided, or not known"
@@ -181,11 +181,11 @@ async def _run_ingest_one(url: str, model: FunctionModel, tmp_path, *, skip_wayb
     async with httpx.AsyncClient() as client:
         with ingestor_agent.override(model=model):
             # Keep our FunctionModel: neutralize the orchestrator's own override.
-            with patch(
-                "orchestrator.pipeline.ingestor_agent.override",
+            with patch.object(
+                        ingestor_agent, "override",
                 side_effect=lambda **kw: nullcontext(),
             ):
-                return await _ingest_one(client, url, cfg, _TODAY, asyncio.Semaphore(8))
+                return await ingest_one(client, url, cfg, _TODAY, asyncio.Semaphore(8))
 
 
 @pytest.mark.asyncio

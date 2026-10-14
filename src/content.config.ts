@@ -46,6 +46,8 @@ const auditSchema = z.object({
     ran_at: z.coerce.date(),
     model: z.string(),
     agents: z.array(z.string()),
+    // The claim run that wrote this sidecar (one per `dr draft` and per claim inside onboard).
+    run_id: z.string().optional(),
   }),
   // Per-agent model lineage. Optional during the v1 transition: existing sidecars
   // written before this field landed validate without it; new sidecars always carry it.

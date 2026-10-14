@@ -14,12 +14,11 @@ Sections:
 
 ## 1. Claim lifecycle
 
-Every claim moves through the same set of states regardless of how it was initiated (`dr claim-draft`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
+Every claim moves through the same set of states regardless of how it was initiated (`dr draft`, `dr onboard`, or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft: dr claim-draft / dr claim-refresh / dr onboard / manual edit
-    draft --> blocked: pipeline threshold gate (< 4 sources or terminal fetch error)
+    [*] --> draft: dr draft / dr claim-refresh / dr onboard / manual edit
     blocked --> archived: dr review --archive
     draft --> under_review: PR opened
     under_review --> draft: PR closed without merge
@@ -33,7 +32,7 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `blocked` is written by the orchestrator when the post-ingest threshold gate fails. The frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
+- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), whose analyst fails, or whose analyst title fails the claim's template writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
 - Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
@@ -49,7 +48,7 @@ flowchart LR
     A([Human or agent]) -->|adds URL or topic| B[research/QUEUE.md]
     B -->|operator picks item| C{Item type}
     C -->|URL| D[dr step-ingest URL]
-    C -->|claim text| E[dr claim-draft claim-text]
+    C -->|claim text| E[dr draft --entity ref claim-text]
     C -->|new entity| F[dr onboard entity type]
     D --> G[Source file written to research/sources/]
     E --> H[Source + claim files written]
@@ -64,16 +63,16 @@ flowchart LR
 
 ## 3. Pipeline execution
 
-The core four-step pipeline as a sequence of messages between agents and the two human checkpoints. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the statement the claim file carries as its title: the analyst's title, which for a template-backed claim must pass the template (vocabulary slot resolved). A title that fails the template skips the Evaluator, since the claim is written as blocked. `dr claim-probe`, which writes nothing, grades the operator's text. For a template-backed claim the analyst and the Evaluator both get the criterion's `notes` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a note's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the note does not name.
+The core four-step pipeline as a sequence of messages between agents and the human checkpoint. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the statement the claim file carries as its title: the analyst's title, which for a template-backed claim must pass the template (vocabulary slot resolved). A title that fails the template skips the Evaluator, and the run writes nothing. `dr draft` (with or without `--dry-run`) has no template and grades the operator's text. For a template-backed claim the analyst and the Evaluator both get the criterion's `notes` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a note's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the note does not name.
 
 Ingest order and the listed sources:
 
 - The Researcher ranks the URLs the scorer kept: pages on the entity's own website host first, then by the scorer's score, then by scorer position. A parent company's host gets no boost.
 - Before ingest the URLs are reordered so the sub-question with the fewest sources (dedup hits already on disk count) is filled first. Each pick takes that sub-question's first URL in ranked order, so an entity page that addresses only a well-covered sub-question can follow URLs for thinner ones. The candidate pool cut (`candidate_pool_size`) always keeps each sub-question's first two URLs and fills the rest in ranked order, so a thin sub-question's low-scored URLs stay in the pool.
 - A sub-question that no ingested source addresses is logged as a warning, which the console shows. The analyst prompt marks it, and the narrative describes the gap in plain words without the sub-question id. The sidecar's `sub_questions[].citations` is empty for it.
-- After the analyst, the claim lists only the sources it relied on: the ids in its `cited_sources`, the sources its own `source_overrides` name (the entity-match relabels do not count, but an analyst override the entity match corrects does), and the sources whose title the narrative names. Uncited fresh sources are not written. A claim blocked because its title fails the template lists every ingested source. Every ingested source stays in the sidecar's `sources_consulted`.
+- After the analyst, the claim lists only the sources it relied on: the ids in its `cited_sources`, the sources its own `source_overrides` name (the entity-match relabels do not count, but an analyst override the entity match corrects does), and the sources whose title the narrative names. Uncited fresh sources are not written. Every ingested source stays in the sidecar's `sources_consulted`.
 - Every ingested source is listed when nothing is cited, or when the cited subset would support a lower `verification_level` than the full list (both checked with the write-time level fit).
-- The Evaluator grades against the listed sources. When the analyst fails, `dr claim-draft` writes every ingested source and no claim.
+- The Evaluator grades against the listed sources. When the analyst fails, or the run is blocked, nothing is written: no source file, no claim and no sidecar.
 
 ```mermaid
 sequenceDiagram
@@ -98,11 +97,8 @@ sequenceDiagram
         Ingestor-->>Operator: SourceFile N
     end
 
-    Operator->>Human: checkpoint review_sources
-    Human-->>Operator: proceed or halt
-
     alt below_threshold (< 4 usable sources)
-        Operator-->>Operator: status=blocked + blocked_reason; return
+        Operator-->>Operator: blocked_reason set, nothing written; return
     else proceed
         Operator->>Analyst: sources
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
@@ -154,18 +150,17 @@ flowchart TD
 
     LOOP["For each template slug
     — render claim text
-    — run verify_claim pipeline
-    — write source files
-    — write claim file
-    — write audit sidecar"]
+    — run the loop (run)
+    — write source files, claim file and
+      audit sidecar (write_claim_run)"]
 
     LOOP -->|template succeeded| NEXT{More templates?}
-    LOOP -->|template failed| FERR[Log error, continue]
+    LOOP -->|template blocked or failed: nothing written| FERR[Log error, continue]
     FERR --> NEXT
     NEXT -->|yes| LOOP
     NEXT -->|no| DONE
 
-    DONE([OnboardResult: claims_created, claims_failed])
+    DONE([OnboardResult: claims_created, claims_blocked, claims_failed])
     DRAFT --> DONE2([OnboardResult: status=rejected])
 ```
 
@@ -179,11 +174,7 @@ Two zones separate pipeline-internal gates (run locally before a PR is opened) f
 flowchart TD
     subgraph before ["Before PR (local)"]
         direction TB
-        START([Author runs pipeline or edits files]) --> PG1
-        PG1{"review_sources
-        (pipeline checkpoint)"}
-        PG1 -->|halt: poor sources| START
-        PG1 -->|proceed| PG2
+        START([Author runs pipeline or edits files]) --> PG2
         PG2{"review_disagreement
         (pipeline checkpoint)"}
         PG2 -->|flag for human review| START
@@ -237,7 +228,7 @@ Notes:
 
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 - A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. It skips a draft whose verdict differs from the analyst verdict in its sidecar unless `human_review.verdict_override` records that change, because only `dr review` records an override (with its reviewer).
-- `dr claim-refresh` (and the forced rewrites `dr step-analyze --write --force`, `dr claim-draft --force` and `dr onboard --force`) on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
+- `dr claim-refresh` (and the forced rewrites `dr step-analyze --write --force`, `dr draft --force` and `dr onboard --force`) on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 
@@ -276,7 +267,7 @@ sequenceDiagram
     Note over URLScorer: structured output, no tools
     URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 4, dropped < 4)
 
-    Note over Orchestrator: if kept=[] (drop-all), return empty URL list; claim blocked as insufficient_sources
+    Note over Orchestrator: if kept=[] (drop-all), return empty URL list; run blocked as insufficient_sources, nothing written
 
     Orchestrator-->>Orchestrator: apply max_sources cap, blocklist filter
 ```

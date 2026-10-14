@@ -17,7 +17,7 @@ from common.models import ACADEMIC_ORIGINS, ACADEMIC_TOPICS, SubQuestion, resolv
 from common.publisher_quality import classify_url_publisher_quality
 from common.source_classification import EntityIdentity, profile_url_names_entity
 from common.utils import host_matches, url_host
-from orchestrator.checkpoints import StepError
+from loop.errors import StepError
 from orchestrator.entity_resolution import (
     ResolvedEntity,
     build_entity_context,
@@ -43,7 +43,7 @@ from researcher.tools.tavily import TavilyRateLimitError, search_tavily
 _KNOWN_BACKENDS: frozenset[str] = frozenset({"brave", "tavily"})
 
 if TYPE_CHECKING:
-    from orchestrator.pipeline import VerifyConfig
+    from loop.spec import VerifyConfig
 
 logger = logging.getLogger(__name__)
 

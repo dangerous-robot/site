@@ -108,7 +108,7 @@ Any other tag is accepted and stored. New behavioral tags should be added to thi
 
 ## Agent Roles
 
-Roles are listed below; several are automated via PydanticAI agents in `pipeline/`. Pipeline routing and persistence live in `orchestrator/`.
+Roles are listed below; several are automated via PydanticAI agents in `pipeline/`. The research run (research, ingest, analyse, evaluate) lives in `loop/`; routing, persistence and the `dr` commands live in `orchestrator/`.
 
 | Role | What it does | Status | Package |
 |------|-------------|--------|---------|
@@ -129,7 +129,9 @@ pipeline/
   researcher/      # Agent: claim -> relevant URLs
   analyst/         # Agent: sources + claim -> verdict + narrative
   auditor/         # Evaluator role; directory rename to evaluator/ deferred to post-v1
-  orchestrator/    # Routing logic, checkpoints, persistence, dr CLI
+  loop/            # The one research run (run, rerun) and StepError; imports no writer
+  orchestrator/    # Routing logic, checkpoints, persistence (the one writer), dr CLI
+  linter/          # dr lint static content checks (no LLM, no network)
   tests/
 ```
 
@@ -141,14 +143,13 @@ Each agent package contains an `instructions.md` file that is loaded at import t
 
 The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` protocol:
 
-- `review_sources` -- fires after ingest; allows halting before analysis when sources are poor
 - `review_disagreement` -- fires when analyst and evaluator verdicts conflict
 - `review_onboard` -- fires during `dr onboard` after applicable claim templates are selected; responses are `accept`, `reject`, or an edited list of template slugs to keep
 - `review_entity_disambiguation` -- fires during `dr onboard` when the entity resolver finds ambiguous candidates
 - `review_verification_status` -- fires during `dr onboard` when the verifier finds no strong public signal for the entity; the operator picks the `verification_status` label (`unverified-startup` or `unverified-other`) or aborts
 - `review_entity_enrichment` -- fires during `dr onboard` after the enricher proposes entity metadata
 
-Pass `--interactive` to `dr claim-probe`, `dr claim-draft`, or `dr onboard` to enable CLI prompts. Tests use `AutoApproveCheckpointHandler`.
+Pass `--interactive` to `dr draft`, `dr claim-refresh`, `dr onboard`, or `dr entity-enrich` to enable CLI prompts (only the checkpoints above that the command reaches fire). Tests use `AutoApproveCheckpointHandler`.
 
 ### Tooling: dr vs inv
 
@@ -156,15 +157,14 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: claim-probe, claim-draft, claim-refresh, claim-promote, evaluate, ingest |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: draft, claim-refresh, claim-promote, onboard, step-* commands |
 | `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
 
 ```
-uv run dr claim-probe "Entity" "claim text"
-uv run dr claim-draft products/chatgpt "ChatGPT excludes frontier models from user data training"
-uv run dr claim-draft - "Some AI company makes a sustainability claim"
+uv run dr draft --dry-run --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
+uv run dr draft --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
 uv run dr step-audit --entity ecosia
 uv run dr step-ingest https://example.com/article
 uv run dr onboard "Ecosia AI" --type product
@@ -174,15 +174,15 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 
 Commands:
 
-- `dr claim-probe` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
-- `dr claim-draft` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). First argument is ENTITY_REF: use 'products/chatgpt' to pre-resolve entity from disk (deterministic claim path, skips LLM inference), or '-' to let the analyst infer and create the entity.
+- `dr draft --dry-run --entity <ref> "<sentence>"` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
+- `dr draft --entity <ref> "<sentence>"` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). `--entity` names an existing entity file (for example `products/chatgpt`); there is no entity inference. A blocked run, or one where the analyst fails, writes nothing and exits 1. `--force` overwrites an existing claim.
 - `dr claim-refresh` -- Re-run the full pipeline on an existing template-backed claim file (must have `criteria_slug`; use `dr claim-promote` first for ad-hoc drafts)
 - `dr claim-promote` -- Promote an ad-hoc claim to a reusable template entry in `research/templates.yaml`
 - `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr reassess` and `dr ingest` remain as hidden deprecated aliases for the last two)
 - `dr onboard` -- Onboard an entity using claim templates
 - `dr wayback-backfill` -- Add an archive.org link (`archived_url`) to existing source files that lack one; `--recheck` also checks existing links and replaces or removes a bad one; exits 1 if any could not be archived
 
-Archive.org captures (Save Page Now): `dr claim-draft`, `dr claim-refresh`, `dr onboard`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered); `dr entity-enrich` and onboard's light research capture only when the ingest model recovers a failed fetch. `dr claim-probe`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
+Archive.org captures (Save Page Now): `dr draft`, `dr claim-refresh`, `dr onboard`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered); `dr entity-enrich` and onboard's light research capture only when the ingest model recovers a failed fetch. `dr draft --dry-run`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar. It needs a person at a terminal: stdin must be a tty and the claim slug is typed back before anything is written, so a piped command cannot sign off (`dr review-queue`'s `a` action has the same check). Agents: do not run it, and do not wrap it in a pty (`script`, `expect`, Python `pty`) or edit a sidecar's `human_review` by hand; a sign-off is Brandon's
 

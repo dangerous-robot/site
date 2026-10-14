@@ -1,7 +1,7 @@
 """Drift smoke test for StepError.error_type vocabulary.
 
 The ``error_type`` field on ``StepError`` is intentionally a free-form
-``str`` (see the class docstring in ``orchestrator/checkpoints.py``).
+``str`` (see the class docstring in ``loop/errors.py``).
 That flexibility is convenient but easy to abuse: a contributor can add
 ``error_type="foo"`` in production code without telling anyone, and the
 docstring slowly goes stale.
@@ -27,11 +27,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
-from orchestrator.checkpoints import StepError
+from loop.errors import StepError
 
 
 # Mirror of the in-use + reserved vocabulary from the StepError docstring.
-# Keep this in sync with orchestrator/checkpoints.py::StepError.__doc__.
+# Keep this in sync with loop/errors.py::StepError.__doc__.
 # The smoke test below also asserts the docstring itself contains each
 # of these literals, so drift between this list and the docstring fails
 # loudly before drift between either and production code can hide.

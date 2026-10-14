@@ -18,7 +18,7 @@ from pydantic_ai.models.test import TestModel
 from pydantic_ai.usage import RunUsage
 
 from ingestor.agent import IngestorDeps, web_fetch
-from orchestrator.pipeline import VerifyConfig, _ingest_urls
+from loop import VerifyConfig, ingest_urls
 
 
 def _make_ctx(
@@ -134,9 +134,9 @@ class TestIngestUrlsPrefetched:
             return (url, sf)
 
         with patch(
-            "orchestrator.pipeline._ingest_one", side_effect=_fake_ingest_one
+            "loop.ingest.ingest_one", side_effect=_fake_ingest_one
         ):
-            results, errors = await _ingest_urls(
+            results, errors = await ingest_urls(
                 None, urls, cfg, sem, prefetched_bodies=bodies
             )
 

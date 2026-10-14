@@ -49,14 +49,10 @@ The recheck loop is described architecturally but has no operational owner. With
 
 ---
 
-## 3. Pipeline deduplication: coupling tradeoff
+## 3. Pipeline deduplication: coupling tradeoff (resolved)
 
-**Where**: `pipeline/orchestrator/pipeline.py`
+**Where**: `pipeline/loop/` (the run) and `pipeline/orchestrator/persistence.py` (the writer)
 
-`verify_claim()`, `research_claim()`, and the per-template loop in `onboard_entity()` implement the same four-step pipeline (researcher, ingestor, checkpoint, analyst, evaluator) with small variations. The primary variation is whether files are written to disk.
+Resolved by RE-AR (One loop, one writer). `dr draft`, `dr claim-refresh` and the per-template loop in `onboard_entity()` all call `loop.run`, which writes nothing, and then the one write function `write_claim_run`. No module under `pipeline/loop/` imports a writer, so a dry run cannot write by a flipped conditional.
 
-A shared pipeline core with a `persist: bool` flag (or persistence callback) would reduce duplication. The risk is that `dr claim-probe` (no writes, safe for dry-run use) and `dr claim-draft` (file-writing) would share a code path where a single conditional separates the two behaviors. A bug in the conditional could cause `dr claim-probe` to write files unexpectedly.
-
-This is not a blocker for any current work. The existing structure is redundant but safe. Refactoring here should happen only after the v1.0.0 milestone is stable, when the behavior of all three paths is well-tested and the refactor risk is lower.
-
-**The question**: Is there appetite to refactor this before or after v1.0.0? If before, a clear test harness verifying `dr claim-probe` produces zero file writes is a prerequisite.
+Two tests pin the dry-run guarantee in `pipeline/tests/test_loop_probe_safety.py`: `test_dry_run_reaches_no_writer_and_no_archive_save` (no `_write_*` function, no `persist_sources`, no archive save is reached, and `allow_save` is `False`) and `test_dry_run_with_wayback_on_never_asks_for_a_capture`. `test_loop_package_imports_no_writer` in the same file pins the import rule.

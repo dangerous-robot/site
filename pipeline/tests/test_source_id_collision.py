@@ -26,7 +26,7 @@ from ingestor.agent import ingestor_agent
 from ingestor.models import SourceFile
 from orchestrator.cli import main
 from orchestrator.persistence import _write_source_files, resolve_source_slugs
-from orchestrator.pipeline import VerifyConfig, _ingest_urls
+from loop import VerifyConfig, ingest_urls
 
 MS_URL = "https://datacenters.microsoft.com/sustainability/"
 AWS_URL = "https://aws.amazon.com/sustainability"
@@ -134,8 +134,8 @@ async def test_ingest_urls_assigns_unique_ids(tmp_path: Path) -> None:
     async def _fake_ingest_one(client, url, cfg, today, sem, prefetched_body=None, **_):
         return (url, _sf(url))
 
-    with patch("orchestrator.pipeline._ingest_one", side_effect=_fake_ingest_one):
-        results, errors = await _ingest_urls(
+    with patch("loop.ingest.ingest_one", side_effect=_fake_ingest_one):
+        results, errors = await ingest_urls(
             None, [AWS_URL, AWS_UTIL_URL], cfg, asyncio.Semaphore(8)
         )
 

@@ -20,6 +20,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from analyst.agent import VerdictAssessment
+    from common.models import SubQuestion
+    from loop import ClaimSpec, VerificationResult, VerifyConfig
     from orchestrator.entity_resolution import SearchHints
 from common.models import (
     INDEPENDENT_SOURCES_REQUIRED,
@@ -343,7 +345,7 @@ def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
     return {
         "verification_level": level.value if level is not None else None,
         "cap_rationale": verdict.cap_rationale,
-        "cap_rationale_fitted": getattr(verdict, "_cap_rationale_fitted", False),
+        "cap_rationale_fitted": getattr(verdict, "cap_rationale_fitted", False),
         "source_overrides": (
             [o.model_dump(mode="python", exclude_none=True) for o in overrides]
             if overrides else None
@@ -436,7 +438,7 @@ def fit_verdict_to_written_pool(
             # Marked fitted only when the analyst gave no rationale: then the
             # template is all this run proposes. Otherwise a rationale the
             # operator wrote on the claim still wins at write time.
-            verdict._cap_rationale_fitted = not verdict.cap_rationale
+            verdict.cap_rationale_fitted = not verdict.cap_rationale
             verdict.cap_rationale = (
                 "Confidence is capped at low: no source on this claim independently "
                 f"addresses {shorten(entity_name, 200)}."
@@ -459,6 +461,19 @@ def _enum_value(value: object) -> object:
 
 
 _CAPPED_LEVELS = frozenset({VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value})
+
+
+# Every frontmatter key a claim file may carry: the keys ``_write_claim_file``
+# writes, plus ``phase`` (``set_claim_status``) and the recheck and audit keys
+# the site schema declares. The linter's ``CANONICAL_CLAIM_KEYS`` is this set,
+# so a key the writer starts writing cannot be flagged as unknown.
+CLAIM_FRONTMATTER_KEYS: tuple[str, ...] = (
+    "title", "entity", "topics", "verdict", "confidence",
+    "verification_level", "cap_rationale", "takeaway", "seo_title",
+    "criteria_slug", "status", "phase", "blocked_reason", "as_of", "sources",
+    "source_overrides", "corrections", "tags",
+    "recheck_cadence_days", "next_recheck_due", "audit",
+)
 
 
 def _write_claim_file(
@@ -896,6 +911,14 @@ def mark_forced_rewrite(
     return True
 
 
+# The top-level keys ``_write_audit_sidecar`` owns; any other key on an
+# existing sidecar is carried forward unchanged.
+_SIDECAR_KEYS = frozenset({
+    "schema_version", "pipeline_run", "models_used", "research", "sub_questions",
+    "sources_consulted", "refresh", "audit", "human_review", "analyst_record",
+})
+
+
 def _write_audit_sidecar(
     claim_path: Path,
     comparison: ComparisonResult | None,
@@ -913,6 +936,7 @@ def _write_audit_sidecar(
     analyst_record: dict | None = None,
     level_clamp: str | None = None,
     keep_other_models: bool = False,
+    run_id: str | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -934,6 +958,13 @@ def _write_audit_sidecar(
     this run did not invoke, for a run that rewrites the sidecar without
     rewriting what those agents produced (``dr step-audit --write``).
 
+    ``run_id`` is written as ``pipeline_run.run_id``, so the sidecar names the
+    run that wrote it.
+
+    Every other top-level key of the existing sidecar (one this function does
+    not write, such as a key a later tool added) is carried forward after
+    ``analyst_record``.
+
     Returns the sidecar path.
     """
     sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
@@ -950,6 +981,7 @@ def _write_audit_sidecar(
     # and a passed record holds only this run's fields.
     if isinstance(existing.get("analyst_record"), dict):
         analyst_record = existing["analyst_record"]
+    carried = {k: v for k, v in existing.items() if k not in _SIDECAR_KEYS}
 
     if comparison is not None:
         audit_block = {
@@ -968,8 +1000,8 @@ def _write_audit_sidecar(
         audit_block = None
 
     # Preserve human_review across mid-pipeline reruns, but reset it when the
-    # operator explicitly refreshes a claim (reset_review=True). The claim-refresh
-    # command sets reset_review=True because a full re-run invalidates prior signoff.
+    # caller passes reset_review=True. No command passes it: a forced rewrite
+    # resets sign-off through ``mark_forced_rewrite`` before this write.
     human_review = {
         "reviewed_at": None,
         "reviewer": None,
@@ -1041,6 +1073,8 @@ def _write_audit_sidecar(
         "model": model,
         "agents": agents_run,
     }
+    if run_id:
+        pipeline_run_block["run_id"] = run_id
     if level_clamp:
         pipeline_run_block["level_clamp"] = level_clamp
     if failure is not None:
@@ -1062,6 +1096,7 @@ def _write_audit_sidecar(
     sidecar_data["human_review"] = human_review
     if analyst_record is not None:
         sidecar_data["analyst_record"] = analyst_record
+    sidecar_data.update(carried)
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
@@ -1069,6 +1104,262 @@ def _write_audit_sidecar(
     )
     logger.info("Wrote audit sidecar: %s", sidecar_path)
     return sidecar_path
+
+
+def build_sub_questions_block(
+    sub_questions: list[SubQuestion],
+    coverage: dict[str, list[str]],
+    queries_by_sub_question: dict[str, list[str]],
+) -> list[dict] | None:
+    """Render the sidecar's ``sub_questions:`` block, or None if empty.
+
+    Each entry has ``id``, ``question``, ``rationale``, ``queries``, and
+    ``citations`` (list of source-ids that addressed it post-ingest).
+    Returns None when the planner emitted no sub-questions, so the
+    sidecar writer can omit the key.
+    """
+    if not sub_questions:
+        return None
+    block: list[dict] = []
+    for sq in sub_questions:
+        block.append({
+            "id": sq.id,
+            "question": sq.question,
+            "rationale": sq.rationale,
+            "queries": list(queries_by_sub_question.get(sq.id, [])),
+            "citations": list(coverage.get(sq.id, [])),
+        })
+    return block
+
+
+def _source_ids_in_research_order(
+    result: VerificationResult, fresh_ids_by_url: dict[str, str]
+) -> list[str]:
+    """The claim's source ids in the researcher's URL order, each once.
+
+    ``fresh_ids_by_url`` maps each cited fresh source's requested URL to its
+    id. Cached sources the analyst did not cite are left out. An id whose URL
+    the researcher did not list (none today) follows the ordered ones, so no
+    cited source is dropped.
+    """
+    id_by_url = {
+        url: sid for url, sid, _sd in result.cached_sources if url not in result.uncited_urls
+    }
+    id_by_url.update(fresh_ids_by_url)
+    reached = (result.url_aliases.get(url, url) for url in result.urls_found)
+    ordered = [id_by_url[u] for u in reached if u in id_by_url]
+    return list(dict.fromkeys(ordered + list(id_by_url.values())))
+
+
+def persist_sources(
+    result: VerificationResult, repo_root: Path, url_index: dict[str, str] | None = None
+) -> list[str]:
+    """Write the fresh sources and return every source id for the claim.
+
+    Sources in ``uncited_urls`` are neither written nor returned. The ids
+    come in the researcher's URL order (``urls_found``, each alias mapped
+    to the URL it reached), cached and fresh alike. A cached and a fresh
+    source can still name the same file, so each id appears once.
+    ``url_index`` gains the written sources under the requested, stored
+    and redirect-target URLs, so later claims in the same run reuse them
+    instead of fetching again.
+    """
+    to_write = [(url, sf) for url, sf in result.source_files if url not in result.uncited_urls]
+    fresh_ids = _write_source_files(to_write, repo_root)
+    if url_index is not None:
+        for (url, sf), sid in zip(to_write, fresh_ids):
+            url_index.setdefault(canonical_key(url), sid)
+            url_index.setdefault(canonical_key(sf.frontmatter.url), sid)
+            if url in result.final_urls:
+                url_index.setdefault(canonical_key(result.final_urls[url]), sid)
+    return _source_ids_in_research_order(
+        result, {url: sid for (url, _sf), sid in zip(to_write, fresh_ids)}
+    )
+
+
+def write_claim_run(
+    result: VerificationResult,
+    spec: ClaimSpec,
+    config: VerifyConfig,
+    *,
+    repo_root: Path,
+    claim_slug: str,
+    force: bool = False,
+    target: Path | None = None,
+    url_index: dict[str, str] | None = None,
+    ran_at: datetime.datetime | None = None,
+    status: str = "draft",
+) -> Path:
+    """Write one claim run to disk, in the one write order; return the claim path.
+
+    The order is the same on every path: ``mark_forced_rewrite`` when
+    ``force`` (the source ids are known before any write, because ingest
+    settled every slug), then the cited source files (``persist_sources``),
+    then the claim, then the full sidecar. The level fit runs once here,
+    after the final source ids, and its note lands in
+    ``pipeline_run.level_clamp``.
+
+    ``target`` is the claim file path; it defaults to the entity's claim
+    directory plus ``claim_slug``. Raises ``ValueError`` for a run with no
+    analyst output or a ``blocked_reason``: callers decide not to write.
+
+    The forced-rewrite snapshot uses the planned ids (``year/slug`` from
+    ingest). If ``persist_sources`` renames a slug on a write-time collision,
+    the snapshot's ``dropped_sources`` can differ from the written
+    ``sources:``; rare, and accepted.
+    """
+    ao = result.analyst_output
+    if ao is None or result.blocked_reason is not None:
+        raise ValueError("write_claim_run needs a run with an analyst output and no blocked_reason")
+    entity_ref = spec.entity.entity_ref
+    entity_name = spec.entity.entity_name
+    ran_at = ran_at or datetime.datetime.now(datetime.timezone.utc)
+    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
+    if target is not None and Path(target) != claim_path:
+        raise ValueError(f"target {target} is not the claim path {claim_path} for slug {claim_slug!r}")
+    # Refused before any write, so a refused run leaves no orphan source file.
+    if claim_path.exists() and not force:
+        raise FileExistsError(
+            f"claim file already exists: {claim_path} (pass force=True to overwrite)"
+        )
+
+    if force:
+        planned_ids = _source_ids_in_research_order(result, {
+            url: f"{sf.year}/{sf.slug}"
+            for url, sf in result.source_files if url not in result.uncited_urls
+        })
+        mark_forced_rewrite(claim_path, planned_ids, ran_at)
+    source_ids = persist_sources(result, repo_root, url_index)
+
+    topics = list(ao.verdict.topics)
+    if spec.topics:
+        # A criterion-backed claim carries the criterion's full topic set.
+        try:
+            topics = [Category(t) for t in spec.topics]
+        except ValueError as exc:
+            logger.warning("Criterion %s has an invalid topic; using the analyst's topics: %s",
+                           spec.criteria_slug, exc)
+    level_clamp = fit_verdict_to_written_pool(ao.verdict, result.sources, source_ids, entity_name)
+    written = _write_claim_file(
+        title=ao.verdict.title,
+        entity_name=entity_name,
+        entity_ref=entity_ref,
+        topics=topics,
+        verdict=ao.verdict.verdict,
+        confidence=ao.verdict.confidence,
+        narrative=ao.verdict.narrative,
+        claim_slug=claim_slug,
+        source_ids=source_ids,
+        repo_root=repo_root,
+        force=force,
+        status=status,
+        criteria_slug=spec.criteria_slug,
+        seo_title=ao.verdict.seo_title,
+        takeaway=ao.verdict.takeaway,
+        **verdict_write_kwargs(ao.verdict),
+    )
+    agents_run = ["researcher", "ingestor", "analyst", "auditor"]
+    _write_audit_sidecar(
+        claim_path=written,
+        comparison=result.consistency,
+        model=config.model,
+        ran_at=ran_at,
+        sources_consulted=result.sources_consulted(),
+        agents_run=agents_run,
+        models_used={a: config.model_for(a) for a in agents_run},
+        research_trace=result.research_trace,
+        sub_questions_block=build_sub_questions_block(
+            result.sub_questions,
+            result.sub_question_coverage,
+            result.queries_by_sub_question,
+        ),
+        analyst_record=analyst_record_for(ao.verdict),
+        level_clamp=level_clamp,
+        run_id=config.run_id,
+    )
+    return written
+
+
+def write_evaluator_rerun(
+    claim_path: Path,
+    result: VerificationResult,
+    config: VerifyConfig,
+    *,
+    ran_at: datetime.datetime | None = None,
+) -> Path:
+    """Rewrite a claim's sidecar after an Evaluator-only rerun; return the sidecar path.
+
+    The claim file is not rewritten, so the research trace, the
+    ``sub_questions`` block, the per-URL ``acquisition`` and ``archive``
+    records, the level fit's note and the other agents' ``models_used`` are
+    carried forward from the existing sidecar.
+    """
+    auditor_model = config.model_for("auditor")
+    sources_consulted = [
+        {"id": sd["source_id"], "url": sd.get("url", ""), "title": sd.get("title", ""), "ingested": True}
+        for sd in result.sources
+        if sd.get("source_id")
+    ]
+    sidecar_path = sidecar_path_for(claim_path)
+    research_trace = None
+    sub_questions_block = None
+    level_clamp = None
+    if sidecar_path.exists():
+        try:
+            existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
+            research_trace = existing.get("research")
+            sub_questions_block = existing.get("sub_questions")
+            # The claim is not rewritten, so the level fit's note
+            # on it still holds.
+            level_clamp = (existing.get("pipeline_run") or {}).get("level_clamp")
+            # Re-graft per-URL `acquisition` from the existing
+            # sidecar's `sources_consulted[]` back into the
+            # research_trace so _write_audit_sidecar can graft
+            # it again on this rewrite. Without this, a re-audit
+            # silently drops the acquisition data the original
+            # research run produced (the auditor doesn't re-run
+            # research).
+            existing_sources = existing.get("sources_consulted") or []
+            prior_acquisition = {
+                s["url"]: s["acquisition"]
+                for s in existing_sources
+                if isinstance(s, dict)
+                and s.get("url")
+                and isinstance(s.get("acquisition"), dict)
+            }
+            if prior_acquisition and isinstance(research_trace, dict):
+                research_trace = {
+                    **research_trace,
+                    "acquisition": prior_acquisition,
+                }
+            # The archive lookup outcome lives on the entries
+            # themselves, so it is carried over by URL directly.
+            prior_archive = {
+                s["url"]: s["archive"]
+                for s in existing_sources
+                if isinstance(s, dict)
+                and s.get("url")
+                and isinstance(s.get("archive"), dict)
+            }
+            for entry in sources_consulted:
+                if entry["url"] in prior_archive:
+                    entry["archive"] = prior_archive[entry["url"]]
+        except yaml.YAMLError:
+            pass
+    return _write_audit_sidecar(
+        claim_path=claim_path,
+        comparison=result.consistency,
+        model=auditor_model,
+        ran_at=ran_at or datetime.datetime.now(tz=datetime.timezone.utc),
+        sources_consulted=sources_consulted,
+        agents_run=["auditor"],
+        models_used={"auditor": auditor_model},
+        research_trace=research_trace,
+        sub_questions_block=sub_questions_block,
+        level_clamp=level_clamp,
+        keep_other_models=True,
+        run_id=config.run_id,
+    )
 
 
 _UNSET = object()

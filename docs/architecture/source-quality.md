@@ -30,7 +30,7 @@ An `unknown` source counts as neither `independent` nor `first-party`. A pool wi
 
 ### Level fit to the written sources
 
-The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. Just before the claim is written (`dr claim-refresh`, `dr onboard`, `dr step-analyze` and `research_claim`), `fit_verdict_to_written_pool` in `pipeline/orchestrator/persistence.py`:
+The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. Just before the claim is written, once, after the final source ids (`write_claim_run` for `dr draft`, `dr claim-refresh` and `dr onboard`; `dr step-analyze --write` calls it directly), `fit_verdict_to_written_pool` in `pipeline/orchestrator/persistence.py`:
 
 - drops `source_overrides` entries for sources not in the written list;
 - counts each written source ref's effective `independence` (its override, else its label after the entity match) with `effective_independence` in `pipeline/common/source_classification.py`, the same function the `verification-level-pool-mismatch` lint check uses; a ref listed twice counts twice, as on the site;
@@ -59,7 +59,7 @@ The proxy is a starting classification. It has a known failure mode (next sectio
 
 ### Entity match: the claim entity's own pages
 
-The proxy knows nothing about the claim's entity, so a page published by the entity itself can arrive labelled `independent` (a "Brave Software" report on brave.com proxies to `secondary`, and the ingest model can also set the label). When the pipeline knows the claim's entity (`dr claim-refresh`, `dr onboard`, `dr verify`, `dr step-analyze`, and `research_claim` when the entity is pre-resolved), it applies a deterministic match before the analyst runs (`entity_first_party_reason` in `pipeline/common/source_classification.py`). A source is `first-party` for the claim when either:
+The proxy knows nothing about the claim's entity, so a page published by the entity itself can arrive labelled `independent` (a "Brave Software" report on brave.com proxies to `secondary`, and the ingest model can also set the label). When the pipeline knows the claim's entity (`dr draft`, `dr claim-refresh`, `dr onboard` and `dr step-analyze`: every path runs the one loop with a resolved entity), it applies a deterministic match once, before the analyst runs (`apply_entity_match` in `pipeline/loop/analyse.py`, using `entity_first_party_reason` in `pipeline/common/source_classification.py`). A source is `first-party` for the claim when either:
 
 - **Host**: its URL host (without `www.`) equals or is a subdomain of the host of the entity's `website` or its parent company's `website`. `search.brave.com` matches `brave.com`; `notbrave.com` and `brave.com.example.net` do not.
 - **Profile**: the URL is the entity's own account on LinkedIn, X, Twitter, Facebook, Instagram or YouTube: the account handle in the path (`linkedin.com/company/<handle>`, `linkedin.com/posts/<handle>_...`, `x.com/<handle>`, `youtube.com/@<handle>`) equals an entity name with its words joined by `-`, `_` or nothing. The publisher of such a page is usually the platform.

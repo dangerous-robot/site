@@ -17,7 +17,7 @@ from researcher.decomposed import (
     decomposed_research,
     execute_searches,
 )
-from orchestrator.checkpoints import StepError
+from loop.errors import StepError
 from orchestrator.entity_resolution import ResolvedEntity
 from common.models import BlockedReason, EntityType, SubQuestion
 
@@ -50,7 +50,7 @@ def _make_cfg(
     research_timeout_s: float = 60.0,
 ):
     """Build a minimal VerifyConfig-like object for unit tests."""
-    from orchestrator.pipeline import VerifyConfig
+    from loop import VerifyConfig
     return VerifyConfig(
         max_initial_queries=max_initial_queries,
         llm_concurrency=llm_concurrency,
@@ -302,27 +302,6 @@ async def test_scorer_drops_all_returns_empty() -> None:
     scorer_drop_errors = [e for e in ro.errors if e.error_type == "scorer_dropped_all"]
     assert len(scorer_drop_errors) == 1, f"Expected one scorer_dropped_all error, got {scorer_drop_errors}"
     assert "2" in scorer_drop_errors[0].message, "Error message should reference candidate count"
-
-
-@pytest.mark.asyncio
-async def test_scorer_drops_all_sets_blocked_reason() -> None:
-    """When _research returns an empty ResearchOutput with scorer_dropped_all,
-    verify_claim sets blocked_reason=INSUFFICIENT_SOURCES."""
-    from orchestrator.pipeline import verify_claim, VerifyConfig
-    from researcher.decomposed import ResearchOutput
-
-    scorer_error = StepError(step="research", error_type="scorer_dropped_all", message="URL scorer dropped all 5 candidates")
-    empty = ResearchOutput(urls=[], errors=[scorer_error], trace={})
-
-    async def _fake_research(*args, **kwargs):
-        return empty
-
-    with patch("orchestrator.pipeline._research", side_effect=_fake_research):
-        result = await verify_claim("TestEntity", "test claim", VerifyConfig())
-
-    assert result.blocked_reason == BlockedReason.INSUFFICIENT_SOURCES, (
-        f"Expected INSUFFICIENT_SOURCES, got {result.blocked_reason}"
-    )
 
 
 # --------------------------------------------------------------------------- #
@@ -661,18 +640,18 @@ class TestVerifyConfigSearchBackend:
 
     def test_default_is_tavily(self, monkeypatch) -> None:
         monkeypatch.delenv("RESEARCH_SEARCH_BACKEND", raising=False)
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         assert VerifyConfig().search_backend == "tavily"
 
     def test_env_var_overrides_default(self, monkeypatch) -> None:
         monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "brave")
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         assert VerifyConfig().search_backend == "brave"
 
     def test_explicit_kwarg_wins(self, monkeypatch) -> None:
         """Explicit kwarg should beat the env var (tests can pin behavior)."""
         monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "brave")
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         assert VerifyConfig(search_backend="tavily").search_backend == "tavily"
 
 
@@ -731,22 +710,22 @@ class TestSelectResearchOrigins:
 
     def test_tagged_topic_with_arxiv_enabled_includes_arxiv(self) -> None:
         """An academic topic + ``arxiv`` in research_origins activates arXiv."""
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
         assert _select_research_origins(cfg, ["ai-safety"]) == ["arxiv"]
 
     def test_untagged_topic_excludes_arxiv(self) -> None:
         """A non-academic topic returns no academic origins, even when
         ``arxiv`` is in ``research_origins``."""
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
         assert _select_research_origins(cfg, ["data-privacy"]) == []
 
     def test_empty_topics_excludes_arxiv(self) -> None:
-        """No criterion context (e.g., ``dr claim-probe``) keeps academic
+        """No criterion context (e.g., ``dr draft --dry-run``) keeps academic
         origins off; the operator can re-run claim-refresh once a
         ``criteria_slug`` exists."""
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         cfg = VerifyConfig(research_origins=["tavily", "arxiv"])
         assert _select_research_origins(cfg, []) == []
 
@@ -754,7 +733,7 @@ class TestSelectResearchOrigins:
         """Explicit ``research_origins=['tavily']`` keeps arXiv off even on
         an academic topic. (The shipped default now includes ``arxiv``;
         operators opt out by overriding this list.)"""
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         cfg = VerifyConfig(research_origins=["tavily"])
         assert _select_research_origins(cfg, ["ai-safety"]) == []
 
@@ -762,7 +741,7 @@ class TestSelectResearchOrigins:
         """``brave`` / ``tavily`` are dispatched via ``cfg.search_backend``
         and never appear in the selector's output, even when present in
         ``research_origins``."""
-        from orchestrator.pipeline import VerifyConfig
+        from loop import VerifyConfig
         cfg = VerifyConfig(research_origins=["brave", "tavily", "arxiv"])
         assert _select_research_origins(cfg, ["ai-safety"]) == ["arxiv"]
 
@@ -938,7 +917,7 @@ async def test_topics_flow_through_to_select_research_origins() -> None:
     """End-to-end: ``topics`` provided to ``decomposed_research`` reaches
     ``_select_research_origins``. Load-bearing for Path 2 -- if this
     breaks, arxiv silently never fires even when configured."""
-    from orchestrator.pipeline import VerifyConfig
+    from loop import VerifyConfig
 
     cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
 
@@ -972,9 +951,9 @@ async def test_topics_flow_through_to_select_research_origins() -> None:
 @pytest.mark.asyncio
 async def test_topics_default_to_empty_when_unset() -> None:
     """``decomposed_research`` accepts ``topics=None`` (back-compat for
-    callers like ``research_claim`` and the onboard light-research path)
+    callers like the onboard light-research path)
     and renders it as an empty list to the selector."""
-    from orchestrator.pipeline import VerifyConfig
+    from loop import VerifyConfig
 
     cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
 

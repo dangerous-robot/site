@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
 from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, Confidence, Independence, VerificationLevel
 from common.source_classification import effective_independence
+from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS
 
 from .models import LintIssue
 
@@ -27,13 +28,7 @@ CANONICAL_ENTITY_KEYS = {
     # company / product entities; rendered in the entity Facts subsection.
     "founded",
 }
-CANONICAL_CLAIM_KEYS = {
-    "title", "entity", "topics", "verdict", "confidence",
-    "verification_level", "cap_rationale", "source_overrides",
-    "takeaway", "criteria_slug", "status", "phase", "blocked_reason",
-    "as_of", "sources", "recheck_cadence_days", "next_recheck_due",
-    "audit", "seo_title", "tags", "corrections",
-}
+CANONICAL_CLAIM_KEYS = set(CLAIM_FRONTMATTER_KEYS)
 INDEPENDENCE_GRACE_DATE = datetime.date(2026, 5, 1)
 CAPPED_VERIFICATION_LEVELS = {VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value}
 CAPPED_CONFIDENCE_VALUES = {Confidence.MEDIUM.value, Confidence.HIGH.value}

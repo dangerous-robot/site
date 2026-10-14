@@ -16,7 +16,7 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 
 1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
-3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The orchestrator halts the claim with `status: blocked` and a `blocked_reason` if fewer than four usable sources were obtained.
+3. **Claim** -- The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
 4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
 5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
 6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
@@ -30,7 +30,8 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 | Role | Current status |
 |------|----------------|
 | **Research Lead** | Manual |
-| **Orchestrator** | `pipeline/orchestrator/` (`pipeline.py`, `cli.py`, `persistence.py`, `checkpoints.py`) |
+| **Orchestrator** | `pipeline/orchestrator/` (`pipeline.py`, `cli.py`, `persistence.py` (the one place that writes claim, source and sidecar files), `checkpoints.py`) |
+| **Research loop** | `pipeline/loop/` (`run`, `rerun`, `ClaimSpec`, `VerifyConfig`, `StepError`); returns a result and writes nothing |
 | **Router** | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`, full implementation tracked in `docs/UNSCHEDULED.md` § Router |
 | **Researcher** | Automated -- `pipeline/researcher/` |
 | **Ingestor** | Automated -- `pipeline/ingestor/` |
@@ -72,7 +73,7 @@ There is no automated scheduling for reviews today. The Citation Auditor role is
 
 ## Pipeline configuration knobs
 
-Operator-visible fields on `VerifyConfig` controlling researcher reach, dispatch, and LLM concurrency:
+Operator-visible fields on `VerifyConfig` (`pipeline/loop/spec.py`) controlling researcher reach, dispatch, and LLM concurrency:
 
 - **`max_initial_queries`** -- cap on how many search queries the Researcher dispatches per claim. The query planner's output is hard-truncated to this count before searches run (default: 7). Lower values reduce API cost and latency; higher values improve recall.
 - **`research_origins`** -- list of dispatch types attempted per claim (default: `["tavily", "arxiv"]`). Web origins always fire; academic origins (`arxiv` today; `s2` and `openalex` planned for Tier 2) fire only when the claim's topics intersect `ACADEMIC_TOPICS` (`ai-safety`, `environmental-impact`, `industry-analysis`).

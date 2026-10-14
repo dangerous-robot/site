@@ -19,9 +19,8 @@ from common.frontmatter import parse_frontmatter
 from ingestor.agent import ingestor_agent
 from ingestor.models import SourceFile, SourceFrontmatter
 from orchestrator.checkpoints import AutoApproveCheckpointHandler
+from loop import VerifyConfig
 from orchestrator.pipeline import (
-    OnboardResult,
-    VerifyConfig,
     _merge_search_hints,
     _probe_collision_suggestions,
     onboard_entity,
@@ -45,12 +44,89 @@ def _ro(urls=None, errors=None, trace=None, sub_questions=None, url_addresses=No
     )
 
 
-async def _fake_research_with_url(*args, **kwargs):
-    return _ro(urls=["https://example.com/report"])
+_URL = "https://example.com/report"
+_URLS = [f"https://example.com/report-{i}" for i in range(1, 5)]
 
 
-async def _fake_research_empty(*args, **kwargs):
-    return _ro()
+@pytest.fixture
+def claim_research():
+    """Script the claim researcher: planner and scorer on TestModel, the search
+    executor patched (``researcher.decomposed.execute_searches``).
+
+    Call it with the URLs the search returns (each with page text); the
+    returned mock counts the searches. Light research and every claim run
+    share it, as they share the researcher. The overrides are entered here,
+    outside the test's event loop, so they are left in the context that set them.
+    """
+    from contextlib import nullcontext
+
+    from researcher.planner import research_planner_agent
+    from researcher.scorer import url_scorer_agent
+    from tests.loop_harness import fake_execute_searches, planner_args, scorer_args
+
+    state: dict = {"urls": []}
+    scorer_model = TestModel(custom_output_args=scorer_args([]))
+
+    async def _search(queries, client, **kwargs):
+        urls = state["urls"]
+        fake = fake_execute_searches(urls, {u: f"Page text of {u}." for u in urls})
+        return await fake(queries, client, **kwargs)
+
+    with (
+        research_planner_agent.override(model=TestModel(custom_output_args=planner_args())),
+        url_scorer_agent.override(model=scorer_model),
+        patch.object(research_planner_agent, "override", side_effect=lambda **kw: nullcontext()),
+        patch.object(url_scorer_agent, "override", side_effect=lambda **kw: nullcontext()),
+        patch("researcher.decomposed.execute_searches", side_effect=_search) as searches,
+    ):
+        def _install(urls: list[str]):
+            state["urls"] = list(urls)
+            scorer_model.custom_output_args = scorer_args(list(urls))
+            return searches
+
+        yield _install
+
+
+def _fetching_ingest_model():
+    """The harness ingest model for the search's URLs; any other URL (a light
+    research seed) gets a source without a fetch, which ingest rejects."""
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    from tests.loop_harness import ingest_model
+
+    inner = ingest_model()
+
+    async def _fn(messages, info):
+        parts = [p for m in messages for p in getattr(m, "parts", [])]
+        prompt = next(p.content for p in parts if isinstance(p, UserPromptPart))
+        url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
+        if url.startswith("https://example.com/"):
+            return await inner.function(messages, info)
+        source = {"frontmatter": {"url": url, "title": "Unfetched", "publisher": "P",
+                                  "accessed_date": "2026-10-14", "kind": "article", "summary": "S."},
+                  "body": "B.", "slug": "page", "year": 2026}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)])
+
+    return FunctionModel(_fn)
+
+
+def _echo_title_analyst(**extra):
+    """A verdict-only analyst whose title is the claim it was asked about, so it passes the template."""
+    from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+    from pydantic_ai.models.function import FunctionModel
+
+    async def _fn(messages, info):
+        prompt = next(
+            str(p.content) for m in messages for p in getattr(m, "parts", []) if isinstance(p, UserPromptPart)
+        )
+        claim = prompt.split("## Claim to evaluate: ", 1)[1].split("\n", 1)[0].strip()
+        args = {"title": claim, "topics": ["environmental-impact"], "verdict": "mixed",
+                "confidence": "medium", "narrative": "The evidence is mixed.",
+                "verification_level": "partially-verified", "seo_title": "Claim", **extra}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    return FunctionModel(_fn)
 
 
 def _fake_gather(raw_description: str, fetch_errors: list[str] | None = None):
@@ -172,11 +248,11 @@ class TestAutoApproveReviewOnboard:
 
 class TestOnboardEntityHappyPath:
     @pytest.mark.asyncio
-    async def test_onboard_creates_entity_and_claims(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_onboard_creates_entity_and_claims(self, tmp_path: Path, monkeypatch, claim_research) -> None:
         """Onboard with TestModel writes entity and claim files."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
 
         with (
             ingestor_agent.override(model=_ingestor_model()),
@@ -216,33 +292,36 @@ class TestOnboardEntityHappyPath:
 
 class TestOnboardEntityNoDoubleIngest:
     @pytest.mark.asyncio
-    async def test_single_research_and_ingest_per_template(self, tmp_path: Path, monkeypatch) -> None:
-        """Onboard should run one _research + _ingest_urls pair per template plus one for light research.
+    async def test_single_research_and_ingest_per_template(
+        self, tmp_path: Path, monkeypatch, claim_research
+    ) -> None:
+        """Onboard runs one research and one ingest per template plus one pair for light research.
 
-        Regression canary: pre-refactor onboard called verify_claim (which runs research+ingest)
-        and then re-ran _research + _ingest_urls purely to recover SourceFile tuples. That
-        doubled LLM/network calls per template. With verify_claim surfacing source_files
-        directly, the extra pair disappears.
+        Regression canary: the per-template loop run must surface its source
+        files, so onboard never re-runs research and ingest to recover them.
         """
         _setup_tmp_repo(tmp_path)
 
+        import loop.ingest as ingest_mod
         from orchestrator import pipeline as pipeline_mod
 
-        real_ingest = pipeline_mod._ingest_urls
-
-        research_calls = 0
+        searches = claim_research([_URL])
         ingest_calls = 0
+        real_light_ingest = pipeline_mod._ingest_urls
+        real_claim_ingest = ingest_mod.ingest_urls
 
-        async def spy_research(*args, **kwargs):
-            nonlocal research_calls
-            research_calls += 1
-            return await _fake_research_with_url(*args, **kwargs)
-
-        async def spy_ingest(*args, **kwargs):
+        async def spy_light_ingest(*args, **kwargs):
             nonlocal ingest_calls
             ingest_calls += 1
-            return await real_ingest(*args, **kwargs)
+            return await real_light_ingest(*args, **kwargs)
 
+        async def spy_claim_ingest(*args, **kwargs):
+            nonlocal ingest_calls
+            ingest_calls += 1
+            return await real_claim_ingest(*args, **kwargs)
+
+        monkeypatch.setattr(pipeline_mod, "_ingest_urls", spy_light_ingest)
+        monkeypatch.setattr(ingest_mod, "ingest_urls", spy_claim_ingest)
         with (
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
@@ -250,8 +329,6 @@ class TestOnboardEntityNoDoubleIngest:
             patch.object(
                 Agent, "override", side_effect=lambda **kw: _noop(**kw)
             ),
-            patch.object(pipeline_mod, "_research", side_effect=spy_research),
-            patch.object(pipeline_mod, "_ingest_urls", side_effect=spy_ingest),
         ):
             config = VerifyConfig(
                 model="test",
@@ -265,76 +342,86 @@ class TestOnboardEntityNoDoubleIngest:
 
         assert result.status == "accepted"
         # 5 company templates + 1 light-research pass = 6 ingest + 6 research calls.
-        # Pre-refactor was 1 + N*2 calls; cap at templates+1 to lock in the single-pair invariant.
         assert ingest_calls == 6, f"expected 6 ingest calls, got {ingest_calls}"
-        assert research_calls <= 6, f"expected <=6 research calls, got {research_calls}"
+        assert searches.call_count <= 6, f"expected <=6 research calls, got {searches.call_count}"
 
 
 class TestOnboardKeepsSourcesOnDisk:
     @pytest.mark.asyncio
-    async def test_claims_list_sources_already_on_disk(self, tmp_path: Path, monkeypatch) -> None:
-        """A researcher URL already stored as a source must still be listed on the claim."""
+    async def test_claims_list_sources_already_on_disk(
+        self, tmp_path: Path, monkeypatch, claim_research
+    ) -> None:
+        """Researcher URLs already stored as sources must still be listed on the claim."""
         _setup_tmp_repo(tmp_path)
-        existing = tmp_path / "research" / "sources" / "2025" / "report.md"
-        existing.parent.mkdir(parents=True)
-        existing.write_text(
-            "---\nurl: https://example.com/report\ntitle: Report\npublisher: Example\n"
-            "accessed_date: 2025-01-01\nkind: report\nsummary: A stored report.\n---\nBody.\n",
-            encoding="utf-8",
-        )
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        for i, url in enumerate(_URLS, 1):
+            existing = tmp_path / "research" / "sources" / "2025" / f"report-{i}.md"
+            existing.parent.mkdir(parents=True, exist_ok=True)
+            existing.write_text(
+                f"---\nurl: {url}\ntitle: Report {i}\npublisher: Example\n"
+                "accessed_date: 2025-01-01\nkind: report\nsummary: A stored report.\n---\nBody.\n",
+                encoding="utf-8",
+            )
+        claim_research(_URLS)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         with (
-            ingestor_agent.override(model=_ingestor_model()),
-            analyst_agent.override(model=_analyst_model()),
+            ingestor_agent.override(model=_fetching_ingest_model()),
+            verdict_only_agent.override(model=_echo_title_analyst()),
             auditor_agent.override(model=_auditor_model()),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
         ):
-            config = VerifyConfig(model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path))
-            result = await onboard_entity("TestCorp", "company", config=config)
+            config = VerifyConfig(model="test", max_sources=4, skip_wayback=True, repo_root=str(tmp_path))
+            result = await onboard_entity(
+                "TestCorp", "company", config=config, only=["publishes-sustainability-report"],
+            )
 
-        written = [p for p, _reason in result.claims_blocked] + result.claims_created
-        assert written
-        for rel in written:
+        assert result.claims_created, (result.claims_blocked, result.errors)
+        for rel in result.claims_created:
             fm, _ = parse_frontmatter((tmp_path / rel).read_text(encoding="utf-8"))
-            assert fm["sources"] == ["2025/report"], rel
+            assert fm["sources"] == [f"2025/report-{i}" for i in range(1, 5)], rel
 
 
     @pytest.mark.asyncio
-    async def test_later_templates_reuse_a_source_written_earlier(self, tmp_path: Path) -> None:
+    async def test_later_templates_reuse_a_source_written_earlier(
+        self, tmp_path: Path, monkeypatch, claim_research
+    ) -> None:
         _setup_tmp_repo(tmp_path)
-        from orchestrator import pipeline as pipeline_mod
+        import loop.ingest as ingest_mod
 
+        claim_research(_URLS)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
         ingested: list[list[str]] = []
+        real_ingest = ingest_mod.ingest_urls
 
-        async def fake_ingest(client, urls, cfg, sem, **kwargs):
+        async def spy_ingest(client, urls, cfg, sem, **kwargs):
             ingested.append(list(urls))
-            return [(u, _make_source_file(u, "report")) for u in urls], []
+            return await real_ingest(client, urls, cfg, sem, **kwargs)
 
+        monkeypatch.setattr(ingest_mod, "ingest_urls", spy_ingest)
         with (
-            ingestor_agent.override(model=_ingestor_model()),
-            analyst_agent.override(model=_analyst_model()),
+            ingestor_agent.override(model=_fetching_ingest_model()),
+            verdict_only_agent.override(model=_echo_title_analyst()),
             auditor_agent.override(model=_auditor_model()),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            patch.object(pipeline_mod, "_research", side_effect=_fake_research_with_url),
-            patch.object(pipeline_mod, "_ingest_urls", side_effect=fake_ingest),
         ):
-            config = VerifyConfig(model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path))
-            result = await onboard_entity("TestCorp", "company", config=config)
+            config = VerifyConfig(model="test", max_sources=4, skip_wayback=True, repo_root=str(tmp_path))
+            result = await onboard_entity(
+                "TestCorp", "company", config=config,
+                only=["publishes-sustainability-report", "contributes-to-ai-safety"],
+            )
 
-        fetched = [urls for urls in ingested if urls]
-        # One fetch for the light-research pass, one for the first template.
-        assert len(fetched) == 2, ingested
-        assert len(result.claims_blocked) + len(result.claims_created) == 5
+        # The first claim fetches the four pages; the second reuses the files the first wrote.
+        assert ingested == [_URLS], ingested
+        assert len(result.claims_created) == 2, (result.claims_blocked, result.errors)
 
 
 class TestOnboardEntitySeedUrl:
     @pytest.mark.asyncio
-    async def test_seed_url_skips_researcher(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_seed_url_skips_researcher(self, tmp_path: Path, monkeypatch, claim_research) -> None:
         """When seed_url is provided, the researcher step is not called for light research."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
 
         with (
             ingestor_agent.override(model=_ingestor_model()),
@@ -363,7 +450,7 @@ class TestOnboardEntitySeedUrl:
 
 class TestOnboardErrorAttribution:
     @pytest.mark.asyncio
-    async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_per_template_errors_are_slug_prefixed(self, tmp_path: Path, monkeypatch, claim_research) -> None:
         """Every result.errors entry must start with `<slug>: `.
 
         When the researcher finds no URLs, claims land in claims_created as
@@ -372,7 +459,7 @@ class TestOnboardErrorAttribution:
         """
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
+        claim_research([])
 
         with (
             ingestor_agent.override(model=_ingestor_model()),
@@ -416,11 +503,11 @@ class TestOnboardErrorAttribution:
 
 class TestOnboardEntityRejection:
     @pytest.mark.asyncio
-    async def test_rejected_writes_draft(self, tmp_path: Path, monkeypatch) -> None:
+    async def test_rejected_writes_draft(self, tmp_path: Path, monkeypatch, claim_research) -> None:
         """Rejected onboard writes draft entity file."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
 
         class RejectHandler(AutoApproveCheckpointHandler):
             async def review_onboard(self, entity_name, entity_type,
@@ -468,15 +555,16 @@ class TestOnboardEntityRejection:
 
 class TestOnboardVocabularyResolution:
     @pytest.mark.asyncio
-    async def test_unresolved_vocabulary_title_is_blocked(self, tmp_path: Path) -> None:
+    async def test_unresolved_vocabulary_title_is_blocked(
+        self, tmp_path: Path, monkeypatch, claim_research
+    ) -> None:
         """When the analyst returns a title containing the raw 'one of (...)' hint,
-        the claim is blocked with analyst_error and written with a clean title."""
+        the claim is blocked with analyst_error and nothing is written."""
         _setup_tmp_repo(tmp_path)
 
-        # Analyst returns the raw vocabulary placeholder as the title.
-        # Onboard now passes a resolved_entity into verify_claim, which routes
-        # the analyst through verdict_only_agent (entity is taken from the
-        # resolved entity, the agent only emits a VerdictAssessment).
+        # Analyst returns the raw vocabulary placeholder as the title. Onboard
+        # runs the loop on a resolved entity, so the analyst is the
+        # verdict-only agent.
         unresolved_verdict = TestModel(
             custom_output_args={
                 "title": "TestCorp has one of (publicly-traded, privately-held, non-profit, B-corp) corporate structure",
@@ -486,46 +574,14 @@ class TestOnboardVocabularyResolution:
                 "narrative": "No sources address ownership structure.",
             },
         )
-
-        from orchestrator import pipeline as pipeline_mod
-
-        async def fake_ingest(client, urls, cfg, sem, **kwargs):
-            from ingestor.models import SourceFile, SourceFrontmatter
-            import datetime
-            sources = []
-            for url in urls:
-                suffix = url.split("/")[-1]
-                sf = SourceFile(
-                    frontmatter=SourceFrontmatter(
-                        url=url,
-                        title=f"Source {suffix}",
-                        publisher="Ex",
-                        accessed_date=datetime.date(2026, 4, 30),
-                        kind="article",
-                        summary="A summary.",
-                    ),
-                    body="Body.",
-                    slug=suffix,
-                    year=2026,
-                )
-                sources.append((url, sf))
-            return sources, []
-
-        async def fake_research(client, entity, claim, cfg, sem, **kwargs):
-            return _ro(urls=[
-                "https://example.com/a",
-                "https://example.com/b",
-                "https://example.com/c",
-                "https://example.com/d",
-            ], trace={"mode": "test"})
+        claim_research(_URLS)
+        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         with (
+            ingestor_agent.override(model=_fetching_ingest_model()),
             verdict_only_agent.override(model=unresolved_verdict),
             auditor_agent.override(model=_auditor_model()),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            patch.object(pipeline_mod, "_research", side_effect=fake_research),
-            patch.object(pipeline_mod, "_ingest_urls", side_effect=fake_ingest),
-            patch.object(pipeline_mod, "_probe_collision_suggestions", side_effect=_no_probe),
         ):
             config = VerifyConfig(
                 model="test",
@@ -539,20 +595,12 @@ class TestOnboardVocabularyResolution:
 
         assert result.status == "accepted"
         assert len(result.claims_created) == 0
-        assert len(result.claims_blocked) == 1
         assert len(result.claims_failed) == 0
-
-        # The blocked claim file must have a clean title (no "one of (")
-        blocked_rel, blocked_reason = result.claims_blocked[0]
-        claim_path = tmp_path / blocked_rel
-        assert claim_path.exists()
-        assert blocked_reason.startswith("analyst_error")
-        fm, _ = parse_frontmatter(claim_path.read_text())
-        assert "one of (" not in fm["title"], (
-            f"blocked claim title must not contain raw vocabulary hint: {fm['title']!r}"
-        )
-        assert fm["status"] == "blocked"
-        assert fm["blocked_reason"] == "analyst_error"
+        assert result.claims_blocked == [("corporate-structure", result.claims_blocked[0][1])]
+        assert result.claims_blocked[0][1].startswith("analyst_error")
+        # A blocked claim writes nothing: no placeholder claim, no source file.
+        assert not (tmp_path / "research" / "claims").exists()
+        assert not (tmp_path / "research" / "sources").exists()
 
 
 class _AgentResult:
@@ -688,12 +736,12 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_needs_disambiguation_with_auto_approve_rejects(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """Auto-approve handler returns 'reject' on disambiguation; run halts rejected."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         from researcher.entity_verifier import entity_verifier_agent
@@ -730,12 +778,12 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_unverified_with_auto_approve_rejects(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """Auto-approve handler returns 'reject' on unverified; run halts rejected."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         from researcher.entity_verifier import entity_verifier_agent
@@ -764,12 +812,12 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_unverified_with_operator_pick_persists_status(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """Operator returns 'unverified-startup'; that becomes verification_status."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         from researcher.entity_verifier import entity_verifier_agent
@@ -817,12 +865,12 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_verified_proceeds_to_enricher(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """verified outcome proceeds to enricher; entity file lands with Facts and History."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
         monkeypatch.setattr(
             "orchestrator.pipeline.gather_light_research",
@@ -873,7 +921,7 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_force_re_enriches_existing_entity(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """dr onboard --force re-runs the enricher and splices into existing file."""
         _setup_tmp_repo(tmp_path)
@@ -886,7 +934,7 @@ class TestOnboardPhaseBVerifier:
             encoding="utf-8",
         )
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
         monkeypatch.setattr(
             "orchestrator.pipeline.gather_light_research",
@@ -930,7 +978,7 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_onboard_skips_enricher_when_no_page_fetched(
-        self, tmp_path: Path, monkeypatch, capsys
+        self, tmp_path: Path, monkeypatch, claim_research, capsys
     ) -> None:
         """--force on an existing entity leaves the file alone when no page summary was collected."""
         _setup_tmp_repo(tmp_path)
@@ -940,7 +988,7 @@ class TestOnboardPhaseBVerifier:
         original = "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n"
         existing.write_text(original, encoding="utf-8")
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr(
             "orchestrator.pipeline.gather_light_research",
             _fake_gather("", ["https://example.com/report: http_403: Forbidden"]),
@@ -1029,12 +1077,12 @@ class TestOnboardPhaseBVerifier:
 
     @pytest.mark.asyncio
     async def test_onboard_new_entity_skips_enricher_when_no_page_fetched(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """A new entity gets the placeholder description, not a model-memory guess."""
         _setup_tmp_repo(tmp_path)
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research([_URL])
         monkeypatch.setattr(
             "orchestrator.pipeline.gather_light_research", _fake_gather(""),
         )
@@ -1116,8 +1164,8 @@ class TestOnboardSearchHintsWiredIntoResearch:
     async def test_per_template_research_receives_search_hints(
         self, tmp_path: Path, monkeypatch
     ) -> None:
-        """Per-template verify_claim runs must call _research with a resolved_entity
-        that carries the merged search_hints. Without this wiring, the post-scorer
+        """Per-template loop runs must hand the researcher a resolved_entity that
+        carries the merged search_hints. Without this wiring, the post-scorer
         filter and scorer disambiguation never fire on the onboard run that wrote
         them — they would only kick in on a re-run from disk."""
         _setup_tmp_repo(tmp_path)
@@ -1130,16 +1178,16 @@ class TestOnboardSearchHintsWiredIntoResearch:
 
         seen_resolved_entities: list = []
 
-        async def spy_research(client, entity, claim, cfg, sem, **kwargs):
+        async def spy_research(claim, entity, cfg, sem, client, **kwargs):
             seen_resolved_entities.append(kwargs.get("resolved_entity"))
-            return _ro(urls=["https://example.com/report"])
+            return _ro(urls=[_URL])
 
+        monkeypatch.setattr("researcher.decomposed.decomposed_research", spy_research)
         with (
             ingestor_agent.override(model=_ingestor_model()),
             analyst_agent.override(model=_analyst_model()),
             auditor_agent.override(model=_auditor_model()),
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-            patch("orchestrator.pipeline._research", side_effect=spy_research),
         ):
             config = VerifyConfig(
                 model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
@@ -1155,7 +1203,7 @@ class TestOnboardSearchHintsWiredIntoResearch:
         # per-template and MUST carry the resolved entity with search_hints.
         per_template_calls = [r for r in seen_resolved_entities if r is not None]
         assert per_template_calls, (
-            "verify_claim was invoked without a resolved_entity; search_hints "
+            "the loop ran without a resolved_entity; search_hints "
             "won't reach decomposed_research"
         )
         for resolved in per_template_calls:
@@ -1168,15 +1216,13 @@ class TestOnboardSearchHintsWiredIntoResearch:
 class TestOnboardSearchHintsPersisted:
     @pytest.mark.asyncio
     async def test_search_hints_land_in_entity_frontmatter(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """CLI-provided hints + probe suggestions persist to entity YAML frontmatter
         and round-trip through parse_entity_ref."""
         _setup_tmp_repo(tmp_path)
 
-        async def fake_research(*args, **kwargs):
-            return _ro(urls=["https://example.com/report"])
-        monkeypatch.setattr("orchestrator.pipeline._research", fake_research)
+        claim_research([_URL])
 
         async def fake_probe(client, entity_name, entity_website):
             return ["evil.example"]
@@ -1239,8 +1285,10 @@ class TestOnboardUsesEntityFileOnDisk:
 
     @pytest.mark.asyncio
     async def test_entity_file_reaches_analyst_and_auditor(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
+        from tests.loop_harness import capturing_model
+
         _setup_tmp_repo(tmp_path)
         ref = self._write_product(tmp_path)
         before = (tmp_path / "research" / "entities" / f"{ref}.md").read_text()
@@ -1255,50 +1303,33 @@ class TestOnboardUsesEntityFileOnDisk:
             return await real_gather(*args, **kwargs)
 
         monkeypatch.setattr("orchestrator.pipeline.gather_light_research", spy_gather)
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
+        claim_research(_URLS)
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
-        # One fake URL is below the two-source threshold; let the analyst run.
-        monkeypatch.setattr("orchestrator.pipeline.below_threshold", lambda sources: False)
-
-        import orchestrator.pipeline as pipeline_mod
-        analyst_prompts: list[str] = []
-        auditor_prompts: list[str] = []
-        real_analyst_prompt = pipeline_mod.build_analyst_prompt
-        real_auditor_prompt = pipeline_mod.build_auditor_prompt
-
-        def spy_analyst_prompt(*args, **kwargs):
-            prompt = real_analyst_prompt(*args, **kwargs)
-            analyst_prompts.append(prompt)
-            return prompt
-
-        def spy_auditor_prompt(*args, **kwargs):
-            prompt = real_auditor_prompt(*args, **kwargs)
-            auditor_prompts.append(prompt)
-            return prompt
-
-        monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", spy_analyst_prompt)
-        monkeypatch.setattr("orchestrator.pipeline.build_auditor_prompt", spy_auditor_prompt)
 
         from researcher.entity_verifier import entity_verifier_agent
         from researcher.entity_enricher import entity_enricher_agent
 
-        verdict_model = TestModel(
-            custom_output_args={
-                # The title must pass the template, or the claim is blocked and the
-                # auditor is skipped.
-                "title": "GreenTest is hosted on renewable energy",
-                "topics": ["environmental-impact"],
-                "verdict": "mixed",
-                "confidence": "medium",
-                "narrative": "The evidence is mixed.",
-                "verification_level": "independently-verified",
-                "seo_title": "GreenTest runs on renewable energy",
-            },
-        )
+        analyst_prompts: list[str] = []
+        auditor_prompts: list[str] = []
+        verdict_model = capturing_model(analyst_prompts, {
+            # The title must pass the template, or the claim is blocked and the
+            # auditor is skipped.
+            "title": "GreenTest is hosted on renewable energy",
+            "topics": ["environmental-impact"],
+            "verdict": "mixed",
+            "confidence": "medium",
+            "narrative": "The evidence is mixed.",
+            "verification_level": "independently-verified",
+            "seo_title": "GreenTest runs on renewable energy",
+        })
+        auditor_model = capturing_model(auditor_prompts, {
+            "verdict": "mixed", "confidence": "medium",
+            "reasoning": "Independent assessment agrees.", "evidence_gaps": [],
+        })
         with (
-            ingestor_agent.override(model=_ingestor_model()),
+            ingestor_agent.override(model=_fetching_ingest_model()),
             verdict_only_agent.override(model=verdict_model),
-            auditor_agent.override(model=_auditor_model()),
+            auditor_agent.override(model=auditor_model),
             entity_verifier_agent.override(model=_verifier_model("verified")),
             entity_enricher_agent.override(
                 model=_enricher_model(description=self.ENRICHER_DESCRIPTION),
@@ -1306,7 +1337,7 @@ class TestOnboardUsesEntityFileOnDisk:
             patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
         ):
             config = VerifyConfig(
-                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
+                model="test", max_sources=4, skip_wayback=True, repo_root=str(tmp_path),
             )
             result = await onboard_entity(
                 "GreenTest", "product", config=config, entity_ref=ref,
@@ -1336,11 +1367,11 @@ class TestOnboardUsesEntityFileOnDisk:
 
         seen: list = []
 
-        async def spy_research(client, entity, claim, cfg, sem, **kwargs):
+        async def spy_research(claim, entity, cfg, sem, client, **kwargs):
             seen.append(kwargs.get("resolved_entity"))
-            return _ro(urls=["https://example.com/report"])
+            return _ro(urls=[_URL])
 
-        monkeypatch.setattr("orchestrator.pipeline._research", spy_research)
+        monkeypatch.setattr("researcher.decomposed.decomposed_research", spy_research)
 
         async def fake_probe(client, entity_name, entity_website):
             return ["probe-excluded.example"]
@@ -1376,85 +1407,6 @@ class TestOnboardUsesEntityFileOnDisk:
             "file-excluded.example", "cli-excluded.example", "probe-excluded.example",
         ]
 
-    @pytest.mark.asyncio
-    async def test_criterion_notes_reach_analyst_and_auditor(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
-        import yaml
-
-        sentinel = "SENTINEL-NOTES: mixed = offsets only"
-        _setup_tmp_repo(tmp_path)
-        templates_path = tmp_path / "research" / "templates.yaml"
-        data = yaml.safe_load(templates_path.read_text(encoding="utf-8"))
-        [entry] = [t for t in data["templates"] if t["slug"] == "renewable-energy-hosting"]
-        entry["notes"] = sentinel
-        templates_path.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
-        ref = self._write_product(tmp_path)
-
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_with_url)
-        monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
-        monkeypatch.setattr("orchestrator.pipeline.below_threshold", lambda sources: False)
-
-        import orchestrator.pipeline as pipeline_mod
-        analyst_prompts: list[str] = []
-        real_analyst_prompt = pipeline_mod.build_analyst_prompt
-
-        def spy_analyst_prompt(*args, **kwargs):
-            prompt = real_analyst_prompt(*args, **kwargs)
-            analyst_prompts.append(prompt)
-            return prompt
-
-        monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", spy_analyst_prompt)
-
-        auditor_prompts: list[str] = []
-        real_auditor_prompt = pipeline_mod.build_auditor_prompt
-
-        def spy_auditor_prompt(bundle):
-            prompt = real_auditor_prompt(bundle)
-            auditor_prompts.append(prompt)
-            return prompt
-
-        monkeypatch.setattr("orchestrator.pipeline.build_auditor_prompt", spy_auditor_prompt)
-
-        from researcher.entity_verifier import entity_verifier_agent
-        from researcher.entity_enricher import entity_enricher_agent
-
-        verdict_model = TestModel(
-            custom_output_args={
-                "title": "GreenTest is hosted on renewable energy",
-                "topics": ["environmental-impact"],
-                "verdict": "mixed",
-                "confidence": "medium",
-                "narrative": "The evidence is mixed.",
-                "verification_level": "independently-verified",
-                "seo_title": "GreenTest runs on renewable energy",
-            },
-        )
-        with (
-            ingestor_agent.override(model=_ingestor_model()),
-            verdict_only_agent.override(model=verdict_model),
-            auditor_agent.override(model=_auditor_model()),
-            entity_verifier_agent.override(model=_verifier_model("verified")),
-            entity_enricher_agent.override(
-                model=_enricher_model(description=self.ENRICHER_DESCRIPTION),
-            ),
-            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-        ):
-            config = VerifyConfig(
-                model="test", max_sources=2, skip_wayback=True, repo_root=str(tmp_path),
-            )
-            result = await onboard_entity(
-                "GreenTest", "product", config=config, entity_ref=ref,
-                only=["renewable-energy-hosting"],
-            )
-
-        assert result.status == "accepted", result.errors
-        assert analyst_prompts, "analyst never ran"
-        assert f"## Criterion notes\n{sentinel}" in analyst_prompts[0]
-        assert auditor_prompts, "auditor never ran"
-        assert f"## Criterion notes\n{sentinel}" in auditor_prompts[0]
-
-
 class TestOnboardSubjectFanOut:
     """Subject onboarding queues only templates whose subjects: list names the subject."""
 
@@ -1469,12 +1421,12 @@ class TestOnboardSubjectFanOut:
 
     @pytest.mark.asyncio
     async def test_referenced_subject_queues_only_matching_templates(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         _setup_tmp_repo(tmp_path)
         ref = self._write_subject_entity(tmp_path, "ai-model-producers", "AI Model Producers")
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
+        claim_research([])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         with (
@@ -1500,7 +1452,7 @@ class TestOnboardSubjectFanOut:
 
     @pytest.mark.asyncio
     async def test_unreferenced_subject_warns_and_proceeds(
-        self, tmp_path: Path, monkeypatch
+        self, tmp_path: Path, monkeypatch, claim_research
     ) -> None:
         """Subject onboard with no matching ``subjects:`` template warns; does not halt.
 
@@ -1511,7 +1463,7 @@ class TestOnboardSubjectFanOut:
         _setup_tmp_repo(tmp_path)
         ref = self._write_subject_entity(tmp_path, "unreferenced-test-subject", "Unreferenced Test Subject")
 
-        monkeypatch.setattr("orchestrator.pipeline._research", _fake_research_empty)
+        claim_research([])
         monkeypatch.setattr("orchestrator.pipeline._probe_collision_suggestions", _no_probe)
 
         with (
@@ -1547,7 +1499,7 @@ class TestGatherLightResearchErrors:
         import asyncio
 
         from common.models import EntityType
-        from orchestrator.checkpoints import StepError
+        from loop.errors import StepError
         from orchestrator.pipeline import gather_light_research
 
         async def fake_ingest(*args, **kwargs):
@@ -1573,7 +1525,7 @@ class TestGatherLightResearchErrors:
         import asyncio
 
         from common.models import EntityType
-        from orchestrator.checkpoints import StepError
+        from loop.errors import StepError
         from orchestrator.pipeline import gather_light_research
 
         async def fake_research(*args, **kwargs):
@@ -1688,151 +1640,3 @@ class TestGatherLightResearchErrors:
 
 
 
-class TestOnboardForceRewritesKeepTheRefreshTrail:
-    """dr onboard --force over a claim that is not a draft does what dr
-    claim-refresh does: the sign-off is reset before the rewrite, and a
-    published claim's sidecar keeps what readers saw."""
-
-    SLUG = "publishes-sustainability-report"
-
-    def _setup(self, tmp_path: Path, status: str) -> tuple[Path, Path]:
-        import yaml
-
-        _setup_tmp_repo(tmp_path)
-        entity_dir = tmp_path / "research" / "entities" / "companies"
-        entity_dir.mkdir(parents=True, exist_ok=True)
-        (entity_dir / "openai.md").write_text(
-            "---\nname: OpenAI\ntype: company\ndescription: An AI lab.\n---\n",
-            encoding="utf-8",
-        )
-        claim_path = tmp_path / "research" / "claims" / "openai" / f"{self.SLUG}.md"
-        claim_path.parent.mkdir(parents=True)
-        claim_path.write_text(
-            "---\ntitle: OpenAI publishes a sustainability or ESG report\n"
-            "entity: companies/openai\ntopics: [environmental-impact]\n"
-            f"verdict: 'true'\nconfidence: high\ncriteria_slug: {self.SLUG}\n"
-            f"status: {status}\nas_of: '2026-10-01'\nsources:\n- 2026/old\n---\nBody.\n",
-            encoding="utf-8",
-        )
-        sidecar_path = claim_path.with_name(f"{self.SLUG}.audit.yaml")
-        sidecar_path.write_text(yaml.safe_dump({
-            "schema_version": 1,
-            "pipeline_run": {"ran_at": "2026-10-01T00:00:00+00:00", "model": "m", "agents": ["analyst"]},
-            "sources_consulted": [],
-            "audit": None,
-            "human_review": {
-                "reviewed_at": "2026-10-02", "reviewer": "reviewer@example.org",
-                "notes": None, "pr_url": None,
-            },
-        }), encoding="utf-8")
-        return claim_path, sidecar_path
-
-    async def _onboard(self, tmp_path: Path, monkeypatch, *, blocked: bool) -> OnboardResult:
-        from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
-        from common.models import (
-            BlockedReason, Category, Confidence, EntityType, Verdict, VerificationLevel,
-        )
-        from orchestrator.pipeline import VerificationResult
-        from researcher.entity_verifier import entity_verifier_agent
-
-        async def fake_verify_claim(entity_name, claim_text, cfg, gate, **kwargs):
-            ao = None if blocked else AnalystOutput(
-                entity=EntityResolution(
-                    entity_name="OpenAI", entity_type=EntityType.COMPANY, entity_description="d",
-                ),
-                verdict=VerdictAssessment(
-                    title="OpenAI publishes a sustainability or ESG report",
-                    verdict=Verdict.FALSE,
-                    confidence=Confidence.MEDIUM,
-                    narrative="New narrative.",
-                    topics=[Category("environmental-impact")],
-                    verification_level=VerificationLevel.PARTIALLY_VERIFIED,
-                    seo_title="OpenAI sustainability report",
-                ),
-            )
-            return VerificationResult(
-                entity=entity_name, claim_text=claim_text,
-                urls_found=[], urls_ingested=[], urls_failed=[], sources=[],
-                analyst_output=ao,
-                blocked_reason=BlockedReason.INSUFFICIENT_SOURCES if blocked else None,
-                cached_sources=[("https://new.example", "2026/new", {"title": "New"})],
-            )
-
-        monkeypatch.setattr("orchestrator.pipeline.verify_claim", fake_verify_claim)
-        monkeypatch.setattr("orchestrator.pipeline.gather_light_research", _fake_gather(""))
-        with (
-            entity_verifier_agent.override(model=_verifier_model("verified")),
-            patch.object(Agent, "override", side_effect=lambda **kw: _noop(**kw)),
-        ):
-            config = VerifyConfig(
-                model="test", skip_wayback=True, repo_root=str(tmp_path), force_overwrite=True,
-            )
-            return await onboard_entity(
-                "OpenAI", "company", config=config, entity_ref="companies/openai",
-                only=[self.SLUG],
-            )
-
-    @pytest.mark.asyncio
-    @pytest.mark.parametrize("blocked", [False, True], ids=["success", "blocked"])
-    async def test_published_claim_keeps_the_published_state(
-        self, tmp_path: Path, monkeypatch, blocked: bool,
-    ) -> None:
-        import yaml
-
-        from orchestrator.review import refresh_verdict_change
-
-        claim_path, sidecar_path = self._setup(tmp_path, "published")
-
-        result = await self._onboard(tmp_path, monkeypatch, blocked=blocked)
-
-        assert not result.claims_failed, result.errors
-        fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-        assert fm["status"] == ("blocked" if blocked else "draft")
-        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-        assert sidecar["human_review"]["reviewed_at"] is None
-        assert sidecar["human_review"]["reviewer"] is None
-        previous = sidecar["refresh"]["previous"]
-        assert previous["status"] == "published"
-        assert previous["verdict"] == "true"
-        assert previous["reviewer"] == "reviewer@example.org"
-        assert sidecar["refresh"]["dropped_sources"] == ["2026/old"]
-        if not blocked:
-            # dr review --approve then asks for a public correction.
-            assert refresh_verdict_change(fm, sidecar) == ("true", "false")
-
-    @pytest.mark.asyncio
-    async def test_archived_claim_loses_its_sign_off(self, tmp_path: Path, monkeypatch) -> None:
-        import yaml
-
-        claim_path, sidecar_path = self._setup(tmp_path, "archived")
-
-        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
-
-        assert not result.claims_failed, result.errors
-        assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
-        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-        assert sidecar["human_review"]["reviewed_at"] is None
-        assert "refresh" not in sidecar
-
-    @pytest.mark.asyncio
-    async def test_draft_claim_keeps_its_review(self, tmp_path: Path, monkeypatch) -> None:
-        import yaml
-
-        _claim_path, sidecar_path = self._setup(tmp_path, "draft")
-
-        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
-
-        assert not result.claims_failed, result.errors
-        sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-        assert sidecar["human_review"]["reviewer"] == "reviewer@example.org"
-        assert "refresh" not in sidecar
-
-    @pytest.mark.asyncio
-    async def test_unparseable_claim_is_refused_by_the_claim_write(self, tmp_path: Path, monkeypatch) -> None:
-        claim_path, _sidecar_path = self._setup(tmp_path, "published")
-        claim_path.write_text("---\ntitle: [unclosed\n---\nBody.\n", encoding="utf-8")
-
-        result = await self._onboard(tmp_path, monkeypatch, blocked=False)
-
-        assert result.claims_failed == [self.SLUG]
-        assert any("cannot parse existing claim" in e for e in result.errors), result.errors

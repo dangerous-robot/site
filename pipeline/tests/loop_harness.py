@@ -1,0 +1,258 @@
+"""Scripted agents and fixtures for driving ``loop.run`` through its public entry.
+
+Every test that uses this module reaches the loop the way a command does:
+``loop.run(ClaimSpec, VerifyConfig)`` or the ``dr`` CLI, with the four agents
+(planner, scorer, ingestor, analyst, Evaluator) on scripted models and
+``researcher.decomposed.execute_searches`` patched. Nothing here patches a
+private name under ``pipeline/loop/``.
+
+The ingest model fetches the requested URL (served from the search result's
+``raw_content``, so no HTTP call is made) and then returns a source for it,
+so ``fetch_failure_reason`` is None without patching it.
+"""
+
+from __future__ import annotations
+
+from contextlib import contextmanager, nullcontext
+from pathlib import Path
+from unittest.mock import patch
+
+from pydantic_ai import Agent
+from pydantic_ai.messages import ModelResponse, ToolCallPart, UserPromptPart
+from pydantic_ai.models.function import AgentInfo, FunctionModel
+from pydantic_ai.models.test import TestModel
+
+ENTITY_REF = "subjects/probe-subject"
+ENTITY_NAME = "Probe Subject"
+SENTENCE = "Probe Subject data centers used more than 4% of US electricity in 2024"
+
+# Four candidate pages, enough to pass the four-source threshold.
+URLS = [
+    "https://example.org/report",
+    "https://example.org/second-report",
+    "https://example.org/third-report",
+    "https://example.org/fourth-report",
+]
+PAGE_TEXT = {
+    u: f"Page {i + 1}. Probe Subject data centers used more than 4% of US electricity in 2024."
+    for i, u in enumerate(URLS)
+}
+SUB_QUESTIONS = [
+    {"id": "sq1", "question": "Does the subject publish energy data?", "rationale": "first-party axis"},
+    {"id": "sq2", "question": "Do third parties confirm it?", "rationale": "independent axis"},
+]
+URL_ADDRESSES = {URLS[0]: ["sq1"], URLS[1]: ["sq1", "sq2"], URLS[2]: ["sq2"], URLS[3]: ["sq1"]}
+
+
+def planner_args(queries: list[str] | None = None) -> dict:
+    queries = queries or ["probe subject energy report", "probe subject energy independent"]
+    return {
+        "sub_questions": list(SUB_QUESTIONS),
+        "queries": [
+            {"text": q, "sub_question_id": "sq1" if i == 0 else "sq2"} for i, q in enumerate(queries)
+        ],
+        "rationale": "two axes",
+    }
+
+
+def scorer_args(urls: list[str] | None = None, *, kept: bool = True) -> dict:
+    urls = urls if urls is not None else URLS
+    if not kept:
+        return {"kept": [], "dropped": list(urls), "rationale": "nothing relevant"}
+    return {
+        "kept": [{"url": u, "addresses": URL_ADDRESSES.get(u, ["sq1"]), "score": 4.0} for u in urls],
+        "dropped": [],
+        "rationale": "all relevant",
+    }
+
+
+def analyst_args(
+    *,
+    title: str = "Probe Subject used over four percent of US electricity",
+    verdict: str = "mixed",
+    confidence: str = "medium",
+    level: str = "partially-verified",
+    cited_sources: list[str] | None = None,
+    narrative: str = "The evidence is mixed.",
+    cap_rationale: str | None = None,
+) -> dict:
+    out = {
+        "title": title,
+        "topics": ["environmental-impact"],
+        "verdict": verdict,
+        "confidence": confidence,
+        "narrative": narrative,
+        "verification_level": level,
+        "seo_title": "Probe Subject electricity share",
+    }
+    if cited_sources is not None:
+        out["cited_sources"] = list(cited_sources)
+    if cap_rationale is not None:
+        out["cap_rationale"] = cap_rationale
+    return out
+
+
+def auditor_args(
+    *, verdict: str = "mixed", confidence: str = "medium", evidence_gaps: list[str] | None = None
+) -> dict:
+    return {
+        "verdict": verdict,
+        "confidence": confidence,
+        "reasoning": "Independent assessment.",
+        "evidence_gaps": list(evidence_gaps or []),
+    }
+
+
+def fake_execute_searches(urls: list[str] | None = None, page_text: dict[str, str] | None = None):
+    """A stand-in for ``researcher.decomposed.execute_searches`` returning scripted candidates."""
+    from researcher.scorer import SearchCandidate
+
+    urls = urls if urls is not None else URLS
+    text = page_text if page_text is not None else PAGE_TEXT
+
+    async def _run(queries, client, **_kwargs):
+        return [
+            SearchCandidate(
+                url=u, title=f"Report {i + 1}", snippet="snippet", from_query=queries[0],
+                raw_content=text.get(u),
+            )
+            for i, u in enumerate(urls)
+        ]
+
+    return _run
+
+
+def ingest_model(
+    *, key_quotes: dict[str, list[str]] | None = None, publisher: str = "Example Publisher",
+) -> FunctionModel:
+    """An ingest model that fetches the requested URL, then returns a source for it."""
+    quotes = key_quotes or {}
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        parts = [p for m in messages for p in getattr(m, "parts", [])]
+        prompt = next(p.content for p in parts if isinstance(p, UserPromptPart))
+        url = prompt.split("URL: ", 1)[1].split("\n", 1)[0]
+        called = [p.tool_name for p in parts if isinstance(p, ToolCallPart)]
+        if not called:
+            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
+        frontmatter = {
+            "url": url,
+            "title": f"Report at {url.rsplit('/', 1)[-1]}",
+            "publisher": publisher,
+            "accessed_date": "2026-10-14",
+            "kind": "article",
+            "summary": "A factual summary of the report.",
+        }
+        if url in quotes:
+            frontmatter["key_quotes"] = list(quotes[url])
+        source = {"frontmatter": frontmatter, "body": "Body of the report.", "slug": "page", "year": 2026}
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)])
+
+    return FunctionModel(_fn)
+
+
+def capturing_model(captured: list[str], args: dict, *, calls: list[str] | None = None, name: str = "") -> FunctionModel:
+    """A model that records its user prompt (and a call tally) and returns scripted output."""
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        for message in messages:
+            for part in getattr(message, "parts", []):
+                if isinstance(part, UserPromptPart):
+                    captured.append(str(part.content))
+        if calls is not None:
+            calls.append(name)
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    return FunctionModel(_fn)
+
+
+def failing_model(exc: Exception | None = None) -> FunctionModel:
+    """A model whose every run raises, so the agent step fails after its retries."""
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        raise exc or RuntimeError("scripted model failure")
+
+    return FunctionModel(_fn)
+
+
+@contextmanager
+def scripted_agents(
+    *,
+    planner: dict | None = None,
+    scorer: dict | None = None,
+    analyst: dict | None = None,
+    auditor: dict | None = None,
+    analyst_model=None,
+    auditor_model=None,
+    ingestor=None,
+    search=None,
+):
+    """Put every agent on a scripted model and patch the search executor.
+
+    ``analyst_model`` and ``auditor_model`` take a ready model (for capturing
+    or failing runs); ``analyst`` and ``auditor`` take ``custom_output_args``
+    for a ``TestModel``. The loop's own ``Agent.override`` calls are made
+    no-ops so the scripted models survive them.
+    """
+    from analyst.agent import analyst_agent, verdict_only_agent
+    from auditor.agent import auditor_agent
+    from ingestor.agent import ingestor_agent
+    from researcher.planner import research_planner_agent
+    from researcher.scorer import url_scorer_agent
+
+    analyst_m = analyst_model or TestModel(custom_output_args=analyst or analyst_args())
+    auditor_m = auditor_model or TestModel(custom_output_args=auditor or auditor_args())
+    with (
+        research_planner_agent.override(model=TestModel(custom_output_args=planner or planner_args())),
+        url_scorer_agent.override(model=TestModel(custom_output_args=scorer or scorer_args())),
+        ingestor_agent.override(model=ingestor or ingest_model()),
+        verdict_only_agent.override(model=analyst_m),
+        analyst_agent.override(model=analyst_m),
+        auditor_agent.override(model=auditor_m),
+        patch("researcher.decomposed.execute_searches", side_effect=search or fake_execute_searches()),
+        patch.object(Agent, "override", side_effect=lambda **kw: nullcontext()),
+    ):
+        yield
+
+
+def write_entity(repo_root: Path, ref: str = ENTITY_REF, name: str = ENTITY_NAME) -> str:
+    """Write a minimal entity file for ``ref`` and return the ref."""
+    type_dir, slug = ref.split("/", 1)
+    entity_type = {"subjects": "subject", "products": "product", "companies": "company"}[type_dir]
+    path = repo_root / "research" / "entities" / type_dir / f"{slug}.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        f"---\nname: {name}\ntype: {entity_type}\ndescription: A test entity.\n---\n",
+        encoding="utf-8",
+    )
+    return ref
+
+
+def claim_spec(repo_root: Path, sentence: str = SENTENCE, ref: str = ENTITY_REF, **kwargs):
+    """Build the loop's ``ClaimSpec`` for an entity file on disk."""
+    from loop import ClaimSpec
+    from orchestrator.entity_resolution import parse_entity_ref
+
+    return ClaimSpec(statement=sentence, entity=parse_entity_ref(ref, repo_root), **kwargs)
+
+
+def loop_config(repo_root: Path, **overrides):
+    from loop import VerifyConfig
+
+    kwargs = {"model": "test", "max_sources": 4, "skip_wayback": True, "repo_root": str(repo_root)}
+    kwargs.update(overrides)
+    return VerifyConfig(**kwargs)
+
+
+def claim_dir(repo_root: Path, ref: str = ENTITY_REF) -> Path:
+    return repo_root / "research" / "claims" / ref
+
+
+def written_claims(repo_root: Path, ref: str = ENTITY_REF) -> list[Path]:
+    d = claim_dir(repo_root, ref)
+    return sorted(p for p in d.glob("*.md")) if d.exists() else []
+
+
+def written_sources(repo_root: Path) -> list[Path]:
+    d = repo_root / "research" / "sources"
+    return sorted(d.rglob("*.md")) if d.exists() else []

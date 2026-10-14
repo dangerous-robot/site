@@ -6,7 +6,8 @@ import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from pydantic import BaseModel, Field, PrivateAttr, field_validator
+from pydantic import BaseModel, Field, field_validator
+from pydantic.json_schema import SkipJsonSchema
 from pydantic_ai import Agent
 
 from analyst.citations import NO_CITATION_FIELDS, has_citation_reference
@@ -134,9 +135,9 @@ class SourceOverride(BaseModel):
         max_length=300,
     )
     # True on the entity-match relabels the orchestrator adds, which do not
-    # mean the analyst relied on the source. Private, so it stays out of the
-    # analyst's output schema and the claim file.
-    _code_relabel: bool = PrivateAttr(default=False)
+    # mean the analyst relied on the source. Kept out of the analyst's output
+    # schema (SkipJsonSchema) and out of the claim file (exclude).
+    code_relabel: SkipJsonSchema[bool] = Field(default=False, exclude=True)
 
 
 class VerdictAssessment(BaseModel):
@@ -209,7 +210,7 @@ class VerdictAssessment(BaseModel):
     # True when the write-time level fit wrote ``cap_rationale`` for a level
     # it lowered and the analyst gave none. A claim with no record of the
     # pipeline's last rationale then takes it over the one on disk.
-    _cap_rationale_fitted: bool = PrivateAttr(default=False)
+    cap_rationale_fitted: SkipJsonSchema[bool] = Field(default=False, exclude=True)
 
     @field_validator("narrative")
     @classmethod

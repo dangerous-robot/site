@@ -17,11 +17,8 @@ from analyst.agent import (
     EntityResolution,
     SourceOverride,
     VerdictAssessment,
-    verdict_only_agent,
 )
-import yaml
 
-from common.frontmatter import parse_frontmatter
 from common.models import Confidence, EntityType, Independence, VerificationLevel
 from common.source_classification import (
     EntityIdentity,
@@ -30,11 +27,9 @@ from common.source_classification import (
     publisher_named_in_claim,
     source_engages_entity,
 )
-from ingestor.models import SourceFile
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for, parse_entity_ref
 from orchestrator.persistence import fit_verdict_to_written_pool, verdict_write_kwargs
-from orchestrator.pipeline import VerifyConfig, _apply_entity_match, research_claim, verify_claim
-from researcher.decomposed import ResearchOutput
+from loop import apply_entity_match
 
 FORUM_URL = "https://community.brave.app/t/brave-sync-servers-location/631793"
 
@@ -164,7 +159,7 @@ def test_product_entity_on_disk_includes_its_parent(repo_root: Path) -> None:
     )
 
 
-# --- E2: verify_claim relabels the analyst's pool and records overrides -----
+# --- E2: shared fixtures (the loop cases live in test_beta7_pins.py) ---------
 
 TRANSPARENCY_URL = "https://brave.com/transparency/"
 OTHER_URLS = [
@@ -172,58 +167,6 @@ OTHER_URLS = [
     "https://sustainability.google/reports/",
     "https://aws.amazon.com/blogs/renewable",
 ]
-
-
-def _write_parent(repo_root: Path) -> None:
-    path = repo_root / "research" / "entities" / "companies" / "brave-software.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "---\nname: Brave Software\ntype: company\n"
-        "website: https://brave.com/about/#company-info\n---\n",
-        encoding="utf-8",
-    )
-
-
-def _write_cached_transparency(repo_root: Path) -> None:
-    path = repo_root / "research" / "sources" / "2025" / "transparency.md"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        "---\n"
-        f"url: {TRANSPARENCY_URL}\n"
-        "title: Brave transparency report\n"
-        "publisher: Brave Software\n"
-        "accessed_date: 2026-01-01\n"
-        "kind: report\n"
-        "independence: independent\n"
-        "summary: Brave publishes a transparency report.\n"
-        "---\n\nBody.\n",
-        encoding="utf-8",
-    )
-
-
-def _fresh(
-    url: str,
-    slug: str,
-    publisher: str,
-    independence: str | None,
-    *,
-    body: str = "Body.",
-    summary: str = "A page.",
-    kind: str = "article",
-) -> SourceFile:
-    fm = {
-        "url": url,
-        "title": f"{publisher} page {slug}",
-        "publisher": publisher,
-        "accessed_date": "2026-10-04",
-        "kind": kind,
-        "summary": summary,
-    }
-    if independence:
-        fm["independence"] = independence
-    return SourceFile.model_validate(
-        {"frontmatter": fm, "body": body, "slug": slug, "year": 2026}
-    )
 
 
 def _verdict(
@@ -250,154 +193,8 @@ def _verdict(
     )
 
 
-def _default_files() -> list[tuple[str, SourceFile]]:
-    return [
-        (FORUM_URL, _fresh(FORUM_URL, "631793", "Brave Software", "independent")),
-        (OTHER_URLS[0], _fresh(OTHER_URLS[0], "sustainability", "AWS", None)),
-        (OTHER_URLS[1], _fresh(OTHER_URLS[1], "reports", "Google", None)),
-        (
-            OTHER_URLS[2],
-            _fresh(
-                OTHER_URLS[2], "renewable", "AWS", "independent",
-                body="AWS hosts Brave Browser on renewable power.",
-            ),
-        ),
-    ]
-
-
-def _patch_pipeline(monkeypatch, analyst_overrides=None, files=None, verdict_kwargs=None) -> dict:
-    captured: dict = {}
-    files = files if files is not None else _default_files()
-    urls = [TRANSPARENCY_URL, *[u for u, _ in files]]
-
-    async def _fake_research(client, entity, claim, cfg, sem, **kwargs):
-        return ResearchOutput(urls=list(urls), trace={"mode": "decomposed"})
-
-    async def _fake_ingest(client, urls_in, cfg, sem, **kwargs):
-        return [f for f in files if f[0] in urls_in], []
-
-    # The entity match runs inside _analyse_claim, so the analyst is faked one
-    # layer down: capture what the prompt is built from, stub the model run.
-    def _fake_prompt(entity_name, claim_text, sources, **kwargs):
-        captured["sources"] = [dict(s) for s in sources]
-        return "prompt"
-
-    async def _fake_run(agent, prompt, timeout_s, **kwargs):
-        out = _verdict(analyst_overrides, **(verdict_kwargs or {}))
-        return (out.verdict if agent is verdict_only_agent else out), [], None
-
-    async def _fake_audit(*args, **kwargs):
-        return None
-
-    monkeypatch.setattr("orchestrator.pipeline._research", _fake_research)
-    monkeypatch.setattr("orchestrator.pipeline._ingest_urls", _fake_ingest)
-    monkeypatch.setattr("orchestrator.pipeline.build_analyst_prompt", _fake_prompt)
-    monkeypatch.setattr("orchestrator.pipeline._run_with_null_retry", _fake_run)
-    monkeypatch.setattr("orchestrator.pipeline._audit_claim", _fake_audit)
-    return captured
-
-
 def _brave_resolved() -> ResolvedEntity:
     return _resolved("companies/brave-software")
-
-
-@pytest.mark.asyncio
-async def test_verify_claim_marks_entity_sources_first_party(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    captured = _patch_pipeline(monkeypatch)
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await verify_claim(
-        "Brave Browser", "Brave is hosted on renewable energy", cfg,
-        resolved_entity=_brave_resolved(),
-    )
-
-    labels = {s["url"]: s["independence"] for s in captured["sources"]}
-    assert labels[TRANSPARENCY_URL] == "first-party"  # cached hit
-    assert labels[FORUM_URL] == "first-party"  # model said independent
-    assert labels[OTHER_URLS[0]] == "unknown"  # says nothing about Brave
-    assert labels[OTHER_URLS[1]] == "unknown"  # Google's own page, not Brave's
-    assert labels[OTHER_URLS[2]] == "independent"  # names Brave Browser
-
-    overrides = result.analyst_output.verdict.source_overrides
-    by_source = {o.source: o for o in overrides}
-    assert set(by_source) == {
-        "2025/transparency", "2026/631793", "2026/sustainability", "2026/reports",
-    }
-    assert by_source["2025/transparency"].independence == Independence.FIRST_PARTY
-    assert by_source["2026/631793"].independence == Independence.FIRST_PARTY
-    assert "brave.com" in by_source["2025/transparency"].reason
-    assert "Brave Software" in by_source["2026/631793"].reason
-    for sid in ("2026/sustainability", "2026/reports"):
-        assert by_source[sid].independence == Independence.UNKNOWN
-        assert by_source[sid].reason.startswith("Off-entity")
-
-
-@pytest.mark.asyncio
-async def test_verify_claim_does_not_duplicate_analyst_override(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    analyst_override = SourceOverride(
-        source="2025/transparency",
-        independence=Independence.FIRST_PARTY,
-        reason="Brave's own report.",
-    )
-    _patch_pipeline(monkeypatch, analyst_overrides=[analyst_override])
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await verify_claim(
-        "Brave Browser", "Brave is hosted on renewable energy", cfg,
-        resolved_entity=_brave_resolved(),
-    )
-
-    sources = [o.source for o in result.analyst_output.verdict.source_overrides]
-    assert sorted(sources) == [
-        "2025/transparency", "2026/631793", "2026/reports", "2026/sustainability",
-    ]
-    kept = next(o for o in result.analyst_output.verdict.source_overrides if o.source == "2025/transparency")
-    assert kept.reason == "Brave's own report."
-
-
-@pytest.mark.asyncio
-async def test_verify_claim_without_resolved_entity_leaves_labels(tmp_path: Path, monkeypatch) -> None:
-    _write_cached_transparency(tmp_path)
-    captured = _patch_pipeline(monkeypatch)
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await verify_claim("Brave Browser", "Brave is hosted on renewable energy", cfg)
-
-    labels = {s["url"]: s["independence"] for s in captured["sources"]}
-    assert labels[TRANSPARENCY_URL] == "independent"
-    assert result.analyst_output.verdict.source_overrides is None
-
-
-@pytest.mark.asyncio
-async def test_research_claim_writes_entity_overrides(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    captured = _patch_pipeline(monkeypatch)
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await research_claim(
-        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
-    )
-
-    labels = {s["url"]: s["independence"] for s in captured["sources"]}
-    assert labels[FORUM_URL] == "first-party"
-    claim_fm, _ = parse_frontmatter((tmp_path / result.claim_path).read_text())
-    written = {o["source"]: o["independence"] for o in claim_fm["source_overrides"]}
-    assert written == {
-        "2025/transparency": "first-party",
-        "2026/631793": "first-party",
-        "2026/sustainability": "unknown",
-        "2026/reports": "unknown",
-    }
-    # The source file keeps its entity-agnostic label.
-    forum_fm, _ = parse_frontmatter(
-        (tmp_path / "research" / "sources" / "2026" / "631793.md").read_text()
-    )
-    assert forum_fm["independence"] == "independent"
 
 
 # --- Off-entity sources: neither independent nor first-party ----------------
@@ -454,7 +251,7 @@ def test_entity_matched_first_party_page_is_left_alone(tmp_path: Path) -> None:
     # The entity's own page already labelled first-party stays first-party
     # with no override; only pages from other organizations are relabelled.
     sources = [_sd("2025/transparency", TRANSPARENCY_URL, "Brave Software", "first-party")]
-    overrides = _apply_entity_match(
+    overrides = apply_entity_match(
         sources, _brave_resolved(), tmp_path, "Brave is hosted on renewable energy"
     )
     assert overrides == []
@@ -475,7 +272,7 @@ def test_google_paper_on_chatgpt_claim_is_unknown(tmp_path: Path) -> None:
             body="We compare Gemini with ChatGPT on energy per prompt.",
         )
     ]
-    overrides = _apply_entity_match(
+    overrides = apply_entity_match(
         sources, chatgpt, tmp_path, "ChatGPT is hosted on renewable energy"
     )
     assert sources[0]["independence"] == "unknown"
@@ -493,7 +290,7 @@ def test_off_entity_note_says_what_was_checked(tmp_path: Path) -> None:
             body="Scaleway's data centers run on renewable power.",
         )
     ]
-    overrides = _apply_entity_match(
+    overrides = apply_entity_match(
         sources, _brave_resolved(), tmp_path, "Brave runs on Scaleway's renewable data centers"
     )
     assert overrides[0].reason == (
@@ -504,7 +301,7 @@ def test_off_entity_note_says_what_was_checked(tmp_path: Path) -> None:
 
 def test_off_entity_reason_fits_override_limit(tmp_path: Path) -> None:
     sources = [_sd("2026/long", "https://x.org/a", "P" * 500, "first-party")]
-    overrides = _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
+    overrides = apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
     assert len(overrides[0].reason) <= 300
 
 
@@ -519,7 +316,7 @@ def test_subject_entity_skips_off_entity_rule(tmp_path: Path) -> None:
         _sd("2026/aws", OTHER_URLS[0], "AWS", "independent"),
         _sd("2026/google", OTHER_URLS[1], "Google", "first-party"),
     ]
-    overrides = _apply_entity_match(sources, subject, tmp_path, "Data centers use water")
+    overrides = apply_entity_match(sources, subject, tmp_path, "Data centers use water")
     assert overrides == []
     assert [s["independence"] for s in sources] == ["independent", "first-party"]
 
@@ -528,78 +325,6 @@ INFOMANIAK_URL = "https://www.infomaniak.com/en/ecology"
 GOOGLE_DOCS_URL = "https://cloud.google.com/sustainability/brave"
 AWS_DOCS_URL = "https://docs.aws.amazon.com/customers/brave"
 REVIEW_URL = "https://www.example-news.com/brave-review"
-
-
-def _off_entity_files() -> list[tuple[str, SourceFile]]:
-    return [
-        (OTHER_URLS[1], _fresh(OTHER_URLS[1], "reports", "Google", "first-party")),
-        (OTHER_URLS[0], _fresh(OTHER_URLS[0], "sustainability", "AWS", "independent")),
-        (
-            AWS_DOCS_URL,
-            _fresh(
-                AWS_DOCS_URL, "brave", "Amazon Web Services", "first-party",
-                body="Brave Browser is an AWS customer.", kind="documentation",
-            ),
-        ),
-        (
-            REVIEW_URL,
-            _fresh(
-                REVIEW_URL, "brave-review", "Example News", "independent",
-                summary="A look at how Brave Browser powers its servers.",
-            ),
-        ),
-        (INFOMANIAK_URL, _fresh(INFOMANIAK_URL, "ecology", "Infomaniak", "first-party")),
-    ]
-
-
-@pytest.mark.asyncio
-async def test_verify_claim_marks_off_entity_sources_unknown(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    captured = _patch_pipeline(monkeypatch, files=_off_entity_files())
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await verify_claim(
-        "Brave Browser", "Brave is hosted on renewable energy by Infomaniak", cfg,
-        resolved_entity=_brave_resolved(),
-    )
-
-    labels = {s["url"]: s["independence"] for s in captured["sources"]}
-    assert labels[OTHER_URLS[1]] == "unknown"  # Google first-party, no Brave mention
-    assert labels[OTHER_URLS[0]] == "unknown"  # AWS independent, no Brave mention
-    assert labels[AWS_DOCS_URL] == "unknown"  # another organization's own docs naming Brave
-    assert labels[REVIEW_URL] == "independent"  # names Brave Browser
-    assert labels[INFOMANIAK_URL] == "first-party"  # the claim names Infomaniak
-
-    by_source = {o.source: o for o in result.analyst_output.verdict.source_overrides}
-    for sid in ("2026/reports", "2026/sustainability", "2026/brave"):
-        assert by_source[sid].independence == Independence.UNKNOWN
-        assert by_source[sid].reason.startswith("Off-entity")
-    assert "2026/brave-review" not in by_source
-    assert "2026/ecology" not in by_source
-
-
-@pytest.mark.asyncio
-async def test_off_entity_override_beats_analyst_first_party(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    analyst_override = SourceOverride(
-        source="2026/reports",
-        independence=Independence.FIRST_PARTY,
-        reason="Google restates its own numbers.",
-    )
-    _patch_pipeline(monkeypatch, analyst_overrides=[analyst_override])
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await verify_claim(
-        "Brave Browser", "Brave is hosted on renewable energy", cfg,
-        resolved_entity=_brave_resolved(),
-    )
-
-    reports = [o for o in result.analyst_output.verdict.source_overrides if o.source == "2026/reports"]
-    assert len(reports) == 1
-    assert reports[0].independence == Independence.UNKNOWN
-    assert reports[0].reason.startswith("Off-entity")
 
 
 # --- The written level fits the written source list -------------------------
@@ -699,67 +424,6 @@ def test_fit_leaves_a_supported_level_alone() -> None:
     assert verdict.confidence == Confidence.MEDIUM
 
 
-@pytest.mark.asyncio
-async def test_research_claim_writes_the_fitted_level(tmp_path: Path, monkeypatch) -> None:
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    _patch_pipeline(
-        monkeypatch,
-        verdict_kwargs={"level": "multiply-verified", "confidence": "medium", "cap_rationale": None},
-    )
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-
-    result = await research_claim(
-        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
-    )
-
-    claim_path = tmp_path / result.claim_path
-    claim_fm, _ = parse_frontmatter(claim_path.read_text())
-    # One written source (the AWS page naming Brave) is independent.
-    assert claim_fm["verification_level"] == "independently-verified"
-    assert claim_fm["confidence"] == "medium"
-    sidecar = yaml.safe_load(claim_path.with_name(claim_path.stem + ".audit.yaml").read_text())
-    assert "multiply-verified" in sidecar["pipeline_run"]["level_clamp"]
-
-
-@pytest.mark.asyncio
-async def test_forced_research_claim_over_a_published_claim_keeps_the_refresh_trail(
-    tmp_path: Path, monkeypatch,
-) -> None:
-    """dr claim-draft --force does what dr claim-refresh does: the rewrite
-    waits for review and the sidecar keeps what readers saw."""
-    _write_parent(tmp_path)
-    _write_cached_transparency(tmp_path)
-    _patch_pipeline(monkeypatch)
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8)
-    first = await research_claim(
-        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
-    )
-    claim_path = tmp_path / first.claim_path
-    sidecar_path = claim_path.with_name(claim_path.stem + ".audit.yaml")
-    claim_path.write_text(
-        claim_path.read_text().replace("status: draft", "status: published"), encoding="utf-8"
-    )
-    sidecar = yaml.safe_load(sidecar_path.read_text())
-    sidecar["human_review"].update(reviewed_at="2026-10-02", reviewer="reviewer@example.org")
-    sidecar_path.write_text(yaml.safe_dump(sidecar), encoding="utf-8")
-    published_verdict = parse_frontmatter(claim_path.read_text())[0]["verdict"]
-
-    cfg = VerifyConfig(model="test", repo_root=str(tmp_path), max_sources=8, force_overwrite=True)
-    second = await research_claim(
-        "Brave is hosted on renewable energy", cfg, resolved_entity=_brave_resolved()
-    )
-
-    assert tmp_path / second.claim_path == claim_path
-    assert parse_frontmatter(claim_path.read_text())[0]["status"] == "draft"
-    sidecar = yaml.safe_load(sidecar_path.read_text())
-    assert sidecar["human_review"]["reviewed_at"] is None
-    assert sidecar["human_review"]["reviewer"] is None
-    assert sidecar["refresh"]["previous"]["status"] == "published"
-    assert sidecar["refresh"]["previous"]["verdict"] == published_verdict
-    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
-
-
 # --- The entity's own pages on a sibling host or under a publisher variant ---
 
 
@@ -788,7 +452,7 @@ def test_entity_docs_on_a_sibling_host_stay_first_party(
 ) -> None:
     resolved = parse_entity_ref(entity_ref, repo_root)
     sources = [_sd(source_id, url, publisher, "first-party", kind="documentation", body=body)]
-    overrides = _apply_entity_match(sources, resolved, repo_root, "It is hosted on renewable energy")
+    overrides = apply_entity_match(sources, resolved, repo_root, "It is hosted on renewable energy")
     assert overrides == []
     assert sources[0]["independence"] == "first-party"
 
@@ -799,7 +463,7 @@ def test_affiliated_first_party_that_never_names_the_entity_is_unknown(repo_root
         "2026/platform-status", "https://status.claude.com/history", "",
         "first-party", title="Status history", body="Incidents by region.",
     )]
-    overrides = _apply_entity_match(sources, resolved, repo_root, "Claude is green")
+    overrides = apply_entity_match(sources, resolved, repo_root, "Claude is green")
     assert sources[0]["independence"] == "unknown"
     assert [o.source for o in overrides] == ["2026/platform-status"]
 
@@ -811,7 +475,7 @@ def test_unaffiliated_first_party_naming_the_entity_is_still_unknown(repo_root: 
         "2026/greenpt-compare", "https://greenpt.ai/compare", "GreenPT",
         "first-party", body="GreenPT uses less energy than Claude.",
     )]
-    _apply_entity_match(sources, resolved, repo_root, "Claude is green")
+    apply_entity_match(sources, resolved, repo_root, "Claude is green")
     assert sources[0]["independence"] == "unknown"
 
 
@@ -821,13 +485,13 @@ def test_publisher_containing_an_entity_word_needs_the_word_whole(tmp_path: Path
         "2026/press", "https://bravenewworld.example/a", "Brave New World Press",
         "first-party", body="Brave Browser is reviewed here.",
     )]
-    _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
+    apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
     assert sources[0]["independence"] == "unknown"
 
 
 def test_off_entity_note_names_the_host_when_publisher_is_empty(tmp_path: Path) -> None:
     sources = [_sd("2026/anon", "https://www.greenpt.ai/energy", "", "first-party")]
-    overrides = _apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
+    overrides = apply_entity_match(sources, _brave_resolved(), tmp_path, "Brave is green")
     assert overrides[0].reason.startswith("Off-entity: first-party for greenpt.ai, not Brave Browser")
 
 

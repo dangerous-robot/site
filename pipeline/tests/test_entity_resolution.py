@@ -224,3 +224,21 @@ class TestVerificationStatusEnumLockstep:
                 f"Zod enum literal {literal} missing from src/content.config.ts — "
                 f"verification_status branches in writer/analyst will drift silently."
             )
+
+
+class TestCanonicalClaimKeysLockstep:
+    """The linter's claim key set is the writer's, and every key is in the Zod schema."""
+
+    def test_claim_keys_come_from_the_writer(self) -> None:
+        from linter.checks import CANONICAL_CLAIM_KEYS
+        from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS
+
+        assert CANONICAL_CLAIM_KEYS == set(CLAIM_FRONTMATTER_KEYS)
+
+    def test_claim_keys_present_in_zod_schema(self) -> None:
+        from linter.checks import CANONICAL_CLAIM_KEYS
+
+        site_root = Path(__file__).resolve().parents[2]
+        zod_source = (site_root / "src" / "content.config.ts").read_text(encoding="utf-8")
+        missing = sorted(k for k in CANONICAL_CLAIM_KEYS if f"{k}:" not in zod_source)
+        assert not missing, f"claim keys missing from src/content.config.ts: {missing}"

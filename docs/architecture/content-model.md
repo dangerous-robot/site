@@ -88,7 +88,7 @@ The Markdown body contains the claim narrative -- the human-readable explanation
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
 | `url` | URL string | yes | Original source URL |
-| `archived_url` | URL string | no | Wayback Machine or permanent archive link. The pipeline sets it after each ingest, and only to a capture that archive.org replays with HTTP 200 for the same page (path case counts): TimeGate's nearest capture, else the newest 200 capture in the CDX index, else a checked Save Page Now capture; a link the ingest model writes itself is dropped. When the live fetch succeeded, a capture older than 90 days or than `published_date` is replaced by a fresh checked capture when one succeeds. `dr wayback-backfill` adds it to existing files, and `dr wayback-backfill --recheck` replaces or removes a link that fails the check. Commands that write nothing (`dr claim-probe`, `dr step-ingest` without `--write`) use existing captures only and never ask archive.org to capture a page |
+| `archived_url` | URL string | no | Wayback Machine or permanent archive link. The pipeline sets it after each ingest, and only to a capture that archive.org replays with HTTP 200 for the same page (path case counts): TimeGate's nearest capture, else the newest 200 capture in the CDX index, else a checked Save Page Now capture; a link the ingest model writes itself is dropped. When the live fetch succeeded, a capture older than 90 days or than `published_date` is replaced by a fresh checked capture when one succeeds. `dr wayback-backfill` adds it to existing files, and `dr wayback-backfill --recheck` replaces or removes a link that fails the check. Commands that write nothing (`dr draft --dry-run`, `dr step-ingest` without `--write`) use existing captures only and never ask archive.org to capture a page |
 | `title` | string | yes | Source title |
 | `publisher` | string | yes | Publishing organization |
 | `published_date` | date | no | Original publication date |
@@ -113,6 +113,7 @@ The `audit` object has the shape:
 | `pipeline_run.ran_at` | date | When the pipeline run occurred |
 | `pipeline_run.model` | string | Model used |
 | `pipeline_run.agents` | string[] | Agents that participated |
+| `pipeline_run.run_id` | string | Optional. One id per claim run (one per `dr draft`, one per claim inside `dr onboard`); written by every full run |
 | `pipeline_run.level_clamp` | string | Present only when the write-time level fit lowered the analyst's `verification_level`; says from what to what and why (see `docs/architecture/source-quality.md` § Level fit to the written sources) |
 | `models_used` | map | Per-agent model lineage (agent name to model string). Optional during the v1 transition: sidecars written before the field landed validate without it; new sidecars always carry it. `dr step-audit --write` replaces only the `auditor` entry and keeps the others; every other write records only the agents that run |
 | `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`, optional `acquisition` and `archive`) |
@@ -144,7 +145,7 @@ The `audit` object has the shape:
 | `human_review.pr_url` | URL or null | PR where the review happened |
 | `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.analyst_verdict`; written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the analyst's only when this matches |
 
-`dr claim-refresh`, and the forced rewrites `dr step-analyze --write --force`, `dr claim-draft --force` and `dr onboard --force`, on a published claim return it to `status: draft` (or `blocked` when the run is blocked), reset `human_review` and write a top-level `refresh` block, which the site does not read (on an archived or blocked claim they reset `human_review` the same way, with no `refresh` block). It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr publish` skips the claim while it is present. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
+`dr claim-refresh`, and the forced rewrites `dr step-analyze --write --force`, `dr draft --force` and `dr onboard --force`, on a published claim return it to `status: draft`, reset `human_review` and write a top-level `refresh` block, which the site does not read (on an archived or blocked claim they reset `human_review` the same way, with no `refresh` block). It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr publish` skips the claim while it is present. A blocked or failed run writes nothing, so the claim and its sidecar stay as they were. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
 
 | Field | Type | Notes |
 |-------|------|-------|

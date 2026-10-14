@@ -21,8 +21,8 @@ from ingestor.tools.wayback import (
     save_to_wayback,
 )
 from ingestor.tools.web_fetch import extract_page_data
-from orchestrator.checkpoints import StepError
-from orchestrator.pipeline import VerifyConfig, _ingest_urls
+from loop import VerifyConfig, ingest_urls
+from loop.errors import StepError
 from common.timeouts import RATE_LIMIT_RETRY_S
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
@@ -478,6 +478,61 @@ class TestWebFetchTimeouts:
         assert result["url"] == url
 
 
+class TestWebFetchRefusesCaptureRequests:
+    """``web_fetch`` never sends a GET to archive.org's /save/ path.
+
+    A GET to ``/save/<url>`` asks Save Page Now to capture the page. The
+    model chose such a URL on its own in a live ``dr draft --dry-run``;
+    the tool refuses it on every path, dry run or not.
+    """
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("url", [
+        "https://web.archive.org/save/https://example.com/article",
+        "http://web.archive.org/save/https://example.com/article",
+        "https://WEB.archive.org/save/example.com",
+        "https://archive.org/save/https://example.com/article",
+        "https://web.archive.org/save?url=https://example.com/article",
+    ])
+    async def test_save_url_is_refused_and_never_sent(self, url: str) -> None:
+        with respx.mock(assert_all_called=False) as router:
+            save = router.route(host__regex=r"(^|\.)archive\.org$").mock(
+                return_value=httpx.Response(200, text="<html><body>captured</body></html>")
+            )
+            async with httpx.AsyncClient() as client:
+                ctx = _make_ingest_ctx(client, skip_wayback=False)
+                result = await web_fetch(ctx, url)
+            save_calls = save.call_count
+        assert save_calls == 0
+        assert "error" in result and "Refused" in result["error"]
+        assert ctx.deps.fetched_text == {}
+
+    @pytest.mark.asyncio
+    async def test_save_url_is_refused_even_when_prefetched(self) -> None:
+        url = "https://web.archive.org/save/https://example.com/"
+        async with httpx.AsyncClient() as client:
+            ctx = _make_ingest_ctx(client)
+            ctx.deps.prefetched_bodies[url] = "body"
+            result = await web_fetch(ctx, url)
+        assert "Refused" in result["error"]
+        assert ctx.deps.requested_fetched is False
+
+    @pytest.mark.asyncio
+    async def test_archive_copy_is_still_fetched(self) -> None:
+        """Positive control: a /web/ snapshot URL is a page fetch and goes through."""
+        url = "https://web.archive.org/web/20250315000000/https://example.com/"
+        with respx.mock:
+            route = respx.get(url).mock(return_value=httpx.Response(
+                200, text="<html><head><title>T</title></head><body><p>Archived page text.</p></body></html>",
+                headers={"content-type": "text/html"},
+            ))
+            async with httpx.AsyncClient() as client:
+                ctx = _make_ingest_ctx(client)
+                result = await web_fetch(ctx, url)
+        assert route.called is True
+        assert "error" not in result
+
+
 class TestWaybackCheckTool:
     """Three-case matrix for the ``wayback_check`` tool side-channel.
 
@@ -575,13 +630,13 @@ class TestMergeAcquisitionWrites:
     was both discovered (research) and recovered (ingest)."""
 
     def test_research_stage_origin_survives_ingest_stage_write(self) -> None:
-        from orchestrator.pipeline import _merge_acquisition_writes
+        from loop import merge_acquisition_writes
 
         url = "https://example.com/recovered"
         acquisition_out = {
             url: {"stage": "research", "origin": "tavily", "query": "x"}
         }
-        _merge_acquisition_writes(
+        merge_acquisition_writes(
             acquisition_out,
             {url: {"stage": "ingest", "recovered_via": "archive_org", "outcome": "recovered"}},
         )
@@ -594,12 +649,12 @@ class TestMergeAcquisitionWrites:
         }
 
     def test_no_existing_entry_just_adds_the_write(self) -> None:
-        from orchestrator.pipeline import _merge_acquisition_writes
+        from loop import merge_acquisition_writes
 
         url = "https://example.com/fresh"
         acquisition_out: dict[str, dict] = {}
         write = {"stage": "ingest", "recovered_via": "archive_org", "outcome": "recovered"}
-        _merge_acquisition_writes(acquisition_out, {url: write})
+        merge_acquisition_writes(acquisition_out, {url: write})
         assert acquisition_out[url] == write
 
 
@@ -618,7 +673,7 @@ class TestIngestUrlsAcquisitionDrain:
         self, monkeypatch
     ) -> None:
         """Successful ingest with archive_org rescue → acquisition_out populated."""
-        from orchestrator import pipeline as pipeline_mod
+        import loop.ingest as ingest_mod
         from ingestor.models import SourceFile, SourceFrontmatter
 
         url = "https://example.com/recovered"
@@ -649,11 +704,11 @@ class TestIngestUrlsAcquisitionDrain:
                 }
             return (u, sf)
 
-        monkeypatch.setattr(pipeline_mod, "_ingest_one", _fake)
+        monkeypatch.setattr(ingest_mod, "ingest_one", _fake)
 
         cfg = VerifyConfig(model="test", repo_root="/tmp")
         acquisition_out: dict[str, dict] = {}
-        results, errors = await _ingest_urls(
+        results, errors = await ingest_urls(
             None, [url], cfg, asyncio.Semaphore(2),
             target=1,
             acquisition_out=acquisition_out,
@@ -668,7 +723,7 @@ class TestIngestUrlsAcquisitionDrain:
     ) -> None:
         """A wayback transport blip on a *successful* ingest stays quiet;
         the same blip on a *failed* ingest produces a StepError."""
-        from orchestrator import pipeline as pipeline_mod
+        import loop.ingest as ingest_mod
         from ingestor.models import SourceFile, SourceFrontmatter
 
         url_ok = "https://example.com/ok"
@@ -706,10 +761,10 @@ class TestIngestUrlsAcquisitionDrain:
                 step="ingest", url=u, error_type="http_error", message="boom"
             )
 
-        monkeypatch.setattr(pipeline_mod, "_ingest_one", _fake)
+        monkeypatch.setattr(ingest_mod, "ingest_one", _fake)
 
         cfg = VerifyConfig(model="test", repo_root="/tmp")
-        results, errors = await _ingest_urls(
+        results, errors = await ingest_urls(
             None, [url_ok, url_bad], cfg, asyncio.Semaphore(2),
             target=2,
         )
