@@ -137,7 +137,7 @@ data:
         position: "/values#ai-is-fueling-environmental-destruction"
       cells:
         greenpt: { type: "yes", claim: /research/claims/greenpt/renewable-energy-hosting, sources: [/research/sources/2026/sustainability-renewable-ai-measured-impact-greenpt] }
-        ecosia: { type: "partial", detail: "Company-wide only", claim: /research/claims/ecosia-ai/renewable-energy-hosting }
+        ecosia: { type: "partial", claim: /research/claims/ecosia-ai/renewable-energy-hosting }
         euria: { type: "yes", claim: /research/claims/euria/renewable-energy-hosting, sources: [/research/sources/2025/euria-sovereign-ai-assistant-challenges-american-dominance] }
         treadlightly: { type: "partial", detail: "Most plans", sources: [/research/sources/2026/treadlightlyai-think-for-yourself-prompt-light] }
         viro: { type: "unknown", claim: /research/claims/viro-ai/renewable-energy-hosting }
