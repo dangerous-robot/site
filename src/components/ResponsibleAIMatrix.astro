@@ -168,6 +168,9 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
                               <span class="sr-only">{icon.srLabel}{STANCE_PHRASE[stance]}</span>
                             </>
                           )}
+                          {cell.type === 'text' && stance !== 'neutral' && (
+                            <span class="stance-dot" aria-hidden="true"></span>
+                          )}
                           {cell.type === 'na' && (
                             <span class="na" aria-label="Not applicable">&ndash;</span>
                           )}
@@ -386,8 +389,10 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
     gap: 0.3em;
   }
 
+  /* Without flex-shrink: 0 a long product name squeezes the icon to nothing. */
   .ra-product-link :global(svg) {
     color: var(--color-text-faint);
+    flex-shrink: 0;
   }
 
   .ra-product-link:hover,
@@ -464,21 +469,25 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .legend-item--mark-source :global(svg) { color: var(--color-text-muted); }
   .cell :global(.ev-mark svg) { color: inherit; }
 
-  /* A text cell (models, ownership) has no icon, and the stance colors are
-     tuned for icons, not small text (good is under 4.5:1 on the dark
-     background), so a dot in the stance color sits before the muted text. */
-  .cell--text .detail::before {
-    content: '';
-    display: inline-block;
-    width: 0.5em;
-    height: 0.5em;
-    margin-right: 0.4em;
-    border-radius: 50%;
-    background: var(--stance, transparent);
-    vertical-align: middle;
+  /* A text cell (models, ownership) has no answer icon, and the stance colors
+     are tuned for icons, not small text (good is under 4.5:1 on the dark
+     background), so a dot in the stance color takes the answer icon's slot. */
+  .stance-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
   }
 
-  .cell--stance-neutral .detail::before { display: none; }
+  .stance-dot::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--stance);
+  }
 
   /* DR2: the "Prefer" line reuses the legend's former text style. */
   .we-prefer {
