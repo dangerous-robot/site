@@ -28,7 +28,6 @@ Keep each session's running note in `handoff/` at the repo root (git-ignored), n
 - Never push to `origin` without Brandon's explicit approval for that push; earlier approval in a session does not carry over. Local commits are fine. The same goes for other remote-affecting actions (remote branch deletion, PRs, tags).
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, etc.)
 - Squash merge to main for clean history
-- Research content changes to `research/claims/` should go through PRs
 
 ## Licensing
 

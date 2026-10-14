@@ -59,7 +59,10 @@ When creating a new roadmap file, follow AGENTS.md naming (`docs/v{semver}-roadm
 **Last updated**: YYYY-MM-DD  
 **Working version**: n/a until this line becomes active (see `VERSION.md`)
 
-Status key: `done` | `in progress` | `ready` | `plan needed` | `decision needed` | `deferred`
+Status key: `done` | `in progress` | `ready` | `plan needed` | `decision needed` | `deferred` | `absorbed` | `retired`
+
+`absorbed`: work carried by another item; counts as closed; a pointer to that item is required.  
+`retired`: no code left to apply to; counts as closed.
 
 ## Releases
 
@@ -115,7 +118,7 @@ Answers "what should I work on next?" with one item, its first step, and what th
 
 **Rank** comes from `docs/priorities.md` ("How to read it").
 
-**Release size.** The beta in progress is the `**Next beta (beta.N):**` line in the active roadmap's `## Plan`. Each entry is a work item, or one checklist line of a larger item, written as "SITE-J (Responsible AI chatbots): published-claim refresh trail". An entry is open until its item is `done` or its line is ticked. The beta's size is its number of open entries. It has room while the size is under 5, or beyond that when the agent judges it reasonable (small items, or a split that would hurt).
+**Release size.** The beta in progress is the `**Next beta (beta.N):**` line in the active roadmap's `## Plan`. Each entry is a work item, or one checklist line of a larger item, written as "SITE-J (Responsible AI chatbots): published-claim refresh trail". An entry is open until its item is `done`, `absorbed` or `retired`, or its line is ticked. The beta's size is its number of open entries. It has room while the size is under 5, or beyond that when the agent judges it reasonable (small items, or a split that would hurt).
 
 Stop at the first step that gives an answer:
 
