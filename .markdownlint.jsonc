@@ -7,5 +7,12 @@
   "MD033": false,
 
   // Content files start with body text after frontmatter, not headings
-  "MD041": false
+  "MD041": false,
+
+  // Rules added in markdownlint 0.38/0.39, off so the upgrade does not widen
+  // what the lint enforces on pipeline-written research files.
+  // MD059: descriptive link text ("here", "link", "more")
+  "MD059": false,
+  // MD060: table pipes aligned consistently
+  "MD060": false
 }
