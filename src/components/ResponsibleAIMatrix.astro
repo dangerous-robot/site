@@ -16,7 +16,7 @@ const ICONS: Record<
   yes: { Icon: Check, srLabel: 'Yes', size: 28 },
   no: { Icon: X, srLabel: 'No', size: 28 },
   partial: { Icon: Minus, srLabel: 'Partial', size: 28 },
-  unknown: { Icon: HelpCircle, srLabel: 'Unknown', size: 26 },
+  unknown: { Icon: HelpCircle, srLabel: 'Unknown', size: 24 },
 };
 
 // Visually hidden text that says in words what the stance color shows (WCAG
@@ -456,7 +456,10 @@ const initialHiddenAttr = initialHiddenProducts.join(' ');
   .cell--stance-good, .legend-item--good { --stance: var(--color-stance-good); }
   .cell--stance-bad, .legend-item--bad { --stance: var(--color-stance-bad); }
   .cell--stance-mixed, .legend-item--mixed { --stance: var(--color-stance-mixed); }
-  .cell :global(svg), .legend-item :global(svg) { color: var(--stance, var(--color-text)); flex-shrink: 0; }
+  /* Neutral icons sit a step below full text color so they don't outshine
+     the stance colors. */
+  .cell :global(svg), .legend-item :global(svg) { color: var(--stance, color-mix(in srgb, var(--color-text) 82%, var(--color-bg))); flex-shrink: 0; }
+  [data-contrast="high"] .cell :global(svg), [data-contrast="high"] .legend-item :global(svg) { color: var(--stance, var(--color-text)); }
   .legend-item--mark-claim :global(svg) { color: var(--color-accent); }
   .legend-item--mark-source :global(svg) { color: var(--color-text-muted); }
   .cell :global(.ev-mark svg) { color: inherit; }
