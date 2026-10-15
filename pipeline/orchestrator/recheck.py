@@ -1,11 +1,15 @@
 """Which published claims are due for a recheck, and what a pending recheck changed.
 
-Reads only. ``dr recheck --due`` selects with ``due_claims``; the review
-packet's header row of a pending recheck comes from ``recheck_counts``.
+Reads only, except ``run_batch``. ``dr recheck --due`` selects with
+``due_claims``; the review packet's header row of a pending recheck comes from
+``recheck_counts``; ``dr recheck`` and ``dr findings --replay`` run their
+claims through ``run_batch``.
 """
 from __future__ import annotations
 
+import asyncio
 import datetime
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -14,7 +18,12 @@ import yaml
 
 from common.frontmatter import parse_frontmatter
 from common.sidecar import read_sidecar
-from orchestrator.persistence import CLAIMS_BASE, DEFAULT_RECHECK_CADENCE_DAYS, pending_path_for
+from orchestrator.persistence import (
+    CLAIMS_BASE,
+    DEFAULT_RECHECK_CADENCE_DAYS,
+    build_source_url_index,
+    pending_path_for,
+)
 
 
 @dataclass(frozen=True)
@@ -134,3 +143,24 @@ def recheck_counts(pending_path: Path, live_path: Path) -> dict:
         "quotes_not_rechecked": sum(1 for q in quotes if q.get("found") not in (True, False)),
         "refetched": sum(1 for e in entries if (e.get("recheck") or {}).get("refetched") is True),
     }
+
+
+# One claim's run in a batch: given the batch's LLM semaphore and source URL
+# index, run the claim, write what it writes and return its outcome word.
+BatchJob = Callable[[asyncio.Semaphore, dict], Awaitable[str]]
+
+
+def run_batch(jobs: Sequence[BatchJob], *, llm_concurrency: int, repo_root: Path) -> list[str]:
+    """Run each job one after another inside one event loop; return their outcomes in order.
+
+    Every job shares one LLM semaphore and one source URL index, so a batch
+    never runs more model calls at once than ``llm_concurrency``. Each job
+    contains its own failures (records its finding and returns an outcome),
+    so one claim's failure never stops the next.
+    """
+    async def _batch() -> list[str]:
+        sem = asyncio.Semaphore(llm_concurrency)
+        url_index = build_source_url_index(repo_root)
+        return [await job(sem, url_index) for job in jobs]
+
+    return asyncio.run(_batch())

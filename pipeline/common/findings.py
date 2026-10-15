@@ -1,8 +1,9 @@
 """The findings record: one per retried, abandoned, split or half-written claim run.
 
 A finding lands at ``research/findings/<yyyy>/<run-id>.yaml`` (the writer is
-``orchestrator.persistence.write_finding``); ``dr findings`` lists, counts and
-closes them. The loop builds the record, the writer writes it and the CLI
+``orchestrator.persistence.write_finding``); ``dr findings`` lists, counts,
+closes and replays them. A replay's own finding names the finding it
+replayed in ``replays``. The loop builds the record, the writer writes it and the CLI
 reads it, so this module imports nothing from either.
 """
 
@@ -46,6 +47,8 @@ class Finding:
     # ``{step, error_type, rule, attempts}``, plus ``message`` on a split
     # entry (a half-claim after a tie-broken run).
     retries: list[dict[str, Any]] = field(default_factory=list)
+    # The run id of the finding this run replayed (``dr findings --replay``).
+    replays: str | None = None
     closed: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -63,6 +66,7 @@ class Finding:
             "attempts": self.attempts,
             "outcome": self.outcome,
             "retries": [dict(r) for r in self.retries],
+            "replays": self.replays,
             "closed": dict(self.closed) if self.closed is not None else None,
         }
 
@@ -85,6 +89,7 @@ class Finding:
             attempts=int(data.get("attempts") or 0),
             outcome=data["outcome"],
             retries=[dict(r) for r in data.get("retries") or []],
+            replays=data.get("replays"),
             closed=dict(data["closed"]) if isinstance(data.get("closed"), dict) else None,
         )
 

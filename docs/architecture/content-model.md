@@ -207,7 +207,7 @@ The Evaluator role is implemented in `pipeline/auditor/`; sidecar field names re
 
 ### Findings file
 
-A run that is abandoned, recovered, split or partial (the claim was written but the restater failed) leaves one YAML record at `research/findings/<yyyy>/<run-id>.yaml`. The directory is tracked in git, sits outside every site collection loader (they read `claims/`, `entities/` and `sources/` only) and is skipped by `dr lint`. `dr findings` lists, counts and closes the records.
+A run that is abandoned, recovered, split or partial (the claim was written but the restater failed) leaves one YAML record at `research/findings/<yyyy>/<run-id>.yaml`. The directory is tracked in git, sits outside every site collection loader (they read `claims/`, `entities/` and `sources/` only) and is skipped by `dr lint`. `dr findings` lists, counts, closes and replays the records (`dr findings --replay` re-runs an abandoned or half-claim record's `claim_spec` and `config` through the loop).
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -219,12 +219,13 @@ A run that is abandoned, recovered, split or partial (the claim was written but 
 | `config` | object | The run settings that shape results (`max_sources`, `candidate_pool_size`, `max_initial_queries`, `search_backend`, `research_origins`, `model`, `skip_wayback`) |
 | `models_used` | map | Agent name to model string |
 | `step` | enum | `research`, `ingest`, `analyse`, `evaluate`, `tiebreak`, `restate` or `write` |
-| `rule` | enum | `flaw-retry`, `transport-retry`, `config-fatal`, `half-claim`, `tiebreaker` or `replay` |
+| `rule` | enum | `flaw-retry`, `transport-retry`, `config-fatal`, `half-claim`, `tiebreaker` or `replay` (a `dr findings --replay` run that raised, or that failed without recording a finding of its own) |
 | `error` | object | `error_type` and `message` |
 | `attempts` | number | How many times the step ran |
 | `outcome` | enum | `recovered`, `abandoned`, `split`, `half-claim` or `partial` |
 | `retries` | array | Every step that was retried on the way: `step`, `error_type`, `rule`, `attempts`. A half-claim after a tie-broken run also lists the split here (`step: tiebreak`, `error_type: verdict_split`) with its `message`, the three verdicts |
-| `closed` | object or null | `{date, by, note}` once `dr findings --close` has triaged it |
+| `replays` | string or null | Set on a finding a replay recorded: the run id of the finding that was replayed. Older records read as null |
+| `closed` | object or null | `{date, by, note}` once `dr findings --close` has triaged it (`by: hand`) or a replay succeeded (`by: replay`) |
 
 ### Criterion
 

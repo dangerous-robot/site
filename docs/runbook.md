@@ -112,6 +112,16 @@ An abandoned, recovered, tie-broken or partial run leaves a record under `resear
 4. A half-claim is a crash between the writes. A claim without a sidecar is replaced with `uv run dr draft --claim <ref> --force`. A pending recheck under `research/pending/` with no sidecar is listed under its live ref: a recheck stopped between moving its claim and its sidecar is replaced with `uv run dr recheck --claim <ref>`, and a promotion stopped between its moves is finished with `uv run dr review --claim <ref> --approve`. A `.dr-recheck-*` directory at the repo root is a recheck killed while writing; nothing reads it, so remove it by hand. A subject record with no claim is reused by the next `dr draft --subject <slug>`, or removed by hand. The tools never delete anything.
 5. Commit the finding files you want kept; `dr lint` ignores the directory.
 
+## Replaying findings after a pipeline change
+
+After a pipeline change that might fix what an abandoned run hit, re-run the finding instead of retyping the command.
+
+1. `uv run dr findings --replay --finding <id>` replays one finding (an id prefix works while it is unambiguous). `uv run dr findings --replay` replays every open finding, oldest first, one after another under one LLM limit. Each replayed finding is one full paid run, so replay one finding first.
+2. The run uses the finding's recorded claim spec and config, with today's per-agent model settings. A `dr draft` finding writes a draft; a `dr recheck` finding writes a pending draft. Review either as usual.
+3. A success prints `<id>: closed (replay <new id> wrote <path>)` (for a `dr recheck` finding, `wrote pending draft <path>`) and closes the finding with `by: replay`. A failure prints `<id>: failed (finding <new id>)`, records a new finding with `replays: <id>` and leaves the old one open, so `dr findings` shows both. A chain of such findings is replayed once, through its newest finding (also when `--finding` names an older one), and a success closes the whole chain.
+4. Skipped with a `skipped:` line and left open: `recovered`, `split` and `partial` findings (their claim was written; close them by hand) and `dr step-analyze` and `dr step-audit` findings (one-agent reruns). A replay that cannot start prints `not replayed: <reason>`, writes nothing and leaves the finding open: a `dr draft` finding whose claim is now published or archived (the line points at `uv run dr recheck --claim <ref>`), a missing claim file, an entity that does not load, or a criterion that `research/templates.yaml` no longer has for that entity.
+5. Exit codes: a batch exits 0 unless it could not start (a missing API key, bad options). With `--finding`, 0 means the finding was closed and 1 means it was not.
+
 ## Picking a restatement
 
 A draft with a weak verdict (`unverified`, `mixed`, `not-applicable`) or a tie-broken one carries ranked restatement candidates in its sidecar. The original stays as drafted. `dr review` prints the candidates in the draft's packet.

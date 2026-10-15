@@ -125,7 +125,8 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Creates or overwrites claim files (dr recheck writes pending drafts only, never a live claim; "
      "dr draft --dry-run and dr recheck --due --dry-run write nothing)",
      ["draft", "recheck"]),
-    ("Modifies existing files in place (dr findings writes only with --close)",
+    ("Modifies existing files in place (dr findings writes only with --close; dr findings --replay "
+     "runs the paid loop and writes what dr draft or dr recheck would, plus findings)",
      ["review", "findings"]),
 ]
 
@@ -835,7 +836,7 @@ def _run_rechecks(
     """
     from common.logging_setup import new_run_id
     from loop import VerifyConfig
-    from orchestrator.persistence import build_source_url_index
+    from orchestrator.recheck import run_batch
 
     def _config(cadence: int) -> VerifyConfig:
         extra = {"run_id": new_run_id()} if batch else {}
@@ -853,14 +854,11 @@ def _run_rechecks(
     configs = [_config(cadence) for _ref, _path, _spec, cadence in targets]
     _check_search_key(configs[0])
 
-    async def _batch() -> list[str]:
-        # Looked up at call time, as dr draft does.
-        from loop import run
+    def _job(ref: str, path: Path, spec, config):
+        async def _one(sem: asyncio.Semaphore, url_index: dict) -> str:
+            # Looked up at call time, as dr draft does.
+            from loop import run
 
-        sem = asyncio.Semaphore(configs[0].llm_concurrency)
-        url_index = build_source_url_index(root)
-        outcomes: list[str] = []
-        for (ref, path, spec, _cadence), config in zip(targets, configs):
             progress("Rechecking claim: %s (%s)", spec.statement, ref)
             try:
                 result = await run(spec, config, sem=sem, url_index=url_index)
@@ -873,12 +871,13 @@ def _run_rechecks(
                     error_type="run_failed", message=str(exc) or type(exc).__name__,
                     error_class=type(exc).__name__,
                 )
-                outcomes.append("abandoned")
-                continue
-            outcomes.append(_write_recheck(result, spec, config, ref, path, root, url_index, batch=batch))
-        return outcomes
+                return "abandoned"
+            return _write_recheck(result, spec, config, ref, path, root, url_index, batch=batch)
 
-    return asyncio.run(_batch())
+        return _one
+
+    jobs = [_job(ref, path, spec, config) for (ref, path, spec, _cadence), config in zip(targets, configs)]
+    return run_batch(jobs, llm_concurrency=configs[0].llm_concurrency, repo_root=root)
 
 
 def _abandon_recheck(
@@ -2359,8 +2358,20 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
 @click.option("--summary", is_flag=True, default=False, help="Count open findings by step, rule and outcome.")
 @click.option("--close", "close_id", default=None, metavar="ID", help="Close the finding with this run id (or a unique prefix); needs --note.")
 @click.option("--note", default=None, help="Why the finding is closed (with --close).")
+@click.option("--replay", is_flag=True, default=False, help="Re-run each open abandoned or half-claim finding through the loop; closes it on success, records a linked finding on failure")
+@click.option("--finding", "finding_id", default=None, metavar="ID", help="With --replay: replay this finding only")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
-def findings(show_all: bool, summary: bool, close_id: str | None, note: str | None, repo_root: str | None) -> None:
+@click.pass_context
+def findings(
+    ctx: click.Context,
+    show_all: bool,
+    summary: bool,
+    close_id: str | None,
+    note: str | None,
+    replay: bool,
+    finding_id: str | None,
+    repo_root: str | None,
+) -> None:
     """List the run findings under research/findings/ and the half-claims a writer crash left.
 
     A finding records a run the error policy retried, abandoned or settled
@@ -2368,17 +2379,28 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
     dr draft, a pending recheck with no sidecar with dr recheck, or removed
     by hand.
 
+    --replay re-runs each open abandoned or half-claim finding of dr draft or
+    dr recheck with its recorded claim and config, one line per finding: a
+    success writes what the original command would have and closes the
+    finding; a failure records a new finding with replays: <old id>.
+
     \b
     Examples:
         dr findings
         dr findings --summary
         dr findings --close a06d7a7e --note "model variance; replay later"
+        dr findings --replay
+        dr findings --replay --finding 6f3f9e88
     """
     from collections import Counter
 
     from common.content_loader import resolve_repo_root
     from orchestrator.persistence import close_finding, half_claims, load_findings, promotion_half_done
 
+    if finding_id is not None and not replay:
+        raise click.UsageError("--finding goes with --replay")
+    if replay and (close_id is not None or note is not None or show_all or summary):
+        raise click.UsageError("--replay cannot be combined with --close, --note, --all or --summary")
     if close_id is not None:
         if show_all or summary:
             raise click.UsageError("--close cannot be combined with --all or --summary")
@@ -2388,6 +2410,11 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
         raise click.UsageError("--note goes with --close <id>")
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
+
+    if replay:
+        from orchestrator.replay import replay_findings
+
+        sys.exit(replay_findings(ctx, root, finding_id))
 
     if close_id is not None:
         try:
@@ -2417,6 +2444,8 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
         click.echo(f"{f.date} {f.command or '-'} {f.summary_line()}")
         if f.claim_ref:
             click.echo(f"    claim: {f.claim_ref}")
+        if f.replays:
+            click.echo(f"    replays: {f.replays}")
         if f.closed is not None:
             click.echo(f"    closed {f.closed.get('date')} by {f.closed.get('by')}: {f.closed.get('note')}")
 
