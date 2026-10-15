@@ -27,15 +27,31 @@ PIPELINE_ROOT = Path(__file__).resolve().parents[1]
 LOOP_DIR = PIPELINE_ROOT / "loop"
 CLI_PATH = PIPELINE_ROOT / "orchestrator" / "cli.py"
 
-# Writer names the loop package may never import or reach as an attribute.
+# Writer names the loop package may never import or reach as an attribute:
+# every function in ``orchestrator/persistence.py`` that writes a file. A
+# writer added to persistence.py is added here in the same commit
+# (``test_every_persistence_writer_is_listed`` checks it).
 WRITER_NAMES = frozenset({
     "_write_source_files",
     "_write_claim_file",
     "_write_audit_sidecar",
     "_write_entity_file",
+    "_store_analyst_record",
+    "_edit_sidecar",
     "persist_sources",
     "mark_forced_rewrite",
     "set_claim_status",
+    "set_claim_corrections",
+    "set_claim_criterion",
+    "set_claim_fields",
+    "append_template_entry",
+    "write_subject_record",
+    "write_claim_run",
+    "write_evaluator_rerun",
+    "clear_audit",
+    "record_restatement_pick",
+    "write_finding",
+    "close_finding",
 })
 
 # The only names cli.py may import from the loop package (plan § SP1, Tests that prove it).
@@ -71,16 +87,80 @@ def _attribute_names(tree: ast.AST) -> set[str]:
     return {node.attr for node in ast.walk(tree) if isinstance(node, ast.Attribute)}
 
 
+def _writer_reaches(module: Path, label: str) -> list[str]:
+    """Each writer name ``module`` imports from a persistence module or reaches as an attribute."""
+    tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+    offending = [
+        f"{label}: from {mod} import {name}"
+        for mod, name in _imported_names(tree, lambda m: "persistence" in m)
+        if name in WRITER_NAMES
+    ]
+    offending += [f"{label}: attribute .{attr}" for attr in sorted(_attribute_names(tree) & WRITER_NAMES)]
+    return offending
+
+
 def test_loop_package_imports_no_writer() -> None:
     offending: list[str] = []
     for module in _loop_modules():
-        tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
-        for mod, name in _imported_names(tree, lambda m: "persistence" in m):
-            if name in WRITER_NAMES:
-                offending.append(f"{module.relative_to(PIPELINE_ROOT)}: from {mod} import {name}")
-        for attr in _attribute_names(tree) & WRITER_NAMES:
-            offending.append(f"{module.relative_to(PIPELINE_ROOT)}: attribute .{attr}")
+        offending += _writer_reaches(module, str(module.relative_to(PIPELINE_ROOT)))
     assert not offending, "the loop reaches a writer:\n" + "\n".join(offending)
+
+
+@pytest.mark.parametrize("name", ["write_claim_run", "record_restatement_pick", "_edit_sidecar", "set_claim_fields"])
+def test_the_writer_check_flags_a_loop_module_that_imports_a_writer(tmp_path, name: str) -> None:
+    """Positive control for the check above: a module importing a writer is caught."""
+    module = tmp_path / "fake_step.py"
+    module.write_text(
+        f"from orchestrator.persistence import load_source_dict, {name}\n"
+        f"import orchestrator.persistence as p\n_ = p.{name}\n",
+        encoding="utf-8",
+    )
+    found = _writer_reaches(module, "fake_step.py")
+    assert f"fake_step.py: from orchestrator.persistence import {name}" in found
+    assert f"fake_step.py: attribute .{name}" in found
+    assert not any("load_source_dict" in f for f in found), "a reader is not a writer"
+
+
+def test_every_persistence_writer_is_listed() -> None:
+    """Every name in WRITER_NAMES exists in persistence.py, and every function there that writes a file is listed.
+
+    "Writes a file" is read from the source: a top-level function whose body
+    calls ``write_text`` or ``write_bytes``, ``open`` with a write mode,
+    ``os.replace`` or ``os.rename``, or calls a listed writer.
+    """
+    import orchestrator.persistence as persistence
+
+    missing = sorted(n for n in WRITER_NAMES if not hasattr(persistence, n))
+    assert not missing, f"WRITER_NAMES names functions persistence.py does not define: {missing}"
+
+    tree = ast.parse((PIPELINE_ROOT / "orchestrator" / "persistence.py").read_text(encoding="utf-8"))
+    functions = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+
+    def write_mode(call: ast.Call) -> bool:
+        modes = [a for a in call.args if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+        modes += [k.value for k in call.keywords
+                  if k.arg == "mode" and isinstance(k.value, ast.Constant) and isinstance(k.value.value, str)]
+        return any(set(m.value) & set("wax") for m in modes)
+
+    def writes(fn: ast.FunctionDef) -> bool:
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Call):
+                target = node.func
+                called = target.attr if isinstance(target, ast.Attribute) else getattr(target, "id", "")
+                owner = getattr(target.value, "id", "") if isinstance(target, ast.Attribute) else ""
+                if called in ("write_text", "write_bytes") or called in WRITER_NAMES:
+                    return True
+                if called == "open" and write_mode(node):
+                    return True
+                if owner == "os" and called in ("replace", "rename"):
+                    return True
+        return False
+
+    control = ast.parse("def f(p):\n    with p.open('w') as fh:\n        fh.write('x')\n    os.replace(p, p)\n").body[0]
+    assert writes(control), "control: open with a write mode counts as a write"
+
+    unlisted = sorted(name for name, fn in functions.items() if writes(fn) and name not in WRITER_NAMES)
+    assert not unlisted, f"persistence.py functions that write a file but are not in WRITER_NAMES: {unlisted}"
 
 
 def test_loop_package_exports_its_public_names() -> None:

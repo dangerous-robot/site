@@ -940,22 +940,6 @@ def test_approve_and_archive_remove_the_block_and_keep_restates(tmp_path, human_
     assert "restatement" not in _sidecar_of(archived)
 
 
-def test_publish_removes_the_block_like_approval(tmp_path) -> None:
-    """Until RE-AV (Review packet) deletes `dr publish`, it retires the candidates as approval does."""
-    write_entity(tmp_path)
-    claim_path, _ = _write_claim(tmp_path, stem="bulk", criteria_slug="x", restatement=_block(),
-                                 restates=f"{ENTITY_REF}/older")
-    from orchestrator.cli import main
-
-    result = CliRunner().invoke(main, [
-        "publish", "--claim", _claim_ref(claim_path, tmp_path), "--yes", "--repo-root", str(tmp_path),
-    ])
-    assert result.exit_code == 0, result.output
-    sidecar = _sidecar_of(claim_path)
-    assert "restatement" not in sidecar
-    assert sidecar["restates"] == f"{ENTITY_REF}/older"
-
-
 def test_an_unreadable_finding_file_is_skipped_not_fatal(tmp_path) -> None:
     from orchestrator.persistence import load_findings
 
@@ -967,7 +951,7 @@ def test_an_unreadable_finding_file_is_skipped_not_fatal(tmp_path) -> None:
 
     from orchestrator.cli import main
 
-    queue = CliRunner().invoke(main, ["review-queue", "--format", "json", "--repo-root", str(tmp_path)])
+    queue = CliRunner().invoke(main, ["review", "--format", "json", "--repo-root", str(tmp_path)])
     assert queue.exit_code == 0, queue.output
 
 
@@ -1162,7 +1146,7 @@ def test_draft_writes_the_claim_without_a_block_and_the_review_queue_names_the_f
 
     from orchestrator.cli import main
 
-    queue = CliRunner().invoke(main, ["review-queue", "--format", "json", "--repo-root", str(tmp_path)])
+    queue = CliRunner().invoke(main, ["review", "--format", "json", "--repo-root", str(tmp_path)])
     assert queue.exit_code == 0, queue.output
     (item,) = json.loads(queue.output)
     assert item["claim_slug"].endswith(claim_path.stem)
@@ -1170,7 +1154,7 @@ def test_draft_writes_the_claim_without_a_block_and_the_review_queue_names_the_f
     assert item["restatement"] is None
 
 
-def test_review_queue_json_carries_the_block_when_one_was_written(tmp_path) -> None:
+def test_review_json_carries_the_block_when_one_was_written(tmp_path) -> None:
     write_entity(tmp_path)
     with scripted_agents(analyst=analyst_args(verdict="mixed"), auditor=auditor_args(verdict="mixed")):
         result = _draft(tmp_path)
@@ -1178,7 +1162,7 @@ def test_review_queue_json_carries_the_block_when_one_was_written(tmp_path) -> N
 
     from orchestrator.cli import main
 
-    queue = CliRunner().invoke(main, ["review-queue", "--format", "json", "--repo-root", str(tmp_path)])
+    queue = CliRunner().invoke(main, ["review", "--format", "json", "--repo-root", str(tmp_path)])
     assert queue.exit_code == 0, queue.output
     (item,) = json.loads(queue.output)
     assert item["restatement_unavailable"] == ""

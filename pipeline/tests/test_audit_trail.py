@@ -145,6 +145,7 @@ class TestBuildSourcesConsulted:
             "url": "https://anthropic.com/voluntary-commitments",
             "title": "Voluntary Commitments",
             "ingested": True,
+            "quotes": [],
         }
 
     def test_combined_fresh_and_cached(self):
@@ -1847,8 +1848,8 @@ class TestDrReviewPromotion:
 
 @pytest.mark.usefixtures("human_at_terminal")
 class TestApproveClaimCallable:
-    """`approve_claim` is the shared entry point that `dr review` and
-    `dr review-queue` both call. The CLI tests above exercise it via Click;
+    """`approve_claim` is the shared entry point that `dr review --claim` and
+    the `dr review` walkthrough's `a` key both call. The CLI tests above exercise it via Click;
     these tests pin the direct call so the queue's `a` action has a
     regression guard that does not depend on Click's runner."""
 

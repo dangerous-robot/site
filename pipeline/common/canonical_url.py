@@ -197,6 +197,14 @@ def canonical_key(url: str) -> str:
     return canonical
 
 
+def canonical_host(url: str) -> str | None:
+    """The host of ``canonicalize(url)`` (lower case, ``www.`` dropped), or None for a URL it refuses."""
+    try:
+        return urlsplit(canonicalize(url)).hostname
+    except ValueError:
+        return None
+
+
 def same_resource(a: str | None, b: str | None) -> bool:
     """True when two URLs canonicalize equal; missing or malformed URLs never match."""
     if not a or not b:

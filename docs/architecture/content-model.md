@@ -29,7 +29,7 @@ research/
       {slug}.md               # e.g. fli-safety-index.md
   findings/
     {yyyy}/                   # year directory
-      {run-id}.yaml           # one per abandoned, recovered or split run; not a site collection
+      {run-id}.yaml           # one per abandoned, recovered, split or partial run; not a site collection
 ```
 
 **Naming rules:**
@@ -120,7 +120,20 @@ The `audit` object has the shape:
 | `pipeline_run.run_id` | string | Optional. One id per claim run (one per `dr draft`); written by every full run |
 | `pipeline_run.level_clamp` | string | Present only when the level fit, run inside the loop before the Evaluator, lowered the analyst's `verification_level`; says from what to what and why (see `docs/architecture/source-quality.md` § Level fit to the written sources) |
 | `models_used` | map | Per-agent model lineage (agent name to model string). Optional during the v1 transition: sidecars written before the field landed validate without it; new sidecars always carry it. `dr step-audit --write` replaces only the `auditor` entry and keeps the others; every other write records only the agents that run |
-| `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`, optional `acquisition` and `archive`) |
+| `research` | object or null | Optional, top level. The research step's trace, which `src/content.config.ts` declares loosely (the pipeline owns its fields; the review packet reads `rejected`). The fields below are the ones a decomposed run writes; `null` on a sidecar whose run recorded no trace |
+| `research.mode` | string | `decomposed` |
+| `research.queries` | string[] | The search queries the planner produced |
+| `research.planner_rationale` | string | The planner's reasoning for the plan |
+| `research.candidates_seen` | number | Candidate URLs the searches returned before scoring |
+| `research.urls_kept`, `research.urls_dropped` | number | How many candidates the scorer kept and dropped |
+| `research.scorer_rationale` | string | The scorer's reasoning |
+| `research.scorer_dropped_all` | boolean | Present and `true` when the scorer dropped every candidate |
+| `research.tool_outcomes` | array | Searches that ran cleanly and found nothing, each `{tool, query, outcome}` |
+| `research.rejected` | array | The candidates the scorer dropped, each `{url, title, score, reason}`. `score` is `null` because the scorer gives its dropped URLs one shared rationale and no score each; `reason` is the scorer's drop rule (`scored below 3 on every sub-question`). The review packet prints them under the searches. `[]` when the scorer dropped none |
+| `research.entity_exclude_dropped`, `research.entity_exclude_spared` | string[] | Optional. URLs removed by the entity's `search_hints.exclude` domains, and the entity's own profile URLs that matched one of those domains but were kept |
+| `sources_consulted` | array | Sources the pipeline considered (`id`, `url`, `title`, `ingested`, `quotes`, optional `acquisition`, `archive` and `shared_with`) |
+| `sources_consulted[].quotes` | array | Every key quote of the source and the automated check the pipeline ran on it, each `{text, found, checked_against, passage, reason}`. For a fresh source `found` says whether the quote is in the fetched page text, `checked_against` says which text (`page`, `archive` or `page-and-archive`), and `passage` is the matched sentence with a bounded window of the page text around it (`null` when not found); a quote that was not found carries the `reason` and was dropped from the source file. For a source reused from disk `found` is `null`, `checked_against` is `not-rechecked` and `passage` is `null`. The review packet prints each quote beside its passage, with a link to the archived copy when the source has an `archived_url` |
+| `sources_consulted[].shared_with` | string[] | Optional. Ids of the other consulted sources on the same canonical publisher host or from the same newswire origin; left out when there are none. The review packet shows it under source independence |
 | `sources_consulted[].acquisition` | object | Optional record of how the source was acquired |
 | `sources_consulted[].acquisition.stage` | enum | Pipeline stage that acquired the source: `research` or `ingest` |
 | `sources_consulted[].acquisition.origin` | enum | Optional provider the source came from: `brave`, `tavily`, `arxiv`, `s2`, `openalex`, `edgar` |
@@ -152,7 +165,7 @@ The `audit` object has the shape:
 | `human_review.reviewed_at` | date or null | When a human reviewed |
 | `human_review.reviewer` | string or null | Reviewer identity |
 | `human_review.notes` | string or null | Human review notes |
-| `human_review.pr_url` | URL or null | PR where the review happened |
+| `human_review.pr_url` | URL or null | Written by `dr review` only when `--pr-url` is given; sign-off is `dr review`, not a PR |
 | `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.pipeline_verdict` (`audit.analyst_verdict` when absent); written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the pipeline verdict only when this matches |
 | `sub_questions` | array | Optional, top level. The planner's sub-questions, declared in `src/content.config.ts` (older sidecars lack some keys) |
 | `sub_questions[].id`, `question`, `rationale` | string | The sub-question's id, text and why it matters |
@@ -161,7 +174,7 @@ The `audit` object has the shape:
 | `sub_questions[].citations` | string[] | Source ids whose fetched text confirmed the scorer's tag for this sub-question (empty when none did) |
 | `sub_questions[].snippet_only` | string[] | Optional. Source ids the scorer tagged for this sub-question but whose fetched text never mentions its terms (its question and query words, minus stop words, the entity's name and any word that appears in two or more sub-questions' terms; a sub-question left with no terms keeps every tag); the tag came from a search snippet only, so it does not count as coverage |
 
-The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force`, on a published claim return it to `status: draft`, reset `human_review` and write a top-level `refresh` block, which the site does not read (on an archived or blocked claim they reset `human_review` the same way, with no `refresh` block). It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr publish` skips the claim while it is present. A blocked or failed run writes nothing, so the claim and its sidecar stay as they were. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
+The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force`, on a published claim return it to `status: draft`, reset `human_review` and write a top-level `refresh` block, which the site does not read (on an archived or blocked claim they reset `human_review` the same way, with no `refresh` block). It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr lint` warns `refresh-pending-review` while it is present. A blocked or failed run writes nothing, so the claim and its sidecar stay as they were. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -169,7 +182,7 @@ The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force
 | `refresh.previous` | object | The last published state, read before the overwrite: `status`, `verdict`, `confidence`, `title`, `as_of`, `sources`, `reviewed_at`, `reviewer`, `ran_at`. A second refresh before re-approval keeps it unchanged |
 | `refresh.dropped_sources` | string[] | Source ids in `refresh.previous.sources` that the latest run no longer cites |
 
-A draft whose pipeline verdict is `unverified`, `mixed` or `not-applicable`, or that went to the tie-breaker, also carries one top-level `restatement` block, written by the Restater (see `docs/architecture/research-flow.md` § Pipeline execution). The site does not read it; `src/content.config.ts` declares it as an optional, loose object. The original statement is never changed. Later sidecar writes carry the block forward unchanged (a rerun never restates); a full run that does not restate drops an old block; approval or archiving removes it. A run whose Restater failed writes no block and records a `partial` finding (`dr findings`; `dr review-queue --format json` carries it as `restatement_unavailable: <run-id>`).
+A draft whose pipeline verdict is `unverified`, `mixed` or `not-applicable`, or that went to the tie-breaker, also carries one top-level `restatement` block, written by the Restater (see `docs/architecture/research-flow.md` § Pipeline execution). The site does not read it; `src/content.config.ts` declares it as an optional, loose object. The original statement is never changed. Later sidecar writes carry the block forward unchanged (a rerun never restates); a full run that does not restate drops an old block; approval or archiving removes it, except while `picked` is set and no claim's sidecar has `restates` naming this claim, so `dr draft --restates` can still read the pick; the kept block then stays until a later approval, archive or full rerun. A run whose Restater failed writes no block and records a `partial` finding (`dr findings`; `dr review --format json` carries it as `restatement_unavailable: <run-id>`, and the packet prints "Restatement unavailable (finding <run-id>)" in place of the candidates).
 
 | Field | Type | Notes |
 |-------|------|-------|
@@ -182,7 +195,7 @@ A draft whose pipeline verdict is `unverified`, `mixed` or `not-applicable`, or 
 | `restatement.why_unverified_note` | string | The Restater's one-paragraph explanation |
 | `restatement.candidates` | array | Ranked from 1; each has `rank`, `text`, `frame`, `expected_verdict`, `expected_confidence`, `verification_level_estimate`, `decisiveness` (0 to 4), `needs_new_research`, `supporting`, `contradicting` (each a list of `source`, `quote`, `quote_verified`, `note`) and `rationale` |
 | `restatement.dropped` | array | Candidates removed by the same-entity rule, each with `text` and `reason` |
-| `restatement.picked` | number or null | The rank an operator ran as a new claim; set by `dr draft --restates --pick` after the new claim is written |
+| `restatement.picked` | number or null | The rank an operator ran as a new claim. Set by the `r` key in `dr review` (the operator's pick, before the run) and by `dr draft --restates --pick` after the new claim is written |
 | `restates` | string | Top-level key in the new claim's sidecar: the ref of the claim it restates; written by `dr draft --restates`. Carried forward by later writes and never removed |
 
 The pipeline also writes a top-level `analyst_record` block, which the site does not read (`src/content.config.ts` declares it as an optional, loose object so the sidecar validates): what the analyst last proposed for the claim (`title`, which records the claim's statement, and `seo_title`, `verdict`, `takeaway`, and `cap_rationale` after the level fit, plus `uncited_by_title`: the ids in the analyst's `cited_sources` whose title the narrative never names, which breaks the cite-by-title rule; an empty list when none), never a value a keep rule left on disk. A forced rewrite compares against it to tell an operator's `seo_title`, `takeaway` or `cap_rationale` from the pipeline's; a blocked write leaves it unchanged, and a field the analyst leaves out keeps its last value. A claim whose sidecar has no `analyst_record` treats any `seo_title` or `takeaway` on disk as the operator's, so that value is kept on every later rewrite while the claim's statement (for `seo_title`) or the analyst's verdict (for `takeaway`) is unchanged; deleting the field from the claim lets the next rewrite take the analyst's. `scripts/backfill_analyst_record.py` writes the record for such claims from each claim's last pipeline-written version in git (dry run by default; the script's docstring states how that commit is chosen).
@@ -193,7 +206,7 @@ The Evaluator role is implemented in `pipeline/auditor/`; sidecar field names re
 
 ### Findings file
 
-A run that is abandoned, recovered or split leaves one YAML record at `research/findings/<yyyy>/<run-id>.yaml`. The directory is tracked in git, sits outside every site collection loader (they read `claims/`, `entities/` and `sources/` only) and is skipped by `dr lint`. `dr findings` lists, counts and closes the records.
+A run that is abandoned, recovered, split or partial (the claim was written but the restater failed) leaves one YAML record at `research/findings/<yyyy>/<run-id>.yaml`. The directory is tracked in git, sits outside every site collection loader (they read `claims/`, `entities/` and `sources/` only) and is skipped by `dr lint`. `dr findings` lists, counts and closes the records.
 
 | Field | Type | Notes |
 |-------|------|-------|

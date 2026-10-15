@@ -21,12 +21,13 @@ from ingestor.agent import (
     archive_after_ingest,
     fetch_failure_reason,
     ingestor_agent,
+    requested_page_kind,
     requested_page_text,
 )
 from ingestor.arxiv_affiliation import arxiv_corporate_lab
 from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
-from ingestor.validation import drop_unfound_quotes, validate_source_file
+from ingestor.validation import apply_quote_checks, validate_source_file
 from loop.errors import StepError
 from loop.policy import Rule, classify_exception, retry_after_s
 from loop.research import _order_by_coverage
@@ -52,6 +53,9 @@ class IngestNotes:
     # Requested URL -> the page text its ingest fetched (the text the quote
     # check trusts); the coverage check reads it.
     page_text: dict[str, str] = field(default_factory=dict)
+    # Requested URL -> one check record per key quote the ingest model
+    # returned (``IngestorDeps.quote_checks``); the sidecar stores them.
+    quote_checks: dict[str, list[dict]] = field(default_factory=dict)
 
 
 def _reuse_stored_redirect_targets(
@@ -139,6 +143,7 @@ async def _ingest_claim_sources(
     result.final_urls = notes.final_urls
     result.archive = notes.archive
     result.page_text = notes.page_text
+    result.quote_checks = notes.quote_checks
     return source_files, ingest_errors, notes
 
 
@@ -222,8 +227,16 @@ def check_ingested_source(
             "Dropping model-written archived_url %s for %s", sf.frontmatter.archived_url, url
         )
         sf.frontmatter.archived_url = None
-    for quote in drop_unfound_quotes(sf, requested_page_text(deps)):
-        logger.warning("Dropping key quote not found on the page for %s: %r", url, quote)
+    checks = apply_quote_checks(sf, requested_page_text(deps), with_passage=True)
+    checked_against = requested_page_kind(deps)
+    deps.quote_checks = []
+    for check in checks:
+        record = {"text": check.text, "found": check.found, "checked_against": checked_against,
+                  "passage": check.passage}
+        if not check.found:
+            logger.warning("Dropping key quote not found on the page for %s: %r", url, check.text)
+            record["reason"] = check.reason
+        deps.quote_checks.append(record)
     if corporate_lab:
         logger.info("arXiv paper %s has a %s author; labelling it first-party", url, corporate_lab)
         # The exact lab name: the entity match compares publishers by equality.
@@ -354,6 +367,7 @@ async def ingest_one(
             notes.final_urls[url] = deps.final_url
         if notes is not None:
             notes.page_text[url] = requested_page_text(deps)
+            notes.quote_checks[url] = list(deps.quote_checks)
 
     if acquisition_out is not None:
         merge_acquisition_writes(acquisition_out, deps.acquisition_writes)

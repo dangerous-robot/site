@@ -28,7 +28,7 @@ uv run pytest tests/ -v
 - `common/` -- Shared models, frontmatter utilities, and content loaders
 - `ingestor/` -- Source ingestion agent (Phase 4.1)
 - `consistency/` -- Consistency checking agent (Phase 4.2)
-- `loop/` -- The one research run (`run`, `rerun`), `StepError`, the error policy (`policy.py`), the blind tie-breaker agent (`tiebreaker/`) and the restater agent (`restater/`, with `restate.py`); returns a result (with a finding when the run was abandoned, recovered or split) and writes nothing
+- `loop/` -- The one research run (`run`, `rerun`), `StepError`, the error policy (`policy.py`), the blind tie-breaker agent (`tiebreaker/`) and the restater agent (`restater/`, with `restate.py`); returns a result (with a finding when the run was abandoned, recovered, split or partial, the last being a failed restater on a claim that was still written) and writes nothing
 - `tests/` -- Test suite
 
 ## Researcher host blocklist

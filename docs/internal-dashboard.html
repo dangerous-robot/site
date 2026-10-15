@@ -156,12 +156,12 @@
         <h4>L3 focal view — orchestrator internals</h4>
         <pre class="mermaid">flowchart TB
     subgraph orch ["pipeline/orchestrator/"]
-        cli["cli.py — dr command surface&lt;br/&gt;(claim-* commands, step-* commands,&lt;br/&gt;review, publish, stats)"]
+        cli["cli.py — dr command surface&lt;br/&gt;(claim-* commands, step-* commands,&lt;br/&gt;review, stats)"]
         engine["pipeline.py — verify engine&lt;br/&gt;verify_claim() · onboard_entity()"]
         gates["checkpoints.py&lt;br/&gt;CheckpointHandler protocol&lt;br/&gt;(CLI-interactive / auto-approve)"]
         persist["persistence.py&lt;br/&gt;claim/source/entity/sidecar writers"]
         entres["entity_resolution.py&lt;br/&gt;ResolvedEntity from on-disk file"]
-        queue["review_queue.py + review.py&lt;br/&gt;sign-off and queue"]
+        queue["review_queue.py + review.py + packet.py&lt;br/&gt;dr review: packet and sign-off"]
     end
 
     agents["agent packages&lt;br/&gt;researcher · ingestor · analyst · auditor"]
@@ -237,7 +237,7 @@
         <pre class="mermaid">stateDiagram-v2
     [*] --> draft: dr claim-draft / onboard
     draft --> blocked: threshold gate (status + blocked_reason written)
-    draft --> published: dr review --approve / dr publish (bulk)
+    draft --> published: dr review --approve
     blocked --> archived: dr review --archive
     published --> archived: dr review --archive
     published --> draft: dr claim-refresh rewrites

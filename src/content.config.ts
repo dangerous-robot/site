@@ -48,10 +48,22 @@ const auditSchema = z.object({
     agents: z.array(z.string()),
     // The claim run that wrote this sidecar (one per `dr draft`).
     run_id: z.string().optional(),
+    // The level fit's note when it lowered the analyst's verification level.
+    level_clamp: z.string().optional(),
   }),
   // Per-agent model lineage. Optional during the v1 transition: existing sidecars
   // written before this field landed validate without it; new sidecars always carry it.
   models_used: z.record(z.string(), z.string()).optional(),
+  // The research trace. Loose: the pipeline owns its fields; the review
+  // packet reads `rejected` (the scorer's dropped candidates).
+  research: z.object({
+    rejected: z.array(z.object({
+      url: z.string(),
+      title: z.string().optional(),
+      score: z.number().nullable().optional(),
+      reason: z.string(),
+    }).loose()).optional(),
+  }).loose().nullable().optional(),
   sources_consulted: z.array(z.object({
     id: z.string(),
     url: httpUrl,
@@ -70,6 +82,19 @@ const auditSchema = z.object({
       status: z.enum(['found', 'failed', 'not-attempted']),
       error: z.string().optional(),
     }).optional(),
+    // Each key quote's check against the fetched page: `found` is null for a
+    // cached source (`checked_against: not-rechecked`); `passage` is the page
+    // text around a found quote, `reason` why one was not found.
+    quotes: z.array(z.object({
+      text: z.string(),
+      found: z.boolean().nullable(),
+      checked_against: z.string(),
+      passage: z.string().nullable().optional(),
+      reason: z.string().optional(),
+    }).loose()).optional(),
+    // Ids of the other consulted sources on the same canonical host or from
+    // the same newswire origin.
+    shared_with: z.array(z.string()).optional(),
   })),
   // The planner's sub-questions. `kind` and `snippet_only` are optional so
   // sidecars written before they existed still validate.
@@ -106,6 +131,13 @@ const auditSchema = z.object({
     tiebreaker_confidence: z.string().optional(),
     tiebreaker_reasoning: z.string().optional(),
   }).nullable(),
+  // A refreshed published claim awaiting re-approval: the published state
+  // it replaced. Loose: the review packet reads it, the site does not.
+  refresh: z.object({
+    refreshed_at: z.coerce.date().optional(),
+    previous: z.object({}).loose().optional(),
+    dropped_sources: z.array(z.string()).optional(),
+  }).loose().optional(),
   human_review: z.object({
     reviewed_at: z.coerce.date().nullable(),
     reviewer: z.string().nullable(),
@@ -123,7 +155,7 @@ const auditSchema = z.object({
     uncited_by_title: z.array(z.string()).optional(),
   }).loose().optional(),
   // Ranked restatement candidates for a weak or tie-broken verdict, until the
-  // claim is approved or archived. Loose so one off-list value from a model
+  // claim is approved or archived (kept while a pick awaits its run). Loose so one off-list value from a model
   // (a frame, say) cannot fail the site build.
   restatement: z.object({
     schema_version: z.number().optional(),

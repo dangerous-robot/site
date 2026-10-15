@@ -16,7 +16,6 @@ load_dotenv()
 
 from common.logging_setup import configure_logging, hr, new_run_id, progress, run_id_var
 from common.models import AGENT_NAMES, DEFAULT_MODEL, resolve_model
-from orchestrator.persistence import set_claim_status
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +125,7 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Creates or overwrites claim files (dr draft --dry-run writes nothing)",
      ["draft"]),
     ("Modifies existing files in place (dr findings writes only with --close)",
-     ["publish", "review", "review-queue", "findings"]),
+     ["review", "findings"]),
 ]
 
 
@@ -1022,6 +1021,13 @@ def draft(
             sys.exit(1)
         spec = ClaimSpec(statement=candidate_text, entity=resolved_entity)
         claim_slug = slugify(candidate_text)
+        planned = planned_claim_path(resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root)
+        if planned.resolve() == original_path.resolve():
+            raise click.UsageError(
+                f"--restates: candidate {pick} would be written over the original claim {restates_ref}; "
+                "its text slugifies to the original's file name. Pick another candidate, or rerun the "
+                f"original with dr draft --claim {restates_ref} --force"
+            )
     elif claim_ref is not None:
         claim_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
         if not claim_path.exists():
@@ -1239,7 +1245,10 @@ def _restatement_candidate(restates_ref: str, pick: int, root: Path) -> tuple[Pa
     sidecar = read_sidecar(original) or {}
     block = sidecar.get("restatement")
     if not isinstance(block, dict):
-        refuse(f"no restatement block in {original.with_suffix('.audit.yaml')}; nothing to pick")
+        refuse(
+            f"no restatement block in {original.with_suffix('.audit.yaml')}; nothing to pick "
+            "(approving or archiving a claim with no recorded pick removes the block)"
+        )
     candidates = [c for c in block.get("candidates") or [] if isinstance(c, dict)]
     chosen = next((c for c in candidates if c.get("rank") == pick), None)
     if chosen is None or not str(chosen.get("text") or "").strip():
@@ -1631,8 +1640,11 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
 # dr review                                                                     #
 # --------------------------------------------------------------------------- #
 
+_SIGN_OFF_FLAGS = ("--approve", "--archive", "--correction", "--reviewer", "--notes", "--pr-url")
+
+
 @main.command()
-@click.option("--claim", required=True, help="Claim identifier: <entity-slug>/<claim-slug>, or a bare <claim-slug> if unique across entities.")
+@click.option("--claim", default=None, help="Claim ref: <entity-dir>/<claim-slug> (subjects/<s>/<stem> for a subject), or a bare <claim-slug> if unique. Without --format, records the sign-off.")
 @click.option("--reviewer", default=None, help="Reviewer name or email (defaults to git config user.email)")
 @click.option("--notes", default=None, help="Optional review notes")
 @click.option("--pr-url", default=None, help="Optional GitHub PR URL")
@@ -1642,71 +1654,112 @@ def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, s
     "--correction", default=None,
     help="One-line public correction, required with --approve when a refresh changed the published verdict.",
 )
+@click.option(
+    "--format", "output_format", default=None, type=click.Choice(["text", "json"]),
+    help="Print review packets and exit, writing nothing: the queue's, or the --claim's. `text` is the whole packet; `json` a JSON array.",
+)
+@click.option("--filter-entity", default=None, help="Restrict the queue to one entity directory (e.g. 'openai').")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
 def review(
     ctx: click.Context,
-    claim: str,
+    claim: str | None,
     reviewer: str | None,
     notes: str | None,
     pr_url: str | None,
     approve: bool,
     archive: bool,
     correction: str | None,
+    output_format: str | None,
+    filter_entity: str | None,
     repo_root: str | None,
 ) -> None:
-    """Record human sign-off in one claim's audit sidecar; --approve also flips status draft->published, --archive flips published->archived.
+    """Walk the drafts awaiting sign-off through their review packets; --format prints packets; --claim signs one off.
 
-    With no flag, writes only the sidecar. With ``--approve`` flips
-    ``status: draft`` to ``status: published``; with ``--archive`` flips
-    ``status: published`` to ``status: archived`` (sidecar written first
-    in either case).
+    \b
+    dr review                          the walkthrough: each draft's review packet,
+                                       then a key: [a]pprove [d]elete [e]dit fields
+                                       [s]kip [p]review [o]pen in editor [r]estate
+                                       [v]iew packet [q]uit
+    dr review --format text|json       every queued draft's packet; writes nothing
+    dr review --claim REF --format text|json
+                                       one claim's packet (published too); writes nothing
+    dr review --claim REF [--approve|--archive] [--correction TEXT]
+                                       records the sign-off in the sidecar; --approve
+                                       also flips draft to published, --archive
+                                       published to archived
 
-    Needs a person at a terminal: stdin must be a tty, and the claim slug is
-    typed back before anything is written.
+    The packet shows, in this order: the verdict chain (statement, restated
+    candidates, analyst, Evaluator, tie-breaker, the pipeline's verdict and
+    rule) with the header facts; every key quote beside its page passage and
+    the check's result; source independence; the run's queries and the
+    scorer's rejected candidates. The walkthrough prints the verdict chain
+    last, directly above the key prompt. `r` records a restatement pick and
+    prints the `dr draft --restates REF --pick N` command to run afterwards;
+    `v` opens the whole packet in $PAGER.
 
-    Example:
-        dr review --claim ecosia/renewable-energy-hosting --approve
+    The walkthrough's `a` and every --claim sign-off need a person at a
+    terminal: stdin must be a tty, and the claim slug is typed back before
+    anything is written. Agents never run the walkthrough or a sign-off.
+
+    \b
+    Examples:
+      dr review
+      dr review --format json | jq '.[].claim_slug'
+      dr review --claim subjects/us-data-centers/<stem> --format text | less
+      dr review --claim ecosia/renewable-energy-hosting --approve
     """
     logger.info(
-        "dr review: claim=%s approve=%s archive=%s",
+        "dr review: claim=%s approve=%s archive=%s format=%s",
         claim,
         approve,
         archive,
+        output_format,
     )
+
+    import json as _json
 
     from common.content_loader import resolve_repo_root
     from common.sidecar import sidecar_path_for
     from orchestrator.review import approve_claim
 
+    # Click cannot express this grammar: each refusal is a usage error (exit 2)
+    # raised before anything is read or written.
+    sign_off = [flag for flag, value in zip(
+        _SIGN_OFF_FLAGS, (approve, archive, correction, reviewer, notes, pr_url),
+    ) if value]
+    if claim is None and sign_off:
+        raise click.UsageError(f"{sign_off[0]} signs off one claim: pass --claim <ref>")
+    if output_format is not None and sign_off:
+        raise click.UsageError(f"--format prints packets and writes nothing; it does not take {sign_off[0]}")
+    if claim is not None and filter_entity is not None:
+        raise click.UsageError("--filter-entity narrows the queue; it does not take --claim")
     if approve and archive:
-        raise click.ClickException("--approve and --archive are mutually exclusive")
+        raise click.UsageError("--approve and --archive are mutually exclusive")
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
 
-    bare = claim[:-3] if claim.endswith(".md") else claim
-    if "/" in bare:
-        claim_path = claims_dir / f"{bare}.md"
-    else:
-        # Bare slug is accepted if exactly one entity directory carries it.
-        matches = sorted(claims_dir.glob(f"*/{bare}.md"))
-        if not matches:
-            click.echo(
-                f"Claim file not found: no research/claims/*/{bare}.md.",
-                err=True,
-            )
-            sys.exit(1)
-        if len(matches) > 1:
-            rels = ", ".join(str(m.relative_to(claims_dir).with_suffix("")) for m in matches)
-            click.echo(
-                f"Ambiguous claim slug {bare!r}; matches: {rels}. "
-                f"Re-run with --claim <entity-slug>/{bare}.",
-                err=True,
-            )
-            sys.exit(1)
-        claim_path = matches[0]
+    if claim is None:
+        from orchestrator.packet import build_packet, item_line, render_full
+        from orchestrator.review_queue import _partial_restate_runs, find_publication_queue, run_interactive
 
+        items = find_publication_queue(root, filter_entity=filter_entity)
+        if output_format is None:
+            run_interactive(items, root)
+            return
+        partial_runs = _partial_restate_runs(root)
+        packets = [build_packet(root / item.path, root, partial_restate_runs=partial_runs) for item in items]
+        if output_format == "json":
+            click.echo(_json.dumps(packets, indent=2, default=str))
+            return
+        for n, packet in enumerate(packets, 1):
+            click.echo(item_line(packet["claim_slug"], n, len(packets)))
+            click.echo(render_full(packet))
+            click.echo()
+        return
+
+    claim_path = _resolve_claim_path(claim, claims_dir)
     if not claim_path.exists():
         click.echo(
             f"Claim file not found: {claim_path.relative_to(root)}.",
@@ -1721,6 +1774,20 @@ def review(
         )
         sys.exit(1)
 
+    if output_format is not None:
+        from orchestrator.packet import build_packet, render_full
+
+        try:
+            packet = build_packet(claim_path, root)
+        except ValueError as exc:
+            click.echo(f"Error: {exc}", err=True)
+            sys.exit(1)
+        if output_format == "json":
+            click.echo(_json.dumps([packet], indent=2, default=str))
+        else:
+            click.echo(render_full(packet))
+        return
+
     mode = "approve" if approve else "archive" if archive else "review"
     approve_claim(
         claim_path,
@@ -1731,85 +1798,21 @@ def review(
         correction_summary=correction,
     )
 
+    rel = claim_path.relative_to(claims_dir).with_suffix("").as_posix()
     if approve:
         click.echo(
-            f"Marked reviewed and published: research/claims/{claim}.md (+ .audit.yaml)"
+            f"Marked reviewed and published: research/claims/{rel}.md (+ .audit.yaml)"
         )
     elif archive:
         click.echo(
-            f"Marked reviewed and archived: research/claims/{claim}.md (+ .audit.yaml)"
+            f"Marked reviewed and archived: research/claims/{rel}.md (+ .audit.yaml)"
         )
     else:
-        click.echo(f"Marked reviewed: research/claims/{claim}.audit.yaml")
+        click.echo(f"Marked reviewed: research/claims/{rel}.audit.yaml")
 
 
 # --------------------------------------------------------------------------- #
-# dr review-queue                                                               #
-# --------------------------------------------------------------------------- #
-
-
-@main.command("review-queue")
-@click.option(
-    "--format", "output_format", default=None, type=click.Choice(["text", "json"]),
-    help=(
-        "Print the queue and exit instead of starting the interactive walkthrough. "
-        "`text` is a tab-separated table; `json` is a JSON array. "
-        "Matches the convention set by `dr lint --format`."
-    ),
-)
-@click.option("--filter-entity", default=None, help="Restrict the queue to one entity directory (e.g. 'openai').")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def review_queue(
-    ctx: click.Context,
-    output_format: str | None,
-    filter_entity: str | None,
-    repo_root: str | None,
-) -> None:
-    """Walk through draft claims awaiting human review (a/d/e/s/p/o/q keys); --format text|json prints the queue for CI/scripting.
-
-    Default (no --format): interactive loop over draft claims with completed
-    research. Single-key actions: [a]pprove, [d]elete, [e]dit fields,
-    [s]kip, [p]review, [o]pen in editor, [q]uit. Approve delegates to the
-    same `approve_claim` callable as `dr review --approve`. Edit opens the
-    five header fields (title, takeaway, seo_title, tags, verdict) in
-    `$EDITOR` for an inline change with a save/re-edit/discard preview.
-
-    With --format: prints the queue and exits. Always exits 0 regardless of
-    queue size; this is informational.
-
-    \b
-    Examples:
-      dr review-queue
-      dr review-queue --format text
-      dr review-queue --format json | jq '.[].claim_slug'
-      dr review-queue --filter-entity openai
-    """
-    import json as _json
-
-    from common.content_loader import resolve_repo_root as _resolve_root
-    from orchestrator.review_queue import (
-        find_publication_queue,
-        format_table,
-        run_interactive,
-        to_json_records,
-    )
-
-    root = Path(repo_root) if repo_root else _resolve_root()
-    items = find_publication_queue(root, filter_entity=filter_entity)
-
-    if output_format == "json":
-        click.echo(_json.dumps(to_json_records(items), indent=2))
-        return
-    if output_format == "text":
-        click.echo(format_table(items))
-        return
-
-    run_interactive(items, root)
-
-
-# --------------------------------------------------------------------------- #
-# dr publish                                                                    #
+# Claim refs                                                                    #
 # --------------------------------------------------------------------------- #
 
 
@@ -1835,17 +1838,18 @@ def _claim_template(fm: dict, root: Path):
 def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:
     """Resolve a `--claim` argument to a concrete claim .md path.
 
-    Accepts ``<entity>/<slug>``, ``<entity>/<slug>.md``, or a bare ``<slug>``
-    that is unique across entity directories. Calls ``sys.exit(1)`` on
-    missing or ambiguous slugs (matching dr review's behavior).
+    Accepts ``<entity>/<slug>`` (``subjects/<subject>/<slug>`` for a subject
+    claim), either with ``.md``, or a bare ``<slug>`` that is unique under
+    ``research/claims/`` at any depth. Calls ``sys.exit(1)`` on missing or
+    ambiguous slugs.
     """
     bare = claim[:-3] if claim.endswith(".md") else claim
     if "/" in bare:
         return claims_dir / f"{bare}.md"
-    matches = sorted(claims_dir.glob(f"*/{bare}.md"))
+    matches = sorted(claims_dir.glob(f"**/{bare}.md"))
     if not matches:
         click.echo(
-            f"Claim file not found: no research/claims/*/{bare}.md.",
+            f"Claim file not found: no research/claims/**/{bare}.md.",
             err=True,
         )
         sys.exit(1)
@@ -1858,307 +1862,6 @@ def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:
         )
         sys.exit(1)
     return matches[0]
-
-
-@main.command()
-@click.option("--entity", default=None, help="Publish all draft claims under this entity slug.")
-@click.option("--claim", default=None, help="Publish a single claim: <entity-slug>/<claim-slug>, or a unique bare <claim-slug>.")
-@click.option("--all", "all_", is_flag=True, default=False, help="Publish every draft claim in the repo.")
-@click.option("--dry-run", is_flag=True, default=False, help="List planned transitions without writing anything.")
-@click.option("--yes", "-y", is_flag=True, default=False, help="Skip the interactive confirmation prompt.")
-@click.option("--note", default=None, help="Suffix appended to the canonical '[auto-publish] ' note prefix.")
-@click.option(
-    "--continue-on-error/--strict",
-    default=True,
-    help=(
-        "Default: continue past per-claim errors and exit 1 at end if any occurred. "
-        "Use --strict to fail-fast on the first error."
-    ),
-)
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def publish(
-    ctx: click.Context,
-    entity: str | None,
-    claim: str | None,
-    all_: bool,
-    dry_run: bool,
-    yes: bool,
-    note: str | None,
-    continue_on_error: bool,
-    repo_root: str | None,
-) -> None:
-    """Bulk-flip draft claims to published, filling sidecar with an auto-publish marker (no reviewer recorded); supports --dry-run.
-
-    Claims processed by this command render as "Unreviewed" on the site.
-    Use `dr review --approve` for human-reviewed publication.
-
-    Each matched draft has its sidecar updated with reviewed_at=<today>,
-    reviewer=null, notes="[auto-publish] <suffix>", and pr_url=null, then
-    its `status:` flipped from draft to published. Claims with status
-    published, archived, or blocked are skipped with a warning. Drafts whose
-    sidecar has a `refresh` block (a refreshed, previously published claim)
-    are skipped too, and the run exits 1: they need `dr review --approve`.
-    So are drafts whose verdict differs from the sidecar's analyst verdict
-    with no matching `human_review.verdict_override`: only `dr review`
-    records an override, because it records who made it.
-
-    Reversibility: a later `dr review --claim <slug> --reviewer alice` (no
-    `--approve`) writes the reviewer in and flips the badge to "Reviewed".
-
-    Discoverability: `grep -l '\\[auto-publish\\]' research/claims/*/*.audit.yaml`.
-
-    \b
-    Examples:
-      dr publish --entity ecosia --dry-run
-      dr publish --claim ecosia/renewable-energy-hosting --yes
-      dr publish --all --yes --note "v1.0.0 backfill"
-    """
-    logger.info(
-        "dr publish: claim=%s entity=%s all=%s dry_run=%s",
-        claim,
-        entity,
-        all_,
-        dry_run,
-    )
-
-    import datetime
-
-    import yaml
-    from common.content_loader import list_claims, resolve_repo_root
-    from common.frontmatter import has_criterion, parse_frontmatter
-    from common.sidecar import read_sidecar, sidecar_path_for
-    from orchestrator.review import refresh_verdict_change, unreviewed_verdict_change
-
-    # Mode selection: exactly one of {--claim, --entity, --all}.
-    selectors = sum(1 for s in (claim, entity, all_) if s)
-    if selectors == 0:
-        raise click.ClickException(
-            "specify exactly one of --claim, --entity, or --all"
-        )
-    if selectors > 1:
-        raise click.ClickException(
-            "--claim, --entity, and --all are mutually exclusive"
-        )
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-
-    # Resolve the candidate claim set.
-    if claim is not None:
-        candidate_paths = [_resolve_claim_path(claim, claims_dir)]
-    elif entity is not None:
-        candidate_paths = list_claims(root, entity=entity)
-    else:  # all_
-        candidate_paths = list_claims(root)
-
-    if not candidate_paths:
-        click.echo("No claims matched the given filters.", err=True)
-        sys.exit(1)
-
-    # Build canonical note string. The "[auto-publish] " prefix is fixed
-    # so a grep across audit sidecars finds every bot-published claim;
-    # operator-supplied --note text appends as the suffix.
-    suffix = note if note else "bulk publish, no human review"
-    note_text = f"[auto-publish] {suffix}"
-
-    # Classify each candidate. Only `to_publish` are written; other lists
-    # surface in the summary so an operator can see what was skipped.
-    to_publish: list[tuple[Path, str | None]] = []  # (claim_path, current_status)
-    already_published: list[Path] = []
-    skipped_archived: list[Path] = []
-    skipped_blocked: list[tuple[Path, str]] = []  # (path, blocked_reason)
-    skipped_missing_sidecar: list[Path] = []
-    skipped_missing_criterion: list[Path] = []
-    skipped_refresh: list[tuple[Path, tuple[str, str] | None]] = []  # (path, verdict change)
-    skipped_override: list[tuple[Path, tuple[str, str]]] = []  # (path, (analyst, current))
-    classify_errors: list[tuple[Path, str]] = []
-
-    for claim_path in candidate_paths:
-        try:
-            fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-        except (FileNotFoundError, ValueError) as exc:
-            classify_errors.append((claim_path, f"frontmatter parse failed: {exc}"))
-            continue
-
-        current_status = fm.get("status")
-        # Missing status field is treated as draft (parity with `dr review`).
-        effective_current = current_status if current_status is not None else "draft"
-
-        if effective_current == "published":
-            already_published.append(claim_path)
-            continue
-        if effective_current == "archived":
-            skipped_archived.append(claim_path)
-            continue
-        if effective_current == "blocked":
-            skipped_blocked.append((claim_path, str(fm.get("blocked_reason", "<unset>"))))
-            continue
-        if effective_current != "draft":
-            classify_errors.append(
-                (claim_path, f"unrecognized status {effective_current!r}")
-            )
-            continue
-
-        # Draft: still need a sidecar to update.
-        sidecar_path = sidecar_path_for(claim_path)
-        if not sidecar_path.exists():
-            skipped_missing_sidecar.append(claim_path)
-            continue
-
-        # Publish gate: criteria_slug is required for the public artifact.
-        if not has_criterion(fm):
-            skipped_missing_criterion.append(claim_path)
-            continue
-
-        # A refresh of a published claim goes back through `dr review --approve`:
-        # this command records no reviewer, which would erase the prior sign-off,
-        # and a changed verdict needs a person-written correction.
-        sidecar_data = read_sidecar(claim_path) or {}
-        if isinstance(sidecar_data.get("refresh"), dict):
-            skipped_refresh.append((claim_path, refresh_verdict_change(fm, sidecar_data)))
-            continue
-
-        # A verdict edited away from the pipeline's needs a reviewer behind the
-        # override; only `dr review` records one, since this command has no reviewer.
-        override_change = unreviewed_verdict_change(fm, sidecar_data)
-        if override_change is not None:
-            skipped_override.append((claim_path, override_change))
-            continue
-
-        to_publish.append((claim_path, current_status))
-
-    # Print the classification summary.
-    def _rel(p: Path) -> str:
-        try:
-            return str(p.relative_to(root))
-        except ValueError:
-            return str(p)
-
-    click.echo(f"Matched {len(candidate_paths)} claim(s); {len(to_publish)} to publish.")
-    if to_publish:
-        sample = to_publish[:10]
-        for path, _ in sample:
-            click.echo(f"  draft -> published: {_rel(path)}")
-        if len(to_publish) > 10:
-            click.echo(f"  ... and {len(to_publish) - 10} more")
-    if already_published:
-        click.echo(f"Skipped (already published): {len(already_published)}")
-    if skipped_archived:
-        click.echo(f"Skipped (archived): {len(skipped_archived)}")
-        for path in skipped_archived:
-            click.echo(f"  ! archived, not republished: {_rel(path)}", err=True)
-    if skipped_blocked:
-        click.echo(f"Skipped (blocked): {len(skipped_blocked)}")
-        for path, reason in skipped_blocked:
-            click.echo(f"  ! blocked ({reason}): {_rel(path)}", err=True)
-    if skipped_missing_sidecar:
-        click.echo(f"Skipped (no audit sidecar): {len(skipped_missing_sidecar)}")
-        for path in skipped_missing_sidecar:
-            click.echo(f"  ! missing sidecar: {_rel(path)}", err=True)
-    if skipped_missing_criterion:
-        click.echo(f"Skipped (no criteria_slug): {len(skipped_missing_criterion)}")
-        for path in skipped_missing_criterion:
-            click.echo(f"  ! missing criteria_slug: {_rel(path)}", err=True)
-    if skipped_refresh:
-        click.echo(f"Skipped (refresh awaiting re-approval): {len(skipped_refresh)}")
-        for path, change in skipped_refresh:
-            slug = path.relative_to(claims_dir).with_suffix("").as_posix()
-            if change is not None:
-                click.echo(
-                    f"  ! verdict {change[0]} -> {change[1]}: run "
-                    f"`dr review --approve --correction TEXT --claim {slug}`",
-                    err=True,
-                )
-            else:
-                click.echo(
-                    f"  ! refreshed, verdict unchanged: run `dr review --approve --claim {slug}`",
-                    err=True,
-                )
-    if skipped_override:
-        click.echo(f"Skipped (verdict override awaiting review): {len(skipped_override)}")
-        for path, (analyst, current) in skipped_override:
-            slug = path.relative_to(claims_dir).with_suffix("").as_posix()
-            click.echo(
-                f"  ! verdict {analyst} -> {current}, no reviewer override: "
-                f"run `dr review --approve --claim {slug}`",
-                err=True,
-            )
-    if classify_errors:
-        click.echo(f"Skipped (errors during classification): {len(classify_errors)}")
-        for path, msg in classify_errors:
-            click.echo(f"  ! {_rel(path)}: {msg}", err=True)
-
-    if dry_run:
-        click.echo("Dry run: no files written.")
-        sys.exit(0)
-
-    if not to_publish:
-        click.echo("Nothing to publish.")
-        # Per-claim errors during classification (e.g. unparseable frontmatter),
-        # missing-criterion, refresh and override skips all count as failures: the
-        # operator asked to publish a claim we would not, so the run should signal.
-        sys.exit(
-            1
-            if (classify_errors or skipped_missing_criterion or skipped_refresh or skipped_override)
-            else 0
-        )
-
-    # Confirmation prompt unless --yes.
-    if not yes:
-        click.confirm(
-            f"Flip {len(to_publish)} draft(s) to published WITHOUT recording human review?",
-            abort=True,
-        )
-
-    today_iso = datetime.date.today().isoformat()
-    published_count = 0
-    # Missing-criterion, refresh and override skips count as errors: the operator asked us
-    # to publish, we couldn't, that's a partial-completion signal that should fail loud.
-    publish_errors: list[tuple[Path, str]] = (
-        list(classify_errors)
-        + [(p, "missing criteria_slug") for p in skipped_missing_criterion]
-        + [(p, "refresh awaiting re-approval") for p, _ in skipped_refresh]
-        + [(p, "verdict override awaiting review") for p, _ in skipped_override]
-    )
-
-    for claim_path, current_status in to_publish:
-        sidecar_path = sidecar_path_for(claim_path)
-        try:
-            sidecar_data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-            sidecar_data["human_review"]["reviewed_at"] = today_iso
-            sidecar_data["human_review"]["reviewer"] = None
-            sidecar_data["human_review"]["notes"] = note_text
-            sidecar_data["human_review"]["pr_url"] = None
-            # Publishing retires the restatement like approval does (`dr review`).
-            sidecar_data.pop("restatement", None)
-            sidecar_path.write_text(
-                yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
-                encoding="utf-8",
-            )
-            # current_status may be None (key absent); pass it through so
-            # set_claim_status's mismatch check sees the actual on-disk value.
-            set_claim_status(claim_path, "published", expected_current=current_status)
-        except Exception as exc:
-            publish_errors.append((claim_path, str(exc)))
-            click.echo(f"  ! failed: {_rel(claim_path)}: {exc}", err=True)
-            if not continue_on_error:
-                click.echo(
-                    f"\nAborted on first error (--strict). Published {published_count} "
-                    f"of {len(to_publish)} before failing.",
-                    err=True,
-                )
-                sys.exit(1)
-            continue
-
-        published_count += 1
-        click.echo(f"  + published: {_rel(claim_path)}")
-
-    click.echo(
-        f"\nDone. Published {published_count} of {len(to_publish)} matched draft(s); "
-        f"{len(publish_errors)} error(s)."
-    )
-    sys.exit(1 if publish_errors else 0)
 
 
 @main.command()
@@ -2298,7 +2001,7 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
 @main.command()
 @click.option(
     "--format", "output_format", default="text", type=click.Choice(["text", "json"]),
-    help="Output format. Mirrors `dr lint --format` and `dr review-queue --format`.",
+    help="Output format. Mirrors `dr lint --format` and `dr review --format`.",
 )
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context

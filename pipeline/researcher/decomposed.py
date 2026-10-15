@@ -352,6 +352,12 @@ async def execute_searches(
     return candidates
 
 
+# The scorer returns its dropped URLs with one shared rationale, so each
+# rejected candidate carries the scorer's drop rule as its reason
+# (``researcher/scorer.py``) and no score of its own.
+SCORER_DROP_REASON = "scored below 3 on every sub-question"
+
+
 async def decomposed_research(
     claim_text: str,
     entity_name: str,
@@ -373,7 +379,7 @@ async def decomposed_research(
     # and `tool_outcomes` so producers can append without checking presence.
     out = ResearchOutput(
         urls=[],
-        trace={"mode": "decomposed", "acquisition": {}, "tool_outcomes": []},
+        trace={"mode": "decomposed", "acquisition": {}, "tool_outcomes": [], "rejected": []},
     )
 
     entity_ctx = build_entity_context(resolved_entity, entity_name)
@@ -497,6 +503,11 @@ async def decomposed_research(
         out.trace["urls_kept"] = len(scored.kept)
         out.trace["urls_dropped"] = len(scored.dropped)
         out.trace["scorer_rationale"] = scored.rationale
+        titles = {c.url: c.title for c in candidates}
+        out.trace["rejected"] = [
+            {"url": u, "title": titles.get(u) or "", "score": None, "reason": SCORER_DROP_REASON}
+            for u in scored.dropped
+        ]
         logger.info(
             "URL scorer: %d kept, %d dropped (rationale: %s)",
             len(scored.kept), len(scored.dropped), scored.rationale,

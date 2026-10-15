@@ -10,7 +10,7 @@ are written to docs/plans/source-quality-rerun-log.jsonl.
 - dr draft --claim --force writes status: draft, resets the sidecar's human_review and
   keeps the prior published state in the sidecar's refresh block. This script
   leaves all of that as written: every refreshed claim leaves the published
-  list until a person approves it in `dr review-queue`, even when the verdict
+  list until a person approves it in `dr review`, even when the verdict
   and confidence are unchanged, because the sources and narrative may not be.
 - Log per-claim status (with source-id deltas) to a JSONL file so the user
   can triage on return.
@@ -173,10 +173,10 @@ def main() -> int:
             "sources_removed": removed,
         }
         log_entry["outcome"] = "awaits_review"
-        log_entry["next_step"] = "draft until a person approves it in dr review-queue"
+        log_entry["next_step"] = "draft until a person approves it in dr review"
         summary["awaits_review"] += 1
         change = "unchanged" if unchanged else f"now verdict={post_verdict} confidence={post_confidence}"
-        print(f"  refreshed ({change}) -- draft, awaits review in dr review-queue")
+        print(f"  refreshed ({change}) -- draft, awaits review in dr review")
 
         with LOG_PATH.open("a", encoding="utf-8") as f:
             f.write(json.dumps(log_entry) + "\n")

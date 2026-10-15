@@ -76,4 +76,4 @@ def test_refresh_with_unchanged_verdict_stays_draft_and_unsigned(tmp_path, monke
     assert review["reviewer"] is None
     entry = json.loads(log_path.read_text(encoding="utf-8").splitlines()[-1])
     assert entry["outcome"] == "awaits_review"
-    assert "dr review-queue" in entry["next_step"]
+    assert entry["next_step"].endswith("in dr review") and "review-queue" not in entry["next_step"]

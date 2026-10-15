@@ -1,6 +1,6 @@
 # Research Flow Diagrams
 
-Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: queue handling, pipeline execution, the draft commands that start a claim, and the sign-off path from PR open to merged and deployed.
+Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: queue handling, pipeline execution, the draft commands that start a claim, and the sign-off path from local checks through `dr review` and the commit to CI and deploy.
 
 Sections:
 
@@ -8,34 +8,32 @@ Sections:
 2. Queue lifecycle
 3. Pipeline execution (sequence)
 4. Draft commands
-5. Sign-off: before and after PR
+5. Sign-off without a PR
 
 ---
 
 ## 1. Claim lifecycle
 
-Every claim moves through the same set of states regardless of how it was initiated (`dr draft` or a manual edit). Transitions are driven by pipeline events, PR events, or time-based staleness.
+Every claim moves through the same set of states regardless of how it was initiated (`dr draft` or a manual edit). Transitions are driven by pipeline events, a person's sign-off in `dr review`, or time-based staleness.
 
 ```mermaid
 stateDiagram-v2
     [*] --> draft: dr draft / dr draft --claim --force / manual edit
     blocked --> archived: dr review --archive
-    draft --> under_review: PR opened
-    under_review --> draft: PR closed without merge
-    under_review --> published: dr review --approve (status flip) + PR merged
+    draft --> published: dr review --approve (status flip)
     published --> stale: recheck_cadence_days elapsed
-    stale --> under_review: dr draft --claim --force, PR opened
+    stale --> draft: dr draft --claim --force
     published --> archived: dr review --archive (entity retired or claim superseded)
     archived --> [*]
 ```
 
 Notes:
 
-- `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered or split, leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
+- `draft` covers both pipeline-written files awaiting sign-off and hand-edited files not yet reviewed.
+- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered, split or partial (claim written, restater failed), leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
 - Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
-- `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
+- `draft → published` and `published → archived` transitions are driven by `dr review`, one claim at a time. See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 
 ---
 
@@ -161,27 +159,30 @@ flowchart TD
 
 ---
 
-## 5. Sign-off: before and after PR
+## 5. Sign-off without a PR
 
-Two zones separate pipeline-internal gates (run locally before a PR is opened) from CI gates and human review (run after the PR is opened). Rejections loop back to the zone that owns them.
+Research content is committed straight to `main`; no pull request stands between a draft and the live site. Sign-off is `dr review`, which a person runs at a terminal. Local checks run before it, the pre-commit hook runs at the commit, and CI runs on `main` before the site deploys. A rejection sends the author back to the first step.
 
 ```mermaid
 flowchart TD
-    subgraph before ["Before PR (local)"]
-        direction TB
-        START([Author runs pipeline or edits files]) --> LOCAL
-        LOCAL["Local checks
-        — inv check
-        — dr lint"]
-        LOCAL -->|fails| START
-        LOCAL -->|passes| OPEN([Open PR])
-    end
+    START([Author runs the pipeline or edits files]) --> LOCAL
+    LOCAL["Local checks
+    — inv check
+    — dr lint"]
+    LOCAL -->|fails| START
+    LOCAL -->|passes| REV
+    REV{"dr review
+    the walkthrough shows each draft's packet;
+    the person signs off at a terminal"}
+    REV -->|delete, edit or skip| START
+    REV -->|approve| COMMIT
+    COMMIT["Commit to main
+    — pre-commit hook: dr lint, inv check"]
+    COMMIT -->|fails| START
+    COMMIT -->|passes| CI1
 
-    OPEN --> AFTER_ENTRY
-
-    subgraph after ["After PR (remote)"]
+    subgraph ci ["CI on main (deploy workflow calls ci.yml)"]
         direction TB
-        AFTER_ENTRY([PR opened]) --> CI1
         CI1["Astro build
         — Zod schema validation"]
         CI1 -->|fails| REWORK[Author revises]
@@ -198,14 +199,15 @@ flowchart TD
         — lint-content job
         — annotates errors"]
         CI4 -->|fails| REWORK
-        CI4 -->|passes| REV
-        REV{Human PR review}
-        REV -->|changes requested| REWORK
-        REV -->|approved| MERGE([Merge to main])
-        REWORK --> AFTER_ENTRY
+        CI4 -->|passes| CI5
+        CI5["Pipeline unit tests
+        — pipeline-tests job"]
+        CI5 -->|fails| REWORK
+        CI5 -->|passes| DEPLOY
     end
 
-    MERGE --> DEPLOY["GitHub Actions deploy
+    REWORK --> START
+    DEPLOY["GitHub Actions deploy
     — npm run build
     — publish to GitHub Pages"]
     DEPLOY --> LIVE([Live at dangerousrobot.org])
@@ -213,9 +215,10 @@ flowchart TD
 
 Notes:
 
-- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
-- A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. It skips a draft whose verdict differs from the pipeline verdict in its sidecar (`audit.pipeline_verdict`, or `audit.analyst_verdict` on a sidecar written before it existed) unless `human_review.verdict_override` records that change, because only `dr review` records an override (with its reviewer).
-- The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force` on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
+- `dr review` with no arguments walks the drafts awaiting sign-off. Each draft prints its review packet: the evidence parts first, then the verdict chain (the claim, the analyst, the Evaluator, the tie-breaker when one ran, the pipeline's verdict and the rule that set it) and the header facts directly above the key prompt. The `v` key opens the whole packet in `$PAGER`; `r` records a restatement pick; `a` approves. `dr review --format text|json` prints the packets and writes nothing.
+- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --claim <ref> --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). The sign-off needs a terminal and the typed claim slug; an agent never runs it. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the original CLI contract.
+- `--approve` records a verdict that differs from the pipeline verdict in the sidecar (`audit.pipeline_verdict`, or `audit.analyst_verdict` on a sidecar written before it existed) as `human_review.verdict_override`, with the reviewer. It refuses a refreshed claim whose verdict changed unless a one-line `--correction` is given. No command publishes without recording a reviewer.
+- The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force` on a published claim return it to draft and save the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 

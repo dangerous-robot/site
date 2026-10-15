@@ -75,6 +75,10 @@ class IngestorDeps:
     # lookup run in code after the ingest reuses it when the live fetch
     # failed, instead of repeating it.
     wayback_link: str | None = None
+    # One record per key quote the model returned, in its order, filled by
+    # the ingest check (``loop.ingest.check_ingested_source``):
+    # ``{text, found, checked_against, passage}`` plus ``reason`` when not found.
+    quote_checks: list[dict] = field(default_factory=list)
 
 
 # Any timestamp segment (including suffixes like "id_") or none at all, then
@@ -105,6 +109,22 @@ def requested_page_text(deps: IngestorDeps) -> str:
         text for url, text in deps.fetched_text.items()
         if _is_page_or_archive_copy(url, deps.requested_url)
     )
+
+
+def requested_page_kind(deps: IngestorDeps) -> str:
+    """Which texts ``requested_page_text`` joins: ``page``, ``archive`` or ``page-and-archive``.
+
+    ``page`` is the live page (or a prefetched body for it); ``archive`` an
+    archive.org copy. A key quote's ``checked_against`` records this.
+    """
+    kinds = {
+        "archive" if _ARCHIVE_COPY.match(url) else "page"
+        for url in deps.fetched_text
+        if _is_page_or_archive_copy(url, deps.requested_url)
+    }
+    if kinds == {"archive"}:
+        return "archive"
+    return "page-and-archive" if kinds == {"page", "archive"} else "page"
 
 
 def fetch_failure_reason(deps: IngestorDeps) -> str | None:

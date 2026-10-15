@@ -1,6 +1,6 @@
 """A sign-off needs a person at a terminal.
 
-`dr review` (every mode) and the `a` action of `dr review-queue` write a
+`dr review --claim` (every mode) and the `a` key of the `dr review` walkthrough write a
 reviewer name into the audit sidecar, which the site renders as "Reviewed".
 An agent session runs commands with stdin piped, so the gate refuses when
 stdin is not a tty and asks for the claim slug to be typed back before any
@@ -162,7 +162,7 @@ class TestReviewQueueApproveNeedsTerminal:
         md_before, sidecar_before = claim_md.read_bytes(), sidecar.read_bytes()
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--repo-root", str(tmp_path)], input=f"a\n{SLUG}\nq\n",
+            main, ["review", "--repo-root", str(tmp_path)], input=f"a\n{SLUG}\nq\n",
         )
 
         assert "terminal" in result.output
@@ -176,7 +176,7 @@ class TestReviewQueueApproveNeedsTerminal:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input=f"a\ntest-entity/other-claim\na\n{SLUG}\n",
         )
 
@@ -191,7 +191,7 @@ class TestReviewQueueApproveNeedsTerminal:
         claim_md, sidecar = _write_claim(tmp_path)
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--repo-root", str(tmp_path)], input=f"a\n{SLUG}\n",
+            main, ["review", "--repo-root", str(tmp_path)], input=f"a\n{SLUG}\n",
         )
 
         assert result.exit_code == 0, result.output

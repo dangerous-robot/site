@@ -67,7 +67,7 @@ export interface ClaimInfo {
   confidence: Confidence;
   as_of: Date;
   criteria_slug?: string;
-  /** Raw reviewer value from the audit sidecar; null when unreviewed or published by `dr publish`. */
+  /** Raw reviewer value from the audit sidecar; null when unreviewed. */
   reviewer: string | null;
 }
 

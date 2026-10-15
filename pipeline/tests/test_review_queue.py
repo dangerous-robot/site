@@ -1,8 +1,8 @@
-"""Tests for `dr review-queue` and the underlying `find_publication_queue` helper.
+"""Tests for `dr review` (the queue walkthrough) and the underlying `find_publication_queue` helper.
 
 Two layers:
 - Unit tests on `find_publication_queue` confirm queue-membership rules.
-- CliRunner tests on the `dr review-queue` command exercise --format text/json
+- CliRunner tests on the `dr review` command (no `--claim`) exercise --format text/json
   and the interactive single-key actions (a/s/p/q) by piping stdin.
 """
 from __future__ import annotations
@@ -265,25 +265,28 @@ class TestFindPublicationQueue:
 # --------------------------------------------------------------------------- #
 
 class TestReviewQueueNonInteractive:
-    def test_text_format_prints_header_and_one_row(self, tmp_path):
+    def test_text_format_prints_each_queued_packet(self, tmp_path):
+        """`--format text` with no `--claim` prints the whole packet of every queued draft (RE-AV, Review packet)."""
         c = _write_claim(tmp_path, entity="ent-a", slug="kilo")
         _write_sidecar(c)
+        _write_claim(tmp_path, entity="ent-a", slug="published-one", status="published")
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--format", "text", "--repo-root", str(tmp_path)]
+            main, ["review", "--format", "text", "--repo-root", str(tmp_path)]
         )
 
         assert result.exit_code == 0, result.output
-        lines = result.output.strip().splitlines()
-        assert lines[0] == "slug\tstatus\tverdict\tneeds_review\tpath"
-        assert lines[1].startswith("ent-a/kilo\tdraft\t")
+        assert "ent-a/kilo" in result.output
+        assert "published-one" not in result.output
+        for n in (1, 2, 3, 4):
+            assert result.output.count(f"── {n}. ") == 1, result.output
 
     def test_json_format_returns_array(self, tmp_path):
         c = _write_claim(tmp_path, entity="ent-a", slug="lima")
         _write_sidecar(c)
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--format", "json", "--repo-root", str(tmp_path)]
+            main, ["review", "--format", "json", "--repo-root", str(tmp_path)]
         )
 
         assert result.exit_code == 0, result.output
@@ -297,7 +300,7 @@ class TestReviewQueueNonInteractive:
         (tmp_path / "research" / "claims").mkdir(parents=True)
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--format", "json", "--repo-root", str(tmp_path)]
+            main, ["review", "--format", "json", "--repo-root", str(tmp_path)]
         )
 
         assert result.exit_code == 0
@@ -308,7 +311,7 @@ class TestReviewQueueNonInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--format", "yaml", "--repo-root", str(tmp_path)],
+            ["review", "--format", "yaml", "--repo-root", str(tmp_path)],
         )
 
         assert result.exit_code != 0
@@ -328,7 +331,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="q\n",
         )
 
@@ -347,7 +350,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="s\ns\n",  # skip both
         )
 
@@ -367,7 +370,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="a\n",  # only one item; loop ends after approve
         )
 
@@ -389,7 +392,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="a\nq\n",  # try to approve, then quit on the re-prompt
         )
 
@@ -409,7 +412,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="a\nRe-checked: no hosting disclosure.\nq\n",
         )
 
@@ -427,7 +430,7 @@ class TestReviewQueueInteractive:
         _write_sidecar(c, analyst_verdict="false", previous_verdict="false")
 
         result = CliRunner().invoke(
-            main, ["review-queue", "--repo-root", str(tmp_path)], input="a\n",
+            main, ["review", "--repo-root", str(tmp_path)], input="a\n",
         )
 
         assert result.exit_code == 0, result.output
@@ -440,7 +443,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="p\nq\n",  # preview then quit
         )
 
@@ -468,7 +471,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="d\ny\n",
         )
 
@@ -487,7 +490,7 @@ class TestReviewQueueInteractive:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="d\nn\nq\n",
         )
 
@@ -526,7 +529,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\ns\nq\n",
         )
 
@@ -563,7 +566,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\ns\nq\n",
         )
 
@@ -600,7 +603,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\nr\nd\nq\n",  # edit, re-edit on validation fail, then discard, then quit
         )
 
@@ -626,7 +629,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\nd\nq\n",  # edit, then discard at error prompt, then quit
         )
 
@@ -651,7 +654,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\nd\nq\n",  # edit, discard at preview, quit
         )
 
@@ -667,7 +670,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\nq\n",
         )
 
@@ -688,7 +691,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\nq\n",
         )
 
@@ -717,7 +720,7 @@ class TestReviewQueueEditFields:
 
         result = CliRunner().invoke(
             main,
-            ["review-queue", "--repo-root", str(tmp_path)],
+            ["review", "--repo-root", str(tmp_path)],
             input="e\ns\nd\nq\n",  # edit, save (aborted), discard at retry, quit
         )
 
@@ -789,15 +792,18 @@ class TestDeleteFiles:
 # --------------------------------------------------------------------------- #
 
 class TestRefreshedHeader:
+    """The header facts print with part 1 of the packet (`dr review --format text --claim`)."""
+
     def _header(self, tmp_path, *, verdict: str, previous_verdict: str) -> str:
         import click
 
-        from orchestrator.review_queue import _format_header
-
         c = _write_claim(tmp_path, entity="ent-a", slug="refreshed", verdict=verdict)
         _write_sidecar(c, analyst_verdict=verdict, previous_verdict=previous_verdict)
-        [item] = find_publication_queue(tmp_path)
-        return click.unstyle(_format_header(item, 1, 1))
+        result = CliRunner().invoke(
+            main, ["review", "--format", "text", "--claim", "ent-a/refreshed", "--repo-root", str(tmp_path)]
+        )
+        assert result.exit_code == 0, result.output
+        return click.unstyle(result.output)
 
     def test_shows_previous_publication(self, tmp_path):
         header = self._header(tmp_path, verdict="false", previous_verdict="false")
@@ -810,11 +816,11 @@ class TestRefreshedHeader:
         assert "verdict changed; approval will ask for a correction" in header
 
     def test_no_line_for_claims_without_refresh(self, tmp_path):
-        import click
-
-        from orchestrator.review_queue import _format_header
-
         c = _write_claim(tmp_path, entity="ent-a", slug="plain")
         _write_sidecar(c)
-        [item] = find_publication_queue(tmp_path)
-        assert "Was published" not in click.unstyle(_format_header(item, 1, 1))
+        result = CliRunner().invoke(
+            main, ["review", "--format", "text", "--claim", "ent-a/plain", "--repo-root", str(tmp_path)]
+        )
+        assert result.exit_code == 0, result.output
+        assert "── 1. " in result.output
+        assert "Was published" not in result.output

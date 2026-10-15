@@ -102,27 +102,84 @@ _CHAR_MAP = str.maketrans({
 _MAX_ELIDED_CHARS = 300
 _MIN_INTERIOR_FRAGMENT_WORDS = 3
 
+# The passage the review packet prints beside a found quote: the sentence or
+# sentences holding the match plus this much context on each side, cut at
+# word boundaries and never longer than the cap.
+PASSAGE_CONTEXT_CHARS = 120
+PASSAGE_MAX_CHARS = 600
 
-def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
-    """Remove key quotes whose text is not on the page; return the dropped ones.
+NOT_FOUND_REASON = "not found in the fetched page text"
+TOO_FAR_APART_REASON = "ellipsis fragments too far apart"
 
-    Sets ``key_quotes`` to the kept quotes, or None when none are kept. A kept
-    quote wrapped in quotation marks, with or without an attribution after the
-    closing mark, is stored as the text inside the marks (see ``_unwrapped``).
+
+@dataclass(frozen=True)
+class QuoteCheck:
+    """One key quote checked against the page text it claims to come from.
+
+    ``text`` is the quote as it is kept (wrapping marks removed, see
+    ``_unwrapped``) when found, else as given. ``passage`` is the page's own
+    text around the match; ``reason`` says why a quote was not found.
+    """
+
+    text: str
+    found: bool
+    passage: str | None = None
+    reason: str | None = None
+
+
+def check_quote(quote: str, page_text: str) -> QuoteCheck:
+    """The one quote rule: whether ``quote`` is on ``page_text``, and where.
+
+    The ingest check (``apply_quote_checks``), the restater's evidence
+    check (``quote_in_text``) and the review packet all read this.
+    """
+    return check_quotes([quote], page_text, with_passage=True)[0]
+
+
+def quote_in_text(quote: str, text: str) -> bool:
+    """``check_quote(quote, text).found``, without building the passage."""
+    return check_quotes([quote], text)[0].found
+
+
+def apply_quote_checks(source: SourceFile, page_text: str, *, with_passage: bool = False) -> list[QuoteCheck]:
+    """Check each key quote against the page, keep the found ones, and return every check.
+
+    Sets ``key_quotes`` to the kept quotes, or None when none are kept; a
+    source with no key quotes is left as it is. A kept quote wrapped in
+    quotation marks, with or without an attribution after the closing mark,
+    is stored as the text inside the marks (see ``_unwrapped``).
     """
     quotes = source.frontmatter.key_quotes or []
     if not quotes:
         return []
+    checks = check_quotes(quotes, page_text, with_passage=with_passage)
+    source.frontmatter.key_quotes = [c.text for c in checks if c.found] or None
+    return checks
+
+
+def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
+    """``apply_quote_checks``, returning the dropped quotes as given."""
+    return [c.text for c in apply_quote_checks(source, page_text) if not c.found]
+
+
+def check_quotes(quotes: list[str], page_text: str, *, with_passage: bool = False) -> list[QuoteCheck]:
+    """``check_quote`` for each quote, normalizing the page once."""
+    if not quotes:
+        return []
     page = _normalize_page(page_text)
-    kept: list[str] = []
-    dropped: list[str] = []
+    located: tuple[str, list[int]] | None = None
+    out: list[QuoteCheck] = []
     for quote in quotes:
-        if _quote_on_page(quote, page):
-            kept.append(_unwrapped(quote, page))
-        else:
-            dropped.append(quote)
-    source.frontmatter.key_quotes = kept or None
-    return dropped
+        span, reason = _find_on_page(_match_text(_fold(quote)), page)
+        if span is None:
+            out.append(QuoteCheck(text=quote, found=False, reason=reason))
+            continue
+        passage = None
+        if with_passage:
+            located = located or _passage_locator(page_text, page)
+            passage = _passage(*located, span)
+        out.append(QuoteCheck(text=_unwrapped(quote, page), found=True, passage=passage))
+    return out
 
 
 def _unwrapped(quote: str, normalized_page: str) -> str:
@@ -185,33 +242,40 @@ def _inner_marks_pair(text: str, mark: str) -> bool:
     return depth == 0
 
 
-def _quote_on_page(quote: str, normalized_page: str) -> bool:
-    return _text_on_page(_match_text(_fold(quote)), normalized_page)
-
-
 def _text_on_page(text: str, normalized_page: str) -> bool:
     """Whether folded quote text, taken as is, appears on the normalized page."""
+    return _find_on_page(text, normalized_page)[0] is not None
+
+
+def _find_on_page(text: str, normalized_page: str) -> tuple[tuple[int, int] | None, str | None]:
+    """Where folded quote text appears on the normalized page, as ``((start, end), None)``.
+
+    ``(None, reason)`` when it does not; the reason says whether the
+    fragments of an elided quote matched but too far apart.
+    """
     text = _strip_markup(text)
     fragments = [
         f for f in _ELISION.split(" ".join(text.split())) if _WORD.search(f)
     ]
     if not fragments or not _fragments_read_as_excerpt(fragments):
-        return False
+        return None, NOT_FOUND_REASON
     patterns = [_fragment_pattern(f) for f in fragments]
+    reason = NOT_FOUND_REASON
     for first in patterns[0].finditer(normalized_page):
         elided = 0
         position = first.end()
         for pattern in patterns[1:]:
             found = pattern.search(normalized_page, position)
             if found is None:
-                return False
+                return None, reason
             elided += found.start() - position
             position = found.end()
         # Matching each later fragment at its earliest place keeps the elided
         # text as short as it can be for this start.
         if elided <= _MAX_ELIDED_CHARS:
-            return True
-    return False
+            return (first.start(), position), None
+        reason = TOO_FAR_APART_REASON
+    return None, reason
 
 
 def _fragments_read_as_excerpt(fragments: list[str]) -> bool:
@@ -269,3 +333,109 @@ def _normalize_page(text: str) -> str:
     # else one space; see _fragment_pattern for how each is matched.
     text = _strip_markup(_fold(text))
     return re.sub(r"\s+", lambda m: "\n" if "\n" in m.group() else " ", text)
+
+
+# --------------------------------------------------------------------------- #
+# The passage around a match                                                   #
+# --------------------------------------------------------------------------- #
+
+# A sentence ends at ., ! or ? (with any closing marks) before whitespace,
+# or at a blank line.
+_SENTENCE_END = re.compile(r"[.!?][\"')\]]*(?=\s)|\n\s*\n")
+
+
+def _sub_mapped(
+    pattern: re.Pattern[str], text: str, index: list[int], group: int | None,
+) -> tuple[str, list[int]]:
+    """``pattern.sub`` that keeps, for each output character, its index in the folded page.
+
+    Each match is replaced by its ``group`` (or nothing), as the
+    substitutions in ``_strip_markup`` do.
+    """
+    out: list[str] = []
+    out_index: list[int] = []
+    position = 0
+    for m in pattern.finditer(text):
+        out.append(text[position:m.start()])
+        out_index.extend(index[position:m.start()])
+        if group is not None:
+            start, end = m.span(group)
+            out.append(text[start:end])
+            out_index.extend(index[start:end])
+        position = m.end()
+    out.append(text[position:])
+    out_index.extend(index[position:])
+    return "".join(out), out_index
+
+
+def _normalize_mapped(folded: str) -> tuple[str, list[int]]:
+    """``_normalize_page`` of an already folded page, with each character's index in ``folded``."""
+    text, index = folded, list(range(len(folded)))
+    text, index = _sub_mapped(_MARKDOWN_ESCAPE, text, index, 1)
+    text, index = _sub_mapped(_MARKDOWN_IMAGE, text, index, None)
+    text, index = _sub_mapped(_MARKDOWN_LINK, text, index, 1)
+    text, index = _sub_mapped(_MARKDOWN_EMPHASIS, text, index, None)
+    cased: list[str] = []
+    cased_index: list[int] = []
+    for ch, i in zip(text, index):
+        lowered = ch.casefold()
+        cased.append(lowered)
+        cased_index.extend([i] * len(lowered))
+    text, index = "".join(cased), cased_index
+    out: list[str] = []
+    out_index: list[int] = []
+    position = 0
+    for m in re.finditer(r"\s+", text):
+        out.append(text[position:m.start()])
+        out_index.extend(index[position:m.start()])
+        out.append("\n" if "\n" in m.group() else " ")
+        out_index.append(index[m.start()])
+        position = m.end()
+    out.append(text[position:])
+    out_index.extend(index[position:])
+    return "".join(out), out_index
+
+
+def _passage_locator(page_text: str, normalized_page: str) -> tuple[str, list[int]]:
+    """The folded page and, for each normalized character, its index there.
+
+    The map only locates a match in the page's own text; if it ever
+    disagrees with the matcher's text, the passage is cut from the
+    normalized text rather than from the wrong place.
+    """
+    folded = _fold(page_text)
+    mapped, index = _normalize_mapped(folded)
+    if mapped != normalized_page:
+        return normalized_page, list(range(len(normalized_page)))
+    return folded, index
+
+
+def _passage(folded: str, index: list[int], span: tuple[int, int]) -> str:
+    """The page's own text around a match at ``span`` in the normalized page.
+
+    The sentence or sentences holding the match, plus up to
+    ``PASSAGE_CONTEXT_CHARS`` on each side, cut at word boundaries and at
+    most ``PASSAGE_MAX_CHARS`` long, with whitespace runs made one space.
+    """
+    start = index[span[0]]
+    end = index[span[1] - 1] + 1
+
+    window_start = max(0, start - PASSAGE_MAX_CHARS)
+    ends = [m.end() for m in _SENTENCE_END.finditer(folded, window_start, start)]
+    sentence_start = ends[-1] if ends else window_start
+    after = _SENTENCE_END.search(folded, max(start, end - 1), min(len(folded), end + PASSAGE_MAX_CHARS))
+    sentence_end = after.end() if after else min(len(folded), end + PASSAGE_MAX_CHARS)
+
+    lo = max(0, sentence_start - PASSAGE_CONTEXT_CHARS)
+    hi = min(len(folded), sentence_end + PASSAGE_CONTEXT_CHARS)
+    if hi - lo > PASSAGE_MAX_CHARS:
+        room = max(0, PASSAGE_MAX_CHARS - (end - start))
+        lo = max(lo, start - room // 2)
+        hi = min(hi, lo + PASSAGE_MAX_CHARS)
+        lo = max(lo, hi - PASSAGE_MAX_CHARS)
+    # Cut at word boundaries, never into the match itself.
+    while lo < start and lo > 0 and not folded[lo - 1].isspace():
+        lo += 1
+    while hi > end and hi < len(folded) and not folded[hi].isspace():
+        hi -= 1
+    return " ".join(folded[lo:hi].split())[:PASSAGE_MAX_CHARS]

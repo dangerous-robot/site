@@ -2,7 +2,7 @@
 
 Through the public ``loop.ingest_one``: an arXiv paper with a corporate-lab
 author is first-party (``arxiv_corporate_lab``), a key quote not on the
-requested page is dropped (``drop_unfound_quotes`` over
+requested page is dropped (the shared quote rule, ``apply_quote_checks``, over
 ``requested_page_text``, so text from another page cannot vouch for it),
 and a model that never fetched the page is rejected (``fetch_failed``).
 """

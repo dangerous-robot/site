@@ -176,7 +176,24 @@ def _golden(case: str) -> dict:
     )
     _apply_re_ba_differences(golden["sidecar"])
     _apply_re_au_differences(golden["sidecar"], CRITERION_STATEMENT if case == "criterion" else SENTENCE)
+    _apply_re_av_differences(golden["sidecar"])
     return golden
+
+
+def _apply_re_av_differences(sidecar: dict) -> None:
+    """The sidecar differences RE-AV (Review packet) adds, and no others.
+
+    The scorer dropped nothing (``research.rejected: []``); the harness ingest
+    returns no key quotes (``quotes: []`` on every consulted source); and the
+    four harness pages share the host example.org, so each source's
+    ``shared_with`` names the other three in the order the run consulted them
+    (recorded from one run).
+    """
+    order = ["2026/report", "2026/second-report", "2026/third-report", "2026/fourth-report"]
+    sidecar["research"]["rejected"] = []
+    for entry in sidecar["sources_consulted"]:
+        entry["quotes"] = []
+        entry["shared_with"] = [sid for sid in order if sid != entry["id"]]
 
 
 def _apply_re_au_differences(sidecar: dict, statement: str) -> None:

@@ -217,6 +217,9 @@ class VerificationResult(BaseModel):
     # Requested URL -> the page text its ingest fetched, for fresh sources;
     # the coverage check reads it.
     page_text: dict[str, str] = Field(default_factory=dict, exclude=True)
+    # Requested URL -> its key quote checks from the ingest (fresh sources);
+    # the writer stores them as ``sources_consulted[].quotes``.
+    quote_checks: dict[str, list[dict]] = Field(default_factory=dict, exclude=True)
     # Requested URL dropped because it reached a page already kept -> the
     # kept URL. The writer lists ``sources:`` in the researcher's URL order
     # through it.
@@ -234,5 +237,6 @@ class VerificationResult(BaseModel):
         from orchestrator.persistence import _build_sources_consulted
 
         return _build_sources_consulted(
-            self.source_files, cached_sources=self.cached_sources, archive=self.archive
+            self.source_files, cached_sources=self.cached_sources, archive=self.archive,
+            quote_checks=self.quote_checks,
         )

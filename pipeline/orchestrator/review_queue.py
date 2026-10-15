@@ -1,29 +1,30 @@
-"""Review-queue: discover draft claims awaiting human sign-off and walk through them.
+"""The `dr review` walkthrough: find draft claims awaiting sign-off and walk through them.
 
-Phase 1 surfaces a single queue type, "publication" — claims at ``status: draft``
-whose research is complete (sidecar exists) but that have not yet been approved
-by a human (``human_review.reviewed_at`` is null/missing).
-
-Future phases will introduce a queue-type protocol so the same interactive
-loop can drive other queues (blocked claims, stale claims, etc.).
+The queue holds claims at ``status: draft`` whose research is complete
+(sidecar exists) but that a person has not yet approved
+(``human_review.reviewed_at`` is null or missing). Each queued draft is shown
+as its review packet (``orchestrator/packet.py``); the edits a reviewer makes
+here are written by ``orchestrator.persistence``.
 """
 from __future__ import annotations
 
 import os
+import shlex
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import asdict, dataclass, replace
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 import click
 import yaml
 
 from common.content_loader import list_claims
-from common.frontmatter import FlowList, parse_frontmatter, serialize_frontmatter
-from common.sidecar import read_sidecar
+from common.frontmatter import parse_frontmatter
+from common.sidecar import pipeline_verdict_of, read_sidecar
+from orchestrator.persistence import REVIEW_EDITABLE_FIELDS, record_restatement_pick, set_claim_fields
 
 
 @dataclass
@@ -48,6 +49,12 @@ class QueueItem:
     restatement: dict | None = None  # the sidecar's restatement block, when one was written
     # Run id of the run's ``partial`` restate finding, when the restater failed; else "".
     restatement_unavailable: str = ""
+    # The verdict the pipeline settled on (the analyst's, for a sidecar from
+    # before the tie-breaker existed).
+    pipeline_verdict: str = ""
+    # ``{from, to}`` when the claim's verdict differs from the pipeline's with
+    # no reviewer override recorded; approving records it as the reviewer's.
+    unreviewed_override: dict | None = None
 
 
 def _slug_for(claim_path: Path, claims_root: Path) -> str:
@@ -76,24 +83,40 @@ def _build_item(
     ``partial_restate_runs`` are the run ids from ``_partial_restate_runs``;
     a claim whose sidecar names one of them gets ``restatement_unavailable``.
     """
+    item = item_for(claim_path, claims_root, repo_root, partial_restate_runs)
+    # In queue: draft (or legacy status-absent, which item_for reads as draft).
+    if item is None or item.status != "draft":
+        return None
+    review = (read_sidecar(claim_path) or {}).get("human_review") or {}
+    if review.get("reviewed_at"):
+        # Already reviewed; not in queue.
+        return None
+    return item
+
+
+def item_for(
+    claim_path: Path,
+    claims_root: Path,
+    repo_root: Path,
+    partial_restate_runs: set[str] | None = None,
+) -> QueueItem | None:
+    """The QueueItem fields of any claim with a readable frontmatter and a sidecar, queued or not.
+
+    None when the frontmatter does not parse or the research has not run
+    (no sidecar).
+    """
+    from orchestrator.review import unreviewed_verdict_change
+
     try:
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     except Exception:
         return None
 
     status = fm.get("status") or ""
-    # In queue: draft (or legacy status-absent).
-    if status not in ("", "draft"):
-        return None
 
     sidecar = read_sidecar(claim_path)
     if sidecar is None:
         # Research not yet run; not our queue's concern.
-        return None
-
-    review = sidecar.get("human_review") or {}
-    if review.get("reviewed_at"):
-        # Already reviewed; not in queue.
         return None
 
     audit = sidecar.get("audit") or {}
@@ -118,6 +141,7 @@ def _build_item(
     restatement = sidecar.get("restatement") if isinstance(sidecar.get("restatement"), dict) else None
     run_id = str((sidecar.get("pipeline_run") or {}).get("run_id") or "")
     unavailable = run_id if run_id and run_id in (partial_restate_runs or set()) else ""
+    override = unreviewed_verdict_change(fm, sidecar)
 
     return QueueItem(
         claim_slug=_slug_for(claim_path, claims_root),
@@ -137,6 +161,8 @@ def _build_item(
         previous_reviewed_at=str(previous.get("reviewed_at") or ""),
         restatement=restatement,
         restatement_unavailable=unavailable,
+        pipeline_verdict=str(pipeline_verdict_of(audit) or ""),
+        unreviewed_override={"from": override[0], "to": override[1]} if override else None,
     )
 
 
@@ -160,14 +186,12 @@ def find_publication_queue(
 # Interactive loop                                                            #
 # --------------------------------------------------------------------------- #
 
-_ACTIONS = ["a", "d", "e", "s", "p", "o", "q"]
+_ACTIONS = ["a", "d", "e", "s", "p", "o", "r", "v", "q"]
 _PROMPT = (
     "[a]pprove  [d]elete  [e]dit fields  [s]kip  [p]review  "
-    "[o]pen in editor  [q]uit"
+    "[o]pen in editor  [r]estate  [v]iew packet  [q]uit"
 )
-_EMPTY = click.style("—", dim=True)
 
-_EDITABLE_FIELDS = ("title", "takeaway", "seo_title", "tags", "verdict")
 _ALLOWED_VERDICTS = frozenset({
     "true", "mostly-true", "mixed", "mostly-false",
     "false", "unverified", "not-applicable", "",
@@ -201,41 +225,6 @@ def _delete_files(claim_path: Path, sidecar_path: Path, trash_dir: Path | None =
             path.unlink(missing_ok=True)
 
 
-def _format_header(item: QueueItem, index: int, total: int) -> str:
-    prefix = f"── [{index}/{total}] {item.claim_slug} "
-    sep = prefix + "─" * max(4, 72 - len(prefix))
-
-    verdict_upper = item.verdict.upper()
-    agreement = ""
-    if item.analyst_verdict or item.auditor_verdict:
-        agreement = f"  (analyst: {item.analyst_verdict} / auditor: {item.auditor_verdict})"
-    flag = click.style("  ⚠ needs review", fg="yellow") if item.needs_review else ""
-    verdict_line = click.style(verdict_upper, bold=True) + agreement + flag
-
-    def row(label: str, value: str) -> str:
-        return f"  {label:<9} {value}"
-
-    refresh_rows = []
-    if item.previous_verdict:
-        was = f"Was published: {item.previous_verdict} (reviewed {item.previous_reviewed_at or 'unknown'})"
-        if item.verdict != item.previous_verdict:
-            was += click.style("  verdict changed; approval will ask for a correction", fg="yellow")
-        refresh_rows.append(row("", was))
-
-    return "\n".join([
-        "",
-        sep,
-        row("Verdict", verdict_line),
-        *refresh_rows,
-        row("Title", item.title),
-        row("Takeaway", item.takeaway or _EMPTY),
-        row("SEO title", item.seo_title or _EMPTY),
-        row("Tags", ", ".join(item.tags) if item.tags else _EMPTY),
-        row("Sources", f"{item.sources_count} cited · {item.sources_ingested} ingested"),
-        "",
-    ])
-
-
 def _resolve_editor() -> list[str]:
     """Editor command for the `o` action. Honors $VISUAL, then $EDITOR, then `code`."""
     for env_var in ("VISUAL", "EDITOR"):
@@ -247,18 +236,25 @@ def _resolve_editor() -> list[str]:
     return []
 
 
-def _preview(claim_path: Path) -> None:
-    """Print the claim file to stdout, paged through `less` if the terminal is tall enough."""
-    text = claim_path.read_text(encoding="utf-8")
-    pager = os.environ.get("PAGER") or ("less" if shutil.which("less") else None)
-    if pager and sys.stdout.isatty():
+def _stdout_is_tty() -> bool:
+    return sys.stdout.isatty()
+
+
+def _page_text(text: str) -> None:
+    """Show ``text`` through ``$PAGER`` (else ``less``) at a terminal; print it otherwise or when the pager fails."""
+    if _stdout_is_tty():
         try:
-            proc = subprocess.run([pager], input=text, text=True, check=False)
+            proc = subprocess.run(shlex.split(os.environ.get("PAGER") or "less"), input=text, text=True, check=False)
             if proc.returncode == 0:
                 return
-        except FileNotFoundError:
+        except (FileNotFoundError, ValueError):
             pass
     click.echo(text)
+
+
+def _preview(claim_path: Path) -> None:
+    """Show the claim file, paged at a terminal."""
+    _page_text(claim_path.read_text(encoding="utf-8"))
 
 
 def _open_in_editor(claim_path: Path) -> None:
@@ -299,7 +295,7 @@ def _run_editor_blocking(path: Path) -> int:
 
 def _build_edit_buffer(fm: dict) -> str:
     subset: dict = {}
-    for key in _EDITABLE_FIELDS:
+    for key in REVIEW_EDITABLE_FIELDS:
         value = fm.get(key, "")
         if key == "tags":
             value = list(value) if isinstance(value, list) else []
@@ -321,11 +317,11 @@ def _parse_edit_buffer(text: str) -> dict:
 
 
 def _validate_edit(data: dict) -> None:
-    unknown = set(data) - set(_EDITABLE_FIELDS)
+    unknown = set(data) - set(REVIEW_EDITABLE_FIELDS)
     if unknown:
         raise ValueError(
             f"Unknown fields not allowed: {sorted(unknown)}. "
-            f"Editable: {list(_EDITABLE_FIELDS)}."
+            f"Editable: {list(REVIEW_EDITABLE_FIELDS)}."
         )
     verdict = data.get("verdict", "")
     if not isinstance(verdict, str) or verdict not in _ALLOWED_VERDICTS:
@@ -344,19 +340,6 @@ def _validate_edit(data: dict) -> None:
         raise ValueError("tags must be a list of strings.")
 
 
-def _apply_edits(claim_path: Path, edits: dict) -> None:
-    text = claim_path.read_text(encoding="utf-8")
-    fm, body = parse_frontmatter(text)
-    for key in _EDITABLE_FIELDS:
-        if key not in edits:
-            continue
-        if key == "tags":
-            fm[key] = FlowList(edits[key])
-        else:
-            fm[key] = edits[key]
-    claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
-
-
 def _preview_item(original: QueueItem, edits: dict) -> QueueItem:
     return replace(
         original,
@@ -368,13 +351,10 @@ def _preview_item(original: QueueItem, edits: dict) -> QueueItem:
     )
 
 
-def _edit_fields(
-    item: QueueItem,
-    claim_path: Path,
-    index: int,
-    total: int,
-) -> QueueItem | None:
+def _edit_fields(item: QueueItem, claim_path: Path) -> QueueItem | None:
     """Drive the edit -> preview -> save loop. Returns updated item on save, None on discard."""
+    from orchestrator.packet import render_header_facts
+
     initial_text = claim_path.read_text(encoding="utf-8")
     fm, _ = parse_frontmatter(initial_text)
     pre_mtime = claim_path.stat().st_mtime_ns
@@ -421,7 +401,7 @@ def _edit_fields(
             continue
 
         updated = _preview_item(item, edits)
-        click.echo(_format_header(updated, index, total))
+        click.echo("\n".join(["", *render_header_facts(updated, styled=True), ""]))
         choice = click.prompt(
             "[s]ave  [r]e-edit  [d]iscard",
             type=click.Choice(["s", "r", "d"], case_sensitive=False),
@@ -449,8 +429,42 @@ def _edit_fields(
             pre_mtime = claim_path.stat().st_mtime_ns
             continue
 
-        _apply_edits(claim_path, edits)
+        set_claim_fields(claim_path, edits)
         return updated
+
+
+def _pick_restatement(item: QueueItem, claim_path: Path) -> None:
+    """The ``r`` key: list the restatement candidates and record the reviewer's pick.
+
+    Runs nothing: it prints the ``dr draft --restates`` command to run after
+    the walkthrough.
+    """
+    if item.restatement_unavailable:
+        click.echo(f"Restatement unavailable (finding {item.restatement_unavailable})")
+        return
+    candidates = [c for c in (item.restatement or {}).get("candidates") or [] if isinstance(c, dict)]
+    if not candidates:
+        click.echo("No restatement candidates for this claim.")
+        return
+    for c in candidates:
+        click.echo(
+            f"  #{c.get('rank')} {c.get('expected_verdict', '')} ({c.get('expected_confidence', '')}) "
+            f"decisiveness {c.get('decisiveness', '?')}/4  {c.get('text', '')}"
+        )
+    answer = click.prompt("Candidate number (blank to cancel)", default="", show_default=False).strip()
+    if not answer:
+        return
+    ranks = {str(c.get("rank")): c.get("rank") for c in candidates}
+    if answer not in ranks:
+        click.echo(f"No candidate {answer}.")
+        return
+    n = ranks[answer]
+    try:
+        record_restatement_pick(claim_path, n)
+    except ValueError as exc:
+        click.echo(f"Could not record the pick: {exc}", err=True)
+        return
+    click.echo(f"Picked {n}. After the walkthrough, run: dr draft --restates {item.claim_slug} --pick {n}")
 
 
 def run_interactive(
@@ -459,27 +473,48 @@ def run_interactive(
     *,
     trash_dir: Path | None = None,
 ) -> None:
-    """Walk the operator through the queue. Returns when they quit or the queue empties."""
+    """Walk the operator through the queue. Returns when they quit or the queue empties.
+
+    Each draft prints its review packet: parts 2 to 4 first, then the item
+    line, the verdict chain and the header facts directly above the key
+    prompt. After a key that returns to the same draft, only that bottom
+    block is printed again, rebuilt from disk.
+    """
     from common.sidecar import sidecar_path_for
+    from orchestrator.packet import build_packet, item_line, render_bottom, render_full, render_upper
     from orchestrator.review import approve_claim, refresh_verdict_change, require_terminal
 
     if not items:
         click.echo("Queue is empty: no draft claims awaiting review.")
         return
 
+    claims_root = repo_root / "research" / "claims"
+    partial_runs = _partial_restate_runs(repo_root)
     total = len(items)
     i = 0
+    shown = -1
     while i < total:
         item = items[i]
-        click.echo(_format_header(item, i + 1, total))
+        claim_path = repo_root / item.path
+        try:
+            packet = build_packet(claim_path, repo_root, partial_restate_runs=partial_runs)
+        except (ValueError, OSError) as exc:
+            # The claim changed under the walkthrough (the `o` editor returns
+            # at once): say so and still take a key, so it can be fixed or skipped.
+            packet = None
+            click.echo(f"\n{item_line(item.claim_slug, i + 1, total)}")
+            click.echo(f"Could not read the packet: {exc}; [o]pen it to fix or [s]kip")
+        if packet is not None:
+            if shown != i:
+                click.echo(render_upper(packet))
+                shown = i
+            click.echo(render_bottom(packet, i + 1, total))
         action = click.prompt(
             _PROMPT + "  ",
             type=click.Choice(_ACTIONS, case_sensitive=False),
             show_choices=False,
             default="s",
         ).lower()
-
-        claim_path = repo_root / item.path
 
         if action == "q":
             return
@@ -489,13 +524,23 @@ def run_interactive(
         if action == "p":
             _preview(claim_path)
             continue  # re-prompt the same item
+        if action == "v":
+            if packet is None:
+                click.echo("No packet to view: the claim does not read.")
+            else:
+                _page_text(render_full(packet))
+            continue
         if action == "o":
             _open_in_editor(claim_path)
             continue  # re-prompt; operator returns when ready
+        if action == "r":
+            _pick_restatement(item, claim_path)
+            items[i] = item_for(claim_path, claims_root, repo_root, partial_runs) or item
+            continue
         if action == "e":
-            updated = _edit_fields(item, claim_path, i + 1, total)
+            updated = _edit_fields(item, claim_path)
             if updated is not None:
-                items[i] = updated
+                items[i] = item_for(claim_path, claims_root, repo_root, partial_runs) or updated
                 click.echo(f"Saved edits to {item.claim_slug}")
             continue
         if action == "a":
@@ -539,23 +584,3 @@ def run_interactive(
             continue
 
     click.echo("\nQueue done.")
-
-
-# --------------------------------------------------------------------------- #
-# Non-interactive output helpers                                              #
-# --------------------------------------------------------------------------- #
-
-def format_table(items: list[QueueItem]) -> str:
-    """Tab-separated rows: slug, status, verdict, needs_review, path. One header line."""
-    lines = ["slug\tstatus\tverdict\tneeds_review\tpath"]
-    for item in items:
-        lines.append(
-            f"{item.claim_slug}\t{item.status}\t{item.verdict}\t"
-            f"{'yes' if item.needs_review else 'no'}\t{item.path}"
-        )
-    return "\n".join(lines)
-
-
-def to_json_records(items: list[QueueItem]) -> list[dict]:
-    """Return JSON-serializable dicts (one per queue item)."""
-    return [asdict(item) for item in items]

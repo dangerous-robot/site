@@ -38,8 +38,9 @@ from common.models import (
 from common.source_classification import (
     classify_source_type,
     independence_for_source_type,
+    newswire_origin,
 )
-from common.canonical_url import canonical_key, same_resource
+from common.canonical_url import canonical_host, canonical_key, same_resource
 from common.templates import normalize_title
 from common.utils import host_token, slugify
 from ingestor.models import SourceFile
@@ -665,6 +666,7 @@ def _build_sources_consulted(
     source_files: list[tuple[str, SourceFile]] | None,
     cached_sources: list[tuple[str, str, dict]] | None = None,
     archive: dict[str, dict] | None = None,
+    quote_checks: dict[str, list[dict]] | None = None,
 ) -> list[dict]:
     """Build the sources_consulted list for an audit sidecar.
 
@@ -677,8 +679,15 @@ def _build_sources_consulted(
 
     ``archive`` (requested URL -> ``{status, error?}``) adds the archive
     lookup record to fresh entries; cached entries were not looked up.
+
+    Every entry carries ``quotes``: a fresh source's key quote checks from
+    ``quote_checks`` (requested URL -> records), a cached source's stored
+    key quotes marked ``not-rechecked``. ``shared_with`` names the other
+    entries on the same canonical host or from the same newswire origin,
+    and is left out when there are none.
     """
     result: list[dict] = []
+    publishers: list[str] = []
     seen_ids: set[str] = set()
 
     for url, source_id, sd in cached_sources or []:
@@ -691,8 +700,13 @@ def _build_sources_consulted(
                 "url": url,
                 "title": sd.get("title", ""),
                 "ingested": True,
+                "quotes": [
+                    {"text": q, "found": None, "checked_against": "not-rechecked", "passage": None}
+                    for q in sd.get("key_quotes") or [] if isinstance(q, str)
+                ],
             }
         )
+        publishers.append(str(sd.get("publisher") or ""))
 
     for url, sf in source_files or []:
         source_id = f"{sf.year}/{sf.slug}"
@@ -707,7 +721,19 @@ def _build_sources_consulted(
         }
         if archive and url in archive:
             entry["archive"] = dict(archive[url])
+        entry["quotes"] = [dict(q) for q in (quote_checks or {}).get(url, [])]
         result.append(entry)
+        publishers.append(sf.frontmatter.publisher or "")
+
+    hosts = [canonical_host(e["url"]) for e in result]
+    origins = [newswire_origin(p) for p in publishers]
+    for i, entry in enumerate(result):
+        shared = [
+            other["id"] for k, other in enumerate(result)
+            if k != i and ((hosts[i] and hosts[k] == hosts[i]) or (origins[i] and origins[k] == origins[i]))
+        ]
+        if shared:
+            entry["shared_with"] = shared
     return result
 
 
@@ -757,8 +783,8 @@ def _refresh_block(
 
     A pending block carries forward unchanged, so a second refresh before
     re-approval does not replace the published state with the unapproved one.
-    It also wins over a new snapshot: approval, archiving and ``dr publish``
-    never leave a block on a published claim, so a published claim with one
+    It also wins over a new snapshot: approval and archiving never leave a
+    block on a published claim, so a published claim with one
     is a refresh that wrote its sidecar and then failed to write the claim,
     and that sidecar's ``human_review`` is already reset.
     """
@@ -1436,6 +1462,31 @@ def set_claim_corrections(claim_path: Path, entries: list[dict]) -> None:
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 
+# The claim fields a reviewer edits in the ``dr review`` walkthrough (``e`` key).
+REVIEW_EDITABLE_FIELDS = ("title", "takeaway", "seo_title", "tags", "verdict")
+
+
+def set_claim_fields(claim_path: Path, edits: dict) -> None:
+    """Write the reviewer's edits to the fields in ``REVIEW_EDITABLE_FIELDS``, keeping everything else.
+
+    Raises ``ValueError`` before any write when ``edits`` names another key.
+    ``tags`` is written as a flow list.
+    """
+    unknown = sorted(set(edits) - set(REVIEW_EDITABLE_FIELDS))
+    if unknown:
+        raise ValueError(f"not a review-editable claim field: {unknown}; editable: {list(REVIEW_EDITABLE_FIELDS)}")
+    text = claim_path.read_text(encoding="utf-8")
+    fm, body = parse_frontmatter(text)
+    for key in REVIEW_EDITABLE_FIELDS:
+        if key not in edits:
+            continue
+        if key == "tags":
+            fm[key] = FlowList(edits[key])
+        else:
+            fm[key] = edits[key]
+    claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+
+
 def set_claim_criterion(claim_path: Path, slug: str) -> None:
     """Add a ``criteria_slug`` line to a claim's frontmatter; every other byte is unchanged.
 
@@ -1537,7 +1588,7 @@ def load_findings(repo_root: Path, include_closed: bool = False) -> list["Findin
 
     out: list[Finding] = []
     for path in _finding_files(repo_root):
-        # One bad file must not stop `dr findings` or `dr review-queue`.
+        # One bad file must not stop `dr findings` or `dr review`.
         try:
             data = yaml.safe_load(path.read_text(encoding="utf-8"))
             finding = Finding.from_dict(data) if isinstance(data, dict) else None

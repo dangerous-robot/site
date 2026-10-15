@@ -17,11 +17,9 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
 3. **Claim** -- `dr draft` runs the loop on a sentence (typed, or a criterion's sentence for an entity) and stores it as the claim's `statement`. The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
-4. **Review** -- The change goes through a pull request. CI runs the quality gates (see below).
-5. **Publish** -- On merge to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
-6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; bare `dr review` records a sign-off without changing status.
-
-A separate operator command, `dr publish`, performs a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. Use it for backfills (e.g., a release-cut auto-publish); use `dr review --approve` for human-reviewed publication.
+4. **Review** -- A person runs `dr review`, which shows each draft's review packet (the verdict chain, every key quote beside its page passage, source independence, the searches and the rejected candidates) and records the sign-off. The commit goes to main; the pre-commit hook and CI run the quality gates (see below).
+5. **Publish** -- On a push to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
+6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; `dr review --claim <ref>` without `--approve` or `--archive` records a sign-off without changing status.
 
 ## Agent Roles
 
@@ -82,14 +80,15 @@ Operator-visible fields on `VerifyConfig` (`pipeline/loop/spec.py`) controlling 
 
 ## Quality Gates
 
-PRs to `main` run a CI workflow (`.github/workflows/ci.yml`) with four checks across two jobs:
+Every push to `main` (the deploy workflow calls it before publishing) and every PR to `main` run a CI workflow (`.github/workflows/ci.yml`) whose three jobs (`check`, `lint-content`, `pipeline-tests`) include these five checks:
 
 1. **Astro build** (`npm run build`) -- Validates all content against Zod schemas. A claim with a missing required field, invalid verdict value, or malformed date will fail the build.
 2. **Markdown lint** (`npm run lint:md`) -- Runs `markdownlint-cli2` against `research/**/*.md`.
-3. **Citation integrity** (`npm run check:citations`) -- Verifies every source slug in a claim's `sources` array resolves to an existing file under `research/sources/`. Catches broken references before merge.
-4. **Content lint** (`dr lint --severity error`) -- Separate `lint-content` CI job that runs static content checks (no LLM, no network) and annotates errors on the PR. Backed by `pipeline/linter/`.
+3. **Citation integrity** (`npm run check:citations`) -- Verifies every source slug in a claim's `sources` array resolves to an existing file under `research/sources/`. Catches broken references before deploy.
+4. **Content lint** (`dr lint --severity error`) -- Separate `lint-content` CI job that runs static content checks (no LLM, no network) and annotates errors on a PR. Backed by `pipeline/linter/`.
+5. **Pipeline unit tests** (`uv run python -m pytest -m 'not acceptance'` in `pipeline/`) -- Separate `pipeline-tests` CI job.
 
-All four must pass. The first three are also available locally via `npm run check`; the fourth runs locally via `uv run dr lint`.
+All five must pass. The first three are also available locally via `npm run check`; the fourth runs locally via `uv run dr lint`, the fifth via `inv test`.
 
 ### What the gates do NOT currently check
 

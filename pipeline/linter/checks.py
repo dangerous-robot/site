@@ -210,7 +210,7 @@ def check_refresh_pending_review(
                 f'refreshed claim was published as "{previous.get("verdict")}" '
                 f"(reviewed {reviewed}) and has not been re-approved"
             ),
-            hint="run `dr review-queue` and approve before committing the refresh",
+            hint="run `dr review` and approve before committing the refresh",
         ))
     return issues
 

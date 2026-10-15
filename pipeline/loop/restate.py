@@ -20,6 +20,7 @@ from pathlib import Path
 from common.frontmatter import parse_frontmatter
 from common.models import Confidence, FailureInfo, Verdict, VerificationLevel, resolve_model
 from common.utils import host_matches, url_host
+from ingestor.validation import quote_in_text
 from loop.analyse import _failure_from_exc, _run_agent_once
 from loop.coverage import _STOP_WORDS, _words
 from loop.restater.models import RestateBundle, RestatementProposal, RestateSource, RestaterDeps
@@ -209,21 +210,16 @@ def _restate_source(sd: dict, marker: str) -> RestateSource:
 # --------------------------------------------------------------------------- #
 
 
-def _collapse(text: str) -> str:
-    return " ".join(text.split()).lower()
-
-
-def _quote_found(quote: str, sd: dict) -> bool:
-    needle = _collapse(quote)
-    if not needle:
-        return False
+def _source_fields(sd: dict) -> list[str]:
     fields = [sd.get("title"), sd.get("summary"), *(sd.get("key_quotes") or []), sd.get("body")]
-    return any(needle in _collapse(f) for f in fields if isinstance(f, str))
+    return [f for f in fields if isinstance(f, str)]
 
 
 def _refs(refs, sources_by_id: dict[str, dict]) -> list[dict]:
+    # One quote rule for the ingest check and the restater (``quote_in_text``).
     return [
-        {"source": r.source, "quote": r.quote, "quote_verified": _quote_found(r.quote, sources_by_id[r.source]),
+        {"source": r.source, "quote": r.quote,
+         "quote_verified": any(quote_in_text(r.quote, f) for f in _source_fields(sources_by_id[r.source])),
          "note": r.note}
         for r in refs
         if r.source in sources_by_id

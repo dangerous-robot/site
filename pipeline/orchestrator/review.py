@@ -1,4 +1,4 @@
-"""Shared `approve_claim` helper used by `dr review` and `dr review-queue`."""
+"""Shared `approve_claim` helper used by `dr review --claim` and the `a` key of the `dr review` walkthrough."""
 from __future__ import annotations
 
 import datetime
@@ -39,6 +39,36 @@ def claim_slug_for(claim_path: Path) -> str:
         if ancestor.name == "claims" and ancestor.parent.name == "research":
             return claim_path.relative_to(ancestor).with_suffix("").as_posix()
     return f"{claim_path.parent.name}/{claim_path.stem}"
+
+
+def _pick_awaits_restatement(claim_path: Path, sidecar: dict) -> bool:
+    """True when the sidecar records a pick and no claim restating this one exists yet.
+
+    ``dr draft --restates <ref> --pick <n>`` reads the candidate from this
+    claim's ``restatement`` block, so approving or archiving must not remove
+    the block between the ``r`` key and that run.
+    """
+    block = sidecar.get("restatement")
+    if not isinstance(block, dict) or block.get("picked") is None:
+        return False
+    claims_root = next(
+        (a for a in claim_path.parents if a.name == "claims" and a.parent.name == "research"),
+        None,
+    )
+    if claims_root is None:
+        return True
+    ref = claim_slug_for(claim_path)
+    for path in claims_root.rglob("*.audit.yaml"):
+        text = path.read_text(encoding="utf-8")
+        if "restates:" not in text:
+            continue
+        try:
+            other = yaml.safe_load(text) or {}
+        except yaml.YAMLError:
+            continue
+        if isinstance(other, dict) and other.get("restates") == ref:
+            return False
+    return True
 
 
 def require_terminal() -> None:
@@ -274,10 +304,12 @@ def approve_claim(
     review["verdict_override"] = _verdict_override(fm, sidecar_data)
     # Approving or archiving ends the refresh and retires the restatement
     # candidates (the claim goes live or away as it stands); a sign-off alone
-    # leaves both. ``restates`` is the claim's link to its original and stays.
+    # leaves both. A recorded pick keeps the candidates until a claim restates
+    # this one. ``restates`` is the claim's link to its original and stays.
     if mode in ("approve", "archive"):
         sidecar_data.pop("refresh", None)
-        sidecar_data.pop("restatement", None)
+        if not _pick_awaits_restatement(claim_path, sidecar_data):
+            sidecar_data.pop("restatement", None)
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
