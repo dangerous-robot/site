@@ -19,7 +19,7 @@ Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain ma
 3. **Claim** -- `dr draft` runs the loop on a sentence (typed, or a criterion's sentence for an entity) and stores it as the claim's `statement`. The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
 4. **Review** -- A person runs `dr review`, which shows each draft's review packet (the verdict chain, every key quote beside its page passage, source independence, the searches and the rejected candidates) and records the sign-off. The commit goes to main; the pre-commit hook and CI run the quality gates (see below).
 5. **Publish** -- On a push to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
-6. **Maintain** -- Claims have a `recheck_cadence_days` field. When a claim is due for review, its sources and verdict should be re-evaluated and `as_of` updated. This step is currently manual. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; `dr review --claim <ref>` without `--approve` or `--archive` records a sign-off without changing status.
+6. **Maintain** -- Claims have a `recheck_cadence_days` field. A claim is due when its `next_recheck_due` (written by the pipeline on every claim write) has passed or, without one, when `as_of` plus the cadence has passed. `dr recheck --due --dry-run` lists the due claims; `dr recheck --due` (or `--claim <ref>`) re-runs them into pending drafts under `research/pending/`, leaving the live claim up, and `dr review` promotes a pending draft on `--approve`. A person starts the recheck; no scheduler does yet. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; `dr review --claim <ref>` without `--approve` or `--archive` records a sign-off without changing status.
 
 ## Agent Roles
 
@@ -40,13 +40,14 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 
 ### Citation Auditor tools
 
-The Citation Auditor responsibility is covered by three separate tools:
+The Citation Auditor responsibility is covered by four separate tools:
 
 | Tool | Scope |
 |------|-------|
 | `scripts/check-citations.ts` | Broken source refs (claim `sources` slugs that do not resolve to a file). Runs in CI. |
 | `dr lint` | Missing required fields, orphaned claims, stale `next_recheck_due` dates. No LLM, no network. |
 | `dr step-audit` (formerly `dr reassess`, now a hidden deprecated alias) | Verdict re-evaluation: re-runs the Evaluator agent against current sources to flag claims whose published verdict may no longer hold. |
+| `dr recheck` | Due-date selection and re-run: `--due` re-runs every published claim whose recheck is due into a pending draft, `--claim <ref>` does one, and `--sources <id>...` re-checks source files' archive links and key quotes. |
 
 ## Content Rules
 
@@ -67,7 +68,7 @@ Claims carry a `recheck_cadence_days` field (default: 60 days) that signals when
 | Pricing claims | 14-30 days | Prices change frequently |
 | Policy/regulation claims | 90-180 days | Policy moves slowly |
 
-There is no automated scheduling for reviews today. The Citation Auditor role is intended to flag stale claims, but this is manual. Automated scheduling is a backlog item (see `docs/UNSCHEDULED.md`).
+The writer sets `next_recheck_due` to `as_of` plus the cadence on every claim write. `dr recheck --due` re-runs every due claim into a pending draft for sign-off at `dr review`; the live claim stays up until a person promotes the draft. Nothing runs `dr recheck` on a schedule yet: the procedure a scheduled job needs is in `docs/runbook.md` § Scheduled rechecks, and the job itself is a backlog item (see `docs/UNSCHEDULED.md`).
 
 ## Pipeline configuration knobs
 
@@ -80,7 +81,7 @@ Operator-visible fields on `VerifyConfig` (`pipeline/loop/spec.py`) controlling 
 
 ## Quality Gates
 
-Every push to `main` (the deploy workflow calls it before publishing) and every PR to `main` run a CI workflow (`.github/workflows/ci.yml`) whose three jobs (`check`, `lint-content`, `pipeline-tests`) include these five checks:
+Every push to `main` (the deploy workflow calls it before publishing) and every PR to `main` run a CI workflow (`.github/workflows/ci.yml`) whose four jobs (`check`, `e2e`, `lint-content`, `pipeline-tests`) include these five checks (the `e2e` job also runs the browser tests, `npm run test:e2e`):
 
 1. **Astro build** (`npm run build`) -- Validates all content against Zod schemas. A claim with a missing required field, invalid verdict value, or malformed date will fail the build.
 2. **Markdown lint** (`npm run lint:md`) -- Runs `markdownlint-cli2` against `research/**/*.md`.
@@ -92,7 +93,7 @@ All five must pass. The first three are also available locally via `npm run chec
 
 ### What the gates do NOT currently check
 
-- Whether `as_of` is current (no staleness detection in CI)
+- Whether `as_of` is current (no staleness detection in CI; `dr recheck --due --dry-run` lists the due claims locally)
 - Whether `archived_url` is present on sources
 - Whether source summaries exceed the 30-word content rule (only the 200-char schema limit is enforced)
 - Link validity (URLs are not fetched)

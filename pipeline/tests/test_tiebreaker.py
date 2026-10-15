@@ -562,11 +562,16 @@ def test_step_audit_write_gives_each_claim_its_own_finding(tmp_path) -> None:
     assert sorted(f["claim_ref"].rsplit("/", 1)[-1] for f in findings) == ["first", "second"]
 
 
-def test_step_audit_write_leaves_a_published_claims_sidecar_when_the_verdict_moves(tmp_path) -> None:
-    """Writing would leave lint's verdict-sidecar-mismatch error on a published claim."""
+def test_step_audit_write_in_a_batch_grades_a_published_claim_but_writes_no_sidecar(tmp_path) -> None:
+    """An --entity batch grades a published claim, keeps its finding and writes no live sidecar.
+
+    Since RE-AW (Recheck) the guard holds whatever the verdict does (this
+    fixture splits it); --write with --claim on a published claim is refused
+    before the model call (test_recheck.py).
+    """
     claim_dir = _step_audit_repo(tmp_path, {"claim": {"status": "published"}})
     before = (claim_dir / "claim.audit.yaml").read_text(encoding="utf-8")
-    result = _step_audit(tmp_path, "--claim", "example/claim")
+    result = _step_audit(tmp_path, "--entity", "example")
 
     assert result.exit_code == 0, result.output
     assert "Not written" in result.output

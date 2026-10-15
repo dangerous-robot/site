@@ -203,11 +203,16 @@ def _search_of(sidecar: dict) -> dict:
         }
         for sq in sidecar.get("sub_questions") or [] if isinstance(sq, dict)
     ]
+    dropped = research.get("urls_dropped")
     return {
         "sub_questions": sub_questions,
         "queries": [str(q) for q in research.get("queries") or []],
         "scorer_rationale": str(research.get("scorer_rationale") or ""),
         "rejected": [r for r in research.get("rejected") or [] if isinstance(r, dict)],
+        # A sidecar written before the scorer's rejections were recorded has
+        # no ``rejected`` key: its empty list is not "nothing rejected".
+        "rejected_recorded": "rejected" in research,
+        "urls_dropped": dropped if isinstance(dropped, int) and not isinstance(dropped, bool) else None,
     }
 
 
@@ -278,7 +283,7 @@ def _chain_lines(chain: dict, *, cut: bool = True) -> list[str]:
 
 
 def render_header_facts(item: QueueItem, *, styled: bool = False, gaps: list[str] | None = None) -> list[str]:
-    """The header facts printed with part 1: verdict, a pending refresh or override, the fields a reviewer edits."""
+    """The header facts printed with part 1: verdict, a pending recheck, refresh or override, the fields a reviewer edits."""
     def style(text: str, **kw) -> str:
         return click.style(text, **kw) if styled else text
 
@@ -297,6 +302,20 @@ def render_header_facts(item: QueueItem, *, styled: bool = False, gaps: list[str
         verdict_row = verdict_row.replace(item.verdict.upper(), click.style(item.verdict.upper(), bold=True), 1)
         if flag:
             verdict_row = verdict_row.replace(flag, click.style(flag, fg="yellow"), 1)
+
+    recheck_rows = []
+    if item.recheck:
+        r = item.recheck
+        if r.get("verdict_changed"):
+            text = f"verdict changed: {r.get('live_verdict')} to {r.get('pending_verdict')}"
+            recheck_rows.append(cut("Recheck", text) if not styled else row("Recheck", style(text, fg="yellow")))
+        else:
+            recheck_rows.append(cut("Recheck", (
+                f"verdict unchanged, {r.get('quotes_found', 0)} of {r.get('quotes_checked', 0)} quotes still found, "
+                f"{r.get('refetched', 0)} sources re-fetched"
+            )))
+            if r.get("quotes_not_rechecked"):
+                recheck_rows.append(cut("", f"{r['quotes_not_rechecked']} quotes not rechecked (source inside its cadence)"))
 
     refresh_rows = []
     if item.previous_verdict:
@@ -318,6 +337,7 @@ def render_header_facts(item: QueueItem, *, styled: bool = False, gaps: list[str
 
     return [
         verdict_row,
+        *recheck_rows,
         *refresh_rows,
         *override_rows,
         cut("Title", item.title) if item.title else row("Title", empty),
@@ -343,6 +363,18 @@ def _part1(packet: dict, *, styled: bool, cut: bool = True) -> list[str]:
     ]
 
 
+_QUOTE_MARKS = ('"', "\u201c", "\u201d")
+
+
+def _quoted(text: object) -> str:
+    """``text`` in double quote marks, unless the stored text already opens and closes with one."""
+    text = str(text)
+    stripped = text.strip()
+    if len(stripped) > 1 and stripped[0] in _QUOTE_MARKS and stripped[-1] in _QUOTE_MARKS:
+        return stripped
+    return f'"{text}"'
+
+
 def _part2(packet: dict) -> list[str]:
     lines = [_heading(2)]
     for s in packet["quotes"]:
@@ -350,19 +382,19 @@ def _part2(packet: dict) -> list[str]:
         missing = "" if s["written"] else " (no source file)"
         lines.append(f"{mark} {s['source']}: {s['title']}{missing}")
         for q in s["quotes"]:
-            text = q["text"]
+            text = _quoted(q["text"])
             if q["found"] is True:
-                lines.append(f'  [found] "{text}"')
+                lines.append(f"  [found] {text}")
                 if q["passage"]:
                     lines.append(f"    passage: {q['passage']}")
                 if q["fragment_link"]:
                     lines.append(f"    open: {q['fragment_link']}")
             elif q["found"] is False:
-                lines.append(f'  [not found] "{text}": {q["reason"] or "no reason recorded"}')
+                lines.append(f'  [not found] {text}: {q["reason"] or "no reason recorded"}')
             elif q["checked_against"] == "not-recorded":
-                lines.append(f'  [not recorded] "{text}"')
+                lines.append(f"  [not recorded] {text}")
             else:
-                lines.append(f'  [{q["checked_against"] or "not checked"}] "{text}"')
+                lines.append(f'  [{q["checked_against"] or "not checked"}] {text}')
     if not packet["quotes"]:
         lines.append("No sources consulted.")
     return lines
@@ -394,6 +426,10 @@ def _part4(packet: dict) -> list[str]:
     lines.extend(f"  {q}" for q in search["queries"] if q not in listed)
     rationale = " ".join(search["scorer_rationale"].split())
     lines.append(f"Scorer: {rationale[:_SCORER_CHARS] or _EMPTY}")
+    if not search.get("rejected_recorded", True):
+        dropped = search.get("urls_dropped")
+        lines.append("Rejected: not recorded" + (f" ({dropped} dropped)" if dropped is not None else ""))
+        return lines
     lines.append(f"Rejected ({len(search['rejected'])}):")
     lines.extend(f"  {r.get('url', '')}: {r.get('reason', '')}" for r in search["rejected"])
     return lines

@@ -122,8 +122,9 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
 _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
     ("Read-only (dry run, no files written)",
      ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit"]),
-    ("Creates or overwrites claim files (dr draft --dry-run writes nothing)",
-     ["draft"]),
+    ("Creates or overwrites claim files (dr recheck writes pending drafts only, never a live claim; "
+     "dr draft --dry-run and dr recheck --due --dry-run write nothing)",
+     ["draft", "recheck"]),
     ("Modifies existing files in place (dr findings writes only with --close)",
      ["review", "findings"]),
 ]
@@ -404,7 +405,7 @@ def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_
 
 
 # --------------------------------------------------------------------------- #
-# dr wayback-backfill                                                           #
+# dr recheck                                                                    #
 # --------------------------------------------------------------------------- #
 
 def _set_archived_url(text: str, archived_url: str | None) -> str:
@@ -465,38 +466,29 @@ def _set_archived_url(text: str, archived_url: str | None) -> str:
     return updated
 
 
-@main.command("wayback-backfill")
-@click.argument("source_ids", nargs=-1, required=True)
-@click.option(
-    "--recheck",
-    is_flag=True,
-    help="Also check sources that already have archived_url, and replace or remove a bad link.",
-)
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str | None) -> None:
-    """Add an archive.org link to existing source files that lack one.
+def _recheck_sources(source_ids: tuple[str, ...], root: Path) -> int:
+    """``dr recheck --sources``: check each source's archive link and key quotes; return the exit code.
 
-    SOURCE_IDS are year/slug ids, e.g. 2025/brave-website-challenge. Each
-    source's URL is looked up on archive.org and a link is written as
-    `archived_url` only when archive.org replays that capture with HTTP 200
-    for the same page (TimeGate's nearest capture, else the newest such one
-    in the CDX index, else a checked Save Page Now capture). Sources that
-    already have one are skipped, unless --recheck: then the existing link
-    is checked the same way and kept, replaced with an existing good capture
-    (no save is made), or removed when none exists. A plain backfill of a
-    removed source afterwards may save a fresh capture. The live page is
-    fetched first so that, as in the ingest, a captured redirect to where it
-    ends up still counts as the page. Exits 1 if any source could not be
-    archived, could not be checked, or lost its link.
+    Each source's URL is fetched live first, so that, as in the ingest, a
+    captured redirect to where the page ends up still counts as the page. A
+    source with no ``archived_url`` gets one written only when archive.org
+    replays a capture with HTTP 200 for the same page (TimeGate's nearest
+    capture, else the newest such one in the CDX index, else a checked Save
+    Page Now capture). An existing link is checked the same way and kept,
+    or replaced with an existing good capture (no save is made); when no
+    replacement passes its check the old link is kept and the reason is
+    printed. The live page's text is checked against the source's key
+    quotes and the result printed; quotes never change the exit code.
+    Only ``archived_url`` is ever written. Exits 1 if any source could not
+    be archived or checked, or kept a link that failed its check.
     """
     import httpx
 
-    from common.content_loader import resolve_repo_root
     from common.frontmatter import parse_frontmatter
     from common.timeouts import default_httpx_timeout
     from ingestor.tools.wayback import archive_with_time_limit, check_capture
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
+    from ingestor.tools.web_fetch import extract_page_data
+    from ingestor.validation import check_quotes
 
     def _write(sid: str, path: Path, text: str, archived_url: str | None) -> bool:
         try:
@@ -506,8 +498,11 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
             return False
         return True
 
-    async def _live_end(client, url: str) -> str | None:
-        """Where the live page ends up now, or None when it does not load.
+    async def _live_end(client, url: str) -> tuple[str | None, str | None]:
+        """Where the live page ends up now and its text, or (None, None) when it does not load.
+
+        The text is None for a page that is not HTML or plain text (a PDF):
+        its key quotes are not checked here.
 
         Source files do not record where the ingest's fetch ended, so this
         stands in for it: without it a capture that redirects there, which the
@@ -517,14 +512,35 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
             async with client.stream(
                 "GET", url, follow_redirects=True, timeout=default_httpx_timeout()
             ) as resp:
-                return str(resp.url) if resp.is_success else None
+                if not resp.is_success:
+                    return None, None
+                content_type = resp.headers.get("content-type", "text/html").lower()
+                if "html" not in content_type and not content_type.startswith("text/"):
+                    return str(resp.url), None
+                body = (await resp.aread()).decode(resp.encoding or "utf-8", errors="replace")
+                return str(resp.url), extract_page_data(body, str(resp.url))["text"]
         except (httpx.HTTPError, httpx.InvalidURL):
-            return None
+            return None, None
+
+    def _check_key_quotes(sid: str, fm: dict, live: str | None, page_text: str | None) -> None:
+        quotes = [q for q in fm.get("key_quotes") or [] if isinstance(q, str)]
+        if not quotes:
+            return
+        if page_text is None:
+            why = "the live page did not load" if live is None else "the live page is not HTML or text"
+            click.echo(f"{sid}: {why}; key quotes not checked")
+            return
+        checks = check_quotes(quotes, page_text)
+        found = sum(1 for c in checks if c.found)
+        click.echo(f"{sid}: {found} of {len(checks)} key quotes found on the live page")
+        for c in checks:
+            if not c.found:
+                click.echo(f"  not found: {c.text!r}: {c.reason or 'no reason recorded'}")
 
     async def _recheck(
         client, sid: str, path: Path, text: str, url: str, old: str, live: str | None
     ) -> bool:
-        """Check ``old`` and keep, replace or remove it; False when the source counts as failed."""
+        """Check ``old`` and keep or replace it; False when the source counts as failed."""
         check = await check_capture(client, old, url, also_same_as=live)
         if check.ok:
             click.echo(f"{sid}: unchanged")
@@ -544,19 +560,18 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
                 return False
             click.echo(f"{sid}: {old} -> {lookup.archived_url}")
             return True
-        if not _write(sid, path, text, None):
-            return False
+        # A link that fails its check is kept until a replacement passes one.
         reasons = [check.reason or "capture failed its check"]
         reasons += [e for e in lookup.errors if e not in reasons]
         reason = "; ".join(reasons)
         if lookup.incomplete:
             outcome = (
                 "the search for another capture did not finish; "
-                f"rerun `dr wayback-backfill {sid}` later"
+                f"rerun `dr recheck --sources {sid}` later"
             )
         else:
             outcome = "no other 200 capture found"
-        click.echo(f"{sid}: removed {old}: {reason}; {outcome}", err=True)
+        click.echo(f"{sid}: kept {old}: {reason}; {outcome}", err=True)
         return False
 
     async def _run() -> int:
@@ -570,15 +585,13 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
                     continue
                 text = path.read_text(encoding="utf-8")
                 fm, _body = parse_frontmatter(text)
-                if fm.get("archived_url") and not recheck:
-                    click.echo(f"{sid}: already has archived_url, skipped")
-                    continue
                 if not fm.get("url"):
                     click.echo(f"{sid}: no url in frontmatter", err=True)
                     failed += 1
                     continue
                 url = str(fm["url"])
-                live = await _live_end(client, url)
+                live, page_text = await _live_end(client, url)
+                _check_key_quotes(sid, fm, live, page_text)
                 if fm.get("archived_url"):
                     old = str(fm["archived_url"])
                     if not await _recheck(client, sid, path, text, url, old, live):
@@ -597,9 +610,379 @@ def wayback_backfill(source_ids: tuple[str, ...], recheck: bool, repo_root: str 
                 click.echo(f"{sid}: {lookup.archived_url}")
         return 1 if failed else 0
 
-    exit_code = asyncio.run(_run())
-    if exit_code:
-        sys.exit(exit_code)
+    return asyncio.run(_run())
+
+
+def _claim_spec_for(claim_path: Path, claim_ref: str, root: Path):
+    """The ``ClaimSpec`` that re-runs a stored claim: its statement, entity, criterion, topics and grading rule.
+
+    Shared by ``dr draft --claim`` and ``dr recheck``. Raises
+    ``click.UsageError`` when the claim's entity file does not load.
+    """
+    from common.frontmatter import claim_statement, parse_frontmatter
+    from loop import ClaimSpec
+    from orchestrator.entity_resolution import parse_entity_ref
+
+    fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_entity = fm.get("entity", "")
+    try:
+        resolved_entity = parse_entity_ref(claim_entity, root)
+    except ValueError as exc:
+        raise click.UsageError(f"--claim {claim_ref}: could not load entity {claim_entity!r}: {exc}") from exc
+    template = _claim_template(fm, root)
+    return ClaimSpec(
+        statement=claim_statement(fm),
+        entity=resolved_entity,
+        criteria_slug=fm.get("criteria_slug"),
+        topics=list(template.topics) if template else [],
+        grading_rule=template.grading_rule or None if template else None,
+    )
+
+
+def _live_status(path: Path) -> str | None:
+    """``published`` or ``archived`` when the claim at ``path`` is live on the site, else None.
+
+    A missing or unparseable file is None: the writer refuses an unparseable
+    claim with its own message.
+    """
+    from common.frontmatter import parse_frontmatter
+
+    try:
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+    status = fm.get("status")
+    return status if status in ("published", "archived") else None
+
+
+@main.command("recheck")
+@click.argument("source_ids", nargs=-1, metavar="[SOURCE_ID]...")
+@click.option("--due", is_flag=True, help="Re-run every published claim whose recheck is due into a pending draft")
+@click.option("--dry-run", is_flag=True, help="With --due: list the due claims and their due dates; no model call, nothing written")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run one published or archived claim into a pending draft")
+@click.option("--sources", "sources_mode", is_flag=True, help="Re-check the archive link and key quotes of each SOURCE_ID (year/slug)")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+@click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
+@click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
+@click.option("--skip-wayback/--wayback", default=None, help="Skip Wayback Machine (default: --wayback)")
+@click.option("--max-initial-queries", default=None, type=click.IntRange(min=1), help="Max search queries for decomposed researcher, at least 1 (default: VerifyConfig.max_initial_queries)")
+@click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls, shared by every claim in the run (default: VerifyConfig.llm_concurrency)")
+@click.pass_context
+def recheck(
+    ctx: click.Context,
+    source_ids: tuple[str, ...],
+    due: bool,
+    dry_run: bool,
+    claim_ref: str | None,
+    sources_mode: bool,
+    repo_root: str | None,
+    max_sources: int | None,
+    candidate_pool_size: int | None,
+    skip_wayback: bool | None,
+    max_initial_queries: int | None,
+    llm_concurrency: int | None,
+) -> None:
+    """Re-run due or named claims into pending drafts; --sources re-checks source files.
+
+    \b
+    --due --dry-run       lists every due published claim with its due date;
+                          no model call, nothing written
+    --due                 re-runs every due claim, one after another under one
+                          LLM limit; one summary line per claim; exit 0 unless
+                          the command failed to start
+    --claim REF           re-runs one published or archived claim
+    --sources ID...       re-checks each source file's archive link and key
+                          quotes against the live page; writes only archived_url
+
+    A claim is due when its next_recheck_due has passed or, without one, when
+    as_of plus recheck_cadence_days (default 60) has passed. A rerun is
+    written as a pending draft under research/pending/ beside the live claim,
+    which stays up until `dr review --claim REF --approve` promotes the draft
+    (with --correction when the verdict changed). A claim with a pending draft
+    is not selected by --due. A run abandoned by the error policy writes only
+    its finding. Cached sources older than the claim's cadence are fetched
+    again and their key quotes and archive link re-checked; the result is
+    recorded in the pending sidecar and the source file is never rewritten.
+
+    \b
+    Examples:
+        dr recheck --due --dry-run
+        dr recheck --due
+        dr recheck --claim earthly-insight/renewable-energy-hosting
+        dr recheck --sources 2025/brave-website-challenge
+    """
+    from common.content_loader import resolve_repo_root
+
+    logger.info(
+        "dr recheck: due=%s dry_run=%s claim=%s sources=%s ids=%s",
+        due, dry_run, claim_ref, sources_mode, source_ids,
+    )
+
+    # Click cannot express this grammar, so it is checked here, before any
+    # model call: every failure is a usage error (exit 2) naming the flag.
+    modes = [flag for flag, on in (
+        ("--due", due), ("--claim", claim_ref is not None), ("--sources", sources_mode),
+    ) if on]
+    if not modes:
+        raise click.UsageError("one of --due, --claim <ref> or --sources <id>... is required")
+    if len(modes) > 1:
+        raise click.UsageError(f"{' and '.join(modes)} cannot be combined; pass exactly one")
+    if dry_run and not due:
+        raise click.UsageError("--dry-run goes with --due: it lists the due claims")
+    if source_ids and not sources_mode:
+        raise click.UsageError(f"source ids are taken with --sources only (got {' '.join(source_ids)})")
+    if sources_mode:
+        if not source_ids:
+            raise click.UsageError("--sources needs at least one source id (year/slug)")
+        research = [flag for flag, value in (
+            ("--max-sources", max_sources), ("--candidate-pool-size", candidate_pool_size),
+            ("--skip-wayback/--wayback", skip_wayback), ("--max-initial-queries", max_initial_queries),
+            ("--llm-concurrency", llm_concurrency),
+        ) if value is not None]
+        if research:
+            raise click.UsageError(f"--sources runs no claim; it does not take {research[0]}")
+
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+
+    if sources_mode:
+        exit_code = _recheck_sources(source_ids, root)
+        if exit_code:
+            sys.exit(exit_code)
+        return
+
+    from orchestrator.recheck import cadence_days, due_claims
+
+    if due and dry_run:
+        listed = due_claims(root)
+        for item in listed:
+            click.echo(f"{item.ref}  due {item.due.isoformat()}")
+        click.echo(f"{len(listed)} due")
+        return
+
+    from common.frontmatter import parse_frontmatter
+    from orchestrator.persistence import planned_claim_path
+
+    # (ref, live path, spec, cadence) for each claim to run.
+    targets: list[tuple[str, Path, object, int]] = []
+
+    def _target(ref: str, path: Path) -> tuple[str, Path, object, int]:
+        spec = _claim_spec_for(path, ref, root)
+        planned = planned_claim_path(spec.entity.entity_ref, spec.entity.entity_name, path.stem, root)
+        if planned.resolve() != path.resolve():
+            raise click.UsageError(
+                f"{ref} is at {path}, but its entity {spec.entity.entity_ref} writes to {planned}"
+            )
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+        return ref, path, spec, cadence_days(fm)
+
+    overrides = {k: v for k, v in {
+        "max_sources": max_sources, "candidate_pool_size": candidate_pool_size,
+        "max_initial_queries": max_initial_queries, "llm_concurrency": llm_concurrency,
+    }.items() if v is not None}
+
+    if claim_ref is not None:
+        claim_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
+        if not claim_path.exists():
+            click.echo(f"Error: claim file not found: {claim_ref} ({claim_path})", err=True)
+            sys.exit(1)
+        ref = _claim_ref(claim_path, root)
+        if _live_status(claim_path) is None:
+            raise click.UsageError(
+                f"--claim {ref} is not published or archived; a draft or blocked claim reruns in place "
+                f"with dr draft --claim {ref} --force"
+            )
+        targets.append(_target(ref, claim_path))
+    else:
+        unrunnable = 0
+        for item in due_claims(root):
+            try:
+                targets.append(_target(item.ref, item.path))
+            except Exception as exc:
+                # A claim the batch cannot start is abandoned with its finding;
+                # the other due claims still run.
+                reason = exc.message if isinstance(exc, click.UsageError) else f"{type(exc).__name__}: {exc}"
+                _abandon_recheck(
+                    ctx, root, item.ref, item.path, overrides, skip_wayback=bool(skip_wayback),
+                    error_type="not_started", message=reason.removeprefix(f"--claim {item.ref}: "),
+                    error_class=type(exc).__name__,
+                )
+                unrunnable += 1
+        if not targets:
+            if not unrunnable:
+                click.echo("0 due")
+            return
+
+    _check_provider_api_keys(_agent_models_from_ctx(ctx))
+    outcomes = _run_rechecks(ctx, root, targets, overrides, skip_wayback=bool(skip_wayback), batch=due)
+    if claim_ref is not None and outcomes != ["ran"]:
+        sys.exit(1)
+
+
+def _run_rechecks(
+    ctx: click.Context,
+    root: Path,
+    targets: list[tuple[str, Path, object, int]],
+    overrides: dict,
+    *,
+    skip_wayback: bool,
+    batch: bool,
+) -> list[str]:
+    """Run each target claim through the loop and write its pending draft; one outcome per claim.
+
+    Claims run one after another under one LLM semaphore and one source URL
+    index, inside one event loop. Each claim's failure is a finding and the
+    next claim still runs. Outcomes: ``ran``, ``abandoned`` or ``failed``.
+    """
+    from common.logging_setup import new_run_id
+    from loop import VerifyConfig
+    from orchestrator.persistence import build_source_url_index
+
+    def _config(cadence: int) -> VerifyConfig:
+        extra = {"run_id": new_run_id()} if batch else {}
+        return VerifyConfig(
+            model=ctx.obj["model"],
+            skip_wayback=skip_wayback,
+            repo_root=str(root),
+            refetch_cached_older_than_days=cadence,
+            show_progress=True,
+            **extra,
+            **overrides,
+            **_ctx_per_agent_kwargs(ctx),
+        )
+
+    configs = [_config(cadence) for _ref, _path, _spec, cadence in targets]
+    _check_search_key(configs[0])
+
+    async def _batch() -> list[str]:
+        # Looked up at call time, as dr draft does.
+        from loop import run
+
+        sem = asyncio.Semaphore(configs[0].llm_concurrency)
+        url_index = build_source_url_index(root)
+        outcomes: list[str] = []
+        for (ref, path, spec, _cadence), config in zip(targets, configs):
+            progress("Rechecking claim: %s (%s)", spec.statement, ref)
+            try:
+                result = await run(spec, config, sem=sem, url_index=url_index)
+            except Exception as exc:
+                # An error outside the loop's steps (the cached-source recheck
+                # among them) has no finding of its own: record one.
+                click.echo(f"Error: {ref}: the run failed: {type(exc).__name__}: {exc}", err=True)
+                _abandon_recheck(
+                    ctx, root, ref, path, overrides, skip_wayback=skip_wayback, spec=spec, config=config,
+                    error_type="run_failed", message=str(exc) or type(exc).__name__,
+                    error_class=type(exc).__name__,
+                )
+                outcomes.append("abandoned")
+                continue
+            outcomes.append(_write_recheck(result, spec, config, ref, path, root, url_index, batch=batch))
+        return outcomes
+
+    return asyncio.run(_batch())
+
+
+def _abandon_recheck(
+    ctx: click.Context,
+    root: Path,
+    ref: str,
+    live_path: Path,
+    overrides: dict,
+    *,
+    skip_wayback: bool,
+    error_type: str,
+    message: str,
+    error_class: str,
+    spec=None,
+    config=None,
+) -> None:
+    """Write the finding of a recheck that could not start or whose run raised, and print its summary line.
+
+    Rule ``config-fatal``, outcome ``abandoned``: nothing is written for the
+    claim. Without a ``ClaimSpec`` (the claim could not be turned into one)
+    the finding's ``claim_spec`` is read from the claim's frontmatter.
+    """
+    import datetime
+
+    from common.findings import Finding, claim_spec_record, config_record
+    from common.frontmatter import claim_statement, parse_frontmatter
+    from common.logging_setup import new_run_id
+    from loop import VerifyConfig
+
+    if config is None:
+        config = VerifyConfig(
+            model=ctx.obj["model"], skip_wayback=skip_wayback, repo_root=str(root), run_id=new_run_id(),
+            **overrides, **_ctx_per_agent_kwargs(ctx),
+        )
+    if spec is not None:
+        spec_record = claim_spec_record(spec)
+    else:
+        try:
+            fm, _ = parse_frontmatter(live_path.read_text(encoding="utf-8"))
+        except Exception:
+            fm = {}
+        spec_record = {
+            "statement": claim_statement(fm) if fm else None,
+            "entity": fm.get("entity"),
+            "criteria_slug": fm.get("criteria_slug"),
+            "topics": list(fm.get("topics") or []),
+            "grading_rule": None,
+        }
+    finding = Finding(
+        run_id=config.run_id,
+        date=datetime.date.today(),
+        claim_spec=spec_record,
+        claim_ref=ref,
+        config=config_record(config),
+        step="research",
+        rule="config-fatal",
+        error={"error_type": error_type, "message": message, "error_class": error_class},
+        attempts=1,
+        outcome="abandoned",
+    )
+    _record_finding(finding, root, command="dr recheck")
+    click.echo(f"{ref}: abandoned (finding {config.run_id})")
+
+
+def _write_recheck(
+    result, spec, config, ref: str, live_path: Path, root: Path, url_index: dict, *, batch: bool = False,
+) -> str:
+    """Write one recheck's pending draft and finding and print its summary line; return its outcome.
+
+    A batch prints only the summary line; ``--claim`` also prints the pending draft's path.
+    """
+    from common.frontmatter import parse_frontmatter
+    from orchestrator.persistence import write_pending_recheck
+
+    finding = result.finding
+    if finding is not None and finding.outcome == "abandoned":
+        _record_finding(finding, root, command="dr recheck", claim_ref=ref)
+    if not _report_unwritable_run(result):
+        run_id = finding.run_id if finding is not None else config.run_id
+        click.echo(f"{ref}: abandoned (finding {run_id})")
+        return "abandoned"
+    try:
+        old = str(parse_frontmatter(live_path.read_text(encoding="utf-8"))[0].get("verdict"))
+        pending = write_pending_recheck(
+            result, spec, config, repo_root=root, live_path=live_path, url_index=url_index,
+        )
+    except Exception as exc:
+        # The pending pair is moved into place only after every write, so a
+        # failure here leaves it as it was; the live pair is never written.
+        click.echo(f"Error: the pending draft was not written: {exc}", err=True)
+        _record_half_claim(result, spec, config, root, ref, exc, command="dr recheck")
+        click.echo(f"{ref}: failed (half-claim)")
+        return "failed"
+    if finding is not None:
+        _record_finding(finding, root, command="dr recheck", claim_ref=ref)
+    new = str(parse_frontmatter(pending.read_text(encoding="utf-8"))[0].get("verdict"))
+    word = "recovered" if finding is not None and finding.outcome == "recovered" else "ran"
+    if not batch:
+        click.echo(f"Pending draft: {pending.relative_to(root).as_posix()}")
+    if new != old:
+        click.echo(f"{ref}: {word}, verdict changed: {old} to {new}")
+    else:
+        click.echo(f"{ref}: {word}, verdict unchanged ({new})")
+    return "ran"
 
 
 # --------------------------------------------------------------------------- #
@@ -625,9 +1008,10 @@ def step_analyze(
     """Re-run the analyst on an existing claim using its already-ingested sources.
 
     Default: read-only (prints analyst output). Use --write (or --force) to
-    overwrite the claim file on disk. A claim that is not a draft (published,
-    archived or blocked) returns to draft and awaits re-approval, as with
-    ``dr draft --claim --force``. The analyst assesses the claim's stored
+    overwrite the claim file on disk. A blocked claim returns to draft, as
+    with ``dr draft --claim --force``; --write on a published or archived
+    claim is refused before the model call (``dr recheck --claim`` reruns it
+    into a pending draft). The analyst assesses the claim's stored
     ``statement`` (``title`` for a claim written before it existed), and
     --write writes that sentence as both. The sidecar's Evaluator comparison (``audit``) is cleared,
     since it graded the old analysis; run ``dr step-audit --write`` after.
@@ -640,8 +1024,6 @@ def step_analyze(
 
     analyst_model = ctx.obj.get("analyst_model") or ctx.obj["model"]
     _check_provider_api_keys(analyst_model)
-
-    import datetime
 
     from common.content_loader import load_entity, resolve_repo_root
     from common.frontmatter import claim_statement, parse_frontmatter
@@ -666,6 +1048,13 @@ def step_analyze(
 
     text = claim_path.read_text(encoding="utf-8")
     fm, _narrative = parse_frontmatter(text)
+    live_status = _live_status(claim_path)
+    if (do_write or force) and live_status is not None:
+        live_ref = _claim_ref(claim_path, root)
+        raise click.UsageError(
+            f"{live_ref} is {live_status}; a rewrite would go live unreviewed. "
+            f"dr recheck --claim {live_ref} writes a pending draft and leaves the live claim up"
+        )
 
     # Resolve entity
     entity_fm, _ = load_entity(fm["entity"], root)
@@ -747,9 +1136,7 @@ def step_analyze(
     # Without --force the write below refuses, so nothing is reset.
     status = fm.get("status", "draft")
     if force:
-        if mark_forced_rewrite(
-            claim_path, source_ids, datetime.datetime.now(tz=datetime.timezone.utc),
-        ):
+        if mark_forced_rewrite(claim_path):
             status = ClaimStatus.DRAFT
         clear_audit(claim_path)
 
@@ -871,9 +1258,9 @@ def _print_verify_result(result) -> None:
 @click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
 @click.option("--subject", "subject_slug", default=None, metavar="SLUG", help="Subject the sentence is about; the subject record is written with the claim when none exists")
 @click.option("--criterion", "criterion_slug", default=None, metavar="SLUG", help="Draft the criterion's sentence for --entity, or attach it to --claim")
-@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run the claim's stored statement in place (needs --force or --dry-run), or attach a criterion with --criterion")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft or blocked claim's stored statement in place (needs --force or --dry-run), or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim")
 @click.option("--dry-run", is_flag=True, help="Run the loop and print the result; write nothing and never ask archive.org to capture a page")
-@click.option("--force", is_flag=True, help="Overwrite the claim file if present; a claim that is not a draft returns to draft and awaits re-approval")
+@click.option("--force", is_flag=True, help="Overwrite the claim file if present; a blocked claim returns to draft; a published or archived claim is refused (dr recheck --claim writes a pending draft)")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
@@ -918,8 +1305,10 @@ def draft(
     --subject SLUG SENTENCE      an ad hoc subject claim; writes
                                  research/entities/subjects/SLUG.md with the claim
                                  when it is missing
-    --claim REF --force          re-runs the claim's stored statement and writes back
-                                 to the same path (--dry-run prints the run instead)
+    --claim REF --force          re-runs a draft or blocked claim's stored statement and
+                                 writes back to the same path (--dry-run prints the run
+                                 instead); a published or archived claim is refused:
+                                 dr recheck --claim REF writes a pending draft
     --claim REF --criterion SLUG attaches a new criterion to a draft: appends it to
                                  research/templates.yaml and sets criteria_slug; no
                                  model call
@@ -933,14 +1322,13 @@ def draft(
         dr draft --dry-run --entity subjects/generative-ai "Generative AI assistants answer most questions without browsing"
         dr draft --criterion renewable-energy-hosting --entity products/chatgpt
         dr draft --subject us-data-centers "US data centers used more than 4% of US electricity in 2024"
-        dr draft --claim chatgpt/renewable-energy-hosting --force
+        dr draft --claim subjects/us-data-centers/<stem> --force
         dr draft --claim subjects/us-data-centers/<stem> --criterion data-centers-electricity-share
         dr draft --restates subjects/us-data-centers/<stem> --pick 2
     """
     import re
 
     from common.content_loader import resolve_repo_root
-    from common.frontmatter import claim_statement, parse_frontmatter
     from common.models import EntityType
     from common.sidecar import sidecar_path_for
     from common.templates import get_template, load_templates, render_statement
@@ -1011,8 +1399,9 @@ def draft(
     claim_path: Path | None = None
     create_entity = False
     original_path: Path | None = None
+    pick_holder: Path | None = None
     if restates_ref is not None:
-        original_path, candidate_text, original_entity = _restatement_candidate(restates_ref, pick, root)
+        original_path, pick_holder, candidate_text, original_entity = _restatement_candidate(restates_ref, pick, root)
         ref_label = original_entity
         try:
             resolved_entity = parse_entity_ref(original_entity, root)
@@ -1033,20 +1422,8 @@ def draft(
         if not claim_path.exists():
             click.echo(f"Error: claim file not found: {claim_ref} ({claim_path})", err=True)
             sys.exit(1)
-        fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-        claim_entity = fm.get("entity", "")
-        try:
-            resolved_entity = parse_entity_ref(claim_entity, root)
-        except ValueError as exc:
-            raise click.UsageError(f"--claim {claim_ref}: could not load entity {claim_entity!r}: {exc}") from exc
-        template = _claim_template(fm, root)
-        spec = ClaimSpec(
-            statement=claim_statement(fm),
-            entity=resolved_entity,
-            criteria_slug=fm.get("criteria_slug"),
-            topics=list(template.topics) if template else [],
-            grading_rule=template.grading_rule or None if template else None,
-        )
+        spec = _claim_spec_for(claim_path, claim_ref, root)
+        resolved_entity = spec.entity
         claim_slug = claim_path.stem
         force = True
         ref_label = claim_ref
@@ -1118,6 +1495,15 @@ def draft(
         if not force and planned.exists():
             click.echo(f"Error: claim file already exists: {planned}. Use --force to overwrite it.", err=True)
             sys.exit(1)
+        # A published or archived claim stays up until a reviewer promotes its
+        # rerun, so no forced write lands on it in place.
+        live_status = _live_status(claim_path or planned) if force else None
+        if live_status is not None:
+            live_ref = _claim_ref(claim_path or planned, root)
+            raise click.UsageError(
+                f"{live_ref} is {live_status}; dr recheck --claim {live_ref} writes a pending draft "
+                "and leaves the live claim up"
+            )
 
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
@@ -1218,20 +1604,26 @@ def draft(
         # Recorded only once the new claim is written: a dry run, an abandoned
         # run or a refused write leaves the original's sidecar untouched.
         try:
-            record_restatement_pick(original_path, pick)
+            record_restatement_pick(pick_holder, pick)
         except ValueError as exc:
             click.echo(f"Warning: the pick was not recorded on {restates_ref}: {exc}", err=True)
         # Printed as the sidecar key it wrote.
         click.echo(f"restates: {_claim_ref(original_path, root)} (candidate {pick})")
 
 
-def _restatement_candidate(restates_ref: str, pick: int, root: Path) -> tuple[Path, str, str]:
-    """The original claim's path, candidate ``pick``'s text and the original's entity ref.
+def _restatement_candidate(restates_ref: str, pick: int, root: Path) -> tuple[Path, Path, str, str]:
+    """The original claim's live path, the claim path whose sidecar holds the pick, candidate ``pick``'s text and the original's entity ref.
 
-    Exits 1 when the claim, its ``restatement`` block or the candidate is missing.
+    A claim with a pending recheck has two sidecars that can hold a
+    ``restatement`` block; the walkthrough's ``r`` key records a pick on the
+    pending one. The candidate is read from the sidecar whose block has
+    ``picked`` equal to ``pick`` (the pending one first), else from the
+    first block found. Exits 1 when the claim, every ``restatement`` block
+    or the candidate is missing.
     """
     from common.frontmatter import parse_frontmatter
     from common.sidecar import read_sidecar
+    from orchestrator.persistence import pending_path_for
 
     def refuse(message: str):
         click.echo(f"Error: {message}", err=True)
@@ -1242,18 +1634,20 @@ def _restatement_candidate(restates_ref: str, pick: int, root: Path) -> tuple[Pa
     if not original.exists():
         refuse(f"claim file not found: {restates_ref} ({original})")
     fm, _body = parse_frontmatter(original.read_text(encoding="utf-8"))
-    sidecar = read_sidecar(original) or {}
-    block = sidecar.get("restatement")
-    if not isinstance(block, dict):
+    pending = pending_path_for(original, root)
+    holders = [p for p in (pending, original) if p.exists()]
+    blocks = [(p, b) for p in holders if isinstance(b := (read_sidecar(p) or {}).get("restatement"), dict)]
+    if not blocks:
         refuse(
             f"no restatement block in {original.with_suffix('.audit.yaml')}; nothing to pick "
             "(approving or archiving a claim with no recorded pick removes the block)"
         )
+    holder, block = next(((p, b) for p, b in blocks if b.get("picked") == pick), blocks[0])
     candidates = [c for c in block.get("candidates") or [] if isinstance(c, dict)]
     chosen = next((c for c in candidates if c.get("rank") == pick), None)
     if chosen is None or not str(chosen.get("text") or "").strip():
         refuse(f"no candidate {pick} in the restatement block of {restates_ref}; it has {len(candidates)}")
-    return original, str(chosen["text"]).strip(), str(fm.get("entity") or "")
+    return original, holder, str(chosen["text"]).strip(), str(fm.get("entity") or "")
 
 
 def _print_restatement(result) -> None:
@@ -1347,7 +1741,9 @@ def _record_finding(finding, root: Path, *, command: str, dry_run: bool = False,
     click.echo(f"Finding: {path}", err=True)
 
 
-def _record_half_claim(result, spec, config, root: Path, claim_ref: str, exc: BaseException) -> None:
+def _record_half_claim(
+    result, spec, config, root: Path, claim_ref: str, exc: BaseException, *, command: str = "dr draft",
+) -> None:
     """Write the finding for a writer that failed part-way (rule half-claim)."""
     import datetime
 
@@ -1382,7 +1778,7 @@ def _record_half_claim(result, spec, config, root: Path, claim_ref: str, exc: Ba
         outcome="half-claim",
         retries=retries,
     )
-    _record_finding(finding, root, command="dr draft")
+    _record_finding(finding, root, command=command)
 
 
 def _report_unwritable_run(result) -> bool:
@@ -1451,7 +1847,11 @@ def step_audit(
     A verdict disagreement goes to the tie-breaker, as in dr draft. Default:
     read-only (prints report and any finding). Use --write to update
     .audit.yaml sidecars and write findings under research/findings/; an
-    abandoned rerun writes only its finding.
+    abandoned rerun writes only its finding. --write never writes a published
+    or archived claim's sidecar: with --claim it is refused before the model
+    call, and in an --entity or --topic batch such a claim is graded and
+    reported but not written (dr recheck --claim reruns it into a pending
+    draft).
 
     Example:
         dr step-audit --entity ecosia
@@ -1474,19 +1874,28 @@ def step_audit(
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.persistence import load_source_dict, write_evaluator_rerun
 
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+    claims_dir = root / "research" / "claims"
+
+    if claim:
+        claim_paths = [_resolve_claim_path(claim, claims_dir)]
+        # Only a reviewer's promotion writes a live claim's files.
+        live_status = _live_status(claim_paths[0]) if do_write else None
+        if live_status is not None:
+            live_ref = _claim_ref(claim_paths[0], root)
+            raise click.UsageError(
+                f"{live_ref} is {live_status}; --write would change its live sidecar unreviewed. "
+                f"dr recheck --claim {live_ref} writes a pending draft and leaves the live claim up"
+            )
+    else:
+        claim_paths = list_claims(root, entity=entity, topic=topic)
+
     # The tie-breaker runs when the Evaluator disagrees with the claim.
     _check_provider_api_keys([
         ctx.obj.get("auditor_model") or ctx.obj["model"],
         ctx.obj.get("tiebreaker_model") or ctx.obj["model"],
     ])
     verbose = ctx.obj.get("verbose", False)
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-
-    if claim:
-        claim_paths = [_resolve_claim_path(claim, claims_dir)]
-    else:
-        claim_paths = list_claims(root, entity=entity, topic=topic)
 
     if not claim_paths:
         click.echo("No claims found.", err=True)
@@ -1577,16 +1986,14 @@ def step_audit(
                 )
             results.append(result)
 
-            settled = graded.consistency.pipeline_verdict
-            moved = settled is not None and settled.value != fm.get("verdict")
-            if do_write and fm.get("status") == "published" and moved:
-                # The sidecar's pipeline verdict would then differ from the
-                # published one with no review behind it, which lint rejects.
-                # The finding above keeps the split; RE-AW (Recheck) gives
-                # this case a pending-draft location.
+            live_status = fm.get("status") if fm.get("status") in ("published", "archived") else None
+            if do_write and live_status is not None:
+                # Only a reviewer's promotion writes a live claim's files; the
+                # Evaluator rerun into a pending draft is RE-AX (Fold side
+                # tools)'s `--rerun`. The finding above is still written.
                 click.echo(
-                    f"Not written: {claim_id} is published as {fm.get('verdict')} and the "
-                    f"pipeline verdict is now {settled.value}; see the finding.",
+                    f"Not written: {claim_id} is {live_status}; dr recheck --claim {claim_id} "
+                    "writes a pending draft and leaves the live claim up.",
                     err=True,
                 )
             elif do_write:
@@ -1652,7 +2059,7 @@ _SIGN_OFF_FLAGS = ("--approve", "--archive", "--correction", "--reviewer", "--no
 @click.option("--archive", is_flag=True, default=False, help="Flip status from published to archived after sidecar write")
 @click.option(
     "--correction", default=None,
-    help="One-line public correction, required with --approve when a refresh changed the published verdict.",
+    help="One-line public correction, required with --approve when a refresh or a pending recheck changed the published verdict.",
 )
 @click.option(
     "--format", "output_format", default=None, type=click.Choice(["text", "json"]),
@@ -1697,6 +2104,12 @@ def review(
     last, directly above the key prompt. `r` records a restatement pick and
     prints the `dr draft --restates REF --pick N` command to run afterwards;
     `v` opens the whole packet in $PAGER.
+
+    A recheck of a published claim (`dr recheck`) waits as a pending draft
+    under research/pending/: it is queued and shown under the live claim's
+    ref, its header says whether the verdict changed, and --approve (or the
+    walkthrough's `a`) promotes it over the live claim, with --correction
+    when the verdict changed. A plain --claim sign-off of it is refused.
 
     The walkthrough's `a` and every --claim sign-off need a person at a
     terminal: stdin must be a tty, and the claim slug is typed back before
@@ -1749,26 +2162,41 @@ def review(
             run_interactive(items, root)
             return
         partial_runs = _partial_restate_runs(root)
-        packets = [build_packet(root / item.path, root, partial_restate_runs=partial_runs) for item in items]
+        packets = []
+        unreadable = 0
+        for item in items:
+            # One claim that does not read must not hide the rest of the queue.
+            try:
+                packets.append(build_packet(root / item.path, root, partial_restate_runs=partial_runs))
+            except Exception as exc:
+                unreadable += 1
+                click.echo(f"Could not read the packet of {item.claim_slug}: {type(exc).__name__}: {exc}", err=True)
         if output_format == "json":
             click.echo(_json.dumps(packets, indent=2, default=str))
-            return
-        for n, packet in enumerate(packets, 1):
-            click.echo(item_line(packet["claim_slug"], n, len(packets)))
-            click.echo(render_full(packet))
-            click.echo()
+        else:
+            for n, packet in enumerate(packets, 1):
+                click.echo(item_line(packet["claim_slug"], n, len(packets)))
+                click.echo(render_full(packet))
+                click.echo()
+        if unreadable:
+            sys.exit(1)
         return
 
-    claim_path = _resolve_claim_path(claim, claims_dir)
+    claim_path, pending_path = _resolve_review_paths(claim, root)
+    shown = pending_path or claim_path
     if not claim_path.exists():
         click.echo(
             f"Claim file not found: {claim_path.relative_to(root)}.",
             err=True,
         )
         sys.exit(1)
-    if not sidecar_path_for(claim_path).exists():
+    from orchestrator.persistence import promotion_half_done
+
+    # --approve finishes a promotion that stopped after moving the sidecar.
+    finishing = approve and pending_path is not None and promotion_half_done(claim_path, root)
+    if not sidecar_path_for(shown).exists() and not finishing:
         click.echo(
-            f"No audit sidecar found at {sidecar_path_for(claim_path).relative_to(root)}. "
+            f"No audit sidecar found at {sidecar_path_for(shown).relative_to(root)}. "
             f"Run the pipeline first.",
             err=True,
         )
@@ -1777,8 +2205,9 @@ def review(
     if output_format is not None:
         from orchestrator.packet import build_packet, render_full
 
+        # A pending recheck is what a reviewer signs off next, so its packet is shown.
         try:
-            packet = build_packet(claim_path, root)
+            packet = build_packet(shown, root)
         except ValueError as exc:
             click.echo(f"Error: {exc}", err=True)
             sys.exit(1)
@@ -1789,6 +2218,8 @@ def review(
         return
 
     mode = "approve" if approve else "archive" if archive else "review"
+    # approve_claim finds the pending recheck itself: --approve promotes it,
+    # a plain sign-off is refused, --archive acts on the live claim.
     approve_claim(
         claim_path,
         reviewer=reviewer,
@@ -1833,6 +2264,19 @@ def _claim_template(fm: dict, root: Path):
     except Exception as exc:
         logger.warning("Could not load templates (no criterion topics and no grading rule for this run): %s", exc)
         return None
+
+
+def _resolve_review_paths(claim: str, root: Path) -> tuple[Path, Path | None]:
+    """``dr review --claim``'s paths: the live claim and its pending recheck, when one exists.
+
+    Only ``dr review`` looks at the pending location; ``dr draft --claim``
+    and the criterion attach act on the live claim (``_resolve_claim_path``).
+    """
+    from orchestrator.persistence import pending_path_for
+
+    claim_path = _resolve_claim_path(claim, root / "research" / "claims")
+    pending = pending_path_for(claim_path, root)
+    return claim_path, pending if pending.exists() else None
 
 
 def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:
@@ -1921,7 +2365,8 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
 
     A finding records a run the error policy retried, abandoned or settled
     with the tie-breaker. Nothing is deleted: a half-claim is replaced with
-    dr draft, or removed by hand.
+    dr draft, a pending recheck with no sidecar with dr recheck, or removed
+    by hand.
 
     \b
     Examples:
@@ -1932,7 +2377,7 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
     from collections import Counter
 
     from common.content_loader import resolve_repo_root
-    from orchestrator.persistence import close_finding, half_claims, load_findings
+    from orchestrator.persistence import close_finding, half_claims, load_findings, promotion_half_done
 
     if close_id is not None:
         if show_all or summary:
@@ -1976,9 +2421,18 @@ def findings(show_all: bool, summary: bool, close_id: str | None, note: str | No
             click.echo(f"    closed {f.closed.get('date')} by {f.closed.get('by')}: {f.closed.get('note')}")
 
     left = half_claims(root)
+
+    def _pending_row(ref: str) -> str:
+        if promotion_half_done(root / "research" / "claims" / f"{ref}.md", root):
+            return f"{ref}: promotion stopped between its moves; finish it with dr review --claim {ref} --approve"
+        return f"{ref}: pending recheck with no sidecar; rerun dr recheck --claim {ref}"
+
     rows = [
         f"{ref}: no sidecar; replace it with dr draft --claim {ref} --force"
         for ref in left["claims_without_sidecar"]
+    ] + [_pending_row(ref) for ref in left["pending_without_sidecar"]] + [
+        f"{name}: a recheck stopped while writing; nothing reads it, remove it by hand"
+        for name in left["staging_left"]
     ] + [
         f"{ref}: subject record with no claim; the next dr draft --subject {ref.split('/', 1)[1]} reuses it"
         for ref in left["subjects_without_claim"]

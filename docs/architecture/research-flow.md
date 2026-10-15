@@ -21,8 +21,9 @@ stateDiagram-v2
     [*] --> draft: dr draft / dr draft --claim --force / manual edit
     blocked --> archived: dr review --archive
     draft --> published: dr review --approve (status flip)
-    published --> stale: recheck_cadence_days elapsed
-    stale --> draft: dr draft --claim --force
+    published --> due: next_recheck_due or as_of + recheck_cadence_days passed
+    due --> pending: dr recheck (live claim stays published)
+    pending --> published: dr review --approve (promotion)
     published --> archived: dr review --archive (entity retired or claim superseded)
     archived --> [*]
 ```
@@ -31,7 +32,7 @@ Notes:
 
 - `draft` covers both pipeline-written files awaiting sign-off and hand-edited files not yet reviewed.
 - `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered, split or partial (claim written, restater failed), leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
-- Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
+- A published claim is due when its `next_recheck_due` has passed or, when it has none, when `as_of` plus `recheck_cadence_days` (default 60) has passed. The writer sets `next_recheck_due` on every claim write. `dr recheck --due --dry-run` lists the due claims, and `dr recheck --due` (or `--claim <ref>`) re-runs them. A rerun never touches the live claim: it lands as a pending draft under `research/pending/` (the `pending` state above, outside the site's claims loader) and the live page stays up until `dr review --approve` promotes it. No scheduler runs `dr recheck`; a person starts it (the scheduled job is a backlog item, see `docs/runbook.md` § Scheduled rechecks). `dr lint` also surfaces a past `next_recheck_due` as `info`. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review`, one claim at a time. See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 
@@ -218,7 +219,7 @@ Notes:
 - `dr review` with no arguments walks the drafts awaiting sign-off. Each draft prints its review packet: the evidence parts first, then the verdict chain (the claim, the analyst, the Evaluator, the tie-breaker when one ran, the pipeline's verdict and the rule that set it) and the header facts directly above the key prompt. The `v` key opens the whole packet in `$PAGER`; `r` records a restatement pick; `a` approves. `dr review --format text|json` prints the packets and writes nothing.
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --claim <ref> --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). The sign-off needs a terminal and the typed claim slug; an agent never runs it. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the original CLI contract.
 - `--approve` records a verdict that differs from the pipeline verdict in the sidecar (`audit.pipeline_verdict`, or `audit.analyst_verdict` on a sidecar written before it existed) as `human_review.verdict_override`, with the reviewer. It refuses a refreshed claim whose verdict changed unless a one-line `--correction` is given. No command publishes without recording a reviewer.
-- The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force` on a published claim return it to draft and save the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. Steps: `docs/runbook.md` § Refreshing a published claim.
+- A forced rewrite (`dr draft --claim --force`, `dr draft --force`, `dr step-analyze --write --force`), and `dr step-audit --claim <ref> --write`, of a published or archived claim is refused with a pointer to `dr recheck --claim <ref>`; only a draft is overwritten in place. `dr recheck` writes the rerun as a pending draft, which `dr review` lists under the live claim's ref with a header saying whether the verdict changed. On `--approve` the pending files move over the live ones (the writer takes the refresh snapshot, with `dropped_sources`, at that moment) and the same approval completes the sign-off and closes the `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 

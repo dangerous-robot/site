@@ -67,6 +67,8 @@ DOCUMENTED_LITERALS: frozenset[str] = frozenset(
         "invalid_output",
         "write_failed",
         "verdict_split",
+        "not_started",
+        "run_failed",
     }
 )
 

@@ -31,7 +31,8 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 | **Kind** | Source | Classification: report, article, documentation, dataset, blog, video, index, paper |
 | **source_type** | Source | Optional authority classification: `primary`, `secondary`, `tertiary`. Set by `pipeline/common/source_classification.py` during ingest. |
 | **as_of** | Claim | Date when verdict was last evaluated |
-| **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60) |
+| **recheck_cadence_days** | Claim | Days between scheduled re-evaluations (default 60). Carried forward from the existing claim by the writer; the default is not written. |
+| **next_recheck_due** | Claim | Date the claim is next due for `dr recheck`: `as_of` plus `recheck_cadence_days`. The writer sets it on every claim write. A claim with none is due when `as_of` plus the cadence has passed. |
 | **criteria_slug** | Claim | Optional back-reference linking a claim to the criterion it was drafted from (`dr draft --criterion`) or had attached (`dr draft --claim --criterion`); the publish gate |
 | **statement** | Claim | The sentence the loop re-runs and the Evaluator grades; `title` equals it. For a criterion-backed claim, the criterion's text rendered once with the entity name; for an ad hoc claim, the operator's sentence. |
 | **founded** | Entity (company, product) | Year the entity was founded (companies) or first launched (products). Optional integer (1800–current year). Subjects ignore this field. Hand-written in the entity file; surfaced on the entity page's Facts subsection and threaded into analyst and scorer prompts. |
@@ -175,7 +176,8 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
 | **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` with no arguments walks the drafts awaiting sign-off, printing each one's review packet before the key prompt. `dr review --claim <ref>` (record only); `--approve` (draft → published); `--archive` (published → archived; also accepts blocked → archived). `--format text\|json` prints packets and writes nothing. Every sign-off needs a person at a terminal: stdin must be a tty and the claim slug is typed back before the write. |
 | **Review packet** | What `dr review` shows for a draft, in four parts: the verdict chain (the claim, the Analyst, the Evaluator, the tie-breaker when one ran, the pipeline's verdict and the rule that set it); every consulted source with each key quote beside its page passage and the automated check's result; source independence, including `shared_with` (other consulted sources from the same publisher host or newswire origin); the searches and the rejected candidates with the scorer's reason. In the walkthrough the verdict chain and header facts print last, directly above the key prompt. |
-| **Recheck** | Scheduled re-evaluation of a claim per `recheck_cadence_days` (manual today; no scheduler) |
+| **Recheck** | Re-evaluation of a published claim once `next_recheck_due` has passed. CLI: `dr recheck` (`--due`, `--claim <ref>`, `--sources <id>...`). The rerun is written as a pending draft under `research/pending/` while the live claim stays up; `dr review --approve` promotes it. A person starts it today; no scheduler runs it. |
+| **Pending draft** | A recheck's result: claim plus audit sidecar at `research/pending/<entity-dir>/<claim-slug>.md`, outside the site's claims loader. `dr review` lists it under the live claim's ref. |
 
 ### Planned terms
 

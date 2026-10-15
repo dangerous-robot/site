@@ -355,27 +355,23 @@ def _step_analyze_write(tmp_path, verdict: str, **output):
         )
 
 
-def test_step_analyze_write_resets_a_published_claim_to_draft(tmp_path) -> None:
-    """A new verdict and narrative must not go live without review, as with dr draft --claim --force."""
-    import yaml
-
-    from common.frontmatter import parse_frontmatter
-    from orchestrator.review import refresh_verdict_change
+@pytest.mark.parametrize("status", ["published", "archived"])
+def test_step_analyze_write_refuses_a_live_claim(tmp_path, status) -> None:
+    """From RE-AW (Recheck) on, no write lands on a published or archived claim
+    in place: the refusal names `dr recheck --claim`, which writes a pending
+    draft. Nothing is written."""
+    from common.frontmatter import parse_frontmatter, serialize_frontmatter
 
     claim_path, sidecar_path = _published_claim_repo(tmp_path)
+    fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_path.write_text(serialize_frontmatter({**fm, "status": status}, body), encoding="utf-8")
+    before = (claim_path.read_bytes(), sidecar_path.read_bytes())
 
     result = _step_analyze_write(tmp_path, "false")
 
-    assert result.exit_code == 0, result.output
-    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-    assert fm["status"] == "draft"
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewed_at"] is None
-    assert sidecar["human_review"]["reviewer"] is None
-    assert sidecar["refresh"]["previous"]["verdict"] == "true"
-    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
-    # dr review --approve then asks for a public correction.
-    assert refresh_verdict_change(fm, sidecar) == ("true", "false")
+    assert result.exit_code == 2, result.output
+    assert "dr recheck --claim acme/green" in result.output
+    assert (claim_path.read_bytes(), sidecar_path.read_bytes()) == before
 
 
 def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> None:
@@ -399,12 +395,12 @@ def test_step_analyze_write_leaves_a_draft_claims_sidecar_alone(tmp_path) -> Non
 
 @pytest.mark.parametrize(
     "previous",
-    [{"status": "archived"}, {"status": "blocked", "blocked_reason": "insufficient_sources"}],
-    ids=["archived", "blocked"],
+    [{"status": "blocked", "blocked_reason": "insufficient_sources"}],
+    ids=["blocked"],
 )
 def test_step_analyze_write_returns_a_non_draft_claim_to_draft(tmp_path, previous) -> None:
-    """Production builds archived claims too, so a rewrite of one waits for
-    review; a blocked claim with a verdict is no longer blocked."""
+    """A blocked claim with a verdict is no longer blocked (published and
+    archived claims are refused above)."""
     import yaml
 
     from common.frontmatter import parse_frontmatter, serialize_frontmatter
@@ -439,7 +435,7 @@ def _add_audit_block(sidecar_path, analyst_verdict: str = "true") -> None:
     sidecar_path.write_text(yaml.safe_dump(data), encoding="utf-8")
 
 
-@pytest.mark.parametrize("status", ["draft", "published"])
+@pytest.mark.parametrize("status", ["draft"])
 def test_step_analyze_write_clears_the_evaluators_comparison(tmp_path, status) -> None:
     """The Evaluator graded the old analysis, so the claim page must not show
     it agreeing or disagreeing with the new verdict until dr step-audit
@@ -468,14 +464,15 @@ def test_approval_after_step_analyze_records_no_override(tmp_path, human_at_term
 
     claim_path, sidecar_path = _published_claim_repo(tmp_path)
     fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    # A draft: from RE-AW (Recheck) on, step-analyze refuses a published claim.
     claim_path.write_text(
-        serialize_frontmatter({**fm, "criteria_slug": "green-claim"}, body), encoding="utf-8"
+        serialize_frontmatter({**fm, "status": "draft", "criteria_slug": "green-claim"}, body), encoding="utf-8"
     )
     _add_audit_block(sidecar_path)
 
     result = _step_analyze_write(tmp_path, "false")
     assert result.exit_code == 0, result.output
-    approve_claim(claim_path, reviewer="reviewer@example.org", mode="approve", correction_summary="New evidence.")
+    approve_claim(claim_path, reviewer="reviewer@example.org", mode="approve")
 
     review = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["human_review"]
     assert review["verdict_override"] is None
@@ -592,7 +589,7 @@ class TestStepAnalyzeCriterion:
 
 
 # --------------------------------------------------------------------------- #
-# Archive links in code: dr step-ingest and dr wayback-backfill               #
+# Archive links in code: dr step-ingest and dr recheck --sources              #
 # --------------------------------------------------------------------------- #
 
 _ARCHIVE_PAGE_URL = "https://example.org/page"
@@ -608,6 +605,7 @@ def _archive_ts(days_ago: float) -> str:
 
 # A recent capture, so the freshness refresh after a live fetch leaves it alone.
 _ARCHIVE_SNAPSHOT = f"https://web.archive.org/web/{_archive_ts(1)}/https://example.org/page"
+_DONE_SNAPSHOT = f"https://web.archive.org/web/{_archive_ts(1)}/https://example.org/done"
 
 
 def _timegate_re():
@@ -623,7 +621,7 @@ def _save_re():
 
 
 def _live_page(mock, url: str = _ARCHIVE_PAGE_URL):
-    """Mock the live fetch `dr wayback-backfill` makes before each lookup."""
+    """Mock the live fetch `dr recheck --sources` makes before each lookup."""
     import httpx
 
     return mock.get(url).mock(return_value=httpx.Response(200, text=_ARCHIVE_PAGE))
@@ -902,7 +900,7 @@ def test_step_audit_write_keeps_the_level_fit_note(tmp_path) -> None:
     assert data["pipeline_run"]["level_clamp"] == note
 
 
-class TestWaybackBackfill:
+class TestRecheckSourcesBackfill:
     _SOURCE = (
         "---\n"
         "url: https://example.org/page\n"
@@ -923,7 +921,7 @@ class TestWaybackBackfill:
         (sources / "done.md").write_text(
             self._SOURCE.replace(
                 "url: https://example.org/page\n",
-                f"url: https://example.org/done\narchived_url: {_ARCHIVE_SNAPSHOT}\n",
+                f"url: https://example.org/done\narchived_url: {_DONE_SNAPSHOT}\n",
             ),
             encoding="utf-8",
         )
@@ -931,7 +929,7 @@ class TestWaybackBackfill:
 
     def _invoke(self, tmp_path, *ids: str):
         return CliRunner().invoke(
-            main, ["wayback-backfill", *ids, "--repo-root", str(tmp_path)]
+            main, ["recheck", "--sources", *ids, "--repo-root", str(tmp_path)]
         )
 
     def test_adds_only_the_archived_url_line(self, tmp_path, mock_capture_replay) -> None:
@@ -945,6 +943,8 @@ class TestWaybackBackfill:
             mock.get(_timegate_re()).mock(
                 return_value=httpx.Response(302, headers={"location": _ARCHIVE_SNAPSHOT})
             )
+            _live_page(mock, "https://example.org/done")
+            done_before = (sources / "done.md").read_bytes()
             result = self._invoke(tmp_path, "2026/page", "2026/done")
 
         assert result.exit_code == 0, result.output
@@ -953,7 +953,9 @@ class TestWaybackBackfill:
             f"url: https://example.org/page\narchived_url: {_ARCHIVE_SNAPSHOT}\n",
         )
         assert (sources / "page.md").read_text() == expected
-        assert "2026/done: already has archived_url" in result.output
+        # A source that already has a good link is rechecked and left byte for byte.
+        assert any(line.startswith("2026/done:") for line in result.output.splitlines()), result.output
+        assert (sources / "done.md").read_bytes() == done_before
 
     def test_failure_prints_the_reason_and_exits_nonzero(self, tmp_path, no_archive_wait) -> None:
         import httpx
@@ -997,7 +999,7 @@ class TestWaybackBackfill:
         assert save.called is False
 
 
-class TestWaybackBackfillRecheck:
+class TestRecheckSources:
     _URL = "https://example.org/page"
     _BAD = f"https://web.archive.org/web/{_archive_ts(2)}/https://example.org/page"
 
@@ -1026,7 +1028,7 @@ class TestWaybackBackfillRecheck:
 
     def _invoke(self, tmp_path):
         return CliRunner().invoke(
-            main, ["wayback-backfill", "--recheck", "2026/page", "--repo-root", str(tmp_path)]
+            main, ["recheck", "--sources", "2026/page", "--repo-root", str(tmp_path)]
         )
 
     @staticmethod
@@ -1039,7 +1041,7 @@ class TestWaybackBackfillRecheck:
 
         return httpx.Response(status, headers={"memento-datetime": "Sat, 10 Oct 2026 00:00:00 GMT"})
 
-    def test_wayback_backfill_recheck_replaces_error_capture(self, tmp_path) -> None:
+    def test_recheck_sources_replaces_error_capture(self, tmp_path) -> None:
         import re
 
         import httpx
@@ -1082,7 +1084,9 @@ class TestWaybackBackfillRecheck:
         assert path.read_text() == self._source(self._BAD)
         assert timegate.called is False
 
-    def test_recheck_removes_link_when_no_good_capture(self, tmp_path) -> None:
+    def test_recheck_keeps_the_link_when_no_good_capture(self, tmp_path) -> None:
+        """Closes the backlog row "`--recheck` removes a bad link before another
+        capture is found": the old link stays until a replacement passes its check."""
         import httpx
         import respx
 
@@ -1095,10 +1099,9 @@ class TestWaybackBackfillRecheck:
             result = self._invoke(tmp_path)
 
         assert result.exit_code == 1
-        assert path.read_text() == self._source(None)
-        assert f"2026/page: removed {self._BAD}: archive.org capture is an error page (HTTP 404)" in (
-            result.output
-        )
+        assert path.read_text() == self._source(self._BAD)
+        assert "removed" not in result.output
+        assert "archive.org capture is an error page (HTTP 404)" in result.output
         assert "no other 200 capture found" in result.output
         assert save.called is False
 
@@ -1118,7 +1121,7 @@ class TestWaybackBackfillRecheck:
         assert "ConnectError" in result.output
         assert timegate.called is False
 
-    def test_recheck_removal_after_timegate_429_says_the_search_did_not_finish(
+    def test_recheck_after_timegate_429_keeps_the_link_and_says_the_search_did_not_finish(
         self, tmp_path, no_archive_wait
     ) -> None:
         import httpx
@@ -1132,10 +1135,10 @@ class TestWaybackBackfillRecheck:
             result = self._invoke(tmp_path)
 
         assert result.exit_code == 1
-        assert path.read_text() == self._source(None)
+        assert path.read_text() == self._source(self._BAD)
         assert "archive.org TimeGate check failed (HTTP 429)" in result.output
         assert "no other 200 capture found" not in result.output
-        assert "rerun `dr wayback-backfill 2026/page` later" in result.output
+        assert "rerun `dr recheck --sources 2026/page` later" in result.output
 
     _MOVED = "https://example.org/moved"
 
@@ -1199,7 +1202,7 @@ class TestWaybackBackfillRecheck:
             result = self._invoke(tmp_path)
 
         assert result.exit_code == 1
-        assert path.read_text() == self._source(None)
+        assert path.read_text() == self._source(self._BAD)
         assert f"archive.org capture redirects to {self._MOVED}" in result.output
         assert "no other 200 capture found" in result.output
 

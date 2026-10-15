@@ -51,6 +51,9 @@ class StepError:
         - ``invalid_output``           -- an agent's output failed validation after its own retries
         - ``write_failed``             -- the writer failed part-way (a half-claim)
         - ``verdict_split``            -- the analyst and the Evaluator disagreed; the tie-breaker settled it
+        - ``not_started``              -- ``dr recheck --due`` could not start a claim's run
+          (its entity file does not load, or the claim is not where its entity writes)
+        - ``run_failed``               -- a ``dr recheck`` run raised outside the loop's steps
 
     Reserved (tier1 source-pool expansion, not yet wired)
     -----------------------------------------------------

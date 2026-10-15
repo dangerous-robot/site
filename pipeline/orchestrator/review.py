@@ -11,8 +11,16 @@ import click
 import yaml
 
 from common.frontmatter import has_criterion, parse_frontmatter
-from common.sidecar import pipeline_verdict_of, sidecar_path_for
-from orchestrator.persistence import set_claim_corrections, set_claim_status
+from common.sidecar import pipeline_verdict_of, read_sidecar, sidecar_path_for
+from orchestrator.persistence import (
+    is_pending,
+    live_path_for,
+    pending_path_for,
+    promote_pending,
+    promotion_half_done,
+    set_claim_corrections,
+    set_claim_status,
+)
 
 ReviewMode = Literal["review", "approve", "archive"]
 
@@ -34,11 +42,34 @@ def _prompt_slug(verb: str, slug: str) -> str:
 
 
 def claim_slug_for(claim_path: Path) -> str:
-    """``<entity>/<claim>`` (or the nested path under ``research/claims``) for a claim file."""
+    """``<entity>/<claim>`` (or the nested path under ``research/claims``) for a claim file.
+
+    A pending recheck under ``research/pending`` has its live claim's ref.
+    """
     for ancestor in claim_path.parents:
-        if ancestor.name == "claims" and ancestor.parent.name == "research":
+        if ancestor.name in ("claims", "pending") and ancestor.parent.name == "research":
             return claim_path.relative_to(ancestor).with_suffix("").as_posix()
     return f"{claim_path.parent.name}/{claim_path.stem}"
+
+
+def _repo_root_of(claim_path: Path) -> Path | None:
+    """The repo root above ``research/claims`` or ``research/pending``, or None."""
+    for ancestor in claim_path.parents:
+        if ancestor.name in ("claims", "pending") and ancestor.parent.name == "research":
+            return ancestor.parent.parent
+    return None
+
+
+def recheck_pair(claim_path: Path) -> tuple[Path, Path | None]:
+    """``(live path, pending path)`` for a live or pending claim path; the pending path is None when no pending recheck exists."""
+    root = _repo_root_of(claim_path)
+    if root is None:
+        return claim_path, None
+    if is_pending(claim_path, root):
+        live = live_path_for(claim_path, root)
+        return live, claim_path if claim_path.exists() else None
+    pending = pending_path_for(claim_path, root)
+    return claim_path, pending if pending.exists() else None
 
 
 def _pick_awaits_restatement(claim_path: Path, sidecar: dict) -> bool:
@@ -181,6 +212,34 @@ def refresh_verdict_change(fm: dict, sidecar: dict | None) -> tuple[str, str] | 
     return str(previous), str(current)
 
 
+def verdict_change_on_approve(claim_path: Path) -> tuple[str, str] | None:
+    """The (previous, new) verdicts an approval of ``claim_path`` would publish over, else None.
+
+    For a pending recheck: the published live verdict and the pending one,
+    when they differ (an archived live claim has no published verdict). For
+    any other claim: ``refresh_verdict_change``. ``--approve`` needs
+    ``--correction`` whenever this is not None.
+    """
+    live, pending = recheck_pair(claim_path)
+    if pending is None:
+        try:
+            fm, _ = parse_frontmatter(live.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None
+        return refresh_verdict_change(fm, read_sidecar(live))
+    try:
+        live_fm, _ = parse_frontmatter(live.read_text(encoding="utf-8"))
+        pending_fm, _ = parse_frontmatter(pending.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if live_fm.get("status") != "published":
+        return None
+    previous, current = live_fm.get("verdict"), pending_fm.get("verdict")
+    if previous is None or current is None or str(previous) == str(current):
+        return None
+    return str(previous), str(current)
+
+
 def _verdict_override(fm: dict, sidecar: dict) -> dict | None:
     """Record a reviewer verdict that differs from the pipeline's, so lint can tell it from drift."""
     audit = sidecar.get("audit")
@@ -245,6 +304,16 @@ def approve_claim(
     block. If an approved refresh changed the published verdict,
     ``correction_summary`` is required and becomes a public ``corrections`` entry.
 
+    A claim with a pending recheck (``research/pending/``; ``claim_path`` may
+    be the live or the pending path) is approved by promotion: the pending
+    pair is checked as the draft, the correction is required when its
+    verdict differs from the published one, the slug typed back is the live
+    ref, ``promote_pending`` moves the pair over the live files with the
+    refresh snapshot, and the approval below completes on the live path.
+    ``mode="review"`` on a pending recheck is refused: only ``--approve``
+    takes it. ``mode="archive"`` acts on the live claim and leaves the
+    pending pair alone.
+
     The audit sidecar at ``<claim>.audit.yaml`` must already exist. If
     ``reviewer`` is None, falls back to ``git config user.email``. Raises
     ``click.ClickException`` on validation errors so CLI callers surface a
@@ -253,6 +322,17 @@ def approve_claim(
     Every mode asks a person at a terminal to type the claim slug back before
     the first write (see ``confirm_person_present``).
     """
+    live, pending = recheck_pair(claim_path)
+    if pending is not None and mode != "archive":
+        if mode == "review":
+            raise click.ClickException(
+                f"{claim_slug_for(live)} has a pending recheck; sign it off with --approve, "
+                "which promotes it over the live claim; nothing changed"
+            )
+        _promote_and_approve(live, pending, reviewer, notes, pr_url, correction_summary)
+        return
+    claim_path = live
+
     sidecar_path = sidecar_path_for(claim_path)
     if not claim_path.exists():
         raise click.ClickException(f"claim file not found: {claim_path}")
@@ -278,7 +358,65 @@ def approve_claim(
     # Last check before the first write, so a claim that fails preflight is
     # reported without asking the operator to type anything.
     confirm_person_present(claim_path, mode)
+    _record_sign_off(claim_path, mode, effective_reviewer, notes, pr_url, summary)
 
+
+def _promote_and_approve(
+    live: Path,
+    pending: Path,
+    reviewer: str | None,
+    notes: str | None,
+    pr_url: str | None,
+    correction_summary: str | None,
+) -> None:
+    """``approve_claim`` for a pending recheck: check, confirm once, promote, then record the approval."""
+    root = _repo_root_of(live)
+    # A promotion that stopped after moving the sidecar is finished by this one.
+    if not sidecar_path_for(pending).exists() and not promotion_half_done(live, root):
+        raise click.ClickException(f"no audit sidecar at {sidecar_path_for(pending)}; nothing changed")
+    _preflight_status(pending, _read_claim_frontmatter(pending), "approve")
+    effective_reviewer = _resolve_reviewer(reviewer)
+    summary = (correction_summary or "").strip()
+    change = verdict_change_on_approve(live)
+    if change is not None and not summary:
+        previous, current = change
+        raise click.ClickException(
+            f"the recheck changed the verdict from {previous!r} to {current!r}; "
+            "pass --correction TEXT with a one-line summary for readers"
+        )
+
+    confirm_person_present(live, "approve")
+
+    # The files may have changed while the prompt waited: check again from disk.
+    if not pending.exists():
+        raise click.ClickException(f"the pending recheck {pending} went away while the prompt waited; nothing changed")
+    _preflight_status(pending, _read_claim_frontmatter(pending), "approve")
+    if verdict_change_on_approve(live) is not None and not summary:
+        raise click.ClickException(
+            "the verdict changed while the prompt waited; rerun with --correction TEXT"
+        )
+    try:
+        promote_pending(live, root)
+    except (OSError, ValueError) as exc:
+        # The walkthrough no longer lists a pending claim whose sidecar moved,
+        # so the way back is named here.
+        raise click.ClickException(
+            f"could not promote {pending}: {exc}; run the same --approve again to finish"
+        ) from exc
+    # The live pair is now a draft with a pending refresh: approve it as one.
+    _record_sign_off(live, "approve", effective_reviewer, notes, pr_url, summary)
+
+
+def _record_sign_off(
+    claim_path: Path,
+    mode: ReviewMode,
+    effective_reviewer: str,
+    notes: str | None,
+    pr_url: str | None,
+    summary: str,
+) -> None:
+    """The writes of a confirmed sign-off: correction, then sidecar, then status."""
+    sidecar_path = sidecar_path_for(claim_path)
     # The operator may have edited the files while the prompt waited (the
     # queue's `o` action with an editor that returns at once): write from a
     # fresh read, with the preflight repeated on it.

@@ -8,7 +8,9 @@ fixtures run through ``dr draft --entity`` and ``dr draft --claim --force``
 and must produce the same claim, sidecar and source files, with these
 differences and no others:
 
-- every claim gains ``statement``;
+- every claim gains ``statement``, and ``next_recheck_due`` (``as_of`` plus
+  the 60-day default cadence, RE-AW, Recheck; volatile like ``as_of``, its
+  value is pinned in ``test_recheck.py``);
 - the ad hoc claim's ``title`` (and the sidecar's ``analyst_record.title``)
   becomes the operator's sentence instead of the analyst's title, and its
   file stem is ``slugify(statement)`` (plan § SP6a, "the one intended
@@ -57,7 +59,7 @@ GOLDEN_DIR = Path(__file__).parent / "fixtures" / "sp1_parity"
 CRITERION_SLUG = "uses-renewable-energy"
 CRITERION_STATEMENT = f"{ENTITY_NAME} uses renewable energy"
 CRITERION_CLAIM_REF = f"{ENTITY_REF}/{CRITERION_SLUG}"
-_VOLATILE = {"as_of": "DATE", "ran_at": "TS", "run_id": "RUNID"}
+_VOLATILE = {"as_of": "DATE", "next_recheck_due": "DUE", "ran_at": "TS", "run_id": "RUNID"}
 
 
 def _normalize(obj):
@@ -251,7 +253,7 @@ def test_criterion_backed_claim_matches_the_re_ar_golden_except_statement(tmp_pa
     golden = _golden("criterion")
     actual = collect(tmp_path)
     assert actual["stem"] == golden["stem"] == CRITERION_SLUG
-    expected_fm = {**golden["claim_fm"], "statement": CRITERION_STATEMENT}
+    expected_fm = {**golden["claim_fm"], "statement": CRITERION_STATEMENT, "next_recheck_due": "DUE"}
     assert actual["claim_fm"] == expected_fm
     assert actual["claim_body"] == golden["claim_body"]
     assert actual["sidecar"] == golden["sidecar"]
@@ -265,7 +267,7 @@ def test_ad_hoc_claim_matches_the_re_ar_golden_except_statement_and_title(tmp_pa
     golden = _golden("adhoc")
     actual = collect(tmp_path)
     assert actual["stem"] == slugify(SENTENCE)
-    expected_fm = {**golden["claim_fm"], "title": SENTENCE, "statement": SENTENCE}
+    expected_fm = {**golden["claim_fm"], "title": SENTENCE, "statement": SENTENCE, "next_recheck_due": "DUE"}
     assert actual["claim_fm"] == expected_fm
     assert actual["claim_body"] == golden["claim_body"]
     expected_sidecar = json.loads(json.dumps(golden["sidecar"]))

@@ -1165,7 +1165,8 @@ def test_review_json_carries_the_block_when_one_was_written(tmp_path) -> None:
     queue = CliRunner().invoke(main, ["review", "--format", "json", "--repo-root", str(tmp_path)])
     assert queue.exit_code == 0, queue.output
     (item,) = json.loads(queue.output)
-    assert item["restatement_unavailable"] == ""
+    # Null, not an empty string, when no restater failed (RE-AV (Review packet) review item 12).
+    assert item["restatement_unavailable"] is None
     assert [c["rank"] for c in item["restatement"]["candidates"]] == [1, 2]
     assert item["restatement"]["picked"] is None
 

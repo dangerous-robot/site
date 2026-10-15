@@ -31,6 +31,7 @@ from loop.coverage import confirm_coverage
 from loop.errors import StepError
 from loop.fit import fit_verdict_to_written_pool
 from loop.ingest import _addresses_with_aliases, _build_source_dict, _ingest_claim_sources
+from loop.recheck import _recheck_cached_sources
 from loop.policy import STEP_ON_EXHAUSTION, Rule, classify_exception, rule_for
 from loop.restate import needs_restatement, restate_step
 from loop.research import _apply_url_dedup, _research, _warn_uncovered
@@ -594,6 +595,7 @@ async def run(
                 result.source_files = []
                 result.page_text = {}
                 result.snippet_only = {}
+                result.source_rechecks = {}
                 urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
                 source_files, ingest_errors, notes = await _ingest_claim_sources(
@@ -659,6 +661,12 @@ async def run(
                         result.blocked_reason.value if result.blocked_reason else "below_threshold",
                     )
                 return driver.finish(result)
+
+            # A recheck re-checks the cached sources older than its cadence,
+            # once, after the step has settled which sources are cached.
+            result.source_rechecks = await _recheck_cached_sources(
+                client, result.cached_sources, ro.prefetched_bodies, cfg, repo_root,
+            )
 
             # Step 3: Analyst
             say("  › Analysing")

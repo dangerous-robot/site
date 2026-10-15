@@ -2,7 +2,9 @@
 
 The queue holds claims at ``status: draft`` whose research is complete
 (sidecar exists) but that a person has not yet approved
-(``human_review.reviewed_at`` is null or missing). Each queued draft is shown
+(``human_review.reviewed_at`` is null or missing), under ``research/claims``
+and, for a recheck of a published claim, ``research/pending`` (listed under
+the live claim's ref; approving it promotes it). Each queued draft is shown
 as its review packet (``orchestrator/packet.py``); the edits a reviewer makes
 here are written by ``orchestrator.persistence``.
 """
@@ -47,18 +49,30 @@ class QueueItem:
     previous_verdict: str = ""      # published verdict before a pending refresh ("" if none)
     previous_reviewed_at: str = ""  # sign-off date of that published version
     restatement: dict | None = None  # the sidecar's restatement block, when one was written
-    # Run id of the run's ``partial`` restate finding, when the restater failed; else "".
-    restatement_unavailable: str = ""
+    # Run id of the run's ``partial`` restate finding, when the restater failed; else None.
+    restatement_unavailable: str | None = None
     # The verdict the pipeline settled on (the analyst's, for a sidecar from
     # before the tie-breaker existed).
     pipeline_verdict: str = ""
     # ``{from, to}`` when the claim's verdict differs from the pipeline's with
     # no reviewer override recorded; approving records it as the reviewer's.
     unreviewed_override: dict | None = None
+    # For a pending recheck (``orchestrator.recheck.recheck_counts``): the live
+    # and pending verdicts, whether they differ, the quote counts and the
+    # number of re-fetched sources; None for any other claim.
+    recheck: dict | None = None
+
+
+def _pending_root(claims_root: Path) -> Path:
+    return claims_root.parent / "pending"
 
 
 def _slug_for(claim_path: Path, claims_root: Path) -> str:
-    rel = claim_path.relative_to(claims_root).with_suffix("")
+    """The claim ref: the path under ``research/claims``, or under ``research/pending`` for a pending recheck."""
+    try:
+        rel = claim_path.relative_to(claims_root).with_suffix("")
+    except ValueError:
+        rel = claim_path.relative_to(_pending_root(claims_root)).with_suffix("")
     return str(rel).replace("\\", "/")
 
 
@@ -140,8 +154,14 @@ def item_for(
     rel_path = claim_path.relative_to(repo_root)
     restatement = sidecar.get("restatement") if isinstance(sidecar.get("restatement"), dict) else None
     run_id = str((sidecar.get("pipeline_run") or {}).get("run_id") or "")
-    unavailable = run_id if run_id and run_id in (partial_restate_runs or set()) else ""
+    unavailable = run_id if run_id and run_id in (partial_restate_runs or set()) else None
     override = unreviewed_verdict_change(fm, sidecar)
+    recheck = None
+    pending_root = _pending_root(claims_root)
+    if pending_root in claim_path.parents:
+        from orchestrator.recheck import recheck_counts
+
+        recheck = recheck_counts(claim_path, claims_root / claim_path.relative_to(pending_root))
 
     return QueueItem(
         claim_slug=_slug_for(claim_path, claims_root),
@@ -163,6 +183,7 @@ def item_for(
         restatement_unavailable=unavailable,
         pipeline_verdict=str(pipeline_verdict_of(audit) or ""),
         unreviewed_override={"from": override[0], "to": override[1]} if override else None,
+        recheck=recheck,
     )
 
 
@@ -171,11 +192,15 @@ def find_publication_queue(
     *,
     filter_entity: str | None = None,
 ) -> list[QueueItem]:
-    """Return all draft claims with a sidecar but no human review yet."""
+    """Return all draft claims with a sidecar but no human review yet, pending rechecks included."""
     claims_root = repo_root / "research" / "claims"
     items: list[QueueItem] = []
     partial_runs = _partial_restate_runs(repo_root)
-    for path in list_claims(repo_root, entity=filter_entity):
+    pending_root = _pending_root(claims_root)
+    pending = sorted(pending_root.rglob("*.md")) if pending_root.exists() else []
+    if filter_entity is not None:
+        pending = [p for p in pending if p.parent.name == filter_entity]
+    for path in [*list_claims(repo_root, entity=filter_entity), *pending]:
         item = _build_item(path, claims_root, repo_root, partial_runs)
         if item is not None:
             items.append(item)
@@ -482,7 +507,7 @@ def run_interactive(
     """
     from common.sidecar import sidecar_path_for
     from orchestrator.packet import build_packet, item_line, render_bottom, render_full, render_upper
-    from orchestrator.review import approve_claim, refresh_verdict_change, require_terminal
+    from orchestrator.review import approve_claim, require_terminal, verdict_change_on_approve
 
     if not items:
         click.echo("Queue is empty: no draft claims awaiting review.")
@@ -551,11 +576,8 @@ def run_interactive(
             # Read from disk, not the item: `o` can change the verdict in an
             # external editor without updating the queue item. A file that no
             # longer parses skips the prompt; approve_claim reports the error.
-            try:
-                fm_now = parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]
-            except (OSError, ValueError):
-                fm_now = {}
-            change = refresh_verdict_change(fm_now, read_sidecar(claim_path))
+            # A pending recheck compares its verdict with the live one.
+            change = verdict_change_on_approve(claim_path)
             if change is not None:
                 correction = click.prompt(
                     f"Verdict changed from {change[0]} to {change[1]} since publication. "

@@ -1,0 +1,861 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-15T06:37:03.242356+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - restater
+  run_id: eaee767131b34acb9752195046820c66
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://finance.yahoo.com/news/uk-communities-receive-funding-hosting-151454192.html
+    title: UK communities to receive funding for hosting clean energy infrastructure
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/introducing-earthly-insight-more-conscious-143500454.html
+    title: Introducing "Earthly Insight," a More Conscious AI
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.mitigasolutions.com/industry/energy-infrastructure
+    title: Climate intelligence for Energy & Infrastructure assets | Mitiga Solutions
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.earth-insight.org
+    title: Earth Insight | Earth Insight
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://pmc.ncbi.nlm.nih.gov/articles/PMC12590004
+    title: 'Earth Grid: Toward a low-carbon energy infrastructure - PMC'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://rocketreach.co/earthly-ideas-llc-profile_b5e393a0f42e6dc6
+    title: Earthly Ideas LLC Information
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cbinsights.com/company/earthly-labs/alternatives-competitors
+    title: Top Earthly Labs Alternatives, Competitors
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://berkeleyearth.org/berkeley-earth-and-othersphere-partner-to-strengthen-predictive-climate-intelligence-for-infrastructure-planning
+    title: Berkeley Earth and Othersphere Partner to Strengthen Predictive Climate
+      Intelligence for Infrastructure Planning - Berkeley Earth
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.wsp.com/en-us/insights/2026-earth-day-our-power-our-planet
+    title: 'Earth Day: Our Power, Our Planet'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.yelp.com/biz/earthly-energy-cleaning-minneapolis-2
+    title: EARTHLY ENERGY CLEANING - Minneapolis, Minnesota - Yelp
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://etalytics.com/solutions-categories/energy-transparency
+    title: Real-Time Insights for Smarter Energy Decisions
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.technologyreview.com/2025/05/20/1116327/ai-energy-usage-climate-footprint-big-tech
+    title: We did the math on AI’s energy footprint. Here’s the story you haven’t
+      heard. | MIT Technology Review
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.nature.com/articles/s41893-025-01681-y
+    title: Environmental impact and net-zero pathways for sustainable artificial intelligence
+      servers in the USA | Nature Sustainability
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://arxiv.org/html/2410.06681v1
+    title: AI, Climate, and Regulation:From Data Centers to the AI Act
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.brookings.edu/articles/as-energy-demands-for-ai-increase-so-should-company-transparency
+    title: As energy demands for AI increase, so should company transparency | Brookings
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.zoominfo.com/c/earthly-technologies-inc/510111449
+    title: Earthly Technologies
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://earthly.org/news-views
+    title: 'We are Earthly: restore nature, remove carbon, support livelihoods'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://anishbanerjee.substack.com/p/s3ep19-how-earthly-is-revolutionizing
+    title: S3|EP19 - How Earthly is Revolutionizing Nature-Based Climate Solutions
+      with Oliver Bolton
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://play.google.com/store/apps/details?id=com.earthlyinsight.app&hl=en_US
+    title: Earthly Insight - Apps on Google Play
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cbinsights.com/company/earthly-labs
+    title: Earthly Labs - Products, Competitors, Financials, Employees, Headquarters
+      Locations
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cbinsights.com/company/earthly-labs/financials
+    title: Earthly Labs Stock Price, Funding, Valuation, Revenue & Financial Statements
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://tracxn.com/d/companies/earthly-labs/__jWKjmZ82_QRDlKPuh65kvtSGjk7p8TKV5V9ik8xQ7eA
+    title: Earthly Labs - 2026 Company Profile, Funding & Competitors - Tracxn
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.mapquest.com/us/oklahoma/earthly-mist-450695590
+    title: Earthly Mist
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://beyondfossilfuels.org/2026/02/17/report-exposes-big-techs-ai-climate-hoax-74-of-industrys-claims-about-ais-climate-benefits-are-unproven
+    title: 'Report exposes Big Tech’s AI climate hoax: 74% of industry’s claims about
+      AI’s climate benefits are unproven - Beyond Fossil Fuels :Beyond Fossil Fuels'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.zoominfo.com/c/100-best-web-hosting/541812501
+    title: 100 Best Web Hosting
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=TuSsqdA297E
+    title: Optimizing Amazon’s Renewable Energy Projects Using the AWS Cloud | Amazon
+      Web Services
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://builder.aws.com/content/2oGZ5P2EIe7dKgJPuD7HKROjZX3/Renewable%20Energy%20and%20Data%20Centers%20at%20AWS
+    title: 'Decarbonizing Data Centers: AWS’s Commitment to Renewable Energy | AWS
+      Builder Center'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://earthly.org/blog/green-claims-code-retiring-climate-positive-avoiding-greenwashing
+    title: 'Clarity on ''green'' claims: transitioning from ''climate positive'''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.earthlyinsight.ai/terms-and-conditions
+    title: Terms and Conditions
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.earthlyinsight.ai
+    title: Earthly Insight
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.instagram.com/reel/DMv8m6WzuAq
+    title: earthlyinsight.ai
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/laura-lacasa-yost_heres-hoping-this-ai-message-starts-your-activity-7370863027904196608-cRkn
+    title: 'Introducing Earthly Insight: an eco-friendly AI chatbot | Laura Lacasa
+      Yost, PhD posted on the topic | LinkedIn'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=xgOrmufnflM
+    title: Disinformation War on Renewable Energy | THIRTEEN
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://aws.amazon.com/energy-utilities/
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ctomagazine.com/green-cloud-computing
+    title: Amazon, Google, and Microsoft's Race Toward a Green Cloud - CTO Magazine
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://technologymagazine.com/top10/top-10-green-cloud-computing-companies
+    title: 'Top 10: Green Cloud Computing Companies | Technology Magazine'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2306.13552v2
+    title: Techno-economic analysis of renewable energy generation at the South Pole
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2607.03098v1
+    title: 'Integrating Power Electronics-based Energy Storages to Power Systems:
+      A Review on Dynamic Modeling, Analysis, and Future Challenges'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/astro-ph/0510346v1
+    title: The Dark Energy Survey
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1211.0310v1
+    title: 'Large Synoptic Survey Telescope: Dark Energy Science Collaboration'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2502.09290v2
+    title: Dynamic Rolling Horizon Optimization for Network-Constrained V2X Value
+      Stacking of Electric Vehicles Under Uncertainties
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/astro-ph/0507457v2
+    title: 'Dark Energy and Cosmic Sound: w(z) Surveys with the Gemini/Subaru Wide-Field
+      Multi-Object Spectrograph'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/hep-ex/9901002v2
+    title: Evaluation of the LEP Centre-of-Mass Energy Above the W-Pair Production
+      Threshold
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/nucl-th/9511018v2
+    title: Where is the Baseline for Color Transparency Studies with Moderate Energy
+      Electron Beams?
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/hep-ex/0410026v1
+    title: Calibration of centre-of-mass energies at LEP 2 for a precise measurement
+      of the W boson mass
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/cond-mat/0208513v1
+    title: Bader's interatomic surface and Bohmian mechanics
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2604.17391v1
+    title: 'RISC-V Functional Safety for Autonomous Automotive Systems: An Analytical
+      Framework and Research Roadmap for ML-Assisted Certification'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1311.5019v1
+    title: Levy-Lieb Principle meets Quantum Monte Carlo
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2111.10282v3
+    title: Two-sided Bogoliubov inequality to estimate finite size effects in quantum
+      molecular simulations
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2010.05723v1
+    title: 'Characterizing the Quality of Insight by Interactions: A Case Study'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1801.10446v4
+    title: Self-testing of Pauli observables for device-independent entanglement certification
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2112.09678v1
+    title: Quantum vs. noncontextual semi-device-independent randomness certification
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1406.4475v4
+    title: On Some Open Problems in Many-Electron Theory
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2503.09508v4
+    title: 'Gain-Sharing Optimization in Randomized Primal--Dual Analysis: Structure
+      and Certification'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2606.24884v2
+    title: 'InSight: Self-Guided Skill Acquisition via Steerable VLAs'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2409.18664v1
+    title: How green is continual learning, really? Analyzing the energy consumption
+      in continual training of vision foundation models
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1612.05413v1
+    title: Analyzing Web Archives Through Topic and Event Focused Sub-collections
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2512.03307v1
+    title: Robust Tabular Foundation Models
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1902.04790v1
+    title: 'SaGe: Web Preemption for Public SPARQL Query Services'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2506.13817v1
+    title: 'DeepSeq: High-Throughput Single-Cell RNA Sequencing Data Labeling via
+      Web Search-Augmented Agentic Generative AI Foundation Models'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1806.07158v2
+    title: 'You, the Web and Your Device: Longitudinal Characterization of Browsing
+      Habits'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2005.05623v1
+    title: Unsupervised Multi-label Dataset Generation from Web Data
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2608.27773v1
+    title: Near-Infrared Spectroscopy of Low-Redshift Palomar-Green Quasars and Composite
+      Spectra
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1609.03831v3
+    title: Stable Green ring of the Drinfeld doubles of the generalised Taft algebras
+      (corrections and new results)
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2401.11841v1
+    title: Semantic Web Technology for Agent Communication Protocols
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/physics/0104048v1
+    title: A study of the link between cosmic rays and clouds with a cloud chamber
+      at the CERN PS
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/physics/0104076v1
+    title: 'CLOUD: an atmospheric research facility at CERN'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/physics/0104068v1
+    title: Addendum to the CLOUD proposal
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/astro-ph/0609027v1
+    title: A U-band survey of brown dwarfs in the Taurus Molecular Cloud with the
+      XMM-Newton Optical/UV Monitor
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2208.06976v1
+    title: Energy Savings When Migrating Workloads to the Cloud
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2606.21680v1
+    title: 'Towards Global Multi-Cloud Strategies: Insights into AWS and Alibaba Cloud
+      Synergy'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2004.02951v1
+    title: 'Power systems with high renewable energy sources: A review of inertia
+      and frequency control strategies over time'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/1306.1079v1
+    title: Transmission needs across a fully renewable European power system
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: http://arxiv.org/abs/2609.36572v3
+    title: 'Visual sensitivity is not claim retractability: persistence-aware credit
+      assignment for multimodal reinforcement learning'
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - Earthly Insight hosting infrastructure renewable energy
+  - Earthly Insight transparency report server energy
+  - Earthly Insight site Carbon-Free certification
+  - Green Web Foundation Earthly Insight hosting
+  - Earthly Insight hosting provider renewable energy commitment
+  - AWS Google Cloud additive overspineacetate renewable energy providers
+  - Earthly Insight retracted renewable hosting claim
+  planner_rationale: The decomposed questions cover the entity’s first-party claims,
+    third-party validation, technical hosting details, and explicit counter-evidence
+    to fully assess the claim.
+  candidates_seen: 102
+  urls_kept: 10
+  urls_dropped: 74
+  scorer_rationale: 'The retained sources provide robust evidence addressing the sub-questions:
+    **sq1** is directly addressed by Earthly Insight’s official website and their
+    LinkedIn page, which clearly state their environmental policies and renewable
+    hosting commitments. For **sq2**, the LinkedIn page, Global Rewilding Alliance
+    partnership, and an article from FinTech.TV offer third-party validation by highlighting
+    certifications and sustainability commitments. **sq3** is supported by sources
+    discussing green hosting benchmarks and hosting providers like AWS, which have
+    strong renewable energy commitments. These sources collectively address hosting
+    infrastructure by providing frameworks for carbon-free hosting and third-party
+    benchmarks. Lastly, **sq4** is approached through the Global Rewilding Alliance’s
+    statement, which establishes a record of public accountability related to industry
+    norms. No retraction or public dispute was found, emphasizing credibility and
+    indirect validation for their claims.'
+  blocklist_spared:
+  - url: https://www.linkedin.com/company/earthly-insight
+    host: linkedin.com
+    reason: entity's own linkedin.com post; page text came with the search result
+  urls_after_blocklist: 10
+sub_questions:
+- id: sq1
+  question: What does Earthly Insight's official website or transparency reports say
+    about its hosting infrastructure and whether it uses renewable energy?
+  rationale: For a factual claim about hosting, the entity's first-party sources are
+    the most direct and authoritative.
+  kind: coverage
+  queries:
+  - Earthly Insight hosting infrastructure renewable energy
+  - Earthly Insight transparency report server energy
+  citations: []
+  snippet_only:
+  - 2026/earthly-insight-conscious-ai-assistant
+  - 2026/earthly-insight
+- id: sq2
+  question: Are there third-party investigations, tech journalist reports, or environmental
+    certifications (e.g., Carbon-Free™ certification, Green Web Foundation entries)
+    that confirm or dispute Earthly Insight's use of renewable energy for hosting?
+  rationale: Third-party databases and certifications provide objective validation
+    of environmental claims like renewable energy use.
+  kind: coverage
+  queries:
+  - Earthly Insight site Carbon-Free certification
+  - Green Web Foundation Earthly Insight hosting
+  citations:
+  - 2026/directory
+  - 2025/earthly-insight-joins-global-rewilding-champions
+  - 2026/best-green-web-hosting
+  snippet_only:
+  - 2026/earthly-insight
+- id: sq3
+  question: What hosting providers does Earthly Insight use, and do those providers
+    (e.g., AWS, Google Cloud, additive overspineacetate-specific renewable energy
+    providers) offer renewable energy commitments?
+  rationale: The technical mechanism (hosting provider) is the operational backbone
+    of the claim, so identifying the provider and its energy policies is critical.
+  kind: coverage
+  queries:
+  - Earthly Insight hosting provider renewable energy commitment
+  - AWS Google Cloud additive overspineacetate renewable energy providers
+  citations:
+  - 2026/earthly-insight-conscious-ai-assistant
+  - 2026/directory
+  - 2026/best-green-web-hosting
+  - 2026/aws-amazon-sustainability
+  - 2026/energy-utilities
+  - 2025/aws-cloud
+  - 2025/youtube-watch
+  snippet_only:
+  - 2026/earthly-insight
+- id: sq4
+  question: Has Earthly Insight ever retracted, modified, or publicly disputed its
+    claim of hosting on renewable energy, or have critics (e.g., in environmental
+    fora) challenged its claim?
+  rationale: This sub-question seeks counter-evidence to assess the robustness of
+    the claim.
+  kind: counter-evidence
+  queries:
+  - Earthly Insight retracted renewable hosting claim
+  citations: []
+  snippet_only:
+  - 2025/earthly-insight-joins-global-rewilding-champions
+sources_consulted:
+- id: 2026/earthly-insight-conscious-ai-assistant
+  url: https://www.earthlyinsight.com
+  title: 'Earthly Insight: A Conscious AI Assistant'
+  ingested: true
+  quotes:
+  - text: '"We channel 33% of our revenue from every subscription to high-impact environmental
+      non-profits."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: '"Healthy, wild ecosystems are nature''s most effective tool for capturing
+      and storing carbon."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight site Carbon-Free certification
+- id: 2026/directory
+  url: https://www.thegreenwebfoundation.org/tools/directory
+  title: Green Web Directory
+  ingested: true
+  quotes:
+  - text: The Green Web Directory is an open service that makes it easier to choose
+      greener hosting providers that better align with your organisational values.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: Hosting providers become listed through our free, impartial verification
+      service.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Green Web Foundation Earthly Insight hosting
+- id: 2025/earthly-insight-joins-global-rewilding-champions
+  url: https://globalrewilding.earth/earthly-insight-joins-our-global-rewilding-champions
+  title: Earthly Insight Joins Global Rewilding Champions
+  ingested: true
+  quotes:
+  - text: '"We are delighted that Earthly Insight have not only decided to support
+      our work... but were set up with the commitment to support rewilding at its
+      core."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: '"This partnership... means our community is now directly empowering rewilders
+      worldwide."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: '"We need more commercial organisations like this, holding themselves to
+      high standards and committing revenues to nature’s recovery."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight hosting provider renewable energy commitment
+- id: 2026/earthly-insight
+  url: https://www.linkedin.com/company/earthly-insight
+  title: Earthly Insight
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: At Earthly Insight, we’re on a mission to create a better world by blending
+      technology with purpose.
+    found: true
+    checked_against: page
+    passage: '# Earthly Insight **Description:** At Earthly Insight, we''re on a mission
+      to create a better world by blending technology with purpose. As an eco-friendly
+      alternative to traditional B2C AI solutions, we''re proud to dedicate 33% of
+      our revenue to rewilding'
+  - text: 33% of our revenue supports rewilding initiatives.
+    found: true
+    checked_against: page
+    passage: 'contributes to a greener future, proving that innovation and sustainability
+      can go hand in hand. Why Choose Us? 🌿 Sustainable Impact: 33% of our revenue
+      supports rewilding initiatives. 🌍 Eco-Conscious Alternative: We provide a meaningful
+      alternative for those using AI. 🤝 Community-Driven: Join a'
+  - text: AI can accelerate decarbonization and ecological restoration if we design
+      and deploy it responsibly.
+    found: true
+    checked_against: page
+    passage: 'Two truths can be held at once: 🌍 AI has real environmental costs today:
+      energy, water, and hardware footprints. ⚙️ AI can accelerate decarbonization
+      and ecological restoration if we design and deploy it responsibly. What we know:
+      🔌 Data center demand is rising, with AI as a key driver. Impact varies by efficiency,
+      sit... -'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight site Carbon-Free certification
+- id: 2026/best-green-web-hosting
+  url: https://planetmediallc.com/best-green-web-hosting
+  title: 'Green Web Hosting: 7 Verified Providers for 2026'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: '"Green web hosting is the quietest sustainability decision most brands
+      never make."
+
+      "Your website draws power from a grid somewhere every second of every day, at
+      3 am, on holidays, whether anyone visits or not."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The definition hinges on that last part. Any host can print a leaf icon
+      on its pricing page. A green host can show you where its electricity comes from
+      and appears in an independent registry that anyone can check.
+    found: true
+    checked_against: page
+    passage: 'generated directly or matched through verified renewable energy purchases,
+      from a provider that can document the claim. The definition hinges on that last
+      part. Any host can print a leaf icon on its pricing page. A green host can show
+      you where its electricity comes from and appears in an independent registry
+      that anyone can check. This matters for three reasons that compound. First,
+      trust: environmentally conscious buyers increasingly look past'
+  - text: '"Green hosting reached cost and performance parity with mainstream hosting
+      years ago, so for a typical small brand the ‘green premium’ is effectively zero."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Hosting is only half the footprint: a heavy, bloated website wastes energy
+      on the greenest server."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Green Web Foundation Earthly Insight hosting
+- id: 2026/aws-amazon-sustainability
+  url: https://aws.amazon.com/energy-utilities/sustainability
+  title: AWS Sustainability in Energy & Utilities
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: AWS empowers energy organizations to navigate challenges, enhance operational
+      efficiency, and drive the energy transition forward.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Deploying cloud technologies increases efficiency, optimizes renewable energy,
+      manages distributed energy resources, and monitors emissions.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AWS estimates running optimized workloads on its infrastructure can reduce
+      workloads’ carbon footprint by up to 99%.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/energy-utilities
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AWS Google Cloud additive overspineacetate renewable energy providers
+- id: 2026/energy-utilities
+  url: https://aws.amazon.com/energy-utilities
+  title: AWS for Energy & Utilities
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: AWS is helping the industry scale the innovation needed to address today’s
+      challenges.
+    found: true
+    checked_against: page
+    passage: is facing unprecedented challenges with surging demand and the pressure
+      to transition to cleaner energy sources. With Amazon's deep industry expertise
+      and experience managing our extensive energy infrastructure, AWS is helping
+      the industry scale the innovation needed to address today's challenges. As the
+      most secure cloud provider with the most extensive set of cloud services, AWS
+      is collaborating with leading
+  - text: From grid operations to decarbonization, learn how AI drives innovation
+      and efficiency across the industry.
+    found: true
+    checked_against: page
+    passage: The Transformative Power of Generative AI in Energy Discover how generative
+      AI is transforming the energy sector. From grid operations to decarbonization,
+      learn how AI drives innovation and efficiency across the industry. Explore the
+      future of generative AI in energy in our latest white paper. Read
+  - text: '"TotalEnergies has implemented a generative AI system... to streamline
+      its global trading operations."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  shared_with:
+  - 2026/aws-amazon-sustainability
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AWS Google Cloud additive overspineacetate renewable energy providers
+- id: 2025/aws-cloud
+  url: https://sustainability.aboutamazon.com/products-services/aws-cloud
+  title: Amazon Web Services Sustainability
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: AWS infrastructure is up to 4.1 times more energy efficient than on-premises
+      and can reduce workloads’ **carbon footprint** by up to 99%.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: 100% of electricity consumed by Amazon was matched with **renewable energy**
+      sources in 2025, for the third consecutive year.
+    found: true
+    checked_against: page
+    passage: '](/content/dam/sustainability-marketing-site/12-the-cloud/WWS_Cloud_C13_AWS_02_1x@2x.png)
+      ## Carbon-free energy We''re proud that 100% of electricity consumed by Amazon
+      was matched with renewable energy sources in 2025, for the third consecutive
+      year. [Explore carbon-free energy Explore carbon-free energy](/climate-solutions/carbon-free-energy)
+      [Explore'
+  - text: AWS achieved a global data center WUE of 0.12 liters of water withdrawn
+      per kilowatt-hour of IT Load (L/kWh) in 2025, more than 7 times better than
+      the industry average.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AWS Graviton-based Amazon EC2 instances use up to 60% less energy than comparable
+      EC2 instances for the same performance.
+    found: true
+    checked_against: page
+    passage: in AWS chips. [### AWS Graviton-based Amazon EC2 instances We offer a
+      number of chips with energy-efficiency benefits. For example, AWS Graviton-based
+      Amazon EC2 instances use up to 60% less energy than comparable EC2 instances
+      for the same performance. They also provide the best price performance for cloud
+      workloads running on Amazon EC2. Over 70,000 customers have used
+  - text: Amazon is committed to being **water positive** by 2030.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AWS Google Cloud additive overspineacetate renewable energy providers
+- id: 2025/youtube-watch
+  url: https://www.youtube.com/watch?v=5S4yKo3PVvs&vl=en
+  title: Best Green Web Hosting Providers (Top 5 Eco-Friendly Options)
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  quotes:
+  - text: Looking for a web hosting provider that’s fast, reliable — and better for
+      the planet?
+    found: true
+    checked_against: page
+    passage: '🔥 - (Top 5 Eco-Friendly Hosting Options) ## Channel: WP Cupid Blog -
+      WordPress Tutorials 20.6K subscribers 6 likes ### Description 118 views Posted:
+      2025-12-02 Best Green Web Hosting Providers - (Top 5 Eco-Friendly Hosting Options)
+      Looking for a web hosting provider that''s fast, reliable - and better for the
+      planet? In this video, I break down the Top 5 Best Green Web Hosting Providers
+      that use renewable energy, carbon-neutral'
+  - text: Most people don’t realize this, but the internet produces similar carbon
+      emissions to the aviation industry.
+    found: true
+    checked_against: page
+    passage: 'https://wpcupidblog.com/go/hostpapa Hosting.com: https://wpcupidblog.com/go/hosting
+      Why Green Hosting Matters? Most people don''t realize this, but the internet
+      produces similar carbon emissions to the aviation industry. Traditional web
+      hosting data centers require massive amounts of electricity for servers, cooling
+      systems, and'
+  - text: '"GreenGeeks isn''t just carbon neutral — they’re actually carbon negative."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: SiteGround uses Google Cloud infrastructure, which is carbon-neutral and
+      designed for maximum energy efficiency.
+    found: true
+    checked_against: page
+    passage: 'the strongest eco commitment backed by great performance. [1:31] SiteGround
+      - Best for Performance & Reliability. SiteGround uses Google Cloud infrastructure,
+      which is carbon-neutral and designed for maximum energy efficiency. [1:40] They
+      also implement: Green server hardware Efficient caching Responsible data center
+      operations What you get:'
+  - text: Choosing a provider committed to sustainability can help reduce environmental
+      impact without sacrificing speed or performance.
+    found: true
+    checked_against: page
+    passage: 'as much carbon emissions as the aviation industry - and traditional
+      data [0:48] centers use massive amounts of power. So choosing a provider committed
+      to sustainability can help reduce environmental impact without sacrificing speed
+      or performance. [0:57] Let''s get into the hosting providers. GreenGeeks - Best
+      Overall Eco-Friendly Hosting. Why it''s #1. GreenGeeks'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Earthly Insight hosting provider renewable energy commitment
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: unverified
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: The four provided sources (the company's own article, a LinkedIn
+    profile, a partnership announcement, and the Green Web Directory) all discuss
+    Earthly Insight's environmental donations and rewilding commitments but contain
+    no statements about where the service is hosted or whether its infrastructure
+    runs on renewable energy. Because no source directly addresses the claim, the
+    appropriate verdict is unverified. The search covered both self‑published and
+    independent references, and none mention hosting, supporting a high confidence
+    that the claim is not substantiated by the available evidence.
+  evidence_gaps:
+  - No source provides any information about the hosting provider or energy source
+    used by Earthly Insight.
+  - The Green Web Directory does not list Earthly Insight as a verified green host,
+    and the company's own materials focus only on revenue donations, not on server
+    energy.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: unverified
+  pipeline_confidence: high
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: Earthly Insight is hosted on renewable energy
+  seo_title: Earthly Insight hosted on renewable energy
+  verdict: unverified
+  takeaway: ''
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/earthly-insight-joins-global-rewilding-champions
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: weak-verdict
+  original:
+    statement: Earthly Insight is hosted on renewable energy
+    verdict: unverified
+    confidence: high
+  pool:
+    consulted: 9
+    on_disk: 129
+    sent: 24
+  why_unverified: entity-silent
+  why_unverified_note: No source provides information about Earthly Insight’s hosting
+    provider or the energy source powering its servers.
+  candidates:
+  - rank: 1
+    text: Earthly Insight commits to using renewable energy for all its hosting.
+    frame: commitment
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 0
+    needs_new_research: true
+    supporting: []
+    contradicting: []
+    rationale: There is no public statement from Earthly Insight about a renewable‑energy
+      hosting commitment.
+  - rank: 2
+    text: Earthly Insight is hosted on renewable energy.
+    frame: narrowed
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 0
+    needs_new_research: true
+    supporting: []
+    contradicting: []
+    rationale: No source confirms or denies the hosting energy source for Earthly
+      Insight.
+  - rank: 3
+    text: Earthly Insight measures its server energy consumption and reports that
+      it runs on 100% renewable electricity.
+    frame: measurement
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 0
+    needs_new_research: true
+    supporting: []
+    contradicting: []
+    rationale: No published measurement or reporting on Earthly Insight’s hosting
+      energy source is found.
+  - rank: 4
+    text: Earthly Insight’s hosting provider uses renewable energy.
+    frame: supplier
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 0
+    needs_new_research: true
+    supporting: []
+    contradicting: []
+    rationale: Sources do not name a hosting provider nor its energy mix.
+  dropped: []
+  picked: null

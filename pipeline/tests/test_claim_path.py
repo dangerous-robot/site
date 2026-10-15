@@ -21,9 +21,9 @@ Covered:
   once with the claim and never overwritten; an abandoned run leaves no
   record and no claim.
 - ``dr draft --claim <ref> --force``: re-runs ``statement`` (``title`` when
-  absent), keeps ``criteria_slug``, writes to the existing path; a non-draft
-  returns to draft with the refresh trail (until SP5 (Recheck)); a failed
-  run leaves the claim untouched; operator fields survive.
+  absent), keeps ``criteria_slug``, writes to the existing path; a published
+  or archived claim is refused (``test_recheck.py``); a failed run leaves the
+  claim untouched; operator fields survive.
 - the claim-path test: fixture copies of the eleven on-disk claims, set to
   draft and re-run, keep their paths.
 - the grammar of ``dr draft``.
@@ -500,35 +500,13 @@ def test_claim_force_falls_back_to_the_title_when_statement_is_absent(tmp_path) 
     assert fm["title"] == title
 
 
-def test_claim_force_on_a_published_claim_returns_it_to_draft_with_the_refresh_trail(tmp_path) -> None:
-    """From ``TestClaimRefreshKeepsPublishedState.test_snapshot_survives_refresh``; today's
-    behaviour until SP5 (Recheck) refuses non-drafts."""
-    write_entity(tmp_path)
-    claim_path, sidecar_path = _write_claim(
-        tmp_path, stem="published-claim", statement="Probe Subject runs on hydro power",
-        status="published", reviewer="reviewer@example.org",
-    )
-    # The Evaluator agrees, so the analyst's verdict is the pipeline's and no tie-breaker runs.
-    with scripted_agents(analyst=analyst_args(verdict="false"), auditor=auditor_args(verdict="false")):
-        result = _dr(tmp_path, *_draft_args("--claim", _claim_ref(claim_path, tmp_path), "--force"))
-
-    assert result.exit_code == 0, result.output
-    fm = _fm(claim_path)
-    assert fm["status"] == "draft"
-    assert fm["verdict"] == "false"
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewed_at"] is None
-    assert sidecar["refresh"]["previous"]["verdict"] == "true"
-    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
-    assert sidecar["refresh"]["dropped_sources"] == ["2026/old"]
-
-
 def test_a_failed_claim_force_leaves_the_claim_untouched(tmp_path) -> None:
-    """From ``test_failed_refresh_leaves_the_published_claim_untouched``."""
+    """From ``test_failed_refresh_leaves_the_published_claim_untouched``; a draft from
+    RE-AW (Recheck) on, which refuses ``--force`` on a published claim before any run."""
     write_entity(tmp_path)
     claim_path, sidecar_path = _write_claim(
         tmp_path, stem="published-claim", statement="Probe Subject runs on hydro power",
-        status="published", reviewer="reviewer@example.org",
+        status="draft", reviewer="reviewer@example.org",
     )
     claim_before = claim_path.read_bytes()
     sidecar_before = sidecar_path.read_bytes()

@@ -1,8 +1,8 @@
 """Tests for ``dr stats`` and the underlying ``orchestrator.stats`` aggregations.
 
-Mirrors ``test_publish.py``'s ``tmp_path`` + CliRunner fixture style so
-every test runs against a synthetic repo root with no leakage to the
-real ``research/`` tree.
+Uses the ``tmp_path`` + CliRunner fixture style, so every test runs
+against a synthetic repo root with no leakage to the real ``research/``
+tree.
 
 Coverage targets the four aggregate dimensions the plan calls out:
 empty corpus, legacy (no acquisition) sidecars, full-acquisition

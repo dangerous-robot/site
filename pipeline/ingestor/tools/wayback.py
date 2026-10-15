@@ -26,7 +26,7 @@ URL instead.
 no good capture exists, or when the one found is older than the caller
 allows; the saved capture is checked the same way. ``find_or_save_archive``
 runs these in order and is shared by the ``wayback_check`` tool, the lookup
-the pipeline runs in code after each ingest, and ``dr wayback-backfill``;
+the pipeline runs in code after each ingest, and ``dr recheck --sources``;
 ``archive_with_time_limit`` adds that lookup's own wall-clock limit.
 """
 

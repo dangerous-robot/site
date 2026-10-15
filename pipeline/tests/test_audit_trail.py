@@ -558,88 +558,29 @@ class TestRefreshSnapshot:
         claim_path = _write_published_claim(tmp_path, status="draft")
         assert _read_published_snapshot(claim_path) is None
 
-    def test_snapshot_written_as_refresh_previous(self, tmp_path):
+    def test_a_refresh_block_on_the_sidecar_carries_forward_unchanged(self, tmp_path):
+        # Only promote_pending starts a refresh block; a later sidecar write
+        # (dr step-audit on the promoted draft) keeps it as it is.
         claim_path = tmp_path / "claim.md"
         claim_path.touch()
+        block = {"refreshed_at": FIXED_TS.isoformat(), "previous": dict(_SNAPSHOT), "dropped_sources": ["2025/a"]}
+        claim_path.with_name("claim.audit.yaml").write_text(
+            yaml.safe_dump({"schema_version": 1, "refresh": block}), encoding="utf-8",
+        )
 
-        data = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
+        data = self._write(claim_path)
 
-        assert data["refresh"]["previous"] == _SNAPSHOT
-        assert data["refresh"]["refreshed_at"] == FIXED_TS.isoformat()
+        assert data["refresh"] == block
         keys = list(data)
         assert keys.index("sources_consulted") < keys.index("refresh") < keys.index("audit")
 
-    def test_pending_block_carries_forward_on_second_refresh(self, tmp_path):
-        claim_path = tmp_path / "claim.md"
-        claim_path.touch()
-        first = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
-
-        later = FIXED_TS + datetime.timedelta(days=1)
-        _write_audit_sidecar(
-            claim_path=claim_path,
-            comparison=_make_comparison(),
-            model="claude-haiku-4-5",
-            ran_at=later,
-            sources_consulted=[],
-            agents_run=["auditor"],
-            previous_publication=None,
-        )
-        data = yaml.safe_load(
-            claim_path.with_name("claim.audit.yaml").read_text(encoding="utf-8")
-        )
-        assert data["refresh"]["previous"] == first["refresh"]["previous"]
-        assert data["refresh"]["refreshed_at"] == first["refresh"]["refreshed_at"]
-
-    def test_pending_block_wins_over_a_new_snapshot(self, tmp_path):
-        # An interrupted refresh leaves the claim published but the sidecar
-        # reset, so a new snapshot would carry no reviewer.
-        claim_path = tmp_path / "claim.md"
-        claim_path.touch()
-        first = self._write(claim_path, previous_publication=dict(_SNAPSHOT))
-
-        data = self._write(
-            claim_path,
-            previous_publication={**_SNAPSHOT, "reviewer": None, "reviewed_at": None},
-        )
-
-        assert data["refresh"]["previous"] == first["refresh"]["previous"]
-
-    def test_no_refresh_key_without_snapshot_or_pending_block(self, tmp_path):
+    def test_no_refresh_key_without_a_block_on_the_sidecar(self, tmp_path):
         claim_path = tmp_path / "claim.md"
         claim_path.touch()
 
-        data = self._write(claim_path, previous_publication=None)
+        data = self._write(claim_path)
 
         assert "refresh" not in data
-
-    def test_dropped_sources_keep_previous_order(self, tmp_path):
-        claim_path = tmp_path / "claim.md"
-        claim_path.touch()
-
-        data = self._write(
-            claim_path,
-            previous_publication=dict(_SNAPSHOT),
-            current_source_ids=["2025/b", "2026/d"],
-        )
-
-        assert data["refresh"]["dropped_sources"] == ["2025/a", "2025/c"]
-
-    def test_dropped_sources_recomputed_on_carried_forward_block(self, tmp_path):
-        claim_path = tmp_path / "claim.md"
-        claim_path.touch()
-        self._write(
-            claim_path,
-            previous_publication=dict(_SNAPSHOT),
-            current_source_ids=["2025/b"],
-        )
-
-        data = self._write(
-            claim_path,
-            previous_publication=None,
-            current_source_ids=["2025/a", "2025/b"],
-        )
-
-        assert data["refresh"]["dropped_sources"] == ["2025/c"]
 
 
 # ---------------------------------------------------------------------------

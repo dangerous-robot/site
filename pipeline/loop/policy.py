@@ -62,6 +62,10 @@ ERROR_POLICY: dict[str, Rule] = {
     "api_key_missing": Rule.CONFIG_FATAL,
     "all_blocked": Rule.CONFIG_FATAL,
     "edgar_ua_missing": Rule.CONFIG_FATAL,
+    # dr recheck: a claim the batch cannot start, or a run that raised
+    # outside the loop's steps; recorded by the command, never retried.
+    "not_started": Rule.CONFIG_FATAL,
+    "run_failed": Rule.CONFIG_FATAL,
     # Writer and disagreement
     "write_failed": Rule.HALF_CLAIM,
     "verdict_split": Rule.TIEBREAKER,

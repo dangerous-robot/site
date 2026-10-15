@@ -52,6 +52,10 @@ WRITER_NAMES = frozenset({
     "record_restatement_pick",
     "write_finding",
     "close_finding",
+    # RE-AW (Recheck): the pending-draft write and its promotion over the live claim.
+    "write_pending_recheck",
+    "promote_pending",
+    "_finish_promotion",
 })
 
 # The only names cli.py may import from the loop package (plan § SP1, Tests that prove it).
@@ -346,7 +350,7 @@ def test_dry_run_with_wayback_on_never_asks_for_a_capture(tmp_path, monkeypatch)
     assert save_calls == 0
 
 
-@pytest.mark.parametrize("name", ["claim-probe", "claim-draft"])
+@pytest.mark.parametrize("name", ["claim-probe", "claim-draft", "wayback-backfill"])
 def test_old_commands_are_gone(name: str) -> None:
     from orchestrator.cli import main
 

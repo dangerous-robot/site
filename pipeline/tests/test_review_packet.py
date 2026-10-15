@@ -735,6 +735,8 @@ def test_a_piped_approve_of_an_edited_verdict_writes_nothing(tmp_path) -> None:
     before = (claim_path.read_bytes(), claim_path.with_suffix(".audit.yaml").read_bytes())
     result = _approve(tmp_path)
     assert result.exit_code != 0
+    # The refusal is the terminal gate's, not some other error (RE-AV review item 9).
+    assert "needs a person at a terminal" in result.output, result.output
     assert (claim_path.read_bytes(), claim_path.with_suffix(".audit.yaml").read_bytes()) == before
 
 
@@ -995,3 +997,76 @@ def test_the_walkthrough_survives_a_claim_that_stops_parsing(tmp_path, monkeypat
     assert result.exit_code == 0, result.output
     assert "Could not read the packet" in result.output
     assert claim_path.read_text(encoding="utf-8").startswith("---\ntitle: [unclosed")
+
+
+# --------------------------------------------------------------------------- #
+# Carried into RE-AW (Recheck) from the RE-AV (Review packet) review             #
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("fmt", ["json", "text"])
+def test_queue_format_reports_one_unreadable_packet_and_prints_the_rest(tmp_path, fmt) -> None:
+    """Item 8: one bad sidecar must not abort the whole queue listing."""
+    _write_packet_claim(tmp_path, stem="good-claim")
+    bad = _write_packet_claim(tmp_path, stem="bad-claim")
+    sidecar = _sidecar(bad)
+    sidecar["sub_questions"] = 7  # item_for reads the claim; build_packet cannot
+    bad.with_suffix(".audit.yaml").write_text(yaml.safe_dump(sidecar, sort_keys=False), encoding="utf-8")
+
+    result = _dr(tmp_path, "review", "--format", fmt)
+
+    assert result.exit_code == 1, result.output
+    assert f"{ENTITY_REF}/bad-claim" in result.stderr
+    if fmt == "json":
+        records = json.loads(result.stdout)
+        assert [r["claim_slug"] for r in records] == [f"{ENTITY_REF}/good-claim"]
+    else:
+        assert f"{ENTITY_REF}/good-claim" in result.stdout
+
+
+def test_part4_says_rejected_not_recorded_for_a_sidecar_without_the_key(tmp_path) -> None:
+    """Item 10: an old sidecar has no research.rejected; the packet must not claim zero rejections."""
+    claim_path = _write_packet_claim(tmp_path)
+    sidecar = _sidecar(claim_path)
+    del sidecar["research"]["rejected"]
+    sidecar["research"]["urls_dropped"] = 30
+    claim_path.with_suffix(".audit.yaml").write_text(yaml.safe_dump(sidecar, sort_keys=False), encoding="utf-8")
+
+    part4 = "\n".join(_part(_lines(_text_packet(tmp_path)), 4))
+
+    assert "Rejected (0)" not in part4, part4
+    assert "Rejected: not recorded (30 dropped)" in part4, part4
+
+
+def test_part4_still_counts_an_empty_rejected_list(tmp_path) -> None:
+    """Positive control for item 10: a recorded empty list is zero rejections."""
+    _write_packet_claim(tmp_path, rejected=0)
+    part4 = "\n".join(_part(_lines(_text_packet(tmp_path)), 4))
+    assert "Rejected (0)" in part4, part4
+
+
+def test_restatement_unavailable_is_null_in_json_when_no_restater_failed(tmp_path) -> None:
+    """Item 12, first half: null, not an empty string."""
+    _write_packet_claim(tmp_path, restatement=None)
+    (record,) = json.loads(_dr(tmp_path, "review", "--format", "json", "--claim", SLUG).output)
+    assert record["restatement_unavailable"] is None
+    assert record["verdict_chain"]["restatement_unavailable"] is None
+
+
+def test_a_stored_quote_wrapped_in_quote_marks_prints_with_one_pair(tmp_path) -> None:
+    """Item 12, second half: on-disk key_quotes can carry their own wrapping marks (the Ecosia source)."""
+    claim_path = _write_packet_claim(tmp_path)
+    sidecar = _sidecar(claim_path)
+    for entry in sidecar["sources_consulted"]:
+        entry.pop("quotes", None)  # an old sidecar: the packet reads the source file's key_quotes
+    claim_path.with_suffix(".audit.yaml").write_text(yaml.safe_dump(sidecar, sort_keys=False), encoding="utf-8")
+    source = tmp_path / "research" / "sources" / f"{_source_id(0)}.md"
+    fm, body = source.read_text(encoding="utf-8").split("---\n", 2)[1:]
+    data = yaml.safe_load(fm)
+    data["key_quotes"] = ['"Renewable sources provide around 26% of global electricity."']
+    source.write_text(f"---\n{yaml.safe_dump(data, sort_keys=False)}---\n{body}", encoding="utf-8")
+
+    part2 = "\n".join(_part(_lines(_text_packet(tmp_path)), 2))
+
+    assert "Renewable sources provide around 26% of global electricity." in part2, part2
+    assert '""' not in part2, part2

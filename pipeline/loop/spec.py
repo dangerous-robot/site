@@ -80,6 +80,11 @@ class VerifyConfig:
     # False when the run writes nothing (``dr draft --dry-run``): archive lookups
     # check TimeGate only and never ask Save Page Now to capture a page.
     allow_save: bool = True
+    # ``dr recheck`` sets the claim's cadence here: a cached source whose
+    # ``accessed_date`` is older than this many days is fetched again and its
+    # key quotes and archive link re-checked (``source_rechecks``); its file
+    # is never rewritten. None (``dr draft``) re-checks no cached source.
+    refetch_cached_older_than_days: int | None = None
     # Per-claim list of acquisition origins to attempt during research.
     # Default ['tavily', 'arxiv']; Brave remains available via search_backend
     # for per-query fallback. arXiv only fires when the claim's topics
@@ -224,6 +229,10 @@ class VerificationResult(BaseModel):
     # kept URL. The writer lists ``sources:`` in the researcher's URL order
     # through it.
     url_aliases: dict[str, str] = Field(default_factory=dict, exclude=True)
+    # Source id -> the re-check of a cached source older than
+    # ``refetch_cached_older_than_days``: ``{refetched, checked_at, archive,
+    # reason, quotes}``; the writer stores it in ``sources_consulted``.
+    source_rechecks: dict[str, dict] = Field(default_factory=dict, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -238,5 +247,5 @@ class VerificationResult(BaseModel):
 
         return _build_sources_consulted(
             self.source_files, cached_sources=self.cached_sources, archive=self.archive,
-            quote_checks=self.quote_checks,
+            quote_checks=self.quote_checks, source_rechecks=self.source_rechecks,
         )

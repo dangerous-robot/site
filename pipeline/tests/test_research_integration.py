@@ -6,12 +6,10 @@ All four agents on scripted models, driven through ``dr draft`` and
 - ``dr draft --entity`` writes the cited sources, the claim and the sidecar
   in the one write order, with the claim's ``sources:`` in the researcher's
   URL order and the sidecar carrying ``pipeline_run.run_id``;
-- ``dr draft --force`` on a published fixture resets the sign-off and writes
-  the refresh block (cases from ``test_entity_independence.py`` and
-  ``test_onboard.py`` ``TestOnboardForceRewritesKeepTheRefreshTrail``);
+- ``dr draft --force`` on a draft keeps its sign-off and the operator's
+  fields (a published or archived claim is refused from RE-AW (Recheck) on;
+  its rerun, refresh trail and crash cases are in ``test_recheck.py``);
 - a criterion's grading text reaches both the Analyst and the Evaluator;
-- a write that fails between the claim and the sidecar leaves the live claim
-  readable and the published snapshot intact;
 - a blocked or failed run writes nothing, so no orphan source files are left;
 - the command's grammar: SENTENCE with ``--entity``, an entity file that
   exists, before any model call.
@@ -215,49 +213,26 @@ def _publish(tmp_path, status: str = "published", verdict: str = "true") -> tupl
     return claim_path, sidecar_path
 
 
-def test_forced_rewrite_of_a_published_claim_keeps_the_refresh_trail(tmp_path, monkeypatch) -> None:
-    from orchestrator.review import refresh_verdict_change
+def test_forced_rewrite_of_a_blocked_claim_runs_in_the_one_write_order(tmp_path, monkeypatch) -> None:
+    """``dr draft --claim <ref> --force`` on a blocked claim: the sign-off reset
+    comes first, then sources, claim and sidecar; the claim returns to draft."""
+    from orchestrator.cli import main
 
     write_entity(tmp_path)
-    claim_path, sidecar_path = _publish(tmp_path)
+    claim_path, sidecar_path = _publish(tmp_path, status="blocked")
     order = _record_write_order(monkeypatch)
 
-    # The Evaluator agrees, so the analyst's verdict is the pipeline's and no tie-breaker runs.
-    with scripted_agents(
-        analyst=analyst_args(verdict="false", confidence="medium"),
-        auditor=auditor_args(verdict="false", confidence="medium"),
-    ):
-        result = _draft(tmp_path, "--force")
+    with scripted_agents():
+        result = CliRunner().invoke(main, [
+            "--model", "test", "draft", "--claim", f"{ENTITY_REF}/{CLAIM_STEM}", "--force",
+            "--skip-wayback", "--repo-root", str(tmp_path),
+        ])
 
     assert result.exit_code == 0, result.output
     assert order == ["mark_forced_rewrite", "_write_source_files", "_write_claim_file", "_write_audit_sidecar"]
-    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-    assert fm["status"] == "draft"
-    assert fm["verdict"] == "false"
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewed_at"] is None
-    assert sidecar["human_review"]["reviewer"] is None
-    previous = sidecar["refresh"]["previous"]
-    assert previous["status"] == "published"
-    assert previous["verdict"] == "true"
-    assert previous["reviewer"] == "reviewer@example.org"
-    assert sidecar["refresh"]["dropped_sources"] == ["2026/old"]
-    # dr review --approve then asks for a public correction.
-    assert refresh_verdict_change(fm, sidecar) == ("true", "false")
-
-
-def test_forced_rewrite_of_an_archived_claim_loses_its_sign_off(tmp_path) -> None:
-    write_entity(tmp_path)
-    claim_path, sidecar_path = _publish(tmp_path, status="archived")
-
-    with scripted_agents():
-        result = _draft(tmp_path, "--force")
-
-    assert result.exit_code == 0, result.output
     assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
     sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewed_at"] is None
-    assert "refresh" not in sidecar
+    assert sidecar["human_review"]["reviewer"] is None
 
 
 def test_forced_rewrite_of_a_draft_keeps_its_review(tmp_path) -> None:
@@ -338,52 +313,6 @@ async def test_grading_rule_reaches_analyst_and_evaluator(tmp_path) -> None:
     assert result.consistency is not None
     assert any(sentinel in p for p in analyst_prompts)
     assert any(sentinel in p for p in auditor_prompts)
-
-
-# --------------------------------------------------------------------------- #
-# A write that fails between the claim and the sidecar                           #
-# --------------------------------------------------------------------------- #
-
-
-@pytest.mark.parametrize("failing_write", ["_write_claim_file", "_write_audit_sidecar"])
-def test_failed_write_keeps_the_live_claim_readable_and_the_snapshot(tmp_path, monkeypatch, failing_write) -> None:
-    import orchestrator.persistence as persistence
-
-    write_entity(tmp_path)
-    claim_path, sidecar_path = _publish(tmp_path)
-    real = getattr(persistence, failing_write)
-    calls = {"n": 0}
-
-    def _fail_once(*args, **kwargs):
-        calls["n"] += 1
-        if calls["n"] == 1:
-            raise OSError(f"simulated {failing_write} failure")
-        return real(*args, **kwargs)
-
-    monkeypatch.setattr(persistence, failing_write, _fail_once)
-
-    with scripted_agents(analyst=analyst_args(verdict="false")):
-        failed = _draft(tmp_path, "--force")
-    assert failed.exit_code != 0
-
-    fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
-    if failing_write == "_write_claim_file":
-        assert fm["status"] == "published"
-        assert fm["verdict"] == "true"
-    else:
-        assert fm["status"] == "draft"
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["refresh"]["previous"]["verdict"] == "true"
-    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
-    assert sidecar["human_review"]["reviewed_at"] is None
-
-    with scripted_agents(analyst=analyst_args(verdict="false")):
-        again = _draft(tmp_path, "--force")
-    assert again.exit_code == 0, again.output
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["refresh"]["previous"]["verdict"] == "true"
-    assert sidecar["refresh"]["previous"]["reviewer"] == "reviewer@example.org"
-    assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
 
 
 # --------------------------------------------------------------------------- #

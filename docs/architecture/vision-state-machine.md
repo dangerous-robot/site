@@ -46,6 +46,8 @@ How much does this change the current plan? **Very little, by design.** The five
 
 **Should these questions be settled now? No.** Ad-hoc scheduled actions can start at Observe (lowest cost, highest immediate value, reversible) and evolve as the state machine fills out. A premature orchestration layer is the failure mode this vision is written against: it would re-introduce the implicit transitions and central coordinator the principles reject. The recommended posture: build the transition substrate first (Audit Trail Phases 2 and 3, build-time validation), let scheduled Observe agents accumulate against that substrate, and only consider Nudge or Execute when the same nudge has been performed manually enough times to have a known shape.
 
+**Settled for rechecks (RE-AW (Recheck)).** The scheduled recheck is the Nudge posture: a scheduled job runs `dr recheck --due`, and every result is written as a pending draft that waits for the operator's promotion in `dr review`, so a scheduled run never changes a live claim. The reason is the pipeline-rebuild interview's answer to Q7: process everything due without stopping, but never let a changed verdict replace a live claim on its own. The job itself is not built; `docs/runbook.md` § Scheduled rechecks lists what it needs.
+
 What this implies for near-term work: nothing new needs to be planned to keep this path open. The Phase 2 and Phase 3 audit-trail work, plus the build-time staleness gate, are exactly the substrate a scheduled agent would read against. Decide later whether the ticker is a Cron Trigger, a GitHub Actions schedule, or an operator's daily routine.
 
 ## Trade-offs and what this is not

@@ -31,19 +31,11 @@ Until this is decided, screening is the operator's call.
 
 ---
 
-## 2. Recheck operational ownership
+## 2. Recheck operational ownership (resolved)
 
-**Where**: `research-workflow.md` "Maintain" step, `research-flow.md` recheck section
+**Where**: `research-workflow.md` "Maintain" step, `research-flow.md` claim lifecycle, `docs/runbook.md`
 
-Every claim has a `recheck_cadence_days` field. The docs acknowledge that staleness detection is manual and automated scheduling is a backlog item. However, neither doc defines:
-
-- Who is responsible for checking (`dr lint` flags stale `next_recheck_due`, but who runs `dr lint`?)
-- At what cadence the check should happen (weekly? on every PR?)
-- Whether stale claims should block merges, generate issues, or just appear in a report
-
-The recheck loop is described architecturally but has no operational owner. Without one, claims will go stale without anyone noticing. The `dr lint` CI integration item in v1.0.0 (shipped as the `lint-content` job) would catch this at merge time, but only for claims that already have a `next_recheck_due` date set. Claims without that field are invisible to the staleness check.
-
-**The question**: Is the intended model (a) cron-based scheduled automation, (b) CI gate that fails on overdue claims, (c) a periodic manual review practice, or (d) something else? This should be documented in `research-workflow.md` even before it is automated.
+Resolved by RE-AW (Recheck). `dr recheck --due` re-runs every published claim whose `next_recheck_due` has passed (or, without one, whose `as_of` plus `recheck_cadence_days` has passed) into a pending draft under `research/pending/`, one summary line per claim, and `dr recheck --due --dry-run` lists the due claims with their due dates. The writer sets `next_recheck_due` on every claim write, so the staleness check no longer misses claims that lack it. The live claim stays up until a person promotes the pending draft with `dr review --approve`. The owner is the operator who runs `dr recheck --due`; the procedure for a scheduled job to run it is in `docs/runbook.md` § Scheduled rechecks, and building that job is a backlog item in `docs/UNSCHEDULED.md`.
 
 ---
 

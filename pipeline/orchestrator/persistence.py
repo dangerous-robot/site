@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import logging
+import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -334,31 +335,68 @@ def write_subject_record(entity: "ResolvedEntity", repo_root: Path) -> Path | No
     return entity_path
 
 
-def _claim_dir_for(entity_ref: str | None, entity_name: str, repo_root: Path) -> Path:
+# Where live claims are written, and where a recheck of a published or
+# archived claim waits for promotion at ``dr review --approve``; both are
+# relative to the repo root. The site's claims loader reads the first only.
+CLAIMS_BASE = Path("research") / "claims"
+PENDING_BASE = Path("research") / "pending"
+
+
+def _claim_dir_for(
+    entity_ref: str | None, entity_name: str, repo_root: Path, *, claims_base: Path = CLAIMS_BASE,
+) -> Path:
     """Return the claims directory for an entity.
 
     Companies and products use a flat layout (research/claims/<slug>/) for
     backward compat; all other types (subjects, …) include the type prefix.
+    ``claims_base`` is the tree the layout sits under (a recheck's staging
+    directory, ``write_pending_recheck``).
     """
+    base = repo_root / claims_base
     if entity_ref and "/" in entity_ref:
         ref_parts = entity_ref.split("/")
         slug = ref_parts[-1]
         if ref_parts[0] in ("companies", "products") and len(ref_parts) == 2:
-            return repo_root / "research" / "claims" / slug
-        return repo_root / "research" / "claims" / Path(*ref_parts)
-    return repo_root / "research" / "claims" / slugify(entity_name)
+            return base / slug
+        return base / Path(*ref_parts)
+    return base / slugify(entity_name)
 
 
-def planned_claim_path(entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path) -> Path:
+def planned_claim_path(
+    entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path,
+    *, claims_base: Path = CLAIMS_BASE,
+) -> Path:
     """Return the path ``_write_claim_file`` writes for these arguments, creating nothing."""
-    return _claim_dir_for(entity_ref, entity_name, repo_root) / f"{slugify(claim_slug)}.md"
+    return _claim_dir_for(entity_ref, entity_name, repo_root, claims_base=claims_base) / f"{slugify(claim_slug)}.md"
 
 
-def _claim_path_for(entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path) -> Path:
+def _claim_path_for(
+    entity_ref: str | None, entity_name: str, claim_slug: str, repo_root: Path,
+    *, claims_base: Path = CLAIMS_BASE,
+) -> Path:
     """Return the path ``_write_claim_file`` writes for these arguments, creating its directory."""
-    claim_path = planned_claim_path(entity_ref, entity_name, claim_slug, repo_root)
+    claim_path = planned_claim_path(entity_ref, entity_name, claim_slug, repo_root, claims_base=claims_base)
     claim_path.parent.mkdir(parents=True, exist_ok=True)
     return claim_path
+
+
+def pending_path_for(claim_path: Path, repo_root: Path) -> Path:
+    """The pending recheck path of a live claim: ``research/claims/<rel>`` to ``research/pending/<rel>``."""
+    return repo_root / PENDING_BASE / Path(claim_path).relative_to(repo_root / CLAIMS_BASE)
+
+
+def live_path_for(pending_path: Path, repo_root: Path) -> Path:
+    """The live claim path a pending recheck promotes over; its claim ref is the live ref."""
+    return repo_root / CLAIMS_BASE / Path(pending_path).relative_to(repo_root / PENDING_BASE)
+
+
+def is_pending(path: Path, repo_root: Path) -> bool:
+    """Whether ``path`` lies under ``research/pending/``."""
+    try:
+        Path(path).relative_to(repo_root / PENDING_BASE)
+    except ValueError:
+        return False
+    return True
 
 
 def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
@@ -391,6 +429,10 @@ def _enum_value(value: object) -> object:
 
 
 _CAPPED_LEVELS = frozenset({VerificationLevel.CLAIMED.value, VerificationLevel.SELF_REPORTED.value})
+
+
+# The site schema's default for ``recheck_cadence_days`` (src/content.config.ts).
+DEFAULT_RECHECK_CADENCE_DAYS = 60
 
 
 # Every frontmatter key a claim file may carry: the keys ``_write_claim_file``
@@ -429,6 +471,7 @@ def _write_claim_file(
     cap_rationale_fitted: bool = False,
     statement: str | None = None,
     uncited_by_title: list[str] | None = None,
+    claims_base: Path = CLAIMS_BASE,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -462,8 +505,15 @@ def _write_claim_file(
     ``verification_level`` and ``confidence`` are both unchanged, and not
     when ``cap_rationale_fitted`` says the level fit wrote the passed one.
     Otherwise the passed values are written.
+
+    Every write sets ``next_recheck_due`` to ``as_of`` plus the claim's
+    ``recheck_cadence_days``, which is carried from the existing claim when
+    set (the site's default of 60 days otherwise, left unwritten).
+
+    ``claims_base`` is the tree the claim is written under (a recheck's
+    staging directory, ``write_pending_recheck``).
     """
-    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
+    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root, claims_base=claims_base)
 
     if claim_path.exists() and not force:
         raise FileExistsError(
@@ -536,6 +586,12 @@ def _write_claim_file(
     if existing_cap_rationale and keep_cap_rationale:
         cap_rationale = existing_cap_rationale
 
+    as_of = datetime.date.today()
+    cadence = existing_fm.get("recheck_cadence_days")
+    if isinstance(cadence, bool) or not isinstance(cadence, int) or cadence <= 0:
+        cadence = None
+    next_recheck_due = as_of + datetime.timedelta(days=cadence or DEFAULT_RECHECK_CADENCE_DAYS)
+
     fm = {
         "title": title,
         "statement": statement,
@@ -550,7 +606,9 @@ def _write_claim_file(
         "criteria_slug": criteria_slug,
         "status": status,
         "blocked_reason": blocked_reason,
-        "as_of": datetime.date.today(),
+        "as_of": as_of,
+        "next_recheck_due": next_recheck_due,
+        "recheck_cadence_days": cadence,
         "sources": source_ids,
         "source_overrides": source_overrides,
         "corrections": existing_corrections,
@@ -667,6 +725,7 @@ def _build_sources_consulted(
     cached_sources: list[tuple[str, str, dict]] | None = None,
     archive: dict[str, dict] | None = None,
     quote_checks: dict[str, list[dict]] | None = None,
+    source_rechecks: dict[str, dict] | None = None,
 ) -> list[dict]:
     """Build the sources_consulted list for an audit sidecar.
 
@@ -682,7 +741,11 @@ def _build_sources_consulted(
 
     Every entry carries ``quotes``: a fresh source's key quote checks from
     ``quote_checks`` (requested URL -> records), a cached source's stored
-    key quotes marked ``not-rechecked``. ``shared_with`` names the other
+    key quotes marked ``not-rechecked``, unless ``source_rechecks`` (source
+    id -> the loop's re-check of a cached source older than the cadence)
+    holds a record for it: then its ``quotes`` are the re-fetched page's
+    checks and ``recheck`` records ``refetched``, ``checked_at``,
+    ``archive`` and ``reason``. ``shared_with`` names the other
     entries on the same canonical host or from the same newswire origin,
     and is left out when there are none.
     """
@@ -694,18 +757,22 @@ def _build_sources_consulted(
         if source_id in seen_ids:
             continue
         seen_ids.add(source_id)
-        result.append(
-            {
-                "id": source_id,
-                "url": url,
-                "title": sd.get("title", ""),
-                "ingested": True,
-                "quotes": [
-                    {"text": q, "found": None, "checked_against": "not-rechecked", "passage": None}
-                    for q in sd.get("key_quotes") or [] if isinstance(q, str)
-                ],
-            }
-        )
+        entry = {
+            "id": source_id,
+            "url": url,
+            "title": sd.get("title", ""),
+            "ingested": True,
+            "quotes": [
+                {"text": q, "found": None, "checked_against": "not-rechecked", "passage": None}
+                for q in sd.get("key_quotes") or [] if isinstance(q, str)
+            ],
+        }
+        recheck = (source_rechecks or {}).get(source_id)
+        if isinstance(recheck, dict):
+            if recheck.get("refetched"):
+                entry["quotes"] = [dict(q) for q in recheck.get("quotes") or []]
+            entry["recheck"] = {k: recheck.get(k) for k in ("refetched", "checked_at", "archive", "reason")}
+        result.append(entry)
         publishers.append(str(sd.get("publisher") or ""))
 
     for url, sf in source_files or []:
@@ -748,8 +815,8 @@ def _iso(value: object) -> str | None:
 def _read_published_snapshot(claim_path: Path) -> dict | None:
     """Return the reader-visible state of a published claim, or None if it is not published.
 
-    A refresh overwrites the claim and resets ``human_review``, so this must be
-    read before the overwrite to keep the prior verdict and sign-off on record.
+    Promotion moves the pending pair over the live one, whose ``human_review``
+    holds the prior sign-off, so ``promote_pending`` reads this before the move.
     """
     try:
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
@@ -859,23 +926,16 @@ def record_restatement_pick(claim_path: Path, n: int) -> None:
     _edit_sidecar(claim_path, edit)
 
 
-def mark_forced_rewrite(
-    claim_path: Path,
-    current_source_ids: list[str] | None,
-    ran_at: datetime.datetime,
-) -> bool:
+def mark_forced_rewrite(claim_path: Path) -> bool:
     """Prepare a forced rewrite of a claim on disk that is not a draft.
 
-    A rewrite must not go live without review (production builds archived
-    claims as well as published ones), and a blocked claim with a verdict is
-    no longer blocked, so a published, archived or blocked claim is written
-    back as a draft (or blocked) and its sidecar's ``human_review`` is reset.
-    For a published claim the sidecar also starts or carries forward the
-    ``refresh`` block, as ``_write_audit_sidecar`` does for ``dr draft
-    --claim --force``, so ``dr review --approve`` asks for a correction when
-    the verdict changed. Call it before the claim write: the sidecar is
-    written first, so a failed claim write leaves the claim unchanged with
-    the snapshot pending.
+    Only a draft or a blocked claim is rewritten in place. A blocked claim
+    with a verdict is no longer blocked, so it is written back as a draft (or
+    blocked) and its sidecar's ``human_review`` is reset. A published or
+    archived claim is never rewritten in place: its rerun is a pending draft
+    (``write_pending_recheck``) and only ``promote_pending`` replaces it, so
+    one raises ``ValueError`` here (the commands refuse it first). Call it
+    before the claim write.
 
     Returns True when the claim was not a draft. A missing claim or a draft
     is left alone, and so is an unparseable claim, which the forced claim
@@ -885,15 +945,17 @@ def mark_forced_rewrite(
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     except (FileNotFoundError, ValueError, yaml.YAMLError):
         return False
-    if fm.get("status", ClaimStatus.DRAFT.value) == ClaimStatus.DRAFT.value:
+    status = fm.get("status", ClaimStatus.DRAFT.value)
+    if status == ClaimStatus.DRAFT.value:
         return False
-    previous_publication = _read_published_snapshot(claim_path)
+    if status in (ClaimStatus.PUBLISHED.value, ClaimStatus.ARCHIVED.value):
+        raise ValueError(
+            f"{claim_path} is {status}; a rerun of it is written as a pending draft "
+            "(dr recheck --claim), never over the live claim"
+        )
 
     def edit(data: dict) -> bool:
         data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
-        refresh = _refresh_block(data, previous_publication, current_source_ids, ran_at)
-        if refresh is not None:
-            data["refresh"] = refresh
         return True
 
     _edit_sidecar(claim_path, edit)
@@ -920,8 +982,6 @@ def _write_audit_sidecar(
     research_trace: dict | None = None,
     sub_questions_block: list[dict] | None = None,
     failure: FailureInfo | None = None,
-    previous_publication: dict | None = None,
-    current_source_ids: list[str] | None = None,
     analyst_record: dict | None = None,
     level_clamp: str | None = None,
     keep_other_models: bool = False,
@@ -934,8 +994,8 @@ def _write_audit_sidecar(
     ``ran_at`` is passed in by the caller (not computed here) so that tests can
     inject a fixed timestamp for reproducible assertions.
 
-    ``previous_publication`` (from ``_read_published_snapshot``) starts a
-    ``refresh`` block; ``current_source_ids`` recomputes its ``dropped_sources``.
+    A ``refresh`` block on the existing sidecar is carried forward unchanged;
+    only ``promote_pending`` starts one.
 
     The ``analyst_record`` block is carried over from the existing sidecar;
     ``_write_claim_file`` owns it. A passed ``analyst_record`` is written only
@@ -1022,7 +1082,7 @@ def _write_audit_sidecar(
             if key in existing_review:
                 human_review[key] = existing_review[key]
 
-    refresh = _refresh_block(existing, previous_publication, current_source_ids, ran_at)
+    refresh = _refresh_block(existing, None, None, ran_at)
 
     if models_used is None:
         models_used = {agent: model for agent in agents_run}
@@ -1206,12 +1266,12 @@ def write_claim_run(
     status: str = "draft",
     create_entity: bool = False,
     restates: str | None = None,
+    claims_base: Path = CLAIMS_BASE,
 ) -> Path:
     """Write one claim run to disk, in the one write order; return the claim path.
 
     The order is the same on every path: ``mark_forced_rewrite`` when
-    ``force`` (the source ids are known before any write, because ingest
-    settled every slug), then the subject record when ``create_entity`` and
+    ``force``, then the subject record when ``create_entity`` and
     none exists (``write_subject_record``), then the cited source files
     (``persist_sources``), then the claim, then the full sidecar. A run that
     never reaches the writer leaves no record, no source and no claim.
@@ -1236,13 +1296,13 @@ def write_claim_run(
     the ref of the claim this run restates (``dr draft --restates``).
 
     ``target`` is the claim file path; it defaults to the entity's claim
-    directory plus ``claim_slug``. Raises ``ValueError`` for a run with no
-    analyst output or a ``blocked_reason``: callers decide not to write.
+    directory under ``claims_base`` plus ``claim_slug``. Raises
+    ``ValueError`` for a run with no analyst output or a ``blocked_reason``:
+    callers decide not to write. A recheck of a published or archived claim
+    goes through ``write_pending_recheck``, which writes it under a staging base.
 
-    The forced-rewrite snapshot uses the planned ids (``year/slug`` from
-    ingest). If ``persist_sources`` renames a slug on a write-time collision,
-    the snapshot's ``dropped_sources`` can differ from the written
-    ``sources:``; rare, and accepted.
+    A forced write onto a published or archived claim raises in
+    ``mark_forced_rewrite`` before any write.
     """
     ao = result.analyst_output
     if ao is None or result.blocked_reason is not None:
@@ -1250,7 +1310,7 @@ def write_claim_run(
     entity_ref = spec.entity.entity_ref
     entity_name = spec.entity.entity_name
     ran_at = ran_at or datetime.datetime.now(datetime.timezone.utc)
-    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root)
+    claim_path = _claim_path_for(entity_ref, entity_name, claim_slug, repo_root, claims_base=claims_base)
     if target is not None and Path(target) != claim_path:
         raise ValueError(f"target {target} is not the claim path {claim_path} for slug {claim_slug!r}")
     # Refused before any write, so a refused run leaves no orphan source file.
@@ -1260,11 +1320,7 @@ def write_claim_run(
         )
 
     if force:
-        planned_ids = _source_ids_in_research_order(result, {
-            url: f"{sf.year}/{sf.slug}"
-            for url, sf in result.source_files if url not in result.uncited_urls
-        })
-        mark_forced_rewrite(claim_path, planned_ids, ran_at)
+        mark_forced_rewrite(claim_path)
     if create_entity:
         write_subject_record(spec.entity, repo_root)
     source_ids = persist_sources(result, repo_root, url_index)
@@ -1306,6 +1362,7 @@ def write_claim_run(
         seo_title=ao.verdict.seo_title,
         takeaway=ao.verdict.takeaway,
         uncited_by_title=result.uncited_by_title,
+        claims_base=claims_base,
         **verdict_write_kwargs(ao.verdict),
     )
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
@@ -1341,6 +1398,197 @@ def write_claim_run(
         restates=restates,
     )
     return written
+
+
+# A recheck writes its pending pair in a directory with this prefix at the
+# repo root, outside ``research/`` so neither the site nor ``dr lint`` reads a
+# leftover, and on the same filesystem so the final moves are atomic.
+RECHECK_STAGING_PREFIX = ".dr-recheck-"
+
+
+def write_pending_recheck(
+    result: VerificationResult,
+    spec: ClaimSpec,
+    config: VerifyConfig,
+    *,
+    repo_root: Path,
+    live_path: Path,
+    url_index: dict[str, str] | None = None,
+    ran_at: datetime.datetime | None = None,
+) -> Path:
+    """Write a rerun of a published or archived claim as a pending draft; return its path.
+
+    The pending draft is ``research/pending/<rel>`` beside the live
+    ``research/claims/<rel>`` (``pending_path_for``). The pair is built in a
+    staging directory (``RECHECK_STAGING_PREFIX``) and moved into place only
+    after every write succeeded, so a writer failure leaves the earlier
+    pending pair, or none, exactly as it was (fresh source files the run
+    wrote stay, as on a ``dr draft`` writer failure).
+
+    The staged pair starts as a copy of each half of the existing pending
+    pair, or else of the live one: that copy is a draft with the sign-off
+    reset (``verdict_override`` dropped) and no ``refresh`` block. The run is
+    written over it by ``write_claim_run`` with ``force``, so the keep rules
+    carry ``corrections``, ``tags``, the operator's ``seo_title``,
+    ``takeaway`` and ``cap_rationale``, ``analyst_record`` and ``restates``.
+    Then the pending sidecar is removed, the claim moved and the sidecar
+    moved, in that order: a crash between them leaves a pending claim with
+    no sidecar, which ``half_claims`` lists. The live claim and its sidecar
+    are never opened for writing; only ``promote_pending`` moves the pending
+    pair over them.
+
+    Raises ``ValueError`` for a run with no analyst output or a
+    ``blocked_reason``, before anything is written.
+    """
+    import shutil
+    import tempfile
+
+    if result.analyst_output is None or result.blocked_reason is not None:
+        raise ValueError("write_pending_recheck needs a run with an analyst output and no blocked_reason")
+    live_path = Path(live_path)
+    pending_path = pending_path_for(live_path, repo_root)
+    live_sidecar = sidecar_path_for(live_path)
+    pending_sidecar = sidecar_path_for(pending_path)
+    rel = live_path.relative_to(repo_root / CLAIMS_BASE)
+    staging = Path(tempfile.mkdtemp(prefix=RECHECK_STAGING_PREFIX, dir=repo_root))
+    try:
+        staging_base = Path(os.path.relpath(staging, repo_root))
+        staged = repo_root / staging_base / rel
+        staged_sidecar = sidecar_path_for(staged)
+        staged.parent.mkdir(parents=True, exist_ok=True)
+        if pending_path.exists():
+            shutil.copyfile(pending_path, staged)
+        else:
+            try:
+                fm, body = parse_frontmatter(live_path.read_text(encoding="utf-8"))
+            except ValueError as exc:
+                raise ValueError(
+                    f"cannot parse existing claim {live_path}; fix its frontmatter before re-running: {exc}"
+                ) from exc
+            fm["status"] = ClaimStatus.DRAFT.value
+            staged.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
+        if pending_sidecar.exists():
+            shutil.copyfile(pending_sidecar, staged_sidecar)
+        elif live_sidecar.exists():
+            data = yaml.safe_load(live_sidecar.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError(f"cannot parse sidecar {live_sidecar}")
+            data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
+            data.pop("refresh", None)
+            staged_sidecar.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        write_claim_run(
+            result, spec, config,
+            repo_root=repo_root,
+            claim_slug=live_path.stem,
+            force=True,
+            target=staged,
+            url_index=url_index,
+            ran_at=ran_at,
+            claims_base=staging_base,
+        )
+        pending_path.parent.mkdir(parents=True, exist_ok=True)
+        pending_sidecar.unlink(missing_ok=True)
+        os.replace(staged, pending_path)
+        os.replace(staged_sidecar, pending_sidecar)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return pending_path
+
+
+def promotion_half_done(live_path: Path, repo_root: Path) -> bool:
+    """True when a promotion moved the pending sidecar over the live one and stopped before the claim.
+
+    The pending claim is still there without its sidecar, and the live claim
+    is published with a sidecar that carries a ``refresh`` block, which
+    approval and archiving never leave on a published claim.
+    """
+    live_path = Path(live_path)
+    pending_path = pending_path_for(live_path, repo_root)
+    if not pending_path.exists() or sidecar_path_for(pending_path).exists():
+        return False
+    try:
+        fm, _ = parse_frontmatter(live_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, yaml.YAMLError):
+        return False
+    if fm.get("status") != ClaimStatus.PUBLISHED.value:
+        return False
+    try:
+        sidecar = read_sidecar(live_path) or {}
+    except (OSError, ValueError, yaml.YAMLError):
+        return False
+    return isinstance(sidecar.get("refresh"), dict)
+
+
+def promote_pending(live_path: Path, repo_root: Path, *, ran_at: datetime.datetime | None = None) -> Path:
+    """Move a pending recheck over its live claim; return the live path.
+
+    First the pending sidecar gains the ``refresh`` block: the live claim's
+    published state (``_read_published_snapshot``; none for an archived
+    claim) and the ``dropped_sources`` the pending draft no longer cites. A
+    ``refresh`` block already on the live sidecar (left by a promotion that
+    stopped part-way) carries forward instead, so a recheck run in between
+    does not replace the prior sign-off with the reset one. Then the
+    sidecar, then the claim, replace the live files, and empty directories
+    under ``research/pending/`` are removed. The live pair is then a draft
+    awaiting re-approval with a pending refresh, which ``dr review
+    --approve`` completes. A crash after both moves leaves that state; a
+    crash between them (``promotion_half_done``) is finished by the next
+    call, which moves the claim only. Both are completed by a second
+    ``--approve``. For an archived live claim no snapshot is written, so a
+    crash between the moves is not detected: the hand fix is to move the
+    pending claim over the live one.
+    """
+    live_path = Path(live_path)
+    pending_path = pending_path_for(live_path, repo_root)
+    pending_sidecar = sidecar_path_for(pending_path)
+    if promotion_half_done(live_path, repo_root):
+        logger.info("Finishing a promotion that stopped after the sidecar move: %s", live_path)
+        return _finish_promotion(live_path, pending_path, repo_root)
+    if not pending_path.exists() or not pending_sidecar.exists():
+        raise FileNotFoundError(f"no pending recheck pair at {pending_path}")
+    ran_at = ran_at or datetime.datetime.now(datetime.timezone.utc)
+    previous_publication = _read_published_snapshot(live_path)
+    live_sidecar = read_sidecar(live_path) or {}
+    existing = {"refresh": live_sidecar["refresh"]} if isinstance(live_sidecar.get("refresh"), dict) else {}
+    pending_fm, _ = parse_frontmatter(pending_path.read_text(encoding="utf-8"))
+    current_source_ids = [str(s) for s in pending_fm.get("sources") or []]
+
+    def edit(data: dict) -> bool:
+        block = _refresh_block(existing, previous_publication, current_source_ids, ran_at)
+        if block is None:
+            return data.pop("refresh", None) is not None
+        # Placed where the sidecar writer places it, after sources_consulted.
+        rebuilt: dict = {}
+        for key, value in data.items():
+            if key == "refresh":
+                continue
+            rebuilt[key] = value
+            if key == "sources_consulted":
+                rebuilt["refresh"] = block
+        rebuilt.setdefault("refresh", block)
+        data.clear()
+        data.update(rebuilt)
+        return True
+
+    _edit_sidecar(pending_path, edit)
+    live_path.parent.mkdir(parents=True, exist_ok=True)
+    os.replace(pending_sidecar, sidecar_path_for(live_path))
+    return _finish_promotion(live_path, pending_path, repo_root)
+
+
+def _finish_promotion(live_path: Path, pending_path: Path, repo_root: Path) -> Path:
+    """The second move of a promotion: the pending claim over the live one, then empty pending directories."""
+    os.replace(pending_path, live_path)
+    pending_root = repo_root / PENDING_BASE
+    directory = pending_path.parent
+    while directory != pending_root and pending_root in directory.parents:
+        try:
+            directory.rmdir()
+        except OSError:
+            break
+        directory = directory.parent
+    logger.info("Promoted pending recheck over %s", live_path)
+    return live_path
 
 
 def write_evaluator_rerun(
@@ -1637,15 +1885,23 @@ def half_claims(repo_root: Path) -> dict[str, list[str]]:
 
     ``claims_without_sidecar`` lists claim refs (the path under
     ``research/claims/`` without ``.md``) that have no ``.audit.yaml``.
-    ``subjects_without_claim`` lists subject records (``subjects/<slug>``)
-    whose claim directory holds no claim.
+    ``pending_without_sidecar`` lists the live refs of pending rechecks
+    under ``research/pending/`` that have no ``.audit.yaml``: a recheck or a
+    promotion stopped between its two moves. ``staging_left`` lists the
+    staging directories a recheck killed while writing left at the repo root
+    (``RECHECK_STAGING_PREFIX``). ``subjects_without_claim`` lists subject
+    records (``subjects/<slug>``) whose claim directory holds no claim.
     """
-    claims_root = repo_root / "research" / "claims"
-    without_sidecar: list[str] = []
-    if claims_root.is_dir():
-        for claim in sorted(claims_root.rglob("*.md")):
-            if not sidecar_path_for(claim).exists():
-                without_sidecar.append(claim.relative_to(claims_root).with_suffix("").as_posix())
+    def without_sidecar(root: Path) -> list[str]:
+        if not root.is_dir():
+            return []
+        return [
+            claim.relative_to(root).with_suffix("").as_posix()
+            for claim in sorted(root.rglob("*.md"))
+            if not sidecar_path_for(claim).exists()
+        ]
+
+    claims_root = repo_root / CLAIMS_BASE
     subjects_root = repo_root / "research" / "entities" / "subjects"
     without_claim: list[str] = []
     if subjects_root.is_dir():
@@ -1653,7 +1909,15 @@ def half_claims(repo_root: Path) -> dict[str, list[str]]:
             claim_dir = claims_root / "subjects" / record.stem
             if not (claim_dir.is_dir() and any(claim_dir.glob("*.md"))):
                 without_claim.append(f"subjects/{record.stem}")
-    return {"claims_without_sidecar": without_sidecar, "subjects_without_claim": without_claim}
+    staging_left = sorted(
+        p.name for p in repo_root.glob(f"{RECHECK_STAGING_PREFIX}*") if p.is_dir()
+    )
+    return {
+        "claims_without_sidecar": without_sidecar(claims_root),
+        "pending_without_sidecar": without_sidecar(repo_root / PENDING_BASE),
+        "staging_left": staging_left,
+        "subjects_without_claim": without_claim,
+    }
 
 
 def _entity_body(history_markdown: str | None) -> str:

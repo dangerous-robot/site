@@ -95,6 +95,15 @@ const auditSchema = z.object({
     // Ids of the other consulted sources on the same canonical host or from
     // the same newswire origin.
     shared_with: z.array(z.string()).optional(),
+    // A recheck's re-check of a cached source older than the claim's cadence:
+    // whether the page was fetched again, when, the archive link's check
+    // (ok, bad, unverified, none or skipped) and why a fetch failed.
+    recheck: z.object({
+      refetched: z.boolean(),
+      checked_at: z.string().optional(),
+      archive: z.string().optional(),
+      reason: z.string().nullable().optional(),
+    }).loose().optional(),
   })),
   // The planner's sub-questions. `kind` and `snippet_only` are optional so
   // sidecars written before they existed still validate.

@@ -69,11 +69,14 @@ def collect_all_paths(
     entity_filter: str | None = None,
 ) -> tuple[list[Path], list[Path], list[Path]]:
     claims_root = repo_root / "research" / "claims"
+    # A pending recheck is linted as a draft, and the sources only it cites
+    # count as referenced, so ``--prune`` keeps them while it waits for review.
+    pending_root = repo_root / "research" / "pending"
     entities_root = repo_root / "research" / "entities"
     sources_root = repo_root / "research" / "sources"
 
     claim_files = [
-        p for p in claims_root.rglob("*.md")
+        p for root in (claims_root, pending_root) for p in root.rglob("*.md")
         if (entity_filter is None or p.parent.name == entity_filter)
     ]
     entity_files = list(entities_root.rglob("*.md"))
