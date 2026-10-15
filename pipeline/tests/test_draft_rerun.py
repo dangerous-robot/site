@@ -1,6 +1,6 @@
 """Acceptance tests for `dr draft --claim <ref> --rerun analyst|evaluator` (RE-AX, Fold side tools).
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP7 (Fold side tools), "Tests that prove it"; design
 ``handoff/2026-10-15-re-ax-design.md``). They replace ``dr step-analyze
 --write`` and ``dr step-audit --write``: the cases are mined from

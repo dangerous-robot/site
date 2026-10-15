@@ -898,7 +898,7 @@ def _operator_set() -> list[Path]:
     files += sorted((REPO_ROOT / "docs" / "architecture").glob("*.md"))
     files += sorted((REPO_ROOT / ".claude" / "skills").rglob("*.md"))
     files += sorted((REPO_ROOT / "scripts").glob("*.sh"))
-    files += [p for p in sorted((REPO_ROOT / "docs" / "plans").glob("*.md")) if p.name != "pipeline-rebuild.md"]
+    files += sorted((REPO_ROOT / "docs" / "plans").glob("*.md"))
     return [p for p in files if p.exists()]
 
 
@@ -915,7 +915,7 @@ def _shared_grep(paths: list[Path]) -> list[str]:
 
 def test_the_operator_docs_name_neither_removed_command() -> None:
     """The spike's shared grep: ``review-queue\\|dr publish`` over the operator set returns nothing."""
-    assert _shared_grep([REPO_ROOT / "docs" / "plans" / "pipeline-rebuild.md"]), "control: the plan names both"
+    assert _shared_grep([REPO_ROOT / "docs" / "plans" / "completed" / "pipeline-rebuild.md"]), "control: the plan names both"
     assert _shared_grep(_operator_set()) == []
 
 

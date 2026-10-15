@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AW (Recheck): `dr recheck`, pending drafts and their promotion.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP5 (Recheck), "Tests that prove it"; design
 ``handoff/2026-10-14-re-aw-design.md``). Every case drives behaviour through a
 public entry: the ``dr`` CLI under ``CliRunner`` with the agents on scripted

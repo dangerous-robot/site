@@ -1,6 +1,6 @@
 """Acceptance tests for `dr draft --source <url>` (RE-AX, Fold side tools).
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP7 (Fold side tools), "Tests that prove it"; Q-B7 (standalone source
 ingest) default; design ``handoff/2026-10-15-re-ax-design.md``). One-URL
 ingest for editorial pages moves from ``dr step-ingest`` (and the hidden

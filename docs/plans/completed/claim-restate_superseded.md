@@ -1,6 +1,6 @@
 # Plan: `dr claim-restate` (claim restatement proposals)
 
-> **Superseded**: This plan has been superseded by RE-AU (Restate inside the loop), [pipeline-rebuild.md § SP3](../pipeline-rebuild.md#sp3-restate-inside-the-loop) (2026-10-14). The original is retained for reference.
+> **Superseded**: This plan has been superseded by RE-AU (Restate inside the loop), [pipeline-rebuild.md § SP3](pipeline-rebuild.md#sp3-restate-inside-the-loop) (2026-10-14). The original is retained for reference.
 
 **Status**: Superseded  
 **Serves**: RE-AC (Claim restatement) in `docs/v1.0.0-roadmap.md` (beta.8), theme 1, Responsible AI chatbots (`docs/priorities.md`, proposed on the theme's `Work:` line, operator to confirm).

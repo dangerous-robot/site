@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AT (Rules, findings file, tie-breaker): readers of ``pipeline_verdict``.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP2 (Rules, findings file, tie-breaker)). Lint ``verdict-sidecar-mismatch``,
 ``dr review --approve``'s override logic, the claim page and the site schema
 are re-anchored on ``audit.pipeline_verdict`` with one fallback: absent means

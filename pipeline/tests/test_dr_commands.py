@@ -1,7 +1,7 @@
 """Acceptance tests for the five-command `dr` set, `dr lint --prune`, the committed hook and
 the end of the `blocked` claim status (RE-AX, Fold side tools).
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP7 (Fold side tools), "Tests that prove it"; design
 ``handoff/2026-10-15-re-ax-design.md``). Replaces ``test_cli_smoke.py``
 (hard-coded cwd, hidden aliases) with ``CliRunner`` calls.

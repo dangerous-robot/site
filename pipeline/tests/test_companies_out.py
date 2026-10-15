@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AY (Companies out): companies are not a claim target.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP8 (Companies out), "Tests that prove it"; Q-B3 (companies) default).
 Behaviour is driven only through public entries: the ``dr`` CLI under
 ``CliRunner`` and the public ``common.templates`` functions. The only patch

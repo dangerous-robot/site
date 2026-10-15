@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AT (Rules, findings file, tie-breaker): the run rules.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP2 (Rules, findings file, tie-breaker), "Tests that prove it"). Every case
 drives behaviour through a public entry: ``loop.run`` or ``loop.rerun`` with
 the agents on scripted models (``tests/loop_harness.py``), the ``dr`` CLI under

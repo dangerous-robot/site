@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AT (Rules, findings file, tie-breaker): the findings file and ``dr findings``.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § End state, The findings file, and § SP2 (Rules, findings file, tie-breaker)).
 The record is ``common.findings.Finding``; the writer and readers are public
 functions in ``orchestrator.persistence``; the command is ``dr findings``

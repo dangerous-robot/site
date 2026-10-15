@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AZ (Findings replay): `dr findings --replay [--finding <id>]`.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP9 (Findings replay), "Tests that prove it"; design
 ``handoff/2026-10-15-re-az-design.md``). Every case drives behaviour through a
 public entry: the ``dr`` CLI under ``CliRunner`` with the agents on scripted

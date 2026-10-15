@@ -44,7 +44,7 @@ Goal: Make per-object model spend visible so we can see which claims, sources, a
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Token usage log + `inv tokens.summary` | [token-usage-log.md](plans/deferred/token-usage-log.md) | Append-only JSONL at `logs/token-log.jsonl` written by a thin wrapper around every `agent.run(...)`; `inv tokens.summary --by object\|time` reader; no DB, no UI Deferred 2026-10-06 (no reader-facing use yet). Triage: Simplicity and clarity; keep; 2026-10-13 |
-| Same-study detection for the review packet | `docs/plans/pipeline-rebuild.md` § Questions for Brandon (follow-up note after Q-B15 (map files)) | Two publishers reporting one study count as two sources today (card candidate C7 (two outlets reporting one study) in the plan's § Card candidates). The review packet's `sources_consulted[].shared_with` groups sources by canonical publisher host and newswire origin only (RE-AV (Review packet), RE-BA (Source pool rules)); `pipeline/common/source_classification.py` has no field or rule for a shared underlying study. Fix: detect a shared origin across publishers (same cited study, report or dataset) and show it in the packet's source-independence part. Added at the pipeline rebuild's Phase 4 close. Triage: Responsible AI chatbots; keep; 2026-10-15 |
+| Same-study detection for the review packet | `docs/plans/completed/pipeline-rebuild.md` § Questions for Brandon (follow-up note after Q-B15 (map files)) | Two publishers reporting one study count as two sources today (card candidate C7 (two outlets reporting one study) in the plan's § Card candidates). The review packet's `sources_consulted[].shared_with` groups sources by canonical publisher host and newswire origin only (RE-AV (Review packet), RE-BA (Source pool rules)); `pipeline/common/source_classification.py` has no field or rule for a shared underlying study. Fix: detect a shared origin across publishers (same cited study, report or dataset) and show it in the packet's source-independence part. Added at the pipeline rebuild's Phase 4 close. Triage: Responsible AI chatbots; keep; 2026-10-15 |
 
 ---
 
@@ -378,7 +378,7 @@ Follow-ups from the code review of the RF1 to RF4 fixes (2026-10-04, [plan](plan
 
 ## Claim restatement follow-ups (RE-AU (Restate inside the loop))
 
-Goal: turn a weak or tie-broken draft into one the sources on disk can settle, without new research. The restater inside the loop (RE-AU (Restate inside the loop), which absorbed RE-AC (Claim restatement); the `dr claim-restate` command was never built) reads the run's pool plus the whole `research/sources/` pool, ranks restatements by how decisively the existing evidence settles them (either direction), and records them in the draft's audit sidecar; the operator runs a pick with `dr draft --restates <ref> --pick <n>`, or archives the claim with `dr review --archive`. The design is in `docs/plans/completed/claim-restate_superseded.md` and the plan in `docs/plans/pipeline-rebuild.md` § SP3 (Restate inside the loop); this section keeps only the follow-ups.
+Goal: turn a weak or tie-broken draft into one the sources on disk can settle, without new research. The restater inside the loop (RE-AU (Restate inside the loop), which absorbed RE-AC (Claim restatement); the `dr claim-restate` command was never built) reads the run's pool plus the whole `research/sources/` pool, ranks restatements by how decisively the existing evidence settles them (either direction), and records them in the draft's audit sidecar; the operator runs a pick with `dr draft --restates <ref> --pick <n>`, or archives the claim with `dr review --archive`. The design is in `docs/plans/completed/claim-restate_superseded.md` and the plan in `docs/plans/completed/pipeline-rebuild.md` § SP3 (Restate inside the loop); this section keeps only the follow-ups.
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|
@@ -432,7 +432,7 @@ Found by the design, cross-review, implementation and review passes of the beta.
 
 ## Pipeline rebuild close findings (2026-10-15)
 
-Found by the Phase 4 close reviews of the pipeline rebuild (`docs/plans/pipeline-rebuild.md`; RE-AR (One loop, one writer) to RE-AZ (Findings replay) and RE-BA (Source pool rules)) and left unfixed in the close fixes (`8f427c4`).
+Found by the Phase 4 close reviews of the pipeline rebuild (`docs/plans/completed/pipeline-rebuild.md`; RE-AR (One loop, one writer) to RE-AZ (Findings replay) and RE-BA (Source pool rules)) and left unfixed in the close fixes (`8f427c4`).
 
 | Work Item | Plan | Notes |
 |-----------|------|-------|

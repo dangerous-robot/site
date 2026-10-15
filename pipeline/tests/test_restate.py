@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AU (Restate inside the loop).
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP3 (Restate inside the loop), "Tests that prove it", § Run rules "Content
 judgment (restatement)" and "Restater fails", and the absorbed design
 ``docs/plans/completed/claim-restate_superseded.md`` D3, D4, D7, D9, D10,
@@ -1262,7 +1262,7 @@ def test_the_operator_docs_never_name_the_unbuilt_command() -> None:
     files += sorted((REPO_ROOT / "docs" / "architecture").glob("*.md"))
     files += sorted((REPO_ROOT / ".claude" / "skills").rglob("*.md"))
     files += sorted((REPO_ROOT / "scripts").glob("*.sh"))
-    files += [p for p in sorted((REPO_ROOT / "docs" / "plans").glob("*.md")) if p.name != "pipeline-rebuild.md"]
+    files += sorted((REPO_ROOT / "docs" / "plans").glob("*.md"))
     hits = []
     for path in files:
         if not path.exists():

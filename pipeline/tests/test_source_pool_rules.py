@@ -1,6 +1,6 @@
 """Acceptance tests for RE-BA (Source pool rules).
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP6b (Source pool rules), "Tests that prove it"). Every case drives
 behaviour through a public entry: ``loop.run``, ``loop.rerun`` or
 ``loop.ingest_one`` with the agents on scripted models

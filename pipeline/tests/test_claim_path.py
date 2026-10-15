@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AS (One claim path): every claim reaches the loop through ``dr draft``.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP6a (One claim path), "Tests that prove it"). Every case drives behaviour
 through a public entry: the ``dr`` CLI under ``CliRunner`` with the four
 agents on scripted models (``tests/loop_harness.py``), ``loop.run``, or a

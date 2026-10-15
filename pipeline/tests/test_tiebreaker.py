@@ -1,6 +1,6 @@
 """Acceptance tests for RE-AT (Rules, findings file, tie-breaker): the tie-breaker.
 
-Written before the implementation (plan ``docs/plans/pipeline-rebuild.md``
+Written before the implementation (plan ``docs/plans/completed/pipeline-rebuild.md``
 § SP2 (Rules, findings file, tie-breaker), § Run rules "Analyst and Evaluator
 disagree" and Q-B5 (tie-breaker)). Every case drives ``loop.run`` or
 ``loop.rerun`` with scripted agents, the ``dr`` CLI under ``CliRunner``, or the
