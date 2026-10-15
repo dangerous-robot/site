@@ -19,16 +19,20 @@ import click
 import httpx
 
 from analyst.agent import AnalystOutput
+from analyst.citations import uncited_by_title
 from auditor.compare import needs_tiebreak, settle_verdict
 from common.findings import Finding, claim_spec_record, config_record
 from common.logging_setup import bind_run_id, progress
 from common.models import BlockedReason, FailureInfo
 from loop.analyse import _apply_cited_filter, _audit_claim_with_failure, _tiebreak, analyse_claim
+from loop.coverage import confirm_coverage
 from loop.errors import StepError
+from loop.fit import fit_verdict_to_written_pool
 from loop.ingest import _addresses_with_aliases, _build_source_dict, _ingest_claim_sources
 from loop.policy import STEP_ON_EXHAUSTION, Rule, classify_exception, rule_for
-from loop.research import _apply_url_dedup, _invert_addresses, _research, _warn_uncovered
+from loop.research import _apply_url_dedup, _research, _warn_uncovered
 from loop.spec import ClaimSpec, VerificationResult, VerifyConfig, _cfg_repo_root
+from orchestrator.entity_resolution import entity_identity_for
 from orchestrator.persistence import build_source_url_index
 
 logger = logging.getLogger(__name__)
@@ -59,7 +63,9 @@ def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
     """
     ingest_only = [e for e in ingest_errors if e.step == "ingest"]
     if ingest_only and all(
-        (e.retryable is False) and e.error_type.startswith("http_")
+        # ``http_{status}`` only: ``http_error`` (a provider 5xx, a dropped
+        # connection) is a transport failure, not a terminal fetch.
+        (e.retryable is False) and e.error_type.startswith("http_") and e.error_type[5:].isdigit()
         for e in ingest_only
     ):
         return BlockedReason.TERMINAL_FETCH_ERROR
@@ -378,6 +384,7 @@ async def _analyse_step(
         if failed.failure is not None and result.failure is None:
             result.failure = failed.failure
         return False
+    result.uncited_by_title = uncited_by_title(analyst_out.verdict, result.sources)
     return True
 
 
@@ -530,6 +537,8 @@ async def run(
                 result.sources = []
                 result.cached_sources = []
                 result.source_files = []
+                result.page_text = {}
+                result.snippet_only = {}
                 urls_to_ingest, cached_sources = _apply_url_dedup(urls, url_index, repo_root)
 
                 source_files, ingest_errors, notes = await _ingest_claim_sources(
@@ -555,12 +564,14 @@ async def run(
                 ingested_set = set(result.urls_ingested) | set(notes.aliases)
                 result.urls_failed = [u for u in urls if u not in ingested_set]
 
-                # Build per-sub-question coverage from the post-ingest source set.
-                # Inverts url -> [sq_id] into sq_id -> [source_id]; sub-questions
-                # with zero addressing sources keep an empty list to surface the
-                # gap to the analyst and the audit sidecar.
-                result.sub_question_coverage = _invert_addresses(
-                    ro.sub_questions, result.sources
+                # Per-sub-question coverage from the post-ingest source set: a
+                # scorer tag stands only when the source's text mentions the
+                # sub-question's terms. Sub-questions with no confirmed source
+                # keep an empty list to surface the gap to the analyst and the
+                # audit sidecar.
+                result.sub_question_coverage, result.snippet_only = confirm_coverage(
+                    ro.sub_questions, ro.queries_by_sub_question, result.sources,
+                    result.page_text, entity_identity_for(resolved_entity, repo_root),
                 )
                 _warn_uncovered(ro.sub_questions, result.sub_question_coverage)
 
@@ -606,8 +617,14 @@ async def run(
                     progress("  ! analyst failed to produce an assessment")
                 return driver.finish(result)
 
-            # Step 4: Evaluator, then the tie-breaker on a disagreement
+            # Step 4: Evaluator, then the tie-breaker on a disagreement. The
+            # level fit runs once, on the listed sources, so the Evaluator
+            # grades the fitted verdict and the writer only records the note.
             cited_sources = _apply_cited_filter(result, result.analyst_output, entity_name)
+            result.level_clamp = fit_verdict_to_written_pool(
+                result.analyst_output.verdict, result.sources,
+                [sd["source_id"] for sd in cited_sources if sd.get("source_id")], entity_name,
+            )
             say("  › Auditing")
             logger.info("Step 4/4: Running the Evaluator...")
             if not await _evaluate_and_settle(driver, result, spec, cfg, cited_sources, say):
@@ -630,7 +647,8 @@ async def rerun(
 ) -> VerificationResult:
     """Run one agent over stored sources: no research, no ingest, no write.
 
-    ``agent`` is ``"analyst"`` (assess ``spec.statement`` from ``sources``;
+    ``agent`` is ``"analyst"`` (assess ``spec.statement`` from ``sources``,
+    then fit the level to every stored source, the claim's listed sources;
     ``consistency`` stays None) or ``"evaluator"`` (grade ``analyst_output``
     against ``sources``, then settle a disagreement with the tie-breaker).
     Each step follows the same error policy as in ``run``, and
@@ -656,10 +674,14 @@ async def rerun(
     with bind_run_id(config.run_id):
         logger.info("rerun entry: agent=%s entity=%s claim=%s", agent, entity_name, spec.statement)
         if agent == "analyst":
-            await _analyse_step(
+            if await _analyse_step(
                 driver, result, spec, config,
                 sub_questions=None, repo_root=_cfg_repo_root(config),
-            )
+            ):
+                result.level_clamp = fit_verdict_to_written_pool(
+                    result.analyst_output.verdict, result.sources,
+                    [sd["source_id"] for sd in result.sources if sd.get("source_id")], entity_name,
+                )
             return driver.finish(result)
 
         result.analyst_output = analyst_output

@@ -38,11 +38,13 @@ _CORPUS = [
                 {"id": "sq1", "question": "Does Brave publish energy sourcing data for Leo?", "rationale": "Direct restatement of the claim's central assertion."},
                 {"id": "sq2", "question": "Do third-party ESG databases profile Brave Software?", "rationale": "Independent corroboration channel."},
                 {"id": "sq3", "question": "Which provider hosts Brave Leo's models, and does that provider disclose energy?", "rationale": "Underlying technical mechanism."},
+                {"id": "sq4", "question": "What evidence shows Brave Leo's energy sourcing is undisclosed?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "Brave transparency report energy", "sub_question_id": "sq1"},
                 {"text": "Brave Software ESG sustainability", "sub_question_id": "sq2"},
                 {"text": "Brave Leo hosting provider", "sub_question_id": "sq3"},
+                {"text": "Brave Leo energy sourcing criticism", "sub_question_id": "sq4"},
             ],
         ),
     },
@@ -55,10 +57,12 @@ _CORPUS = [
             sub_questions=[
                 {"id": "sq1", "question": "Does Ecosia publish a sustainability report?", "rationale": "Direct restatement."},
                 {"id": "sq2", "question": "Do third-party sources confirm the existence of an Ecosia sustainability report?", "rationale": "Independent corroboration."},
+                {"id": "sq3", "question": "Is there evidence Ecosia stopped publishing its sustainability report?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "Ecosia sustainability report", "sub_question_id": "sq1"},
                 {"text": "Ecosia financial reports independent", "sub_question_id": "sq2"},
+                {"text": "Ecosia sustainability report discontinued", "sub_question_id": "sq3"},
             ],
         ),
     },
@@ -72,11 +76,13 @@ _CORPUS = [
                 {"id": "sq1", "question": "Does Anthropic's published policy state that user conversations are not used for training by default?", "rationale": "First-party policy statement."},
                 {"id": "sq2", "question": "Do model cards or technical documentation describe the training pipeline's data sources?", "rationale": "Technical mechanism axis."},
                 {"id": "sq3", "question": "Have independent investigations or regulators corroborated the policy?", "rationale": "Independent corroboration."},
+                {"id": "sq4", "question": "Is there evidence Anthropic trained on user conversations by default?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "Anthropic privacy policy training", "sub_question_id": "sq1"},
                 {"text": "Claude model card training data", "sub_question_id": "sq2"},
                 {"text": "Anthropic training data investigation", "sub_question_id": "sq3"},
+                {"text": "Anthropic user data training opt-out controversy", "sub_question_id": "sq4"},
             ],
         ),
     },
@@ -89,10 +95,12 @@ _CORPUS = [
             sub_questions=[
                 {"id": "sq1", "question": "Is Microsoft listed on a public stock exchange?", "rationale": "Direct restatement."},
                 {"id": "sq2", "question": "What does Microsoft's regulatory filings say about its corporate structure?", "rationale": "Authoritative regulatory record."},
+                {"id": "sq3", "question": "Is there evidence Microsoft is privately held or delisted?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "Microsoft NASDAQ listing", "sub_question_id": "sq1"},
                 {"text": "Microsoft 10-K filing structure", "sub_question_id": "sq2"},
+                {"text": "Microsoft delisting private ownership", "sub_question_id": "sq3"},
             ],
         ),
     },
@@ -106,11 +114,13 @@ _CORPUS = [
                 {"id": "sq1", "question": "Has OpenAI publicly committed to EU AI Act compliance?", "rationale": "First-party commitment."},
                 {"id": "sq2", "question": "Has the EU AI Office or another regulator assessed OpenAI's compliance?", "rationale": "Regulator assessment."},
                 {"id": "sq3", "question": "What technical safeguards has OpenAI documented for general-purpose AI obligations?", "rationale": "Technical mechanism."},
+                {"id": "sq4", "question": "Has any regulator found OpenAI out of compliance with the EU AI Act?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "OpenAI EU AI Act compliance", "sub_question_id": "sq1"},
                 {"text": "EU AI Office OpenAI assessment", "sub_question_id": "sq2"},
                 {"text": "OpenAI GPAI safeguards", "sub_question_id": "sq3"},
+                {"text": "OpenAI EU AI Act violation", "sub_question_id": "sq4"},
             ],
         ),
     },
@@ -123,10 +133,12 @@ _CORPUS = [
             sub_questions=[
                 {"id": "sq1", "question": "Does ChatGPT expose a chat history toggle in user settings?", "rationale": "Direct restatement."},
                 {"id": "sq2", "question": "Has the toggle behavior been independently documented?", "rationale": "Independent corroboration."},
+                {"id": "sq3", "question": "Is there evidence the chat history toggle was removed or does not work?", "rationale": "What would falsify the claim.", "kind": "counter-evidence"},
             ],
             queries=[
                 {"text": "ChatGPT chat history toggle settings", "sub_question_id": "sq1"},
                 {"text": "ChatGPT history disable review", "sub_question_id": "sq2"},
+                {"text": "ChatGPT history toggle removed", "sub_question_id": "sq3"},
             ],
         ),
     },
@@ -142,7 +154,8 @@ async def test_planner_output_shape(entry) -> None:
     plan = result.output
 
     assert isinstance(plan, ResearchPlan)
-    assert 2 <= len(plan.sub_questions) <= 5
+    assert 2 <= len(plan.sub_questions) <= 6
+    assert [sq.kind for sq in plan.sub_questions].count("counter-evidence") == 1
     assert len(plan.sub_questions) >= entry["expected_min_sq"]
 
     sq_ids = {sq.id for sq in plan.sub_questions}

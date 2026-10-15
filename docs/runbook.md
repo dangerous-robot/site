@@ -101,6 +101,10 @@ An abandoned, recovered or tie-broken run leaves a record under `research/findin
 4. A half-claim is a crash between the writes. A claim without a sidecar is replaced with `uv run dr draft --claim <ref> --force`; a subject record with no claim is reused by the next `dr draft --subject <slug>`, or removed by hand. The tools never delete anything.
 5. Commit the finding files you want kept; `dr lint` ignores the directory.
 
+## Model slots
+
+Every agent runs on `--model` unless its own override is set: `--researcher-model` (`DR_RESEARCHER_MODEL`), `--analyst-model` (`DR_ANALYST_MODEL`), `--auditor-model` (`DR_AUDITOR_MODEL`), `--ingestor-model` (`DR_INGESTOR_MODEL`) and `--tiebreaker-model` (`DR_TIEBREAKER_MODEL`). These are options of `dr` itself, so they go before the subcommand (`uv run dr --tiebreaker-model <model> draft ...`). The tie-breaker is the third judge when the analyst and the Evaluator disagree. Without `DR_TIEBREAKER_MODEL` it runs on the same model as the rest of the run, so set that variable to a stronger model if you want a disagreement settled by a different one.
+
 ## Archive links for sources
 
 The pipeline gives each new source an `archived_url` after ingesting it: an existing archive.org capture that replays with HTTP 200 for the same page if there is one, otherwise it asks archive.org to capture the page and checks that capture the same way. When the live fetch succeeded and the capture found is older than 90 days or than the page's `published_date`, it asks for a fresh capture and keeps the old one if that fails. Commands that write nothing (`dr draft --dry-run`, `dr step-ingest` without `--write`) only look for an existing snapshot. The `dr` command list in AGENTS.md says which commands can capture.

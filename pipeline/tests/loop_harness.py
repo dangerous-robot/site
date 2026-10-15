@@ -33,25 +33,44 @@ URLS = [
     "https://example.org/third-report",
     "https://example.org/fourth-report",
 ]
+# Each page names every harness sub-question's terms, so the post-ingest text
+# check (RE-BA, Source pool rules) confirms the scorer's tags on every page.
 PAGE_TEXT = {
-    u: f"Page {i + 1}. Probe Subject data centers used more than 4% of US electricity in 2024."
+    u: (
+        f"Page {i + 1}. Probe Subject data centers used more than 4% of US electricity in 2024. "
+        "Third parties confirm the energy data it publishes; some evidence shows a lower share."
+    )
     for i, u in enumerate(URLS)
+}
+# One counter-evidence sub-question (RE-BA, Source pool rules): the planner must
+# emit one, with at least one query, so the harness plan carries it too.
+COUNTER_SUB_QUESTION = {
+    "id": "sq3",
+    "question": "What evidence shows the share of electricity was below 4%?",
+    "rationale": "what would falsify the claim",
+    "kind": "counter-evidence",
 }
 SUB_QUESTIONS = [
     {"id": "sq1", "question": "Does the subject publish energy data?", "rationale": "first-party axis"},
     {"id": "sq2", "question": "Do third parties confirm it?", "rationale": "independent axis"},
+    COUNTER_SUB_QUESTION,
 ]
 URL_ADDRESSES = {URLS[0]: ["sq1"], URLS[1]: ["sq1", "sq2"], URLS[2]: ["sq2"], URLS[3]: ["sq1"]}
 
 
 def planner_args(queries: list[str] | None = None) -> dict:
+    """The harness plan: two coverage sub-questions and the counter-evidence one.
+
+    ``queries`` are the coverage queries (the first for sq1, the rest for sq2);
+    the counter-evidence sub-question always gets its own query.
+    """
     queries = queries or ["probe subject energy report", "probe subject energy independent"]
     return {
         "sub_questions": list(SUB_QUESTIONS),
         "queries": [
             {"text": q, "sub_question_id": "sq1" if i == 0 else "sq2"} for i, q in enumerate(queries)
-        ],
-        "rationale": "two axes",
+        ] + [{"text": "probe subject electricity share disputed", "sub_question_id": "sq3"}],
+        "rationale": "two axes and a counter-evidence check",
     }
 
 

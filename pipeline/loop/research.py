@@ -26,31 +26,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _invert_addresses(
-    sub_questions: list[SubQuestion],
-    sources: list[dict],
-) -> dict[str, list[str]]:
-    """Build a sq_id -> [source_id] map from the ingested sources' addresses.
-
-    Sub-questions with no addressing source keep an empty list so the
-    coverage gap is observable. ``sources`` is the post-ingest list of
-    source dicts (cached + fresh combined); each carries ``source_id`` and
-    the ``addresses`` of the researcher URL it came from.
-    """
-    coverage: dict[str, list[str]] = {sq.id: [] for sq in sub_questions}
-    for sd in sources:
-        sid = sd.get("source_id")
-        if not sid:
-            continue
-        # Read ``addresses`` rather than re-looking up by ``url``: a cached
-        # source's url is the one on disk, which can differ in form from the
-        # researcher's URL.
-        for sq_id in sd.get("addresses", []):
-            if sq_id in coverage and sid not in coverage[sq_id]:
-                coverage[sq_id].append(sid)
-    return coverage
-
-
 def _warn_uncovered(
     sub_questions: list[SubQuestion],
     coverage: dict[str, list[str]],

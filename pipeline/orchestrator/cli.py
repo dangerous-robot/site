@@ -649,7 +649,6 @@ def step_analyze(
     from orchestrator.persistence import (
         _write_claim_file,
         clear_audit,
-        fit_verdict_to_written_pool,
         load_source_dict,
         mark_forced_rewrite,
         verdict_write_kwargs,
@@ -668,7 +667,6 @@ def step_analyze(
 
     # Resolve entity
     entity_fm, _ = load_entity(fm["entity"], root)
-    entity_name = entity_fm["name"]
     # With the resolved entity the analyst sees the entity-match labels, and
     # --write keeps their overrides, as dr draft does. The loop runs on a
     # resolved entity, so a missing entity file is a usage error.
@@ -718,11 +716,10 @@ def step_analyze(
             click.echo("Error: analyst agent failed to produce output.", err=True)
         sys.exit(1)
 
-    # Fit before printing, so the printed level is the one --write writes.
+    # The loop fitted the level to the stored sources, so the printed level
+    # is the one --write writes.
     source_ids = fm.get("sources") or []
-    level_clamp = fit_verdict_to_written_pool(
-        analyst_out.verdict, source_dicts, source_ids, entity_name
-    )
+    level_clamp = rerun_result.level_clamp
 
     # Always print the result
     a = analyst_out
@@ -772,6 +769,7 @@ def step_analyze(
             criteria_slug=fm.get("criteria_slug"),
             seo_title=a.verdict.seo_title,
             takeaway=a.verdict.takeaway,
+            uncited_by_title=rerun_result.uncited_by_title,
             **verdict_write_kwargs(a.verdict),
         )
         click.echo(f"Wrote {written_path}")
@@ -814,6 +812,8 @@ def _print_verify_result(result) -> None:
         click.echo(f"  Topics:     {', '.join(t.value for t in a.verdict.topics)}")
         click.echo(f"  Verdict:    {a.verdict.verdict.value}")
         click.echo(f"  Confidence: {a.verdict.confidence.value}")
+        if result.level_clamp:
+            click.echo(f"  Level fit:  {result.level_clamp}")
         click.echo(f"  Narrative:")
         for line in a.verdict.narrative.strip().split("\n"):
             click.echo(f"    {line}")

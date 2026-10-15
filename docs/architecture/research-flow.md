@@ -68,12 +68,16 @@ The core four-step pipeline as a sequence of messages between agents, with the b
 Ingest order and the listed sources:
 
 - The Researcher ranks the URLs the scorer kept: pages on the entity's own website host first, then by the scorer's score, then by scorer position. A parent company's host gets no boost.
+- A transport failure on one URL (a null body, a provider 5xx or 429, a dropped connection; not a timeout) is retried once for that URL before it is dropped from the pool.
+- Cached sources never shrink the fresh-ingest target: when sibling claims already left sources on disk, the loop still tries `max_sources` fresh candidates. Cached sources only steer the order below.
 - Before ingest the URLs are reordered so the sub-question with the fewest sources (dedup hits already on disk count) is filled first. Each pick takes that sub-question's first URL in ranked order, so an entity page that addresses only a well-covered sub-question can follow URLs for thinner ones. The candidate pool cut (`candidate_pool_size`) always keeps each sub-question's first two URLs and fills the rest in ranked order, so a thin sub-question's low-scored URLs stay in the pool.
-- A sub-question that no ingested source addresses is logged as a warning, which the console shows. The analyst prompt marks it, and the narrative describes the gap in plain words without the sub-question id. The sidecar's `sub_questions[].citations` is empty for it.
+- The ingest order still uses the scorer's tags, which come from search snippets. After ingest, the loop checks each tag against the page text: the fetched text of the requested page for a fresh source, the stored title, summary, quotes and body for a cached one. A tag whose page never mentions the sub-question's terms (its question and query words, minus stop words and the entity's name) is dropped from that source's `addresses` and listed in the sidecar's `sub_questions[].snippet_only`.
+- A sub-question that no ingested source addresses after that check is logged as a warning, which the console shows. The analyst prompt marks it (from the confirmed tags), and the narrative describes the gap in plain words without the sub-question id. The sidecar's `sub_questions[].citations` is empty for it. The counter-evidence sub-question is held to the same check.
 - After the analyst, the claim lists only the sources it relied on: the ids in its `cited_sources`, the sources its own `source_overrides` name (the entity-match relabels do not count, but an analyst override the entity match corrects does), and the sources whose title the narrative names. Uncited fresh sources are not written. Every ingested source stays in the sidecar's `sources_consulted`.
-- Every ingested source is listed when nothing is cited, or when the cited subset would support a lower `verification_level` than the full list (both checked with the write-time level fit).
+- Every ingested source is listed when nothing is cited, or when the cited subset would support a lower `verification_level` than the full list (both checked with the level fit, which then runs on the listed sources before the Evaluator, so the Evaluator grades the fitted verdict).
+- A source in the analyst's `cited_sources` whose title the narrative never names breaks the cite-by-title rule (`pipeline/analyst/instructions.md`). The loop does not drop it; the sidecar's `analyst_record.uncited_by_title` lists those ids.
 - The Evaluator grades against the listed sources. When the analyst fails, or the run is blocked, nothing is written: no source file, no claim and no sidecar; the run's finding is the only record.
-- A disagreement (the two verdicts differ; two evidence gaps alone never count) goes to the tie-breaker, which gets the Evaluator's blind bundle on the frontier tier with a higher thinking budget. A verdict that matches either side wins; a three-way split takes the weakest by `VERDICT_STRENGTH` with that side's confidence. The sidecar records all three sides, `pipeline_verdict` and `rule_applied`. A tie-breaker that fails after one retry abandons the run.
+- A disagreement (the two verdicts differ; two evidence gaps alone never count) goes to the tie-breaker, which gets the Evaluator's blind bundle with a higher thinking budget, on the `--tiebreaker-model` slot (the run's `--model` unless `DR_TIEBREAKER_MODEL` is set; see the runbook's "Model slots"). A verdict that matches either side wins; a three-way split takes the weakest by `VERDICT_STRENGTH` with that side's confidence. The sidecar records all three sides, `pipeline_verdict` and `rule_applied`. A tie-breaker that fails after one retry abandons the run.
 
 ```mermaid
 sequenceDiagram
@@ -222,7 +226,7 @@ sequenceDiagram
 
     Orchestrator->>QueryPlanner: claim text + entity context (name, parent_company if set)
     Note over QueryPlanner: structured output, no tools
-    QueryPlanner-->>Orchestrator: QueryPlan (queries list, rationale)
+    QueryPlanner-->>Orchestrator: QueryPlan (2-5 coverage sub-questions plus one counter-evidence sub-question that asks what would falsify the claim, each with queries; rationale)
 
     Note over Orchestrator: hard-truncate to max_initial_queries; select origins per claim topics
 
@@ -241,7 +245,7 @@ sequenceDiagram
 
     Orchestrator->>URLScorer: claim + entity context (name, parent_company if set) + candidates (title, snippet, publisher_quality)
     Note over URLScorer: structured output, no tools
-    URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 4, dropped < 4)
+    URLScorer-->>Orchestrator: ScoredURLs (kept ≥ 3 on at least one sub-question, dropped < 3)
 
     Note over Orchestrator: if kept=[] (drop-all), return empty URL list; run blocked as insufficient_sources, nothing written
 

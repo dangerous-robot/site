@@ -16,7 +16,11 @@ differences and no others:
 - the sidecar's ``audit`` block gains ``pipeline_verdict``,
   ``pipeline_confidence`` and ``rule_applied`` (RE-AT, Rules, findings file,
   tie-breaker); the scripted analyst and Evaluator agree, so they are the
-  analyst's verdict and confidence and ``agreed``.
+  analyst's verdict and confidence and ``agreed``;
+- the sidecar's ``sub_questions`` block gains the harness plan's
+  counter-evidence sub-question and, per entry, ``kind`` and ``snippet_only``;
+  ``research.queries`` gains its query; ``analyst_record`` gains
+  ``uncited_by_title`` (RE-BA, Source pool rules; ``_apply_re_ba_differences``).
 
 Volatile values (``as_of``, ``ran_at``, ``run_id``, the per-agent
 ``models_used`` read from the operator's ``.env``) are replaced before the
@@ -161,7 +165,36 @@ def _golden(case: str) -> dict:
         pipeline_confidence=audit["analyst_confidence"],
         rule_applied="agreed",
     )
+    _apply_re_ba_differences(golden["sidecar"])
     return golden
+
+
+def _apply_re_ba_differences(sidecar: dict) -> None:
+    """The sidecar differences RE-BA (Source pool rules) adds, and no others.
+
+    The harness plan carries a counter-evidence sub-question with its own
+    query (the planner must emit one); every ``sub_questions`` entry records
+    its ``kind`` and the tags the text check dropped (``snippet_only``, none
+    here: every harness page names every sub-question's terms); and the
+    ``analyst_record`` lists the cited sources the narrative never names by
+    title (none: the scripted analyst cites nothing by id).
+    """
+    from tests.loop_harness import COUNTER_SUB_QUESTION, planner_args
+
+    plan = planner_args()
+    sidecar["research"]["planner_rationale"] = plan["rationale"]
+    sidecar["research"]["queries"] = [q["text"] for q in plan["queries"]]
+    for entry in sidecar["sub_questions"]:
+        entry.setdefault("kind", "coverage")
+        entry.setdefault("snippet_only", [])
+    counter = COUNTER_SUB_QUESTION
+    sidecar["sub_questions"].append({
+        "id": counter["id"], "question": counter["question"], "rationale": counter["rationale"],
+        "kind": "counter-evidence",
+        "queries": [q["text"] for q in plan["queries"] if q["sub_question_id"] == counter["id"]],
+        "citations": [], "snippet_only": [],
+    })
+    sidecar["analyst_record"]["uncited_by_title"] = []
 
 
 def test_criterion_backed_claim_matches_the_re_ar_golden_except_statement(tmp_path) -> None:

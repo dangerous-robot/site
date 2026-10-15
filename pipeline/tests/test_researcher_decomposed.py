@@ -32,13 +32,16 @@ def _stub_sub_questions() -> list[SubQuestion]:
     return [
         SubQuestion(id="sq1", question="First sub-question?", rationale="covers axis 1"),
         SubQuestion(id="sq2", question="Second sub-question?", rationale="covers axis 2"),
+        SubQuestion(id="sq3", question="What would falsify it?", rationale="counter", kind="counter-evidence"),
     ]
 
 
 def _plan(queries: list[str], rationale: str = "ok") -> ResearchPlan:
+    """A plan whose ``queries`` serve sq1, plus the counter-evidence sub-question's own query."""
     return ResearchPlan(
         sub_questions=_stub_sub_questions(),
-        queries=[PlannedQuery(text=q, sub_question_id="sq1") for q in queries],
+        queries=[PlannedQuery(text=q, sub_question_id="sq1") for q in queries]
+        + [PlannedQuery(text="counter query", sub_question_id="sq3")],
         rationale=rationale,
     )
 
@@ -71,10 +74,12 @@ async def test_research_planner_output_shape() -> None:
                 "sub_questions": [
                     {"id": "sq1", "question": "Q1?", "rationale": "axis 1"},
                     {"id": "sq2", "question": "Q2?", "rationale": "axis 2"},
+                    {"id": "sq3", "question": "What would falsify it?", "rationale": "counter", "kind": "counter-evidence"},
                 ],
                 "queries": [
                     {"text": "q1", "sub_question_id": "sq1"},
                     {"text": "q2", "sub_question_id": "sq2"},
+                    {"text": "q3", "sub_question_id": "sq3"},
                 ],
                 "rationale": "test rationale",
             },
@@ -86,6 +91,7 @@ async def test_research_planner_output_shape() -> None:
     assert isinstance(plan, ResearchPlan)
     assert len(plan.queries) > 0
     assert len(plan.sub_questions) >= 2
+    assert [sq.kind for sq in plan.sub_questions] == ["coverage", "coverage", "counter-evidence"]
     assert isinstance(plan.rationale, str)
     assert len(plan.rationale) > 0
 
@@ -124,6 +130,8 @@ async def test_research_planner_cap_enforcement() -> None:
     assert len(captured_queries[0]) == 3, (
         f"Expected 3 queries after truncation, got {len(captured_queries[0])}"
     )
+    # The counter-evidence sub-question's query, last in the plan, survives the cap.
+    assert captured_queries[0] == ["query_0", "query_1", "counter query"]
     assert isinstance(kept, list)
     assert isinstance(errors, list)
 

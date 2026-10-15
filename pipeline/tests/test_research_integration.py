@@ -122,7 +122,7 @@ def test_draft_writes_sources_claim_and_sidecar_in_order(tmp_path, monkeypatch) 
     assert isinstance(sidecar["pipeline_run"]["run_id"], str) and len(sidecar["pipeline_run"]["run_id"]) == 32
     assert sidecar["audit"]["auditor_verdict"] == "mixed"
     assert sidecar["human_review"]["reviewed_at"] is None
-    assert {e["id"] for e in sidecar["sub_questions"]} == {"sq1", "sq2"}
+    assert {e["id"] for e in sidecar["sub_questions"]} == {"sq1", "sq2", "sq3"}
     assert result.output.count(str(claim_path.relative_to(tmp_path))) >= 1
 
 
@@ -141,7 +141,7 @@ def test_sidecar_records_an_uncovered_sub_question_with_no_citations(tmp_path) -
     assert result.exit_code == 0, result.output
     _claim_path, sidecar_path = _claim_and_sidecar(tmp_path)
     block = {e["id"]: e for e in yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["sub_questions"]}
-    assert set(block) == {"sq1", "sq2"}
+    assert set(block) == {"sq1", "sq2", "sq3"}
     for entry in block.values():
         assert {"id", "question", "rationale", "queries", "citations"} <= set(entry)
     assert block["sq2"]["citations"] == []

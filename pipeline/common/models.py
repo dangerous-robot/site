@@ -29,6 +29,10 @@ class SubQuestion(BaseModel):
     rationale: str = Field(
         description="One-sentence justification for why this sub-question belongs in the decomposition; surfaced in the audit sidecar.",
     )
+    kind: Literal["coverage", "counter-evidence"] = Field(
+        default="coverage",
+        description="'coverage' for an axis of the claim; 'counter-evidence' for the one sub-question asking what evidence would falsify it.",
+    )
 
 
 async def _log_infomaniak_response(response: httpx.Response) -> None:

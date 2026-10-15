@@ -66,12 +66,57 @@ _TERTIARY_PUBLISHERS: frozenset[str] = frozenset(
 # SourceKind values that are intrinsically tertiary when publisher is unknown.
 _TERTIARY_KINDS: frozenset[str] = frozenset({"blog"})
 
+# Press-wire services: (lowercase publisher word or phrase, origin key). A release
+# syndicated through one ("Yahoo Finance (via ACCESS Newswire)") is the
+# issuing organization's own statement. First row that matches wins, so the
+# bare "newswire" comes last.
+NEWSWIRE_ORIGINS: tuple[tuple[str, str], ...] = (
+    ("pr newswire", "prnewswire"),
+    ("prnewswire", "prnewswire"),
+    ("business wire", "businesswire"),
+    ("businesswire", "businesswire"),
+    ("globenewswire", "globenewswire"),
+    ("globe newswire", "globenewswire"),
+    ("access newswire", "accesswire"),
+    ("accesswire", "accesswire"),
+    ("ein presswire", "einpresswire"),
+    ("einpresswire", "einpresswire"),
+    ("prweb", "prweb"),
+    ("marketwired", "marketwired"),
+    ("newsfile", "newsfile"),
+    ("cision", "cision"),
+    ("newswire", "newswire"),
+)
+
+
+# Whole words only: a bare substring test made "Decision Lab" and "Precision
+# Medicine Weekly" press wires (by "cision") and so first-party. The bare
+# "newswire" keeps substring matching: no ordinary word contains it, and a
+# run-together name ("AsiaNewswire") is still a press wire.
+_NEWSWIRE_PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = tuple(
+    (re.compile(re.escape(term) if term == "newswire" else rf"\b{re.escape(term)}\b"), origin)
+    for term, origin in NEWSWIRE_ORIGINS
+)
+
+
+def newswire_origin(publisher: str) -> str | None:
+    """The press-wire service a publisher names (``NEWSWIRE_ORIGINS``, whole words), or None."""
+    pub_lower = (publisher or "").lower()
+    return next((origin for pattern, origin in _NEWSWIRE_PATTERNS if pattern.search(pub_lower)), None)
+
+
+def is_newswire(publisher: str) -> bool:
+    """True when the publisher names a press-wire service."""
+    return newswire_origin(publisher) is not None
+
 
 def classify_source_type(publisher: str, kind: str) -> str:
     """Return 'primary', 'secondary', or 'tertiary' for a source.
 
     Rules (evaluated in order, first match wins):
     1. publisher matches a known AI-company or regulatory-filing term -> primary
+    1b. publisher names a press-wire service (``is_newswire``) -> primary
+       (a syndicated release is its issuer's own statement)
     2. kind is 'documentation' -> primary (company docs are first-party)
     3. publisher matches a known secondary-source term -> secondary
     4. publisher matches a known tertiary-source term -> tertiary
@@ -83,6 +128,9 @@ def classify_source_type(publisher: str, kind: str) -> str:
 
     # sec.gov as a substring avoids matching "section", "secretary", etc.
     if "sec.gov" in pub_lower or any(term in pub_lower for term in _PRIMARY_PUBLISHERS):
+        return "primary"
+
+    if is_newswire(publisher):
         return "primary"
 
     if kind_lower == "documentation":

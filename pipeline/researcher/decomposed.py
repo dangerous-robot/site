@@ -392,7 +392,7 @@ async def decomposed_research(
         plan: ResearchPlan = planner_res.output
         out.sub_questions = list(plan.sub_questions)
         # Belt-and-suspenders: hard-truncate even if the model ignores the prompt cap
-        planned = plan.queries[: cfg.max_initial_queries]
+        planned = _truncate_queries(plan, cfg.max_initial_queries)
         queries = [pq.text for pq in planned]
         out.queries_by_sub_question = _group_queries_by_sq(planned)
         out.trace["queries"] = list(queries)
@@ -566,6 +566,22 @@ def _rank_kept(urls: list[str], scores: dict[str, float], entity_host: str) -> l
         return bool(entity_host) and host_matches(url_host(url), entity_host)
 
     return sorted(urls, key=lambda u: (not on_entity_host(u), -scores.get(u, DEFAULT_SCORE)))
+
+
+def _truncate_queries(plan: ResearchPlan, cap: int) -> list:
+    """The plan's first ``cap`` queries, still holding one counter-evidence query.
+
+    The plan validator guarantees the counter-evidence sub-question a query;
+    when the cap would cut every one, its first query takes the last kept slot.
+    """
+    planned = list(plan.queries[:cap])
+    counter_ids = {sq.id for sq in plan.sub_questions if sq.kind == "counter-evidence"}
+    if not planned or any(pq.sub_question_id in counter_ids for pq in planned):
+        return planned
+    counter = next((pq for pq in plan.queries if pq.sub_question_id in counter_ids), None)
+    if counter is not None:
+        planned[-1] = counter
+    return planned
 
 
 def _group_queries_by_sq(planned) -> dict[str, list[str]]:

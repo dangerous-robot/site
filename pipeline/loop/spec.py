@@ -56,6 +56,13 @@ class VerifyConfig:
     flaw_retries: int = 1
     transport_retries: int = 2
     transport_backoff_s: tuple[float, ...] = (45.0, 90.0)
+    # A transport failure on one URL inside the ingest step (a null body, a
+    # rate limit, a dropped connection, not a timeout) is retried this many
+    # times, ``url_retry_delay_s`` apart unless the provider sent
+    # ``retry-after``. Short on purpose: a null body is instant and usually
+    # transient, and the step-level retry covers a pool that fails as a whole.
+    url_retries: int = 1
+    url_retry_delay_s: float = 2.0
     # PydanticAI's portable thinking level for the tie-breaker; None leaves the
     # model's default (for a gateway that rejects reasoning settings).
     tiebreaker_thinking: str | None = "high"
@@ -154,9 +161,10 @@ class VerificationResult(BaseModel):
     research_trace: dict | None = None
     # Sub-question decomposition the planner emitted for this claim.
     sub_questions: list[SubQuestion] = Field(default_factory=list)
-    # Map SubQuestion.id -> list of source_ids that addressed it after ingest
-    # (sources whose ScoredCandidate.addresses included this id AND that
-    # ingested successfully). An empty list signals an uncovered axis.
+    # Map SubQuestion.id -> list of source_ids that address it after ingest:
+    # the scorer tagged the source for it, the source ingested, and its text
+    # mentions the sub-question's terms (``loop/coverage.py``). An empty
+    # list signals an uncovered axis.
     sub_question_coverage: dict[str, list[str]] = Field(default_factory=dict)
     # Per-sub-question queries from the planner. Used to render the audit
     # sidecar's `sub_questions:` block; not part of the on-disk claim file.
@@ -177,6 +185,18 @@ class VerificationResult(BaseModel):
     # kept out of the claim's ``sources:`` and not written. Keyed by URL so
     # a slug renamed at write time cannot desync it.
     uncited_urls: set[str] = Field(default_factory=set, exclude=True)
+    # The level fit's note when it lowered the analyst's level (``loop/fit.py``),
+    # else None. The writer records it as ``pipeline_run.level_clamp``.
+    level_clamp: str | None = None
+    # Ids in the analyst's ``cited_sources`` whose title the narrative never
+    # names; recorded as ``analyst_record.uncited_by_title``.
+    uncited_by_title: list[str] = Field(default_factory=list)
+    # Sub-question id -> source ids the scorer tagged for it whose text never
+    # mentions its terms (dropped from ``sub_question_coverage``).
+    snippet_only: dict[str, list[str]] = Field(default_factory=dict)
+    # Requested URL -> the page text its ingest fetched, for fresh sources;
+    # the coverage check reads it.
+    page_text: dict[str, str] = Field(default_factory=dict, exclude=True)
     # Requested URL dropped because it reached a page already kept -> the
     # kept URL. The writer lists ``sources:`` in the researcher's URL order
     # through it.

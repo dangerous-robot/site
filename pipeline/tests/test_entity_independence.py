@@ -28,8 +28,10 @@ from common.source_classification import (
     source_engages_entity,
 )
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for, parse_entity_ref
-from orchestrator.persistence import fit_verdict_to_written_pool, verdict_write_kwargs
+from orchestrator.persistence import verdict_write_kwargs
 from loop import apply_entity_match
+# The level fit lives in the loop from RE-BA (Source pool rules) on; the cases below are unchanged.
+from loop.fit import fit_verdict_to_written_pool
 
 FORUM_URL = "https://community.brave.app/t/brave-sync-servers-location/631793"
 

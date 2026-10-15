@@ -71,6 +71,19 @@ const auditSchema = z.object({
       error: z.string().optional(),
     }).optional(),
   })),
+  // The planner's sub-questions. `kind` and `snippet_only` are optional so
+  // sidecars written before they existed still validate.
+  sub_questions: z.array(z.object({
+    id: z.string(),
+    question: z.string(),
+    rationale: z.string(),
+    kind: z.enum(['coverage', 'counter-evidence']).optional(),
+    queries: z.array(z.string()),
+    // Source ids whose fetched text confirmed the scorer's tag.
+    citations: z.array(z.string()),
+    // Source ids the scorer tagged whose text never mentions the sub-question's terms.
+    snippet_only: z.array(z.string()).optional(),
+  })).optional(),
   audit: z.object({
     analyst_verdict: z.string(),
     auditor_verdict: z.string(),

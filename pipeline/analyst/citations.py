@@ -175,6 +175,26 @@ def cited_source_ids(
     return out
 
 
+def uncited_by_title(verdict: "VerdictAssessment", sources: list[dict]) -> list[str]:
+    """Ids in ``verdict.cited_sources`` whose title the narrative never names, in ``sources`` order.
+
+    The analyst instructions ask for each cited source to be named by its
+    title in the narrative. Ids outside ``sources`` are ignored, and a source
+    with no title counts as not named.
+    """
+    cited = set(verdict.cited_sources)
+    narrative = _match_form(verdict.narrative or "")
+    out: list[str] = []
+    for src in sources:
+        sid = src.get("source_id")
+        if not sid or sid not in cited or sid in out:
+            continue
+        title = _match_form(src.get("title") or "")
+        if not (title and _contains_phrase(narrative, title)):
+            out.append(sid)
+    return out
+
+
 def _contains_phrase(text: str, phrase: str) -> bool:
     # Word edges, so a short title such as "AI" does not match inside "said".
     return re.search(rf"(?<!\w){re.escape(phrase)}(?!\w)", text) is not None

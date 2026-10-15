@@ -28,6 +28,7 @@ from ingestor.models import SourceFile
 from ingestor.tools.web_fetch import TerminalFetchError
 from ingestor.validation import drop_unfound_quotes, validate_source_file
 from loop.errors import StepError
+from loop.policy import Rule, classify_exception, retry_after_s
 from loop.research import _order_by_coverage
 from loop.spec import VerificationResult, VerifyConfig, _cfg_repo_root
 from orchestrator.persistence import load_source_dict, resolve_source_slugs
@@ -48,6 +49,9 @@ class IngestNotes:
     aliases: dict[str, str] = field(default_factory=dict)
     # Requested URL -> sidecar ``archive`` record ({status, error?}).
     archive: dict[str, dict] = field(default_factory=dict)
+    # Requested URL -> the page text its ingest fetched (the text the quote
+    # check trusts); the coverage check reads it.
+    page_text: dict[str, str] = field(default_factory=dict)
 
 
 def _reuse_stored_redirect_targets(
@@ -93,13 +97,16 @@ async def _ingest_claim_sources(
     url_index: dict[str, str],
     repo_root: Path,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError], IngestNotes]:
-    """Ingest up to the claim's remaining source count; return fresh sources, errors and notes.
+    """Ingest up to ``max_sources`` fresh sources; return fresh sources, errors and notes.
 
-    Redirects to a stored page move into ``cached_sources``, and ``result``
-    gains the final URLs and archive records the sidecar and index need.
+    Cached sources steer the order (a sub-question they already cover goes
+    later) and never shrink the target: ``max_sources`` fresh candidates are
+    still tried. Redirects to a stored page move into ``cached_sources``, and
+    ``result`` gains the final URLs, archive records and fetched page text
+    the sidecar, index and coverage check need.
     """
     notes = IngestNotes()
-    remaining = max(0, cfg.max_sources - len(cached_sources))
+    remaining = cfg.max_sources
     if remaining > 0:
         # Ingest stops at ``remaining`` successes in list order, so a thin
         # sub-question's URLs go first; dedup hits on disk count as coverage.
@@ -131,6 +138,7 @@ async def _ingest_claim_sources(
     )
     result.final_urls = notes.final_urls
     result.archive = notes.archive
+    result.page_text = notes.page_text
     return source_files, ingest_errors, notes
 
 
@@ -265,55 +273,75 @@ async def ingest_one(
 
     A successful ingest also gets its ``archived_url`` from that lookup,
     unless ``archive`` is False (the caller discards the source).
+
+    A transport failure on this URL (``classify_exception``: a null body, a
+    rate limit, a dropped connection; not a timeout, which already spent
+    ``ingest_timeout_s``) is retried ``cfg.url_retries`` times, each after
+    the provider's ``retry-after`` or ``cfg.url_retry_delay_s``. Every
+    attempt starts from fresh ``IngestorDeps``.
     """
     repo_root = repo_root or _cfg_repo_root(cfg)
-    deps = IngestorDeps(
-        http_client=client,
-        repo_root=str(repo_root),
-        requested_url=url,
-        skip_wayback=cfg.skip_wayback,
-        allow_save=cfg.allow_save,
-        today=today,
-        prefetched_bodies={url: prefetched_body} if prefetched_body else {},
-    )
     prompt = (
         f"Ingest this URL and produce a SourceFile:\n\n"
         f"URL: {url}\n"
         f"Today's date: {today.isoformat()}\n"
     )
-    try:
-        with ingestor_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
-            async with sem:
-                res = await asyncio.wait_for(
-                    ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
+    attempts = 1 + max(0, cfg.url_retries)
+    for attempt in range(1, attempts + 1):
+        deps = IngestorDeps(
+            http_client=client,
+            repo_root=str(repo_root),
+            requested_url=url,
+            skip_wayback=cfg.skip_wayback,
+            allow_save=cfg.allow_save,
+            today=today,
+            prefetched_bodies={url: prefetched_body} if prefetched_body else {},
+        )
+        retry_in: float | None = None
+        try:
+            with ingestor_agent.override(model=resolve_model(cfg.model_for("ingestor"))):
+                async with sem:
+                    res = await asyncio.wait_for(
+                        ingestor_agent.run(prompt, deps=deps), timeout=cfg.ingest_timeout_s
+                    )
+            sf = res.output
+            derived = slug_from_url(url)
+            if derived:
+                sf.slug = derived
+            # Outside the LLM semaphore and time limit; never raises.
+            corporate_lab = await arxiv_corporate_lab(client, url)
+            outcome: tuple[str, SourceFile] | StepError = check_ingested_source(
+                url, sf, deps, repo_root, corporate_lab
+            )
+        except asyncio.TimeoutError:
+            logger.warning("Ingest timed out: %s", url)
+            outcome = StepError(
+                step="ingest", url=url, error_type="timeout", message="Ingest timed out"
+            )
+        except TerminalFetchError as exc:
+            logger.info("Skipped terminal fetch (%d): %s", exc.status_code, url)
+            outcome = StepError(
+                step="ingest",
+                url=url,
+                error_type=f"http_{exc.status_code}",
+                message=exc.reason,
+                retryable=False,
+            )
+        except Exception as exc:
+            error_type, rule = classify_exception(exc)
+            outcome = StepError(
+                step="ingest", url=url, error_type=error_type, message=str(exc) or type(exc).__name__,
+            )
+            if rule is Rule.TRANSPORT_RETRY and error_type != "timeout" and attempt < attempts:
+                retry_in = retry_after_s(exc) or cfg.url_retry_delay_s
+                logger.warning(
+                    "Ingest of %s failed (%s); retrying in %.1fs: %s", url, error_type, retry_in, exc,
                 )
-        sf = res.output
-        derived = slug_from_url(url)
-        if derived:
-            sf.slug = derived
-        # Outside the LLM semaphore and time limit; never raises.
-        corporate_lab = await arxiv_corporate_lab(client, url)
-        outcome: tuple[str, SourceFile] | StepError = check_ingested_source(
-            url, sf, deps, repo_root, corporate_lab
-        )
-    except asyncio.TimeoutError:
-        logger.warning("Ingest timed out: %s", url)
-        outcome = StepError(
-            step="ingest", url=url, error_type="timeout", message="Ingest timed out"
-        )
-    except TerminalFetchError as exc:
-        logger.info("Skipped terminal fetch (%d): %s", exc.status_code, url)
-        outcome = StepError(
-            step="ingest",
-            url=url,
-            error_type=f"http_{exc.status_code}",
-            message=exc.reason,
-            retryable=False,
-        )
-    except Exception as exc:
-        error_type = "http_error" if "HTTP" in type(exc).__name__ else "model_error"
-        logger.warning("Failed to ingest %s: %s", url, exc)
-        outcome = StepError(step="ingest", url=url, error_type=error_type, message=str(exc))
+            else:
+                logger.warning("Failed to ingest %s: %s", url, exc)
+        if retry_in is None:
+            break
+        await asyncio.sleep(retry_in)
 
     if isinstance(outcome, tuple):
         if archive:
@@ -324,6 +352,8 @@ async def ingest_one(
                 notes.archive[url] = record
         if notes is not None and deps.final_url:
             notes.final_urls[url] = deps.final_url
+        if notes is not None:
+            notes.page_text[url] = requested_page_text(deps)
 
     if acquisition_out is not None:
         merge_acquisition_writes(acquisition_out, deps.acquisition_writes)

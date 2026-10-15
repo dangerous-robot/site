@@ -13,6 +13,7 @@ from loop.policy import ERROR_POLICY, STEP_ON_EXHAUSTION, Rule, classify_excepti
 from loop.spec import ClaimSpec, VerificationResult, VerifyConfig
 from loop.ingest import check_ingested_source, ingest_one, ingest_urls, merge_acquisition_writes
 from loop.analyse import analyse_claim, apply_entity_match, audit_claim
+from loop.fit import fit_verdict_to_written_pool
 # Last: importing the ``loop.run`` submodule binds ``loop.run`` to the module;
 # this line rebinds the name to the function.
 from loop.run import blocked_reason_label, rerun, run
@@ -31,6 +32,7 @@ __all__ = [
     "blocked_reason_label",
     "check_ingested_source",
     "classify_exception",
+    "fit_verdict_to_written_pool",
     "ingest_one",
     "ingest_urls",
     "merge_acquisition_writes",

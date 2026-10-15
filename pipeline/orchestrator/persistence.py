@@ -26,22 +26,17 @@ if TYPE_CHECKING:
     from loop import ClaimSpec, VerificationResult, VerifyConfig
     from orchestrator.entity_resolution import ResolvedEntity, SearchHints
 from common.models import (
-    INDEPENDENT_SOURCES_REQUIRED,
-    SELF_REPORT_KINDS,
-    SELF_REPORTED_BASIS_KINDS,
     BlockedReason,
     ClaimStatus,
     Category,
     Confidence,
     EntityType,
     FailureInfo,
-    Independence,
     Verdict,
     VerificationLevel,
 )
 from common.source_classification import (
     classify_source_type,
-    effective_independence,
     independence_for_source_type,
 )
 from common.canonical_url import canonical_key, same_resource
@@ -383,102 +378,6 @@ def verdict_write_kwargs(verdict: "VerdictAssessment") -> dict:
     }
 
 
-def fit_verdict_to_written_pool(
-    verdict: "VerdictAssessment",
-    sources: list[dict],
-    source_ids: list[str],
-    entity_name: str,
-    log: bool = True,
-) -> str | None:
-    """Lower ``verification_level`` to what the written source list supports.
-
-    The analyst picks the level from every source it was shown, but the claim
-    cites only ``source_ids``, and the site counts that list. Overrides for
-    sources not in the list are dropped. Independence per source is its
-    override, else the label in ``sources`` (already relabelled for the
-    entity). A level short of independent sources falls to
-    ``independently-verified`` with one, else to ``self-reported`` (a
-    first-party report, documentation or dataset is written) or ``claimed``.
-    ``self-reported`` falls to ``claimed`` when no independent source and no
-    first-party report, documentation, dataset or article is written; an
-    article is kept because the analyst may judge one with methodology or
-    data self-reported.
-    A capped result gets ``confidence: low`` and, when the verdict has none,
-    a template ``cap_rationale``. A ``self-reported`` verdict lowered to
-    ``claimed`` always gets the template: its own rationale describes the
-    first-party report that is no longer written. Either way, a rationale the
-    operator wrote on the claim is kept at write time (``_write_claim_file``).
-
-    Returns a one-line note when the level changed, else None. Call it just
-    before the claim (and its sidecar) is written, after the final
-    ``source_ids`` exist. ``log=False`` is for trial runs on a copy.
-    """
-    written = set(source_ids)
-    if verdict.source_overrides:
-        verdict.source_overrides = [
-            o for o in verdict.source_overrides if o.source in written
-        ] or None
-
-    level = _enum_value(verdict.verification_level)
-    required = INDEPENDENT_SOURCES_REQUIRED.get(level)
-    if required is None and level != VerificationLevel.SELF_REPORTED.value:
-        return None
-    by_id = {sd.get("source_id"): sd for sd in sources}
-    overrides = {
-        o.source: o.independence.value
-        for o in verdict.source_overrides or []
-        if o.independence is not None
-    }
-    labels = effective_independence(
-        source_ids,
-        {sid: by_id.get(sid, {}).get("independence") for sid in source_ids},
-        overrides,
-    )
-
-    def first_party_of(kinds: frozenset[str]) -> bool:
-        return any(
-            label == Independence.FIRST_PARTY.value and by_id.get(sid, {}).get("kind") in kinds
-            for sid, label in labels
-        )
-
-    independent = sum(1 for _, v in labels if v == Independence.INDEPENDENT.value)
-    if required is None:
-        # self-reported. With an independent source the pool supports more,
-        # and the fit only lowers.
-        if independent or first_party_of(SELF_REPORTED_BASIS_KINDS):
-            return None
-        new_level = VerificationLevel.CLAIMED
-        reason = "include no first-party report, documentation, dataset or article"
-    elif independent >= required:
-        return None
-    else:
-        reason = (
-            f"include {independent} independent source(s), and {level} needs {required}"
-        )
-        if independent >= 1:
-            new_level = VerificationLevel.INDEPENDENTLY_VERIFIED
-        elif first_party_of(SELF_REPORT_KINDS):
-            new_level = VerificationLevel.SELF_REPORTED
-        else:
-            new_level = VerificationLevel.CLAIMED
-    verdict.verification_level = new_level
-    if new_level in (VerificationLevel.SELF_REPORTED, VerificationLevel.CLAIMED):
-        verdict.confidence = Confidence.LOW
-        if not verdict.cap_rationale or required is None:
-            # Marked fitted only when the analyst gave no rationale: then the
-            # template is all this run proposes. Otherwise a rationale the
-            # operator wrote on the claim still wins at write time.
-            verdict.cap_rationale_fitted = not verdict.cap_rationale
-            verdict.cap_rationale = (
-                "Confidence is capped at low: no source on this claim independently "
-                f"addresses {shorten(entity_name, 200)}."
-            )
-    note = f"verification_level {level} lowered to {new_level.value}: the written sources {reason}"
-    if log:
-        logger.info("Level fit: %s", note)
-    return note
-
-
 def shorten(text: str, limit: int = 80) -> str:
     """``text`` cut to ``limit`` characters with a trailing "...", so it fits a
     length-limited field such as ``SourceOverride.reason``."""
@@ -528,6 +427,7 @@ def _write_claim_file(
     source_overrides: list[dict] | None = None,
     cap_rationale_fitted: bool = False,
     statement: str | None = None,
+    uncited_by_title: list[str] | None = None,
 ) -> Path:
     """Write the claim file to disk. Returns the file path.
 
@@ -666,6 +566,7 @@ def _write_claim_file(
         record = updated_analyst_record(
             title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway,
             cap_rationale=analyst_cap_rationale, previous=record,
+            uncited_by_title=uncited_by_title,
         )
     if record:
         _store_analyst_record(claim_path, record)
@@ -680,6 +581,7 @@ def updated_analyst_record(
     takeaway: str | None = None,
     cap_rationale: str | None = None,
     previous: dict | None = None,
+    uncited_by_title: list[str] | None = None,
 ) -> dict:
     """The sidecar ``analyst_record`` block after an analyst's write.
 
@@ -692,6 +594,8 @@ def updated_analyst_record(
     seo_title change together, since the seo_title shortens that title.
     ``cap_rationale`` is the value after the level fit, and None is recorded
     too: on a capped level a claim then has no pipeline rationale to match.
+    ``uncited_by_title`` (the cited source ids the narrative never names by
+    title) is written when given.
     """
     record = dict(previous or {})
     if seo_title is not None:
@@ -702,14 +606,16 @@ def updated_analyst_record(
     if takeaway is not None:
         record["takeaway"] = takeaway
     record["cap_rationale"] = cap_rationale
+    if uncited_by_title is not None:
+        record["uncited_by_title"] = list(uncited_by_title)
     return record
 
 
-def analyst_record_for(verdict: "VerdictAssessment") -> dict:
+def analyst_record_for(verdict: "VerdictAssessment", uncited_by_title: list[str] | None = None) -> dict:
     """``updated_analyst_record`` for a verdict as written, for a claim's first sidecar."""
     return updated_analyst_record(
         verdict.title, verdict.seo_title, verdict=verdict.verdict, takeaway=verdict.takeaway,
-        cap_rationale=verdict.cap_rationale,
+        cap_rationale=verdict.cap_rationale, uncited_by_title=uncited_by_title,
     )
 
 
@@ -986,8 +892,8 @@ def _write_audit_sidecar(
     when the existing sidecar has none, as for a claim written before its
     first sidecar existed.
 
-    ``level_clamp`` is the note from ``fit_verdict_to_written_pool``; it
-    explains why the claim's level differs from the analyst's.
+    ``level_clamp`` is the note from the loop's level fit (``loop/fit.py``);
+    it explains why the claim's level differs from the analyst's.
 
     ``keep_other_models`` keeps the existing ``models_used`` entries of agents
     this run did not invoke, for a run that rewrites the sidecar without
@@ -1150,24 +1056,30 @@ def build_sub_questions_block(
     sub_questions: list[SubQuestion],
     coverage: dict[str, list[str]],
     queries_by_sub_question: dict[str, list[str]],
+    snippet_only: dict[str, list[str]] | None = None,
 ) -> list[dict] | None:
     """Render the sidecar's ``sub_questions:`` block, or None if empty.
 
-    Each entry has ``id``, ``question``, ``rationale``, ``queries``, and
-    ``citations`` (list of source-ids that addressed it post-ingest).
-    Returns None when the planner emitted no sub-questions, so the
-    sidecar writer can omit the key.
+    Each entry has ``id``, ``question``, ``rationale``, ``kind``
+    (``coverage`` or ``counter-evidence``), ``queries``, ``citations`` (the
+    source ids whose fetched text confirmed the scorer's tag) and
+    ``snippet_only`` (the source ids the scorer tagged but whose text never
+    mentions the sub-question's terms). Returns None when the planner
+    emitted no sub-questions, so the sidecar writer can omit the key.
     """
     if not sub_questions:
         return None
+    snippet_only = snippet_only or {}
     block: list[dict] = []
     for sq in sub_questions:
         block.append({
             "id": sq.id,
             "question": sq.question,
             "rationale": sq.rationale,
+            "kind": sq.kind,
             "queries": list(queries_by_sub_question.get(sq.id, [])),
             "citations": list(coverage.get(sq.id, [])),
+            "snippet_only": list(snippet_only.get(sq.id, [])),
         })
     return block
 
@@ -1242,13 +1154,16 @@ def write_claim_run(
 
     The claim's ``verdict`` and ``confidence`` are the pipeline's: the
     analyst's, or the side the tie-breaker settled on
-    (``result.consistency.pipeline_verdict``). A capped level still caps
-    the confidence at low whichever side won.
+    (``result.consistency.pipeline_verdict``). When the fit lowered the
+    level to a capped one, the confidence is capped at low whichever side
+    won; a capped level the analyst chose keeps its confidence, and
+    ``dr lint`` warns.
 
     The claim's ``title`` and ``statement`` are both ``spec.statement``, and
     the sidecar's ``analyst_record.title`` records it, so the ``seo_title``
-    keep rule compares like with like on the next write. The level fit runs once here,
-    after the final source ids, and its note lands in
+    keep rule compares like with like on the next write. The level fit ran
+    inside the loop, after the cited filter and before the Evaluator; its
+    note (``result.level_clamp``) is recorded here in
     ``pipeline_run.level_clamp``.
 
     ``target`` is the claim file path; it defaults to the entity's claim
@@ -1293,14 +1208,16 @@ def write_claim_run(
         except ValueError as exc:
             logger.warning("Criterion %s has an invalid topic; using the analyst's topics: %s",
                            spec.criteria_slug, exc)
-    level_clamp = fit_verdict_to_written_pool(ao.verdict, result.sources, source_ids, entity_name)
+    level_clamp = result.level_clamp
     verdict, confidence = ao.verdict.verdict, ao.verdict.confidence
     settled = result.consistency
     if settled is not None and settled.pipeline_verdict is not None:
         verdict = settled.pipeline_verdict
         confidence = settled.pipeline_confidence or confidence
-    if _enum_value(ao.verdict.verification_level) in _CAPPED_LEVELS:
-        # A capped level caps confidence whichever side's verdict won.
+    if level_clamp and _enum_value(ao.verdict.verification_level) in _CAPPED_LEVELS:
+        # The fit lowered the level to a capped one: confidence is capped
+        # whichever side's verdict won. A capped level the analyst chose
+        # keeps its confidence, and lint's confidence-cap-violation flags it.
         confidence = Confidence.LOW
     written = _write_claim_file(
         title=spec.statement,
@@ -1319,6 +1236,7 @@ def write_claim_run(
         criteria_slug=spec.criteria_slug,
         seo_title=ao.verdict.seo_title,
         takeaway=ao.verdict.takeaway,
+        uncited_by_title=result.uncited_by_title,
         **verdict_write_kwargs(ao.verdict),
     )
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
@@ -1337,11 +1255,12 @@ def write_claim_run(
             result.sub_questions,
             result.sub_question_coverage,
             result.queries_by_sub_question,
+            snippet_only=result.snippet_only,
         ),
         # The verdict recorded is the one written, as later writes record it,
         # so a tie-broken claim's operator takeaway survives a forced rerun.
         analyst_record={
-            **analyst_record_for(ao.verdict),
+            **analyst_record_for(ao.verdict, uncited_by_title=result.uncited_by_title),
             "title": spec.statement,
             "verdict": _enum_value(verdict),
         },

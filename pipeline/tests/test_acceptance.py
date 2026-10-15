@@ -152,7 +152,7 @@ async def test_research_planner_structure() -> None:
     query_texts = [pq.text for pq in plan.queries]
     assert len(query_texts) == len(set(query_texts)), "Duplicate queries returned"
     assert plan.rationale.strip(), "Rationale is empty"
-    assert 2 <= len(plan.sub_questions) <= 5
+    assert 2 <= len(plan.sub_questions) <= 6
 
     entity_terms = {"google", "alphabet"}
     for q in query_texts:

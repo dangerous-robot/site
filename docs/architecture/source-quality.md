@@ -30,14 +30,14 @@ An `unknown` source counts as neither `independent` nor `first-party`. A pool wi
 
 ### Level fit to the written sources
 
-The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. Just before the claim is written, once, after the final source ids (`write_claim_run` for `dr draft`; `dr step-analyze --write` calls it directly), `fit_verdict_to_written_pool` in `pipeline/orchestrator/persistence.py`:
+The analyst picks the level from every source it was shown; the claim cites only the sources written to its `sources:` list, and the site counts that list. The fit runs inside the loop, once, after the cited filter has fixed the final source ids and before the Evaluator (`fit_verdict_to_written_pool` in `pipeline/loop/fit.py`), so the Evaluator grades the fitted verdict. `dr step-analyze` reaches the same fit through the loop's analyst rerun, against every source stored on the claim. The fit:
 
 - drops `source_overrides` entries for sources not in the written list;
 - counts each written source ref's effective `independence` (its override, else its label after the entity match) with `effective_independence` in `pipeline/common/source_classification.py`, the same function the `verification-level-pool-mismatch` lint check uses; a ref listed twice counts twice, as on the site;
 - lowers a level that needs more `independent` sources than the list has (`partially-verified` and `independently-verified` need one, `multiply-verified` two): to `independently-verified` with one, else to `self-reported` when a written `first-party` source has `kind` in {report, documentation, dataset}, else to `claimed`;
 - lowers `self-reported` to `claimed` when the list has no `independent` source and no `first-party` source with `kind` in {report, documentation, dataset, article}. A first-party `article` keeps `self-reported`, since the analyst may judge one self-reported (see the boundary below).
 
-A lowered level of `self-reported` or `claimed` also sets `confidence: low` and, when the analyst wrote none, the `cap_rationale` "Confidence is capped at low: no source on this claim independently addresses <entity>." A `self-reported` level lowered to `claimed` always gets that rationale, since the analyst's describes a first-party report the list no longer has. A rationale the operator wrote on the claim is kept over the fit's, even when the level or confidence changes, until the operator edits it (`docs/architecture/content-model.md`, `cap_rationale`). The audit sidecar records why under `pipeline_run.level_clamp`, since the auditor and the analyst snapshot saw the level from before the fit.
+The fit lowers confidence only when it lowers the level. A capped level the analyst chose itself keeps the confidence the analyst gave it, and `dr lint` warns (`confidence-cap-violation`). A lowered level of `self-reported` or `claimed` also sets `confidence: low` and, when the analyst wrote none, the `cap_rationale` "Confidence is capped at low: no source on this claim independently addresses <entity>." A `self-reported` level lowered to `claimed` always gets that rationale, since the analyst's describes a first-party report the list no longer has. A rationale the operator wrote on the claim is kept over the fit's, even when the level or confidence changes, until the operator edits it (`docs/architecture/content-model.md`, `cap_rationale`). The writer records why under `pipeline_run.level_clamp` from the loop's result. Because the fit runs before the Evaluator, `audit.analyst_confidence` is the post-fit confidence.
 
 ### `claimed` vs `self-reported` boundary
 
@@ -64,6 +64,7 @@ The proxy knows nothing about the claim's entity, so a page published by the ent
 - **Host**: its URL host (without `www.`) equals or is a subdomain of the host of the entity's `website` or its parent company's `website`. `search.brave.com` matches `brave.com`; `notbrave.com` and `brave.com.example.net` do not.
 - **Profile**: the URL is the entity's own account on LinkedIn, X, Twitter, Facebook, Instagram or YouTube: the account handle in the path (`linkedin.com/company/<handle>`, `linkedin.com/posts/<handle>_...`, `x.com/<handle>`, `youtube.com/@<handle>`) equals an entity name with its words joined by `-`, `_` or nothing. The publisher of such a page is usually the platform.
 - **Publisher**: its `publisher`, lowercased with punctuation and a trailing `inc`/`llc`/`ltd` removed, equals the entity's `name`, `legal_name` or an alias, or the same fields on the parent company (`parent_company` on the entity file). Equality, not substring: "Meta" does not match "Metacritic".
+- **Newswire**: a publisher naming a press-wire service (PR Newswire, Business Wire, GlobeNewswire, ACCESS Newswire, EIN Presswire, PRWeb, Marketwired, Newsfile, Cision, or any publisher with "newswire" in the name; the other names match only as whole words, so "Decision Lab" is not Cision; `NEWSWIRE_ORIGINS` in `pipeline/common/source_classification.py`) is the issuer's own statement. `classify_source_type` puts such a publisher in `primary`, so the proxy label is `first-party` from ingest. For a company or product entity, a release whose title, summary, key quotes or body name the entity is `first-party` for the claim (reason "Entity match: newswire release", with an override recorded when the stored label was `independent`); a release that does not name the entity is off-entity like any other `first-party` source. A subject entity has no off-entity check, so the newswire rule adds nothing for it.
 
 A source that does not match is about someone else, and for a company or product entity it does not count for the entity either way:
 
@@ -109,7 +110,7 @@ The override is per-claim, not on the source file itself. A source may add genui
 
 ## Confidence cap
 
-When `verification_level` is `claimed` or `self-reported`, `confidence` is capped at `low`. The cap fires regardless of how comprehensive or auditable the entity's self-report appears. Cap quality is communicated through the rationale, not through cap level.
+When `verification_level` is `claimed` or `self-reported`, `confidence` is capped at `low`. The analyst applies the cap, and the level fit applies it when it lowers a level; `dr lint` catches drift (`confidence-cap-violation`). The cap fires regardless of how comprehensive or auditable the entity's self-report appears. Cap quality is communicated through the rationale, not through cap level.
 
 ### Rationale templates
 
@@ -129,7 +130,7 @@ Claims where absence of evidence is the primary basis should use `verdict: unver
 
 ### Lint enforcement
 
-`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`, and (`verification-level-pool-mismatch`) when a level needs more `independent` sources than the claim's written list has, or the level is `self-reported` and the list has neither an `independent` source nor a `first-party` report, documentation, dataset or article. The warnings surface drift; the analyst sets the cap and the [level fit](#level-fit-to-the-written-sources) lowers an unsupported level at write time.
+`dr lint` issues a warning when `confidence` is `medium` or `high` and `verification_level` is `claimed` or `self-reported`, and (`verification-level-pool-mismatch`) when a level needs more `independent` sources than the claim's written list has, or the level is `self-reported` and the list has neither an `independent` source nor a `first-party` report, documentation, dataset or article. The warnings surface drift; the analyst sets the cap and the [level fit](#level-fit-to-the-written-sources), run inside the loop before the Evaluator, lowers an unsupported level.
 
 ## Source overrides on claims
 

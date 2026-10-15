@@ -23,7 +23,7 @@ from enum import Enum
 
 import httpx
 import openai
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelAPIError, ModelHTTPError, UnexpectedModelBehavior
 
 
 class Rule(str, Enum):
@@ -99,6 +99,20 @@ def classify_exception(exc: BaseException) -> tuple[str, Rule]:
     """The vocabulary literal and rule for an exception raised inside a step."""
     if isinstance(exc, (asyncio.TimeoutError, httpx.TimeoutException)):
         return "timeout", Rule.TRANSPORT_RETRY
+    # An agent run never lets a raw openai error out: PydanticAI turns a 4xx or
+    # 5xx reply into ModelHTTPError and a dropped connection into ModelAPIError.
+    # The openai arms below catch only a direct client call.
+    if isinstance(exc, ModelHTTPError):
+        status = exc.status_code
+        if status == 429:
+            return "rate_limited", Rule.TRANSPORT_RETRY
+        if status >= 500:
+            return "http_error", Rule.TRANSPORT_RETRY
+        if status in (401, 403):
+            return "api_key_missing", Rule.CONFIG_FATAL
+        return "model_error", Rule.FLAW_RETRY
+    if isinstance(exc, ModelAPIError):
+        return "http_error", Rule.TRANSPORT_RETRY
     if isinstance(exc, openai.RateLimitError):
         return "rate_limited", Rule.TRANSPORT_RETRY
     if isinstance(exc, (openai.AuthenticationError, openai.PermissionDeniedError)):
@@ -116,7 +130,8 @@ def classify_exception(exc: BaseException) -> tuple[str, Rule]:
 
 def retry_after_s(exc: BaseException) -> float | None:
     """Seconds a rate-limited provider asked to wait, from its ``retry-after`` header."""
-    response = getattr(exc, "response", None)
+    # A ModelHTTPError carries no response; the openai error it wraps does.
+    response = getattr(exc, "response", None) or getattr(exc.__cause__, "response", None)
     headers = getattr(response, "headers", None)
     if headers is None:
         return None

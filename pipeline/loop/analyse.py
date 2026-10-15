@@ -26,10 +26,13 @@ from common.models import EntityType, FailureInfo, FailureStep, Independence, Su
 from common.source_classification import (
     entity_affiliated,
     entity_first_party_reason,
+    is_newswire,
+    newswire_origin,
     publisher_named_in_claim,
     source_engages_entity,
 )
 from common.utils import url_host
+from loop.fit import fit_verdict_to_written_pool
 from loop.policy import classify_exception, retry_after_s
 from loop.spec import VerificationResult, VerifyConfig, _cfg_repo_root
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for
@@ -83,6 +86,9 @@ def apply_entity_match(
     source counts agree with the level.
 
     - The entity's own source (``entity_first_party_reason``) is ``first-party``.
+    - A press-wire release (``is_newswire``) that names the entity is the
+      entity's own statement, so ``first-party``; one that never names it
+      falls to the rules below.
     - Any other ``first-party`` source is another organization's self-report.
       It stays ``first-party`` when the claim names its publisher (a provider
       the entity relies on), or when it names the entity and looks published
@@ -111,6 +117,11 @@ def apply_entity_match(
             if label == Independence.FIRST_PARTY.value:
                 continue
             new_label, note = Independence.FIRST_PARTY, f"Entity match: {reason}."
+        elif check_off_entity and is_newswire(publisher) and source_engages_entity(sd, identity):
+            if label == Independence.FIRST_PARTY.value:
+                continue
+            new_label = Independence.FIRST_PARTY
+            note = f"Entity match: newswire release ({newswire_origin(publisher)}) naming {entity_name}."
         elif not check_off_entity or publisher_named_in_claim(publisher, claim_text):
             continue
         elif label == Independence.FIRST_PARTY.value:
@@ -359,12 +370,10 @@ def _apply_cited_filter(
     warning, when nothing is cited (that means unknown, not none) or when
     the cited subset would fit a lower ``verification_level`` than the full
     list: both sides go through ``fit_verdict_to_written_pool`` on a copy,
-    so the counting rules are the write-time fit's and the linter's.
-    ``result.sources`` stays whole, since the write-time fit and the
-    sidecar read it.
+    so the counting rules are the level fit's and the linter's.
+    ``result.sources`` stays whole, since the level fit and the sidecar
+    read it.
     """
-    from orchestrator.persistence import fit_verdict_to_written_pool
-
     verdict = analyst_out.verdict
     analyst_overrides = [o for o in verdict.source_overrides or [] if not o.code_relabel]
     cited = set(cited_source_ids(verdict, result.sources, analyst_overrides))

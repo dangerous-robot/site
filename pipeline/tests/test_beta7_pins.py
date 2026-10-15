@@ -180,7 +180,7 @@ async def test_cache_hits_land_on_cached_sources(tmp_path) -> None:
     stored.write_text(
         f"---\nurl: {URLS[0]}\ntitle: Stored report\npublisher: Example Publisher\n"
         "accessed_date: 2026-01-01\nkind: article\nindependence: independent\n"
-        "summary: Stored.\n---\n\nBody.\n",
+        "summary: Stored.\n---\n\nBody. Third parties confirm the energy data it publishes.\n",
         encoding="utf-8",
     )
     with scripted_agents():
@@ -215,7 +215,7 @@ _COVER_ADDRESSES = {
     _COVER_URLS[0]: ["sq1"], _COVER_URLS[1]: ["sq1"], _COVER_URLS[2]: ["sq1"],
     _COVER_URLS[3]: ["sq1"], _COVER_URLS[4]: ["sq2"], _COVER_URLS[5]: ["sq2"],
 }
-_COVER_TEXT = {u: f"Page {u}. Probe Subject data centers used power." for u in _COVER_URLS}
+_COVER_TEXT = {u: f"Page {u}. Probe Subject data centers used power; third parties confirm the energy data." for u in _COVER_URLS}
 
 
 def _store_source(repo_root, url: str, slug: str) -> None:
@@ -224,7 +224,7 @@ def _store_source(repo_root, url: str, slug: str) -> None:
     path.write_text(
         f"---\nurl: {url}\ntitle: Stored {slug}\npublisher: Example Publisher\n"
         "accessed_date: 2026-01-01\nkind: article\nindependence: independent\n"
-        "summary: Stored.\n---\n\nBody.\n",
+        "summary: Stored.\n---\n\nBody. Third parties confirm the energy data it publishes.\n",
         encoding="utf-8",
     )
 
@@ -272,7 +272,8 @@ def _recording_ingest_model(first_calls: list[str], *, fail: set[str] = frozense
 async def test_thinnest_sub_question_is_ingested_first_and_cache_hits_count(tmp_path) -> None:
     """From test_ingest_urls.py ``test_ingest_claim_sources_prefers_thin_sub_question`` and
     the ``_order_by_coverage`` cases: cached sources cover sq1, so sq2's URLs, ranked
-    last by the scorer, fill the fresh slots first."""
+    last by the scorer, are tried first. Cached sources no longer shrink the fresh
+    target (RE-BA, Source pool rules), so the two remaining sq1 URLs fill it too."""
     scorer, search = _coverage_case(tmp_path)
     first_calls: list[str] = []
     with scripted_agents(scorer=scorer, search=search, ingestor=_recording_ingest_model(first_calls)):
@@ -280,7 +281,7 @@ async def test_thinnest_sub_question_is_ingested_first_and_cache_hits_count(tmp_
 
     assert result.cached_source_ids == ["2026/cover-a", "2026/cover-b"]
     assert set(first_calls[:2]) == {_COVER_URLS[4], _COVER_URLS[5]}
-    assert {url for url, _sf in result.source_files} == {_COVER_URLS[4], _COVER_URLS[5]}
+    assert {url for url, _sf in result.source_files} == set(_COVER_URLS[2:])
     assert sorted(result.sub_question_coverage["sq2"]) == ["2026/cover-e", "2026/cover-f"]
 
 
@@ -309,11 +310,14 @@ _ORDER_TEXT = {u: f"Page {u}. Probe Subject data centers used power." for u in _
 
 
 def _order_planner(sub_question_ids: list[str]) -> dict:
+    """A plan over ``sub_question_ids`` plus the counter-evidence sub-question every plan carries."""
+    counter = f"sq{len(sub_question_ids) + 1}"
     return {
         "sub_questions": [
             {"id": sq, "question": f"Question {sq}?", "rationale": "axis"} for sq in sub_question_ids
-        ],
-        "queries": [{"text": f"query {sq}", "sub_question_id": sq} for sq in sub_question_ids],
+        ] + [{"id": counter, "question": "What would falsify it?", "rationale": "counter", "kind": "counter-evidence"}],
+        "queries": [{"text": f"query {sq}", "sub_question_id": sq} for sq in sub_question_ids]
+        + [{"text": f"query {counter}", "sub_question_id": counter}],
         "rationale": "axes",
     }
 
@@ -994,9 +998,10 @@ async def test_an_analyst_override_for_the_same_source_is_not_duplicated(tmp_pat
     )
 
     overrides = result.analyst_output.verdict.source_overrides
-    assert sorted(o.source for o in overrides) == [
-        "2025/transparency", "2026/631793", "2026/reports", "2026/sustainability",
-    ]
+    # The analyst cites only the transparency report, and the level fit runs in
+    # the loop (RE-BA, Source pool rules), keeping the overrides of the listed
+    # sources only; the entity match's override for it is merged, not added.
+    assert sorted(o.source for o in overrides) == ["2025/transparency"]
     kept = next(o for o in overrides if o.source == "2025/transparency")
     assert kept.reason == "Brave's own report."
 
