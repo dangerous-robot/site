@@ -19,8 +19,10 @@ Run it from the repo root: `pipeline/` is a member of the uv workspace defined t
 
 ## Running tests
 
+Run inside `pipeline/`. The `acceptance` marker selects live tests that make paid model and search calls, so the default command leaves them out:
+
 ```bash
-uv run pytest tests/ -v
+uv run python -m pytest -m 'not acceptance'
 ```
 
 ## Structure
