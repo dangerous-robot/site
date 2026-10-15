@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class IngestNotes:
-    """What one ``_ingest_urls`` call learned about its URLs beyond the SourceFiles."""
+    """What one ``ingest_urls`` call learned about its URLs beyond the SourceFiles."""
 
     # Requested URL -> URL its live fetch ended on after redirects.
     final_urls: dict[str, str] = field(default_factory=dict)
@@ -178,11 +178,11 @@ def merge_acquisition_writes(
 
 
 def _trace_acquisition_sink(research_trace: object) -> dict | None:
-    """Return the ``acquisition`` map on ``research_trace`` for ``_ingest_urls``.
+    """Return the ``acquisition`` map on ``research_trace`` for ``ingest_urls``.
 
     Acts as ``setdefault`` so repeated calls return the same dict.
     Returns ``None`` if ``research_trace`` isn't a dict (defensive against
-    error variants of ``ResearchOutput``); in that case ``_ingest_urls``
+    error variants of ``ResearchOutput``); in that case ``ingest_urls``
     drops acquisition writes silently rather than blowing up the run.
     """
     if not isinstance(research_trace, dict):
@@ -265,27 +265,24 @@ async def ingest_one(
     failures_out: list[dict] | None = None,
     repo_root: Path | None = None,
     notes: IngestNotes | None = None,
-    archive: bool = True,
 ) -> tuple[str, SourceFile] | StepError:
     """Ingest a single URL. Returns a (url, SourceFile) tuple on success or a StepError.
 
     ``acquisition_out`` and ``failures_out`` are optional output sinks
     populated from the ``wayback_check`` tool's side-channel on
-    ``IngestorDeps``. Defaults preserve the historical signature for
-    direct callers (e.g., ``test_terminal_fetch.py``) that don't care
-    about wayback provenance.
+    ``IngestorDeps``. Both sinks are optional; a caller that does not
+    need archive provenance omits them.
 
     * ``acquisition_out`` (dict): per-URL recovery writes shaped
       ``{recovered_via, stage, outcome}``. Merged into the caller's map.
     * ``failures_out`` (list): wayback transport-failure dicts
       ``{stage, error_type, message}``. The caller decides whether to
-      promote these to ``StepError`` (see ``_ingest_urls`` — only for
+      promote these to ``StepError`` (see ``ingest_urls`` — only for
       URLs whose ingest itself failed terminally).
     * ``notes``: gains, for a successful ingest, the URL its live fetch
       ended on and the sidecar record of the archive lookup.
 
-    A successful ingest also gets its ``archived_url`` from that lookup,
-    unless ``archive`` is False (the caller discards the source).
+    A successful ingest also gets its ``archived_url`` from that lookup.
 
     A transport failure on this URL (``classify_exception``: a null body, a
     rate limit, a dropped connection; not a timeout, which already spent
@@ -357,12 +354,11 @@ async def ingest_one(
         await asyncio.sleep(retry_in)
 
     if isinstance(outcome, tuple):
-        if archive:
-            # Outside the LLM semaphore and the ingest time limit: a slow
-            # archive.org must not turn a good ingest into a timeout.
-            record = await archive_after_ingest(outcome[1], deps)
-            if notes is not None:
-                notes.archive[url] = record
+        # Outside the LLM semaphore and the ingest time limit: a slow
+        # archive.org must not turn a good ingest into a timeout.
+        record = await archive_after_ingest(outcome[1], deps)
+        if notes is not None:
+            notes.archive[url] = record
         if notes is not None and deps.final_url:
             notes.final_urls[url] = deps.final_url
         if notes is not None:
@@ -387,7 +383,6 @@ async def ingest_urls(
     prefetched_bodies: dict[str, str] | None = None,
     acquisition_out: dict[str, dict] | None = None,
     notes: IngestNotes | None = None,
-    archive: bool = True,
     known_pages: dict[str, str] | None = None,
 ) -> tuple[list[tuple[str, SourceFile]], list[StepError]]:
     """Waterfall: attempt up to candidate_pool_size URLs in the order given,
@@ -398,8 +393,7 @@ async def ingest_urls(
     ``notes.aliases``. ``known_pages`` (canonical key -> requested URL) names
     pages the claim already has from the dedup index; a URL that reaches one
     is dropped the same way. ``notes.final_urls`` maps each requested URL to the
-    URL its live fetch ended on. ``archive=False`` skips the archive lookup
-    for callers that keep only the summary.
+    URL its live fetch ended on.
 
     When ``prefetched_bodies`` is supplied, each URL's body (if present)
     is threaded into ``IngestorDeps`` so ``web_fetch`` returns it without
@@ -410,7 +404,7 @@ async def ingest_urls(
     per-URL ``{recovered_via, ...}`` writes drained from the
     ``wayback_check`` side-channel are merged into it. Mirrors the
     ``acquisition_out`` parameter on ``researcher.execute_searches`` —
-    the orchestrator passes ``research_trace["acquisition"]`` so the
+    ``_ingest_claim_sources`` passes ``research_trace["acquisition"]`` so the
     audit sidecar can graft the provenance onto matching
     ``sources_consulted[]`` entries.
 
@@ -455,7 +449,6 @@ async def ingest_urls(
                 failures_out=url_failures,
                 repo_root=repo_root,
                 notes=notes,
-                archive=archive,
             )
 
             if isinstance(outcome, tuple):

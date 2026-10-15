@@ -12,7 +12,6 @@ import httpx
 
 from common.blocklist import filter_urls, load_blocklist
 from common.canonical_url import canonical_key
-from common.content_loader import resolve_repo_root
 from common.models import SubQuestion
 from common.source_classification import EntityIdentity, profile_url_names_entity
 from loop.errors import StepError
@@ -137,8 +136,7 @@ def _apply_blocklist_cap(
     ``prefetched_bodies`` is kept and listed under ``trace["blocklist_spared"]``.
     """
     out_errors: list[StepError] = list(errors) if errors else []
-    repo_root_str = cfg.repo_root or str(resolve_repo_root())
-    entries = load_blocklist(Path(repo_root_str))
+    entries = load_blocklist(_cfg_repo_root(cfg))
     kept, dropped = filter_urls(raw_urls, entries)
     spared_records: list[dict[str, str]] = []
     if identity is not None and dropped:
@@ -155,7 +153,8 @@ def _apply_blocklist_cap(
                 {
                     "url": d.url,
                     "host": d.host,
-                    "reason": f"entity's own {d.host} post; page text came with the search result",
+                    # A profile URL can be a post or the profile page itself.
+                    "reason": f"entity's own {d.host} page; page text came with the search result",
                 }
                 for d in spared
             ]

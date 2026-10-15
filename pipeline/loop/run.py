@@ -32,7 +32,7 @@ from loop.errors import StepError
 from loop.fit import fit_verdict_to_written_pool
 from loop.ingest import _addresses_with_aliases, _build_source_dict, _ingest_claim_sources
 from loop.recheck import _recheck_cached_sources
-from loop.policy import STEP_ON_EXHAUSTION, Rule, classify_exception, rule_for
+from loop.policy import STEP_ON_EXHAUSTION, Rule, classify_exception, is_http_status, rule_for
 from loop.restate import needs_restatement, restate_step
 from loop.research import _apply_url_dedup, _research, _warn_uncovered
 from loop.spec import ClaimSpec, VerificationResult, VerifyConfig, _cfg_repo_root
@@ -69,7 +69,7 @@ def _classify_blocked_reason(ingest_errors: list[StepError]) -> BlockedReason:
     if ingest_only and all(
         # ``http_{status}`` only: ``http_error`` (a provider 5xx, a dropped
         # connection) is a transport failure, not a terminal fetch.
-        (e.retryable is False) and e.error_type.startswith("http_") and e.error_type[5:].isdigit()
+        (e.retryable is False) and is_http_status(e.error_type)
         for e in ingest_only
     ):
         return BlockedReason.TERMINAL_FETCH_ERROR
@@ -88,12 +88,12 @@ def _summarize_terminal_fetch(ingest_errors: list[StepError]) -> str:
 def _record_threshold_block(
     result: VerificationResult, ingest_errors: list[StepError]
 ) -> None:
-    """Mark `result` as blocked by the < 4 source threshold and emit logs."""
+    """Mark `result` as blocked by the usable-source threshold and emit logs."""
     result.blocked_reason = _classify_blocked_reason(ingest_errors)
     if result.blocked_reason == BlockedReason.TERMINAL_FETCH_ERROR:
         result.errors.insert(0, _summarize_terminal_fetch(ingest_errors))
     msg = (
-        f"Claim halted: < 4 usable sources "
+        f"Claim halted: < {MIN_USABLE_SOURCES} usable sources "
         f"(blocked_reason={result.blocked_reason.value})"
     )
     click.echo(msg, err=True)
@@ -195,6 +195,18 @@ def _threshold_failure(usable: int, ingest_errors: list[StepError]) -> _StepFail
             message=f"{needed}; {_summarize_terminal_fetch(ingest_errors)}",
         )
     return _StepFailure(error_type="insufficient_sources", message=needed)
+
+
+def _retry_entry(step: str, failure: _StepFailure, rule: Rule, attempts: int) -> dict:
+    """One recovered step as the finding's ``retries`` records it."""
+    return {"step": step, "error_type": failure.error_type, "rule": rule.value, "attempts": attempts}
+
+
+def _note_abandoned(result: VerificationResult, failed: _StepFailure, message: str) -> None:
+    """Record an abandoned step on ``result``; the first agent failure record wins."""
+    result.errors.append(message)
+    if failed.failure is not None and result.failure is None:
+        result.failure = failed.failure
 
 
 # The agent each step runs, for the finding's ``models_used``.
@@ -340,10 +352,7 @@ class _Driver:
             error=error,
             attempts=attempts,
             outcome=outcome,
-            retries=[
-                {"step": s, "error_type": f.error_type, "rule": r.value, "attempts": n}
-                for s, f, r, n in retries
-            ],
+            retries=[_retry_entry(*r) for r in retries],
         )
 
 
@@ -392,9 +401,7 @@ async def _analyse_step(
     analyst_out, failed = await driver.step("analyse", attempt)
     result.analyst_output = analyst_out
     if failed is not None:
-        result.errors.append("Analyst failed to produce an assessment")
-        if failed.failure is not None and result.failure is None:
-            result.failure = failed.failure
+        _note_abandoned(result, failed, "Analyst failed to produce an assessment")
         return False
     result.uncited_by_title = uncited_by_title(analyst_out.verdict, result.sources)
     return True
@@ -419,9 +426,7 @@ async def _evaluate_and_settle(
 
     comparison, failed = await driver.step("evaluate", evaluate)
     if failed is not None:
-        result.errors.append("Evaluator failed to produce an assessment")
-        if failed.failure is not None and result.failure is None:
-            result.failure = failed.failure
+        _note_abandoned(result, failed, "Evaluator failed to produce an assessment")
         return False
     result.consistency = comparison
     if not needs_tiebreak(comparison):
@@ -441,9 +446,7 @@ async def _evaluate_and_settle(
 
     assessment, failed = await driver.step("tiebreak", tiebreak)
     if failed is not None:
-        result.errors.append("Tie-breaker failed to produce an assessment")
-        if failed.failure is not None and result.failure is None:
-            result.failure = failed.failure
+        _note_abandoned(result, failed, "Tie-breaker failed to produce an assessment")
         return False
     result.consistency = settle_verdict(comparison, assessment)
     driver.split(result.consistency)
@@ -480,10 +483,7 @@ async def _restate(
             # names neither the restater's model nor a retry it needed.
             split.models_used.setdefault("restater", cfg.model_for("restater"))
             if driver.recovered and driver.recovered[-1][0] == "restate":
-                step, failure, rule, attempts = driver.recovered[-1]
-                split.retries.append({
-                    "step": step, "error_type": failure.error_type, "rule": rule.value, "attempts": attempts,
-                })
+                split.retries.append(_retry_entry(*driver.recovered[-1]))
         return
     result.errors.append("Restater failed; the claim is written without a restatement")
     if split is not None and driver.finding is not None:
@@ -520,7 +520,7 @@ async def run(
     claim_text = spec.statement
     resolved_entity = spec.entity
     topics = spec.topics
-    cfg = config or VerifyConfig()
+    cfg = config
     # Semaphore MUST be created inside the coroutine driven by asyncio.run (loop-bound).
     _sem = sem if sem is not None else asyncio.Semaphore(cfg.llm_concurrency)
     driver = _Driver(spec, cfg)
@@ -535,10 +535,8 @@ async def run(
         errors=[],
     )
 
-    research_entity = resolved_entity.entity_name if resolved_entity is not None else entity_name
-
     # Console-only emit (no file-log mirror) — paired logger.info calls below
-    # carry the structured "Step N/M: ..." line for info.log/debug.log.
+    # carry the structured "<step>: ..." line for info.log/debug.log.
     if cfg.show_progress:
         say = lambda m, *a: progress(m, *a, log=False)
     else:
@@ -549,12 +547,12 @@ async def run(
         async with httpx.AsyncClient() as client:
             # Step 1: Research
             say("  › Searching")
-            logger.info("Step 1/4: Searching for sources...")
+            logger.info("Research: searching for sources...")
             research: dict = {}
 
             async def research_attempt():
                 ro = await _research(
-                    client, research_entity, claim_text, cfg, _sem,
+                    client, entity_name, claim_text, cfg, _sem,
                     resolved_entity=resolved_entity, topics=topics,
                 )
                 research["errors"] = ro.errors
@@ -581,7 +579,7 @@ async def run(
 
             # Step 2: Ingest
             say("  › Ingesting")
-            logger.info("Step 2/4: Ingesting %d candidate URLs...", len(urls))
+            logger.info("Ingest: ingesting %d candidate URLs...", len(urls))
             repo_root = _cfg_repo_root(cfg)
             if url_index is None:
                 url_index = build_source_url_index(repo_root)
@@ -670,7 +668,7 @@ async def run(
 
             # Step 3: Analyst
             say("  › Analysing")
-            logger.info("Step 3/4: Analysing claim from %d sources...", len(result.sources))
+            logger.info("Analyse: analysing claim from %d sources...", len(result.sources))
             if not await _analyse_step(
                 driver, result, spec, cfg,
                 sub_questions=result.sub_questions, repo_root=repo_root,
@@ -684,12 +682,12 @@ async def run(
             # level fit runs once, on the listed sources, so the Evaluator
             # grades the fitted verdict and the writer only records the note.
             cited_sources = _apply_cited_filter(result, result.analyst_output, entity_name)
+            cited_ids = [sd["source_id"] for sd in cited_sources if sd.get("source_id")]
             result.level_clamp = fit_verdict_to_written_pool(
-                result.analyst_output.verdict, result.sources,
-                [sd["source_id"] for sd in cited_sources if sd.get("source_id")], entity_name,
+                result.analyst_output.verdict, result.sources, cited_ids, entity_name,
             )
             say("  › Auditing")
-            logger.info("Step 4/4: Running the Evaluator...")
+            logger.info("Evaluate: running the Evaluator...")
             if not await _evaluate_and_settle(driver, result, spec, cfg, cited_sources, say):
                 if cfg.show_progress:
                     progress("  ! %s", result.errors[-1])
@@ -703,7 +701,7 @@ async def run(
                 logger.info("Restating (%s)...", trigger)
                 await _restate(
                     driver, result, spec, cfg,
-                    cited_ids=[sd["source_id"] for sd in cited_sources if sd.get("source_id")],
+                    cited_ids=cited_ids,
                     trigger=trigger,
                 )
                 if result.restatement is None and cfg.show_progress:

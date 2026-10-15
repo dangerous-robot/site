@@ -146,10 +146,13 @@ flowchart TD
     M -->|--claim ref --criterion new-slug| R5["Attach a criterion to a draft:
     appends to research/templates.yaml, sets criteria_slug;
     no model call, no file moved"]
+    M -->|--restates ref --pick n| R6["Run restatement candidate n as a new claim;
+    restates: ref in its sidecar"]
     R1 --> LOOP
     R2 --> LOOP
     R3 --> LOOP
     R4 --> LOOP
+    R6 --> LOOP
     LOOP["Loop (run): research, ingest, analyse, evaluate;
     blocked or failed: nothing written, exit 1"]
     LOOP --> W["write_claim_run:

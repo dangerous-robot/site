@@ -20,17 +20,12 @@ from common.models import (
     VerificationLevel,
 )
 from common.source_classification import effective_independence
-from orchestrator.persistence import shorten
+from orchestrator.persistence import _enum_value, shorten
 
 if TYPE_CHECKING:
     from analyst.agent import VerdictAssessment
 
 logger = logging.getLogger(__name__)
-
-
-def _enum_value(value: object) -> object:
-    # Callers pass enums; a parsed file holds their string values.
-    return getattr(value, "value", value)
 
 
 def fit_verdict_to_written_pool(

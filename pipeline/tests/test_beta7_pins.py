@@ -1483,6 +1483,8 @@ async def test_the_entitys_own_post_with_page_text_passes_the_blocklist(tmp_path
     spared = result.research_trace["blocklist_spared"]
     assert [s["url"] for s in spared] == [_OWN_POST]
     assert "linkedin.com" in spared[0]["reason"]
+    # A spared URL may be a profile page, not a post.
+    assert spared[0]["reason"].startswith("entity's own linkedin.com page;")
 
 
 @pytest.mark.asyncio

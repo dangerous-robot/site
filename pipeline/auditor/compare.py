@@ -106,8 +106,8 @@ def compare(
     )
 
 
-# How strong a claim each verdict makes (Q-B5, the tie-breaker ordering): a
-# three-way split settles on the weakest. Polarity does not count, so
+# How strong a claim each verdict makes: a three-way split settles on the
+# weakest. Polarity does not count, so
 # mostly-true and mostly-false rank together, as do true and false.
 VERDICT_STRENGTH: dict[Verdict, int] = {
     Verdict.NOT_APPLICABLE: 0,

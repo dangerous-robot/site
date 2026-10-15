@@ -1,8 +1,6 @@
 """The restater's input bundle and output models.
 
-Field shapes follow the absorbed design
-(``docs/plans/completed/claim-restate_superseded.md`` § The agent). The bundle
-carries the pipeline verdict, so the agent explains a gap rather than
+The bundle carries the pipeline verdict, so the agent explains a gap rather than
 re-judging the claim, and never the Evaluator's or the tie-breaker's
 reasoning or a verdict any candidate should get.
 """

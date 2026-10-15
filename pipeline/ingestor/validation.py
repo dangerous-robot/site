@@ -128,11 +128,7 @@ class QuoteCheck:
 
 
 def check_quote(quote: str, page_text: str) -> QuoteCheck:
-    """The one quote rule: whether ``quote`` is on ``page_text``, and where.
-
-    The ingest check (``apply_quote_checks``), the restater's evidence
-    check (``quote_in_text``) and the review packet all read this.
-    """
+    """One quote against the page, with its passage; ``check_quotes`` does the work."""
     return check_quotes([quote], page_text, with_passage=True)[0]
 
 
@@ -155,11 +151,6 @@ def apply_quote_checks(source: SourceFile, page_text: str, *, with_passage: bool
     checks = check_quotes(quotes, page_text, with_passage=with_passage)
     source.frontmatter.key_quotes = [c.text for c in checks if c.found] or None
     return checks
-
-
-def drop_unfound_quotes(source: SourceFile, page_text: str) -> list[str]:
-    """``apply_quote_checks``, returning the dropped quotes as given."""
-    return [c.text for c in apply_quote_checks(source, page_text) if not c.found]
 
 
 def check_quotes(quotes: list[str], page_text: str, *, with_passage: bool = False) -> list[QuoteCheck]:

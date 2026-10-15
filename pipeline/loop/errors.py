@@ -53,18 +53,18 @@ class StepError:
         - ``verdict_split``            -- the analyst and the Evaluator disagreed; the tie-breaker settled it
         - ``not_started``              -- ``dr recheck --due`` could not start a claim's run
           (its entity file does not load, or the claim is not where its entity writes)
-        - ``run_failed``               -- a ``dr recheck`` run raised outside the loop's steps
+        - ``run_failed``               -- a ``dr recheck`` or ``dr findings --replay`` run raised
+          outside the loop's steps
 
-    Reserved (tier1 source-pool expansion, not yet wired)
-    -----------------------------------------------------
-    See ``docs/plans/completed/source-pool-expansion-tier1.md`` and the companion
-    search-backend plan. These literals are documented up-front so paths
-    can be implemented in any order without doc churn:
+    Archive, search and SEC EDGAR literals
+    --------------------------------------
+    No code emits the two EDGAR literals yet; they are listed so the error
+    policy already has a rule for each:
 
-        - ``wayback_unavailable``      -- Path 1: archive.org TimeGate API down
-        - ``edgar_ua_missing``         -- Path 3: SEC EDGAR User-Agent header
+        - ``wayback_unavailable``      -- archive.org TimeGate API down
+        - ``edgar_ua_missing``         -- SEC EDGAR User-Agent header
           not configured
-        - ``edgar_rate_limited``       -- Path 3: SEC EDGAR rate limit hit
+        - ``edgar_rate_limited``       -- SEC EDGAR rate limit hit
         - ``tavily_rate_limited``      -- search backend: Tavily rate limit hit
 
     What does NOT belong on this channel

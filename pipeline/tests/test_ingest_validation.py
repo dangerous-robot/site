@@ -5,13 +5,18 @@ from __future__ import annotations
 import pytest
 
 from ingestor.models import SourceFile
-from ingestor.validation import drop_unfound_quotes
+from ingestor.validation import apply_quote_checks
 
 _PAGE = (
     "Brave publishes a transparency report.\n"
     "Google will reach 100% renewable energy\nfor its data centers by 2030.\n"
     "Life is about making things, said Boris.\n"
 )
+
+
+def _dropped(source: SourceFile, page: str) -> list[str]:
+    """Run the ingest quote check on ``source``; the quotes it dropped, as given."""
+    return [c.text for c in apply_quote_checks(source, page) if not c.found]
 
 
 def _source(quotes: list[str] | None) -> SourceFile:
@@ -33,7 +38,7 @@ def _source(quotes: list[str] | None) -> SourceFile:
 
 def _kept(quotes: list[str], page: str = _PAGE) -> list[str] | None:
     source = _source(quotes)
-    drop_unfound_quotes(source, page)
+    _dropped(source, page)
     return source.frontmatter.key_quotes
 
 
@@ -42,7 +47,7 @@ def test_paraphrase_dropped() -> None:
     paraphrase = "Brave releases an annual transparency document."
     source = _source([verbatim, paraphrase])
 
-    dropped = drop_unfound_quotes(source, _PAGE)
+    dropped = _dropped(source, _PAGE)
 
     assert source.frontmatter.key_quotes == [verbatim]
     assert dropped == [paraphrase]
@@ -50,13 +55,13 @@ def test_paraphrase_dropped() -> None:
 
 def test_all_quotes_dropped_gives_none() -> None:
     source = _source(["Nothing like this is on the page."])
-    drop_unfound_quotes(source, _PAGE)
+    _dropped(source, _PAGE)
     assert source.frontmatter.key_quotes is None
 
 
 def test_no_quotes_is_a_no_op() -> None:
     source = _source(None)
-    assert drop_unfound_quotes(source, _PAGE) == []
+    assert _dropped(source, _PAGE) == []
     assert source.frontmatter.key_quotes is None
 
 

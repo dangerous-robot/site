@@ -274,3 +274,15 @@ def test_findings_directory_is_tracked_in_the_repo() -> None:
     findings = REPO_ROOT / "research" / "findings"
     assert findings.is_dir()
     assert (findings / ".gitkeep").exists() or any(findings.rglob("*.yaml"))
+    # Existing on disk is not enough: a fresh clone gets the directory only
+    # when git tracks a file in it.
+    import subprocess
+
+    try:
+        tracked = subprocess.run(
+            ["git", "ls-files", "research/findings/.gitkeep"],
+            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+        ).stdout.split()
+    except (OSError, subprocess.CalledProcessError):
+        pytest.skip("not a git checkout")
+    assert tracked == ["research/findings/.gitkeep"]

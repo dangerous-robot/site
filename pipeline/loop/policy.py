@@ -90,11 +90,16 @@ _KEY_MISSING_MSG = "provider requires"
 _NULL_RESPONSE_MSG = "Invalid response from"
 
 
+def is_http_status(error_type: str) -> bool:
+    """True for an ``http_{status}`` literal such as ``http_403``; False for ``http_error``."""
+    return error_type.startswith("http_") and error_type[5:].isdigit()
+
+
 def rule_for(error_type: str) -> Rule:
     """The rule for a vocabulary literal; ``KeyError`` for one not in the table."""
     if error_type in ERROR_POLICY:
         return ERROR_POLICY[error_type]
-    if error_type.startswith("http_") and error_type[5:].isdigit():
+    if is_http_status(error_type):
         return Rule.TRANSPORT_RETRY if error_type == "http_429" else ERROR_POLICY["http_"]
     raise KeyError(error_type)
 

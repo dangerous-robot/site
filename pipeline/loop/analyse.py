@@ -143,9 +143,9 @@ def apply_entity_match(
             continue
         sd["independence"] = new_label.value
         logger.info("%s -> %s (%s)", sd["source_id"], new_label.value, note)
-        override = SourceOverride(source=sd["source_id"], independence=new_label, reason=note)
-        override.code_relabel = True
-        overrides.append(override)
+        overrides.append(SourceOverride(
+            source=sd["source_id"], independence=new_label, reason=note, code_relabel=True,
+        ))
     return overrides
 
 

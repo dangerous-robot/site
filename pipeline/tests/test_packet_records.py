@@ -3,7 +3,7 @@
 The loop records, the writer stores:
 
 - ``sources_consulted[].quotes[] {text, found, checked_against, passage | reason}``
-  from the ingest quote check (``ingestor.validation.check_quote``), with
+  from the ingest quote check (``ingestor.validation.apply_quote_checks``), with
   ``found: null`` and ``checked_against: not-rechecked`` for a cached source;
 - ``sources_consulted[].shared_with`` naming the other consulted sources on the
   same canonical host or from the same newswire origin (omitted when empty);
@@ -189,10 +189,10 @@ def test_check_quote_gives_a_reason_and_no_passage_when_the_quote_is_absent() ->
     assert check.reason
 
 
-def test_drop_unfound_quotes_agrees_with_check_quote() -> None:
+def test_apply_quote_checks_agrees_with_check_quote() -> None:
     """Control: the ingest drop and the shared check are one rule."""
     from ingestor.models import SourceFile
-    from ingestor.validation import check_quote, drop_unfound_quotes
+    from ingestor.validation import apply_quote_checks, check_quote
 
     page = "The therapist said energy use rose. Google's figure is 0.24 Wh."
     quotes = ["rapist said energy", "therapist said energy", "Google’s figure", "not there"]
@@ -201,7 +201,7 @@ def test_drop_unfound_quotes_agrees_with_check_quote() -> None:
                         "kind": "article", "summary": "S", "key_quotes": list(quotes)},
         "body": "B", "slug": "p", "year": 2026,
     })
-    dropped = drop_unfound_quotes(sf, page)
+    dropped = [c.text for c in apply_quote_checks(sf, page) if not c.found]
     assert dropped == [q for q in quotes if not check_quote(q, page).found]
     assert dropped == ["rapist said energy", "not there"]
 

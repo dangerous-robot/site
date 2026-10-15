@@ -60,7 +60,7 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Research Lead** | (human; no agent) | — |
 | **Orchestrator** | `pipeline/orchestrator/` (commands and the one writer); the research run itself is `pipeline/loop/` | the `dr` CLI itself; entry point for every pipeline command |
 | **Router** | planned (`pipeline/router/`); v1 surface shipped via [`triage-agent.md`](../plans/completed/triage-agent.md), full implementation tracked in `docs/UNSCHEDULED.md` § Router | — |
-| **Researcher** | `pipeline/researcher/` | invoked by `dr draft`; standalone via `dr step-research` |
+| **Researcher** | `pipeline/researcher/` | invoked by `dr draft`; standalone via `dr step-research` (currently broken: it crashes after its paid research calls; `dr draft --dry-run` shows what research finds and writes nothing) |
 | **Ingestor** | `pipeline/ingestor/` | invoked by `dr draft`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
 | **Analyst** | `pipeline/analyst/` | invoked by `dr draft`; standalone via `dr step-analyze` |
 | **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |

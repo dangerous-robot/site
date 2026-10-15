@@ -134,7 +134,7 @@ class SourceOverride(BaseModel):
         description="One short sentence explaining why the override was applied (cited in the architecture doc).",
         max_length=300,
     )
-    # True on the entity-match relabels the orchestrator adds, which do not
+    # True on the entity-match relabels the loop adds, which do not
     # mean the analyst relied on the source. Kept out of the analyst's output
     # schema (SkipJsonSchema) and out of the claim file (exclude).
     code_relabel: SkipJsonSchema[bool] = Field(default=False, exclude=True)
@@ -207,7 +207,7 @@ class VerdictAssessment(BaseModel):
         max_length=200,
     )
 
-    # True when the write-time level fit wrote ``cap_rationale`` for a level
+    # True when the level fit (loop/fit.py) wrote ``cap_rationale`` for a level
     # it lowered and the analyst gave none. A claim with no record of the
     # pipeline's last rationale then takes it over the one on disk.
     cap_rationale_fitted: SkipJsonSchema[bool] = Field(default=False, exclude=True)

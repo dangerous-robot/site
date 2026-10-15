@@ -6,7 +6,7 @@ How continuous integration, deployment, and quality checks work for the Dangerou
 
 **Trigger:** Pull requests targeting `main`. The workflow also declares `workflow_call`, so the deploy pipeline can reuse it as a verification gate.
 
-Three jobs run in parallel on `ubuntu-latest`:
+Four jobs run in parallel on `ubuntu-latest`:
 
 **`check`** (Node 22). The job sets `WATCH_DATA: fixture`, so `/watch` is built from the invented fixture data with no network and no API key. Steps run sequentially so a failure in an earlier step short-circuits the rest:
 
@@ -32,6 +32,11 @@ The checkout, setup-node and upload-artifact steps in `e2e` are pinned by commit
 3. Annotates each reported error on the PR (file path plus check id) via `actions/github-script`.
 4. Fails the job if `dr lint` exited nonzero.
 
+**`pipeline-tests`** (Python 3.12, 15-minute limit). Runs the pipeline's unit tests:
+
+1. Installs `uv` the same way as `lint-content` and runs `uv sync --locked`.
+2. Runs `uv run python -m pytest -m 'not acceptance'` from `pipeline/`, so pytest reads that directory's `pyproject.toml`. Acceptance tests call live APIs and need keys, so CI leaves them out.
+
 If any job fails, the PR check fails.
 
 ## Deploy Workflow (`.github/workflows/deploy.yml`)
@@ -40,7 +45,7 @@ If any job fails, the PR check fails.
 
 Three-job pipeline:
 
-1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e` and `lint-content` jobs gate every deploy.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content` and `pipeline-tests` jobs gate every deploy.
 2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
@@ -48,7 +53,7 @@ Three-job pipeline:
 
 `/watch` shows playlist and video data fetched from the YouTube Data API at build time. The YouTube API Services Developer Policies allow that data to be stored for at most 30 days, and nothing from the API is committed, so the page is rebuilt every week.
 
-A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e` or `lint-content`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
+A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e`, `lint-content` or `pipeline-tests`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
 
 GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the "Deploy to GitHub Pages" workflow in the repository's Actions tab.
 

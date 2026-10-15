@@ -2,9 +2,9 @@
 
 A finding records the claim spec, the config and the command of a run that
 was abandoned or left a half-claim. A replay runs that claim through the loop
-with the recorded config under a new run id and writes what the original
-command would have written: a draft for ``dr draft``, a pending draft for
-``dr recheck``. A success closes the finding (``closed: {date, by: replay,
+(for ``dr recheck``, the live claim's current spec) with the recorded config
+under a new run id and writes what the original command would have written:
+a draft for ``dr draft``, a pending draft for ``dr recheck``. A success closes the finding (``closed: {date, by: replay,
 note}``); a failure leaves it open and the replay's own finding carries
 ``replays: <old run id>``. Every replay in one command shares one LLM
 semaphore and one source URL index (``orchestrator.recheck.run_batch``).
@@ -77,7 +77,12 @@ def _rel(path: Path, root: Path) -> str:
 
 
 def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
-    """The claim spec as the finding recorded it, and where its replay writes.
+    """The claim spec to replay, and where its replay writes.
+
+    A ``dr draft`` finding replays the spec it recorded. A ``dr recheck``
+    finding replays the live claim's spec as ``dr recheck --claim`` builds it
+    (``_claim_spec_for``): its current statement and its criterion's topics
+    and grading rule, which a run that never started did not record.
 
     Raises ``ReplayNotStarted`` when the original command would refuse the
     run today: the entity does not load, the claim the finding names is
@@ -88,7 +93,7 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
     from common.models import EntityType
     from common.utils import slugify
     from loop import ClaimSpec
-    from orchestrator.cli import _live_status
+    from orchestrator.cli import _claim_spec_for, _live_status
     from orchestrator.entity_resolution import ResolvedEntity, parse_entity_ref
     from orchestrator.persistence import planned_claim_path
     from orchestrator.recheck import cadence_days
@@ -131,7 +136,7 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
     claims_root = repo_root / "research" / "claims"
     ref = finding.claim_ref
 
-    def _on_entity_path(path: Path) -> None:
+    def _on_entity_path(path: Path, entity: ResolvedEntity) -> None:
         planned = planned_claim_path(entity.entity_ref, entity.entity_name, path.stem, repo_root)
         if planned.resolve() != path.resolve():
             raise ReplayNotStarted(
@@ -150,10 +155,14 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
                 f"{ref} is not published or archived; a draft or blocked claim reruns in place "
                 f"with dr draft --claim {ref} --force"
             )
-        _on_entity_path(live_path)
+        try:
+            live_spec = _claim_spec_for(live_path, ref, repo_root)
+        except click.UsageError as exc:
+            raise ReplayNotStarted(exc.message) from exc
+        _on_entity_path(live_path, live_spec.entity)
         fm, _ = parse_frontmatter(live_path.read_text(encoding="utf-8"))
         return ReplayTarget(
-            kind="pending", spec=spec, claim_slug=live_path.stem,
+            kind="pending", spec=live_spec, claim_slug=live_path.stem,
             live_path=live_path, live_ref=ref, cadence=cadence_days(fm),
         )
 
@@ -169,7 +178,7 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
         status = _live_status(claim_path)
         if status is not None:
             raise ReplayNotStarted(f"{ref} is {status}; dr recheck --claim {ref} writes a pending draft")
-        _on_entity_path(claim_path)
+        _on_entity_path(claim_path, entity)
         return ReplayTarget(
             kind="draft", spec=spec, claim_slug=claim_path.stem, claim_path=claim_path,
             create_entity=create_entity,
@@ -494,17 +503,26 @@ def replay_findings(ctx: click.Context, repo_root: Path, finding_id: str | None)
                         root, head, config, message=str(exc) or type(exc).__name__,
                         error_class=type(exc).__name__, step=_failed_step(result),
                     )
-            new_id = _link(root, head, config, failed=written is None, step=_failed_step(result))
+            try:
+                new_id = _link(root, head, config, failed=written is None, step=_failed_step(result))
+                if written is not None:
+                    note = f"replayed as {config.run_id}: {written}"
+                    for f in chain:
+                        try:
+                            close_finding(root, f.run_id, note, by="replay")
+                        except (KeyError, ValueError) as exc:
+                            click.echo(f"Warning: finding {f.run_id} was not closed: {exc}", err=True)
+            except OSError as exc:
+                # A findings file that cannot be read or written ends this
+                # replay, not the batch: run_batch does not guard its jobs.
+                click.echo(f"Error: {head.run_id}: could not update the findings: {exc}", err=True)
+                click.echo(f"{head.run_id}: failed (findings not updated: {type(exc).__name__})")
+                _superseded(chain, head)
+                return "failed"
             if written is None:
                 click.echo(f"{head.run_id}: failed (finding {new_id})")
                 _superseded(chain, head)
                 return "failed"
-            note = f"replayed as {config.run_id}: {written}"
-            for f in chain:
-                try:
-                    close_finding(root, f.run_id, note, by="replay")
-                except (KeyError, ValueError) as exc:
-                    click.echo(f"Warning: finding {f.run_id} was not closed: {exc}", err=True)
             line_written = written if written.startswith("wrote ") else f"wrote {written}"
             click.echo(f"{head.run_id}: closed (replay {config.run_id} {line_written})")
             for f in chain[:-1]:

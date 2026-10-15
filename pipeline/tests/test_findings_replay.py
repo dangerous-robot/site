@@ -39,6 +39,8 @@ from tests.loop_harness import (
     ENTITY_REF,
     SENTENCE,
     analyst_args,
+    auditor_args,
+    capturing_model,
     claim_dir,
     failing_model,
     scripted_agents,
@@ -406,6 +408,36 @@ def test_replay_without_finding_runs_every_open_finding_in_date_order_and_never_
         assert len(_lines_for(result.stdout, run_id)) == 1, (run_id, result.stdout)
 
 
+def test_a_findings_file_error_after_one_replay_does_not_stop_the_batch(tmp_path, monkeypatch) -> None:
+    """An OSError while linking or closing findings fails that replay; the next one still runs."""
+    import orchestrator.replay as replay_mod
+
+    write_entity(tmp_path)
+    for run_id, (date, statement) in BATCH.items():
+        _write_finding(tmp_path, run_id, date=date, statement=statement)
+    calls = _spy_run(monkeypatch)
+    real_link = replay_mod._link
+
+    def _link_failing_once(root, old, config, **kwargs):
+        if old.run_id == RUN_1:
+            raise PermissionError("findings directory is read-only")
+        return real_link(root, old, config, **kwargs)
+
+    monkeypatch.setattr(replay_mod, "_link", _link_failing_once)
+
+    with scripted_agents():
+        result = _replay(tmp_path)
+
+    assert result.exit_code == 0, result.output
+    assert len(calls) == 3
+    assert _lines_for(result.stdout, RUN_1)[0].startswith(f"{RUN_1}: failed"), result.stdout
+    assert _lines_for(result.stdout, RUN_2)[0].startswith(f"{RUN_2}: closed"), result.stdout
+    assert _lines_for(result.stdout, RUN_3)[0].startswith(f"{RUN_3}: closed"), result.stdout
+    records = _findings(tmp_path)
+    assert records[RUN_1]["closed"] is None
+    assert records[RUN_2]["closed"]["by"] == "replay"
+
+
 def test_a_batch_replay_whose_run_raises_records_a_linked_finding_and_the_rest_run(tmp_path, monkeypatch) -> None:
     write_entity(tmp_path)
     for run_id, (date, statement) in BATCH.items():
@@ -537,6 +569,54 @@ def test_replay_of_a_recheck_finding_writes_a_pending_draft_and_leaves_the_live_
     assert _findings(tmp_path)[RUN_OLD]["closed"]["by"] == "replay"
     # No draft was written over the live path.
     assert [p.name for p in written_claims(tmp_path)] == ["live-claim.md"]
+
+
+def test_replay_of_a_recheck_finding_grades_the_live_claim_with_its_criterion_rule(
+    tmp_path, monkeypatch,
+) -> None:
+    """A recheck finding that could not start records no grading rule and may hold an old statement.
+
+    The replay builds its spec from the live claim, as ``dr recheck --claim``
+    does, so the criterion's grading rule reaches the analyst and the
+    Evaluator and the claim's current statement is the one graded.
+    """
+    rule = "RULE-SENTINEL: mixed means offsets only"
+    (tmp_path / "research").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "research" / "templates.yaml").write_text(
+        "templates:\n"
+        "  - slug: probe-criterion\n"
+        '    text: "ENTITY data centers used more than 4% of US electricity in 2024"\n'
+        "    entity_type: subject\n"
+        f"    subjects: [{ENTITY_REF}]\n"
+        "    topics: [environmental-impact]\n"
+        "    core: true\n"
+        f'    grading_rule: "{rule}"\n',
+        encoding="utf-8",
+    )
+    _write_claim(tmp_path, "live-claim", status="published")
+    _write_finding(
+        tmp_path, command="dr recheck", claim_ref=f"{ENTITY_REF}/live-claim",
+        statement="An older wording of the claim", step="research", rule="config-fatal",
+    )
+    assert _findings(tmp_path)[RUN_OLD]["claim_spec"]["grading_rule"] is None
+    calls = _spy_run(monkeypatch)
+    analyst_prompts: list[str] = []
+    auditor_prompts: list[str] = []
+
+    with scripted_agents(
+        analyst_model=capturing_model(analyst_prompts, analyst_args()),
+        auditor_model=capturing_model(auditor_prompts, auditor_args()),
+    ):
+        result = _replay(tmp_path, "--finding", RUN_OLD)
+
+    assert result.exit_code == 0, result.output
+    ((spec, _config, _sem),) = calls
+    assert spec.statement == SENTENCE
+    assert spec.grading_rule == rule
+    assert spec.topics == ["environmental-impact"]
+    assert analyst_prompts and any(rule in p for p in analyst_prompts)
+    assert auditor_prompts and any(rule in p for p in auditor_prompts)
+    assert _findings(tmp_path)[RUN_OLD]["closed"]["by"] == "replay"
 
 
 def test_replay_of_a_draft_rerun_finding_rewrites_the_draft_in_place(tmp_path, monkeypatch) -> None:

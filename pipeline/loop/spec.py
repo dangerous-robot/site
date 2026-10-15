@@ -72,10 +72,8 @@ class VerifyConfig:
     # target successes to pass to the analyst
     max_sources: int = 8
     candidate_pool_size: int = 32
-    # Interim default: wayback ON. The wayback-archive-job plan envisions
-    # archival as a background job with skip_wayback=True in-pipeline, but
-    # until that job lands we want primary sources behind paywalls/blocks
-    # rescued via web.archive.org during the synchronous run.
+    # Wayback on by default so a paywalled or blocked primary source can still
+    # be read from web.archive.org during the run.
     skip_wayback: bool = False
     # False when the run writes nothing (``dr draft --dry-run``): archive lookups
     # check TimeGate only and never ask Save Page Now to capture a page.

@@ -26,7 +26,7 @@ from pathlib import Path
 
 import click
 
-from common.frontmatter import parse_frontmatter
+from common.frontmatter import claim_statement, parse_frontmatter
 from common.sidecar import pipeline_verdict_of, read_sidecar
 from common.source_classification import classify_source_type, independence_for_source_type
 from orchestrator.review_queue import QueueItem, _partial_restate_runs, item_for
@@ -75,7 +75,8 @@ def build_packet(claim_path: Path, repo_root: Path, *, partial_restate_runs: set
 
     cited = [str(s) for s in fm.get("sources") or []]
     consulted = [e for e in sidecar.get("sources_consulted") or [] if isinstance(e, dict) and e.get("id")]
-    entries = consulted + [{"id": sid} for sid in cited if sid not in {str(e["id"]) for e in consulted}]
+    consulted_ids = {str(e["id"]) for e in consulted}
+    entries = consulted + [{"id": sid} for sid in cited if sid not in consulted_ids]
     files = {str(e["id"]): _source_file(str(e["id"]), repo_root) for e in entries}
     overrides = [o for o in fm.get("source_overrides") or [] if isinstance(o, dict)]
 
@@ -125,7 +126,7 @@ def _verdict_chain(item: QueueItem, fm: dict, body: str, sidecar: dict) -> dict:
         tiebreaker = _side(audit.get("tiebreaker_verdict"), audit.get("tiebreaker_confidence"),
                            audit.get("tiebreaker_reasoning"))
     return {
-        "statement": str(fm.get("statement") or fm.get("title") or ""),
+        "statement": claim_statement(fm),
         "restatement": restatement,
         "restatement_unavailable": item.restatement_unavailable,
         "analyst": _side(audit.get("analyst_verdict") or fm.get("verdict"),

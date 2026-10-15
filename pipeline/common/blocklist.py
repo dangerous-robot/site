@@ -60,7 +60,7 @@ def load_blocklist(repo_root: Path) -> list[BlocklistEntry]:
     """Load blocklist entries from ``<repo_root>/research/blocklist.yaml``.
 
     Returns an empty list if the file does not exist (fresh clones should not crash).
-    Cached per repo root so onboarding does not re-parse the YAML for every template.
+    Cached per repo root so repeated research and ingest calls do not re-parse the YAML.
     """
     return list(_load_blocklist_cached(str(repo_root)))
 
