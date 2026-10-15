@@ -196,48 +196,67 @@ test_ns.add_task(_test_acceptance, name="acceptance")
 
 @task(positional=[])
 def _audit(ctx, detail=False, output="", json=False, min_severity="info"):
-    """Run content integrity checks and print a summary.
+    """Run content integrity checks (dr lint) and print a summary.
 
     Options:
-      --detail              show full per-file output on stdout
+      --detail              show full per-file output on stdout (dr lint --format text)
       --output FILE         write full per-file detail to FILE
-      --json                emit JSON (full detail, implies --detail)
+      --json                emit JSON (dr lint --format json)
       --min-severity LEVEL  error | warning | info  (default: info)
 
     Subtasks:
-      inv audit.prune            list orphaned source files (dry-run)
-      inv audit.prune --apply    delete orphaned sources + empty year dirs
+      inv audit.prune            list orphaned source files by year
+      inv audit.prune --apply    delete orphaned sources + empty year dirs (dr lint --prune)
     """
-    parts = ["uv run python -m linter"]
-    if detail:
-        parts.append("--detail")
-    if output:
-        parts.extend(["--output", output])
-    if json:
-        parts.append("--json")
+    fmt = "json" if json else "text" if detail else "summary"
+    parts = ["uv run dr lint", "--format", fmt]
     if min_severity != "info":
-        parts.extend(["--min-severity", min_severity])
+        parts.extend(["--severity", min_severity])
     with ctx.cd("pipeline"):
         ctx.run(" ".join(parts), pty=True, in_stream=False, warn=True)
+        if output:
+            detail_parts = ["uv run dr lint", "--format", "text"]
+            if min_severity != "info":
+                detail_parts.extend(["--severity", min_severity])
+            result = ctx.run(" ".join(detail_parts), hide=True, in_stream=False, warn=True)
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(result.stdout)
+            print(f"  detail written to {output}")
 
 
 @task(positional=[])
 def _audit_prune(ctx, apply=False):
-    """Show orphaned source count by year (dry-run). Pass --apply to delete.
+    """Show orphaned source count by year. Pass --apply to delete them.
 
-    Dry-run prints a year-bucket summary of source files not cited by any claim
-    or editorial page.
+    Without --apply, prints a year-bucket summary of source files not cited
+    by any claim, pending draft or editorial page (dr lint's
+    unreferenced-source issues) and deletes nothing.
 
     Options:
       --apply    delete the files and remove any empty year directories
+                 (dr lint --prune)
 
     Related:
       inv audit                  show full integrity summary
       inv audit --detail         see per-file unreferenced-source warnings
     """
-    flags = " --apply" if apply else ""
     with ctx.cd("pipeline"):
-        ctx.run(f"uv run python -m linter.prune{flags}", pty=True, in_stream=False, warn=True)
+        if apply:
+            ctx.run("uv run dr lint --prune --format summary", pty=True, in_stream=False, warn=True)
+            return
+        result = ctx.run("uv run dr lint --format json", hide=True, in_stream=False, warn=True)
+    issues = [i for i in json.loads(result.stdout) if i["check_id"] == "unreferenced-source"]
+    if not issues:
+        print("No orphaned sources found.")
+        return
+    by_year: dict[str, int] = {}
+    for issue in issues:
+        year = issue["path"].replace("\\", "/").split("/")[-2]
+        by_year[year] = by_year.get(year, 0) + 1
+    print(f"{len(issues)} orphaned source(s) by year:")
+    for year in sorted(by_year):
+        print(f"  {year}  {by_year[year]:>4}")
+    print("\nPass --apply to delete them (dr lint --prune).")
 
 
 audit_ns = Collection("audit")

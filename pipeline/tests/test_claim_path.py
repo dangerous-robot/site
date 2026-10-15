@@ -31,7 +31,7 @@ Covered:
   appended from the stored claim, ``criteria_slug`` written, nothing else
   changed, no model call, the four refusals; ``dr review --approve`` then
   accepts the claim and lint reports no ``published-without-criterion``.
-- ``dr step-analyze`` and ``dr step-audit`` read the stored ``statement``
+- ``dr draft --claim <ref> --rerun analyst|evaluator`` reads the stored ``statement``
   (one statement rule; closes the "Claim-text reconstruction duplicated"
   backlog row).
 - the record and the code: ``statement`` declared; ``grading_rule`` declared
@@ -911,32 +911,32 @@ def test_after_attach_review_approve_accepts_the_claim_and_lint_is_clean(
 
 
 # --------------------------------------------------------------------------- #
-# One statement rule for the side tools (until SP7 (Fold side tools) folds them) #
+# One statement rule for dr draft --claim <ref> --rerun                          #
 # --------------------------------------------------------------------------- #
 
 
-def test_step_analyze_reads_the_stored_statement(tmp_path) -> None:
+def test_rerun_analyst_reads_the_stored_statement(tmp_path) -> None:
     write_entity(tmp_path)
     _write_source(tmp_path)
     stored = "Probe Subject reports its water use yearly"
     claim_path, _ = _write_claim(tmp_path, stem="water-use", statement=stored, title="An older title")
     ctx, analyst_prompts, _auditor_prompts = _capturing()
     with ctx:
-        result = _dr(tmp_path, "step-analyze", "--claim", _claim_ref(claim_path, tmp_path))
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "analyst", "--dry-run")
 
     assert result.exit_code == 0, result.output
     assert any(stored in p for p in analyst_prompts)
     assert not any("An older title" in p for p in analyst_prompts)
 
 
-def test_step_audit_grades_the_stored_statement(tmp_path) -> None:
+def test_rerun_evaluator_grades_the_stored_statement(tmp_path) -> None:
     write_entity(tmp_path)
     _write_source(tmp_path)
     stored = "Probe Subject reports its water use yearly"
     claim_path, _ = _write_claim(tmp_path, stem="water-use", statement=stored, title="An older title")
     ctx, _analyst_prompts, auditor_prompts = _capturing()
     with ctx:
-        result = _dr(tmp_path, "step-audit", "--claim", _claim_ref(claim_path, tmp_path))
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "evaluator", "--dry-run")
 
     assert result.exit_code == 0, result.output
     assert any(f"## Claim\n{stored}\n" in p for p in auditor_prompts)

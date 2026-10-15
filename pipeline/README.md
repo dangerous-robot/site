@@ -25,12 +25,18 @@ Run inside `pipeline/`. The `acceptance` marker selects live tests that make pai
 uv run python -m pytest -m 'not acceptance'
 ```
 
+Run it from `pipeline/` (or `inv test` from the repo root). Do not run pytest from the repo root with no file argument: the root `pyproject.toml` sets no `asyncio_mode`, so unmarked async tests fail there; mark every new async test `@pytest.mark.asyncio`.
+
 ## Structure
 
 - `common/` -- Shared models, frontmatter utilities, and content loaders
-- `ingestor/` -- Source ingestion agent (Phase 4.1)
-- `consistency/` -- Consistency checking agent (Phase 4.2)
+- `researcher/` -- Researcher agent: claim to candidate URLs
+- `ingestor/` -- Ingestor agent: URL to source file
+- `analyst/` -- Analyst agent: sources and claim to verdict and narrative
+- `auditor/` -- The Evaluator agent (directory rename to `evaluator/` deferred to post-v1)
 - `loop/` -- The one research run (`run`, `rerun`), `StepError`, the error policy (`policy.py`), the blind tie-breaker agent (`tiebreaker/`) and the restater agent (`restater/`, with `restate.py`); returns a result (with a finding when the run was abandoned, recovered, split or partial, the last being a failed restater on a claim that was still written) and writes nothing
+- `orchestrator/` -- The `dr` commands (`cli.py`), routing and persistence (`persistence.py`, the one writer)
+- `linter/` -- The static content checks behind `dr lint` (no LLM, no network)
 - `tests/` -- Test suite
 
 ## Researcher host blocklist

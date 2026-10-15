@@ -14,9 +14,9 @@ Research content lives under `research/` as Markdown with YAML frontmatter, defi
 
 Steps 1-3 are automated by PydanticAI agents in `pipeline/`. Steps 4-6 remain manual or partially automated.
 
-1. **Identify** -- A topic or URL is added to `research/QUEUE.md`.
+1. **Identify** -- The operator picks a topic, a URL or a criterion to work on; there is no queue file.
 2. **Ingest** -- The Ingestor agent takes a URL and produces a source file under `research/sources/{yyyy}/{slug}.md`.
-3. **Claim** -- `dr draft` runs the loop on a sentence (typed, or a criterion's sentence for an entity) and stores it as the claim's `statement`. The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run with a `blocked_reason` and writes nothing if fewer than four usable sources were obtained; so does an analyst failure.
+3. **Claim** -- `dr draft` runs the loop on a sentence (typed, or a criterion's sentence for an entity) and stores it as the claim's `statement`. The Analyst proposes a draft verdict; the Evaluator independently assesses it. Both write to a claim file under `research/claims/{entity-slug}/`. The loop stops the run and writes nothing if fewer than four usable sources were obtained (the run is abandoned with a finding); so does an analyst failure.
 4. **Review** -- A person runs `dr review`, which shows each draft's review packet (the verdict chain, every key quote beside its page passage, source independence, the searches and the rejected candidates) and records the sign-off. The commit goes to main; the pre-commit hook and CI run the quality gates (see below).
 5. **Publish** -- On a push to main, the deploy workflow builds the Astro site and publishes to GitHub Pages.
 6. **Maintain** -- Claims have a `recheck_cadence_days` field. A claim is due when its `next_recheck_due` (written by the pipeline on every claim write) has passed or, without one, when `as_of` plus the cadence has passed. `dr recheck --due --dry-run` lists the due claims; `dr recheck --due` (or `--claim <ref>`) re-runs them into pending drafts under `research/pending/`, leaving the live claim up, and `dr review` promotes a pending draft on `--approve`. A person starts the recheck; no scheduler does yet. Lifecycle transitions are driven by `dr review`: `--approve` flips a reviewed `draft` to `published` (and records the sign-off in the audit sidecar); `--archive` retires a `published` claim to `archived`; `dr review --claim <ref>` without `--approve` or `--archive` records a sign-off without changing status.
@@ -35,7 +35,7 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 | **Ingestor** | Automated -- `pipeline/ingestor/` |
 | **Analyst** | Automated -- `pipeline/analyst/` |
 | **Evaluator** | Automated -- `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) |
-| **Citation Auditor** | Partially automated, split across three tools (see below). Full auditing is a backlog item (`docs/UNSCHEDULED.md`). |
+| **Citation Auditor** | Partially automated, split across four tools (see below). Full auditing is a backlog item (`docs/UNSCHEDULED.md`). |
 | **Page Builder** | Not yet implemented. No LLM needed -- plain data transformation. Backlog item (`docs/UNSCHEDULED.md`). |
 
 ### Citation Auditor tools
@@ -46,7 +46,7 @@ The Citation Auditor responsibility is covered by four separate tools:
 |------|-------|
 | `scripts/check-citations.ts` | Broken source refs (claim `sources` slugs that do not resolve to a file). Runs in CI. |
 | `dr lint` | Missing required fields, orphaned claims, stale `next_recheck_due` dates. No LLM, no network. |
-| `dr step-audit` (formerly `dr reassess`, now a hidden deprecated alias) | Verdict re-evaluation: re-runs the Evaluator agent against current sources to flag claims whose published verdict may no longer hold. |
+| `dr draft --claim <ref> --rerun evaluator` | Verdict re-evaluation: re-runs the Evaluator agent against the claim's stored sources to flag a verdict that may no longer hold. A draft is rewritten in place; a published or archived claim gets a pending draft. |
 | `dr recheck` | Due-date selection and re-run: `--due` re-runs every published claim whose recheck is due into a pending draft, `--claim <ref>` does one, and `--sources <id>...` re-checks source files' archive links and key quotes. |
 
 ## Content Rules
@@ -102,7 +102,7 @@ These gaps are candidates for additional CI scripts or the Citation Auditor agen
 
 ## Claim Schema
 
-Canonical schema lives in `src/content.config.ts` and is documented in [content-model.md § Claim](content-model.md#claim). Notable fields: `topics` (1-3 slugs), `verdict`, `confidence`, `status` (`draft` | `published` | `archived` | `blocked`), `phase`, `blocked_reason`, `as_of`, `sources`, `recheck_cadence_days`, `audit` (sidecar; `audit.pipeline_verdict` is the verdict the pipeline settled on, `analyst_verdict` when absent). A run that is abandoned leaves no claim, so `blocked` is only for files already on disk; its finding lives in `research/findings/`.
+Canonical schema lives in `src/content.config.ts` and is documented in [content-model.md § Claim](content-model.md#claim). Notable fields: `topics` (1-3 slugs), `verdict`, `confidence`, `status` (`draft` | `published` | `archived`), `phase`, `as_of`, `sources`, `recheck_cadence_days`, `audit` (sidecar; `audit.pipeline_verdict` is the verdict the pipeline settled on, `analyst_verdict` when absent). A run that is abandoned leaves no claim; its finding lives in `research/findings/`.
 
 ## Licensing
 
@@ -117,5 +117,5 @@ Contributors agree to these terms. See `CONTRIBUTING.md`.
 - Agent roles and content rules: `AGENTS.md`
 - CI workflow: `.github/workflows/ci.yml`
 - Citation checker: `scripts/check-citations.ts`
-- Research queue: `research/QUEUE.md`
+- Command contract: `docs/architecture/pipeline-commands.md`
 - Unscheduled work: `docs/UNSCHEDULED.md`

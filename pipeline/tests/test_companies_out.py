@@ -89,7 +89,7 @@ def _dr(repo_root: Path, *args: str):
 
 
 def _tripwire(monkeypatch) -> list[str]:
-    """Make the public loop entry record and fail if a command reaches it."""
+    """Make the public loop entries record and fail if a command reaches one."""
     import loop
 
     called: list[str] = []
@@ -98,7 +98,12 @@ def _tripwire(monkeypatch) -> list[str]:
         called.append("run")
         raise AssertionError("loop.run must not be called for a company entity")
 
+    async def _rerun(*args, **kwargs):
+        called.append("rerun")
+        raise AssertionError("loop.rerun must not be called for a company entity")
+
     monkeypatch.setattr(loop, "run", _run)
+    monkeypatch.setattr(loop, "rerun", _rerun)
     return called
 
 
@@ -196,12 +201,16 @@ def _mode_args(mode: str, claim_ref: str) -> list[str]:
         "claim-dry-run": ["draft", "--claim", claim_ref, "--dry-run"],
         "claim-attach": ["draft", "--claim", claim_ref, "--criterion", "probe-co-energy-report"],
         "restates": ["draft", "--restates", claim_ref, "--pick", "1"],
+        "rerun-analyst": ["draft", "--claim", claim_ref, "--rerun", "analyst"],
+        "rerun-evaluator": ["draft", "--claim", claim_ref, "--rerun", "evaluator"],
+        "rerun-evaluator-dry-run": ["draft", "--claim", claim_ref, "--rerun", "evaluator", "--dry-run"],
     }[mode] + ["--skip-wayback"] * (mode != "claim-attach")
 
 
 ALL_MODES = (
     "entity", "entity-dry-run", "criterion-moved", "criterion-kept",
     "claim-force", "claim-dry-run", "claim-attach", "restates",
+    "rerun-analyst", "rerun-evaluator", "rerun-evaluator-dry-run",
 )
 
 
@@ -305,7 +314,7 @@ def test_criterion_on_a_company_ref_spelled_another_way_is_refused(tmp_path, mon
     )
 
 
-@pytest.mark.parametrize("mode", ["claim-force", "claim-dry-run", "claim-attach", "restates"])
+@pytest.mark.parametrize("mode", ["claim-force", "claim-dry-run", "claim-attach", "restates", "rerun-analyst"])
 @pytest.mark.parametrize("ref", OTHER_SPELLINGS)
 def test_a_stored_claim_whose_entity_is_a_company_spelled_another_way_is_refused(
     tmp_path, monkeypatch, mode, ref,
@@ -314,6 +323,15 @@ def test_a_stored_claim_whose_entity_is_a_company_spelled_another_way_is_refused
     _company_repo(tmp_path)
     claim_ref = _write_company_claim(tmp_path, restatement=(mode == "restates"), ref=PRODUCT_REF, entity=ref)
     _assert_refused_and_unchanged(tmp_path, monkeypatch, *_mode_args(mode, claim_ref))
+
+
+@pytest.mark.parametrize("agent", ["analyst", "evaluator"])
+def test_a_rerun_of_a_published_company_claim_is_refused_before_the_pending_draft(tmp_path, monkeypatch, agent) -> None:
+    """A published claim's rerun writes under research/pending/; the refusal comes first."""
+    _company_repo(tmp_path)
+    claim_ref = _write_company_claim(tmp_path, status="published")
+    _assert_refused_and_unchanged(tmp_path, monkeypatch, "draft", "--claim", claim_ref, "--rerun", agent)
+    assert not (tmp_path / "research" / "pending").exists()
 
 
 def _through_the_repo_dir(root: Path) -> str:

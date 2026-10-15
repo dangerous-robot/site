@@ -48,7 +48,6 @@ WRITER_NAMES = frozenset({
     "write_subject_record",
     "write_claim_run",
     "write_evaluator_rerun",
-    "clear_audit",
     "record_restatement_pick",
     "write_finding",
     "close_finding",
@@ -56,6 +55,13 @@ WRITER_NAMES = frozenset({
     "write_pending_recheck",
     "promote_pending",
     "_finish_promotion",
+    # RE-AX (Fold side tools): `dr draft --claim <ref> --rerun`, its pending-draft
+    # form, the staging both pending writes share and the promotion's carry of
+    # the live claim's operator fields.
+    "write_analyst_rerun",
+    "write_pending_rerun",
+    "_stage_pending",
+    "_merge_live_operator_fields",
 })
 
 # The only names cli.py may import from the loop package (plan § SP1, Tests that prove it).

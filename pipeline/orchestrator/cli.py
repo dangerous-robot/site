@@ -117,52 +117,7 @@ def _ctx_per_agent_kwargs(ctx: click.Context) -> dict[str, str | None]:
     return {f"{agent}_model": ctx.obj.get(f"{agent}_model") for agent in AGENT_NAMES}
 
 
-# Subcommand groups for `dr --help`, ordered safest -> most destructive.
-# New commands not listed here fall into the "Other" bucket so they stay visible.
-_COMMAND_GROUPS: list[tuple[str, list[str]]] = [
-    ("Read-only (dry run, no files written)",
-     ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit"]),
-    ("Creates or overwrites claim files (dr recheck writes pending drafts only, never a live claim; "
-     "dr draft --dry-run and dr recheck --due --dry-run write nothing)",
-     ["draft", "recheck"]),
-    ("Modifies existing files in place (dr findings writes only with --close; dr findings --replay "
-     "runs the paid loop and writes what dr draft or dr recheck would, plus findings)",
-     ["review", "findings"]),
-]
-
-
-class _CategorizedGroup(click.Group):
-    """`click.Group` that organizes `dr --help` by write semantics."""
-
-    def format_commands(self, ctx: click.Context, formatter) -> None:
-        seen: set[str] = set()
-        for heading, names in _COMMAND_GROUPS:
-            rows = []
-            for name in names:
-                cmd = self.get_command(ctx, name)
-                if cmd is None or getattr(cmd, "hidden", False):
-                    continue
-                rows.append((name, cmd.get_short_help_str(limit=120)))
-                seen.add(name)
-            if rows:
-                with formatter.section(heading):
-                    formatter.write_dl(rows)
-
-        # Catch-all so a newly-added command isn't silently hidden.
-        leftovers = []
-        for name in self.list_commands(ctx):
-            if name in seen:
-                continue
-            cmd = self.get_command(ctx, name)
-            if cmd is None or getattr(cmd, "hidden", False):
-                continue
-            leftovers.append((name, cmd.get_short_help_str(limit=70)))
-        if leftovers:
-            with formatter.section("Other"):
-                formatter.write_dl(leftovers)
-
-
-@click.group(cls=_CategorizedGroup)
+@click.group()
 @click.option("--verbose", is_flag=True, help="Surface INFO-level events on stderr in addition to progress lines. File logs (logs/info.log, logs/debug.log) are written at full detail regardless of this flag.")
 @click.option("--model", default=DEFAULT_MODEL, help="Default LLM model for all agents", envvar="DR_MODEL")
 @click.option("--researcher-model", default=None, help="Override model for the researcher agent (falls back to --model)", envvar="DR_RESEARCHER_MODEL")
@@ -200,209 +155,6 @@ def main(
         # Bare set() rather than bind_run_id(): the id must outlive this
         # callback frame to reach the subcommand body.
         run_id_var.set(new_run_id())
-
-
-# --------------------------------------------------------------------------- #
-# dr step-research                                                              #
-# --------------------------------------------------------------------------- #
-
-def _print_research_trace(
-    entity: str, claim: str, urls: list[str], errors: list[str], trace: dict
-) -> None:
-    click.echo(f"Entity:  {entity}")
-    click.echo(f"Claim:   {claim}")
-    click.echo("")
-
-    queries = trace.get("queries", [])
-    planner_rationale = trace.get("planner_rationale", "")
-    candidates_seen = trace.get("candidates_seen", 0)
-    urls_kept = trace.get("urls_kept", 0)
-    urls_dropped = trace.get("urls_dropped", 0)
-    scorer_rationale = trace.get("scorer_rationale", "")
-
-    click.echo("Step 1 — Query planning")
-    click.echo(f"  Queries ({len(queries)}):")
-    for q in queries:
-        click.echo(f'    "{q}"')
-    if planner_rationale:
-        click.echo(f"  Rationale: {planner_rationale}")
-    click.echo("")
-
-    click.echo("Step 2 — Search")
-    query_word = "query" if len(queries) == 1 else "queries"
-    click.echo(f"  {candidates_seen} candidates from {len(queries)} {query_word}")
-    click.echo("")
-
-    click.echo("Step 3 — URL scoring")
-    click.echo(f"  {urls_kept} kept  {urls_dropped} dropped")
-    if scorer_rationale:
-        click.echo(f"  Rationale: {scorer_rationale}")
-    click.echo("")
-
-    if urls:
-        click.echo(f"URLs to ingest ({len(urls)}):")
-        for i, url in enumerate(urls, 1):
-            click.echo(f"  {i}. {url}")
-        click.echo("")
-        click.echo("  (blocklist not applied — use `dr draft --dry-run` for production results)")
-    else:
-        click.echo("No URLs returned.")
-
-    if errors:
-        click.echo("")
-        click.echo("--- Errors ---")
-        for err in errors:
-            click.echo(f"  ! {err}")
-
-
-@main.command("step-research")
-@click.argument("entity")
-@click.argument("claim")
-@click.option("--llm-concurrency", default=8, type=int, help="Max concurrent LLM calls")
-@click.pass_context
-def step_research(ctx: click.Context, entity: str, claim: str, llm_concurrency: int) -> None:
-    """Run only the researcher step and print what it found; nothing is written to disk.
-
-    Runs the decomposed researcher (planner → search → scorer) and prints
-    each step's output. Useful for inspecting source discovery without
-    running the full pipeline.
-
-    Example:
-        dr step-research "Microsoft" "Microsoft's climate pledges rely on carbon credits"
-    """
-    logger.info("dr step-research: entity=%s claim=%s", entity, claim)
-    _check_provider_api_keys(_agent_models_from_ctx(ctx))
-
-    from loop import VerifyConfig
-    from researcher.decomposed import decomposed_research
-
-    config = VerifyConfig(
-        model=ctx.obj["model"],
-        llm_concurrency=llm_concurrency,
-        **_ctx_per_agent_kwargs(ctx),
-    )
-    _check_search_key(config)
-
-    async def _run():
-        import httpx
-        sem = asyncio.Semaphore(llm_concurrency)
-        async with httpx.AsyncClient() as client:
-            return await decomposed_research(claim, entity, config, sem, client)
-
-    urls, errors, trace = asyncio.run(_run())
-    error_msgs = [f"{e.step}/{e.error_type}: {e.message}" for e in errors]
-    _print_research_trace(entity, claim, urls, error_msgs, trace)
-
-
-# --------------------------------------------------------------------------- #
-# dr step-ingest                                                                #
-# --------------------------------------------------------------------------- #
-
-@main.command("step-ingest")
-@click.argument("url")
-@click.option("--write", "do_write", is_flag=True, help="Write source file to disk (default: read-only, prints markdown)")
-@click.option("--force", is_flag=True, help="Overwrite existing source file; implies --write")
-@click.option("--skip-wayback", is_flag=True, help="Skip Wayback Machine lookup")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def step_ingest(ctx: click.Context, url: str, do_write: bool, force: bool, skip_wayback: bool, repo_root: str | None) -> None:
-    """Fetch a URL, structure via the ingestor agent, and print the result.
-
-    Default: read-only (prints Markdown). Use --write (or --force) to persist
-    to research/sources/<year>/<slug>.md.
-
-    Example:
-        dr step-ingest https://example.com/article
-        dr step-ingest https://example.com/article --write
-    """
-    logger.info("dr step-ingest: url=%s do_write=%s", url, do_write)
-
-    if not url.startswith(("http://", "https://")):
-        click.echo(f"Error: invalid URL: {url}", err=True)
-        sys.exit(1)
-
-    ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
-    _check_provider_api_keys(ingestor_model)
-
-    import datetime
-    import httpx
-    from common.content_loader import resolve_repo_root
-    from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
-    from ingestor.arxiv_affiliation import arxiv_corporate_lab
-    from loop import StepError, check_ingested_source
-    from orchestrator.persistence import resolve_source_slugs, source_markdown
-
-    root_str: str
-    try:
-        root_str = repo_root or str(resolve_repo_root())
-    except Exception as exc:
-        click.echo(f"Error: Cannot determine repo root: {exc}", err=True)
-        sys.exit(2)
-
-    # A dry run must not make archive.org capture the page, through the
-    # model's wayback_check tool or the lookup in code.
-    capture = do_write or force
-
-    async def _run():
-        async with httpx.AsyncClient() as client:
-            deps = IngestorDeps(
-                http_client=client, repo_root=root_str, requested_url=url,
-                skip_wayback=skip_wayback, allow_save=capture,
-            )
-            prompt = f"Ingest this URL and produce a SourceFile:\n\nURL: {url}\nToday's date: {deps.today.isoformat()}\n"
-            try:
-                with ingestor_agent.override(model=resolve_model(ingestor_model)):
-                    res = await asyncio.wait_for(ingestor_agent.run(prompt, deps=deps), timeout=120)
-            except asyncio.TimeoutError:
-                click.echo("Error: agent timed out after 120 seconds.", err=True)
-                return 1
-            except Exception as exc:
-                click.echo(f"Error: agent failed: {exc}", err=True)
-                return 1
-
-            corporate_lab = await arxiv_corporate_lab(client, url)
-            checked = check_ingested_source(
-                url, res.output, deps, Path(root_str), corporate_lab
-            )
-            if isinstance(checked, StepError):
-                if checked.error_type == "fetch_failed":
-                    click.echo(f"Error: fetch failed, no page text for {url}: {checked.message}", err=True)
-                else:
-                    click.echo(f"Validation error: {checked.message}", err=True)
-                return 1
-            _url, sf = checked
-
-            archive = await archive_after_ingest(sf, deps)
-            if archive["status"] == "failed":
-                hint = "" if capture else " (Save Page Now runs only with --write)"
-                click.echo(f"Archive lookup failed for {url}: {archive['error']}{hint}", err=True)
-
-            markdown = source_markdown(sf)
-
-            if not (do_write or force):
-                click.echo(markdown)
-                return 0
-
-            # After resolving, an existing file at the slug always has this
-            # URL, so --force can only overwrite the same page.
-            resolve_source_slugs([sf], Path(root_str))
-            target_dir = Path(root_str) / "research" / "sources" / str(sf.year)
-            target_dir.mkdir(parents=True, exist_ok=True)
-            target_path = target_dir / f"{sf.slug}.md"
-            mode = "w" if force else "x"
-            try:
-                with open(target_path, mode, encoding="utf-8") as f:
-                    f.write(markdown)
-            except FileExistsError:
-                click.echo(f"Error: file already exists: {target_path} (use --force to overwrite)", err=True)
-                return 1
-
-            click.echo(f"Wrote {target_path}")
-            return 0
-
-    exit_code = asyncio.run(_run())
-    if exit_code:
-        sys.exit(exit_code)
 
 
 # --------------------------------------------------------------------------- #
@@ -686,6 +438,31 @@ def _claim_spec_for(claim_path: Path, claim_ref: str, root: Path):
     )
 
 
+def _refuse_unknown_status(path: Path) -> None:
+    """Exit 1 before any model call when the claim's ``status`` is set and is not draft, published or archived.
+
+    The writer refuses such a claim (``mark_forced_rewrite``), so a run would
+    be paid for and then end in a half-claim finding. A missing or
+    unparseable file is left to the writer.
+    """
+    from common.frontmatter import parse_frontmatter
+    from common.models import ClaimStatus
+
+    try:
+        fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    status = fm.get("status")
+    if status is None or str(status) in {s.value for s in ClaimStatus}:
+        return
+    click.echo(
+        f"Error: {path}: its status {status!r} is not draft, published or archived; "
+        "fix its frontmatter before re-running. Nothing was run.",
+        err=True,
+    )
+    sys.exit(1)
+
+
 def _live_status(path: Path) -> str | None:
     """``published`` or ``archived`` when the claim at ``path`` is live on the site, else None.
 
@@ -835,7 +612,7 @@ def recheck(
         ref = _claim_ref(claim_path, root)
         if _live_status(claim_path) is None:
             raise click.UsageError(
-                f"--claim {ref} is not published or archived; a draft or blocked claim reruns in place "
+                f"--claim {ref} is not published or archived; a draft reruns in place "
                 f"with dr draft --claim {ref} --force"
             )
         targets.append(_target(ref, claim_path))
@@ -1031,188 +808,6 @@ def _write_recheck(
 
 
 # --------------------------------------------------------------------------- #
-# dr step-analyze                                                               #
-# --------------------------------------------------------------------------- #
-
-@main.command("step-analyze")
-@click.option("--claim", "claim_ref", required=True,
-    help="Claim to re-analyze: entity/slug (e.g. ecosia-ai/renewable-energy-hosting)")
-@click.option("--write", "do_write", is_flag=True,
-    help="Write analyst output to the claim file (default: read-only)")
-@click.option("--force", is_flag=True,
-    help="Overwrite existing claim file; implies --write")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def step_analyze(
-    ctx: click.Context,
-    claim_ref: str,
-    do_write: bool,
-    force: bool,
-    repo_root: str | None,
-) -> None:
-    """Re-run the analyst on an existing claim using its already-ingested sources.
-
-    Default: read-only (prints analyst output). Use --write (or --force) to
-    overwrite the claim file on disk. A blocked claim returns to draft, as
-    with ``dr draft --claim --force``; --write on a published or archived
-    claim is refused before the model call (``dr recheck --claim`` reruns it
-    into a pending draft). The analyst assesses the claim's stored
-    ``statement`` (``title`` for a claim written before it existed), and
-    --write writes that sentence as both. The sidecar's Evaluator comparison (``audit``) is cleared,
-    since it graded the old analysis; run ``dr step-audit --write`` after.
-
-    Example:
-        dr step-analyze --claim ecosia-ai/renewable-energy-hosting
-        dr step-analyze --claim ecosia-ai/renewable-energy-hosting --write --force
-    """
-    logger.info("dr step-analyze: claim=%s do_write=%s force=%s", claim_ref, do_write, force)
-
-    analyst_model = ctx.obj.get("analyst_model") or ctx.obj["model"]
-    _check_provider_api_keys(analyst_model)
-
-    from common.content_loader import load_entity, resolve_repo_root
-    from common.frontmatter import claim_statement, parse_frontmatter
-    from common.models import ClaimStatus
-    from loop import ClaimSpec, VerifyConfig, rerun
-    from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.persistence import (
-        _write_claim_file,
-        clear_audit,
-        load_source_dict,
-        mark_forced_rewrite,
-        verdict_write_kwargs,
-    )
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-    claim_path = _resolve_claim_path(claim_ref, claims_dir)
-
-    if not claim_path.exists():
-        click.echo(f"Error: claim file not found: {claim_path}", err=True)
-        sys.exit(1)
-
-    text = claim_path.read_text(encoding="utf-8")
-    fm, _narrative = parse_frontmatter(text)
-    live_status = _live_status(claim_path)
-    if (do_write or force) and live_status is not None:
-        live_ref = _claim_ref(claim_path, root)
-        raise click.UsageError(
-            f"{live_ref} is {live_status}; a rewrite would go live unreviewed. "
-            f"dr recheck --claim {live_ref} writes a pending draft and leaves the live claim up"
-        )
-
-    # Resolve entity
-    entity_fm, _ = load_entity(fm["entity"], root)
-    # With the resolved entity the analyst sees the entity-match labels, and
-    # --write keeps their overrides, as dr draft does. The loop runs on a
-    # resolved entity, so a missing entity file is a usage error.
-    try:
-        resolved_entity = parse_entity_ref(fm["entity"], root)
-    except ValueError as exc:
-        raise click.UsageError(f"could not load entity '{fm['entity']}': {exc}") from exc
-
-    claim_text = claim_statement(fm)
-    template = _claim_template(fm, root)
-
-    # Load sources
-    # Same shape the main pipeline gives the analyst: ``source_id`` lets
-    # year/slug citation tokens resolve, ``independence`` feeds the prompt.
-    source_dicts: list[dict] = []
-    for sid in fm.get("sources") or []:
-        sd = load_source_dict(sid, root)
-        if sd is None:
-            click.echo(f"Warning: source '{sid}' not found, skipping", err=True)
-            continue
-        source_dicts.append(sd)
-
-    cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
-
-    spec = ClaimSpec(
-        statement=claim_text,
-        entity=resolved_entity,
-        criteria_slug=fm.get("criteria_slug"),
-        grading_rule=template.grading_rule or None if template else None,
-    )
-    rerun_result = asyncio.run(rerun(spec, cfg, source_dicts, agent="analyst"))
-    analyst_out, analyst_failure = rerun_result.analyst_output, rerun_result.failure
-    _record_finding(
-        rerun_result.finding, root, command="dr step-analyze",
-        dry_run=not (do_write or force), claim_ref=_claim_ref(claim_path, root),
-    )
-
-    if analyst_out is None:
-        if analyst_failure is not None:
-            click.echo(
-                f"Error: analyst agent failed: {analyst_failure.error_class}: "
-                f"{analyst_failure.error_message} "
-                f"(model={analyst_failure.model}, timeout_s={analyst_failure.timeout_s})",
-                err=True,
-            )
-        else:
-            click.echo("Error: analyst agent failed to produce output.", err=True)
-        sys.exit(1)
-
-    # The loop fitted the level to the stored sources, so the printed level
-    # is the one --write writes.
-    source_ids = fm.get("sources") or []
-    level_clamp = rerun_result.level_clamp
-
-    # Always print the result
-    a = analyst_out
-    click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
-    click.echo(f"Title:      {a.verdict.title}")
-    click.echo(f"Topics:     {', '.join(t.value for t in a.verdict.topics)}")
-    click.echo(f"Verdict:    {a.verdict.verdict.value}")
-    click.echo(f"Confidence: {a.verdict.confidence.value}")
-    click.echo(f"Level:      {a.verdict.verification_level.value}")
-    if level_clamp:
-        click.echo(f"Level fit:  {level_clamp}")
-    click.echo(f"Narrative:")
-    for line in a.verdict.narrative.strip().split("\n"):
-        click.echo(f"  {line}")
-
-    if not (do_write or force):
-        return
-
-    # Write claim file
-    entity_ref = fm["entity"]
-    claim_slug = claim_path.stem
-
-    # Without --force the write below refuses, so nothing is reset.
-    status = fm.get("status", "draft")
-    if force:
-        if mark_forced_rewrite(claim_path):
-            status = ClaimStatus.DRAFT
-        clear_audit(claim_path)
-
-    try:
-        written_path = _write_claim_file(
-            title=claim_text,
-            statement=claim_text,
-            entity_name=entity_fm["name"],
-            entity_ref=entity_ref,
-            topics=a.verdict.topics,
-            verdict=a.verdict.verdict,
-            confidence=a.verdict.confidence,
-            narrative=a.verdict.narrative,
-            claim_slug=claim_slug,
-            source_ids=source_ids,
-            repo_root=root,
-            force=force,
-            status=status,
-            criteria_slug=fm.get("criteria_slug"),
-            seo_title=a.verdict.seo_title,
-            takeaway=a.verdict.takeaway,
-            uncited_by_title=rerun_result.uncited_by_title,
-            **verdict_write_kwargs(a.verdict),
-        )
-        click.echo(f"Wrote {written_path}")
-    except FileExistsError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        sys.exit(1)
-
-
-# --------------------------------------------------------------------------- #
 # Run report, shared by dr draft --dry-run                                      #
 # --------------------------------------------------------------------------- #
 
@@ -1303,9 +898,9 @@ def _print_verify_result(result) -> None:
 @click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
 @click.option("--subject", "subject_slug", default=None, metavar="SLUG", help="Subject the sentence is about; the subject record is written with the claim when none exists")
 @click.option("--criterion", "criterion_slug", default=None, metavar="SLUG", help="Draft the criterion's sentence for --entity, or attach it to --claim")
-@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft or blocked claim's stored statement in place (needs --force or --dry-run), or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft claim's stored statement in place (needs --force or --dry-run), rerun one agent with --rerun, or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim or --rerun")
 @click.option("--dry-run", is_flag=True, help="Run the loop and print the result; write nothing and never ask archive.org to capture a page")
-@click.option("--force", is_flag=True, help="Overwrite the claim file if present; a blocked claim returns to draft; a published or archived claim is refused (dr recheck --claim writes a pending draft)")
+@click.option("--force", is_flag=True, help="Overwrite the claim file if present (with --source: the source file of the same URL); a published or archived claim is refused (dr recheck --claim writes a pending draft)")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
@@ -1314,6 +909,8 @@ def _print_verify_result(result) -> None:
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
 @click.option("--restates", "restates_ref", default=None, metavar="REF", help="Run candidate --pick N from the claim's restatement block as a new claim linked back with restates:")
 @click.option("--pick", "pick", default=None, type=click.IntRange(min=1), metavar="N", help="The rank of the restatement candidate to run (with --restates)")
+@click.option("--rerun", "rerun_agent", default=None, type=click.Choice(["analyst", "evaluator"]), help="With --claim: rerun one agent over the claim's stored sources and write the result (a pending draft for a published or archived claim)")
+@click.option("--source", "source_url", default=None, metavar="URL", help="Ingest one page as a source file under research/sources/ (for an editorial page); writes no claim")
 @click.pass_context
 def draft(
     ctx: click.Context,
@@ -1332,14 +929,16 @@ def draft(
     llm_concurrency: int | None,
     restates_ref: str | None,
     pick: int | None,
+    rerun_agent: str | None,
+    source_url: str | None,
 ) -> None:
     """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
-    Exactly one of --entity, --subject, --claim or --restates names what the
-    claim is about. A company entity is refused in every mode (usage error,
-    nothing written): companies are parent records, not claim targets. The
-    claim stores the sentence it checks as its statement (and as its title).
-    A run abandoned by the error policy writes only its finding under
+    Exactly one of --entity, --subject, --claim, --restates or --source names
+    what the run is about. A company entity is refused in every mode (usage
+    error, nothing written): companies are parent records, not claim targets.
+    The claim stores the sentence it checks as its statement (and as its
+    title). A run abandoned by the error policy writes only its finding under
     research/findings/ and exits 1; a retried or tie-broken run writes the
     claim and its finding. A writer failure leaves a half-claim finding.
 
@@ -1352,17 +951,27 @@ def draft(
     --subject SLUG SENTENCE      an ad hoc subject claim; writes
                                  research/entities/subjects/SLUG.md with the claim
                                  when it is missing
-    --claim REF --force          re-runs a draft or blocked claim's stored statement and
+    --claim REF --force          re-runs a draft claim's stored statement and
                                  writes back to the same path (--dry-run prints the run
                                  instead); a published or archived claim is refused:
                                  dr recheck --claim REF writes a pending draft
+    --claim REF --rerun analyst|evaluator
+                                 reruns one agent over the claim's stored sources (no
+                                 search, no ingest): the analyst rewrites the claim and
+                                 nulls the sidecar's audit; the Evaluator rewrites the
+                                 sidecar (and the claim's verdict when the tie-breaker
+                                 settles on another one). A draft is rewritten in place;
+                                 a published or archived claim gets a pending draft
     --claim REF --criterion SLUG attaches a new criterion to a draft: appends it to
                                  research/templates.yaml and sets criteria_slug; no
                                  model call
     --restates REF --pick N      runs candidate N of the claim's restatement block as a
                                  new ad hoc claim about the same entity, writes
                                  restates: REF in its sidecar and records the pick on
-                                 the original
+                                 the original (not on a published or archived one)
+    --source URL                 ingests one page into research/sources/<year>/<slug>.md
+                                 and writes nothing else; --dry-run prints it and never
+                                 asks archive.org to capture the page
 
     \b
     Examples:
@@ -1372,6 +981,8 @@ def draft(
         dr draft --claim subjects/us-data-centers/<stem> --force
         dr draft --claim subjects/us-data-centers/<stem> --criterion data-centers-electricity-share
         dr draft --restates subjects/us-data-centers/<stem> --pick 2
+        dr draft --claim subjects/us-data-centers/<stem> --rerun evaluator
+        dr draft --source https://example.com/article
     """
     import re
 
@@ -1386,22 +997,67 @@ def draft(
     from orchestrator.persistence import planned_claim_path, record_restatement_pick, write_claim_run
 
     logger.info(
-        "dr draft: entity=%s subject=%s criterion=%s claim=%s restates=%s pick=%s sentence=%s dry_run=%s force=%s",
-        entity_ref, subject_slug, criterion_slug, claim_ref, restates_ref, pick, sentence, dry_run, force,
+        "dr draft: entity=%s subject=%s criterion=%s claim=%s restates=%s pick=%s rerun=%s source=%s "
+        "sentence=%s dry_run=%s force=%s",
+        entity_ref, subject_slug, criterion_slug, claim_ref, restates_ref, pick, rerun_agent, source_url,
+        sentence, dry_run, force,
     )
 
     # Click cannot express this grammar, so it is checked here, before any
     # model call: every failure is a usage error (exit 2) naming the flag.
     modes = [flag for flag, value in (
         ("--entity", entity_ref), ("--subject", subject_slug), ("--claim", claim_ref),
-        ("--restates", restates_ref),
+        ("--restates", restates_ref), ("--source", source_url),
     ) if value is not None]
     if pick is not None and restates_ref is None:
         raise click.UsageError("--pick goes with --restates <claim-ref>")
     if not modes:
-        raise click.UsageError("one of --entity <ref>, --subject <slug>, --claim <ref> or --restates <ref> is required")
+        raise click.UsageError(
+            "one of --entity <ref>, --subject <slug>, --claim <ref>, --restates <ref> or --source <url> is required"
+        )
     if len(modes) > 1:
         raise click.UsageError(f"{' and '.join(modes)} cannot be combined; pass exactly one")
+    # --rerun and --source run no research, so they are checked first and
+    # dispatched before the loop's grammar below.
+    research_flags = [flag for flag, value in (
+        ("--max-sources", max_sources), ("--candidate-pool-size", candidate_pool_size),
+        ("--max-initial-queries", max_initial_queries), ("--llm-concurrency", llm_concurrency),
+    ) if value is not None]
+    if rerun_agent is not None:
+        if claim_ref is None:
+            raise click.UsageError("--rerun goes with --claim <ref>: it reruns one agent over a stored claim")
+        if sentence is not None:
+            raise click.UsageError("SENTENCE is not taken with --rerun: the claim's stored statement is re-run")
+        if criterion_slug is not None:
+            raise click.UsageError(
+                "--criterion is not taken with --rerun; attach one with dr draft --claim <ref> --criterion <slug>"
+            )
+        if force:
+            raise click.UsageError("--rerun writes without --force (--dry-run prints the run instead); drop --force")
+        if research_flags:
+            raise click.UsageError(f"--rerun searches nothing; it does not take {research_flags[0]}")
+    if source_url is not None:
+        if sentence is not None:
+            raise click.UsageError("SENTENCE is not taken with --source: it ingests one page")
+        if criterion_slug is not None:
+            raise click.UsageError("--criterion is not taken with --source: it writes no claim")
+        if force and dry_run:
+            raise click.UsageError("--force overwrites the source file; it does not go with --dry-run")
+        if research_flags:
+            raise click.UsageError(f"--source ingests one page; it does not take {research_flags[0]}")
+        if not source_url.startswith(("http://", "https://")):
+            raise click.UsageError(f"--source {source_url}: not an http:// or https:// URL")
+    if rerun_agent is not None or source_url is not None:
+        root = Path(repo_root) if repo_root else resolve_repo_root()
+        if rerun_agent is not None:
+            _rerun_claim(ctx, claim_ref, rerun_agent, root, dry_run=dry_run)
+            return
+        exit_code = _ingest_source(
+            ctx, source_url, write=not dry_run, force=force, skip_wayback=skip_wayback, root=root,
+        )
+        if exit_code:
+            sys.exit(exit_code)
+        return
     if restates_ref is not None:
         if pick is None:
             raise click.UsageError("--restates needs --pick <n>: the rank of the candidate to run")
@@ -1564,6 +1220,8 @@ def draft(
                 f"{live_ref} is {live_status}; dr recheck --claim {live_ref} writes a pending draft "
                 "and leaves the live claim up"
             )
+        if force:
+            _refuse_unknown_status(claim_path or planned)
 
     _check_provider_api_keys(_agent_models_from_ctx(ctx))
 
@@ -1662,11 +1320,21 @@ def draft(
             click.echo(f"Note: flagged for human review ({reasons}).")
     if original_path is not None:
         # Recorded only once the new claim is written: a dry run, an abandoned
-        # run or a refused write leaves the original's sidecar untouched.
-        try:
-            record_restatement_pick(pick_holder, pick)
-        except ValueError as exc:
-            click.echo(f"Warning: the pick was not recorded on {restates_ref}: {exc}", err=True)
+        # run or a refused write leaves the original's sidecar untouched. A
+        # live claim's sidecar changes only when a reviewer promotes its
+        # pending draft, so a pick held there is not recorded.
+        holder_status = _live_status(pick_holder) if pick_holder == original_path else None
+        if holder_status is not None:
+            click.echo(
+                f"Warning: the pick was not recorded on {restates_ref}: it is {holder_status}; "
+                "its sidecar changes only at promotion",
+                err=True,
+            )
+        else:
+            try:
+                record_restatement_pick(pick_holder, pick)
+            except ValueError as exc:
+                click.echo(f"Warning: the pick was not recorded on {restates_ref}: {exc}", err=True)
         # Printed as the sidecar key it wrote.
         click.echo(f"restates: {_claim_ref(original_path, root)} (candidate {pick})")
 
@@ -1773,6 +1441,288 @@ def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
     click.echo(f"Attached to {claim_path}")
 
 
+def _ingest_source(ctx: click.Context, url: str, *, write: bool, force: bool, skip_wayback: bool, root: Path) -> int:
+    """``dr draft --source URL``: fetch one page, structure it with the ingestor agent, and write or print it; return the exit code.
+
+    Writes one file, research/sources/<year>/<slug>.md, and nothing else: no
+    claim, sidecar or finding, and no loop run. ``write=False``
+    (``--dry-run``) prints the Markdown and never asks archive.org to capture
+    the page. Without ``force`` an existing file at the slug is refused; with
+    it, only a file holding the same URL is overwritten.
+    """
+    ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
+    _check_provider_api_keys(ingestor_model)
+
+    import httpx
+    from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
+    from ingestor.arxiv_affiliation import arxiv_corporate_lab
+    from loop import StepError, check_ingested_source
+    from orchestrator.persistence import resolve_source_slugs, source_markdown
+
+    root_str = str(root)
+    do_write = write
+
+    # A dry run must not make archive.org capture the page, through the
+    # model's wayback_check tool or the lookup in code.
+    capture = do_write or force
+
+    async def _run():
+        async with httpx.AsyncClient() as client:
+            deps = IngestorDeps(
+                http_client=client, repo_root=root_str, requested_url=url,
+                skip_wayback=skip_wayback, allow_save=capture,
+            )
+            prompt = f"Ingest this URL and produce a SourceFile:\n\nURL: {url}\nToday's date: {deps.today.isoformat()}\n"
+            try:
+                with ingestor_agent.override(model=resolve_model(ingestor_model)):
+                    res = await asyncio.wait_for(ingestor_agent.run(prompt, deps=deps), timeout=120)
+            except asyncio.TimeoutError:
+                click.echo("Error: agent timed out after 120 seconds.", err=True)
+                return 1
+            except Exception as exc:
+                click.echo(f"Error: agent failed: {exc}", err=True)
+                return 1
+
+            corporate_lab = await arxiv_corporate_lab(client, url)
+            checked = check_ingested_source(
+                url, res.output, deps, Path(root_str), corporate_lab
+            )
+            if isinstance(checked, StepError):
+                if checked.error_type == "fetch_failed":
+                    click.echo(f"Error: fetch failed, no page text for {url}: {checked.message}", err=True)
+                else:
+                    click.echo(f"Validation error: {checked.message}", err=True)
+                return 1
+            _url, sf = checked
+
+            archive = await archive_after_ingest(sf, deps)
+            if archive["status"] == "failed":
+                hint = "" if capture else " (Save Page Now runs only without --dry-run)"
+                click.echo(f"Archive lookup failed for {url}: {archive['error']}{hint}", err=True)
+
+            markdown = source_markdown(sf)
+
+            if not (do_write or force):
+                click.echo(markdown)
+                return 0
+
+            # After resolving, an existing file at the slug always has this
+            # URL, so --force can only overwrite the same page.
+            resolve_source_slugs([sf], Path(root_str))
+            target_dir = Path(root_str) / "research" / "sources" / str(sf.year)
+            target_dir.mkdir(parents=True, exist_ok=True)
+            target_path = target_dir / f"{sf.slug}.md"
+            mode = "w" if force else "x"
+            try:
+                with open(target_path, mode, encoding="utf-8") as f:
+                    f.write(markdown)
+            except FileExistsError:
+                click.echo(f"Error: file already exists: {target_path} (use --force to overwrite)", err=True)
+                return 1
+
+            click.echo(f"Wrote {target_path}")
+            return 0
+
+    return asyncio.run(_run())
+
+
+def _stored_analysis(fm: dict, body: str, root: Path):
+    """The analysis a claim file holds, as the ``AnalystOutput`` the Evaluator grades."""
+    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
+    from common.content_loader import load_entity
+    from common.models import Category, Confidence, Verdict, VerificationLevel
+
+    entity_fm, _ = load_entity(fm["entity"], root)
+    # The claim file is the analysis the Evaluator grades. Built
+    # without validation: a claim written before seo_title existed
+    # does not validate as a VerdictAssessment.
+    level = fm.get("verification_level")
+    analysis = AnalystOutput.model_construct(
+        entity=EntityResolution(
+            entity_name=entity_fm["name"],
+            entity_type=entity_fm["type"],
+            entity_description=entity_fm["description"],
+        ),
+        verdict=VerdictAssessment.model_construct(
+            title=fm["title"],
+            verdict=Verdict(fm["verdict"]),
+            confidence=Confidence(fm["confidence"]),
+            narrative=body,
+            topics=[Category(t) for t in fm["topics"]],
+            verification_level=VerificationLevel(level) if level else None,
+            seo_title=fm.get("seo_title") or "",
+            takeaway=fm.get("takeaway"),
+            cap_rationale=fm.get("cap_rationale"),
+            source_overrides=None,
+            cited_sources=[],
+        ),
+    )
+    return analysis
+
+
+def _print_analyst_rerun(result) -> None:
+    """The analyst rerun's assessment, with the level the loop fitted to the stored sources."""
+    analyst_out = result.analyst_output
+    level_clamp = result.level_clamp
+
+    # Always print the result
+    a = analyst_out
+    click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
+    click.echo(f"Title:      {a.verdict.title}")
+    click.echo(f"Topics:     {', '.join(t.value for t in a.verdict.topics)}")
+    click.echo(f"Verdict:    {a.verdict.verdict.value}")
+    click.echo(f"Confidence: {a.verdict.confidence.value}")
+    click.echo(f"Level:      {a.verdict.verification_level.value}")
+    if level_clamp:
+        click.echo(f"Level fit:  {level_clamp}")
+    click.echo(f"Narrative:")
+    for line in a.verdict.narrative.strip().split("\n"):
+        click.echo(f"  {line}")
+
+
+
+def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, dry_run: bool) -> None:
+    """``dr draft --claim REF --rerun analyst|evaluator``: one agent over the claim's stored sources, then the writer.
+
+    Calls ``loop.rerun`` only: no search, no ingest. The analyst assesses
+    the claim's stored statement from its listed sources; the Evaluator
+    grades the analysis the claim file holds, and a disagreement goes to the
+    tie-breaker. A draft is rewritten in place (``write_analyst_rerun``,
+    ``write_evaluator_rerun``); a published or archived claim gets a pending
+    draft under research/pending/ (``write_pending_rerun``) and its live
+    files are never opened for writing. A claim that already has a pending
+    draft is rerun from that draft, the newest version of the claim. A
+    rerun that fails or is abandoned writes only its finding and exits 1;
+    ``--dry-run`` prints the run and writes nothing.
+    """
+    from common.frontmatter import parse_frontmatter
+    from common.sidecar import sidecar_path_for
+    from loop import VerifyConfig, rerun
+    from orchestrator.persistence import (
+        load_source_dict,
+        pending_path_for,
+        planned_claim_path,
+        write_analyst_rerun,
+        write_evaluator_rerun,
+        write_pending_rerun,
+    )
+
+    live_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
+    if not live_path.exists():
+        click.echo(f"Error: claim file not found: {claim_ref} ({live_path})", err=True)
+        sys.exit(1)
+    # Company and product claims share research/claims/<slug>/, so only entity: tells them apart.
+    _refuse_company(parse_frontmatter(live_path.read_text(encoding="utf-8"))[0].get("entity"), root)
+    ref = _claim_ref(live_path, root)
+    live_status = _live_status(live_path)
+    pending = pending_path_for(live_path, root) if live_status is not None else None
+    read_path = pending if pending is not None and pending.exists() else live_path
+
+    # Before the dry-run branch: a claim no command may write is not graded either.
+    _refuse_unknown_status(live_path)
+    spec = _claim_spec_for(read_path, ref, root)
+    _refuse_company_type(spec.entity.entity_type)
+    if not dry_run:
+        # Refused before the model call; the writer checks it again.
+        planned = planned_claim_path(spec.entity.entity_ref, spec.entity.entity_name, live_path.stem, root)
+        if planned.resolve() != live_path.resolve():
+            click.echo(
+                f"Error: {ref} is at {live_path}, but its entity {spec.entity.entity_ref} "
+                f"writes to {planned}. Nothing was run.",
+                err=True,
+            )
+            sys.exit(1)
+    fm, body = parse_frontmatter(read_path.read_text(encoding="utf-8"))
+
+    # Same shape the loop gives the analyst: ``source_id`` lets year/slug
+    # citation tokens resolve, ``independence`` feeds the prompt.
+    sources: list[dict] = []
+    for sid in fm.get("sources") or []:
+        sd = load_source_dict(sid, root)
+        if sd is None:
+            click.echo(f"Warning: source '{sid}' not found, skipping", err=True)
+            continue
+        sources.append(sd)
+
+    if agent == "analyst":
+        _check_provider_api_keys(ctx.obj.get("analyst_model") or ctx.obj["model"])
+        analysis = None
+    else:
+        # The tie-breaker runs when the Evaluator disagrees with the claim.
+        _check_provider_api_keys([
+            ctx.obj.get("auditor_model") or ctx.obj["model"],
+            ctx.obj.get("tiebreaker_model") or ctx.obj["model"],
+        ])
+        analysis = _stored_analysis(fm, body, root)
+
+    cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
+    progress("Rerunning the %s: %s (%s)%s", agent, spec.statement, ref, " [dry run]" if dry_run else "")
+    result = asyncio.run(rerun(spec, cfg, sources, agent=agent, analyst_output=analysis))
+
+    finding = result.finding
+    abandoned = finding is not None and finding.outcome == "abandoned"
+    if agent == "analyst":
+        ran = result.analyst_output is not None and not abandoned
+        if ran:
+            _print_analyst_rerun(result)
+        elif result.failure is not None:
+            failure = result.failure
+            click.echo(
+                f"Error: analyst agent failed: {failure.error_class}: {failure.error_message} "
+                f"(model={failure.model}, timeout_s={failure.timeout_s})",
+                err=True,
+            )
+        else:
+            click.echo("Error: analyst agent failed to produce output.", err=True)
+    else:
+        from auditor.report import format_text_report
+
+        ran = result.consistency is not None and not abandoned
+        if ran:
+            graded = result.consistency.model_copy(
+                update={"claim_id": ref, "claim_file": str(read_path.relative_to(root))}
+            )
+            click.echo(format_text_report([graded]))
+        else:
+            reason = "; ".join(result.errors) or "the Evaluator produced no assessment"
+            click.echo(f"Error: {ref} was not graded: {reason}", err=True)
+
+    # Named apart from a full `dr draft` run, which `dr findings --replay` would rerun in full.
+    command = f"dr draft --rerun {agent}"
+    if dry_run or not ran:
+        _record_finding(finding, root, command=command, dry_run=dry_run, claim_ref=ref)
+        if not ran:
+            click.echo("Nothing was written." if not dry_run else "Nothing was written (dry run).", err=True)
+            sys.exit(1)
+        return
+
+    try:
+        if live_status is not None:
+            written = write_pending_rerun(live_path, result, spec, cfg, agent=agent, repo_root=root)
+            click.echo(f"Pending draft: {written.relative_to(root).as_posix()}")
+        elif agent == "analyst":
+            written = write_analyst_rerun(live_path, result, spec, cfg, repo_root=root)
+            click.echo(f"Wrote {written} (+ .audit.yaml)")
+        else:
+            written = write_evaluator_rerun(live_path, result, cfg)
+            click.echo(f"Wrote {sidecar_path_for(live_path)}")
+    except Exception as exc:
+        # A draft's claim is written before its sidecar, so a stop between
+        # them is a half-claim. A pending draft is moved into place only after
+        # every write, so a stop there leaves nothing; its finding still uses
+        # rule half-claim, as `dr recheck` does for the same stop.
+        click.echo(f"Error: the rerun was not written in full: {exc}", err=True)
+        if agent == "analyst":
+            rerun_agents = ["analyst"]
+        else:
+            rerun_agents = ["auditor"]
+            if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
+                rerun_agents.append("tiebreaker")
+        _record_half_claim(result, spec, cfg, root, ref, exc, command=command, agents=rerun_agents)
+        sys.exit(1)
+    _record_finding(finding, root, command=command, claim_ref=ref)
+
+
 def _claim_ref(claim_path: Path, root: Path) -> str:
     """The ``dr`` claim ref for a claim path: its path under research/claims/ without ``.md``."""
     try:
@@ -1804,16 +1754,24 @@ def _record_finding(finding, root: Path, *, command: str, dry_run: bool = False,
 
 def _record_half_claim(
     result, spec, config, root: Path, claim_ref: str, exc: BaseException, *, command: str = "dr draft",
+    agents: list[str] | None = None,
 ) -> None:
-    """Write the finding for a writer that failed part-way (rule half-claim)."""
+    """Write the finding for a writer that failed part-way (rule half-claim).
+
+    ``agents`` names the agents that ran (a ``--rerun`` runs one or two);
+    by default the full run's agents.
+    """
     import datetime
 
     from common.findings import Finding, claim_spec_record, config_record
 
     earlier = result.finding
-    agents = ["researcher", "ingestor", "analyst", "auditor"]
-    if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
-        agents.append("tiebreaker")
+    if agents is not None:
+        agents = list(agents)
+    else:
+        agents = ["researcher", "ingestor", "analyst", "auditor"]
+        if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
+            agents.append("tiebreaker")
     if result.restatement is not None or (earlier is not None and earlier.step == "restate"):
         agents.append("restater")
     retries = list(earlier.retries) if earlier is not None else []
@@ -1877,231 +1835,6 @@ def _report_unwritable_run(result) -> bool:
             click.echo(f"Error: analyst agent failed ({label}). Nothing was written.", err=True)
         return False
     return True
-
-
-# --------------------------------------------------------------------------- #
-# dr step-audit  (formerly reassess)                                            #
-# --------------------------------------------------------------------------- #
-
-@main.command("step-audit")
-@click.option("--claim", default=None, help="Audit a single claim file (entity/slug)")
-@click.option("--entity", default=None, help="Audit all claims for an entity")
-@click.option("--topic", default=None, help="Audit all claims with a given topic")
-@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
-@click.option("--dry-run", is_flag=True, help="Show what would be audited without calling LLM")
-@click.option("--write", "do_write", is_flag=True,
-    help="Write auditor results to .audit.yaml sidecar (default: read-only)")
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def step_audit(
-    ctx: click.Context,
-    claim: str | None,
-    entity: str | None,
-    topic: str | None,
-    output_format: str,
-    dry_run: bool,
-    do_write: bool,
-    repo_root: str | None,
-) -> None:
-    """Re-run the auditor on existing claim file(s) and report verdict/confidence disagreements.
-
-    A verdict disagreement goes to the tie-breaker, as in dr draft. Default:
-    read-only (prints report and any finding). Use --write to update
-    .audit.yaml sidecars and write findings under research/findings/; an
-    abandoned rerun writes only its finding. --write never writes a published
-    or archived claim's sidecar: with --claim it is refused before the model
-    call, and in an --entity or --topic batch such a claim is graded and
-    reported but not written (dr recheck --claim reruns it into a pending
-    draft).
-
-    Example:
-        dr step-audit --entity ecosia
-        dr step-audit --claim ecosia/renewable-energy-hosting
-        dr step-audit --claim ecosia/renewable-energy-hosting --write
-    """
-    logger.info(
-        "dr step-audit: claim=%s entity=%s topic=%s dry_run=%s do_write=%s",
-        claim, entity, topic, dry_run, do_write,
-    )
-    import dataclasses
-
-    from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
-    from auditor.report import format_json_report, format_text_report
-    from common.content_loader import list_claims, load_entity, resolve_repo_root
-    from common.frontmatter import claim_statement, parse_frontmatter
-    from common.models import Category, Confidence, Verdict, VerificationLevel
-    from common.sidecar import sidecar_path_for
-    from loop import ClaimSpec, VerifyConfig, rerun
-    from orchestrator.entity_resolution import parse_entity_ref
-    from orchestrator.persistence import load_source_dict, write_evaluator_rerun
-
-    root = Path(repo_root) if repo_root else resolve_repo_root()
-    claims_dir = root / "research" / "claims"
-
-    if claim:
-        claim_paths = [_resolve_claim_path(claim, claims_dir)]
-        # Only a reviewer's promotion writes a live claim's files.
-        live_status = _live_status(claim_paths[0]) if do_write else None
-        if live_status is not None:
-            live_ref = _claim_ref(claim_paths[0], root)
-            raise click.UsageError(
-                f"{live_ref} is {live_status}; --write would change its live sidecar unreviewed. "
-                f"dr recheck --claim {live_ref} writes a pending draft and leaves the live claim up"
-            )
-    else:
-        claim_paths = list_claims(root, entity=entity, topic=topic)
-
-    # The tie-breaker runs when the Evaluator disagrees with the claim.
-    _check_provider_api_keys([
-        ctx.obj.get("auditor_model") or ctx.obj["model"],
-        ctx.obj.get("tiebreaker_model") or ctx.obj["model"],
-    ])
-    verbose = ctx.obj.get("verbose", False)
-
-    if not claim_paths:
-        click.echo("No claims found.", err=True)
-        sys.exit(0)
-
-    cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
-
-    async def _run():
-        results = []
-        for path in claim_paths:
-            text = path.read_text(encoding="utf-8")
-            fm, body = parse_frontmatter(text)
-
-            claim_id = str(path.relative_to(claims_dir).with_suffix(""))
-            # A blocked claim's title keeps the raw vocabulary placeholder and
-            # its body is the block notice: there is no claim to grade.
-            if fm.get("status") == "blocked":
-                click.echo(f"Skipped (blocked): {claim_id}", err=True)
-                continue
-
-            entity_fm, _ = load_entity(fm["entity"], root)
-            sources = []
-            for sid in fm.get("sources", []):
-                sd = load_source_dict(sid, root)
-                if sd is None:
-                    click.echo(f"Warning: source '{sid}' not found", err=True)
-                    continue
-                sources.append(sd)
-
-            if dry_run:
-                click.echo(f"[dry-run] Would audit: {claim_id}")
-                continue
-
-            # The claim file is the analysis the Evaluator grades. Built
-            # without validation: a claim written before seo_title existed
-            # does not validate as a VerdictAssessment.
-            level = fm.get("verification_level")
-            analysis = AnalystOutput.model_construct(
-                entity=EntityResolution(
-                    entity_name=entity_fm["name"],
-                    entity_type=entity_fm["type"],
-                    entity_description=entity_fm["description"],
-                ),
-                verdict=VerdictAssessment.model_construct(
-                    title=fm["title"],
-                    verdict=Verdict(fm["verdict"]),
-                    confidence=Confidence(fm["confidence"]),
-                    narrative=body,
-                    topics=[Category(t) for t in fm["topics"]],
-                    verification_level=VerificationLevel(level) if level else None,
-                    seo_title=fm.get("seo_title") or "",
-                    takeaway=fm.get("takeaway"),
-                    cap_rationale=fm.get("cap_rationale"),
-                    source_overrides=None,
-                    cited_sources=[],
-                ),
-            )
-            template = _claim_template(fm, root)
-            spec = ClaimSpec(
-                statement=claim_statement(fm),
-                entity=parse_entity_ref(fm["entity"], root),
-                criteria_slug=fm.get("criteria_slug"),
-                grading_rule=template.grading_rule or None if template else None,
-            )
-
-            progress("Auditing: %s ...", claim_id)
-            # One run id per claim, so each claim's finding is its own record.
-            claim_cfg = cfg if len(claim_paths) == 1 else dataclasses.replace(cfg, run_id=new_run_id())
-            graded = await rerun(spec, claim_cfg, sources, agent="evaluator", analyst_output=analysis)
-            _record_finding(
-                graded.finding, root, command="dr step-audit",
-                dry_run=not do_write, claim_ref=_claim_ref(path, root),
-            )
-            abandoned = graded.finding is not None and graded.finding.outcome == "abandoned"
-            if graded.consistency is None or abandoned:
-                reason = "; ".join(graded.errors) or "the Evaluator produced no assessment"
-                click.echo(f"Skipped (not graded): {claim_id}: {reason}", err=True)
-                continue
-            result = graded.consistency.model_copy(
-                update={"claim_id": claim_id, "claim_file": str(path.relative_to(root))}
-            )
-
-            if verbose or result.needs_review:
-                click.echo(
-                    f"  {result.claim_id}: {result.primary_verdict.value} vs "
-                    f"{result.assessed_verdict.value} ({result.verdict_severity.value})",
-                    err=True,
-                )
-            results.append(result)
-
-            live_status = fm.get("status") if fm.get("status") in ("published", "archived") else None
-            if do_write and live_status is not None:
-                # Only a reviewer's promotion writes a live claim's files; the
-                # Evaluator rerun into a pending draft is RE-AX (Fold side
-                # tools)'s `--rerun`. The finding above is still written.
-                click.echo(
-                    f"Not written: {claim_id} is {live_status}; dr recheck --claim {claim_id} "
-                    "writes a pending draft and leaves the live claim up.",
-                    err=True,
-                )
-            elif do_write:
-                write_evaluator_rerun(path, graded, claim_cfg)
-                click.echo(f"Wrote {sidecar_path_for(path)}")
-
-        if results:
-            if output_format == "json":
-                click.echo(format_json_report(results))
-            else:
-                click.echo(format_text_report(results))
-
-    asyncio.run(_run())
-
-
-@main.command("reassess", hidden=True)
-@click.option("--claim", default=None)
-@click.option("--entity", default=None)
-@click.option("--topic", default=None)
-@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
-@click.option("--dry-run", is_flag=True)
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def reassess(ctx, claim, entity, topic, output_format, dry_run, repo_root):
-    """Deprecated: use `dr step-audit` instead."""
-    click.echo("Note: `dr reassess` is deprecated; use `dr step-audit`.", err=True)
-    ctx.invoke(step_audit, claim=claim, entity=entity, topic=topic,
-               output_format=output_format, dry_run=dry_run, do_write=False,
-               repo_root=repo_root)
-
-
-# --------------------------------------------------------------------------- #
-# dr ingest                                                                     #
-# --------------------------------------------------------------------------- #
-
-@main.command(hidden=True)
-@click.argument("url")
-@click.option("--repo-root", default=None)
-@click.option("--dry-run", is_flag=True)
-@click.option("--skip-wayback", is_flag=True)
-@click.option("--force", is_flag=True)
-@click.pass_context
-def ingest(ctx: click.Context, url: str, repo_root: str | None, dry_run: bool, skip_wayback: bool, force: bool) -> None:
-    """Deprecated: use `dr step-ingest` instead."""
-    click.echo("Note: `dr ingest` is deprecated; use `dr step-ingest`.", err=True)
-    ctx.invoke(step_ingest, url=url, do_write=not dry_run, force=force,
-               skip_wayback=skip_wayback, repo_root=repo_root)
 
 
 # --------------------------------------------------------------------------- #
@@ -2371,30 +2104,41 @@ def _resolve_claim_path(claim: str, claims_dir: Path) -> Path:
 
 @main.command()
 @click.option("--entity", default=None, help="Lint only claims for this entity slug")
-@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json"]))
+@click.option("--format", "output_format", default="text", type=click.Choice(["text", "json", "summary"]), help="text: every issue by file; json: an array of issues; summary: counts by check")
 @click.option("--severity", default="info", type=click.Choice(["error", "warning", "info"]), help="Minimum severity to report")
+@click.option("--prune", is_flag=True, help="Delete every source file no claim, pending draft or page cites (unreferenced-source) and the year directories it empties; cannot be undone")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
-def lint(ctx: click.Context, entity: str | None, output_format: str, severity: str, repo_root: str | None) -> None:
+def lint(ctx: click.Context, entity: str | None, output_format: str, severity: str, prune: bool, repo_root: str | None) -> None:
     """Static content checks against research/ (frontmatter schema, source refs, criteria slugs, sign-off); no LLM, no network.
 
-    Exits 1 if any errors are found.
+    Exits 1 if any errors are found. --prune runs the same checks, then,
+    when they report no error, deletes the files of every
+    unreferenced-source issue; a source cited only by a pending draft under
+    research/pending/ counts as referenced.
 
     \b
     Examples:
       dr lint
       dr lint --entity ecosia
       dr lint --format json --severity error
+      dr lint --format summary
+      dr lint --prune
     """
     logger.info(
-        "dr lint: entity=%s severity=%s format=%s",
+        "dr lint: entity=%s severity=%s format=%s prune=%s",
         entity or "<all>",
         severity,
         output_format,
+        prune,
     )
+    if prune and entity is not None:
+        # With a filter the other entities' claims are not read, so their
+        # sources would look unreferenced and be deleted.
+        raise click.UsageError("--prune reads every claim to find unreferenced sources; it does not take --entity")
 
     from linter.runner import run_all_checks
-    from linter.report import format_text_report, format_json_report
+    from linter.report import format_json_report, format_summary_report, format_text_report
     from common.content_loader import resolve_repo_root as _resolve_root
 
     resolved_root = Path(repo_root) if repo_root else _resolve_root()
@@ -2402,12 +2146,51 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
 
     if output_format == "json":
         click.echo(format_json_report(issues, min_severity=severity))
+    elif output_format == "summary":
+        click.echo(format_summary_report(issues, files_checked, min_severity=severity))
     else:
         click.echo(format_text_report(issues, files_checked, min_severity=severity))
 
     errors = [i for i in issues if i.severity == "error"]
+    if prune:
+        if errors:
+            # A claim that does not parse cites nothing the checks can see, so
+            # its sources would look unreferenced and be deleted.
+            click.echo(
+                f"Not pruning: lint reported {len(errors)} error(s); fix them and run dr lint --prune again.",
+                err=True,
+            )
+        else:
+            _prune_sources(issues, resolved_root)
+
     if errors:
         sys.exit(1)
+
+
+def _prune_sources(issues: list, root: Path) -> None:
+    """Delete the file of every ``unreferenced-source`` issue and the year directories that leaves empty."""
+    sources_root = root / "research" / "sources"
+    orphans = sorted(Path(i.path) for i in issues if i.check_id == "unreferenced-source")
+
+    if not orphans:
+        click.echo("No orphaned sources found.")
+        return
+
+    for p in orphans:
+        p.unlink(missing_ok=True)
+        try:
+            click.echo(f"Deleted {p.relative_to(sources_root).with_suffix('').as_posix()}")
+        except ValueError:
+            click.echo(f"Deleted {p}")
+
+    # Remove year directories that are now empty
+    year_dirs = {p.parent for p in orphans}
+    for d in sorted(year_dirs):
+        if d.exists() and not any(d.iterdir()):
+            d.rmdir()
+            click.echo(f"  removed empty dir: {d}")
+
+    click.echo(f"Deleted {len(orphans)} file(s).")
 
 
 # --------------------------------------------------------------------------- #
@@ -2420,7 +2203,7 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
 @click.option("--summary", is_flag=True, default=False, help="Count open findings by step, rule and outcome.")
 @click.option("--close", "close_id", default=None, metavar="ID", help="Close the finding with this run id (or a unique prefix); needs --note.")
 @click.option("--note", default=None, help="Why the finding is closed (with --close).")
-@click.option("--replay", is_flag=True, default=False, help="Re-run each open abandoned or half-claim finding through the loop; closes it on success, records a linked finding on failure")
+@click.option("--replay", is_flag=True, default=False, help="Re-run each open abandoned or half-claim finding through the paid loop (one full run each); closes it on success, records a linked finding on failure")
 @click.option("--finding", "finding_id", default=None, metavar="ID", help="With --replay: replay this finding only")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.pass_context
@@ -2518,10 +2301,13 @@ def findings(
             return f"{ref}: promotion stopped between its moves; finish it with dr review --claim {ref} --approve"
         return f"{ref}: pending recheck with no sidecar; rerun dr recheck --claim {ref}"
 
-    rows = [
-        f"{ref}: no sidecar; replace it with dr draft --claim {ref} --force"
-        for ref in left["claims_without_sidecar"]
-    ] + [_pending_row(ref) for ref in left["pending_without_sidecar"]] + [
+    def _no_sidecar_row(ref: str) -> str:
+        # A published or archived claim is never rewritten in place.
+        if _live_status(root / "research" / "claims" / f"{ref}.md") is not None:
+            return f"{ref}: no sidecar; rerun it into a pending draft with dr recheck --claim {ref}"
+        return f"{ref}: no sidecar; replace it with dr draft --claim {ref} --force"
+
+    rows = [_no_sidecar_row(ref) for ref in left["claims_without_sidecar"]] + [_pending_row(ref) for ref in left["pending_without_sidecar"]] + [
         f"{name}: a recheck stopped while writing; nothing reads it, remove it by hand"
         for name in left["staging_left"]
     ] + [
@@ -2536,57 +2322,6 @@ def findings(
             click.echo(f"  {row}")
     if not shown and not rows:
         click.echo("No open findings." if not show_all else "No findings.")
-
-
-# --------------------------------------------------------------------------- #
-# dr stats                                                                      #
-# --------------------------------------------------------------------------- #
-
-
-@main.command()
-@click.option(
-    "--format", "output_format", default="text", type=click.Choice(["text", "json"]),
-    help="Output format. Mirrors `dr lint --format` and `dr review --format`.",
-)
-@click.option("--repo-root", default=None, type=click.Path(exists=True))
-@click.pass_context
-def stats(ctx: click.Context, output_format: str, repo_root: str | None) -> None:
-    """Aggregate read-only counters from claims and audit sidecars; no LLM, no network.
-
-    Reports four aggregates that back the success-criteria table in
-    docs/plans/completed/source-pool-expansion-tier1.md:
-
-    \b
-      - wayback_recovery: Path 1 archive_org recovery rate
-      - acquisition_origins: per-origin distribution (brave/tavily/arxiv/...)
-      - academic_topic_coverage: Path 2 hit-rate on academic-tagged claims
-      - verification_levels: analyst-derived source-pool level distribution
-
-    Empty-state safe: a corpus with no `acquisition` blocks (the current
-    state) reports zero counts and a null rate rather than crashing.
-
-    \b
-    Examples:
-      dr stats
-      dr stats --format json | jq '.wayback_recovery.rate'
-      dr stats --format json | jq '.academic_topic_coverage.rate'
-    """
-    logger.info("dr stats: format=%s", output_format)
-
-    from common.content_loader import resolve_repo_root as _resolve_root
-    from orchestrator.stats import (
-        compute_stats,
-        format_json_report,
-        format_text_report,
-    )
-
-    resolved_root = Path(repo_root) if repo_root else _resolve_root()
-    aggregates = compute_stats(resolved_root)
-
-    if output_format == "json":
-        click.echo(format_json_report(aggregates))
-    else:
-        click.echo(format_text_report(aggregates))
 
 
 if __name__ == "__main__":

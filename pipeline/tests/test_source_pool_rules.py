@@ -366,7 +366,7 @@ def test_an_analyst_chosen_capped_level_keeps_its_confidence_and_lint_flags_it(t
 
 @pytest.mark.asyncio
 async def test_rerun_analyst_fits_the_level_against_the_stored_sources(tmp_path) -> None:
-    """``dr step-analyze`` reads the fit from the loop's result, not from the writer."""
+    """``dr draft --rerun analyst`` reads the fit from the loop's result, not from the writer."""
     import loop
 
     write_entity(tmp_path)

@@ -1,11 +1,11 @@
 # Research Flow Diagrams
 
-Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: queue handling, pipeline execution, the draft commands that start a claim, and the sign-off path from local checks through `dr review` and the commit to CI and deploy.
+Visual reference for the research lifecycle. The first diagram is a state machine covering a claim from draft to archival. The remaining diagrams zoom into specific mechanisms: how work enters, pipeline execution, the draft commands that start a claim, and the sign-off path from local checks through `dr review` and the commit to CI and deploy.
 
 Sections:
 
 1. Claim lifecycle (state machine)
-2. Queue lifecycle
+2. How work enters
 3. Pipeline execution (sequence)
 4. Draft commands
 5. Sign-off without a PR
@@ -18,8 +18,7 @@ Every claim moves through the same set of states regardless of how it was initia
 
 ```mermaid
 stateDiagram-v2
-    [*] --> draft: dr draft / dr draft --claim --force / manual edit
-    blocked --> archived: dr review --archive
+    [*] --> draft: dr draft / dr draft --claim --force / dr draft --claim --rerun / manual edit
     draft --> published: dr review --approve (status flip)
     published --> due: next_recheck_due or as_of + recheck_cadence_days passed
     due --> pending: dr recheck (live claim stays published)
@@ -31,31 +30,29 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting sign-off and hand-edited files not yet reviewed.
-- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered, split or partial (claim written, restater failed), leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
+- The pipeline writes no placeholder claim: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. A claim's status is `draft`, `published` or `archived`; any other value is a `dr lint` error (`invalid-claim-status`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered, split or partial (claim written, restater failed), leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
 - A published claim is due when its `next_recheck_due` has passed or, when it has none, when `as_of` plus `recheck_cadence_days` (default 60) has passed. The writer sets `next_recheck_due` on every claim write. `dr recheck --due --dry-run` lists the due claims, and `dr recheck --due` (or `--claim <ref>`) re-runs them. A rerun never touches the live claim: it lands as a pending draft under `research/pending/` (the `pending` state above, outside the site's claims loader) and the live page stays up until `dr review --approve` promotes it. No scheduler runs `dr recheck`; a person starts it (the scheduled job is a backlog item, see `docs/runbook.md` § Scheduled rechecks). `dr lint` also surfaces a past `next_recheck_due` as `info`. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review`, one claim at a time. See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
 
 ---
 
-## 2. Queue lifecycle
+## 2. How work enters
 
-How items enter and exit the queue:
+Work enters when the operator adds one of the non-claim objects or names a command. There is no queue file.
 
 ```mermaid
 flowchart LR
-    A([Human or agent]) -->|adds URL or topic| B[research/QUEUE.md]
-    B -->|operator picks item| C{Item type}
-    C -->|URL| D[dr step-ingest URL]
+    A([Operator]) --> C{What to add}
+    C -->|URL of an editorial page| D[dr draft --source URL]
     C -->|claim text| E[dr draft --entity ref claim-text]
     C -->|criterion for an entity| F[dr draft --criterion slug --entity ref]
     D --> G[Source file written to research/sources/]
     E --> H[Source + claim files written]
     F --> I[Source + claim files written]
-    G --> J[Remove item from QUEUE.md]
+    G --> J([Draft awaits dr review])
     H --> J
     I --> J
-    J --> K([Queue cleared])
 ```
 
 ---
@@ -148,16 +145,23 @@ flowchart TD
     no model call, no file moved"]
     M -->|--restates ref --pick n| R6["Run restatement candidate n as a new claim;
     restates: ref in its sidecar"]
+    M -->|--claim ref --rerun analyst or evaluator| R7["Rerun one agent over the stored sources (loop rerun,
+    no search): a draft is rewritten in place, a published
+    or archived claim gets a pending draft"]
+    M -->|--source url| R8["Ingest one page into research/sources/:
+    no claim, no loop run"]
     R1 --> LOOP
     R2 --> LOOP
     R3 --> LOOP
     R4 --> LOOP
     R6 --> LOOP
+    R7 --> W
     LOOP["Loop (run): research, ingest, analyse, evaluate;
     blocked or failed: nothing written, exit 1"]
     LOOP --> W["write_claim_run:
     source files, claim file, audit sidecar"]
     R5 --> DONE([Draft claim on disk])
+    R8 --> DONE2([Source file on disk])
     W --> DONE
 ```
 
@@ -220,9 +224,9 @@ flowchart TD
 Notes:
 
 - `dr review` with no arguments walks the drafts awaiting sign-off. Each draft prints its review packet: the evidence parts first, then the verdict chain (the claim, the analyst, the Evaluator, the tie-breaker when one ran, the pipeline's verdict and the rule that set it) and the header facts directly above the key prompt. The `v` key opens the whole packet in `$PAGER`; `r` records a restatement pick; `a` approves. `dr review --format text|json` prints the packets and writes nothing.
-- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --claim <ref> --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). The sign-off needs a terminal and the typed claim slug; an agent never runs it. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the original CLI contract.
+- Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --claim <ref> --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim. The sign-off needs a terminal and the typed claim slug; an agent never runs it. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the original CLI contract.
 - `--approve` records a verdict that differs from the pipeline verdict in the sidecar (`audit.pipeline_verdict`, or `audit.analyst_verdict` on a sidecar written before it existed) as `human_review.verdict_override`, with the reviewer. It refuses a refreshed claim whose verdict changed unless a one-line `--correction` is given. No command publishes without recording a reviewer.
-- A forced rewrite (`dr draft --claim --force`, `dr draft --force`, `dr step-analyze --write --force`), and `dr step-audit --claim <ref> --write`, of a published or archived claim is refused with a pointer to `dr recheck --claim <ref>`; only a draft is overwritten in place. `dr recheck` writes the rerun as a pending draft, which `dr review` lists under the live claim's ref with a header saying whether the verdict changed. On `--approve` the pending files move over the live ones (the writer takes the refresh snapshot, with `dropped_sources`, at that moment) and the same approval completes the sign-off and closes the `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. Steps: `docs/runbook.md` § Refreshing a published claim.
+- A forced rewrite (`dr draft --claim --force`, `dr draft --force`) of a published or archived claim is refused with a pointer to `dr recheck --claim <ref>`; only a draft is overwritten in place. `dr recheck` (or `dr draft --claim <ref> --rerun analyst|evaluator`) writes the rerun as a pending draft, which `dr review` lists under the live claim's ref with a header saying whether the verdict changed. On `--approve` the pending files move over the live ones (the writer takes the refresh snapshot, with `dropped_sources`, at that moment) and the same approval completes the sign-off and closes the `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---
 

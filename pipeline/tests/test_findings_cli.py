@@ -97,8 +97,8 @@ def test_write_finding_lands_at_the_plan_path_with_the_plan_keys(tmp_path) -> No
 def test_write_finding_takes_the_command_from_the_caller(tmp_path) -> None:
     from orchestrator.persistence import write_finding
 
-    path = write_finding(_finding(command=None), tmp_path, command="dr step-audit")
-    assert yaml.safe_load(path.read_text(encoding="utf-8"))["command"] == "dr step-audit"
+    path = write_finding(_finding(command=None), tmp_path, command="dr recheck")
+    assert yaml.safe_load(path.read_text(encoding="utf-8"))["command"] == "dr recheck"
 
 
 def test_load_and_close_findings(tmp_path) -> None:

@@ -39,7 +39,7 @@ Facts behind each node, checked 2026-10-06:
 | Node | Source in HEAD |
 |---|---|
 | Researcher, Ingestor, Analyst, Auditor | `pipeline/researcher/`, `pipeline/ingestor/`, `pipeline/analyst/`, `pipeline/auditor/` |
-| Blocked branch | `BlockedReason` in `pipeline/common/models.py:106` (`insufficient_sources`, `terminal_fetch_error`, `analyst_error`); claim `status` enum includes `blocked` (`src/content.config.ts:197`) |
+| Blocked branch | `BlockedReason` in `pipeline/common/models.py:111` (`insufficient_sources`, `terminal_fetch_error`, `analyst_error`); a run that ends here writes no claim, only a finding |
 | Auditor output | sidecar `analyst_verdict`, `auditor_verdict`, `needs_review` (`_write_audit_sidecar` in `pipeline/orchestrator/persistence.py`) |
 | Tie-breaker | `pipeline/loop/tiebreaker/`; sidecar `tiebreaker_verdict`, `pipeline_verdict`, `rule_applied` |
 | Human review | `dr review` (`pipeline/orchestrator/cli.py:1807`): `--approve` flips draft to published, `--archive` flips published to archived; reviewer shown by handle, linked to a profile page, via `src/lib/reviewers.ts` |

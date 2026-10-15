@@ -44,7 +44,8 @@ async def _recheck_cached_sources(
     The page text is the search's ``raw_content`` for the URL when it has
     one, else one GET; no model is called. The source file's key quotes are
     checked against that text, and its ``archived_url`` with ``check_capture``
-    (never a save). A failed fetch records ``refetched: false`` and the
+    (never a save), which also accepts a capture redirecting to where the
+    GET ended. A failed fetch records ``refetched: false`` and the
     reason, and the quotes stay unchecked. A source whose ``accessed_date``
     is missing or unreadable counts as old.
     """
@@ -68,9 +69,14 @@ async def _recheck_cached_sources(
         stored_url = str(fm.get("url") or url)
         text = prefetched_bodies.get(url) or prefetched_bodies.get(stored_url)
         reason: str | None = None
+        # Where the live fetch ended, so a capture that redirects there still
+        # counts as the page, as `dr recheck --sources` checks it.
+        final_url: str | None = None
         if text is None:
             try:
                 resp = await client.get(stored_url, follow_redirects=True, timeout=default_httpx_timeout())
+                if resp.is_success:
+                    final_url = str(resp.url)
                 content_type = resp.headers.get("content-type", "text/html").lower()
                 if resp.is_success and "html" not in content_type and not content_type.startswith("text/"):
                     # A PDF or other binary page would mark every quote not found;
@@ -97,7 +103,7 @@ async def _recheck_cached_sources(
         elif not archived_url:
             archive = "none"
         else:
-            capture = await check_capture(client, str(archived_url), stored_url)
+            capture = await check_capture(client, str(archived_url), stored_url, also_same_as=final_url)
             archive = "ok" if capture.ok else "unverified" if capture.unverified else "bad"
             if not capture.ok and reason is None:
                 reason = capture.reason

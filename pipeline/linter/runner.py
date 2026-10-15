@@ -17,6 +17,7 @@ from .checks import (
     check_empty_required_strings,
     check_entity_type_dir_mismatch,
     check_future_as_of,
+    check_invalid_claim_status,
     check_legacy_field_name,
     check_missing_cap_rationale,
     check_missing_criteria_slug,
@@ -109,7 +110,7 @@ def run_all_checks(
     source_bodies: dict[str, str] = {}
     for p in source_files:
         source_fms[str(p)], source_bodies[str(p)] = _read_frontmatter_and_body(p)
-    # Drafts and blocked claims need theirs too: a pending refresh lives there.
+    # Drafts need theirs too: a pending refresh lives there.
     claim_sidecars = {str(p): read_sidecar(p) for p in claim_files}
 
     # Build entity index: "companies/ecosia" style refs
@@ -135,6 +136,7 @@ def run_all_checks(
     issues: list[LintIssue] = []
     issues += check_orphaned_claims(claim_files, claim_fms, entity_index)
     issues += check_missing_required_fields(claim_files, claim_fms)
+    issues += check_invalid_claim_status(claim_files, claim_fms)
     issues += check_empty_required_strings(claim_files, claim_fms, entity_files, entity_fms)
     issues += check_broken_criteria_slug(claim_files, claim_fms, template_slugs)
     issues += check_broken_source_refs(claim_files, claim_fms, source_ids)

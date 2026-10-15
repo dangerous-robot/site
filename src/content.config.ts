@@ -178,6 +178,11 @@ const auditSchema = z.object({
   }).loose().optional(),
   // The ref of the claim this one restates (dr draft --restates).
   restates: z.string().optional(),
+  // Pending drafts' sidecars, and a live sidecar between a promotion's two
+  // moves: the operator text on both claims at seed time, which promotion's
+  // merge compares and updates. Removed from the live sidecar after the
+  // claim move (an approval removes one a stop left).
+  seeded_live: z.object({}).loose().optional(),
 });
 
 
@@ -292,12 +297,10 @@ const claims = defineCollection({
     // Falls back to `title` when absent. Useful when the research label exceeds SERP limits.
     seo_title: z.string().max(42).optional(),
     criteria_slug: z.string().optional(),
-    status: z.enum(['draft', 'published', 'archived', 'blocked']).default('draft'),
+    status: z.enum(['draft', 'published', 'archived']).default('draft'),
     // Pipeline phase advanced by the Orchestrator while a claim is in
     // progress; absent on terminal states. See docs/plans/claim-lifecycle-states.md.
     phase: z.enum(['researching', 'ingesting', 'analyzing', 'evaluating']).optional(),
-    // Set together with status='blocked' to record why the pipeline halted.
-    blocked_reason: z.enum(['insufficient_sources', 'terminal_fetch_error', 'analyst_error']).optional(),
     as_of: z.coerce.date(),
     sources: z.array(z.string()),
     recheck_cadence_days: z.number().default(60),

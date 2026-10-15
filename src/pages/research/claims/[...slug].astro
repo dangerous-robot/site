@@ -18,9 +18,8 @@ import {
 } from "../../../lib/sourceQuality";
 
 export async function getStaticPaths() {
-  // Only reviewed claims go live. Drafts are unreviewed, and a blocked claim carries a
-  // placeholder verdict that would replace the published one at the same URL; the dev
-  // server still builds both for local review.
+  // Only reviewed claims go live. Drafts are unreviewed; the dev server still builds
+  // them for local review.
   const claims = await getCollection(
     "claims",
     ({ data }) => import.meta.env.DEV || data.status === "published" || data.status === "archived",

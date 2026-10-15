@@ -27,7 +27,7 @@ def _reset_run_id_var():
 def _no_live_tiebreaker(monkeypatch):
     """Keep a developer's ``DR_TIEBREAKER_MODEL`` out of the unit tests.
 
-    The tie-breaker runs inside ``dr draft`` and ``dr step-audit`` whenever the
+    The tie-breaker runs inside ``dr draft`` (and ``dr draft --rerun evaluator``) whenever the
     Evaluator disagrees, and ``.env`` may name a frontier model for it. A CLI
     test that scripts only the analyst and the Evaluator would otherwise send
     the third pass to that model. Tests that set the variable themselves

@@ -1,7 +1,7 @@
 """Classify a source as primary, secondary, or tertiary based on publisher and kind.
 
 Shared utility used by both `_write_source_files()` (called from the writer's
-`persist_sources`) and the standalone `dr ingest` write path.
+`persist_sources`) and the standalone `dr draft --source` write path.
 """
 
 from __future__ import annotations

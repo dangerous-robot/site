@@ -755,8 +755,9 @@ def test_a_product_finding_without_an_entity_file_is_not_replayed(tmp_path, monk
         ("split", "dr draft"),
         ("recovered", "dr draft"),
         ("partial", "dr draft"),
+        ("abandoned", "dr draft --rerun evaluator"),
+        ("half-claim", "dr draft --rerun analyst"),
         ("abandoned", "dr step-audit"),
-        ("abandoned", "dr step-analyze"),
     ],
 )
 def test_findings_a_replay_cannot_reproduce_are_skipped_and_stay_open(

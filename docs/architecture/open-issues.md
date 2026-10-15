@@ -7,7 +7,7 @@ Issues surfaced by the architecture review that still need design decisions befo
 
 Resolved and moved to plans:
 - Claim promotion / `dr review` -> [`docs/plans/completed/claim-promotion-audit-rename-verdicts.md`](../plans/completed/claim-promotion-audit-rename-verdicts.md) §1
-- `dr audit` rename (to `dr reassess`) -> same plan §2
+- `dr audit` rename -> same plan §2; the standalone Evaluator run is `dr draft --claim <ref> --rerun evaluator` (resolved)
 - Verdict definitions -> same plan §3
 
 ---

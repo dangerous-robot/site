@@ -20,7 +20,7 @@ from common.models import SourceKind
 from orchestrator.cli import main
 from common.models import Category
 from common.frontmatter import parse_frontmatter, serialize_frontmatter
-from common.models import BlockedReason, Phase
+from common.models import Phase
 from orchestrator.persistence import (
     _build_sources_consulted,
     _write_audit_sidecar,
@@ -388,8 +388,8 @@ class TestWriteAuditSidecar:
         }
 
     def test_models_used_drops_agents_this_run_did_not_invoke_by_default(self, tmp_path):
-        # A blocked write runs fewer agents; the old analyst model must not
-        # stay on a sidecar whose claim is now a placeholder.
+        # A full run replaces every agent's output; a model entry for an agent
+        # this run did not invoke must not stay on the sidecar.
         claim_path = tmp_path / "test-claim.md"
         claim_path.touch()
         _write_audit_sidecar(
@@ -560,7 +560,7 @@ class TestRefreshSnapshot:
 
     def test_a_refresh_block_on_the_sidecar_carries_forward_unchanged(self, tmp_path):
         # Only promote_pending starts a refresh block; a later sidecar write
-        # (dr step-audit on the promoted draft) keeps it as it is.
+        # (dr draft --rerun evaluator on the promoted draft) keeps it as it is.
         claim_path = tmp_path / "claim.md"
         claim_path.touch()
         block = {"refreshed_at": FIXED_TS.isoformat(), "previous": dict(_SNAPSHOT), "dropped_sources": ["2025/a"]}
@@ -774,15 +774,14 @@ class TestAcquisitionAndToolOutcomes:
         assert "research" not in data or data.get("research") is None
 
     def test_re_audit_preserves_prior_acquisition(self, tmp_path):
-        """`dr step-audit --write` must not silently drop acquisition data.
+        """A re-audit must not silently drop acquisition data.
 
         On re-audit the auditor doesn't re-run research, so the rebuilt
-        ``sources_consulted`` list has no ``acquisition`` key. The cli
-        path at ``orchestrator/cli.py`` step_audit reads acquisition off
-        the existing sidecar's ``sources_consulted[]`` and merges it
-        back into ``research_trace["acquisition"]`` so
-        ``_write_audit_sidecar`` can graft per-URL on rewrite. This
-        test exercises that round-trip end-to-end via the writer.
+        ``sources_consulted`` list has no ``acquisition`` key. Reading
+        acquisition off the existing sidecar's ``sources_consulted[]`` and
+        merging it back into ``research_trace["acquisition"]`` lets
+        ``_write_audit_sidecar`` graft it per URL on rewrite. This test
+        exercises that round-trip end-to-end via the writer.
         """
         # Step 1: write an initial sidecar with per-URL acquisition.
         claim_path = tmp_path / "test-claim.md"
@@ -813,7 +812,7 @@ class TestAcquisitionAndToolOutcomes:
         assert data["sources_consulted"][0]["acquisition"]["origin"] == "tavily"
         assert data["sources_consulted"][1]["acquisition"]["origin"] == "brave"
 
-        # Step 2: simulate the re-audit read path (mirrors step_audit in cli.py).
+        # Step 2: simulate the re-audit read path.
         existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
         research_trace = existing.get("research")
         existing_sources = existing.get("sources_consulted") or []
@@ -1051,9 +1050,9 @@ class TestWriteClaimFile:
         fm, _ = parse_frontmatter(path.read_text(encoding="utf-8"))
         assert fm["cap_rationale"] == "Fit rationale."
 
-    def test_blocked_force_overwrite_drops_cap_rationale(self, tmp_path):
-        # A blocked write passes no verification_level, so an old rationale
-        # naming a cap must not survive it.
+    def test_force_overwrite_without_a_level_drops_cap_rationale(self, tmp_path):
+        # A write that passes no verification_level has no capped level, so an
+        # old rationale naming a cap must not survive it.
         path = self._call(tmp_path, cap_rationale="Operator rationale.")
 
         self._call(tmp_path, force=True)
@@ -1077,34 +1076,10 @@ class TestWriteClaimFile:
             sources_consulted=[], agents_run=["researcher"],
         )
 
-    def _blocked(self, repo_root: Path):
-        return self._call(
-            repo_root, force=True, title="Brave hosts on VALUE energy",
-            confidence=Confidence.LOW, status="blocked",
-            blocked_reason=BlockedReason.ANALYST_ERROR,
-        )
 
     def _seo_title(self, path: Path) -> str:
         return parse_frontmatter(path.read_text(encoding="utf-8"))[0]["seo_title"]
 
-    def test_blocked_write_between_runs_keeps_operator_seo_title(self, tmp_path):
-        self._add_sidecar(tmp_path)
-        path = self._call(tmp_path, title=self._TITLE, seo_title="Analyst seo title")
-        self._set_frontmatter(path, seo_title="Operator seo title")
-
-        self._blocked(tmp_path)
-        self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
-
-        assert self._seo_title(path) == "Operator seo title"
-
-    def test_blocked_write_seeds_record_for_claim_written_before_it(self, tmp_path):
-        path = self._call(tmp_path, title=self._TITLE, seo_title="Operator seo title")
-        self._add_sidecar(tmp_path)
-
-        self._blocked(tmp_path)
-        self._call(tmp_path, force=True, title=self._TITLE, seo_title="New analyst seo title")
-
-        assert self._seo_title(path) == "Operator seo title"
 
     def test_analyst_seo_title_replaced_when_title_unchanged(self, tmp_path):
         sidecar = self._add_sidecar(tmp_path)
@@ -1213,15 +1188,6 @@ class TestWriteClaimFile:
 
         assert self._takeaway(path) == "Takeaway of unknown origin."
 
-    def test_blocked_write_between_runs_keeps_operator_takeaway(self, tmp_path):
-        self._add_sidecar(tmp_path)
-        path = self._analyst_run(tmp_path, "Analyst takeaway.")
-        self._set_frontmatter(path, takeaway="Operator takeaway.")
-
-        self._blocked(tmp_path)
-        self._analyst_run(tmp_path, "New analyst takeaway.")
-
-        assert self._takeaway(path) == "Operator takeaway."
 
     def test_sidecar_written_after_the_claim_keeps_the_stored_takeaway(self, tmp_path):
         # Verify and onboard write the claim, then the sidecar with the record
@@ -1337,25 +1303,6 @@ class TestWriteClaimFile:
         self._capped_run(tmp_path, "New analyst rationale.")
         assert self._cap_rationale(path) == "Operator rationale."
 
-    def test_operator_cap_rationale_survives_a_blocked_run(self, tmp_path):
-        self._add_sidecar(tmp_path)
-        path = self._capped_run(tmp_path, "Analyst rationale.")
-        self._set_frontmatter(path, cap_rationale="Operator rationale.")
-
-        self._blocked(tmp_path)
-        assert self._cap_rationale(path) == "Operator rationale."
-
-        self._capped_run(tmp_path, "New analyst rationale.")
-        assert self._cap_rationale(path) == "Operator rationale."
-
-    def test_blocked_write_keeps_the_cap_rationale_record(self, tmp_path):
-        sidecar = self._add_sidecar(tmp_path)
-        self._capped_run(tmp_path, "Analyst rationale.")
-
-        self._blocked(tmp_path)
-
-        record = yaml.safe_load(sidecar.read_text())["analyst_record"]
-        assert record["cap_rationale"] == "Analyst rationale."
 
     def test_force_overwrite_refuses_unparseable_existing(self, tmp_path):
         path = self._call(tmp_path, narrative="original")
@@ -1690,62 +1637,6 @@ class TestDrReviewPromotion:
         assert claim_md.read_bytes() == md_before
         assert sidecar.read_bytes() == sidecar_before
 
-    def test_approve_on_blocked_claim_fails_with_clear_error(self, tmp_path):
-        """Blocked claims must not be promotable to published."""
-        entity_dir = tmp_path / "research" / "claims" / "test-entity"
-        entity_dir.mkdir(parents=True, exist_ok=True)
-        claim_md = entity_dir / "test-claim.md"
-        claim_md.write_text(
-            "---\ntitle: Test\nstatus: blocked\n"
-            "blocked_reason: insufficient_sources\n---\nBody.\n",
-            encoding="utf-8",
-        )
-        sidecar = entity_dir / "test-claim.audit.yaml"
-        _write_minimal_sidecar(sidecar)
-        md_before = claim_md.read_bytes()
-        sidecar_before = sidecar.read_bytes()
-
-        runner = CliRunner()
-        result = runner.invoke(main, [
-            "review",
-            "--claim", "test-entity/test-claim",
-            "--reviewer", "test@example.com",
-            "--approve",
-            "--repo-root", str(tmp_path),
-        ])
-
-        assert result.exit_code != 0
-        assert "blocked" in result.output.lower()
-        assert "insufficient_sources" in result.output
-        # Files remain untouched; the gate fires pre-write.
-        assert claim_md.read_bytes() == md_before
-        assert sidecar.read_bytes() == sidecar_before
-
-    def test_archive_on_blocked_claim_succeeds(self, tmp_path):
-        """blocked → archived is a valid transition (operator retires the claim)."""
-        entity_dir = tmp_path / "research" / "claims" / "test-entity"
-        entity_dir.mkdir(parents=True, exist_ok=True)
-        claim_md = entity_dir / "test-claim.md"
-        claim_md.write_text(
-            "---\ntitle: Test\nstatus: blocked\n"
-            "blocked_reason: insufficient_sources\n---\nBody.\n",
-            encoding="utf-8",
-        )
-        sidecar = entity_dir / "test-claim.audit.yaml"
-        _write_minimal_sidecar(sidecar)
-
-        runner = CliRunner()
-        result = runner.invoke(main, [
-            "review",
-            "--claim", "test-entity/test-claim",
-            "--reviewer", "test@example.com",
-            "--archive",
-            "--repo-root", str(tmp_path),
-        ])
-
-        assert result.exit_code == 0, result.output
-        fm_text = claim_md.read_text(encoding="utf-8")
-        assert "status: archived" in fm_text
 
     def test_atomicity_md_write_failure_leaves_sidecar_updated(self, tmp_path, monkeypatch):
         """Sidecar is the commit point.
@@ -2061,11 +1952,15 @@ class TestApproveRefreshedClaim:
         fm, _ = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
         assert [c["previous_verdict"] for c in fm["corrections"]] == ["false", "unverified", "false"]
 
-    def test_archiving_a_blocked_refresh_closes_it(self, tmp_path):
+
+    def test_archiving_a_published_claim_with_a_refresh_block_removes_it(self, tmp_path):
+        """Archive is the other way out of a `refresh` block; a published claim can still carry
+        one (a promotion stopped part-way)."""
         from orchestrator.review import approve_claim
 
         claim_md, sidecar = _setup_refreshed_claim(tmp_path)
-        set_claim_status(claim_md, "blocked", "draft")
+        set_claim_status(claim_md, "published", "draft")
+        assert "refresh" in yaml.safe_load(sidecar.read_text(encoding="utf-8"))
 
         approve_claim(claim_md, reviewer="test@example.com", mode="archive")
 
@@ -2137,7 +2032,7 @@ class TestApproveRecordsVerdictOverride:
         assert data["human_review"]["verdict_override"] == {"from": "unverified", "to": "mostly-false"}
 
     def test_override_survives_a_pipeline_rewrite_that_keeps_review(self, tmp_path):
-        # `dr step-audit --write` rewrites the sidecar without resetting sign-off;
+        # `dr draft --rerun evaluator` rewrites the sidecar without resetting sign-off;
         # dropping the override there would make a valid published claim fail lint.
         from orchestrator.review import approve_claim
 
@@ -2160,29 +2055,10 @@ class TestApproveRecordsVerdictOverride:
 
 
 # ---------------------------------------------------------------------------
-# set_claim_status — phase / blocked_reason kwargs (PR 2)
+# set_claim_status — the phase kwarg
 # ---------------------------------------------------------------------------
 
-class TestSetClaimStatusBlocked:
-    def test_blocked_round_trip_via_parse_frontmatter(self, tmp_path):
-        """Writing status=blocked + blocked_reason round-trips through the parser."""
-        claim_md = tmp_path / "claim.md"
-        claim_md.write_text(
-            "---\ntitle: Test\nstatus: draft\n---\nBody.\n",
-            encoding="utf-8",
-        )
-
-        set_claim_status(
-            claim_md,
-            "blocked",
-            expected_current="draft",
-            blocked_reason=BlockedReason.INSUFFICIENT_SOURCES,
-        )
-
-        fm, body = parse_frontmatter(claim_md.read_text(encoding="utf-8"))
-        assert fm["status"] == "blocked"
-        assert fm["blocked_reason"] == "insufficient_sources"
-        assert "Body." in body
+class TestSetClaimStatusPhase:
 
     def test_phase_kwarg_writes_field(self, tmp_path):
         claim_md = tmp_path / "claim.md"
@@ -2211,23 +2087,20 @@ class TestSetClaimStatusBlocked:
 
         set_claim_status(
             claim_md,
-            "blocked",
+            "published",
             expected_current="draft",
             phase=None,
-            blocked_reason=BlockedReason.INSUFFICIENT_SOURCES,
         )
 
         text = claim_md.read_text(encoding="utf-8")
         assert "phase:" not in text
-        assert "status: blocked" in text
-        assert "blocked_reason: insufficient_sources" in text
+        assert "status: published" in text
 
-    def test_default_kwargs_do_not_touch_phase_or_blocked_reason(self, tmp_path):
+    def test_default_kwargs_do_not_touch_phase(self, tmp_path):
         """Existing draft → published callers omit kwargs and must not lose state."""
         claim_md = tmp_path / "claim.md"
         claim_md.write_text(
-            "---\ntitle: Test\nstatus: draft\nphase: analyzing\n"
-            "blocked_reason: insufficient_sources\n---\nBody.\n",
+            "---\ntitle: Test\nstatus: draft\nphase: analyzing\n---\nBody.\n",
             encoding="utf-8",
         )
 
@@ -2237,4 +2110,3 @@ class TestSetClaimStatusBlocked:
         assert "status: published" in text
         # Untouched fields still present.
         assert "phase: analyzing" in text
-        assert "blocked_reason: insufficient_sources" in text

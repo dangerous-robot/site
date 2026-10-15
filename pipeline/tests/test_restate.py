@@ -34,7 +34,7 @@ Covered:
 - the pool: the run's consulted sources plus the ranked ``research/sources/``
   pool, consulted first, capped at ``restate_pool_size``;
 - one ``restatement`` block per sidecar: written by the full run, carried
-  forward unchanged by ``dr step-audit --write``, replaced by a later full
+  forward unchanged by ``dr draft --claim <ref> --rerun``, replaced by a later full
   run (dropped when that run did not restate), and removed on approve or
   archive like ``refresh``; ``restates`` survives approve;
 - ``dr draft --restates <ref> --pick <n>``: reads candidate ``<n>`` from the
@@ -472,7 +472,7 @@ async def test_restater_runs_after_the_tie_break_and_sees_the_settled_verdict(tm
 
 @pytest.mark.asyncio
 async def test_rerun_never_restates(tmp_path) -> None:
-    """``dr step-audit --write`` and ``dr step-analyze --write`` carry a block forward; only the full run writes one."""
+    """``dr draft --claim <ref> --rerun evaluator|analyst`` carries a block forward; only the full run writes one."""
     import loop
     from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
 
@@ -875,25 +875,25 @@ def test_a_polar_agreed_draft_writes_no_block_and_no_restater_entry(tmp_path) ->
     assert "restater" not in sidecar["models_used"]
 
 
-def test_step_audit_write_carries_the_block_forward_unchanged(tmp_path) -> None:
+def test_rerun_evaluator_carries_the_block_forward_unchanged(tmp_path) -> None:
     write_entity(tmp_path)
     claim_path, sidecar_path = _write_claim(tmp_path, stem="weak-claim", restatement=_block(picked=2))
     before = _sidecar_of(claim_path)["restatement"]
     with scripted_agents(auditor=auditor_args(verdict="unverified")):
-        result = _dr(tmp_path, "step-audit", "--claim", _claim_ref(claim_path, tmp_path), "--write")
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "evaluator")
     assert result.exit_code == 0, result.output
     after = _sidecar_of(claim_path)
     assert after["audit"]["auditor_verdict"] == "unverified"
     assert after["restatement"] == before, "an Evaluator rerun rewrites the sidecar but keeps the block and the pick"
 
 
-def test_step_analyze_forced_write_keeps_the_block(tmp_path) -> None:
-    """The third later write: ``mark_forced_rewrite`` and ``clear_audit`` edit the sidecar in place."""
+def test_rerun_analyst_keeps_the_block(tmp_path) -> None:
+    """The third later write: an analyst-only rerun rewrites the claim and its sidecar and keeps the block."""
     write_entity(tmp_path)
     claim_path, _ = _write_claim(tmp_path, stem="weak-claim", restatement=_block(picked=3))
     before = _sidecar_of(claim_path)["restatement"]
     with scripted_agents(analyst=analyst_args(verdict="unverified")):
-        result = _dr(tmp_path, "step-analyze", "--claim", _claim_ref(claim_path, tmp_path), "--write", "--force")
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "analyst")
     assert result.exit_code == 0, result.output
     assert _sidecar_of(claim_path)["restatement"] == before
 

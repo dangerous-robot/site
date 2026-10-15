@@ -7,21 +7,12 @@ address blocks every commit in the checkout.
 from __future__ import annotations
 
 import datetime
-from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import patch
 
-import httpx
 import pytest
-import respx
-from click.testing import CliRunner
-from pydantic_ai.messages import ModelResponse, ToolCallPart
-from pydantic_ai.models.function import AgentInfo, FunctionModel
 
 from common.frontmatter import parse_frontmatter
-from ingestor.agent import ingestor_agent
 from ingestor.models import SourceFile
-from orchestrator.cli import main
 from orchestrator.persistence import _write_source_files
 
 URL = "https://greentest.example/contact"
@@ -72,51 +63,6 @@ def test_wrapped_linked_and_code_addresses_are_unchanged(tmp_path: Path) -> None
     )
     _, body = _written(tmp_path, original)
     assert body.rstrip("\n") == original
-
-
-@contextmanager
-def _noop_ctx():
-    yield
-
-
-def _fetch_then_return(url: str, source: dict) -> FunctionModel:
-    called = False
-
-    async def _fn(messages, info: AgentInfo) -> ModelResponse:
-        nonlocal called
-        if not called:
-            called = True
-            return ModelResponse(parts=[ToolCallPart(tool_name="web_fetch", args={"url": url})])
-        return ModelResponse(
-            parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=source)]
-        )
-
-    return FunctionModel(_fn)
-
-
-def test_step_ingest_write_wraps_bare_email(tmp_path: Path) -> None:
-    source = _sf("Write to mail@example.org for help.").model_dump(mode="json")
-    html = "<html><head><title>Contact</title></head><body><p>mail@example.org</p></body></html>"
-    with respx.mock:
-        respx.get(URL).mock(return_value=httpx.Response(200, html=html))
-        with ingestor_agent.override(model=_fetch_then_return(URL, source)):
-            with patch(
-                "ingestor.agent.ingestor_agent.override",
-                side_effect=lambda **kw: _noop_ctx(),
-            ):
-                result = CliRunner().invoke(
-                    main,
-                    [
-                        "--model", "test", "--ingestor-model", "test",
-                        "step-ingest", URL, "--write", "--skip-wayback",
-                        "--repo-root", str(tmp_path),
-                    ],
-                )
-    assert result.exit_code == 0, result.output
-    written = list((tmp_path / "research" / "sources" / "2026").glob("*.md"))
-    assert len(written) == 1
-    _, body = parse_frontmatter(written[0].read_text(encoding="utf-8"))
-    assert "Write to <mail@example.org> for help." in body
 
 
 @pytest.mark.parametrize(

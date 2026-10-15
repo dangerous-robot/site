@@ -2,16 +2,14 @@
 
 ``rerun(spec, config, sources, agent, analyst_output=None)`` runs the Analyst
 or the Evaluator alone, through the same null retry as ``run``, with no
-researcher or ingest call. ``dr step-analyze --write`` and ``dr step-audit
---write`` call it and then the writer; the writer's sidecar carries the
-other agents' record forward by default.
+researcher or ingest call. ``dr draft --claim <ref> --rerun analyst|evaluator``
+calls it and then the writer; the writer's sidecar carries the other agents'
+record forward by default (``tests/test_draft_rerun.py``).
 """
 
 from __future__ import annotations
 
 import pytest
-import yaml
-from click.testing import CliRunner
 
 from tests.loop_harness import (
     SENTENCE,
@@ -138,69 +136,3 @@ async def test_rerun_refuses_an_unknown_agent(tmp_path) -> None:
 
 async def _never_search(queries, client, **_kwargs):
     raise AssertionError("execute_searches must not run on a rerun")
-
-
-# --------------------------------------------------------------------------- #
-# dr step-audit --write: the writer carries the rest of the sidecar forward      #
-# --------------------------------------------------------------------------- #
-
-
-def _write_claim_repo(tmp_path, sidecar: dict) -> tuple:
-    from common.frontmatter import serialize_frontmatter
-
-    (tmp_path / "research" / "entities" / "companies").mkdir(parents=True)
-    (tmp_path / "research" / "entities" / "companies" / "example.md").write_text(
-        serialize_frontmatter({"name": "Example", "type": "company", "description": "A company."}, "Body.\n"),
-        encoding="utf-8",
-    )
-    claim_dir = tmp_path / "research" / "claims" / "example"
-    claim_dir.mkdir(parents=True)
-    claim_path = claim_dir / "claim.md"
-    # The verdict is the TestModel Evaluator's (true, high): the pair agrees, so no tie-breaker runs.
-    claim_path.write_text(
-        serialize_frontmatter(
-            {"title": "Example claim", "entity": "companies/example", "verdict": "true",
-             "confidence": "high", "topics": ["environmental-impact"], "sources": []},
-            "Body.\n",
-        ),
-        encoding="utf-8",
-    )
-    sidecar_path = claim_dir / "claim.audit.yaml"
-    sidecar_path.write_text(
-        yaml.safe_dump({"schema_version": 1, "sources_consulted": [], **sidecar}), encoding="utf-8"
-    )
-    return claim_path, sidecar_path
-
-
-def test_step_audit_write_carries_the_rest_of_the_sidecar_forward(tmp_path) -> None:
-    """Research trace, sub-questions, other agents' models, the fit note and an
-    unknown key all survive an Evaluator-only rewrite."""
-    from orchestrator.cli import main
-
-    note = "verification_level independently-verified lowered to claimed: the written sources include 0"
-    _claim_path, sidecar_path = _write_claim_repo(tmp_path, {
-        "pipeline_run": {"ran_at": "2026-10-01T00:00:00+00:00", "model": "m",
-                         "agents": ["researcher", "ingestor", "analyst"], "level_clamp": note},
-        "models_used": {"researcher": "r-model", "ingestor": "i-model", "analyst": "a-model",
-                        "auditor": "old-auditor"},
-        "research": {"mode": "decomposed", "queries": ["q1"]},
-        "sub_questions": [{"id": "sq1", "question": "Q?", "rationale": "r", "queries": ["q1"], "citations": []}],
-        "custom_note": {"kept": True},
-    })
-
-    result = CliRunner().invoke(main, [
-        "--model", "test", "--auditor-model", "test",
-        "step-audit", "--claim", "example/claim", "--write", "--repo-root", str(tmp_path),
-    ])
-
-    assert result.exit_code == 0, result.output
-    data = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert data["pipeline_run"]["agents"] == ["auditor"]
-    assert data["pipeline_run"]["level_clamp"] == note
-    assert data["models_used"] == {
-        "researcher": "r-model", "ingestor": "i-model", "analyst": "a-model", "auditor": "test",
-    }
-    assert data["research"] == {"mode": "decomposed", "queries": ["q1"]}
-    assert data["sub_questions"][0]["id"] == "sq1"
-    assert data["custom_note"] == {"kept": True}
-    assert data["audit"]["auditor_verdict"]

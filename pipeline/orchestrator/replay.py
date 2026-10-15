@@ -28,11 +28,11 @@ if TYPE_CHECKING:
     from loop import ClaimSpec, VerifyConfig
 
 # What a replay can reproduce. A recovered, split or partial run wrote its
-# claim; a step-analyze or step-audit run re-ran one agent, which a full loop
-# run would not reproduce.
+# claim; a `dr draft --claim <ref> --rerun` run re-ran one agent, which a full
+# loop run would not reproduce (and would force-write over a draft).
 REPLAYED_COMMANDS: tuple[str, ...] = ("dr draft", "dr recheck")
 REPLAYED_OUTCOMES: tuple[str, ...] = ("abandoned", "half-claim")
-_ONE_AGENT_COMMANDS = ("dr step-analyze", "dr step-audit")
+_ONE_AGENT_COMMANDS = ("dr draft --rerun analyst", "dr draft --rerun evaluator")
 
 
 class ReplayNotStarted(Exception):
@@ -62,7 +62,11 @@ def skip_reason(finding: Finding) -> str | None:
     """None when a replay can reproduce the finding's run, else why it is skipped."""
     if finding.command not in REPLAYED_COMMANDS:
         if finding.command in _ONE_AGENT_COMMANDS:
-            return f"command {finding.command} runs one agent; not replayed"
+            agent = finding.command.rsplit(" ", 1)[-1]
+            return (
+                f"command {finding.command} reruns one agent, which a replay does not reproduce; "
+                f"run dr draft --claim {finding.claim_ref or '<ref>'} --rerun {agent} again"
+            )
         return f"command {finding.command or '-'} is not replayed"
     if finding.outcome not in REPLAYED_OUTCOMES:
         return f"outcome {finding.outcome}: the run wrote its claim; close it with dr findings --close"

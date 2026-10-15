@@ -8,7 +8,7 @@ This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot
 
 ## How the system works
 
-The system tracks four object types: **criteria** (a registry of claim sentences in `research/templates.yaml`, each with a `grading_rule`; intake-only), **entities** (products and subjects are what claims are about; companies are read-only parent records that feed first-party source matching; all hand-written except subjects, which `dr draft --subject` can also write; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: the operator drafts a claim from a **criterion** for one entity (`dr draft --criterion <slug> --entity <ref>`); a **product** gains a claim for each criterion the operator drafts for it (a company is not a claim target: `dr draft` refuses it in every mode); a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (the Evaluator does not feed back into the Analyst; a verdict disagreement goes to a blind **tie-breaker**: a match with either side is the pipeline verdict, a three-way split takes the weakest, and every split, abandoned, recovered or partial run (claim written, restater failed) leaves a finding under `research/findings/`); a weak (`unverified`, `mixed`, `not-applicable`) or tie-broken verdict also gets ranked **restatement** candidates written into the sidecar's `restatement` block by the **Restater**, which never rewrites the claim. The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
+The system tracks four object types: **criteria** (a registry of claim sentences in `research/templates.yaml`, each with a `grading_rule`; intake-only), **entities** (products and subjects are what claims are about; companies are read-only parent records that feed first-party source matching; all hand-written except subjects, which `dr draft --subject` can also write; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (phases → drafted, then published or archived at sign-off); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when the operator adds one of the three non-claim objects: the operator drafts a claim from a **criterion** for one entity (`dr draft --criterion <slug> --entity <ref>`); a **product** gains a claim for each criterion the operator drafts for it (a company is not a claim target: `dr draft` refuses it in every mode); a **source** is matched by the **Router** to existing criteria (new claim work) or to existing claims (a rerun). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (the Evaluator does not feed back into the Analyst; a verdict disagreement goes to a blind **tie-breaker**: a match with either side is the pipeline verdict, a three-way split takes the weakest, and every split, abandoned, recovered or partial run (claim written, restater failed) leaves a finding under `research/findings/`); a weak (`unverified`, `mixed`, `not-applicable`) or tie-broken verdict also gets ranked **restatement** candidates written into the sidecar's `restatement` block by the **Restater**, which never rewrites the claim. The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
 
 For the generalized vision, see `docs/architecture/glossary.md` § How the system works.
 
@@ -112,9 +112,9 @@ Roles are listed below; several are automated via PydanticAI agents in `pipeline
 
 | Role | What it does | Status | Package |
 |------|-------------|--------|---------|
-| **Research Lead** | Orchestrates work from `QUEUE.md`; creates sub-tasks and plans; never edits claims directly | Manual | (none) |
-| **Orchestrator** | Owns claim lifecycle: phase transitions, blocked routing, queue management | Implicit in `pipeline/orchestrator/` today; named role documented; full implementation tracked in `docs/UNSCHEDULED.md` § Router (v1 surface shipped via `docs/plans/completed/triage-agent.md` and `docs/plans/completed/claim-lifecycle-states.md`) | `pipeline/orchestrator/` |
-| **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router | (`pipeline/router/` planned) |
+| **Research Lead** | Orchestrates work; creates sub-tasks and plans; never edits claims directly | Manual | (none) |
+| **Orchestrator** | Owns claim lifecycle: phase transitions | Implicit in `pipeline/orchestrator/` today; named role documented; full implementation tracked in `docs/UNSCHEDULED.md` § Router (v1 surface shipped via `docs/plans/completed/triage-agent.md` and `docs/plans/completed/claim-lifecycle-states.md`) | `pipeline/orchestrator/` |
+| **Router** | Dispatches small classifications; matches new sources to criteria/claims | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router | (`pipeline/router/` planned) |
 | **Researcher** | Takes claim text, returns relevant URLs for ingestion (`web_search` tool) | Automated | `researcher/` |
 | **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
 | **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
@@ -149,7 +149,7 @@ No run asks a person anything. `loop/policy.py` maps every `StepError` type and 
 - transport-retry: timeouts, rate limits and null bodies retry twice with backoff (45 s, then 90 s), then the run is abandoned (again except the restater, which ends `partial`).
 - config-fatal: `api_key_missing` and `all_blocked` abandon at once.
 
-An abandoned run writes no claim, no sidecar and no fresh source file. Every abandoned, recovered, split or partial run leaves one record at `research/findings/<yyyy>/<run-id>.yaml`; `dr findings` lists them. A crash between the claim write and the sidecar write leaves a half-claim, which `dr findings` also lists and nothing deletes. `dr findings --replay` re-runs open findings after a pipeline change. The full rule table is in `docs/plans/pipeline-rebuild.md` § Run rules (it moves to `docs/architecture/pipeline-commands.md` in RE-AX (Fold side tools)).
+An abandoned run writes no claim, no sidecar and no fresh source file. Every abandoned, recovered, split or partial run leaves one record at `research/findings/<yyyy>/<run-id>.yaml`; `dr findings` lists them. A crash between the claim write and the sidecar write leaves a half-claim, which `dr findings` also lists and nothing deletes. `dr findings --replay` re-runs open findings after a pipeline change. The full rule table is in `docs/architecture/pipeline-commands.md` § Run rules.
 
 ### Tooling: dr vs inv
 
@@ -157,52 +157,43 @@ Two CLIs exist with different scopes:
 
 | Tool | What it is | Use for |
 |------|-----------|---------|
-| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: draft, review, step-* commands |
-| `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint |
+| `dr` | Python CLI defined in `pipeline/` | Pipeline operations: draft, recheck, review, findings, lint |
+| `inv` | Invoke task runner defined in `tasks.py` | Repo-level operations: setup, build, test, lint, audit |
 
 **`dr`** is the pipeline entry point. It lives in `orchestrator/cli.py` and is installed into the repo's venv:
 
 ```
 uv run dr draft --dry-run --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
 uv run dr draft --entity products/chatgpt "ChatGPT excludes frontier models from user data training"
-uv run dr step-audit --entity ecosia-ai
-uv run dr step-ingest https://example.com/article
+uv run dr draft --claim ecosia-ai/renewable-energy-hosting --rerun evaluator
+uv run dr draft --source https://example.com/article
 uv run dr draft --criterion renewable-energy-hosting --entity products/chatgpt
 uv run dr draft --claim subjects/generative-ai/<stem> --criterion <new-slug>
 uv run dr lint --entity ecosia-ai
 uv run dr review --claim ecosia-ai/renewable-energy-hosting
 ```
 
-Commands:
+The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
 
-- `dr draft --dry-run --entity <ref> "<sentence>"` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
-- `dr draft --entity <ref> "<sentence>"` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). `--entity` names an existing entity file (for example `products/chatgpt`); there is no entity inference. An entity under `companies/`, however its ref is spelled (a `..` detour or other casing included), is a usage error (exit 2) in every `dr draft` mode (`--entity`, `--criterion ... --entity`, `--claim`, `--restates`, `--claim --criterion`), before any model call: one text, naming products and subjects as the claim targets. An abandoned run (blocked, or a step that failed its retries) writes nothing but its finding and exits 1; a disagreement between Analyst and Evaluator is settled by the tie-breaker (`--tiebreaker-model`, env `DR_TIEBREAKER_MODEL`); a weak or tie-broken verdict then goes to the Restater (`--restater-model`, env `DR_RESTATER_MODEL`, falls back to `--auditor-model`), whose failure writes the claim without a `restatement` block and records a `partial` finding. `--force` overwrites an existing claim.
-- `dr draft --criterion <slug> --entity <ref>` -- Draft the criterion's sentence for the entity: the text is rendered once with the entity name and stored as `statement`, the claim takes `criteria_slug` and the criterion's topics, and it is written to `<entity-dir>/<criteria_slug>.md`. The criterion's `grading_rule` reaches the Analyst and the Evaluator. An inactive criterion (`inactive: true` in `research/templates.yaml`) is a usage error (exit 2) for every entity type.
-- `dr draft --subject <slug> "<sentence>"` -- Draft an ad hoc subject claim at `<entity-dir>/<slugified sentence>.md`; writes `research/entities/subjects/<slug>.md` with the claim when none exists.
-- `dr draft --claim <ref> --force` -- Re-run the claim's stored `statement` and write back to the same path, keeping `criteria_slug`. A claim that is published or archived is a usage error naming `dr recheck --claim <ref>` (a rerun of a live claim lands as a pending draft instead). Without `--force` or `--dry-run` it is a usage error.
-- `dr draft --claim <ref> --criterion <new-slug>` -- Attach a new criterion to an ad hoc draft: appends the entry to `research/templates.yaml` and sets `criteria_slug`. Runs no model call and moves no file. It is refused when the slug exists, the claim already has `criteria_slug`, the claim is not a draft, or the entity is a company (the same usage error as every other company refusal). A claim needs `criteria_slug` before `dr review --approve` publishes it.
-- `dr draft --restates <claim-ref> --pick <n>` -- Run restatement candidate `<n>` from the original claim's sidecar `restatement` block as a new claim (second run, second sign-off) and write `restates: <claim-ref>` in the new sidecar. There is no SENTENCE: the text and the entity come from the sidecar. It is refused, before any model call, when the block or candidate `<n>` is missing, and it records `restatement.picked: <n>` on the original only after the new claim is written. In `dr review` the `r` key lists the candidates, records the pick and prints this command to run after the walkthrough; it runs nothing. Approving or archiving the original removes the block, except while a pick is recorded and no claim restates the original yet. It is a usage error when the candidate's text would give the original's own file name.
-- `dr step-research` / `dr step-ingest` / `dr step-analyze` / `dr step-audit` -- Run a single pipeline step standalone (`dr ingest` and `dr reassess` remain as hidden deprecated aliases of `dr step-ingest` and `dr step-audit`). `dr step-research` is currently broken: it spends its paid research calls, then fails with a Python error before printing any result; use `dr draft --dry-run` to see what research finds (it runs the whole pipeline and writes nothing)
-- `dr recheck --due [--dry-run]` -- Re-run every published claim whose recheck is due (`next_recheck_due` has passed, or without one `as_of` plus `recheck_cadence_days`, default 60). Each result is written as a pending draft under `research/pending/<entity-dir>/` (claim plus sidecar) and the live claim stays up; a claim that already has a pending draft is skipped. One LLM limit covers the batch, an abandoned claim writes only its finding, every claim gets one summary line and the exit code is 0 unless the command failed to start. `--dry-run` lists the due claims with their due dates and calls no model.
-- `dr recheck --claim <ref>` -- Re-run one published or archived claim into a pending draft; a draft or blocked claim is a usage error pointing at `dr draft --claim <ref> --force`. Cached sources older than the claim's cadence are fetched again and their key quotes and archive link re-checked; the outcome is recorded per source in the pending sidecar (`sources_consulted[].recheck`) and the source file is never rewritten. `dr review --claim <ref> --approve` promotes the pending draft over the live claim (with `--correction` when the verdict changed).
-- `dr recheck --sources <id>...` -- Re-check source files' archive links and key quotes against the live page. The live page's text is checked against each source's key quotes and the result printed (quotes never change the exit code). It writes only `archived_url`: a link that fails its check is kept when no replacement capture passes, and the exit code is 1 when a source could not be archived or checked.
-- `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
-- `dr findings` -- List open findings (abandoned, recovered, tie-broken and partial runs) and half-claims, newest first; `--all` includes closed ones, `--summary` counts open findings by step, rule and outcome, `--close <id> --note <text>` records a hand triage, and `--replay [--finding <id>]` re-runs each open abandoned or half-claim finding's recorded claim spec and config through the loop, under one LLM limit, printing one summary line per finding (a `dr recheck` finding also prints the recheck's own `<ref>: ...` line above it). A success closes the finding (`closed.by: replay`); a failure records a new finding with `replays:` naming the old one and leaves the old one open. A chain of such findings is replayed once, through its newest finding, even when `--finding` names an older one. A `dr draft` finding writes a draft and a `dr recheck` finding writes a pending draft. A `dr draft` finding is not replayed when `dr draft` would now refuse it, for example when its entity is a company or its criterion is gone or inactive. Recovered, split and partial findings and one-agent reruns (`dr step-analyze`, `dr step-audit`) are skipped. Each replayed finding costs one full run. It deletes nothing
-- `dr review` -- With no arguments, the walkthrough of drafts awaiting sign-off: each draft prints its review packet (evidence first; the verdict chain, with the pipeline's verdict and the tie-breaker, and the header facts directly above the key prompt) and takes a key: `a` approve, `d` delete, `e` edit fields, `s` skip, `p` preview, `o` open in an editor, `r` pick a restatement, `v` view the whole packet in `$PAGER`, `q` quit. `--format text|json` prints the packets of the queue (or one `--claim`) and writes nothing. `--claim <ref> [--approve|--archive]` records a sign-off in the audit sidecar. Every sign-off needs a person at a terminal: stdin must be a tty and the claim slug is typed back before anything is written, so a piped command cannot sign off. Agents: do not run the walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand; a sign-off is Brandon's. `--format` is read-only and safe for an agent.
-
-Archive.org captures (Save Page Now): `dr draft`, `dr step-ingest --write` (or `--force`), `dr recheck` and `dr findings --replay` (unless the replayed finding's config skips the lookup) ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered). `dr draft --dry-run`, `dr recheck --due --dry-run`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
+Agents: do not run the `dr review` walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off; a sign-off is Brandon's. `dr review --format text|json` is read-only and safe for an agent.
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.
 
 **`inv`** wraps repo-wide tasks:
 
 ```
-inv setup      # install all dependencies (npm + uv)
-inv test       # run pipeline unit tests
-inv test.all   # run all tests including acceptance
-inv build      # build Astro site
-inv check      # build + lint + test (pre-push gate)
-inv clean      # remove build artifacts
+inv setup            # install all dependencies (npm + uv)
+inv dev              # start the Astro dev server
+inv test             # run pipeline unit tests
+inv test.all         # run all tests including acceptance
+inv test.acceptance  # run only acceptance tests (live APIs)
+inv build            # build Astro site
+inv lint             # lint research Markdown and check citations
+inv audit            # run dr lint and print a summary
+inv audit.prune      # list orphaned source files by year; --apply deletes them
+inv check            # type-check, build, lint, test (pre-push gate)
+inv clean            # remove build artifacts
+inv worker-deploy    # type-check, test, migrate and deploy the dr-api Worker
 ```
 
 `inv` requires a one-time global install: `uv tool install invoke`. For pipeline operations, use `dr` directly.

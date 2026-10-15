@@ -7,8 +7,8 @@ invocation can be reconstructed by grepping by id across both files.
 
 The ``run_id`` field is shared with the planned token-usage log
 (``docs/plans/deferred/token-usage-log.md``); call sites that build a
-``VerifyConfig`` use ``cfg.run_id`` and call sites that don't (e.g.
-``dr ingest``) use ``bind_run_id(new_run_id())``.
+``VerifyConfig`` bind ``cfg.run_id`` with ``bind_run_id``; the CLI sets a
+fresh id for every command (``run_id_var.set``) so the rest share it.
 """
 
 from __future__ import annotations

@@ -13,6 +13,7 @@ import yaml
 from common.frontmatter import has_criterion, parse_frontmatter
 from common.sidecar import pipeline_verdict_of, read_sidecar, sidecar_path_for
 from orchestrator.persistence import (
+    SEEDED_LIVE_KEY,
     is_pending,
     live_path_for,
     pending_path_for,
@@ -169,12 +170,6 @@ def _preflight_status(
         effective_current = current_status if current_status is not None else "draft"
         if effective_current == "archived":
             raise click.ClickException("cannot approve an archived claim")
-        if effective_current == "blocked":
-            blocked_reason = fm.get("blocked_reason", "<unset>")
-            raise click.ClickException(
-                f"Cannot approve blocked claim {claim_path}; "
-                f"address blocked_reason={blocked_reason!r} first."
-            )
         if effective_current != "draft":
             raise click.ClickException(
                 f"claim already {effective_current}; use --archive to retire"
@@ -192,10 +187,10 @@ def _preflight_status(
         raise click.ClickException(
             "cannot archive: claim has no status field; publish first or edit the file manually"
         )
-    if current_status not in ("published", "blocked"):
+    if current_status != "published":
         raise click.ClickException(
             f"cannot archive a claim with status {current_status!r}; "
-            f"only published or blocked claims can be archived"
+            f"only published claims can be archived"
         )
     return current_status, "archived"
 
@@ -298,7 +293,7 @@ def approve_claim(
 
     ``mode="review"`` updates the sidecar only.
     ``mode="approve"`` additionally flips status ``draft`` → ``published``.
-    ``mode="archive"`` additionally flips status ``published|blocked`` → ``archived``.
+    ``mode="archive"`` additionally flips status ``published`` → ``archived``.
 
     Approving or archiving a refreshed claim closes its sidecar ``refresh``
     block. If an approved refresh changed the published verdict,
@@ -446,6 +441,8 @@ def _record_sign_off(
     # this one. ``restates`` is the claim's link to its original and stays.
     if mode in ("approve", "archive"):
         sidecar_data.pop("refresh", None)
+        # A promotion that stopped after its claim move leaves its seed record here.
+        sidecar_data.pop(SEEDED_LIVE_KEY, None)
         if not _pick_awaits_restatement(claim_path, sidecar_data):
             sidecar_data.pop("restatement", None)
 

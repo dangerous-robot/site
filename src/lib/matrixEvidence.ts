@@ -62,7 +62,7 @@ export interface ClaimInfo {
   id: string;
   title: string;
   entity: string;
-  status: 'draft' | 'published' | 'archived' | 'blocked';
+  status: 'draft' | 'published' | 'archived';
   verdict: Verdict;
   confidence: Confidence;
   as_of: Date;

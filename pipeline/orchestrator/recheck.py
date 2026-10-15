@@ -75,7 +75,7 @@ def due_date(fm: dict) -> tuple[datetime.date, Literal["next_recheck_due", "as_o
 def due_claims(repo_root: Path, today: datetime.date | None = None) -> list[DueClaim]:
     """Published claims whose due date is today or earlier, in path order.
 
-    Drafts, blocked and archived claims are not selected, nor is a claim
+    Drafts and archived claims are not selected, nor is a claim
     whose pending recheck already awaits review.
     """
     today = today or datetime.date.today()

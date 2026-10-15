@@ -667,7 +667,7 @@ class TestVerdictSidecarMismatch:
         assert len(issues) == 1
         assert issues[0].check_id == "verdict-sidecar-mismatch"
         assert issues[0].severity == "error"
-        assert "dr draft --claim" in issues[0].hint and "dr review" in issues[0].hint
+        assert "dr recheck --claim" in issues[0].hint and "dr review" in issues[0].hint
 
     def test_matching_override_accepted(self):
         override = {"from": "unverified", "to": "false"}
@@ -704,8 +704,6 @@ class TestRefreshPendingReview:
         assert issues[0].severity == "warning"
         assert "false" in issues[0].message and "2026-05-11" in issues[0].message
 
-    def test_blocked_refresh_also_warns(self):
-        assert len(self._issues({"status": "blocked"}, _sidecar(refresh=self.refresh))) == 1
 
     def test_published_claim_no_issue(self):
         assert self._issues({"status": "published"}, _sidecar(refresh=self.refresh)) == []

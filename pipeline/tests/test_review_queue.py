@@ -35,7 +35,6 @@ def _write_claim(
     status: str | None = "draft",
     title: str = "Test claim",
     verdict: str = "true",
-    blocked_reason: str | None = None,
     criteria_slug: str | None = "test-criterion",
     fm_sources: list[str] | None = None,
 ) -> Path:
@@ -58,8 +57,6 @@ def _write_claim(
     ]
     if status is not None:
         fm_lines.append(f"status: {status}")
-    if blocked_reason is not None:
-        fm_lines.append(f"blocked_reason: {blocked_reason}")
     if criteria_slug is not None:
         fm_lines.append(f"criteria_slug: {criteria_slug}")
     fm_lines.extend(["---", "", CLAIM_BODY])
@@ -162,17 +159,6 @@ class TestFindPublicationQueue:
 
         assert find_publication_queue(tmp_path) == []
 
-    def test_excludes_blocked(self, tmp_path):
-        c = _write_claim(
-            tmp_path,
-            entity="ent-a",
-            slug="delta",
-            status="blocked",
-            blocked_reason="insufficient_sources",
-        )
-        _write_sidecar(c)
-
-        assert find_publication_queue(tmp_path) == []
 
     def test_excludes_draft_without_sidecar(self, tmp_path):
         _write_claim(tmp_path, entity="ent-a", slug="echo")  # no sidecar

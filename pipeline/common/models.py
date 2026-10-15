@@ -99,7 +99,6 @@ class ClaimStatus(str, Enum):
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
-    BLOCKED = "blocked"
 
 
 class Phase(str, Enum):
@@ -110,6 +109,8 @@ class Phase(str, Enum):
 
 
 class BlockedReason(str, Enum):
+    """Why a loop run produced no verdict (``VerificationResult.blocked_reason``); never written to a claim file."""
+
     INSUFFICIENT_SOURCES = "insufficient_sources"
     TERMINAL_FETCH_ERROR = "terminal_fetch_error"
     ANALYST_ERROR = "analyst_error"
@@ -126,9 +127,8 @@ class Category(str, Enum):
     REGULATION_POLICY = "regulation-policy"
 
 
-# Topics that activate academic-API dispatch (Path 2 selector + dr stats
-# academic-coverage aggregate). Single source of truth so a Category
-# rename doesn't drift the two consumers out of sync.
+# Topics that activate academic-API dispatch (the Path 2 selector). Single
+# source of truth so a Category rename cannot drift the selector out of sync.
 ACADEMIC_TOPICS: frozenset[str] = frozenset({
     Category.AI_SAFETY.value,
     Category.ENVIRONMENTAL_IMPACT.value,

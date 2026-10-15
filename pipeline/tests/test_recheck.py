@@ -778,19 +778,6 @@ def test_draft_entity_force_onto_a_published_path_is_a_usage_error(tmp_path, mon
     assert _snapshot(tmp_path) == before
 
 
-def test_draft_claim_force_on_a_blocked_claim_still_rewrites_it_as_a_draft(tmp_path) -> None:
-    """Blocked claims are not live; only published and archived ones go to the pending location."""
-    path = _write_claim(tmp_path, "blocked-claim", status="blocked",
-                        extra_fm={"blocked_reason": "insufficient_sources"})
-
-    with scripted_agents():
-        result = _dr(tmp_path, "draft", "--claim", _ref("blocked-claim"), "--force", "--skip-wayback")
-
-    assert result.exit_code == 0, result.output
-    assert _fm(path)["status"] == "draft"
-    assert not _claim_path(tmp_path, "blocked-claim", "pending").exists()
-
-
 # --------------------------------------------------------------------------- #
 # Promotion at dr review                                                           #
 # --------------------------------------------------------------------------- #
@@ -1187,49 +1174,6 @@ def test_r_on_a_pending_recheck_records_the_pick_there_and_the_printed_command_r
 
 
 # --------------------------------------------------------------------------- #
-# dr step-audit --write never writes a live claim's sidecar                         #
-# --------------------------------------------------------------------------- #
-
-
-@pytest.mark.parametrize("status", ["published", "archived"])
-def test_step_audit_write_on_a_live_claim_is_a_usage_error_naming_recheck(tmp_path, monkeypatch, status) -> None:
-    import loop
-
-    _write_claim(tmp_path, "live-claim", status=status)
-    called: list[str] = []
-
-    async def _rerun(*_a, **_kw):
-        called.append("rerun")
-        raise AssertionError("loop.rerun must not be called here")
-
-    monkeypatch.setattr(loop, "rerun", _rerun)
-    before = _snapshot(tmp_path)
-
-    result = _dr(tmp_path, "step-audit", "--claim", _ref("live-claim"), "--write")
-
-    assert result.exit_code == 2, result.output
-    assert f"dr recheck --claim {_ref('live-claim')}" in result.output
-    assert called == []
-    assert _snapshot(tmp_path) == before
-
-
-def test_step_audit_write_over_an_entity_writes_drafts_and_leaves_live_sidecars_alone(tmp_path) -> None:
-    live = _write_claim(tmp_path, "live-claim", status="published")
-    draft = _write_claim(tmp_path, "a-draft", status="draft", reviewed=False)
-    live_before = _bytes(live, _sidecar_path(live))
-    draft_before = _sidecar_path(draft).read_bytes()
-
-    with scripted_agents():
-        # --entity matches the claim directory name.
-        result = _dr(tmp_path, "step-audit", "--entity", ENTITY_REF.split("/")[-1], "--write")
-
-    assert result.exit_code == 0, result.output
-    assert _bytes(live, _sidecar_path(live)) == live_before
-    assert f"dr recheck --claim {_ref('live-claim')}" in result.output
-    assert _sidecar_path(draft).read_bytes() != draft_before
-
-
-# --------------------------------------------------------------------------- #
 # The pending draft in the review queue                                            #
 # --------------------------------------------------------------------------- #
 
@@ -1365,6 +1309,13 @@ def test_the_recheck_sidecar_key_is_declared_in_the_site_schema() -> None:
     assert re.search(r"\brecheck\s*:", sources_block), "sources_consulted[].recheck is not declared"
 
 
+
+def test_the_seeded_live_sidecar_key_is_declared_in_the_site_schema() -> None:
+    from orchestrator.persistence import SEEDED_LIVE_KEY
+
+    config = (REPO_ROOT / "src" / "content.config.ts").read_text(encoding="utf-8")
+    assert re.search(rf"^\s*{SEEDED_LIVE_KEY}\s*:", config, re.MULTILINE), f"{SEEDED_LIVE_KEY} is not declared"
+
 # --------------------------------------------------------------------------- #
 # dr recheck --sources (the folded wayback-backfill)                              #
 # --------------------------------------------------------------------------- #
@@ -1426,3 +1377,920 @@ def test_research_workflow_names_the_ci_job_count_ci_yml_has() -> None:
     assert m.group(1) == words[len(jobs)], (m.group(0), jobs)
     named = re.findall(r"`([a-z0-9-]+)`", m.group(2))
     assert sorted(named) == sorted(jobs)
+
+
+# --------------------------------------------------------------------------- #
+# Carried from RE-AW (Recheck) review into RE-AX (Fold side tools)                 #
+# (numbers are the SP5 open-majors list in handoff/2026-10-14-pipeline-rebuild.md) #
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_promotion_keeps_corrections_and_tags_edited_on_the_live_claim_after_the_recheck(tmp_path) -> None:
+    """Items 6 and 14, RE-AK (Published fields survive the pipeline): `corrections` and `tags`
+    edited on the live claim after the recheck seeded its pending pair survive promotion, and
+    the approval's own correction is added on top, newest first."""
+    first = {"date": "2026-09-01", "summary": "An older correction.", "previous_verdict": "mostly-true"}
+    later = {"date": "2026-10-10", "summary": "Edited on the live claim after the recheck.",
+             "previous_verdict": "mixed"}
+    live = _write_claim(tmp_path, "live-claim", verdict="true", as_of=_days(-90),
+                        extra_fm={"corrections": [first], "tags": ["energy"]})
+
+    with scripted_agents(analyst=analyst_args(verdict="false"), auditor=auditor_args(verdict="false")):
+        ran = _recheck(tmp_path, "--claim", _ref("live-claim"))
+    assert ran.exit_code == 0, ran.output
+    fm, body = parse_frontmatter(live.read_text(encoding="utf-8"))
+    live.write_text(serialize_frontmatter({**fm, "corrections": [later, first], "tags": ["energy", "water"]}, body),
+                    encoding="utf-8")
+
+    done = _approve(tmp_path, "--correction", "Re-checked against new sources.")
+
+    assert done.exit_code == 0, done.output
+    promoted = _fm(live)
+    assert promoted["tags"] == ["energy", "water"]
+    summaries = [c["summary"] for c in promoted["corrections"]]
+    assert summaries == ["Re-checked against new sources.", later["summary"], first["summary"]]
+
+
+def test_promotion_lists_two_dropped_sources_in_the_live_order(tmp_path) -> None:
+    """Items 3, 12 and 21: mined from the deleted TestRefreshSnapshot cases."""
+    from orchestrator.persistence import promote_pending
+
+    live, _pending = _pending_pair(tmp_path, live_sources=("2026/a", "2026/b", "2026/c"),
+                                   pending_sources=("2026/b",))
+
+    promote_pending(live, tmp_path)
+
+    assert _sidecar(live)["refresh"]["dropped_sources"] == ["2026/a", "2026/c"]
+
+
+def test_a_refresh_block_carried_forward_at_promotion_gets_its_dropped_sources_recomputed(tmp_path) -> None:
+    """Items 3, 12 and 21: a block already on the live sidecar keeps its `previous` and
+    recomputes `dropped_sources` against the promoted claim's sources."""
+    from orchestrator.persistence import promote_pending
+
+    live, _pending = _pending_pair(tmp_path, live_sources=("2026/a", "2026/b"), pending_sources=("2026/c",))
+    previous = {"status": "published", "verdict": "true", "sources": ["2026/x", "2026/c", "2026/y"],
+                "reviewer": REVIEWER}
+    data = _sidecar(live)
+    data["refresh"] = {"refreshed_at": "2026-10-01T00:00:00+00:00", "previous": previous,
+                       "dropped_sources": ["stale"]}
+    _sidecar_path(live).write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+
+    promote_pending(live, tmp_path)
+
+    refresh = _sidecar(live)["refresh"]
+    assert refresh["previous"] == previous
+    assert refresh["dropped_sources"] == ["2026/x", "2026/y"]
+
+
+def test_a_cached_capture_that_redirects_where_the_live_page_ends_is_recorded_ok(tmp_path) -> None:
+    """Item 13: the loop's re-check of a cached archive link passes the live page's final URL
+    (`also_same_as`), as `dr recheck --sources` does, so a capture that redirects there is `ok`."""
+    import httpx
+    import respx
+
+    from tests.loop_harness import fake_execute_searches
+
+    moved = f"{URLS[0]}-moved"
+    ts = "20261010000000"
+    link = f"https://web.archive.org/web/{ts}/{URLS[0]}"
+    memento = {"memento-datetime": "Sat, 10 Oct 2026 00:00:00 GMT"}
+    on_page = "Probe Subject data centers used more than 4% of US electricity in 2024."
+    old = _write_source(tmp_path, "2026/stored-old", URLS[0], accessed=_days(-200), key_quotes=[on_page])
+    old.write_text(old.read_text(encoding="utf-8").replace(f"url: {URLS[0]}\n", f"url: {URLS[0]}\narchived_url: {link}\n"),
+                   encoding="utf-8")
+    sids = ["2026/stored-old"]
+    for i in (1, 2, 3):
+        _write_source(tmp_path, f"2026/stored-{i}", URLS[i], accessed=_days(-1))
+        sids.append(f"2026/stored-{i}")
+    _write_claim(tmp_path, "live-claim", as_of=_days(-90), sources=tuple(sids))
+    # No search raw_content for the stored URL, so the recheck fetches it (and follows the redirect).
+    page_text = {u: t for u, t in PAGE_TEXT.items() if u != URLS[0]}
+
+    with respx.mock(assert_all_called=False) as mock, scripted_agents(search=fake_execute_searches(page_text=page_text)):
+        mock.get(URLS[0]).mock(return_value=httpx.Response(301, headers={"location": moved}))
+        mock.get(moved).mock(return_value=httpx.Response(200, html=f"<html><body><p>{on_page}</p></body></html>"))
+        replay = f"https://web.archive.org/web/{ts}id_/{URLS[0]}"
+        moved_replay = f"https://web.archive.org/web/{ts}id_/{moved}"
+        mock.head(replay).mock(return_value=httpx.Response(301, headers={**memento, "location": moved_replay}))
+        mock.head(moved_replay).mock(return_value=httpx.Response(200, headers=memento))
+        result = _dr(tmp_path, "recheck", "--claim", _ref("live-claim"), "--wayback")
+
+    assert result.exit_code == 0, result.output
+    entries = {e["id"]: e for e in _sidecar(_claim_path(tmp_path, "live-claim", "pending"))["sources_consulted"]}
+    record = entries["2026/stored-old"]["recheck"]
+    assert record["refetched"] is True
+    assert record["archive"] == "ok", record
+
+
+def test_restates_on_a_published_claim_leaves_the_live_sidecar_alone(tmp_path) -> None:
+    """Item 18: `dr draft --restates` never writes `restatement.picked` into a published
+    claim's live sidecar; the new claim is still written."""
+    live = _write_claim(tmp_path, "live-claim", verdict="mixed",
+                        sidecar_extra={"restatement": _restatement(LIVE_CANDIDATES, picked=1)})
+    before = _bytes(live, _sidecar_path(live))
+
+    with scripted_agents():
+        result = _dr(tmp_path, "draft", "--restates", _ref("live-claim"), "--pick", "2", "--skip-wayback")
+
+    assert result.exit_code == 0, result.output
+    assert _bytes(live, _sidecar_path(live)) == before
+    restated = [p for p in (tmp_path / "research" / "claims" / ENTITY_REF).glob("*.audit.yaml")
+                if p.name != "live-claim.audit.yaml"]
+    assert [yaml.safe_load(p.read_text(encoding="utf-8")).get("restates") for p in restated] == [_ref("live-claim")]
+
+
+@pytest.mark.parametrize(
+    "status,advice,not_advice",
+    [
+        ("published", "dr recheck --claim", "--force"),
+        ("archived", "dr recheck --claim", "--force"),
+        ("draft", "dr draft --claim", "dr recheck"),
+    ],
+)
+def test_findings_advice_for_a_claim_without_a_sidecar_names_a_command_that_runs(
+    tmp_path, status, advice, not_advice,
+) -> None:
+    """Item 24: `dr draft --claim <ref> --force` is a usage error on a published or archived claim."""
+    claim = _write_claim(tmp_path, "lost-sidecar", status=status, reviewed=status != "draft")
+    _sidecar_path(claim).unlink()
+
+    result = _dr(tmp_path, "findings")
+
+    assert result.exit_code == 0, result.output
+    [row] = [ln for ln in result.output.splitlines() if _ref("lost-sidecar") in ln and "no sidecar" in ln]
+    assert f"{advice} {_ref('lost-sidecar')}" in row
+    assert not_advice not in row
+
+
+def test_the_archive_capture_paragraph_lists_only_commands_that_look_up_a_snapshot() -> None:
+    """Items 5 and 22: `dr recheck --due --dry-run` makes no archive.org call. The paragraph
+    lives in AGENTS.md today and may move with the command list to
+    docs/architecture/pipeline-commands.md; every copy is checked and at least one must exist."""
+    paragraphs = []
+    for rel in ("AGENTS.md", "docs/architecture/pipeline-commands.md"):
+        path = REPO_ROOT / rel
+        if path.exists():
+            text = path.read_text(encoding="utf-8")
+            paragraphs += [p for p in text.split("\n\n") if "Save Page Now" in p and "existing snapshot" in p]
+    assert paragraphs, "no archive-capture paragraph found (positive control)"
+    for paragraph in paragraphs:
+        assert "dr draft --dry-run" in paragraph
+        assert "--due --dry-run" not in paragraph
+
+
+# --------------------------------------------------------------------------- #
+# RE-AX (Fold side tools) fix pass: operator fields edited on the live claim     #
+# after seeding survive promotion (RE-AK (Published fields survive the           #
+# pipeline) and RE-AH (Claim refresh keeps operator fields and verifies quotes)) #
+# --------------------------------------------------------------------------- #
+
+_ANALYST_TAKEAWAY = "The analyst wrote this takeaway."
+# The loop writes the claim's statement as its title, so a recheck's analyst title is SENTENCE.
+_LIVE_RECORD = {
+    "title": SENTENCE,
+    "seo_title": "Probe Subject electricity share",
+    "verdict": "mixed",
+    "cap_rationale": None,
+}
+
+
+def _seed_then_edit_live(root: Path, live_fm: dict, live_edit: dict, *, analyst: dict | None = None,
+                         auditor_verdict: str = "mixed", live_record: dict | None = None) -> Path:
+    """Recheck a published `mixed` claim (live analyst_record `_LIVE_RECORD`), then edit the live claim."""
+    live = _write_claim(root, "live-claim", verdict="mixed", as_of=_days(-90), extra_fm=live_fm,
+                        sidecar_extra={"analyst_record": {**_LIVE_RECORD, **(live_record or {})}})
+    args = analyst or {**analyst_args(), "takeaway": _ANALYST_TAKEAWAY}
+    with scripted_agents(analyst=args, auditor=auditor_args(verdict=auditor_verdict)):
+        ran = _recheck(root, "--claim", _ref("live-claim"))
+    assert ran.exit_code == 0, ran.output
+    pending = _claim_path(root, "live-claim", "pending")
+    seeded = _sidecar(pending)["seeded_live"]
+    assert {key: seeded[key] for key in ("takeaway", "seo_title", "cap_rationale", "corrections", "tags")} == {
+        "takeaway": live_fm.get("takeaway"), "seo_title": live_fm.get("seo_title"),
+        "cap_rationale": live_fm.get("cap_rationale"),
+        "corrections": live_fm.get("corrections"), "tags": live_fm.get("tags"),
+    }
+    assert seeded["analyst_title"] == {**_LIVE_RECORD, **(live_record or {})}["title"]
+    pending_fm = _fm(pending)
+    assert seeded["pending"] == {key: pending_fm.get(key) for key in ("takeaway", "seo_title", "cap_rationale")}
+    if live_edit:
+        fm, body = parse_frontmatter(live.read_text(encoding="utf-8"))
+        live.write_text(serialize_frontmatter({**fm, **live_edit}, body), encoding="utf-8")
+    return live
+
+
+def _promote(live: Path, root: Path) -> dict:
+    from orchestrator.persistence import promote_pending
+
+    promote_pending(live, root)
+    assert "seeded_live" not in _sidecar(live)
+    return _fm(live)
+
+
+def test_promotion_keeps_a_takeaway_edited_on_the_live_claim_while_the_verdict_is_unchanged(tmp_path) -> None:
+    from linter.runner import run_all_checks
+
+    live = _seed_then_edit_live(tmp_path, {"takeaway": "First operator takeaway."},
+                                {"takeaway": "Later operator takeaway."})
+    pending = _claim_path(tmp_path, "live-claim", "pending")
+    assert _fm(pending)["takeaway"] == "First operator takeaway."
+    issues, _checked = run_all_checks(tmp_path)
+    assert issues, "control: the lint run reports something on this fixture"
+    named = [i for i in issues if "seeded_live" in i.message or str(_sidecar_path(pending)) in str(i.path)]
+    assert named == [], "a pending sidecar's seeded_live block raises no lint issue"
+
+    assert _promote(live, tmp_path)["takeaway"] == "Later operator takeaway."
+
+
+def test_promotion_drops_a_live_takeaway_edit_when_the_verdict_changed(tmp_path) -> None:
+    """Control for the takeaway carry: the keep rule holds it only while the verdict is unchanged."""
+    live = _seed_then_edit_live(tmp_path, {"takeaway": "First operator takeaway."},
+                                {"takeaway": "Later operator takeaway."},
+                                analyst={**analyst_args(verdict="false"), "takeaway": _ANALYST_TAKEAWAY},
+                                auditor_verdict="false")
+
+    assert _promote(live, tmp_path)["takeaway"] == _ANALYST_TAKEAWAY
+
+
+def test_promotion_keeps_an_seo_title_edited_on_the_live_claim_while_the_analyst_title_is_unchanged(tmp_path) -> None:
+    live = _seed_then_edit_live(tmp_path, {"seo_title": "First operator SEO title"},
+                                {"seo_title": "Later operator SEO title"})
+    assert _fm(_claim_path(tmp_path, "live-claim", "pending"))["seo_title"] == "First operator SEO title"
+
+    assert _promote(live, tmp_path)["seo_title"] == "Later operator SEO title"
+
+
+def test_promotion_drops_a_live_seo_title_edit_when_the_analyst_title_changed(tmp_path) -> None:
+    """Control for the seo_title carry."""
+    live = _seed_then_edit_live(tmp_path, {"seo_title": "First operator SEO title"},
+                                {"seo_title": "Later operator SEO title"},
+                                live_record={"title": "An older analyst title for the claim"})
+
+    assert _promote(live, tmp_path)["seo_title"] == _LIVE_RECORD["seo_title"]
+
+
+def test_promotion_keeps_a_cap_rationale_edited_on_the_live_claim(tmp_path) -> None:
+    live = _seed_then_edit_live(tmp_path, {"cap_rationale": "First operator rationale."},
+                                {"cap_rationale": "Later operator rationale."})
+    assert _fm(_claim_path(tmp_path, "live-claim", "pending"))["cap_rationale"] == "First operator rationale."
+
+    assert _promote(live, tmp_path)["cap_rationale"] == "Later operator rationale."
+
+
+def test_promotion_keeps_a_review_edit_on_the_pending_claim_when_the_live_claim_is_unchanged(tmp_path) -> None:
+    """Control: with no live edit after seeding, the pending value (here a review edit) stands."""
+    from orchestrator.persistence import set_claim_fields
+
+    live = _seed_then_edit_live(tmp_path, {"takeaway": "First operator takeaway.", "seo_title": "Operator SEO title"},
+                                {})
+    pending = _claim_path(tmp_path, "live-claim", "pending")
+    set_claim_fields(pending, {"takeaway": "Reviewer edit on the pending draft.", "seo_title": "Reviewer SEO title"})
+
+    promoted = _promote(live, tmp_path)
+    assert promoted["takeaway"] == "Reviewer edit on the pending draft."
+    assert promoted["seo_title"] == "Reviewer SEO title"
+
+
+def test_promotion_with_an_unparseable_live_claim_refuses_before_anything_moves(tmp_path) -> None:
+    from orchestrator.persistence import promote_pending
+
+    live = _seed_then_edit_live(tmp_path, {"takeaway": "First operator takeaway."}, {})
+    pending = _claim_path(tmp_path, "live-claim", "pending")
+    # No frontmatter at all: the published-snapshot read treats it as unpublished, so only the
+    # operator-field merge sees the failure, and it must refuse before the first move.
+    live.write_text("Body with no frontmatter.\n", encoding="utf-8")
+    before = _bytes(live, _sidecar_path(live), pending, _sidecar_path(pending))
+
+    with pytest.raises(ValueError, match="frontmatter"):
+        promote_pending(live, tmp_path)
+
+    assert _bytes(live, _sidecar_path(live), pending, _sidecar_path(pending)) == before
+
+
+# --------------------------------------------------------------------------- #
+# P2 (pending tag edit lost): promotion takes `tags` and `corrections` from the  #
+# live claim only when they changed there after the recheck seeded the pending   #
+# pair; a review edit on the pending draft survives. Items 6 and 14 of SP5        #
+# (RE-AW, Recheck), both directions.                                              #
+# --------------------------------------------------------------------------- #
+
+_OLDER_CORRECTION = {"date": "2026-09-01", "summary": "An older correction.", "previous_verdict": "mostly-true"}
+
+
+def _recheck_unchanged(root: Path, live_fm: dict) -> tuple[Path, Path]:
+    """Recheck a published `mixed` claim into a pending draft with the same verdict; return (live, pending)."""
+    live = _write_claim(root, "live-claim", verdict="mixed", as_of=_days(-90), extra_fm=live_fm)
+    with scripted_agents(analyst=analyst_args(), auditor=auditor_args(verdict="mixed")):
+        ran = _recheck(root, "--claim", _ref("live-claim"))
+    assert ran.exit_code == 0, ran.output
+    pending = _claim_path(root, "live-claim", "pending")
+    assert _fm(pending)["verdict"] == "mixed"
+    return live, pending
+
+
+def _edit_live(live: Path, edit: dict) -> None:
+    fm, body = parse_frontmatter(live.read_text(encoding="utf-8"))
+    live.write_text(serialize_frontmatter({**fm, **edit}, body), encoding="utf-8")
+
+
+def _queue_tag_editor(tags: list[str]):
+    """A stand-in for the `e` key's editor: rewrite only `tags` in the edit buffer."""
+    def edit(path: Path) -> int:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data["tags"] = tags
+        path.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
+        return 0
+
+    return edit
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_tag_edit_made_in_the_review_queue_on_a_pending_recheck_survives_approval(tmp_path, monkeypatch) -> None:
+    """The review queue lists the pending draft; `e` edits its tags, `a` promotes it. The live
+    claim's tags did not change after seeding, so the reviewer's edit is what goes live."""
+    import orchestrator.review_queue as review_queue_mod
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    monkeypatch.setattr(review_queue_mod, "_run_editor_blocking", _queue_tag_editor(["energy", "highlight"]))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+
+    walk = _dr(tmp_path, "review", input="e\ns\na\n")
+
+    assert walk.exit_code == 0, walk.output
+    assert "Saved edits" in walk.output
+    assert not pending.exists(), walk.output
+    promoted = _fm(live)
+    assert promoted["status"] == "published"
+    assert promoted["tags"] == ["energy", "highlight"]
+    assert "seeded_live" not in _sidecar(live)
+
+
+def test_promotion_takes_live_tags_edited_after_seeding_over_unchanged_pending_tags(tmp_path) -> None:
+    """The other direction: a live edit after seeding wins when the pending value is unchanged."""
+    from orchestrator.persistence import promote_pending
+
+    live, _pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    _edit_live(live, {"tags": ["energy", "water"]})
+
+    promote_pending(live, tmp_path)
+
+    assert _fm(live)["tags"] == ["energy", "water"]
+
+
+def test_promotion_unions_corrections_added_on_both_the_live_and_the_pending_claim(tmp_path) -> None:
+    from orchestrator.persistence import promote_pending, set_claim_corrections
+
+    live_added = {"date": "2026-10-12", "summary": "Added on the live claim.", "previous_verdict": "mixed"}
+    pending_added = {"date": "2026-10-10", "summary": "Added on the pending draft.", "previous_verdict": "mixed"}
+    live, pending = _recheck_unchanged(tmp_path, {"corrections": [_OLDER_CORRECTION]})
+    _edit_live(live, {"corrections": [live_added, _OLDER_CORRECTION]})
+    set_claim_corrections(pending, [pending_added, _OLDER_CORRECTION])
+
+    promote_pending(live, tmp_path)
+
+    summaries = [c["summary"] for c in _fm(live)["corrections"]]
+    assert summaries == [live_added["summary"], pending_added["summary"], _OLDER_CORRECTION["summary"]]
+
+
+def test_promotion_keeps_a_correction_removed_on_the_live_claim_removed(tmp_path) -> None:
+    """A correction deleted on the live claim after seeding stays deleted when the pending draft
+    did not change its list (no union in that case)."""
+    from orchestrator.persistence import promote_pending
+
+    live, _pending = _recheck_unchanged(tmp_path, {"corrections": [_OLDER_CORRECTION]})
+    _edit_live(live, {"corrections": None})
+
+    promote_pending(live, tmp_path)
+
+    assert not _fm(live).get("corrections")
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_pending_tag_edit_survives_a_promotion_that_stopped_before_the_claim_move(tmp_path, monkeypatch) -> None:
+    """The half-done promotion path: the merge ran before the sidecar move, so finishing the
+    promotion must not take the live tags over the reviewer's edit."""
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, live)
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    assert pending.exists() and not _sidecar_path(pending).exists()
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert not pending.exists()
+    assert _fm(live)["tags"] == ["energy", "highlight"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_pending_tag_edit_survives_a_promotion_whose_sidecar_move_failed(tmp_path, monkeypatch) -> None:
+    """The sidecar move fails, so the retry is a fresh promotion, not a half-done one: the
+    pending sidecar must still carry its seed record, or the retry takes the live tags."""
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    assert pending.exists() and _sidecar_path(pending).exists()
+    assert "seeded_live" in _sidecar(pending)
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy", "highlight"]
+    assert "seeded_live" not in _sidecar(live)
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_live_tag_edit_made_after_a_failed_sidecar_move_survives_the_retry(tmp_path, monkeypatch) -> None:
+    """The other direction of the failed sidecar move: with the seed record kept, a live edit
+    made between the failure and the retry is still told apart from the unchanged pending tags."""
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    _edit_live(live, {"tags": ["energy", "water"]})
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy", "water"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_tag_edit_made_after_a_failed_sidecar_move_survives_the_retry(tmp_path, monkeypatch) -> None:
+    """The first --approve took the live tag into the pending draft, then the sidecar move
+    failed. The reviewer then removes that tag on the pending draft; the retry must not take
+    it back from the live claim, which it already consumed."""
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    _edit_live(live, {"tags": ["energy", "pick"]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    assert _fm(pending)["tags"] == ["energy", "pick"]
+    set_claim_fields(pending, {"tags": ["energy"]})
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_live_tag_removed_after_a_failed_sidecar_move_stays_removed(tmp_path, monkeypatch) -> None:
+    """A tag added on the live claim, taken by the first --approve, then removed on the live
+    claim before the retry: the retry takes the removal as a fresh live edit."""
+    live, _pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    _edit_live(live, {"tags": ["energy", "water"]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    _edit_live(live, {"tags": ["energy"]})
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_correction_edit_made_after_a_failed_sidecar_move_survives_the_retry(
+    tmp_path, monkeypatch,
+) -> None:
+    from orchestrator.persistence import set_claim_corrections
+
+    live_added = {"date": "2026-10-12", "summary": "Added on the live claim.", "previous_verdict": "mixed"}
+    live, pending = _recheck_unchanged(tmp_path, {"corrections": [_OLDER_CORRECTION]})
+    _edit_live(live, {"corrections": [live_added, _OLDER_CORRECTION]})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    set_claim_corrections(pending, [_OLDER_CORRECTION])
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert [c["summary"] for c in _fm(live)["corrections"]] == [_OLDER_CORRECTION["summary"]]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_takeaway_edit_made_after_a_failed_sidecar_move_survives_the_retry(
+    tmp_path, monkeypatch,
+) -> None:
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"takeaway": "Operator takeaway."})
+    _edit_live(live, {"takeaway": "Live edit after seeding."})
+
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(live))
+        failed = _approve(tmp_path)
+    assert failed.exit_code != 0
+    assert _fm(pending)["takeaway"] == "Live edit after seeding."
+    set_claim_fields(pending, {"takeaway": "Reviewer edit after the failed move."})
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["takeaway"] == "Reviewer edit after the failed move."
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_pending_tag_edit_survives_promotion_of_a_pair_with_no_seed_record(tmp_path) -> None:
+    """A pending pair written before the seed record existed cannot tell a live edit from a
+    review edit; the pending value stands (as before the record), so the review edit is kept."""
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    data = _sidecar(pending)
+    data.pop("seeded_live")
+    _sidecar_path(pending).write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+
+    approved = _approve(tmp_path)
+
+    assert approved.exit_code == 0, approved.output
+    assert _fm(live)["tags"] == ["energy", "highlight"]
+
+
+def test_promotion_keeps_tags_added_on_both_the_live_and_the_pending_claim(tmp_path) -> None:
+    from orchestrator.persistence import promote_pending, set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy", "water-use"]})
+    _edit_live(live, {"tags": ["energy", "water-use", "water"]})
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+
+    promote_pending(live, tmp_path)
+
+    # Both additions kept; the pending draft's removal of water-use applied.
+    assert _fm(live)["tags"] == ["energy", "water", "highlight"]
+
+
+# --------------------------------------------------------------------------- #
+# Promotion stopped after each of its writes: the retry keeps a review edit on  #
+# the pending draft and an operator edit on the live claim made in between      #
+# (RE-AK (Published fields survive the pipeline): corrections and tags always   #
+# kept, an operator's takeaway kept while the verdict is unchanged).            #
+# --------------------------------------------------------------------------- #
+
+# Every write `dr review --approve` makes to the claim files when it promotes a
+# pending recheck that has a live tag and takeaway edit to take. The stop cases
+# below run once per entry; a new write fails the inventory test until its stop
+# case is counted here. `<copy>` is the merged pending claim's sibling copy.
+_PENDING_DIR = "research/pending/subjects/probe-subject"
+_LIVE_DIR = "research/claims/subjects/probe-subject"
+PROMOTION_WRITES = [
+    ("write", f"{_PENDING_DIR}/live-claim.md.<copy>"),
+    ("write", f"{_PENDING_DIR}/live-claim.audit.yaml"),
+    ("replace", f"{_PENDING_DIR}/live-claim.md.<copy> -> {_PENDING_DIR}/live-claim.md"),
+    ("write", f"{_PENDING_DIR}/live-claim.audit.yaml"),
+    ("replace", f"{_PENDING_DIR}/live-claim.audit.yaml -> {_LIVE_DIR}/live-claim.audit.yaml"),
+    ("replace", f"{_PENDING_DIR}/live-claim.md -> {_LIVE_DIR}/live-claim.md"),
+    ("write", f"{_LIVE_DIR}/live-claim.audit.yaml"),
+    ("rmdir", _PENDING_DIR),
+    ("rmdir", "research/pending/subjects"),
+    ("write", f"{_LIVE_DIR}/live-claim.audit.yaml"),
+    ("write", f"{_LIVE_DIR}/live-claim.md"),
+]
+
+
+def _normalized(writes: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    return [(kind, re.sub(r"live-claim\.md\.[0-9a-f]+\.merge", "live-claim.md.<copy>", path))
+            for kind, path in writes]
+
+
+def _pending_promotion_with_live_edits(root: Path) -> tuple[Path, Path]:
+    """A pending recheck seeded from a live claim whose tags and takeaway an operator then edited."""
+    live, pending = _recheck_unchanged(root, {"tags": ["energy"], "takeaway": "Seed operator takeaway."})
+    assert _fm(pending)["takeaway"] == "Seed operator takeaway."
+    _edit_live(live, {"tags": ["energy", "pick"], "takeaway": "Live takeaway edit."})
+    return live, pending
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_the_promotion_write_inventory_has_a_stop_case_per_write(tmp_path) -> None:
+    from tests.write_faults import WriteFaults
+
+    live, pending = _pending_promotion_with_live_edits(tmp_path)
+    faults = WriteFaults(tmp_path)
+
+    with faults.record():
+        approved = _approve(tmp_path)
+
+    assert approved.exit_code == 0, approved.output
+    assert _normalized(faults.writes) == PROMOTION_WRITES
+    fm = _fm(live)
+    assert (fm["status"], sorted(fm["tags"]), fm["takeaway"]) == ("published", ["energy", "pick"], "Live takeaway edit.")
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+@pytest.mark.parametrize("edit", ["none", "review", "live"])
+@pytest.mark.parametrize("stop", range(len(PROMOTION_WRITES)), ids=lambda n: f"stop{n}")
+def test_a_promotion_stopped_at_any_write_keeps_edits_made_before_the_retry(tmp_path, stop, edit) -> None:
+    """Stop `--approve` at one write, edit (or not), run `--approve` again. A review edit is made
+    on the pending draft while it exists (else on the claim being approved) and removes the
+    tag the reviewer can see the merge took; a live edit adds a tag and rewrites the takeaway."""
+    from tests.write_faults import WriteFaults
+
+    live, pending = _pending_promotion_with_live_edits(tmp_path)
+    faults = WriteFaults(tmp_path)
+
+    with faults.fail_at(stop):
+        first = _approve(tmp_path)
+    assert faults.fired, faults.writes
+
+    expected_tags = {"energy", "pick"}
+    expected_takeaway = "Live takeaway edit."
+    if edit == "review":
+        target = pending if pending.exists() else live
+        seen = set(_fm(target).get("tags") or [])
+        reviewed = (seen - {"pick"}) | {"highlight"}
+        _edit_live(target, {"tags": sorted(reviewed), "takeaway": "Reviewer takeaway."})
+        assert reviewed != seen
+        # A tag the merge had not yet taken when the reviewer looked is still the live claim's edit.
+        expected_tags = reviewed | ({"pick"} if "pick" not in seen else set())
+        expected_takeaway = "Reviewer takeaway."
+    elif edit == "live":
+        seen = set(_fm(live).get("tags") or [])
+        _edit_live(live, {"tags": sorted(seen | {"water"}), "takeaway": "Second live takeaway edit."})
+        expected_tags = {"energy", "pick", "water"}
+        expected_takeaway = "Second live takeaway edit."
+
+    if first.exit_code != 0:
+        again = _approve(tmp_path)
+        assert again.exit_code == 0, again.output
+
+    fm = _fm(live)
+    assert fm["status"] == "published"
+    assert set(fm["tags"]) == expected_tags
+    assert fm["takeaway"] == expected_takeaway
+    assert not pending.exists() and not _sidecar_path(pending).exists()
+    assert list((tmp_path / "research").rglob("*.merge")) == []
+    sidecar = _sidecar(live)
+    assert "seeded_live" not in sidecar
+    assert "refresh" not in sidecar
+    assert sidecar["human_review"]["reviewer"] == REVIEWER
+
+
+@pytest.mark.parametrize("field", ["takeaway", "seo_title", "cap_rationale"])
+def test_a_review_edit_on_the_pending_draft_wins_over_a_live_edit_of_the_same_field(tmp_path, field) -> None:
+    """Both sides edited one scalar field after seeding: the reviewer's pending value goes live
+    (a live value is taken only when the pending draft left the field as seeded)."""
+    from orchestrator.persistence import promote_pending
+
+    live, pending = _recheck_unchanged(tmp_path, {field: "Seed operator value."})
+    _edit_live(pending, {field: "Reviewer edit on pending."})
+    _edit_live(live, {field: "Live edit after seeding."})
+
+    promote_pending(live, tmp_path)
+
+    assert _fm(live)[field] == "Reviewer edit on pending."
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_live_tag_edit_survives_a_rerun_from_the_existing_pending_pair(tmp_path) -> None:
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    _edit_live(live, {"tags": ["energy", "water"]})
+    with scripted_agents(analyst=analyst_args()):
+        r = _dr(tmp_path, "draft", "--claim", _ref("live-claim"), "--rerun", "analyst")
+    assert r.exit_code == 0, r.output
+    assert "seeded_live" in _sidecar(pending)
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy", "water"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_tag_edit_survives_a_second_recheck_from_the_existing_pending_pair(tmp_path) -> None:
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+    with scripted_agents(analyst=analyst_args(), auditor=auditor_args(verdict="mixed")):
+        ran = _recheck(tmp_path, "--claim", _ref("live-claim"))
+    assert ran.exit_code == 0, ran.output
+    assert _fm(pending)["tags"] == ["energy", "highlight"]
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert _fm(live)["tags"] == ["energy", "highlight"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_review_and_live_tag_edits_both_survive_a_second_recheck_from_the_existing_pending_pair(tmp_path) -> None:
+    from orchestrator.persistence import set_claim_fields
+
+    live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+    _edit_live(live, {"tags": ["energy", "water"]})
+    with scripted_agents(analyst=analyst_args(), auditor=auditor_args(verdict="mixed")):
+        ran = _recheck(tmp_path, "--claim", _ref("live-claim"))
+    assert ran.exit_code == 0, ran.output
+
+    again = _approve(tmp_path)
+
+    assert again.exit_code == 0, again.output
+    assert sorted(_fm(live)["tags"]) == ["energy", "highlight", "water"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_tag_edit_on_a_pending_draft_from_an_analyst_rerun_survives_a_second_rerun_and_promotion(
+    tmp_path,
+) -> None:
+    from orchestrator.persistence import promote_pending, set_claim_fields
+    import tests.test_draft_rerun as D
+
+    live = D._repo(tmp_path, status="published", verdict="true", confidence="high", fm_extra={"tags": ["energy"]})
+    with scripted_agents(analyst=analyst_args(verdict="true")):
+        assert D._rerun(tmp_path, "analyst").exit_code == 0
+    pending = D._claim_path(tmp_path, "pending")
+    assert D._sidecar(pending)["seeded_live"]["tags"] == ["energy"]
+    set_claim_fields(pending, {"tags": ["energy", "highlight"]})
+    with scripted_agents(analyst=analyst_args(verdict="true")):
+        assert D._rerun(tmp_path, "analyst").exit_code == 0
+    assert D._fm(pending)["tags"] == ["energy", "highlight"]
+
+    promote_pending(live, tmp_path)
+
+    assert D._fm(live)["tags"] == ["energy", "highlight"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_review_queue_tag_edit_on_a_pending_draft_from_an_evaluator_rerun_survives_approval(
+    tmp_path, monkeypatch,
+) -> None:
+    import orchestrator.review_queue as review_queue_mod
+    import tests.test_draft_rerun as D
+
+    live = D._repo(tmp_path, status="published", verdict="mixed", fm_extra={"tags": ["energy"]})
+    with scripted_agents(auditor=auditor_args(verdict="false"), tiebreaker=auditor_args(verdict="mixed")):
+        assert D._rerun(tmp_path, "evaluator").exit_code == 0
+    pending = D._claim_path(tmp_path, "pending")
+    assert pending.exists()
+    monkeypatch.setattr(review_queue_mod, "_run_editor_blocking", _queue_tag_editor(["energy", "highlight"]))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+
+    walk = _dr(tmp_path, "review", input="e\ns\na\n")
+
+    assert walk.exit_code == 0, walk.output
+    assert not pending.exists(), walk.output
+    assert D._fm(live)["tags"] == ["energy", "highlight"]
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_approving_an_evaluator_rerun_that_changed_a_published_verdict_needs_a_correction(tmp_path) -> None:
+    import tests.test_draft_rerun as D
+
+    live = D._repo(tmp_path, status="published", verdict="true", confidence="high",
+                   fm_extra={"takeaway": D.OPERATOR_TAKEAWAY},
+                   sidecar_extra={"analyst_record": dict(D.ANALYST_RECORD_TRUE)})
+    before = live.read_bytes()
+    with scripted_agents(auditor=auditor_args(verdict="false"), tiebreaker=auditor_args(verdict="false")):
+        assert D._rerun(tmp_path, "evaluator").exit_code == 0
+    assert D._fm(D._claim_path(tmp_path, "pending"))["verdict"] == "false"
+    assert live.read_bytes() == before
+
+    r = D._dr(tmp_path, "review", "--claim", D.REF, "--approve", "--reviewer", REVIEWER)
+
+    assert r.exit_code != 0, r.output
+    assert "--correction" in r.output
+    assert live.read_bytes() == before
+
+
+# The writes of a retry that finishes a promotion stopped at its claim move
+# (`promotion_half_done`), when the live claim was edited before the retry:
+# the merge against the seed record on the live sidecar, then the rest.
+HALF_DONE_WRITES = [
+    ("write", f"{_PENDING_DIR}/live-claim.md.<copy>"),
+    ("write", f"{_LIVE_DIR}/live-claim.audit.yaml"),
+    ("replace", f"{_PENDING_DIR}/live-claim.md.<copy> -> {_PENDING_DIR}/live-claim.md"),
+    ("replace", f"{_PENDING_DIR}/live-claim.md -> {_LIVE_DIR}/live-claim.md"),
+    ("write", f"{_LIVE_DIR}/live-claim.audit.yaml"),
+    ("rmdir", _PENDING_DIR),
+    ("rmdir", "research/pending/subjects"),
+    ("write", f"{_LIVE_DIR}/live-claim.audit.yaml"),
+    ("write", f"{_LIVE_DIR}/live-claim.md"),
+]
+_CLAIM_MOVE = PROMOTION_WRITES.index(("replace", f"{_PENDING_DIR}/live-claim.md -> {_LIVE_DIR}/live-claim.md"))
+
+
+def _half_done_with_a_live_edit(root: Path) -> tuple[Path, Path]:
+    """A promotion stopped at its claim move, then a live tag and takeaway edit; return (live, pending)."""
+    from orchestrator.persistence import promotion_half_done
+    from tests.write_faults import WriteFaults
+
+    live, pending = _pending_promotion_with_live_edits(root)
+    faults = WriteFaults(root)
+    with faults.fail_at(_CLAIM_MOVE):
+        assert _approve(root).exit_code != 0
+    assert promotion_half_done(live, root)
+    _edit_live(live, {"tags": sorted(set(_fm(live)["tags"]) | {"water"}), "takeaway": "Second live takeaway edit."})
+    return live, pending
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_the_half_done_promotion_write_inventory_has_a_stop_case_per_write(tmp_path) -> None:
+    from tests.write_faults import WriteFaults
+
+    live, _pending = _half_done_with_a_live_edit(tmp_path)
+    faults = WriteFaults(tmp_path)
+
+    with faults.record():
+        approved = _approve(tmp_path)
+
+    assert approved.exit_code == 0, approved.output
+    assert _normalized(faults.writes) == HALF_DONE_WRITES
+    fm = _fm(live)
+    assert (sorted(fm["tags"]), fm["takeaway"]) == (["energy", "pick", "water"], "Second live takeaway edit.")
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+@pytest.mark.parametrize("edit", ["none", "review", "live"])
+@pytest.mark.parametrize("stop", range(len(HALF_DONE_WRITES)), ids=lambda n: f"stop{n}")
+def test_a_half_done_promotion_retry_stopped_at_any_write_keeps_edits_made_before_the_next_retry(
+    tmp_path, stop, edit,
+) -> None:
+    from tests.write_faults import WriteFaults
+
+    live, pending = _half_done_with_a_live_edit(tmp_path)
+    faults = WriteFaults(tmp_path)
+
+    with faults.fail_at(stop):
+        second = _approve(tmp_path)
+    assert faults.fired, faults.writes
+
+    expected_tags = {"energy", "pick", "water"}
+    expected_takeaway = "Second live takeaway edit."
+    if edit == "review":
+        target = pending if pending.exists() else live
+        seen = set(_fm(target).get("tags") or [])
+        reviewed = (seen - {"water"}) | {"highlight"}
+        _edit_live(target, {"tags": sorted(reviewed), "takeaway": "Reviewer takeaway."})
+        expected_tags = reviewed | ({"water"} if "water" not in seen else set())
+        expected_takeaway = "Reviewer takeaway."
+    elif edit == "live":
+        _edit_live(live, {"tags": sorted(set(_fm(live)["tags"]) | {"solar"}), "takeaway": "Third live takeaway edit."})
+        expected_tags = {"energy", "pick", "water", "solar"}
+        expected_takeaway = "Third live takeaway edit."
+
+    if second.exit_code != 0:
+        third = _approve(tmp_path)
+        assert third.exit_code == 0, third.output
+
+    fm = _fm(live)
+    assert fm["status"] == "published"
+    assert set(fm["tags"]) == expected_tags
+    assert fm["takeaway"] == expected_takeaway
+    assert not pending.exists()
+    assert list((tmp_path / "research").rglob("*.merge")) == []
+    assert "seeded_live" not in _sidecar(live)
+
+
+@pytest.mark.usefixtures("human_at_terminal")
+def test_a_live_edit_is_lost_when_a_recheck_stopped_between_its_moves_is_rerun_before_promotion(
+    tmp_path, monkeypatch,
+) -> None:
+    """Pins a loss the seed record does not cover. The first recheck moved its pending claim and
+    stopped before its sidecar; the rerun (`dr recheck --claim`, the advice `dr findings` gives)
+    starts from that pending claim with no sidecar, so its pair has no `seeded_live`, and
+    promotion keeps the pending tags over a live edit made in between."""
+    live = _write_claim(tmp_path, "live-claim", verdict="mixed", as_of=_days(-90), extra_fm={"tags": ["energy"]})
+    pending = _claim_path(tmp_path, "live-claim", "pending")
+    with monkeypatch.context() as m:
+        _fail_replace_onto(m, _sidecar_path(pending))
+        with scripted_agents(analyst=analyst_args(), auditor=auditor_args(verdict="mixed")):
+            assert _recheck(tmp_path, "--claim", _ref("live-claim")).exit_code == 1
+    assert pending.exists() and not _sidecar_path(pending).exists()
+    _edit_live(live, {"tags": ["energy", "water"]})
+    with scripted_agents(analyst=analyst_args(), auditor=auditor_args(verdict="mixed")):
+        assert _recheck(tmp_path, "--claim", _ref("live-claim")).exit_code == 0
+    assert "seeded_live" not in _sidecar(pending)
+
+    approved = _approve(tmp_path)
+
+    assert approved.exit_code == 0, approved.output
+    assert _fm(live)["tags"] == ["energy"]

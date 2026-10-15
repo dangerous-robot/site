@@ -80,7 +80,7 @@ The `check` script chains seven stages in order:
 npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch
 ```
 
-Run it locally before pushing. The CI `check` job runs all of these except check:reviewers. `inv check` (also the pre-commit hook) runs check:types, test:site, build, check:watch, lint:md and check:citations, then the pipeline's pytest suite; it does not run check:reviewers. Browser tests (`npm run test:e2e`) are in none of these; CI runs them in the `e2e` job. (CI's `lint-content` job is separate; its equivalent is `uv run dr lint` from `pipeline/`.)
+Run it locally before pushing. The CI `check` job runs all of these except check:reviewers. `inv check` runs check:types, test:site, build, check:watch, lint:md and check:citations, then the pipeline's pytest suite; it does not run check:reviewers. The pre-commit hook (`scripts/git-hooks/pre-commit`, installed by symlink into `.git/hooks/`; see `docs/runbook.md` § Linting and the pre-commit hook) runs `dr lint` first, then `inv check`, and fails the commit when `.venv/bin/dr` is missing. Browser tests (`npm run test:e2e`) are in none of these; CI runs them in the `e2e` job. (CI's `lint-content` job is separate; it runs the same `dr lint` entry point as the hook and `inv audit`.)
 
 ### Stage 1: Types
 

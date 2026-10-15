@@ -139,7 +139,7 @@ describe('matrixEvidenceProblems: claims', () => {
     expectProblem((d) => { row(d, 'renewable-hosting').cells.greenpt.claim = '/research/claims/greenpt/nope'; },
       'renewable-hosting/greenpt', 'does not exist');
   });
-  for (const status of ['draft', 'archived', 'blocked'] as const) {
+  for (const status of ['draft', 'archived'] as const) {
     test(`a cited claim is ${status}`, () => {
       expectProblem(() => {}, 'renewable-hosting/greenpt', `is ${status}, not published`, withClaim(claim({ status })));
     });

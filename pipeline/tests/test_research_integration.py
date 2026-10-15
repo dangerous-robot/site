@@ -213,13 +213,13 @@ def _publish(tmp_path, status: str = "published", verdict: str = "true") -> tupl
     return claim_path, sidecar_path
 
 
-def test_forced_rewrite_of_a_blocked_claim_runs_in_the_one_write_order(tmp_path, monkeypatch) -> None:
-    """``dr draft --claim <ref> --force`` on a blocked claim: the sign-off reset
-    comes first, then sources, claim and sidecar; the claim returns to draft."""
+def test_forced_rewrite_of_a_draft_runs_in_the_one_write_order(tmp_path, monkeypatch) -> None:
+    """``dr draft --claim <ref> --force`` on a draft: the forced-rewrite check
+    comes first, then sources, claim and sidecar; the claim stays a draft."""
     from orchestrator.cli import main
 
     write_entity(tmp_path)
-    claim_path, sidecar_path = _publish(tmp_path, status="blocked")
+    claim_path, _sidecar_path = _publish(tmp_path, status="draft")
     order = _record_write_order(monkeypatch)
 
     with scripted_agents():
@@ -231,8 +231,6 @@ def test_forced_rewrite_of_a_blocked_claim_runs_in_the_one_write_order(tmp_path,
     assert result.exit_code == 0, result.output
     assert order == ["mark_forced_rewrite", "_write_source_files", "_write_claim_file", "_write_audit_sidecar"]
     assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
-    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewer"] is None
 
 
 def test_forced_rewrite_of_a_draft_keeps_its_review(tmp_path) -> None:

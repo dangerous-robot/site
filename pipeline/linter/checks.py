@@ -9,7 +9,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
-from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, Confidence, Independence, VerificationLevel
+from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, ClaimStatus, Confidence, Independence, VerificationLevel
 from common.sidecar import pipeline_verdict_of
 from common.source_classification import effective_independence
 from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS, ENTITY_FRONTMATTER_KEYS
@@ -75,6 +75,30 @@ def check_missing_required_fields(
                     message=f'required field "{field}" is absent',
                     hint=f'add `{field}:` to the claim frontmatter',
                 ))
+    return issues
+
+
+CLAIM_STATUSES = tuple(s.value for s in ClaimStatus)
+
+
+def check_invalid_claim_status(
+    claim_files: list[Path],
+    claim_frontmatters: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """A claim whose ``status`` is set to a value other than draft, published or archived."""
+    issues = []
+    for path in claim_files:
+        fm = claim_frontmatters.get(str(path), {})
+        status = fm.get("status")
+        if status is None or str(status) in CLAIM_STATUSES:
+            continue
+        issues.append(LintIssue(
+            path=str(path),
+            check_id="invalid-claim-status",
+            severity="error",
+            message=f"status {status!r} is not a claim status ({', '.join(CLAIM_STATUSES)})",
+            hint="set `status: draft` and rerun the claim with `dr draft --claim <ref> --force`",
+        ))
     return issues
 
 
@@ -175,7 +199,7 @@ def check_verdict_sidecar_mismatch(
                 f'published verdict "{verdict}" differs from the pipeline verdict '
                 f'"{analyst}" and no reviewer override is recorded'
             ),
-            hint="re-run `dr draft --claim <ref> --force`, or approve with `dr review` to record the override",
+            hint="re-run `dr recheck --claim <ref>`, or approve with `dr review` to record the override",
         ))
     return issues
 

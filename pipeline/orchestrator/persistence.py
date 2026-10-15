@@ -27,7 +27,6 @@ if TYPE_CHECKING:
     from loop import ClaimSpec, VerificationResult, VerifyConfig
     from orchestrator.entity_resolution import ResolvedEntity, SearchHints
 from common.models import (
-    BlockedReason,
     ClaimStatus,
     Category,
     Confidence,
@@ -442,7 +441,7 @@ DEFAULT_RECHECK_CADENCE_DAYS = 60
 CLAIM_FRONTMATTER_KEYS: tuple[str, ...] = (
     "title", "statement", "entity", "topics", "verdict", "confidence",
     "verification_level", "cap_rationale", "takeaway", "seo_title",
-    "criteria_slug", "status", "phase", "blocked_reason", "as_of", "sources",
+    "criteria_slug", "status", "phase", "as_of", "sources",
     "source_overrides", "corrections", "tags",
     "recheck_cadence_days", "next_recheck_due", "audit",
 )
@@ -461,7 +460,6 @@ def _write_claim_file(
     repo_root: Path,
     force: bool = False,
     status: str = "draft",
-    blocked_reason: BlockedReason | None = None,
     criteria_slug: str | None = None,
     seo_title: str | None = None,
     takeaway: str | None = None,
@@ -486,21 +484,18 @@ def _write_claim_file(
     ``statement`` is the sentence the loop re-runs; the pipeline passes the
     same text as ``title``.
 
-    Pass ``status='blocked'`` plus a ``blocked_reason`` for the
-    threshold-blocked variant; the caller supplies a placeholder
-    ``narrative`` and ``verdict``/``confidence`` since the Analyst did
-    not run.
-
     On a forced overwrite, the existing ``seo_title`` wins when an operator
     wrote it (it differs from the analyst's last one, recorded as
     ``analyst_record`` in the audit sidecar) and the title is unchanged from
     the analyst's last title (ignoring case and spacing). The existing
-    ``takeaway`` wins when the analyst gives none, and when an operator wrote
+    ``takeaway`` wins when the analyst gives none, when an operator wrote
     it (it differs from the analyst's last one in the record) while the
-    verdict is the analyst's last verdict. The existing ``cap_rationale``
+    verdict is the record's verdict, and when it is the takeaway an
+    Evaluator rerun's verdict rewrite tied to the verdict it was written for
+    (``takeaway_verdict`` in the record) and that verdict is written again.
+    The existing ``cap_rationale``
     wins when an operator wrote it (it differs from the pipeline's last one in
-    the record), whatever the new level or confidence, and on a blocked
-    write. With no recorded ``cap_rationale``, the existing one wins only on
+    the record), whatever the new level or confidence. With no recorded ``cap_rationale``, the existing one wins only on
     a capped level (``claimed`` or ``self-reported``) while
     ``verification_level`` and ``confidence`` are both unchanged, and not
     when ``cap_rationale_fitted`` says the level fit wrote the passed one.
@@ -544,8 +539,8 @@ def _write_claim_file(
     existing_corrections = existing_fm.get("corrections") or None
     existing_tags = existing_fm.get("tags") or []
 
-    # Compared against the analyst's last title, not the file's: a blocked
-    # write in between replaces the title with a placeholder.
+    # Compared against the analyst's last title, not the file's: an operator
+    # may have edited the title since.
     record = _read_analyst_record(claim_path, existing_fm)
     recorded_title = record.get("title")
     if (
@@ -559,10 +554,16 @@ def _write_claim_file(
         seo_title = existing_seo_title
 
     # A takeaway with no record counts as the operator's (record.get gives None).
+    # One an Evaluator rerun found on disk when it rewrote the verdict is
+    # judged against the verdict it was written for (write_evaluator_rerun).
     if takeaway is None or (
         existing_takeaway
         and existing_takeaway != record.get("takeaway")
         and record.get("verdict") == _enum_value(verdict)
+    ) or (
+        existing_takeaway
+        and existing_takeaway == record.get("takeaway")
+        and record.get("takeaway_verdict") == _enum_value(verdict)
     ):
         takeaway = existing_takeaway
 
@@ -570,7 +571,7 @@ def _write_claim_file(
     # With a record, a rationale that differs from the pipeline's last one is
     # the operator's and wins over any new one until the operator edits it,
     # on every write: the claim page shows it only on a capped level, so on an
-    # uncapped or blocked claim it waits unseen for the next capped run.
+    # uncapped claim it waits unseen for the next capped run.
     # Without a record the text on disk may be a stale analyst one, so it is
     # kept only on a capped level while the level and confidence it explains
     # hold, and never over the level fit's.
@@ -605,7 +606,6 @@ def _write_claim_file(
         "seo_title": seo_title,
         "criteria_slug": criteria_slug,
         "status": status,
-        "blocked_reason": blocked_reason,
         "as_of": as_of,
         "next_recheck_due": next_recheck_due,
         "recheck_cadence_days": cadence,
@@ -620,13 +620,11 @@ def _write_claim_file(
     )
     logger.info("Wrote claim: %s (status=%s)", claim_path, status)
 
-    # Only an analyst's proposal updates the record; a blocked write keeps it.
-    if _enum_value(status) != ClaimStatus.BLOCKED.value:
-        record = updated_analyst_record(
-            title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway,
-            cap_rationale=analyst_cap_rationale, previous=record,
-            uncited_by_title=uncited_by_title,
-        )
+    record = updated_analyst_record(
+        title, analyst_seo_title, verdict=verdict, takeaway=analyst_takeaway,
+        cap_rationale=analyst_cap_rationale, previous=record,
+        uncited_by_title=uncited_by_title,
+    )
     if record:
         _store_analyst_record(claim_path, record)
     return claim_path
@@ -644,11 +642,15 @@ def updated_analyst_record(
 ) -> dict:
     """The sidecar ``analyst_record`` block after an analyst's write.
 
-    It holds what the analyst proposed, never a value a keep rule left on
-    disk, so the next write can tell the operator's text from the analyst's.
-    The one exception is ``verdict``: it is the verdict as written (the
-    pipeline verdict, which a tie-breaker can set against the analyst), since
-    the takeaway keep rule compares it with the next written verdict.
+    It holds what the analyst proposed, so the next write can tell the
+    operator's text from the analyst's. ``verdict`` is the verdict as
+    written (the pipeline verdict, which a tie-breaker can set against the
+    analyst). An Evaluator-only rerun that rewrites the verdict records the
+    new verdict and the takeaway on disk, with ``takeaway_verdict`` naming
+    the verdict an operator's takeaway was written for and
+    ``rewritten_from`` the verdict it replaced (``write_evaluator_rerun``);
+    an analyst takeaway clears ``takeaway_verdict``, and an analyst verdict
+    clears ``rewritten_from``.
     A field the analyst left out keeps its ``previous`` value: title and
     seo_title change together, since the seo_title shortens that title.
     ``cap_rationale`` is the value after the level fit, and None is recorded
@@ -662,8 +664,10 @@ def updated_analyst_record(
         record["seo_title"] = seo_title
     if verdict is not None:
         record["verdict"] = _enum_value(verdict)
+        record.pop("rewritten_from", None)
     if takeaway is not None:
         record["takeaway"] = takeaway
+        record.pop("takeaway_verdict", None)
     record["cap_rationale"] = cap_rationale
     if uncited_by_title is not None:
         record["uncited_by_title"] = list(uncited_by_title)
@@ -683,14 +687,23 @@ def _read_analyst_record(claim_path: Path, existing_fm: dict) -> dict:
 
     Read from the audit sidecar. A claim written before the record existed
     gets its file title and verdict with no seo_title or takeaway, so any
-    seo_title or takeaway on disk counts as the operator's; a blocked file
-    gives neither, since it holds placeholders.
+    seo_title or takeaway on disk counts as the operator's. A record whose
+    ``verdict`` differs from the claim's while its ``rewritten_from`` (the
+    verdict an Evaluator rerun replaced, ``write_evaluator_rerun``) equals the
+    claim's is read with the claim's verdict.
     """
     recorded = (read_sidecar(claim_path) or {}).get("analyst_record")
     if isinstance(recorded, dict):
+        replaced = recorded.get("rewritten_from")
+        on_disk = _enum_value(existing_fm.get("verdict"))
+        if replaced is not None and recorded.get("verdict") != on_disk and replaced == on_disk:
+            # An Evaluator rerun records its new verdict before the claim write; a claim that
+            # still shows the verdict it replaced was never rewritten (or was set back by hand),
+            # so the takeaway on disk is judged against the verdict it shows.
+            return {**recorded, "verdict": on_disk}
         return recorded
     existing_title = existing_fm.get("title")
-    if isinstance(existing_title, str) and existing_fm.get("status") != ClaimStatus.BLOCKED.value:
+    if isinstance(existing_title, str):
         return {
             "title": existing_title,
             "seo_title": None,
@@ -848,12 +861,13 @@ def _refresh_block(
 ) -> dict | None:
     """Build the sidecar ``refresh`` block, or None when no refresh awaits re-approval.
 
-    A pending block carries forward unchanged, so a second refresh before
-    re-approval does not replace the published state with the unapproved one.
-    It also wins over a new snapshot: approval and archiving never leave a
-    block on a published claim, so a published claim with one
-    is a refresh that wrote its sidecar and then failed to write the claim,
-    and that sidecar's ``human_review`` is already reset.
+    Only ``promote_pending`` starts a block, from the live claim's published
+    state (``previous_publication``). A block already in ``existing`` carries
+    forward and wins over a new snapshot: approval and archiving never leave
+    a block on a published claim, so a live sidecar with one is a promotion
+    that stopped part-way, and its ``previous`` is the sign-off a reader last
+    saw. ``dropped_sources`` is recomputed against ``current_source_ids``
+    (the promoted claim's sources) when they are given.
     """
     if isinstance(existing.get("refresh"), dict):
         block = dict(existing["refresh"])
@@ -885,26 +899,6 @@ def _edit_sidecar(claim_path: Path, edit: Callable[[dict], bool]) -> None:
         )
 
 
-def clear_audit(claim_path: Path) -> None:
-    """Set the sidecar's ``audit`` block to null for a new analysis of the claim.
-
-    For a rewrite that runs the analyst but not the Evaluator (``dr
-    step-analyze --write``): the Evaluator's verdict and reasoning describe
-    the old analysis, so comparing them with the new verdict would show an
-    agreement nobody checked, and ``dr review --approve`` would read the old
-    analyst verdict as a reviewer's override. The claim page shows the
-    Evaluator check as unavailable until ``dr step-audit --write``, as for a
-    blocked claim. Call it before the claim write.
-    """
-    def edit(data: dict) -> bool:
-        if data.get("audit") is None:
-            return False
-        data["audit"] = None
-        return True
-
-    _edit_sidecar(claim_path, edit)
-
-
 def record_restatement_pick(claim_path: Path, n: int) -> None:
     """Set ``restatement.picked`` to ``n`` in the claim's sidecar.
 
@@ -927,19 +921,19 @@ def record_restatement_pick(claim_path: Path, n: int) -> None:
 
 
 def mark_forced_rewrite(claim_path: Path) -> bool:
-    """Prepare a forced rewrite of a claim on disk that is not a draft.
+    """Check that a forced rewrite may land on the claim on disk; call it before the claim write.
 
-    Only a draft or a blocked claim is rewritten in place. A blocked claim
-    with a verdict is no longer blocked, so it is written back as a draft (or
-    blocked) and its sidecar's ``human_review`` is reset. A published or
-    archived claim is never rewritten in place: its rerun is a pending draft
-    (``write_pending_recheck``) and only ``promote_pending`` replaces it, so
-    one raises ``ValueError`` here (the commands refuse it first). Call it
-    before the claim write.
+    Only a draft is rewritten in place, and it is left as it is (its
+    sign-off included). A published or archived claim is never rewritten in
+    place: its rerun is a pending draft (``write_pending_recheck``,
+    ``write_pending_rerun``) and only ``promote_pending`` replaces it, so one
+    raises ``ValueError`` here (the commands refuse it first). A claim whose
+    ``status`` is none of the three is refused the same way an unparseable
+    claim is: its frontmatter is fixed by hand before a rerun.
 
-    Returns True when the claim was not a draft. A missing claim or a draft
-    is left alone, and so is an unparseable claim, which the forced claim
-    write then refuses with its own message.
+    Returns False: nothing is changed. A missing claim is left alone, and so
+    is an unparseable one, which the forced claim write then refuses with its
+    own message.
     """
     try:
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
@@ -951,15 +945,12 @@ def mark_forced_rewrite(claim_path: Path) -> bool:
     if status in (ClaimStatus.PUBLISHED.value, ClaimStatus.ARCHIVED.value):
         raise ValueError(
             f"{claim_path} is {status}; a rerun of it is written as a pending draft "
-            "(dr recheck --claim), never over the live claim"
+            "(dr recheck --claim or dr draft --claim --rerun), never over the live claim"
         )
-
-    def edit(data: dict) -> bool:
-        data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
-        return True
-
-    _edit_sidecar(claim_path, edit)
-    return True
+    raise ValueError(
+        f"cannot rewrite {claim_path}: its status {status!r} is not draft, published or archived; "
+        "fix its frontmatter before re-running"
+    )
 
 
 # The top-level keys ``_write_audit_sidecar`` owns; any other key on an
@@ -985,6 +976,7 @@ def _write_audit_sidecar(
     analyst_record: dict | None = None,
     level_clamp: str | None = None,
     keep_other_models: bool = False,
+    drop_models: tuple[str, ...] = (),
     run_id: str | None = None,
     restatement: dict | None = None,
     restates: str | None = None,
@@ -1007,7 +999,8 @@ def _write_audit_sidecar(
 
     ``keep_other_models`` keeps the existing ``models_used`` entries of agents
     this run did not invoke, for a run that rewrites the sidecar without
-    rewriting what those agents produced (``dr step-audit --write``).
+    rewriting what those agents produced (``dr draft --claim --rerun``),
+    except the agents in ``drop_models``, whose output the run discards.
 
     ``run_id`` is written as ``pipeline_run.run_id``, so the sidecar names the
     run that wrote it.
@@ -1091,13 +1084,12 @@ def _write_audit_sidecar(
         # the default model. Drop any extras so the recorded dict mirrors the
         # agents this run actually invoked.
         models_used = {agent: models_used.get(agent, model) for agent in agents_run}
-    # Off by default: a blocked write runs fewer agents and replaces the
-    # claim with a placeholder, so an older analyst model would name output
-    # that is no longer on disk.
+    # Off by default: a full run replaces what every agent produced, so an
+    # older model entry would name output that is no longer on disk.
     prior_models = existing.get("models_used")
     if keep_other_models and isinstance(prior_models, dict):
         models_used = {
-            **{a: m for a, m in prior_models.items() if a not in models_used},
+            **{a: m for a, m in prior_models.items() if a not in models_used and a not in drop_models},
             **models_used,
         }
 
@@ -1440,16 +1432,53 @@ def write_pending_recheck(
     Raises ``ValueError`` for a run with no analyst output or a
     ``blocked_reason``, before anything is written.
     """
-    import shutil
-    import tempfile
-
     if result.analyst_output is None or result.blocked_reason is not None:
         raise ValueError("write_pending_recheck needs a run with an analyst output and no blocked_reason")
     live_path = Path(live_path)
+
+    def write(staged: Path, staging_base: Path) -> None:
+        write_claim_run(
+            result, spec, config,
+            repo_root=repo_root,
+            claim_slug=live_path.stem,
+            force=True,
+            target=staged,
+            url_index=url_index,
+            ran_at=ran_at,
+            claims_base=staging_base,
+        )
+
+    return _stage_pending(live_path, repo_root, write)
+
+
+def _stage_pending(live_path: Path, repo_root: Path, write: Callable[[Path, Path], None]) -> Path:
+    """Build a claim's pending pair in a staging directory and move it into place; return the pending claim path.
+
+    The staged pair is seeded from the existing pending pair, else from the
+    live pair (status draft, sign-off reset, no ``refresh`` block), then
+    ``write(staged_claim_path, staging_base)`` writes the run over it. A pair
+    seeded from the live one records, under ``SEEDED_LIVE_KEY`` in its
+    sidecar, the live ``takeaway``, ``seo_title``, ``cap_rationale``,
+    ``corrections`` and ``tags``, the live analyst title, and (under
+    ``pending``) the three text fields as the run wrote them on the pending
+    draft, so promotion can tell an edit made on either side afterwards
+    (``_merge_live_operator_fields``). A pair seeded from an existing pending
+    pair keeps that pair's record, settled as promotion would read it
+    (``_settled_seed``), with each ``pending`` value the reviewer had not
+    changed moved to what this run wrote. The moves (pending sidecar
+    removed, claim, sidecar) run only after ``write`` returns, so a failure
+    leaves the earlier pending pair, or none, as it was. The live pair is
+    never opened for writing.
+    """
+    import shutil
+    import tempfile
+
     pending_path = pending_path_for(live_path, repo_root)
     live_sidecar = sidecar_path_for(live_path)
     pending_sidecar = sidecar_path_for(pending_path)
     rel = live_path.relative_to(repo_root / CLAIMS_BASE)
+    seeded_live: dict | None = None
+    before: dict = {}
     staging = Path(tempfile.mkdtemp(prefix=RECHECK_STAGING_PREFIX, dir=repo_root))
     try:
         staging_base = Path(os.path.relpath(staging, repo_root))
@@ -1458,6 +1487,7 @@ def write_pending_recheck(
         staged.parent.mkdir(parents=True, exist_ok=True)
         if pending_path.exists():
             shutil.copyfile(pending_path, staged)
+            before, _ = parse_frontmatter(staged.read_text(encoding="utf-8"))
         else:
             try:
                 fm, body = parse_frontmatter(live_path.read_text(encoding="utf-8"))
@@ -1465,6 +1495,8 @@ def write_pending_recheck(
                 raise ValueError(
                     f"cannot parse existing claim {live_path}; fix its frontmatter before re-running: {exc}"
                 ) from exc
+            seeded_live = {key: fm.get(key) or None for key in _SEEDED_LIVE_FIELDS}
+            seeded_live["analyst_title"] = _read_analyst_record(live_path, fm).get("title")
             fm["status"] = ClaimStatus.DRAFT.value
             staged.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
         if pending_sidecar.exists():
@@ -1476,16 +1508,31 @@ def write_pending_recheck(
             data["human_review"] = {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
             data.pop("refresh", None)
             staged_sidecar.write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
-        write_claim_run(
-            result, spec, config,
-            repo_root=repo_root,
-            claim_slug=live_path.stem,
-            force=True,
-            target=staged,
-            url_index=url_index,
-            ran_at=ran_at,
-            claims_base=staging_base,
-        )
+        write(staged, staging_base)
+        after, _ = parse_frontmatter(staged.read_text(encoding="utf-8"))
+
+        def record_seed(data: dict) -> bool:
+            if seeded_live is not None:
+                data[SEEDED_LIVE_KEY] = {
+                    **seeded_live, "pending": {key: after.get(key) or None for key in _SEEDED_TEXT_FIELDS},
+                }
+                return True
+            stored = data.get(SEEDED_LIVE_KEY)
+            if not isinstance(stored, dict):
+                return False
+            record = _settled_seed(stored, pending_path)
+            pending_seed = record.get("pending")
+            if isinstance(pending_seed, dict):
+                # A value the reviewer left as seeded follows the run, so a live edit can still be
+                # taken over it; one the reviewer changed stays a review edit.
+                record["pending"] = {
+                    key: (after.get(key) or None) if (before.get(key) or None) == (seed or None) else seed
+                    for key, seed in pending_seed.items()
+                }
+            data[SEEDED_LIVE_KEY] = record
+            return True
+
+        _edit_sidecar(staged, record_seed)
         pending_path.parent.mkdir(parents=True, exist_ok=True)
         pending_sidecar.unlink(missing_ok=True)
         os.replace(staged, pending_path)
@@ -1522,27 +1569,45 @@ def promotion_half_done(live_path: Path, repo_root: Path) -> bool:
 def promote_pending(live_path: Path, repo_root: Path, *, ran_at: datetime.datetime | None = None) -> Path:
     """Move a pending recheck over its live claim; return the live path.
 
-    First the pending sidecar gains the ``refresh`` block: the live claim's
-    published state (``_read_published_snapshot``; none for an archived
-    claim) and the ``dropped_sources`` the pending draft no longer cites. A
-    ``refresh`` block already on the live sidecar (left by a promotion that
-    stopped part-way) carries forward instead, so a recheck run in between
-    does not replace the prior sign-off with the reset one. Then the
-    sidecar, then the claim, replace the live files, and empty directories
-    under ``research/pending/`` are removed. The live pair is then a draft
+    First the pending claim takes the operator fields edited on the live
+    claim after the recheck seeded the pending pair, keeping the ones edited
+    on the pending draft (``_merge_live_operator_fields``); a claim that does
+    not parse raises there with nothing written. Then the pending sidecar
+    gains the ``refresh`` block: the live claim's published state
+    (``_read_published_snapshot``; none for an archived claim) and the
+    ``dropped_sources`` the pending draft no longer cites. A ``refresh``
+    block already on the live sidecar (left by a promotion that stopped
+    part-way) carries forward instead, so a recheck run in between does not
+    replace the prior sign-off with the reset one. Then the sidecar, then
+    the claim, replace the live files; the seed record (``SEEDED_LIVE_KEY``)
+    is removed from the live sidecar, and empty directories under
+    ``research/pending/`` are removed. The live pair is then a draft
     awaiting re-approval with a pending refresh, which ``dr review
-    --approve`` completes. A crash after both moves leaves that state; a
-    crash between them (``promotion_half_done``) is finished by the next
-    call, which moves the claim only. Both are completed by a second
-    ``--approve``. For an archived live claim no snapshot is written, so a
-    crash between the moves is not detected: the hand fix is to move the
-    pending claim over the live one.
+    --approve`` completes.
+
+    A stop at any write is finished by calling this again (a second
+    ``--approve``). Before the sidecar move the retry is a fresh promotion;
+    between the two moves (``promotion_half_done``) the seed record is on
+    the live sidecar, and the retry merges against it, then moves the claim.
+    Either way the merge reads the record as the last write left it
+    (``_settled_seed``), so a review edit on the pending draft and an
+    operator edit on the live claim made before the retry are kept or
+    dropped exactly as a promotion that never stopped would treat them. A
+    stop after the claim move leaves a draft whose
+    sidecar still holds the seed record; its approval removes it.
+
+    For an archived live claim no snapshot is written, so a stop between
+    the moves is not detected: the hand fix is to move the pending claim
+    over the live one, and an edit made on the live claim after the first
+    attempt is then lost.
     """
     live_path = Path(live_path)
     pending_path = pending_path_for(live_path, repo_root)
     pending_sidecar = sidecar_path_for(pending_path)
     if promotion_half_done(live_path, repo_root):
         logger.info("Finishing a promotion that stopped after the sidecar move: %s", live_path)
+        # The seed record moved with the sidecar, so the merge reads it from the live side.
+        _merge_live_operator_fields(live_path, pending_path, record_path=live_path)
         return _finish_promotion(live_path, pending_path, repo_root)
     if not pending_path.exists() or not pending_sidecar.exists():
         raise FileNotFoundError(f"no pending recheck pair at {pending_path}")
@@ -1550,6 +1615,7 @@ def promote_pending(live_path: Path, repo_root: Path, *, ran_at: datetime.dateti
     previous_publication = _read_published_snapshot(live_path)
     live_sidecar = read_sidecar(live_path) or {}
     existing = {"refresh": live_sidecar["refresh"]} if isinstance(live_sidecar.get("refresh"), dict) else {}
+    _merge_live_operator_fields(live_path, pending_path, record_path=pending_path)
     pending_fm, _ = parse_frontmatter(pending_path.read_text(encoding="utf-8"))
     current_source_ids = [str(s) for s in pending_fm.get("sources") or []]
 
@@ -1577,8 +1643,17 @@ def promote_pending(live_path: Path, repo_root: Path, *, ran_at: datetime.dateti
 
 
 def _finish_promotion(live_path: Path, pending_path: Path, repo_root: Path) -> Path:
-    """The second move of a promotion: the pending claim over the live one, then empty pending directories."""
+    """The second move of a promotion: the pending claim over the live one, then the seed record and empty pending directories.
+
+    The seed record stays on the live sidecar until the claim has moved: a
+    stop before the move is a half-done promotion, whose retry merges
+    against it. Merge copies a stopped merge left beside the pending claim
+    are removed with it.
+    """
     os.replace(pending_path, live_path)
+    _edit_sidecar(live_path, lambda data: data.pop(SEEDED_LIVE_KEY, None) is not None)
+    for copy in pending_path.parent.glob(f"{pending_path.name}.*{_MERGE_COPY_SUFFIX}"):
+        copy.unlink(missing_ok=True)
     pending_root = repo_root / PENDING_BASE
     directory = pending_path.parent
     while directory != pending_root and pending_root in directory.parents:
@@ -1591,24 +1666,205 @@ def _finish_promotion(live_path: Path, pending_path: Path, repo_root: Path) -> P
     return live_path
 
 
-def write_evaluator_rerun(
-    claim_path: Path,
-    result: VerificationResult,
-    config: VerifyConfig,
-    *,
-    ran_at: datetime.datetime | None = None,
-) -> Path:
-    """Rewrite a claim's sidecar after an Evaluator-only rerun; return the sidecar path.
+# The claim fields an operator owns on the live claim: the public record of
+# what changed and the homepage card picks. The keep rules carry them into
+# the pending draft unchanged; promotion takes the live value only when it
+# changed after seeding, and when the pending draft's list changed too it
+# keeps both sides' additions and applies both sides' removals
+# (``_merged_entries``).
+_LIVE_OPERATOR_FIELDS = ("corrections", "tags")
 
-    The claim file is not rewritten, so the research trace, the
-    ``sub_questions`` block, each ``sources_consulted`` entry (with its
-    ``acquisition`` and ``archive`` records), the level fit's note and the
-    other agents' ``models_used`` are carried forward from the existing
-    sidecar. A source the existing sidecar does not list gets a minimal
-    entry. When the rerun's disagreement went to the tie-breaker, it is
-    recorded beside the Evaluator. The ``restatement`` block, pick included,
-    is carried unchanged: a rerun never restates.
+# The text fields the keep rules decide (``_write_claim_file``). Promotion
+# takes a live edit of one only when the pending draft still has the value
+# the seed record holds for it (under ``pending``), so a review edit wins.
+_SEEDED_TEXT_FIELDS = ("takeaway", "seo_title", "cap_rationale")
+
+# The fields a pending pair seeded from the live claim records under
+# ``SEEDED_LIVE_KEY`` in its sidecar. Promotion compares the live claim with
+# that record to find an edit made after seeding, which the keep rules never
+# saw (``_merge_live_operator_fields``).
+_SEEDED_LIVE_FIELDS = (*_SEEDED_TEXT_FIELDS, *_LIVE_OPERATOR_FIELDS)
+SEEDED_LIVE_KEY = "seeded_live"
+
+# A merge writes the merged pending claim to a sibling
+# ``<claim>.md.<token>.merge`` and moves it over the claim; the token names
+# the copy in the seed record's ``next`` (``_settled_seed``).
+_MERGE_COPY_SUFFIX = ".merge"
+
+
+def _merge_copy_path(pending_path: Path, token: str) -> Path:
+    return pending_path.with_name(f"{pending_path.name}.{token}{_MERGE_COPY_SUFFIX}")
+
+
+def _settled_seed(record: dict, pending_path: Path) -> dict:
+    """The seed record as the last merge left it.
+
+    A merge records its result as ``next`` (with ``copy``, the token of the
+    merged claim copy it then moves over the pending claim) before the move.
+    While that copy is still on disk the move never happened, so the record
+    without ``next`` holds; once it is gone (or the merge wrote no copy),
+    ``next`` holds. A copy is never removed before ``next`` names a new one,
+    so a stop at any merge write leaves this answer true.
     """
+    base = {key: value for key, value in record.items() if key != "next"}
+    following = record.get("next")
+    if not isinstance(following, dict):
+        return base
+    token = following.get("copy")
+    if token and _merge_copy_path(pending_path, str(token)).exists():
+        return base
+    return {key: value for key, value in following.items() if key != "copy"}
+
+
+def _correction_key(entry: object) -> object:
+    if isinstance(entry, dict):
+        return (str(entry.get("date")), entry.get("summary"), str(entry.get("previous_verdict")))
+    return repr(entry)
+
+
+def _merged_entries(live: list | None, pending: list | None, seeded: list | None) -> list | None:
+    """Both sides' ``corrections`` or ``tags``: every entry either side added since seeding, less any either side removed.
+
+    The live claim's order, then the pending draft's; corrections are then
+    sorted newest first by ``date`` (the sort is stable, and leaves tags,
+    which have no date, in that order).
+    """
+    seeded_keys = {_correction_key(e) for e in seeded or []}
+    live_keys = {_correction_key(e) for e in live or []}
+    pending_keys = {_correction_key(e) for e in pending or []}
+    removed = (seeded_keys - live_keys) | (seeded_keys - pending_keys)
+    merged: list = []
+    seen: set = set()
+    for entry in [*(live or []), *(pending or [])]:
+        key = _correction_key(entry)
+        if key in seen or key in removed:
+            continue
+        seen.add(key)
+        merged.append(entry)
+    merged.sort(key=lambda e: str(e.get("date")) if isinstance(e, dict) else "", reverse=True)
+    return merged or None
+
+
+def _merge_live_operator_fields(live_path: Path, pending_path: Path, *, record_path: Path) -> None:
+    """Give the pending claim the operator fields edited on the live claim since the pending pair was seeded.
+
+    The seed record is ``SEEDED_LIVE_KEY`` in ``record_path``'s sidecar (the
+    pending one, or the live one between a promotion's two moves), read as
+    the last merge left it (``_settled_seed``). A field whose live value is
+    unchanged since then keeps the pending value. A field edited on the
+    live claim is taken from it for ``tags`` and ``corrections`` (a field
+    the live claim lacks is removed), unless the pending draft's list
+    changed as well, when both sides' additions are kept and both sides'
+    removals applied (``_merged_entries``). ``takeaway``, ``seo_title`` and
+    ``cap_rationale`` are taken from the live claim only while the pending
+    draft still has the value the record holds for it under ``pending``
+    (a review edit, the review queue's ``e`` key or a hand edit, wins), and
+    under the keep rules: ``takeaway`` while the pending verdict equals the
+    live one, ``seo_title`` while the analyst's title is unchanged (the
+    live analyst title recorded at seeding against the pending
+    ``analyst_record``, ignoring case and spacing), ``cap_rationale``
+    always. A pending pair whose record lacks a field (or, for those three,
+    lacks ``pending``) cannot tell a live edit from a review edit, so the
+    pending value stands: an edit made on the live claim after seeding is
+    then lost.
+
+    Writes, in order: the merged claim to a sibling copy (only when a value
+    changes), the record's ``next`` (the live and pending values as this
+    merge leaves them, and the copy's token), then the copy moved over the
+    pending claim. A stop before the move leaves the copy, so a retry reads
+    the earlier record and merges again against the pending claim as it
+    then is; a stop after it leaves ``next`` in force, so a retry treats
+    any later difference on either side as a new edit. Raises
+    ``ValueError`` when either claim's frontmatter does not parse, before
+    anything is written. With no live claim there is nothing to carry.
+    """
+    import secrets
+
+    if not live_path.exists():
+        return
+    live_fm, _ = parse_frontmatter(live_path.read_text(encoding="utf-8"))
+    pending_fm, body = parse_frontmatter(pending_path.read_text(encoding="utf-8"))
+    stored = (read_sidecar(record_path) or {}).get(SEEDED_LIVE_KEY)
+    if not isinstance(stored, dict):
+        return
+    seeded = _settled_seed(stored, pending_path)
+    pending_seed = seeded.get("pending") if isinstance(seeded.get("pending"), dict) else None
+    changed = False
+
+    def take(key: str, value: object) -> None:
+        nonlocal changed
+        if (pending_fm.get(key) or None) == value:
+            return
+        changed = True
+        if value is None:
+            pending_fm.pop(key, None)
+        else:
+            pending_fm[key] = FlowList(value) if key == "tags" else value
+
+    for key in _LIVE_OPERATOR_FIELDS:
+        if key not in seeded:
+            continue
+        live_value = live_fm.get(key) or None
+        seed_value = seeded.get(key) or None
+        if live_value == seed_value:
+            continue
+        pending_value = pending_fm.get(key) or None
+        if pending_value != seed_value:
+            take(key, _merged_entries(live_value, pending_value, seed_value))
+        else:
+            take(key, live_value)
+
+    if "analyst_title" in seeded:
+        live_title = seeded["analyst_title"]
+    else:
+        live_title = _read_analyst_record(live_path, live_fm).get("title")
+    pending_title = _read_analyst_record(pending_path, pending_fm).get("title")
+    allowed = {
+        "takeaway": _enum_value(live_fm.get("verdict")) == _enum_value(pending_fm.get("verdict")),
+        "seo_title": (
+            isinstance(live_title, str)
+            and isinstance(pending_title, str)
+            and normalize_title(live_title) == normalize_title(pending_title)
+        ),
+        "cap_rationale": True,
+    }
+    for key in _SEEDED_TEXT_FIELDS:
+        value = live_fm.get(key) or None
+        if (
+            key in seeded
+            and value != (seeded.get(key) or None)
+            and pending_seed is not None
+            and key in pending_seed
+            and (pending_fm.get(key) or None) == (pending_seed.get(key) or None)
+            and allowed[key]
+        ):
+            take(key, value)
+
+    following = dict(seeded)
+    for key in _SEEDED_LIVE_FIELDS:
+        if key in seeded:
+            value = live_fm.get(key) or None
+            following[key] = list(value) if isinstance(value, list) else value
+    if pending_seed is not None:
+        following["pending"] = {key: pending_fm.get(key) or None for key in pending_seed}
+    if following == seeded and not changed:
+        return
+    token = secrets.token_hex(6) if changed else None
+    if token is not None:
+        copy = _merge_copy_path(pending_path, token)
+        copy.write_text(serialize_frontmatter(pending_fm, body), encoding="utf-8")
+
+    def record_next(data: dict) -> bool:
+        data[SEEDED_LIVE_KEY] = {**seeded, "next": {**following, "copy": token}}
+        return True
+
+    _edit_sidecar(record_path, record_next)
+    if token is not None:
+        os.replace(copy, pending_path)
+
+
+def _existing_sidecar(claim_path: Path) -> dict:
+    """The claim's sidecar as a dict; empty when it is missing or does not parse."""
     sidecar_path = sidecar_path_for(claim_path)
     existing: dict = {}
     if sidecar_path.exists():
@@ -1617,6 +1873,11 @@ def write_evaluator_rerun(
             existing = loaded if isinstance(loaded, dict) else {}
         except yaml.YAMLError:
             pass
+    return existing
+
+
+def _carried_sources_consulted(existing: dict, sources: list[dict]) -> list[dict]:
+    """One ``sources_consulted`` entry per rerun source: the existing sidecar's entry, else a minimal one."""
     prior_entries = {
         s["id"]: s
         for s in existing.get("sources_consulted") or []
@@ -1625,9 +1886,108 @@ def write_evaluator_rerun(
     sources_consulted = [
         dict(prior_entries[sd["source_id"]]) if sd["source_id"] in prior_entries else
         {"id": sd["source_id"], "url": sd.get("url", ""), "title": sd.get("title", ""), "ingested": True}
-        for sd in result.sources
+        for sd in sources
         if sd.get("source_id")
     ]
+    return sources_consulted
+
+
+def _drop_audit(data: dict) -> bool:
+    """``_edit_sidecar`` edit: set ``audit`` to null; False when it already is."""
+    if data.get("audit") is None:
+        return False
+    data["audit"] = None
+    return True
+
+
+def write_evaluator_rerun(
+    claim_path: Path,
+    result: VerificationResult,
+    config: VerifyConfig,
+    *,
+    ran_at: datetime.datetime | None = None,
+) -> Path:
+    """Rewrite a draft claim's sidecar after an Evaluator-only rerun; return the sidecar path.
+
+    The research trace, the ``sub_questions`` block, each
+    ``sources_consulted`` entry (with its ``acquisition`` and ``archive``
+    records), the level fit's note and the other agents' ``models_used`` are
+    carried forward from the existing sidecar. A source the existing sidecar
+    does not list gets a minimal entry. When the rerun's disagreement went to
+    the tie-breaker, it is recorded beside the Evaluator; otherwise an older
+    tie-breaker's ``models_used`` entry is dropped. The ``restatement``
+    block, pick included, is carried unchanged: a rerun never restates.
+
+    The claim file is rewritten only when the pipeline verdict
+    (``result.consistency.pipeline_verdict``, the side the tie-breaker
+    settled on) differs from the claim's ``verdict``: the claim then takes
+    that verdict and ``pipeline_confidence`` (capped at low on a capped
+    level the level fit set, as ``write_claim_run`` does). Before the claim
+    write, one sidecar edit sets ``audit`` to null and rewrites
+    ``analyst_record``, so a writer that stops part-way leaves no stale
+    grade and no record rebuilt from the new verdict. The record (or, with
+    none on disk, ``_read_analyst_record``'s fallback, whose missing
+    ``seo_title`` keeps an operator's ``seo_title`` the operator's) takes
+    the new verdict and the takeaway on disk, and ``takeaway_verdict``
+    names the verdict that takeaway was written for when it is an
+    operator's (it differs from the recorded one; a takeaway the record
+    already ties to a verdict keeps that tie): the takeaway keep rule then
+    keeps it only when that verdict is written again, and keeps an operator
+    takeaway written after this rewrite while the verdict holds.
+    ``rewritten_from`` names the verdict being replaced: a stop before the
+    claim write leaves the claim showing it, and ``_read_analyst_record``
+    then reads the record with the claim's verdict, so a takeaway an
+    operator writes for that verdict is kept while the analyst returns it.
+    The claim is written next, then the rest of the sidecar. Otherwise the
+    claim's bytes are unchanged.
+
+    A published or archived claim raises ``ValueError`` before any write:
+    its rerun is a pending draft (``write_pending_rerun``).
+    """
+    mark_forced_rewrite(claim_path)
+    existing = _existing_sidecar(claim_path)
+    sources_consulted = _carried_sources_consulted(existing, result.sources)
+    level_clamp = (existing.get("pipeline_run") or {}).get("level_clamp")
+    settled = result.consistency
+    analyst_record = None
+    if settled is not None and settled.pipeline_verdict is not None:
+        fm, body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+        verdict = _enum_value(settled.pipeline_verdict)
+        old_verdict = _enum_value(fm.get("verdict"))
+        if str(old_verdict) != verdict:
+            # Read before the claim write: with no record on disk the fallback
+            # is built from the file's own title, which keeps an operator's
+            # seo_title and takeaway counted as the operator's.
+            prior = _read_analyst_record(claim_path, fm)
+            disk_takeaway = fm.get("takeaway") or None
+            if not disk_takeaway:
+                takeaway_verdict = None
+            elif disk_takeaway == prior.get("takeaway"):
+                # The analyst's own takeaway (None), or one an earlier rewrite tied to its verdict.
+                takeaway_verdict = prior.get("takeaway_verdict")
+            else:
+                takeaway_verdict = old_verdict
+            confidence = _enum_value(settled.pipeline_confidence) or fm.get("confidence")
+            if level_clamp and _enum_value(fm.get("verification_level")) in _CAPPED_LEVELS:
+                confidence = Confidence.LOW.value
+            fm["verdict"] = verdict
+            fm["confidence"] = confidence
+            if prior:
+                analyst_record = {**prior, "verdict": verdict, "takeaway": disk_takeaway,
+                                  "takeaway_verdict": takeaway_verdict, "rewritten_from": old_verdict}
+
+            # The old grade names the old verdict as the pipeline's, and the
+            # record must be on disk before the claim write: after it, a
+            # missing record's fallback would be rebuilt from the new verdict.
+            def drop_audit_and_record(data: dict) -> bool:
+                changed = _drop_audit(data)
+                if analyst_record is not None and data.get("analyst_record") != analyst_record:
+                    data["analyst_record"] = analyst_record
+                    changed = True
+                return changed
+
+            _edit_sidecar(claim_path, drop_audit_and_record)
+            claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
     agents_run = ["auditor"]
     if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
         agents_run.append("tiebreaker")
@@ -1642,12 +2002,165 @@ def write_evaluator_rerun(
         models_used={a: config.model_for(a) for a in agents_run},
         research_trace=existing.get("research"),
         sub_questions_block=existing.get("sub_questions"),
-        # The claim is not rewritten, so the level fit's note on it still holds.
-        level_clamp=(existing.get("pipeline_run") or {}).get("level_clamp"),
+        analyst_record=analyst_record,
+        # The analysis is not rewritten, so the level fit's note on it still holds.
+        level_clamp=level_clamp,
         keep_other_models=True,
+        # A tie-breaker that ran is in models_used; an older one graded the
+        # old disagreement, whose output this grade replaces.
+        drop_models=("tiebreaker",),
         run_id=config.run_id,
         restatement=existing.get("restatement"),
     )
+
+
+def write_analyst_rerun(
+    claim_path: Path,
+    result: VerificationResult,
+    spec: ClaimSpec,
+    config: VerifyConfig,
+    *,
+    repo_root: Path,
+    claims_base: Path = CLAIMS_BASE,
+    ran_at: datetime.datetime | None = None,
+) -> Path:
+    """Rewrite a draft claim and its sidecar after an analyst-only rerun; return the claim path.
+
+    The claim is written through ``_write_claim_file`` with its keep rules
+    (``corrections``, ``tags``, an operator's ``seo_title``, ``takeaway``
+    and ``cap_rationale``): ``title`` and ``statement`` are both
+    ``spec.statement``, ``sources`` is the claim's stored list, and the
+    verdict, level and ``source_overrides`` are the rerun's (confidence
+    capped at low when the level fit lowered the level to a capped one, as
+    ``write_claim_run`` does). The sidecar's ``audit`` is set to null before
+    the claim write (the Evaluator graded the old analysis; ``dr draft
+    --claim <ref> --rerun evaluator`` grades the new one), so a writer that
+    stops part-way leaves no stale grade. Then the sidecar: ``pipeline_run`` names the analyst only
+    with this run's level fit note, the analyst's ``models_used`` entry is
+    replaced, the auditor's and tie-breaker's dropped and the others kept, and ``research``, ``sub_questions``, each
+    ``sources_consulted`` entry, ``restatement``, ``human_review`` and
+    unknown keys are carried forward.
+
+    ``claims_base`` is the tree the claim is under (a pending rerun's
+    staging directory, ``write_pending_rerun``). A published or archived
+    claim raises ``ValueError`` before any write.
+    """
+    ao = result.analyst_output
+    if ao is None or result.blocked_reason is not None:
+        raise ValueError("write_analyst_rerun needs a run with an analyst output and no blocked_reason")
+    claim_path = Path(claim_path)
+    entity_ref = spec.entity.entity_ref
+    entity_name = spec.entity.entity_name
+    expected = _claim_path_for(entity_ref, entity_name, claim_path.stem, repo_root, claims_base=claims_base)
+    if expected.resolve() != claim_path.resolve():
+        raise ValueError(f"{claim_path} is not the claim path {expected} for its entity {entity_ref}")
+    mark_forced_rewrite(claim_path)
+    fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    source_ids = [str(s) for s in fm.get("sources") or []]
+
+    topics = list(ao.verdict.topics)
+    if spec.topics:
+        # A criterion-backed claim carries the criterion's full topic set.
+        try:
+            topics = [Category(t) for t in spec.topics]
+        except ValueError as exc:
+            logger.warning("Criterion %s has an invalid topic; using the analyst's topics: %s",
+                           spec.criteria_slug, exc)
+    verdict, confidence = ao.verdict.verdict, ao.verdict.confidence
+    if result.level_clamp and _enum_value(ao.verdict.verification_level) in _CAPPED_LEVELS:
+        confidence = Confidence.LOW
+
+    # Null the old grade before the claim write, so a stop before the
+    # sidecar write cannot leave it beside the new analysis for approval to
+    # compare against.
+    _edit_sidecar(claim_path, _drop_audit)
+    written = _write_claim_file(
+        title=spec.statement,
+        statement=spec.statement,
+        entity_name=entity_name,
+        entity_ref=entity_ref,
+        topics=topics,
+        verdict=verdict,
+        confidence=confidence,
+        narrative=ao.verdict.narrative,
+        claim_slug=claim_path.stem,
+        source_ids=source_ids,
+        repo_root=repo_root,
+        force=True,
+        status=ClaimStatus.DRAFT.value,
+        criteria_slug=spec.criteria_slug,
+        seo_title=ao.verdict.seo_title,
+        takeaway=ao.verdict.takeaway,
+        uncited_by_title=result.uncited_by_title,
+        claims_base=claims_base,
+        **verdict_write_kwargs(ao.verdict),
+    )
+    existing = _existing_sidecar(written)
+    analyst_model = config.model_for("analyst")
+    _write_audit_sidecar(
+        claim_path=written,
+        comparison=None,
+        model=analyst_model,
+        ran_at=ran_at or datetime.datetime.now(tz=datetime.timezone.utc),
+        sources_consulted=_carried_sources_consulted(existing, result.sources),
+        agents_run=["analyst"],
+        models_used={"analyst": analyst_model},
+        research_trace=existing.get("research"),
+        sub_questions_block=existing.get("sub_questions"),
+        # Used only when the claim had no sidecar to hold the record.
+        analyst_record={
+            **analyst_record_for(ao.verdict, uncited_by_title=result.uncited_by_title),
+            "title": spec.statement,
+            "verdict": _enum_value(verdict),
+        },
+        level_clamp=result.level_clamp,
+        keep_other_models=True,
+        # ``audit`` is null, so no Evaluator or tie-breaker output is on disk.
+        drop_models=("auditor", "tiebreaker"),
+        run_id=config.run_id,
+        restatement=existing.get("restatement"),
+    )
+    return written
+
+
+def write_pending_rerun(
+    live_path: Path,
+    result: VerificationResult,
+    spec: ClaimSpec,
+    config: VerifyConfig,
+    *,
+    agent: str,
+    repo_root: Path,
+    ran_at: datetime.datetime | None = None,
+) -> Path:
+    """Write an analyst-only or Evaluator-only rerun of a published or archived claim as a pending draft; return its path.
+
+    The pending pair is staged and moved into place as ``write_pending_recheck``
+    does (seeded from the existing pending pair, else from the live pair with
+    the sign-off reset), and the staged copy is written by
+    ``write_analyst_rerun`` (``agent="analyst"``) or ``write_evaluator_rerun``
+    (``agent="evaluator"``). The live claim and its sidecar are never opened
+    for writing. Raises ``ValueError`` before anything is written for an
+    unknown agent or a run with nothing to write.
+    """
+    live_path = Path(live_path)
+    if agent == "analyst":
+        if result.analyst_output is None or result.blocked_reason is not None:
+            raise ValueError("write_pending_rerun needs a run with an analyst output and no blocked_reason")
+
+        def write(staged: Path, staging_base: Path) -> None:
+            write_analyst_rerun(
+                staged, result, spec, config, repo_root=repo_root, claims_base=staging_base, ran_at=ran_at,
+            )
+    elif agent == "evaluator":
+        if result.consistency is None:
+            raise ValueError("write_pending_rerun needs an Evaluator rerun with an assessment")
+
+        def write(staged: Path, staging_base: Path) -> None:
+            write_evaluator_rerun(staged, result, config, ran_at=ran_at)
+    else:
+        raise ValueError(f"rerun agent must be 'analyst' or 'evaluator', not {agent!r}")
+    return _stage_pending(live_path, repo_root, write)
 
 
 _UNSET = object()
@@ -1659,7 +2172,6 @@ def set_claim_status(
     expected_current: str | None,
     *,
     phase: object = _UNSET,
-    blocked_reason: object = _UNSET,
 ) -> None:
     """Flip the ``status`` field in a claim's frontmatter.
 
@@ -1670,10 +2182,8 @@ def set_claim_status(
     Optional kwargs:
         phase: When provided, sets the ``phase`` field. Pass ``None`` to
             clear it (e.g. on transition to a terminal state). Omitting
-            the argument leaves the existing value untouched.
-        blocked_reason: Same semantics as ``phase`` for ``blocked_reason``.
-            Both kwargs default to a sentinel that means "do not touch",
-            so existing draft → published / published → archived callers
+            the argument (a sentinel default) leaves the existing value
+            untouched, so draft → published / published → archived callers
             are unchanged.
 
     Raises:
@@ -1694,12 +2204,10 @@ def set_claim_status(
     fm["status"] = new_status
     # _clean_for_serialize drops None-valued keys (so passing None clears
     # the field on disk); the FrontmatterDumper enum representer handles
-    # enum-to-scalar conversion, so callers can pass Phase / BlockedReason
-    # values directly without a `.value` unwrap.
+    # enum-to-scalar conversion, so callers can pass Phase values directly
+    # without a `.value` unwrap.
     if phase is not _UNSET:
         fm["phase"] = phase
-    if blocked_reason is not _UNSET:
-        fm["blocked_reason"] = blocked_reason
     claim_path.write_text(serialize_frontmatter(fm, body), encoding="utf-8")
 
 

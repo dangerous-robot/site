@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Run dr lint, then inv check (site build, site tests, unit tests), before every commit.
+# Install once per checkout: ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+DR="$REPO_ROOT/.venv/bin/dr"
+
+# A missing dr fails the commit: skipping lint here would let a broken tree in.
+if [[ ! -x "$DR" ]]; then
+  echo "pre-commit: dr not found at $DR; run uv sync at the repo root" >&2
+  exit 1
+fi
+
+echo "pre-commit: running dr lint..."
+"$DR" lint --repo-root "$REPO_ROOT"
+
+echo "pre-commit: running inv check..."
+cd "$REPO_ROOT"
+inv check

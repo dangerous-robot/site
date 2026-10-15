@@ -7,6 +7,7 @@ Reference documents describing how the system works today. See [AGENTS.md](/AGEN
 | [site.md](site.md) | Astro stack, page routing, homepage, writing + Sveltia CMS admin, layout, build output, deployment |
 | [content-model.md](content-model.md) | Content types (entities, claims, sources, criteria, plus the editorial `writing` collection), Zod schemas, relationships, directory conventions |
 | [ci-deploy.md](ci-deploy.md) | CI/CD workflows, quality checks, citation validation, npm scripts |
+| [pipeline-commands.md](pipeline-commands.md) | The `dr` command contract: the five commands, flags, what each writes, archive.org captures, run rules |
 | [research-workflow.md](research-workflow.md) | Content lifecycle, agent roles, content rules, review cadence, quality gates |
 | [glossary.md](glossary.md) | Canonical vocabulary: research objects, roles, pipeline terms, governance rules |
 | [research-flow.md](research-flow.md) | Mermaid flow diagrams: initiation paths, pipeline, sign-off, rejection, publish, recheck |

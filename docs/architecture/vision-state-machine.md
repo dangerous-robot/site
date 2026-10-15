@@ -4,7 +4,7 @@
 
 ## Framing
 
-This project already behaves like a state machine, but only implicitly. Claims move through lifecycle states (draft, blocked, published, archived) and transient pipeline phases (researching, ingesting, analyzing, evaluating). Entities and sources have their own lifecycles (proposed, active, flagged, retired). The operator signs off at `dr review`; no run stops to ask a person anything. The vision is to make this implicit structure explicit, and to treat it as the central organizing model for the whole system.
+This project already behaves like a state machine, but only implicitly. Claims move through lifecycle states (draft, published, archived) and transient pipeline phases (researching, ingesting, analyzing, evaluating). Entities and sources have their own lifecycles (proposed, active, flagged, retired). The operator signs off at `dr review`; no run stops to ask a person anything. The vision is to make this implicit structure explicit, and to treat it as the central organizing model for the whole system.
 
 By "state machine" we mean the union of three things: the **claim lifecycle** (the durable status of a research output), the **pipeline phase** (where a claim currently sits in the research, ingest, analysis and evaluation steps, with the tie-breaker on a disagreement), and the **operator decision points** (the human transitions, which today means sign-off at `dr review`; disagreements and failed runs are settled by rules, see principle 3). Together these form a single graph of named states and named transitions. Every agent action is a transition. Every operator review is a transition. Nothing moves without being a transition.
 
@@ -12,10 +12,10 @@ By "state machine" we mean the union of three things: the **claim lifecycle** (t
 
 The pieces that already exist:
 
-- **Claim status** (`draft | blocked | published | archived`) with a `blocked_reason` enum captures durable lifecycle.
+- **Claim status** (`draft | published | archived`) captures durable lifecycle. A run that cannot reach a verdict writes no claim; its finding goes to `research/findings/`.
 - **Claim phase** (`researching | ingesting | analyzing | evaluating`) captures transient pipeline position.
 - **General object lifecycle** (`proposed | active | flagged | retired`) applies to entities and sources.
-- **Queue lifecycle** (intake, operator action, written, removed) captures candidate flow.
+- **Pending drafts** (`research/pending/`) hold a recheck's result for a published claim until the operator promotes or discards it in `dr review`.
 - **Audit sidecar** (`.audit.yaml` schema v1) records the most recent pipeline run, both verdicts, agreement flag, and human review block.
 
 What is missing is a unified statement that these are facets of one model, and a discipline that every change to any of them is a named, recorded transition.
@@ -38,8 +38,8 @@ A composable state machine raises an obvious question: who ticks it? If agents o
 
 Three roles such agents could play, in increasing intrusiveness:
 
-- **Observe.** A scheduled Worker reads the published research tree (via GitHub, an R2 mirror, or a built index), checks invariants (claims past `next_recheck_due`, claims in `blocked` longer than N days, queue depth, sidecar staleness), and emits alerts: an issue, a Slack ping, a status page. No state is changed.
-- **Nudge.** The same Worker, on finding a transition that should fire (a claim due for recheck, a queue item old enough to escalate), dispatches a GitHub Action or webhook that triggers the existing Python pipeline. The Worker does not run the LLM work; it requests it. Pre/post-conditions still live in the pipeline.
+- **Observe.** A scheduled Worker reads the published research tree (via GitHub, an R2 mirror, or a built index), checks invariants (claims past `next_recheck_due`, pending drafts waiting longer than N days, open findings, sidecar staleness), and emits alerts: an issue, a Slack ping, a status page. No state is changed.
+- **Nudge.** The same Worker, on finding a transition that should fire (a claim due for recheck, a finding old enough to escalate), dispatches a GitHub Action or webhook that triggers the existing Python pipeline. The Worker does not run the LLM work; it requests it. Pre/post-conditions still live in the pipeline.
 - **Execute.** Workers run the agent calls themselves, write back to the repo (or a D1/R2 store), and close the loop without operator involvement. This is the orchestration layer; it is also where simplicity is at greatest risk.
 
 How much does this change the current plan? **Very little, by design.** The five principles already accommodate it: if every transition has explicit pre/post-conditions and a recorded outcome, the question of *what triggers the transition* is decoupled from the question of *what the transition does*. The same agent code runs whether a human, a GitHub Action, or a Cron Trigger called it. Build-time validation still gates publication regardless of who pressed the button.
@@ -56,7 +56,7 @@ This is not BPMN, not a workflow engine, not event sourcing in the database sens
 
 ## Near-term direction
 
-- **Audit Trail Phase 2 and Phase 3** (`docs/plans/deferred/audit-trail-extensions.md`, deferred 2026-10-06; the refresh-trail slice is `docs/plans/completed/published-claim-refresh-trail.md`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
+- **Audit Trail Phase 2 and Phase 3** (`docs/plans/deferred/audit-trail-extensions.md`, deferred 2026-10-06; the refresh-trail slice is completed, see `docs/plans/completed/`) extends sidecars with the fields a transition log needs, and introduces append-only recheck history.
 - **Build-time staleness gate**, the first CI invariant in the state-machine spirit.
 - **Verification-level taxonomy** (`multiply-verified | independently-verified | partially-verified | self-reported | claimed`) — shipped since this doc was written: `verification_level` is live in the schema, scorer, and lint checks (see `source-quality.md`).
 - **Schema migration log**, required for transitions of the schema itself.

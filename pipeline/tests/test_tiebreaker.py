@@ -486,31 +486,31 @@ async def test_rerun_evaluator_settles_through_the_tiebreaker(tmp_path) -> None:
     assert result.finding is not None and result.finding.outcome == "split"
 
 
-def _step_audit_repo(tmp_path, claims: dict[str, dict]) -> Path:
-    """A repo with one company and these claims (name to frontmatter overrides), each with a sidecar."""
+def _rerun_repo(tmp_path) -> Path:
+    """A repo with one subject and one draft claim about it, with a sidecar; return the claim directory."""
     from common.frontmatter import serialize_frontmatter
 
-    companies = tmp_path / "research" / "entities" / "companies"
-    companies.mkdir(parents=True)
-    (companies / "example.md").write_text(
-        serialize_frontmatter({"name": "Example", "type": "company", "description": "A company."}, "Body.\n"),
+    subjects = tmp_path / "research" / "entities" / "subjects"
+    subjects.mkdir(parents=True)
+    (subjects / "example.md").write_text(
+        serialize_frontmatter({"name": "Example", "type": "subject", "description": "A subject."}, "Body.\n"),
         encoding="utf-8",
     )
-    claim_dir = tmp_path / "research" / "claims" / "example"
+    claim_dir = tmp_path / "research" / "claims" / "subjects" / "example"
     claim_dir.mkdir(parents=True)
-    for name, overrides in claims.items():
-        fm = {"title": f"Example claim {name}", "entity": "companies/example", "verdict": "mixed",
-              "confidence": "medium", "topics": ["environmental-impact"], "sources": [], **overrides}
-        (claim_dir / f"{name}.md").write_text(serialize_frontmatter(fm, "Body.\n"), encoding="utf-8")
-        (claim_dir / f"{name}.audit.yaml").write_text(yaml.safe_dump({
-            "schema_version": 1, "sources_consulted": [],
-            "models_used": {"researcher": "r-model", "ingestor": "i-model", "analyst": "a-model",
-                            "auditor": "old-auditor"},
-        }), encoding="utf-8")
+    fm = {"title": "Example claim", "statement": "Example claim", "entity": "subjects/example",
+          "verdict": "mixed", "confidence": "medium", "topics": ["environmental-impact"], "sources": [],
+          "status": "draft"}
+    (claim_dir / "claim.md").write_text(serialize_frontmatter(fm, "Body.\n"), encoding="utf-8")
+    (claim_dir / "claim.audit.yaml").write_text(yaml.safe_dump({
+        "schema_version": 1, "sources_consulted": [],
+        "models_used": {"researcher": "r-model", "ingestor": "i-model", "analyst": "a-model",
+                        "auditor": "old-auditor"},
+    }), encoding="utf-8")
     return claim_dir
 
 
-def _step_audit(tmp_path, *args: str):
+def _rerun_evaluator(tmp_path, ref: str):
     from orchestrator.cli import main
 
     with scripted_agents(
@@ -519,7 +519,7 @@ def _step_audit(tmp_path, *args: str):
     ):
         return CliRunner().invoke(main, [
             "--model", "test", "--auditor-model", "test", "--tiebreaker-model", "test",
-            "step-audit", *args, "--write", "--repo-root", str(tmp_path),
+            "draft", "--claim", ref, "--rerun", "evaluator", "--repo-root", str(tmp_path),
         ])
 
 
@@ -528,9 +528,11 @@ def _findings(tmp_path) -> list[dict]:
             for p in sorted((tmp_path / "research" / "findings").rglob("*.yaml"))]
 
 
-def test_step_audit_write_records_a_tie_broken_disagreement(tmp_path) -> None:
-    claim_dir = _step_audit_repo(tmp_path, {"claim": {"status": "draft"}})
-    result = _step_audit(tmp_path, "--claim", "example/claim")
+def test_rerun_evaluator_records_a_tie_broken_disagreement(tmp_path) -> None:
+    from common.frontmatter import parse_frontmatter
+
+    claim_dir = _rerun_repo(tmp_path)
+    result = _rerun_evaluator(tmp_path, "subjects/example/claim")
 
     assert result.exit_code == 0, result.output
     data = yaml.safe_load((claim_dir / "claim.audit.yaml").read_text(encoding="utf-8"))
@@ -545,36 +547,10 @@ def test_step_audit_write_records_a_tie_broken_disagreement(tmp_path) -> None:
         "researcher": "r-model", "ingestor": "i-model", "analyst": "a-model",
         "auditor": "test", "tiebreaker": "test",
     }
+    # The claim takes the verdict the tie-breaker settled on (a draft rerun in place).
+    fm, _ = parse_frontmatter((claim_dir / "claim.md").read_text(encoding="utf-8"))
+    assert fm["verdict"] == "true"
     (finding,) = _findings(tmp_path)
     assert finding["outcome"] == "split"
-    assert finding["command"] == "dr step-audit"
-    assert finding["claim_ref"].endswith("example/claim")
-
-
-def test_step_audit_write_gives_each_claim_its_own_finding(tmp_path) -> None:
-    _step_audit_repo(tmp_path, {"first": {"status": "draft"}, "second": {"status": "draft"}})
-    result = _step_audit(tmp_path, "--entity", "example")
-
-    assert result.exit_code == 0, result.output
-    findings = _findings(tmp_path)
-    assert len(findings) == 2
-    assert findings[0]["run_id"] != findings[1]["run_id"]
-    assert sorted(f["claim_ref"].rsplit("/", 1)[-1] for f in findings) == ["first", "second"]
-
-
-def test_step_audit_write_in_a_batch_grades_a_published_claim_but_writes_no_sidecar(tmp_path) -> None:
-    """An --entity batch grades a published claim, keeps its finding and writes no live sidecar.
-
-    Since RE-AW (Recheck) the guard holds whatever the verdict does (this
-    fixture splits it); --write with --claim on a published claim is refused
-    before the model call (test_recheck.py).
-    """
-    claim_dir = _step_audit_repo(tmp_path, {"claim": {"status": "published"}})
-    before = (claim_dir / "claim.audit.yaml").read_text(encoding="utf-8")
-    result = _step_audit(tmp_path, "--entity", "example")
-
-    assert result.exit_code == 0, result.output
-    assert "Not written" in result.output
-    assert (claim_dir / "claim.audit.yaml").read_text(encoding="utf-8") == before
-    (finding,) = _findings(tmp_path)
-    assert finding["outcome"] == "split"
+    assert finding["command"] == "dr draft --rerun evaluator"
+    assert finding["claim_ref"] == "subjects/example/claim"
