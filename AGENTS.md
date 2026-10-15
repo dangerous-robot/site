@@ -8,13 +8,13 @@ This repo is the research hub behind [dangerousrobot.org](https://dangerousrobot
 
 ## How the system works
 
-The system tracks four object types: **criteria** (a registry of claim sentences in `research/templates.yaml`, each with a `grading_rule`; intake-only), **entities** (companies and products in v1, hand-written; subjects, hand-written or written by `dr draft --subject`; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: the operator drafts a claim from a **criterion** for one entity (`dr draft --criterion <slug> --entity <ref>`); a **company** or **product** gains a claim for each criterion the operator drafts for it; a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (open-loop: disagreements surface to the operator and are not auto-resolved, so the Evaluator does not feed back into the Analyst in v1). The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
+The system tracks four object types: **criteria** (a registry of claim sentences in `research/templates.yaml`, each with a `grading_rule`; intake-only), **entities** (companies and products in v1, hand-written; subjects, hand-written or written by `dr draft --subject`; intake-only), **sources** (citable references; dual-role: they can enter from outside as operator-supplied intake **or** be produced inside the pipeline by the Ingestor), and **claims** (the system's only output type, never an intake). The **Orchestrator** owns each claim's lifecycle (queue → phases → drafted / blocked); the **Router** dispatches small classifications and matches incoming sources to criteria or claims. Work enters when one of the three non-claim objects is added to the queue: the operator drafts a claim from a **criterion** for one entity (`dr draft --criterion <slug> --entity <ref>`); a **company** or **product** gains a claim for each criterion the operator drafts for it; a **source** is matched by the **Router** to existing criteria (queuing new claim work) or to existing claims (queuing reassessment). The **Researcher** gathers candidate sources; the **Ingestor** archives each as a source file; the **Analyst** proposes a **draft verdict** and narrative once enough usable sources are available; the **Evaluator** produces an **independent evaluation** (the Evaluator does not feed back into the Analyst; a verdict disagreement goes to a blind **tie-breaker**: a match with either side is the pipeline verdict, a three-way split takes the weakest, and every split, abandoned or recovered run leaves a finding under `research/findings/`). The combined post-review artifact is the **verdict**. The operator runs `dr review --approve` to publish, `--archive` to retire, or leaves a claim as draft for rework. **Citation check** is a static CI verification, not an agent.
 
 For the generalized vision, see `docs/architecture/glossary.md` § How the system works.
 
 ## Design principle
 
-**Small decisions, small models.** Each agent is scoped to make the smallest defensible decision in its lane. Larger models are reserved for tasks that genuinely require them. The Router runs on the smallest model class; only Analyst and Evaluator may invoke frontier models. This minimizes wasteful use of large models, the central cost the project exists to make visible, and keeps behavior auditable and legible. (This is testable design intent: a future check can verify model classes per agent.)
+**Small decisions, small models.** Each agent is scoped to make the smallest defensible decision in its lane. Larger models are reserved for tasks that genuinely require them. The Router runs on the smallest model class; only the Analyst, the Evaluator and the tie-breaker (the one agent above them, run only on a disagreement) may invoke frontier models. This minimizes wasteful use of large models, the central cost the project exists to make visible, and keeps behavior auditable and legible. (This is testable design intent: a future check can verify model classes per agent.)
 
 ## Writing conventions
 
@@ -119,6 +119,7 @@ Roles are listed below; several are automated via PydanticAI agents in `pipeline
 | **Ingestor** | Takes a URL, produces a source file (one URL in, one `sources/{yyyy}/{slug}.md` out); uses `web_fetch`, `wayback_check` | Automated | `ingestor/` |
 | **Analyst** | Given a claim and its sources, produces `AnalystOutput` (entity + verdict + narrative) | Automated | `analyst/` |
 | **Evaluator** | Grades the claim statement against the sources, with the analyst's narrative as context, returning `IndependentAssessment` | Automated | `auditor/` |
+| **Tie-breaker** | Grades the claim statement blind (no analyst or Evaluator verdict in its prompt), only when the two verdicts differ, returning `IndependentAssessment` | Automated | `loop/tiebreaker/` |
 
 ### Directory layout
 
@@ -129,8 +130,8 @@ pipeline/
   researcher/      # Agent: claim -> relevant URLs
   analyst/         # Agent: sources + claim -> verdict + narrative
   auditor/         # Evaluator role; directory rename to evaluator/ deferred to post-v1
-  loop/            # The one research run (run, rerun) and StepError; imports no writer
-  orchestrator/    # Routing logic, checkpoints, persistence (the one writer), dr CLI
+  loop/            # The one research run (run, rerun), the error policy, the tie-breaker and StepError; imports no writer
+  orchestrator/    # Routing logic, persistence (the one writer), dr CLI
   linter/          # dr lint static content checks (no LLM, no network)
   tests/
 ```
@@ -139,13 +140,15 @@ pipeline/
 
 Each agent package contains an `instructions.md` file that is loaded at import time via `common/instructions.py`. Edit `instructions.md` to change agent behavior without touching Python code.
 
-### Checkpoint behavior
+### Run rules
 
-The pipeline supports human-in-the-loop checkpoints via a `CheckpointHandler` protocol:
+No run asks a person anything. `loop/policy.py` maps every `StepError` type and exception class to one rule:
 
-- `review_disagreement` -- fires when analyst and evaluator verdicts conflict
+- flaw-retry: the failed step reruns once, with earlier outputs kept in memory, then the run is abandoned.
+- transport-retry: timeouts, rate limits and null bodies retry twice with backoff (45 s, then 90 s), then the run is abandoned.
+- config-fatal: `api_key_missing` and `all_blocked` abandon at once.
 
-Pass `--interactive` to `dr draft` to enable the CLI prompt. Tests use `AutoApproveCheckpointHandler`.
+An abandoned run writes no claim, no sidecar and no fresh source file. Every abandoned, recovered or split run leaves one record at `research/findings/<yyyy>/<run-id>.yaml`; `dr findings` lists them. A crash between the claim write and the sidecar write leaves a half-claim, which `dr findings` also lists and nothing deletes. The full rule table is in `docs/plans/pipeline-rebuild.md` § Run rules (it moves to `docs/architecture/pipeline-commands.md` in RE-AX (Fold side tools)).
 
 ### Tooling: dr vs inv
 
@@ -172,7 +175,7 @@ uv run dr review --claim ecosia/renewable-energy-hosting
 Commands:
 
 - `dr draft --dry-run --entity <ref> "<sentence>"` -- Dry-run the full pipeline for a claim: find sources, evaluate verdict, no disk writes and no archive.org captures
-- `dr draft --entity <ref> "<sentence>"` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). `--entity` names an existing entity file (for example `products/chatgpt`); there is no entity inference. A blocked run, or one where the analyst fails, writes nothing and exits 1. `--force` overwrites an existing claim.
+- `dr draft --entity <ref> "<sentence>"` -- Run the full pipeline for a claim and write outputs to disk with `status: draft` (no `criteria_slug`). `--entity` names an existing entity file (for example `products/chatgpt`); there is no entity inference. An abandoned run (blocked, or a step that failed its retries) writes nothing but its finding and exits 1; a disagreement between Analyst and Evaluator is settled by the tie-breaker (`--tiebreaker-model`, env `DR_TIEBREAKER_MODEL`). `--force` overwrites an existing claim.
 - `dr draft --criterion <slug> --entity <ref>` -- Draft the criterion's sentence for the entity: the text is rendered once with the entity name and stored as `statement`, the claim takes `criteria_slug` and the criterion's topics, and it is written to `<entity-dir>/<criteria_slug>.md`. The criterion's `grading_rule` reaches the Analyst and the Evaluator.
 - `dr draft --subject <slug> "<sentence>"` -- Draft an ad hoc subject claim at `<entity-dir>/<slugified sentence>.md`; writes `research/entities/subjects/<slug>.md` with the claim when none exists.
 - `dr draft --claim <ref> --force` -- Re-run the claim's stored `statement` and write back to the same path, keeping `criteria_slug`. A claim that is not a draft returns to draft and awaits re-approval (until RE-AW (Recheck) refuses non-drafts). Without `--force` or `--dry-run` it is a usage error.
@@ -182,6 +185,7 @@ Commands:
 
 Archive.org captures (Save Page Now): `dr draft`, `dr step-ingest --write` (or `--force`) and `dr wayback-backfill` ask archive.org to capture a page that has no snapshot yet (`--skip-wayback` turns the lookup off where offered). `dr draft --dry-run`, `dr step-ingest` without `--write` and `dr ingest --dry-run` check for an existing snapshot only. A capture counts only when archive.org returns a dated snapshot link that replays with HTTP 200 for the same page.
 - `dr lint` -- Run static content checks (no LLM, no network); exits 1 on errors
+- `dr findings` -- List open findings (abandoned, recovered and tie-broken runs) and half-claims, newest first; `--all` includes closed ones, `--summary` counts open findings by step, rule and outcome, `--close <id> --note <text>` records a hand triage. It deletes nothing
 - `dr review` -- Mark a claim as human-reviewed in its audit sidecar. It needs a person at a terminal: stdin must be a tty and the claim slug is typed back before anything is written, so a piped command cannot sign off (`dr review-queue`'s `a` action has the same check). Agents: do not run it, and do not wrap it in a pty (`script`, `expect`, Python `pty`) or edit a sidecar's `human_review` by hand; a sign-off is Brandon's
 
 With the venv activated (`source .venv/bin/activate`), the `uv run` prefix is optional.

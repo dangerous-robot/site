@@ -23,7 +23,6 @@ from dotenv import load_dotenv
 from analyst.agent import analyst_agent, build_analyst_prompt
 from common.models import DEFAULT_MODEL, Confidence, SubQuestion, Verdict, resolve_model
 from loop import ClaimSpec, VerifyConfig, run
-from orchestrator.checkpoints import AutoApproveCheckpointHandler
 from orchestrator.entity_resolution import parse_entity_ref
 from researcher.planner import research_planner_agent
 from researcher.scorer import SearchCandidate, build_scorer_prompt, url_scorer_agent
@@ -264,9 +263,7 @@ async def test_full_pipeline_false_claim_smoke() -> None:
         statement="Anthropic only uses models that were trained on 100% renewable energy",
         entity=parse_entity_ref("companies/anthropic", resolve_repo_root()),
     )
-    result = await run(
-        spec, _cfg_from_env(max_sources=5), checkpoint=AutoApproveCheckpointHandler(),
-    )
+    result = await run(spec, _cfg_from_env(max_sources=5))
 
     assert not result.errors, f"Pipeline errors: {result.errors}"
     assert len(result.urls_found) > 0, "Research found no URLs"

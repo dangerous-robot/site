@@ -1511,7 +1511,7 @@ async def test_a_third_party_post_with_page_text_is_dropped(tmp_path) -> None:
     assert len(_blocked_messages(result)) == 2
 
 
-# --- Threshold, terminal fetch and the review checkpoint (test_orchestrator.py:555, 894) ---
+# --- Threshold and terminal fetch (test_orchestrator.py:555); the review pin moved to test_tiebreaker.py ---
 
 
 @pytest.mark.asyncio
@@ -1530,25 +1530,6 @@ async def test_every_fetch_refused_is_a_terminal_fetch_block(tmp_path) -> None:
     assert result.blocked_reason == BlockedReason.TERMINAL_FETCH_ERROR
     assert result.errors[0] == "4 URLs (4× http_403)"
     assert result.analyst_output is None
-
-
-@pytest.mark.asyncio
-async def test_a_rejected_review_names_the_real_flag_reason(tmp_path) -> None:
-    """From ``test_rejected_review_names_the_real_flag_reason``."""
-    import loop
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler
-    from tests.loop_harness import auditor_args
-
-    class _Reject(AutoApproveCheckpointHandler):
-        async def review_disagreement(self, comparison):
-            return False
-
-    write_entity(tmp_path)
-    with scripted_agents(auditor=auditor_args(evidence_gaps=["g1", "g2"])):
-        result = await loop.run(claim_spec(tmp_path), loop_config(tmp_path), checkpoint=_Reject())
-
-    assert "Flagged for human review: 2+ evidence gaps" in result.errors
-    assert not any("disagree" in e for e in result.errors)
 
 
 # --- Statement the Evaluator grades without a template (test_orchestrator.py:1026; RE-AD) ---

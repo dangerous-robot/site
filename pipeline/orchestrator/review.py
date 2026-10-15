@@ -11,7 +11,7 @@ import click
 import yaml
 
 from common.frontmatter import has_criterion, parse_frontmatter
-from common.sidecar import sidecar_path_for
+from common.sidecar import pipeline_verdict_of, sidecar_path_for
 from orchestrator.persistence import set_claim_corrections, set_claim_status
 
 ReviewMode = Literal["review", "approve", "archive"]
@@ -152,11 +152,11 @@ def refresh_verdict_change(fm: dict, sidecar: dict | None) -> tuple[str, str] | 
 
 
 def _verdict_override(fm: dict, sidecar: dict) -> dict | None:
-    """Record a reviewer verdict that differs from the analyst's, so lint can tell it from drift."""
+    """Record a reviewer verdict that differs from the pipeline's, so lint can tell it from drift."""
     audit = sidecar.get("audit")
     if not isinstance(audit, dict):
         return None
-    analyst = audit.get("analyst_verdict")
+    analyst = pipeline_verdict_of(audit)
     current = fm.get("verdict")
     if analyst is None or current is None or str(analyst) == str(current):
         return None
@@ -164,7 +164,7 @@ def _verdict_override(fm: dict, sidecar: dict) -> dict | None:
 
 
 def unreviewed_verdict_change(fm: dict, sidecar: dict | None) -> tuple[str, str] | None:
-    """Return (analyst, current) when the verdict differs from the analyst's with no matching recorded override.
+    """Return (pipeline, current) when the verdict differs from the pipeline's with no matching recorded override.
 
     Published as is, such a claim fails lint's verdict-sidecar-mismatch check.
     """

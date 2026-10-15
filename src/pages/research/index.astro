@@ -59,7 +59,7 @@ const faqSchema = {
       "name": "How does work enter this site?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Six channels put new research in the queue: a new criterion (fans out drafts to all applicable entities), a new company or product (fans out drafts across active criteria), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
+        "text": "Six channels put new research in the queue: a new criterion (an operator drafts its claim for one entity at a time), a new product or subject (an operator drafts claims about it one at a time), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
       },
     },
     {
@@ -309,10 +309,10 @@ const faqSchema = {
           <p>Six channels can put new research in the queue. The first four are operator-driven; the last two are public submission paths.</p>
           <ol>
             <li>
-              <strong>A new criterion.</strong> A reusable claim template is added to the template library. The system fans out a draft claim for every entity the criterion applies to.
+              <strong>A new criterion.</strong> A reusable claim template is added to the template library. An operator drafts the criterion's claim for one entity at a time.
             </li>
             <li>
-              <strong>A new company or product.</strong> An operator onboards an entity. The system fans out a draft claim across every active criterion.
+              <strong>A new product or subject.</strong> An operator writes a product's file by hand; a subject's record is written with its first claim. Claims about it are drafted one at a time.
             </li>
             <li>
               <strong>A new source.</strong> An operator adds a citable reference. The system matches it to existing criteria (queuing new claim work) or to existing claims (queuing a reassessment).

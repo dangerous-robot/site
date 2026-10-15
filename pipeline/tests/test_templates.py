@@ -166,6 +166,10 @@ class TestAppendTemplateEntry:
             if line.lstrip().startswith("#"):
                 assert line in after_text, line
         assert get_template(load_templates(fixture_root), "probe-new-criterion") is not None
+        # One blank line, not two, between the new entry and the comment block after it.
+        tail = after_text[after_text.index("probe-new-criterion"):]
+        assert tail.startswith("probe-new-criterion")
+        assert "    core: false\n\n# Deferred" in tail
 
     def test_entry_appends_when_templates_is_the_last_key(self, tmp_path: Path) -> None:
         path = tmp_path / "research" / "templates.yaml"

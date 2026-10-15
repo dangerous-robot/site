@@ -103,7 +103,7 @@ def _check_search_key(config) -> None:
 
 
 def _agent_models_from_ctx(ctx: click.Context) -> list[str]:
-    """All resolved model specs for the four agents in this CLI run."""
+    """All resolved model specs for the agents in this CLI run."""
     base = ctx.obj["model"]
     seen: list[str] = []
     for agent in AGENT_NAMES:
@@ -125,8 +125,8 @@ _COMMAND_GROUPS: list[tuple[str, list[str]]] = [
      ["lint", "stats", "step-research", "step-ingest", "step-analyze", "step-audit"]),
     ("Creates or overwrites claim files (dr draft --dry-run writes nothing)",
      ["draft"]),
-    ("Modifies existing files in place",
-     ["publish", "review", "review-queue"]),
+    ("Modifies existing files in place (dr findings writes only with --close)",
+     ["publish", "review", "review-queue", "findings"]),
 ]
 
 
@@ -168,6 +168,7 @@ class _CategorizedGroup(click.Group):
 @click.option("--analyst-model", default=None, help="Override model for the analyst agent (falls back to --model)", envvar="DR_ANALYST_MODEL")
 @click.option("--auditor-model", default=None, help="Override model for the auditor agent (falls back to --model)", envvar="DR_AUDITOR_MODEL")
 @click.option("--ingestor-model", default=None, help="Override model for the ingestor agent (falls back to --model)", envvar="DR_INGESTOR_MODEL")
+@click.option("--tiebreaker-model", default=None, help="Override model for the tie-breaker agent (falls back to --model)", envvar="DR_TIEBREAKER_MODEL")
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -177,6 +178,7 @@ def main(
     analyst_model: str | None,
     auditor_model: str | None,
     ingestor_model: str | None,
+    tiebreaker_model: str | None,
 ) -> None:
     """dr -- dangerousrobot.org research pipeline."""
     ctx.ensure_object(dict)
@@ -185,6 +187,7 @@ def main(
     ctx.obj["analyst_model"] = analyst_model
     ctx.obj["auditor_model"] = auditor_model
     ctx.obj["ingestor_model"] = ingestor_model
+    ctx.obj["tiebreaker_model"] = tiebreaker_model
     ctx.obj["verbose"] = verbose
     # Skip logging setup for the bare `dr` / `dr --help` paths so we don't
     # open file handles when the user is just inspecting usage.
@@ -698,6 +701,10 @@ def step_analyze(
     )
     rerun_result = asyncio.run(rerun(spec, cfg, source_dicts, agent="analyst"))
     analyst_out, analyst_failure = rerun_result.analyst_output, rerun_result.failure
+    _record_finding(
+        rerun_result.finding, root, command="dr step-analyze",
+        dry_run=not (do_write or force), claim_ref=_claim_ref(claim_path, root),
+    )
 
     if analyst_out is None:
         if analyst_failure is not None:
@@ -820,6 +827,10 @@ def _print_verify_result(result) -> None:
         click.echo(f"  Agreement:        {'yes' if c.verdict_agrees else 'NO'}")
         click.echo(f"  Severity:         {c.verdict_severity.value}")
         click.echo(f"  Needs review:     {'YES' if c.needs_review else 'no'}")
+        if c.tiebreaker_verdict is not None:
+            click.echo(f"  Tie-breaker:      {c.tiebreaker_verdict.value} ({c.tiebreaker_confidence.value})")
+        if c.pipeline_verdict is not None:
+            click.echo(f"  Pipeline verdict: {c.pipeline_verdict.value} ({c.rule_applied})")
         click.echo(f"  Reasoning:")
         for line in c.reasoning.strip().split("\n"):
             click.echo(f"    {line}")
@@ -863,7 +874,6 @@ def _print_verify_result(result) -> None:
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
 @click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
-@click.option("--interactive/--no-interactive", default=False, help="Enable human-in-the-loop checkpoints")
 @click.pass_context
 def draft(
     ctx: click.Context,
@@ -880,14 +890,14 @@ def draft(
     skip_wayback: bool,
     max_initial_queries: int | None,
     llm_concurrency: int | None,
-    interactive: bool,
 ) -> None:
     """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
     Exactly one of --entity, --subject or --claim names what the claim is
     about. The claim stores the sentence it checks as its statement (and as
-    its title). A run that is blocked or whose analyst fails writes nothing
-    and exits 1.
+    its title). A run abandoned by the error policy writes only its finding
+    under research/findings/ and exits 1; a retried or tie-broken run writes
+    the claim and its finding. A writer failure leaves a half-claim finding.
 
     \b
     --entity REF SENTENCE        an ad hoc claim at <entity-dir>/<slugified sentence>.md
@@ -921,7 +931,6 @@ def draft(
     from common.templates import get_template, load_templates, render_statement
     from common.utils import slugify
     from loop import ClaimSpec, VerifyConfig, run
-    from orchestrator.checkpoints import AutoApproveCheckpointHandler, CLICheckpointHandler
     from orchestrator.entity_resolution import ResolvedEntity, parse_entity_ref
     from orchestrator.persistence import planned_claim_path, write_claim_run
 
@@ -1078,19 +1087,25 @@ def draft(
         **_ctx_per_agent_kwargs(ctx),
     )
     _check_search_key(config)
-    checkpoint = CLICheckpointHandler() if interactive else AutoApproveCheckpointHandler()
 
     click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
     progress("Drafting claim: %s (%s)%s", spec.statement, ref_label, " [dry run]" if dry_run else "")
-    result = asyncio.run(run(spec, config, checkpoint=checkpoint))
+    result = asyncio.run(run(spec, config))
+    existing_ref = _claim_ref(claim_path, root) if claim_path is not None else None
 
     if dry_run:
+        _record_finding(result.finding, root, command="dr draft", dry_run=True)
         _print_verify_result(result)
         return
 
+    if result.finding is not None and result.finding.outcome == "abandoned":
+        _record_finding(result.finding, root, command="dr draft", claim_ref=existing_ref)
     if not _report_unwritable_run(result):
         sys.exit(1)
 
+    planned = claim_path or planned_claim_path(
+        resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root,
+    )
     try:
         written_path = write_claim_run(
             result, spec, config,
@@ -1104,14 +1119,19 @@ def draft(
     except FileExistsError as exc:
         click.echo(f"Error: {exc}. Use --force to overwrite it.", err=True)
         sys.exit(1)
-    except (ValueError, OSError) as exc:
+    except Exception as exc:
+        # Nothing is deleted: a claim without its sidecar, or a subject record
+        # without its claim, is listed by dr findings.
         click.echo(f"Error: the claim was not written: {exc}", err=True)
+        _record_half_claim(result, spec, config, root, _claim_ref(planned, root), exc)
         sys.exit(1)
 
     try:
         claim_rel = written_path.relative_to(root)
     except ValueError:
         claim_rel = written_path
+    if result.finding is not None:
+        _record_finding(result.finding, root, command="dr draft", claim_ref=_claim_ref(written_path, root))
 
     hr()
     click.echo("Draft Report")
@@ -1123,6 +1143,12 @@ def draft(
 
     a = result.analyst_output
     click.echo(f"Verdict:    {a.verdict.verdict.value} ({a.verdict.confidence.value})")
+    c = result.consistency
+    if c is not None and c.tiebreaker_verdict is not None and c.pipeline_verdict is not None:
+        click.echo(
+            f"Settled:    {c.pipeline_verdict.value} ({c.rule_applied}; analyst {c.primary_verdict.value}, "
+            f"Evaluator {c.assessed_verdict.value}, tie-breaker {c.tiebreaker_verdict.value})"
+        )
     click.echo(f"Analyst title: {a.verdict.title}")
     click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
     click.echo("")
@@ -1188,11 +1214,76 @@ def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
     click.echo(f"Attached to {claim_path}")
 
 
+def _claim_ref(claim_path: Path, root: Path) -> str:
+    """The ``dr`` claim ref for a claim path: its path under research/claims/ without ``.md``."""
+    try:
+        return claim_path.relative_to(root / "research" / "claims").with_suffix("").as_posix()
+    except ValueError:
+        return claim_path.with_suffix("").as_posix()
+
+
+def _record_finding(finding, root: Path, *, command: str, dry_run: bool = False, claim_ref: str | None = None) -> None:
+    """Print the run's finding in one line and write it under research/findings/ (never on a dry run)."""
+    from orchestrator.persistence import write_finding
+
+    if finding is None:
+        return
+    if claim_ref is not None:
+        finding.claim_ref = claim_ref
+    if finding.command is None:
+        finding.command = command
+    click.echo(finding.summary_line(), err=True)
+    if dry_run:
+        return
+    try:
+        path = write_finding(finding, root, command=command)
+    except OSError as exc:
+        click.echo(f"Error: the finding was not written: {exc}", err=True)
+        return
+    click.echo(f"Finding: {path}", err=True)
+
+
+def _record_half_claim(result, spec, config, root: Path, claim_ref: str, exc: BaseException) -> None:
+    """Write the finding for a writer that failed part-way (rule half-claim)."""
+    import datetime
+
+    from common.findings import Finding, claim_spec_record, config_record
+
+    earlier = result.finding
+    agents = ["researcher", "ingestor", "analyst", "auditor"]
+    if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
+        agents.append("tiebreaker")
+    retries = list(earlier.retries) if earlier is not None else []
+    if earlier is not None and earlier.outcome in ("recovered", "split"):
+        entry = {"step": earlier.step, "error_type": earlier.error.get("error_type"),
+                 "rule": earlier.rule, "attempts": earlier.attempts}
+        if earlier.outcome == "split":
+            # The sidecar that would hold the three verdicts was not written.
+            entry["message"] = earlier.error.get("message")
+        retries.append(entry)
+    finding = Finding(
+        run_id=config.run_id,
+        date=datetime.date.today(),
+        claim_spec=claim_spec_record(spec),
+        claim_ref=claim_ref,
+        config=config_record(config),
+        models_used={a: config.model_for(a) for a in agents},
+        step="write",
+        rule="half-claim",
+        error={"error_type": "write_failed", "message": str(exc) or type(exc).__name__,
+               "error_class": type(exc).__name__},
+        attempts=1,
+        outcome="half-claim",
+        retries=retries,
+    )
+    _record_finding(finding, root, command="dr draft")
+
+
 def _report_unwritable_run(result) -> bool:
     """Print why a run cannot be written and return False, or return True.
 
-    A blocked run and a run whose analyst failed write nothing: no
-    placeholder claim and no source file.
+    A run the error policy abandoned, a blocked run and a run whose analyst
+    failed write nothing: no placeholder claim and no source file.
     """
     from common.models import BlockedReason
     from loop import blocked_reason_label
@@ -1202,6 +1293,13 @@ def _report_unwritable_run(result) -> bool:
     if result.blocked_reason is not None:
         label = blocked_reason_label(result.blocked_reason.value, result.errors, failure=result.failure)
         click.echo(f"Blocked ({result.blocked_reason.value}): {label}. Nothing was written.", err=True)
+        return False
+    finding = result.finding
+    if finding is not None and finding.outcome == "abandoned":
+        click.echo(
+            f"Abandoned at the {finding.step} step ({finding.error.get('error_type')}). Nothing was written.",
+            err=True,
+        )
         return False
     if result.analyst_output is None:
         failure = result.failure
@@ -1244,7 +1342,10 @@ def step_audit(
 ) -> None:
     """Re-run the auditor on existing claim file(s) and report verdict/confidence disagreements.
 
-    Default: read-only (prints report). Use --write to update .audit.yaml sidecars.
+    A verdict disagreement goes to the tie-breaker, as in dr draft. Default:
+    read-only (prints report and any finding). Use --write to update
+    .audit.yaml sidecars and write findings under research/findings/; an
+    abandoned rerun writes only its finding.
 
     Example:
         dr step-audit --entity ecosia
@@ -1255,6 +1356,8 @@ def step_audit(
         "dr step-audit: claim=%s entity=%s topic=%s dry_run=%s do_write=%s",
         claim, entity, topic, dry_run, do_write,
     )
+    import dataclasses
+
     from analyst.agent import AnalystOutput, EntityResolution, VerdictAssessment
     from auditor.report import format_json_report, format_text_report
     from common.content_loader import list_claims, load_entity, resolve_repo_root
@@ -1265,8 +1368,11 @@ def step_audit(
     from orchestrator.entity_resolution import parse_entity_ref
     from orchestrator.persistence import load_source_dict, write_evaluator_rerun
 
-    auditor_model = ctx.obj.get("auditor_model") or ctx.obj["model"]
-    _check_provider_api_keys(auditor_model)
+    # The tie-breaker runs when the Evaluator disagrees with the claim.
+    _check_provider_api_keys([
+        ctx.obj.get("auditor_model") or ctx.obj["model"],
+        ctx.obj.get("tiebreaker_model") or ctx.obj["model"],
+    ])
     verbose = ctx.obj.get("verbose", False)
     root = Path(repo_root) if repo_root else resolve_repo_root()
     claims_dir = root / "research" / "claims"
@@ -1341,8 +1447,15 @@ def step_audit(
             )
 
             progress("Auditing: %s ...", claim_id)
-            graded = await rerun(spec, cfg, sources, agent="evaluator", analyst_output=analysis)
-            if graded.consistency is None:
+            # One run id per claim, so each claim's finding is its own record.
+            claim_cfg = cfg if len(claim_paths) == 1 else dataclasses.replace(cfg, run_id=new_run_id())
+            graded = await rerun(spec, claim_cfg, sources, agent="evaluator", analyst_output=analysis)
+            _record_finding(
+                graded.finding, root, command="dr step-audit",
+                dry_run=not do_write, claim_ref=_claim_ref(path, root),
+            )
+            abandoned = graded.finding is not None and graded.finding.outcome == "abandoned"
+            if graded.consistency is None or abandoned:
                 reason = "; ".join(graded.errors) or "the Evaluator produced no assessment"
                 click.echo(f"Skipped (not graded): {claim_id}: {reason}", err=True)
                 continue
@@ -1358,8 +1471,20 @@ def step_audit(
                 )
             results.append(result)
 
-            if do_write:
-                write_evaluator_rerun(path, graded, cfg)
+            settled = graded.consistency.pipeline_verdict
+            moved = settled is not None and settled.value != fm.get("verdict")
+            if do_write and fm.get("status") == "published" and moved:
+                # The sidecar's pipeline verdict would then differ from the
+                # published one with no review behind it, which lint rejects.
+                # The finding above keeps the split; RE-AW (Recheck) gives
+                # this case a pending-draft location.
+                click.echo(
+                    f"Not written: {claim_id} is published as {fm.get('verdict')} and the "
+                    f"pipeline verdict is now {settled.value}; see the finding.",
+                    err=True,
+                )
+            elif do_write:
+                write_evaluator_rerun(path, graded, claim_cfg)
                 click.echo(f"Wrote {sidecar_path_for(path)}")
 
         if results:
@@ -1606,7 +1731,7 @@ def _claim_template(fm: dict, root: Path):
     try:
         return get_template(load_templates(root), criteria_slug)
     except Exception as exc:
-        logger.warning("Could not load templates (falling back to title): %s", exc)
+        logger.warning("Could not load templates (no criterion topics and no grading rule for this run): %s", exc)
         return None
 
 
@@ -1976,6 +2101,94 @@ def lint(ctx: click.Context, entity: str | None, output_format: str, severity: s
     errors = [i for i in issues if i.severity == "error"]
     if errors:
         sys.exit(1)
+
+
+# --------------------------------------------------------------------------- #
+# dr findings                                                                   #
+# --------------------------------------------------------------------------- #
+
+
+@main.command()
+@click.option("--all", "show_all", is_flag=True, default=False, help="Include closed findings and their notes.")
+@click.option("--summary", is_flag=True, default=False, help="Count open findings by step, rule and outcome.")
+@click.option("--close", "close_id", default=None, metavar="ID", help="Close the finding with this run id (or a unique prefix); needs --note.")
+@click.option("--note", default=None, help="Why the finding is closed (with --close).")
+@click.option("--repo-root", default=None, type=click.Path(exists=True))
+def findings(show_all: bool, summary: bool, close_id: str | None, note: str | None, repo_root: str | None) -> None:
+    """List the run findings under research/findings/ and the half-claims a writer crash left.
+
+    A finding records a run the error policy retried, abandoned or settled
+    with the tie-breaker. Nothing is deleted: a half-claim is replaced with
+    dr draft, or removed by hand.
+
+    \b
+    Examples:
+        dr findings
+        dr findings --summary
+        dr findings --close a06d7a7e --note "model variance; replay later"
+    """
+    from collections import Counter
+
+    from common.content_loader import resolve_repo_root
+    from orchestrator.persistence import close_finding, half_claims, load_findings
+
+    if close_id is not None:
+        if show_all or summary:
+            raise click.UsageError("--close cannot be combined with --all or --summary")
+        if not note or not note.strip():
+            raise click.UsageError("--close needs --note <why it is closed>")
+    elif note is not None:
+        raise click.UsageError("--note goes with --close <id>")
+
+    root = Path(repo_root) if repo_root else resolve_repo_root()
+
+    if close_id is not None:
+        try:
+            path = close_finding(root, close_id, note.strip())
+        except KeyError:
+            click.echo(f"Error: no finding with id {close_id}", err=True)
+            sys.exit(1)
+        except ValueError as exc:
+            click.echo(f"Error: {exc}", err=True)
+            sys.exit(1)
+        click.echo(f"Closed {path.stem}: {note.strip()}")
+        return
+
+    everything = load_findings(root, include_closed=True)
+    open_findings = [f for f in everything if f.closed is None]
+
+    if summary:
+        click.echo(f"open: {len(open_findings)}, closed: {len(everything) - len(open_findings)}")
+        for label, attr in (("step", "step"), ("rule", "rule"), ("outcome", "outcome")):
+            counts = Counter(getattr(f, attr) for f in open_findings)
+            pairs = ", ".join(f"{name}: {n}" for name, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0])))
+            click.echo(f"by {label}: {pairs}" if pairs else f"by {label}: none")
+        return
+
+    shown = everything if show_all else open_findings
+    for f in sorted(shown, key=lambda f: (f.date, f.run_id), reverse=True):
+        click.echo(f"{f.date} {f.command or '-'} {f.summary_line()}")
+        if f.claim_ref:
+            click.echo(f"    claim: {f.claim_ref}")
+        if f.closed is not None:
+            click.echo(f"    closed {f.closed.get('date')} by {f.closed.get('by')}: {f.closed.get('note')}")
+
+    left = half_claims(root)
+    rows = [
+        f"{ref}: no sidecar; replace it with dr draft --claim {ref} --force"
+        for ref in left["claims_without_sidecar"]
+    ] + [
+        f"{ref}: subject record with no claim; the next dr draft --subject {ref.split('/', 1)[1]} reuses it"
+        for ref in left["subjects_without_claim"]
+    ]
+    if rows:
+        if shown:
+            click.echo("")
+        click.echo("Half-claims:")
+        for row in rows:
+            click.echo(f"  {row}")
+    if not shown and not rows:
+        click.echo("No open findings." if not show_all else "No findings.")
 
 
 # --------------------------------------------------------------------------- #

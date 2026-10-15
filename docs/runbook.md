@@ -87,9 +87,19 @@ Entity files are hand-written; no command writes a product file. Claims are then
 
 1. Write the product file by hand at `research/entities/products/<slug>.md` (name, description, website, parent company, search hints; copy a neighbour).
 2. Draft one claim per criterion: `uv run dr draft --criterion <slug> --entity products/<slug>`. The criterion's sentence is rendered once with the entity name and stored as the claim's `statement`; the claim is written to `research/claims/<entity-dir>/<criteria_slug>.md` with `criteria_slug` and the criterion's topics. The product criteria are `renewable-energy-hosting`, `no-training-on-user-data`, `discloses-models-used`, `discloses-energy-sourcing`, `realtime-energy-display`, `excludes-image-generation`, `excludes-frontier-models` and `open-source-models-only`. These replace the deleted `scripts/onboard-chatgpt.sh` and `scripts/onboard-openai.sh`. A criterion whose entity type does not match the entity is a usage error. Add `--dry-run` first to see the run without writing anything.
-3. For a subject with no entity file, `uv run dr draft --subject <slug> "<sentence>"` writes a minimal subject record (`research/entities/subjects/<slug>.md`: name from the slug, description from the sentence) together with the claim, and never overwrites an existing record. A run that is blocked or whose analyst fails writes neither.
+3. For a subject with no entity file, `uv run dr draft --subject <slug> "<sentence>"` writes a minimal subject record (`research/entities/subjects/<slug>.md`: name from the slug, description from the sentence) together with the claim, and never overwrites an existing record. A run that is abandoned (blocked, or a step that failed its retries) writes neither; its finding is the only record.
 4. An ad hoc draft needs a criterion before `dr review --approve` can publish it. Before sign-off, run `uv run dr draft --claim <entity>/<claim-slug> --criterion <new-slug>`. It runs no model, moves no file, appends the entry to `research/templates.yaml` and sets `criteria_slug`. It is refused when the slug already exists, the claim already has `criteria_slug`, the claim is not a draft, or the entity is a company.
 5. Review as usual (`uv run dr review-queue`), then commit the entity file, claims, sidecars and sources.
+
+## Triaging findings
+
+An abandoned, recovered or tie-broken run leaves a record under `research/findings/<yyyy>/`. Nothing in the pipeline asks a person anything mid-run, so this is where a run's problems surface.
+
+1. After runs, check `uv run dr findings`. It lists open findings newest first, then half-claims. `--summary` counts open findings by step, rule and outcome; `--all` includes closed ones.
+2. A finding that points at a pipeline bug becomes a row in `docs/UNSCHEDULED.md`, with the finding's run id in the row. Close the finding: `uv run dr findings --close <id> --note "<where it went>"`. An id prefix works while it is unambiguous.
+3. A finding that is model variance or a flaky source (a `recovered` run, a one-off timeout) is closed with a note saying so.
+4. A half-claim is a crash between the writes. A claim without a sidecar is replaced with `uv run dr draft --claim <ref> --force`; a subject record with no claim is reused by the next `dr draft --subject <slug>`, or removed by hand. The tools never delete anything.
+5. Commit the finding files you want kept; `dr lint` ignores the directory.
 
 ## Archive links for sources
 

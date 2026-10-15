@@ -32,7 +32,7 @@ stateDiagram-v2
 Notes:
 
 - `draft` covers both pipeline-written files awaiting a PR and hand-edited files on a feature branch.
-- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`).
+- `blocked` is no longer written by the pipeline: a run that fails the post-ingest threshold gate (fewer than 4 usable sources or a terminal fetch error), or whose analyst fails writes no claim file and no source file, and `dr draft` exits 1. The status stays valid for files already on disk, where the frontmatter carries `status: blocked` and `blocked_reason` (one of `insufficient_sources`, `terminal_fetch_error`, `analyst_error`). A run that fails a step retries by rule (once for a flaw, twice with backoff for a transport error) and, when abandoned, recovered or split, leaves a finding under `research/findings/` (see [content-model.md](content-model.md#findings-file)).
 - Stale claims are flagged today by `dr lint` (which surfaces a past `next_recheck_due` as `info`) and by `dr reassess` (which re-runs the Evaluator against current sources). No scheduler exists. See [research-workflow.md § Citation Auditor tools](research-workflow.md#citation-auditor-tools).
 - Archived claims remain in the repo but are excluded from published output.
 - `draft → published` and `published → archived` transitions are driven by `dr review` (per-claim) or `dr publish` (bulk). See § 5 below for sign-off semantics, and [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
@@ -63,7 +63,7 @@ flowchart LR
 
 ## 3. Pipeline execution
 
-The core four-step pipeline as a sequence of messages between agents and the human checkpoint. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the claim's `statement`, and the claim's `title` equals it: for `dr draft --criterion` the criterion's sentence rendered once with the entity name, otherwise the operator's sentence as typed. The analyst's title is not written. For a criterion-backed claim the analyst and the Evaluator both get the criterion's `grading_rule` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a rule's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the rule does not name. The criteria's `vocabulary` lists are site-only: the pipeline ignores them.
+The core four-step pipeline as a sequence of messages between agents, with the blind tie-breaker that settles a disagreement. Ingestor calls run concurrently, one per URL returned by the Researcher. A source keeps only the key quotes found in the fetched text (body, title and meta description) of the requested page or its archive.org copy; the rest are dropped with a warning. A kept quote is stored without wrapping quotation marks or an attribution after them, since the source page shows each quote in a blockquote; the marks stay when they belong to the page text or the inner text alone is not on the page. A quote with an ellipsis must read as one excerpt: at most 300 characters of page text elided, at least three words between two ellipses, and at least two words in one fragment. The Evaluator role is implemented in `pipeline/auditor/`; the role and package names diverge intentionally in v1. The Evaluator grades the claim's `statement`, and the claim's `title` equals it: for `dr draft --criterion` the criterion's sentence rendered once with the entity name, otherwise the operator's sentence as typed. The analyst's title is not written. For a criterion-backed claim the analyst and the Evaluator both get the criterion's `grading_rule` (from `research/templates.yaml`) with the claim text, as grading guidance that is never cited as evidence; a rule's verdict mapping wins for its criterion, and `pipeline/common/verdict-scale.md` governs what the rule does not name. The criteria's `vocabulary` lists are site-only: the pipeline ignores them.
 
 Ingest order and the listed sources:
 
@@ -72,7 +72,8 @@ Ingest order and the listed sources:
 - A sub-question that no ingested source addresses is logged as a warning, which the console shows. The analyst prompt marks it, and the narrative describes the gap in plain words without the sub-question id. The sidecar's `sub_questions[].citations` is empty for it.
 - After the analyst, the claim lists only the sources it relied on: the ids in its `cited_sources`, the sources its own `source_overrides` name (the entity-match relabels do not count, but an analyst override the entity match corrects does), and the sources whose title the narrative names. Uncited fresh sources are not written. Every ingested source stays in the sidecar's `sources_consulted`.
 - Every ingested source is listed when nothing is cited, or when the cited subset would support a lower `verification_level` than the full list (both checked with the write-time level fit).
-- The Evaluator grades against the listed sources. When the analyst fails, or the run is blocked, nothing is written: no source file, no claim and no sidecar.
+- The Evaluator grades against the listed sources. When the analyst fails, or the run is blocked, nothing is written: no source file, no claim and no sidecar; the run's finding is the only record.
+- A disagreement (the two verdicts differ; two evidence gaps alone never count) goes to the tie-breaker, which gets the Evaluator's blind bundle on the frontier tier with a higher thinking budget. A verdict that matches either side wins; a three-way split takes the weakest by `VERDICT_STRENGTH` with that side's confidence. The sidecar records all three sides, `pipeline_verdict` and `rule_applied`. A tie-breaker that fails after one retry abandons the run.
 
 ```mermaid
 sequenceDiagram
@@ -81,7 +82,7 @@ sequenceDiagram
     participant Ingestor
     participant Analyst
     participant Evaluator
-    actor Human
+    participant Tiebreaker as Tie-breaker
 
     Operator->>Researcher: claim text + entity
     Researcher-->>Operator: candidate URLs (post-blocklist)
@@ -104,11 +105,11 @@ sequenceDiagram
         Analyst-->>Operator: AnalystOutput (verdict, narrative)
 
         Operator->>Evaluator: claim statement, analyst narrative, listed sources
-        Evaluator-->>Operator: ComparisonResult (independent, open-loop)
+        Evaluator-->>Operator: ComparisonResult (independent)
 
-        alt needs_review
-            Operator->>Human: checkpoint review_disagreement
-            Human-->>Operator: accept or flag
+        alt verdicts differ
+            Operator->>Tiebreaker: same bundle, blind
+            Tiebreaker-->>Operator: IndependentAssessment; settle_verdict
         end
     end
 
@@ -157,11 +158,7 @@ Two zones separate pipeline-internal gates (run locally before a PR is opened) f
 flowchart TD
     subgraph before ["Before PR (local)"]
         direction TB
-        START([Author runs pipeline or edits files]) --> PG2
-        PG2{"review_disagreement
-        (pipeline checkpoint)"}
-        PG2 -->|flag for human review| START
-        PG2 -->|accept| LOCAL
+        START([Author runs pipeline or edits files]) --> LOCAL
         LOCAL["Local checks
         — inv check
         — dr lint"]
@@ -206,7 +203,7 @@ flowchart TD
 Notes:
 
 - Human sign-off on a claim is recorded by `dr review` (writes `human_review` in the audit sidecar). `dr review --approve` additionally flips `status: draft` to `status: published`, so sign-off and publish are a single operator step. `dr review --archive` retires a published claim (or a blocked claim). Bare `dr review` records a sign-off without changing status. See [`docs/plans/completed/audit-trail.md`](../plans/completed/audit-trail.md) for the CLI contract.
-- A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. It skips a draft whose verdict differs from the analyst verdict in its sidecar unless `human_review.verdict_override` records that change, because only `dr review` records an override (with its reviewer).
+- A separate operator command, `dr publish`, does a bulk `draft → published` flip without recording an individual reviewer. Affected claims render as "Unreviewed" on the site until a later `dr review` writes a reviewer in. It skips a draft whose verdict differs from the pipeline verdict in its sidecar (`audit.pipeline_verdict`, or `audit.analyst_verdict` on a sidecar written before it existed) unless `human_review.verdict_override` records that change, because only `dr review` records an override (with its reviewer).
 - The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force` on a published claim returns it to draft and saves the published verdict and sign-off in the sidecar `refresh` block. Approving a changed verdict requires a one-line correction, which becomes a `corrections` entry on the claim page. `dr publish` skips every refreshed claim, so re-approval always records a reviewer. Steps: `docs/runbook.md` § Refreshing a published claim.
 
 ---

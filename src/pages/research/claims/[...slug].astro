@@ -77,6 +77,7 @@ const AGENT_LABELS: Record<string, string> = {
   ingestor: "Ingestor",
   analyst: "Analyst",
   auditor: "Evaluator",
+  tiebreaker: "Tie-breaker",
 };
 const agentLabel = (key: string): string => AGENT_LABELS[key] ?? key;
 
@@ -213,6 +214,14 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
                 <div>
                   <p>Analyst: {audit.audit.analyst_verdict} ({audit.audit.analyst_confidence})</p>
                   <p>Evaluator: {audit.audit.auditor_verdict} ({audit.audit.auditor_confidence})</p>
+                  {audit.audit.tiebreaker_verdict && (
+                    <p>Tie-breaker: {audit.audit.tiebreaker_verdict} ({audit.audit.tiebreaker_confidence})</p>
+                  )}
+                  {/* A sidecar written before the tie-breaker existed has no pipeline_verdict: the analyst's was the pipeline's. */}
+                  <p>
+                    Pipeline verdict: {audit.audit.pipeline_verdict ?? audit.audit.analyst_verdict}
+                    {audit.audit.rule_applied ? ` (${audit.audit.rule_applied})` : ''}
+                  </p>
                   <p class={audit.audit.verdict_agrees ? 'audit-agrees' : 'audit-disagrees'}>
                     {audit.audit.verdict_agrees ? 'Verdicts agree' : 'Verdicts differ'}
                   </p>

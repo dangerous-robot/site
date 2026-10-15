@@ -221,7 +221,11 @@ def test_forced_rewrite_of_a_published_claim_keeps_the_refresh_trail(tmp_path, m
     claim_path, sidecar_path = _publish(tmp_path)
     order = _record_write_order(monkeypatch)
 
-    with scripted_agents(analyst=analyst_args(verdict="false", confidence="medium")):
+    # The Evaluator agrees, so the analyst's verdict is the pipeline's and no tie-breaker runs.
+    with scripted_agents(
+        analyst=analyst_args(verdict="false", confidence="medium"),
+        auditor=auditor_args(verdict="false", confidence="medium"),
+    ):
         result = _draft(tmp_path, "--force")
 
     assert result.exit_code == 0, result.output

@@ -21,11 +21,13 @@ Top to bottom, so it fits a phone without horizontal scroll:
     |
 [Ingestor]            fetches each source (archive.org copy when the live page fails), writes a source file
     |
-    +--> [Blocked]    fewer than 2 usable sources, a fetch error, or an analyst error
+    +--> [Blocked]    fewer than 4 usable sources, a fetch error, or an analyst error
     |
 [Analyst]             weighs the evidence, drafts verdict, confidence and narrative
     |
-[Auditor]             checks the draft against the sources; flags disagreement
+[Auditor]             checks the draft against the sources
+    |
+[Tie-breaker]         settles a disagreement blind (runs only when the verdicts differ)
     |
 [Human review]        human: `dr review --approve`, or revise, or archive
     |
@@ -38,7 +40,8 @@ Facts behind each node, checked 2026-10-06:
 |---|---|
 | Researcher, Ingestor, Analyst, Auditor | `pipeline/researcher/`, `pipeline/ingestor/`, `pipeline/analyst/`, `pipeline/auditor/` |
 | Blocked branch | `BlockedReason` in `pipeline/common/models.py:106` (`insufficient_sources`, `terminal_fetch_error`, `analyst_error`); claim `status` enum includes `blocked` (`src/content.config.ts:197`) |
-| Auditor output | sidecar `analyst_verdict`, `auditor_verdict`, `needs_review` (`pipeline/orchestrator/persistence.py:484-490`) |
+| Auditor output | sidecar `analyst_verdict`, `auditor_verdict`, `needs_review` (`_write_audit_sidecar` in `pipeline/orchestrator/persistence.py`) |
+| Tie-breaker | `pipeline/loop/tiebreaker/`; sidecar `tiebreaker_verdict`, `pipeline_verdict`, `rule_applied` |
 | Human review | `dr review` (`pipeline/orchestrator/cli.py:1807`): `--approve` flips draft to published, `--archive` flips published to archived; reviewer shown by handle, linked to a profile page, via `src/lib/reviewers.ts` |
 
 ## Edges: what passes between steps
@@ -49,13 +52,14 @@ Facts behind each node, checked 2026-10-06:
 | Researcher → Ingestor | Candidate source URLs |
 | Ingestor → Analyst | Stored source content, key quotes, source type and independence |
 | Analyst → Auditor | Draft verdict, confidence, narrative |
-| Auditor → Human review | Draft claim file plus audit sidecar (both verdicts, `needs_review`) |
+| Auditor → Tie-breaker | Only on a verdict disagreement: the claim, the Analyst's narrative, the sources and the grading rule, with neither side's verdict |
+| Auditor or Tie-breaker → Human review | Draft claim file carrying the pipeline verdict, plus audit sidecar (every verdict, `pipeline_verdict`, `needs_review`) |
 | Human review → Published verdict | `status: published`, `human_review` block filled |
 | Human review → revise | Notes; likely a re-run (`dr draft --claim <ref> --force`) or a hand edit before approval |
 
 ## Visual treatment
 
-- Automated steps (Researcher, Ingestor, Analyst, Auditor): one plain node style.
+- Automated steps (Researcher, Ingestor, Analyst, Auditor, Tie-breaker): one plain node style; the Tie-breaker drawn as a side step that runs only when the verdicts differ.
 - Human steps (Question, Human review): the site accent color or a dashed border.
 - Decision after Human review: a branch, not a diamond-heavy flowchart.
 - Blocked: a side branch, labeled, in a muted style.

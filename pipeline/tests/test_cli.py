@@ -797,10 +797,11 @@ def test_step_audit_write_keeps_the_archive_record(tmp_path) -> None:
     )
     claim_dir = tmp_path / "research" / "claims" / "example"
     claim_dir.mkdir(parents=True)
+    # The verdict is the TestModel Evaluator's (true, high): the pair agrees, so no tie-breaker runs.
     (claim_dir / "claim.md").write_text(
         serialize_frontmatter(
-            {"title": "Example claim", "entity": "companies/example", "verdict": "unverified",
-             "confidence": "low", "topics": ["environmental-impact"], "sources": ["2026/page"]},
+            {"title": "Example claim", "entity": "companies/example", "verdict": "true",
+             "confidence": "high", "topics": ["environmental-impact"], "sources": ["2026/page"]},
             "Body.\n",
         ),
         encoding="utf-8",
@@ -843,10 +844,11 @@ def _step_audit_write(tmp_path, sidecar: dict) -> dict:
     )
     claim_dir = tmp_path / "research" / "claims" / "example"
     claim_dir.mkdir(parents=True)
+    # The verdict is the TestModel Evaluator's (true, high): the pair agrees, so no tie-breaker runs.
     (claim_dir / "claim.md").write_text(
         serialize_frontmatter(
-            {"title": "Example claim", "entity": "companies/example", "verdict": "unverified",
-             "confidence": "low", "topics": ["environmental-impact"], "sources": []},
+            {"title": "Example claim", "entity": "companies/example", "verdict": "true",
+             "confidence": "high", "topics": ["environmental-impact"], "sources": []},
             "Body.\n",
         ),
         encoding="utf-8",

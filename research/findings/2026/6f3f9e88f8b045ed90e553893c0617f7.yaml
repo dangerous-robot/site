@@ -1,0 +1,33 @@
+run_id: 6f3f9e88f8b045ed90e553893c0617f7
+date: 2026-10-14
+command: dr draft
+claim_spec:
+  statement: Lake Baikal holds about one fifth of the world's unfrozen fresh surface
+    water
+  entity: subjects/probe-sp2
+  criteria_slug: null
+  topics: []
+  grading_rule: null
+claim_ref: null
+config:
+  max_sources: 3
+  candidate_pool_size: 32
+  max_initial_queries: 7
+  search_backend: tavily
+  research_origins:
+  - tavily
+  - arxiv
+  model: greenpt:gpt-oss-120b
+  skip_wayback: false
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+step: ingest
+rule: flaw-retry
+error:
+  error_type: insufficient_sources
+  message: 3 usable sources, 4 needed
+attempts: 2
+outcome: abandoned
+retries: []
+closed: null

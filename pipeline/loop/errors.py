@@ -1,4 +1,4 @@
-"""Typed errors from the steps of a claim run (research, ingest)."""
+"""Typed errors from the steps of a claim run, and the vocabulary every failure uses."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ class StepError:
 
     The ``error_type`` attribute is intentionally a free-form ``str``, not a
     closed enum or ``Literal``. This is a deliberate design choice: the field
-    is a coarse classifier for log filtering and checkpoint UI grouping, and
+    is a coarse classifier for log filtering and the error policy, and
     new categories should be cheap to add. The trade-off is drift -- so the
     smoke test in ``pipeline/tests/test_step_error_vocab.py`` scans
     production code and fails if a new literal lands without an entry below.
@@ -39,6 +39,19 @@ class StepError:
         - ``no_results``               -- search returned zero candidates
         - ``scorer_dropped_all``       -- URL scorer rejected every candidate
 
+    Run rules (step-level; ``pipeline/loop/policy.py`` maps each to a rule)
+    ------------------------------------------------------------------------
+    A whole step's failure, recorded on the run's finding rather than per URL:
+
+        - ``insufficient_sources``     -- fewer than four usable sources after ingest
+        - ``sources_unreachable``      -- below four, and every failed page failed in transit
+        - ``terminal_fetch_error``     -- below four, and every failed page refused (``http_{status}``)
+        - ``rate_limited``             -- a provider answered with a rate limit
+        - ``null_body``                -- a provider answered with an empty body
+        - ``invalid_output``           -- an agent's output failed validation after its own retries
+        - ``write_failed``             -- the writer failed part-way (a half-claim)
+        - ``verdict_split``            -- the analyst and the Evaluator disagreed; the tie-breaker settled it
+
     Reserved (tier1 source-pool expansion, not yet wired)
     -----------------------------------------------------
     See ``docs/plans/completed/source-pool-expansion-tier1.md`` and the companion
@@ -63,9 +76,9 @@ class StepError:
           live on ``sources_consulted[].acquisition.outcome`` in the audit
           trail, not on the error stream.
 
-    Keeping the error channel narrow makes log dashboards and the
-    ``review_sources`` checkpoint readable; the trace and audit channels
-    carry the per-tool / per-URL detail.
+    Keeping the error channel narrow keeps log dashboards and the findings
+    file readable; the trace and audit channels carry the per-tool / per-URL
+    detail.
     """
 
     def __init__(

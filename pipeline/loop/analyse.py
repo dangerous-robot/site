@@ -7,9 +7,7 @@ import logging
 import traceback
 from pathlib import Path
 
-import openai
 from pydantic_ai import capture_run_messages
-from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from analyst.agent import (
     AnalystOutput,
@@ -23,7 +21,7 @@ from analyst.citations import cited_source_ids, clean_citations
 from auditor.agent import auditor_agent, build_auditor_prompt
 from auditor.bundle import build_bundle
 from auditor.compare import compare
-from auditor.models import ComparisonResult
+from auditor.models import ClaimBundle, ComparisonResult, IndependentAssessment
 from common.models import EntityType, FailureInfo, FailureStep, Independence, SubQuestion, resolve_model
 from common.source_classification import (
     entity_affiliated,
@@ -32,20 +30,12 @@ from common.source_classification import (
     source_engages_entity,
 )
 from common.utils import url_host
+from loop.policy import classify_exception, retry_after_s
 from loop.spec import VerificationResult, VerifyConfig, _cfg_repo_root
 from orchestrator.entity_resolution import ResolvedEntity, entity_identity_for
 from orchestrator.persistence import shorten
 
 logger = logging.getLogger(__name__)
-
-
-_NULL_RESPONSE_MSG = "Invalid response from"
-
-_NULL_BODY_RETRIES = 2
-
-_NULL_BODY_RETRY_DELAY_S = 45.0
-
-_RATE_LIMIT_RETRY_DELAY_S = 90.0
 
 
 def _failure_from_exc(
@@ -56,9 +46,14 @@ def _failure_from_exc(
     model: str | None,
     timeout_s: float | None,
 ) -> FailureInfo:
-    """Build a FailureInfo from an exception, capturing a short traceback head."""
+    """Build a FailureInfo from an exception, capturing a short traceback head.
+
+    ``error_type`` and ``rule`` are the error policy's reading of the
+    exception, which decides whether the run retries the step.
+    """
     tb = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
     head_lines = tb.splitlines()[:12]
+    error_type, rule = classify_exception(exc)
     return FailureInfo(
         step=step,
         agent=agent,
@@ -67,6 +62,9 @@ def _failure_from_exc(
         error_message=str(exc) or type(exc).__name__,
         timeout_s=timeout_s,
         traceback_head="\n".join(head_lines) if head_lines else None,
+        error_type=error_type,
+        rule=rule.value,
+        retry_after_s=retry_after_s(exc),
     )
 
 
@@ -164,55 +162,33 @@ def _merge_entity_overrides(
     verdict.source_overrides = merged
 
 
-async def _run_with_null_retry(
+async def _run_agent_once(
     agent,
     prompt: str,
     timeout_s: float,
     *,
-    retries: int = _NULL_BODY_RETRIES,
-    delay_s: float = _NULL_BODY_RETRY_DELAY_S,
+    model_settings: dict | None = None,
 ) -> tuple:
-    """Run an agent, retrying on Infomaniak null-body responses.
+    """Run an agent once under its time limit.
 
-    Returns (output, messages, last_exc). output is None on final failure;
-    last_exc is None on success and the final raised exception otherwise so
-    callers can build a structured FailureInfo. The retry loop sits outside
-    asyncio.wait_for so each call gets its own timeout and the retry window
-    is additive — no timeout budget conflict.
+    Returns (output, messages, exc). output is None on failure and exc the
+    raised exception, so the caller can build a structured FailureInfo. The
+    run's error policy (``loop/policy.py``) decides whether to try again;
+    this wrapper never retries. The console gets one line; the traceback and
+    the run's messages go to the debug log.
     """
-    for attempt in range(retries + 1):
-        with capture_run_messages() as messages:
-            try:
-                res = await asyncio.wait_for(agent.run(prompt), timeout=timeout_s)
-                return res.output, messages, None
-            except Exception as exc:
-                if (
-                    isinstance(exc, UnexpectedModelBehavior)
-                    and _NULL_RESPONSE_MSG in str(exc)
-                    and attempt < retries
-                ):
-                    logger.warning(
-                        "null-body response (attempt %d/%d); retrying in %.0fs",
-                        attempt + 1, retries + 1, delay_s,
-                    )
-                    await asyncio.sleep(delay_s)
-                    continue
-                if isinstance(exc, openai.RateLimitError) and attempt < retries:
-                    header_val = exc.response.headers.get("retry-after")
-                    try:
-                        wait = float(header_val) if header_val else _RATE_LIMIT_RETRY_DELAY_S
-                    except ValueError:
-                        wait = _RATE_LIMIT_RETRY_DELAY_S
-                    logger.warning(
-                        "rate limit (attempt %d/%d); retrying in %.0fs",
-                        attempt + 1, retries + 1, wait,
-                    )
-                    await asyncio.sleep(wait)
-                    continue
-                logger.exception("Agent failed: %s", exc)
-                for i, msg in enumerate(messages):
-                    logger.error("Agent run message [%d]: %r", i, msg)
-                return None, messages, exc
+    with capture_run_messages() as messages:
+        try:
+            res = await asyncio.wait_for(
+                agent.run(prompt, model_settings=model_settings), timeout=timeout_s
+            )
+            return res.output, messages, None
+        except Exception as exc:
+            logger.warning("Agent failed: %s: %s", type(exc).__name__, exc)
+            logger.debug("Agent failure traceback", exc_info=exc)
+            for i, msg in enumerate(messages):
+                logger.debug("Agent run message [%d]: %r", i, msg)
+            return None, messages, exc
 
 
 async def analyse_claim(
@@ -255,7 +231,7 @@ async def analyse_claim(
         )
 
     with verdict_only_agent.override(model=resolve_model(model_spec)):
-        verdict_assessment, _, exc = await _run_with_null_retry(
+        verdict_assessment, _, exc = await _run_agent_once(
             verdict_only_agent, prompt, cfg.analyst_timeout_s
         )
     if verdict_assessment is None:
@@ -283,16 +259,14 @@ def _clean_verdict_citations(verdict: VerdictAssessment, sources: list[dict]) ->
         logger.warning("Analyst output has unresolved citation references: %s", unresolved)
 
 
-async def audit_claim(
-    entity_name: str,
+def _evaluator_bundle(
     statement: str,
     analyst_out: AnalystOutput,
     sources: list[dict],
-    cfg: VerifyConfig,
-    criterion_notes: str | None = None,
-) -> ComparisonResult | None:
-    """Grade ``statement`` against ``sources``; the caller picks the statement."""
-    bundle = build_bundle(
+    criterion_notes: str | None,
+) -> ClaimBundle:
+    """What the Evaluator and the tie-breaker see: the statement, the narrative, the sources."""
+    return build_bundle(
         entity_name=analyst_out.entity.entity_name,
         claim_text=statement,
         entity_type=analyst_out.entity.entity_type,
@@ -303,13 +277,26 @@ async def audit_claim(
         criterion_notes=criterion_notes,
     )
 
-    prompt = build_auditor_prompt(bundle)
 
-    with auditor_agent.override(model=resolve_model(cfg.model_for("auditor"))):
-        assessment, _, _exc = await _run_with_null_retry(auditor_agent, prompt, cfg.auditor_timeout_s)
+async def _audit_claim_with_failure(
+    statement: str,
+    analyst_out: AnalystOutput,
+    sources: list[dict],
+    cfg: VerifyConfig,
+    criterion_notes: str | None = None,
+) -> tuple[ComparisonResult | None, FailureInfo | None]:
+    """Grade ``statement`` against ``sources``; (comparison, None) or (None, failure)."""
+    bundle = _evaluator_bundle(statement, analyst_out, sources, criterion_notes)
+    prompt = build_auditor_prompt(bundle)
+    model_spec = cfg.model_for("auditor")
+
+    with auditor_agent.override(model=resolve_model(model_spec)):
+        assessment, _, exc = await _run_agent_once(auditor_agent, prompt, cfg.auditor_timeout_s)
 
     if assessment is None:
-        return None
+        return None, _failure_from_exc(
+            exc or RuntimeError("the Evaluator returned no output"), step="auditor", agent="auditor", model=model_spec, timeout_s=cfg.auditor_timeout_s,
+        )
 
     return compare(
         analyst_out.verdict.verdict,
@@ -317,7 +304,48 @@ async def audit_claim(
         assessment,
         bundle.claim_id,
         "(draft -- not yet saved)",
+    ), None
+
+
+async def audit_claim(
+    entity_name: str,
+    statement: str,
+    analyst_out: AnalystOutput,
+    sources: list[dict],
+    cfg: VerifyConfig,
+    criterion_notes: str | None = None,
+) -> ComparisonResult | None:
+    """Grade ``statement`` against ``sources``; the caller picks the statement."""
+    comparison, _failure = await _audit_claim_with_failure(
+        statement, analyst_out, sources, cfg, criterion_notes=criterion_notes,
     )
+    return comparison
+
+
+async def _tiebreak(
+    statement: str,
+    analyst_out: AnalystOutput,
+    sources: list[dict],
+    cfg: VerifyConfig,
+    criterion_notes: str | None = None,
+) -> tuple[IndependentAssessment | None, FailureInfo | None]:
+    """The tie-breaker's blind grade of ``statement``, over the bundle the Evaluator saw."""
+    from loop.tiebreaker.agent import build_tiebreaker_prompt, tiebreaker_agent
+
+    prompt = build_tiebreaker_prompt(_evaluator_bundle(statement, analyst_out, sources, criterion_notes))
+    model_spec = cfg.model_for("tiebreaker")
+    settings = {"thinking": cfg.tiebreaker_thinking} if cfg.tiebreaker_thinking else None
+
+    with tiebreaker_agent.override(model=resolve_model(model_spec)):
+        assessment, _, exc = await _run_agent_once(
+            tiebreaker_agent, prompt, cfg.tiebreaker_timeout_s, model_settings=settings,
+        )
+    if assessment is None:
+        return None, _failure_from_exc(
+            exc or RuntimeError("the tie-breaker returned no output"), step="tiebreaker", agent="tiebreaker", model=model_spec,
+            timeout_s=cfg.tiebreaker_timeout_s,
+        )
+    return assessment, None
 
 
 def _apply_cited_filter(

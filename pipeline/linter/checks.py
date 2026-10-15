@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 
 from analyst.citations import NO_CITATION_FIELDS, find_citation_references
 from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, Confidence, Independence, VerificationLevel
+from common.sidecar import pipeline_verdict_of
 from common.source_classification import effective_independence
 from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS, ENTITY_FRONTMATTER_KEYS
 
@@ -157,10 +158,10 @@ def check_verdict_sidecar_mismatch(
             continue
         sidecar = claim_sidecars.get(str(path))
         audit = (sidecar or {}).get("audit")
-        if not isinstance(audit, dict) or audit.get("analyst_verdict") is None:
+        if pipeline_verdict_of(audit) is None:
             continue
         verdict = str(fm.get("verdict"))
-        analyst = str(audit["analyst_verdict"])
+        analyst = str(pipeline_verdict_of(audit))
         if verdict == analyst:
             continue
         override = ((sidecar or {}).get("human_review") or {}).get("verdict_override") or {}

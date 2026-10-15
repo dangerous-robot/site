@@ -46,7 +46,7 @@ const auditSchema = z.object({
     ran_at: z.coerce.date(),
     model: z.string(),
     agents: z.array(z.string()),
-    // The claim run that wrote this sidecar (one per `dr draft` and per claim inside onboard).
+    // The claim run that wrote this sidecar (one per `dr draft`).
     run_id: z.string().optional(),
   }),
   // Per-agent model lineage. Optional during the v1 transition: existing sidecars
@@ -82,6 +82,16 @@ const auditSchema = z.object({
     auditor_reasoning: z.string().optional(),
     evidence_gaps: z.array(z.string()).optional(),
     needs_review_reasons: z.array(z.string()).optional(),
+    // The settled verdict. Absent on a sidecar written before the tie-breaker
+    // existed, where analyst_verdict is the pipeline's; null when a
+    // disagreement was never settled.
+    pipeline_verdict: z.string().nullable().optional(),
+    pipeline_confidence: z.string().nullable().optional(),
+    rule_applied: z.string().nullable().optional(),
+    // Present only when the analyst and the Evaluator disagreed.
+    tiebreaker_verdict: z.string().optional(),
+    tiebreaker_confidence: z.string().optional(),
+    tiebreaker_reasoning: z.string().optional(),
   }).nullable(),
   human_review: z.object({
     reviewed_at: z.coerce.date().nullable(),

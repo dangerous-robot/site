@@ -57,3 +57,11 @@ class TestAgentInstructionsWiring:
         agent_dir = Path(__file__).resolve().parent.parent / "ingestor"
         expected = load_instructions(agent_dir)
         assert ingestor_agent._system_prompts[0] == expected
+
+    def test_tiebreaker_loads_instructions(self):
+        from common.instructions import common
+        from loop.tiebreaker.agent import tiebreaker_agent
+        agent_dir = Path(__file__).resolve().parent.parent / "loop" / "tiebreaker"
+        assert (agent_dir / "instructions.md").exists()
+        expected = load_instructions(agent_dir, common("verdict-scale.md"))
+        assert tiebreaker_agent._system_prompts[0] == expected

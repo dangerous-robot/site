@@ -156,10 +156,11 @@ def _write_claim_repo(tmp_path, sidecar: dict) -> tuple:
     claim_dir = tmp_path / "research" / "claims" / "example"
     claim_dir.mkdir(parents=True)
     claim_path = claim_dir / "claim.md"
+    # The verdict is the TestModel Evaluator's (true, high): the pair agrees, so no tie-breaker runs.
     claim_path.write_text(
         serialize_frontmatter(
-            {"title": "Example claim", "entity": "companies/example", "verdict": "unverified",
-             "confidence": "low", "topics": ["environmental-impact"], "sources": []},
+            {"title": "Example claim", "entity": "companies/example", "verdict": "true",
+             "confidence": "high", "topics": ["environmental-impact"], "sources": []},
             "Body.\n",
         ),
         encoding="utf-8",

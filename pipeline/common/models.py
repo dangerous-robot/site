@@ -65,12 +65,13 @@ async def _log_infomaniak_response(response: httpx.Response) -> None:
         )
 
 
-AgentName = Literal["researcher", "analyst", "auditor", "ingestor"]
-# Canonical iteration order for the four agents that participate in a
-# single claim verification. Used by VerifyConfig.model_for and CLI
-# helpers that enumerate per-agent overrides; adding an agent means
-# editing this tuple and the matching VerifyConfig fields.
-AGENT_NAMES: tuple[AgentName, ...] = ("researcher", "analyst", "auditor", "ingestor")
+AgentName = Literal["researcher", "analyst", "auditor", "ingestor", "tiebreaker"]
+# Canonical iteration order for the agents that participate in a single
+# claim verification (the tie-breaker runs only on a verdict disagreement).
+# Used by VerifyConfig.model_for and CLI helpers that enumerate per-agent
+# overrides; adding an agent means editing this tuple and the matching
+# VerifyConfig fields.
+AGENT_NAMES: tuple[AgentName, ...] = ("researcher", "analyst", "auditor", "ingestor", "tiebreaker")
 
 
 class Verdict(str, Enum):
@@ -201,7 +202,7 @@ class VerdictSeverity(str, Enum):
 DEFAULT_MODEL = "greenpt:gpt-oss-120b"
 
 
-FailureStep = Literal["research", "ingest", "analyst", "auditor"]
+FailureStep = Literal["research", "ingest", "analyst", "auditor", "tiebreaker"]
 
 
 @dataclass
@@ -220,6 +221,12 @@ class FailureInfo:
     error_message: str
     timeout_s: float | None = None
     traceback_head: str | None = None
+    # The error policy's reading of the exception (``loop.classify_exception``):
+    # the StepError vocabulary literal and the rule it maps to.
+    error_type: str | None = None
+    rule: str | None = None
+    # Seconds a rate-limited provider asked to wait (its ``retry-after`` header).
+    retry_after_s: float | None = None
 
 
 def _model_needs_reasoning_strip(model_id: str) -> bool:

@@ -540,7 +540,6 @@ class TestRefreshSnapshot:
             ran_at=FIXED_TS,
             sources_consulted=[],
             agents_run=["auditor"],
-            reset_review=True,
             **kwargs,
         )
         sidecar = claim_path.with_name(claim_path.stem + ".audit.yaml")
@@ -582,7 +581,6 @@ class TestRefreshSnapshot:
             ran_at=later,
             sources_consulted=[],
             agents_run=["auditor"],
-            reset_review=True,
             previous_publication=None,
         )
         data = yaml.safe_load(

@@ -76,3 +76,11 @@ class ComparisonResult(BaseModel):
     confidence_agrees: bool
     verdict_severity: VerdictSeverity
     needs_review: bool
+    # The settled verdict (``compare.settle_verdict``). An agreement is settled
+    # at compare time; a disagreement stays None until the tie-breaker runs.
+    tiebreaker_verdict: Verdict | None = None
+    tiebreaker_confidence: Confidence | None = None
+    tiebreaker_reasoning: str | None = None
+    pipeline_verdict: Verdict | None = None
+    pipeline_confidence: Confidence | None = None
+    rule_applied: str | None = None

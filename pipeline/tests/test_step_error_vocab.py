@@ -56,6 +56,17 @@ DOCUMENTED_LITERALS: frozenset[str] = frozenset(
         "edgar_ua_missing",
         "edgar_rate_limited",
         "tavily_rate_limited",
+        # Run rules (RE-AT, Rules, findings file, tie-breaker): step-level
+        # failures the error policy table maps to a rule, and the finding-only
+        # types for a writer crash and a settled disagreement.
+        "insufficient_sources",
+        "sources_unreachable",
+        "terminal_fetch_error",
+        "rate_limited",
+        "null_body",
+        "invalid_output",
+        "write_failed",
+        "verdict_split",
     }
 )
 
@@ -205,6 +216,10 @@ def test_scanner_finds_known_literals() -> None:
         "no_results",
         "scorer_dropped_all",
         "http_{",  # format pattern from f"http_{exc.status_code}"
+        # RE-AT (Rules, findings file, tie-breaker): the loop records these.
+        "insufficient_sources",
+        "verdict_split",
+        "write_failed",
     }
     missing = sorted(must_be_present - set(findings))
     assert not missing, (

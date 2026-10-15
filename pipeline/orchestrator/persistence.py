@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from analyst.agent import VerdictAssessment
+    from common.findings import Finding
     from common.models import SubQuestion
     from loop import ClaimSpec, VerificationResult, VerifyConfig
     from orchestrator.entity_resolution import ResolvedEntity, SearchHints
@@ -684,6 +685,9 @@ def updated_analyst_record(
 
     It holds what the analyst proposed, never a value a keep rule left on
     disk, so the next write can tell the operator's text from the analyst's.
+    The one exception is ``verdict``: it is the verdict as written (the
+    pipeline verdict, which a tie-breaker can set against the analyst), since
+    the takeaway keep rule compares it with the next written verdict.
     A field the analyst left out keeps its ``previous`` value: title and
     seo_title change together, since the seo_title shortens that title.
     ``cap_rationale`` is the value after the level fit, and None is recorded
@@ -961,7 +965,6 @@ def _write_audit_sidecar(
     models_used: dict[str, str] | None = None,
     research_trace: dict | None = None,
     sub_questions_block: list[dict] | None = None,
-    reset_review: bool = False,
     failure: FailureInfo | None = None,
     previous_publication: dict | None = None,
     current_source_ids: list[str] | None = None,
@@ -1027,12 +1030,18 @@ def _write_audit_sidecar(
             "auditor_reasoning": comparison.reasoning,
             "evidence_gaps": list(comparison.evidence_gaps),
             "needs_review_reasons": needs_review_reasons(comparison),
+            "pipeline_verdict": _enum_value(comparison.pipeline_verdict),
+            "pipeline_confidence": _enum_value(comparison.pipeline_confidence),
+            "rule_applied": comparison.rule_applied,
         }
+        if comparison.tiebreaker_verdict is not None:
+            audit_block["tiebreaker_verdict"] = _enum_value(comparison.tiebreaker_verdict)
+            audit_block["tiebreaker_confidence"] = _enum_value(comparison.tiebreaker_confidence)
+            audit_block["tiebreaker_reasoning"] = comparison.tiebreaker_reasoning
     else:
         audit_block = None
 
-    # Preserve human_review across mid-pipeline reruns, but reset it when the
-    # caller passes reset_review=True. No command passes it: a forced rewrite
+    # Preserve human_review across mid-pipeline reruns. A forced rewrite
     # resets sign-off through ``mark_forced_rewrite`` before this write.
     human_review = {
         "reviewed_at": None,
@@ -1040,14 +1049,13 @@ def _write_audit_sidecar(
         "notes": None,
         "pr_url": None,
     }
-    if not reset_review:
-        existing_review = existing.get("human_review")
-        if isinstance(existing_review, dict):
-            # verdict_override is written only at approval, so it is kept
-            # only where present rather than added as null to every sidecar.
-            for key in (*human_review, "verdict_override"):
-                if key in existing_review:
-                    human_review[key] = existing_review[key]
+    existing_review = existing.get("human_review")
+    if isinstance(existing_review, dict):
+        # verdict_override is written only at approval, so it is kept
+        # only where present rather than added as null to every sidecar.
+        for key in (*human_review, "verdict_override"):
+            if key in existing_review:
+                human_review[key] = existing_review[key]
 
     refresh = _refresh_block(existing, previous_publication, current_source_ids, ran_at)
 
@@ -1232,6 +1240,11 @@ def write_claim_run(
     (``persist_sources``), then the claim, then the full sidecar. A run that
     never reaches the writer leaves no record, no source and no claim.
 
+    The claim's ``verdict`` and ``confidence`` are the pipeline's: the
+    analyst's, or the side the tie-breaker settled on
+    (``result.consistency.pipeline_verdict``). A capped level still caps
+    the confidence at low whichever side won.
+
     The claim's ``title`` and ``statement`` are both ``spec.statement``, and
     the sidecar's ``analyst_record.title`` records it, so the ``seo_title``
     keep rule compares like with like on the next write. The level fit runs once here,
@@ -1281,14 +1294,22 @@ def write_claim_run(
             logger.warning("Criterion %s has an invalid topic; using the analyst's topics: %s",
                            spec.criteria_slug, exc)
     level_clamp = fit_verdict_to_written_pool(ao.verdict, result.sources, source_ids, entity_name)
+    verdict, confidence = ao.verdict.verdict, ao.verdict.confidence
+    settled = result.consistency
+    if settled is not None and settled.pipeline_verdict is not None:
+        verdict = settled.pipeline_verdict
+        confidence = settled.pipeline_confidence or confidence
+    if _enum_value(ao.verdict.verification_level) in _CAPPED_LEVELS:
+        # A capped level caps confidence whichever side's verdict won.
+        confidence = Confidence.LOW
     written = _write_claim_file(
         title=spec.statement,
         statement=spec.statement,
         entity_name=entity_name,
         entity_ref=entity_ref,
         topics=topics,
-        verdict=ao.verdict.verdict,
-        confidence=ao.verdict.confidence,
+        verdict=verdict,
+        confidence=confidence,
         narrative=ao.verdict.narrative,
         claim_slug=claim_slug,
         source_ids=source_ids,
@@ -1301,6 +1322,8 @@ def write_claim_run(
         **verdict_write_kwargs(ao.verdict),
     )
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
+    if settled is not None and settled.tiebreaker_verdict is not None:
+        agents_run.append("tiebreaker")
     _write_audit_sidecar(
         claim_path=written,
         comparison=result.consistency,
@@ -1315,7 +1338,13 @@ def write_claim_run(
             result.sub_question_coverage,
             result.queries_by_sub_question,
         ),
-        analyst_record={**analyst_record_for(ao.verdict), "title": spec.statement},
+        # The verdict recorded is the one written, as later writes record it,
+        # so a tie-broken claim's operator takeaway survives a forced rerun.
+        analyst_record={
+            **analyst_record_for(ao.verdict),
+            "title": spec.statement,
+            "verdict": _enum_value(verdict),
+        },
         level_clamp=level_clamp,
         run_id=config.run_id,
     )
@@ -1332,73 +1361,48 @@ def write_evaluator_rerun(
     """Rewrite a claim's sidecar after an Evaluator-only rerun; return the sidecar path.
 
     The claim file is not rewritten, so the research trace, the
-    ``sub_questions`` block, the per-URL ``acquisition`` and ``archive``
-    records, the level fit's note and the other agents' ``models_used`` are
-    carried forward from the existing sidecar.
+    ``sub_questions`` block, each ``sources_consulted`` entry (with its
+    ``acquisition`` and ``archive`` records), the level fit's note and the
+    other agents' ``models_used`` are carried forward from the existing
+    sidecar. A source the existing sidecar does not list gets a minimal
+    entry. When the rerun's disagreement went to the tie-breaker, it is
+    recorded beside the Evaluator.
     """
-    auditor_model = config.model_for("auditor")
+    sidecar_path = sidecar_path_for(claim_path)
+    existing: dict = {}
+    if sidecar_path.exists():
+        try:
+            loaded = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+            existing = loaded if isinstance(loaded, dict) else {}
+        except yaml.YAMLError:
+            pass
+    prior_entries = {
+        s["id"]: s
+        for s in existing.get("sources_consulted") or []
+        if isinstance(s, dict) and s.get("id")
+    }
     sources_consulted = [
+        dict(prior_entries[sd["source_id"]]) if sd["source_id"] in prior_entries else
         {"id": sd["source_id"], "url": sd.get("url", ""), "title": sd.get("title", ""), "ingested": True}
         for sd in result.sources
         if sd.get("source_id")
     ]
-    sidecar_path = sidecar_path_for(claim_path)
-    research_trace = None
-    sub_questions_block = None
-    level_clamp = None
-    if sidecar_path.exists():
-        try:
-            existing = yaml.safe_load(sidecar_path.read_text(encoding="utf-8")) or {}
-            research_trace = existing.get("research")
-            sub_questions_block = existing.get("sub_questions")
-            # The claim is not rewritten, so the level fit's note
-            # on it still holds.
-            level_clamp = (existing.get("pipeline_run") or {}).get("level_clamp")
-            # Re-graft per-URL `acquisition` from the existing
-            # sidecar's `sources_consulted[]` back into the
-            # research_trace so _write_audit_sidecar can graft
-            # it again on this rewrite. Without this, a re-audit
-            # silently drops the acquisition data the original
-            # research run produced (the auditor doesn't re-run
-            # research).
-            existing_sources = existing.get("sources_consulted") or []
-            prior_acquisition = {
-                s["url"]: s["acquisition"]
-                for s in existing_sources
-                if isinstance(s, dict)
-                and s.get("url")
-                and isinstance(s.get("acquisition"), dict)
-            }
-            if prior_acquisition and isinstance(research_trace, dict):
-                research_trace = {
-                    **research_trace,
-                    "acquisition": prior_acquisition,
-                }
-            # The archive lookup outcome lives on the entries
-            # themselves, so it is carried over by URL directly.
-            prior_archive = {
-                s["url"]: s["archive"]
-                for s in existing_sources
-                if isinstance(s, dict)
-                and s.get("url")
-                and isinstance(s.get("archive"), dict)
-            }
-            for entry in sources_consulted:
-                if entry["url"] in prior_archive:
-                    entry["archive"] = prior_archive[entry["url"]]
-        except yaml.YAMLError:
-            pass
+    agents_run = ["auditor"]
+    if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
+        agents_run.append("tiebreaker")
+    auditor_model = config.model_for("auditor")
     return _write_audit_sidecar(
         claim_path=claim_path,
         comparison=result.consistency,
         model=auditor_model,
         ran_at=ran_at or datetime.datetime.now(tz=datetime.timezone.utc),
         sources_consulted=sources_consulted,
-        agents_run=["auditor"],
-        models_used={"auditor": auditor_model},
-        research_trace=research_trace,
-        sub_questions_block=sub_questions_block,
-        level_clamp=level_clamp,
+        agents_run=agents_run,
+        models_used={a: config.model_for(a) for a in agents_run},
+        research_trace=existing.get("research"),
+        sub_questions_block=existing.get("sub_questions"),
+        # The claim is not rewritten, so the level fit's note on it still holds.
+        level_clamp=(existing.get("pipeline_run") or {}).get("level_clamp"),
         keep_other_models=True,
         run_id=config.run_id,
     )
@@ -1523,9 +1527,109 @@ def append_template_entry(repo_root: Path, entry: dict) -> None:
     head = "".join(lines[:insert_at])
     if head and not head.endswith("\n"):
         head += "\n"
-    tail = "".join(lines[insert_at:])
+    # One blank line goes between the new entry and the comment block after it.
+    tail_lines = lines[insert_at:]
+    while tail_lines and not tail_lines[0].strip():
+        tail_lines.pop(0)
+    tail = "\n" + "".join(tail_lines) if tail_lines else ""
     path.write_text(f"{head}\n{fragment}{tail}", encoding="utf-8")
     logger.info("Appended criterion %s to %s", slug, path)
+
+
+def _findings_dir(repo_root: Path) -> Path:
+    return repo_root / "research" / "findings"
+
+
+def write_finding(finding: "Finding", repo_root: Path, command: str | None = None) -> Path:
+    """Write ``research/findings/<yyyy>/<run_id>.yaml`` and return its path.
+
+    ``command`` fills the record's ``command`` when the finding has none. A
+    second write for the same run id replaces the first: one record per run.
+    """
+    if finding.command is None and command is not None:
+        finding.command = command
+    path = _findings_dir(repo_root) / f"{finding.date.year:04d}" / f"{finding.run_id}.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        yaml.safe_dump(finding.to_dict(), sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    logger.info("Wrote finding: %s", path)
+    return path
+
+
+def _finding_files(repo_root: Path) -> list[Path]:
+    root = _findings_dir(repo_root)
+    return sorted(root.rglob("*.yaml")) if root.is_dir() else []
+
+
+def load_findings(repo_root: Path, include_closed: bool = False) -> list["Finding"]:
+    """Every finding under ``research/findings/``, in path order; closed ones only when asked."""
+    from common.findings import Finding
+
+    out: list[Finding] = []
+    for path in _finding_files(repo_root):
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            logger.warning("Skipped unreadable finding: %s", path)
+            continue
+        finding = Finding.from_dict(data)
+        if finding.closed is None or include_closed:
+            out.append(finding)
+    return out
+
+
+def close_finding(repo_root: Path, finding_id: str, note: str, by: str = "hand") -> Path:
+    """Record ``closed: {date, by, note}`` on the finding whose run id is or starts with ``finding_id``.
+
+    Raises ``KeyError`` when no finding matches, ``ValueError`` when the
+    prefix matches more than one or the finding is already closed.
+    """
+    from common.findings import Finding
+
+    matches = [p for p in _finding_files(repo_root) if p.stem.startswith(finding_id)]
+    exact = [p for p in matches if p.stem == finding_id]
+    if exact:
+        matches = exact
+    if not matches:
+        raise KeyError(finding_id)
+    if len(matches) > 1:
+        raise ValueError(f"{finding_id} matches {len(matches)} findings: {', '.join(p.stem for p in matches)}")
+    path = matches[0]
+    finding = Finding.from_dict(yaml.safe_load(path.read_text(encoding="utf-8")))
+    if finding.closed is not None:
+        raise ValueError(f"finding {finding.run_id} is already closed ({finding.closed.get('note')})")
+    finding.closed = {"date": datetime.date.today(), "by": by, "note": note}
+    path.write_text(
+        yaml.safe_dump(finding.to_dict(), sort_keys=False, allow_unicode=True),
+        encoding="utf-8",
+    )
+    logger.info("Closed finding: %s", path)
+    return path
+
+
+def half_claims(repo_root: Path) -> dict[str, list[str]]:
+    """What a writer crash can leave behind; nothing is deleted.
+
+    ``claims_without_sidecar`` lists claim refs (the path under
+    ``research/claims/`` without ``.md``) that have no ``.audit.yaml``.
+    ``subjects_without_claim`` lists subject records (``subjects/<slug>``)
+    whose claim directory holds no claim.
+    """
+    claims_root = repo_root / "research" / "claims"
+    without_sidecar: list[str] = []
+    if claims_root.is_dir():
+        for claim in sorted(claims_root.rglob("*.md")):
+            if not sidecar_path_for(claim).exists():
+                without_sidecar.append(claim.relative_to(claims_root).with_suffix("").as_posix())
+    subjects_root = repo_root / "research" / "entities" / "subjects"
+    without_claim: list[str] = []
+    if subjects_root.is_dir():
+        for record in sorted(subjects_root.glob("*.md")):
+            claim_dir = claims_root / "subjects" / record.stem
+            if not (claim_dir.is_dir() and any(claim_dir.glob("*.md"))):
+                without_claim.append(f"subjects/{record.stem}")
+    return {"claims_without_sidecar": without_sidecar, "subjects_without_claim": without_claim}
 
 
 def _entity_body(history_markdown: str | None) -> str:

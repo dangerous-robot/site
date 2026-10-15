@@ -23,6 +23,19 @@ def _reset_run_id_var():
     run_id_var.set(None)
 
 
+@pytest.fixture(autouse=True)
+def _no_live_tiebreaker(monkeypatch):
+    """Keep a developer's ``DR_TIEBREAKER_MODEL`` out of the unit tests.
+
+    The tie-breaker runs inside ``dr draft`` and ``dr step-audit`` whenever the
+    Evaluator disagrees, and ``.env`` may name a frontier model for it. A CLI
+    test that scripts only the analyst and the Evaluator would otherwise send
+    the third pass to that model. Tests that set the variable themselves
+    still can.
+    """
+    monkeypatch.delenv("DR_TIEBREAKER_MODEL", raising=False)
+
+
 @pytest.fixture(scope="session")
 def repo_root() -> Path:
     """Resolve the repository root once per test session."""

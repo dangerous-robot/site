@@ -1,0 +1,226 @@
+templates:
+  # Active: 5 company + 8 product, plus the subject templates below
+  # Remaining templates deferred to inactive_templates below
+
+  # --- Company ---
+
+  - slug: publishes-sustainability-report
+    text: "COMPANY publishes a sustainability or ESG report"
+    entity_type: company
+    topics: [environmental-impact]
+    core: true
+    notes: "Environmental analog of financial transparency"
+    grading_rule: "Environmental analog of financial transparency"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: corporate-structure
+    text: "COMPANY has STRUCTURE corporate structure"
+    entity_type: company
+    topics: [industry-analysis]
+    core: true
+    notes: "Controlled vocabulary; ownership determines incentives"
+    grading_rule: "Controlled vocabulary; ownership determines incentives"  # TODO Brandon: rewrite as a grading rule
+    vocabulary:
+      STRUCTURE:
+        - publicly-traded
+        - privately-held
+        - non-profit
+        - B-corp
+        - employee-owned
+        - steward-ownership
+        - cooperative
+
+  - slug: contributes-to-ai-safety
+    text: "COMPANY contributes to AI safety causes"
+    entity_type: company
+    topics: [ai-safety]
+    core: true
+    notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: contributes-to-environmental-causes
+    text: "COMPANY contributes to environmental causes"
+    entity_type: company
+    topics: [environmental-impact]
+    core: true
+    notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: financial-transparency
+    text: "COMPANY provides financial transparency"
+    entity_type: company
+    topics: [industry-analysis]
+    core: true
+    notes: "Public financials, revenue breakdowns, cost disclosures"
+    grading_rule: "Public financials, revenue breakdowns, cost disclosures"  # TODO Brandon: rewrite as a grading rule
+
+  # --- Product ---
+
+  - slug: renewable-energy-hosting
+    text: "PRODUCT is hosted on renewable energy"
+    entity_type: product
+    topics: [environmental-impact]
+    core: true
+    notes: "Verdict encodes degree: true = 100%, mostly-true = significant with gaps, mixed = offsets only"
+    grading_rule: "Verdict encodes degree: true = 100%, mostly-true = significant with gaps, mixed = offsets only"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: no-training-on-user-data
+    text: "PRODUCT does not use user data for training"
+    entity_type: product
+    topics: [data-privacy]
+    core: true
+    notes: "Covers default behavior; opt-out options noted in narrative"
+    grading_rule: "Covers default behavior; opt-out options noted in narrative"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: discloses-models-used
+    text: "PRODUCT discloses which models it uses"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Some products don't say what's running behind the API"
+    grading_rule: "Some products don't say what's running behind the API"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: discloses-energy-sourcing
+    text: "PRODUCT discloses its energy sourcing"
+    entity_type: product
+    topics: [environmental-impact]
+    core: true
+    notes: "Transparency meta-claim: does the company say where its energy comes from?"
+    grading_rule: "Transparency meta-claim: does the company say where its energy comes from?"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: realtime-energy-display
+    text: "PRODUCT displays real-time energy consumption to user"
+    entity_type: product
+    topics: [environmental-impact]
+    core: true
+    notes: "Binary: the feature exists or it doesn't"
+    grading_rule: "Binary: the feature exists or it doesn't"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: excludes-image-generation
+    text: "PRODUCT excludes image generation feature"
+    entity_type: product
+    topics: [environmental-impact]
+    core: true
+    notes: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"
+    grading_rule: "Image generation has the highest per-query energy cost; excluding it is an environmental stance"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: excludes-frontier-models
+    text: "PRODUCT excludes frontier-scale models"
+    entity_type: product
+    topics: [ai-safety, environmental-impact]
+    core: true
+    notes: "See controlled vocabulary for frontier-scale definition"
+    grading_rule: "See controlled vocabulary for frontier-scale definition"  # TODO Brandon: rewrite as a grading rule
+
+  - slug: open-source-models-only
+    text: "PRODUCT uses only open-weight models"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Auditability: weights and architecture are publicly available"
+    grading_rule: "Auditability: weights and architecture are publicly available"  # TODO Brandon: rewrite as a grading rule
+
+  # --- AI Model Producers (Subject) ---
+
+  - slug: ai-producers-signed-safety-commitments
+    text: "Most major ENTITY have signed AI safety commitments"
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
+    topics: [ai-safety]
+    core: true
+
+  - slug: ai-producers-existential-score
+    text: "Most major ENTITY score D or worse on FLI's 2025 AI Safety Index for Existential Threat"
+    entity_type: subject
+    subjects: [subjects/ai-model-producers]
+    topics: [ai-safety, industry-analysis]
+    tags:
+    - highlight
+    core: true
+
+  # --- Generative AI (Subject) ---
+
+  - slug: using-generative-ai-harms-cognitive-ability
+    text: "Using generative AI can harm cognitive ability"
+    entity_type: subject
+    subjects: [subjects/generative-ai]
+    topics: [ai-safety]
+    tags: [highlight]
+    core: true
+
+
+# Deferred: post-v0.1.0
+# To reactivate, move entries back into `templates` above.
+# Neither the Python pipeline nor the Astro loader reads this key.
+
+inactive_templates:
+
+  # --- Environmental Impact (Product) ---
+
+  # --- Data Privacy (Product) ---
+
+  - slug: data-jurisdiction
+    text: "PRODUCT stores user data in JURISDICTION"
+    entity_type: product
+    topics: [data-privacy]
+    core: true
+    notes: "Controlled vocabulary; assess data protection strength"
+    vocabulary:
+      JURISDICTION:
+        - EU
+        - Switzerland
+        - US
+        - US-California
+        - UK
+        - Canada
+        - Australia
+        - multiple
+
+  - slug: user-data-deletion
+    text: "PRODUCT allows users to delete their data"
+    entity_type: product
+    topics: [data-privacy]
+    core: true
+    notes: "Basic GDPR/CCPA concern; binary but implementation quality varies"
+
+  # --- AI Safety & Transparency ---
+
+  - slug: publishes-ai-limitations
+    text: "COMPANY publishes known AI limitations"
+    entity_type: company
+    topics: [ai-literacy]
+    core: true
+    notes: "Public documentation of what the product can't do or gets wrong"
+
+  - slug: anti-sycophancy-by-design
+    text: "PRODUCT implements anti-sycophancy by design"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Documented design choices to reduce flattery/agreement bias"
+
+  - slug: labels-ai-generated-content
+    text: "PRODUCT labels AI-generated content"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Watermarking, metadata, or visible labeling of AI outputs"
+
+  # --- Responsible Business (Company) ---
+
+  - slug: ai-alternatives-guidance
+    text: "COMPANY offers AI alternatives guidance"
+    entity_type: company
+    topics: [ai-literacy]
+    core: true
+    notes: "Willingness to recommend not using your own product"
+
+  # --- Model Selection (Product) ---
+
+  - slug: documents-model-selection
+    text: "PRODUCT documents model selection criteria"
+    entity_type: product
+    topics: [ai-safety]
+    core: true
+    notes: "Meta-transparency: why these models and not others?"
+
+

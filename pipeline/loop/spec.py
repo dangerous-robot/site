@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, computed_field
 from analyst.agent import AnalystOutput
 from auditor.models import ComparisonResult
 from common.content_loader import resolve_repo_root
+from common.findings import Finding
 from common.logging_setup import new_run_id, run_id_var
 from common.models import DEFAULT_MODEL, AgentName, BlockedReason, FailureInfo, SubQuestion
 from common.timeouts import ingest_budget_with_wayback_s
@@ -48,6 +49,16 @@ class VerifyConfig:
     analyst_model: str | None = None
     auditor_model: str | None = None
     ingestor_model: str | None = None
+    tiebreaker_model: str | None = None
+    # The error policy's retry counts (``loop/policy.py``). A flaw retry runs
+    # at once; a transport retry waits the matching ``transport_backoff_s``
+    # entry, or the provider's ``retry-after`` when it sent one.
+    flaw_retries: int = 1
+    transport_retries: int = 2
+    transport_backoff_s: tuple[float, ...] = (45.0, 90.0)
+    # PydanticAI's portable thinking level for the tie-breaker; None leaves the
+    # model's default (for a gateway that rejects reasoning settings).
+    tiebreaker_thinking: str | None = "high"
     # target successes to pass to the analyst
     max_sources: int = 8
     candidate_pool_size: int = 32
@@ -81,6 +92,8 @@ class VerifyConfig:
     research_timeout_s: float = 120.0
     analyst_timeout_s: float = 120.0
     auditor_timeout_s: float = 120.0
+    # Longer than the Evaluator's: the tie-breaker runs with a higher thinking budget.
+    tiebreaker_timeout_s: float = 300.0
     # Effort lever for decomposed researcher: more queries = wider net.
     max_initial_queries: int = 7
     # Integer cap for the shared asyncio.Semaphore created at each call site.
@@ -152,6 +165,10 @@ class VerificationResult(BaseModel):
     # the audit sidecar (pipeline_run.failure) so blocked runs can be triaged
     # without grepping logs.
     failure: FailureInfo | None = Field(default=None, exclude=True)
+    # The run's finding, when a step was retried, the run was abandoned or
+    # the tie-breaker settled a disagreement. The command that ran the loop
+    # writes it (``orchestrator.persistence.write_finding``).
+    finding: Finding | None = Field(default=None, exclude=True)
     # Requested URL -> URL its live fetch ended on, for fresh sources.
     final_urls: dict[str, str] = Field(default_factory=dict, exclude=True)
     # Requested URL -> archive lookup record, for fresh sources.

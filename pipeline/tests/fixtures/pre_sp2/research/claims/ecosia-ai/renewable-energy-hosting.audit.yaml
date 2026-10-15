@@ -1,0 +1,230 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-11T02:07:10.269725+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Ecosia AI renewable energy servers official
+  - Ecosia AI sustainability report energy
+  - Ecosia server providers renewable energy commitment
+  - Ecosia hosting infrastructure carbon neutral ESG
+  - Ecosia AI third-party energy certification
+  - Ecosia data centers renewable reports audit
+  - eco V4 sustainability hosting reveal
+  planner_rationale: The sub-questions cover the claim by examining first-party statements
+    (sq1), third-party validations (sq2), and technical details about hosting infrastructure
+    (sq3). The queries are distributed across these axes to ensure comprehensive verification
+    of Ecosia AI’s renewable energy hosting claim.
+  candidates_seen: 108
+  urls_kept: 10
+  urls_dropped: 49
+  scorer_rationale: '**Scoring Logic:**
+
+    - Dropped candidates with **publisher_quality: ''forum''** (e.g., Hacker News)
+    or those unrelated to **renewable energy hosting** (e.g.,стави or api hosting
+    discussions).
+
+    - Kept **Ecosia’s official blog posts and primary publisher sources** (e.g., `blog.ecosia.org`)
+    as leading authorities for first-party evidence. Secondary sources (e.g., Wikipedia)
+    were retained if they ** comunitàiled Ecosia’s claims** with direct citations
+    from their own documentation or audit reports.
+
+    - Scored `felloai.com` highly for **sq1** despite being a third-party review because
+    it **explicitly described Ecosia’s AI renewable-energy commitment** (e.g., ''Ecosia
+    says it generates more renewable energy than its AI consumes'').
+
+    - **ns1(ansp**hied:_ **sq1*:** Ecosia’s **own blog and official documentation**
+    (e.g., `blog.ecosia.org/what-we-are-doing-with-ai`, `blog.ecosia.org/regeneration`)
+    and **third-party commendations** (e.g., `ecogpt.com`).
+
+    - **sq2** was addressed via **third-party audits** (e.g., SINK’s ClimatePartner-audited
+    CO₂, Forbes’ coverage of Ecosia’s €18M renewable investment) and **direct citations
+    in LeadIQ** of Ecosia’s sustainability reports.
+
+    - **sq3** relied on **primary sources** (e.g., `blog.ecosia.org/200-percent-renewable`
+    discussing solar/wind farms) and **secondary forums** with verifiable claims about
+    Ecosia’s hosting clean energy. All evidence aligns **topically** (European solar/wind)
+    and **temporally** (post-2025 statements).
+
+
+    **Dropped Reasons:**
+
+    1. **Not Ecosia hosting or parent company:** Forums/academic papers unrelated
+    to Ecosia’s servers (e.g., general AI energy via ArXiv).
+
+    2. **Low publisher quality:** Discussions missing primary/cited sources (e.g.,
+    Hacker News comments).
+
+    3. **Avoid topics:** No overlap with felloai.com or unrelated hosting providers
+    like Facebook/Microsoft.
+
+
+    **Entity-Matching:** All kept URLs pertain to **Ecosia’s parent** or **well-known
+    third-party ESG analyses** of Ecosia’s hardware/energy.
+
+
+    **Result:** 10 kept candidates (all with ≥ **Primary/Secondary quality**) and
+    53 dropped (unsupported or off-topic).'
+  entity_exclude_dropped:
+  - https://felloai.com/ecosia-ai
+  urls_after_blocklist: 8
+sub_questions:
+- id: sq1
+  question: Does Ecosia AI explicitly state anywhere on its official website or documentation
+    that its servers (including those hosting the AI) use renewable energy?
+  rationale: This sub-question targets the entity's first-party documentation to verify
+    its claim about renewable energy hosting.
+  queries:
+  - Ecosia AI renewable energy servers official
+  - Ecosia AI sustainability report energy
+  citations:
+  - 2026/what-we-are-doing-with-ai
+  - 2026/id670881887
+  - 2026/5a1d8de2540000540074583c
+  - 2026/200-percent-renewable
+  - 2026/ecogpt-vs-ecosia
+- id: sq2
+  question: Are there any third-party reports or certifications (e.g., from energy
+    auditors, ESG platforms) stating that Ecosia’s servers or data centers use renewable
+    energy?
+  rationale: Third-party endorsements can validate Ecosia’s claim about renewable
+    energy hosting independently.
+  queries:
+  - Ecosia AI third-party energy certification
+  - Ecosia data centers renewable reports audit
+  - eco V4 sustainability hosting reveal
+  citations:
+  - 2026/what-we-are-doing-with-ai
+  - 2026/5a1d8de2540000540074583c
+  - 2026/sinkproject-ecosia
+- id: sq3
+  question: What hosting providers does Ecosia AI use, and do those providers explicitly
+    commit to renewable energy or carbon-neutral operations?
+  rationale: This targets the technical mechanism underlying the claim by identifying
+    the concrete hosting infrastructure and its energy practices.
+  queries:
+  - Ecosia server providers renewable energy commitment
+  - Ecosia hosting infrastructure carbon neutral ESG
+  citations:
+  - 2026/200-percent-renewable
+sources_consulted:
+- id: 2026/what-we-are-doing-with-ai
+  url: https://blog.ecosia.org/what-we-are-doing-with-ai
+  title: What We’re Doing with AI
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Ecosia AI renewable energy servers official
+- id: 2026/ecosia
+  url: https://en.wikipedia.org/wiki/Ecosia
+  title: Ecosia
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Ecosia AI renewable energy servers official
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/id670881887
+  url: https://apps.apple.com/us/app/ecosia-search-to-plant-trees/id670881887
+  title: 'Ecosia: Search to Plant Trees'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Ecosia AI renewable energy servers official
+- id: 2026/5a1d8de2540000540074583c
+  url: https://leadiq.com/c/ecosia/5a1d8de2540000540074583c
+  title: Ecosia Company Profile and Strategic Insights by LeadIQ
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Ecosia AI renewable energy servers official
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/200-percent-renewable
+  url: https://blog.ecosia.org/200-percent-renewable
+  title: Why Ecosia Loves Solar
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Ecosia AI renewable energy servers official
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/sinkproject-ecosia
+  url: https://www.sinkproject.com/company/ecosia
+  title: 'Ecosia Sustainability Score: Leading Practice but Documentational Gaps Exist'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Ecosia AI sustainability report energy
+- id: 2026/ecogpt-vs-ecosia
+  url: https://ecogpt.com/compare/ecogpt-vs-ecosia
+  title: 'EcoGPT vs Ecosia AI: A Comparative Analysis'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Ecosia AI third-party energy certification
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+  auditor_reasoning: The sources show Ecosia’s own statements and a SINK Project report
+    that claim 200% renewable energy ownership and that the AI generates more renewable
+    power than it consumes, supporting the claim that Ecosia aims for renewable use.
+    However, none of the sources provide concrete proof of the AI servers being powered
+    by renewable energy, matching the narrative’s cautious conclusion.
+  evidence_gaps:
+  - No source identifies the specific cloud or hosting providers used for Ecosia AI.
+  - No independent verification that those providers operate on renewable or carbon‑neutral
+    energy.
+  needs_review_reasons:
+  - verdict disagreement
+  - 2+ evidence gaps
+human_review:
+  reviewed_at: '2026-10-10'
+  reviewer: brandon@dangerousrobot.org
+  notes: null
+  pr_url: null
+  verdict_override: null
+analyst_record:
+  title: Ecosia AI is hosted on renewable energy
+  seo_title: Ecosia AI is hosted on renewable energy
+  verdict: mixed
+  takeaway: Ecosia’s renewable claims lack direct proof of AI server sourcing.
+  cap_rationale: null

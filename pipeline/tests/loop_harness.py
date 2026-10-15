@@ -166,11 +166,66 @@ def capturing_model(captured: list[str], args: dict, *, calls: list[str] | None 
     return FunctionModel(_fn)
 
 
-def failing_model(exc: Exception | None = None) -> FunctionModel:
-    """A model whose every run raises, so the agent step fails after its retries."""
+def failing_model(exc: Exception | None = None, *, calls: list | None = None) -> FunctionModel:
+    """A model whose every run raises, so the agent step fails after its retries.
+
+    ``calls`` (a list) gains one entry per model run, so a test can count the
+    attempts a retry rule made.
+    """
 
     async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        if calls is not None:
+            calls.append("run")
         raise exc or RuntimeError("scripted model failure")
+
+    return FunctionModel(_fn)
+
+
+def flaky_model(args: dict, *, fail_times: int = 1, exc: Exception | None = None, calls: list | None = None) -> FunctionModel:
+    """A model that raises on its first ``fail_times`` runs, then returns ``args``.
+
+    For the recovered-retry cases: the first attempt fails, the retry succeeds.
+    """
+    seen: list[str] = []
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        seen.append("run")
+        if calls is not None:
+            calls.append("run")
+        if len(seen) <= fail_times:
+            raise exc or RuntimeError("scripted transient failure")
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    return FunctionModel(_fn)
+
+
+def counting_search(urls: list[str] | None = None, *, calls: list):
+    """``fake_execute_searches`` that also counts how many times research ran."""
+    inner = fake_execute_searches(urls)
+
+    async def _run(queries, client, **kwargs):
+        calls.append("search")
+        return await inner(queries, client, **kwargs)
+
+    return _run
+
+
+def counting_ingest_model(calls: list, *, fail: Exception | None = None) -> FunctionModel:
+    """An ingest model that counts each URL it is asked for (first turn only).
+
+    With ``fail`` set, every run raises it instead, so each URL's ingest fails
+    the same way (a transport failure on every page, say).
+    """
+    inner = ingest_model()
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        parts = [p for m in messages for p in getattr(m, "parts", [])]
+        called = [p.tool_name for p in parts if isinstance(p, ToolCallPart)]
+        if not called:
+            calls.append("ingest")
+        if fail is not None:
+            raise fail
+        return await inner.function(messages, info)
 
     return FunctionModel(_fn)
 
@@ -186,13 +241,18 @@ def scripted_agents(
     auditor_model=None,
     ingestor=None,
     search=None,
+    tiebreaker: dict | None = None,
+    tiebreaker_model=None,
 ):
     """Put every agent on a scripted model and patch the search executor.
 
     ``analyst_model`` and ``auditor_model`` take a ready model (for capturing
     or failing runs); ``analyst`` and ``auditor`` take ``custom_output_args``
-    for a ``TestModel``. The loop's own ``Agent.override`` calls are made
-    no-ops so the scripted models survive them.
+    for a ``TestModel``. ``tiebreaker`` and ``tiebreaker_model`` do the same
+    for the tie-breaker (RE-AT, Rules, findings file, tie-breaker); with
+    neither, the tie-breaker answers ``mixed`` at medium confidence, so a
+    scripted disagreement still settles. The loop's own ``Agent.override``
+    calls are made no-ops so the scripted models survive them.
     """
     from analyst.agent import analyst_agent, verdict_only_agent
     from auditor.agent import auditor_agent
@@ -202,6 +262,16 @@ def scripted_agents(
 
     analyst_m = analyst_model or TestModel(custom_output_args=analyst or analyst_args())
     auditor_m = auditor_model or TestModel(custom_output_args=auditor or auditor_args())
+    tiebreaker_m = tiebreaker_model or TestModel(custom_output_args=tiebreaker or auditor_args())
+    # The package lands with RE-AT; until then the override is skipped so the
+    # harness still imports at the base commit.
+    try:
+        from loop.tiebreaker.agent import tiebreaker_agent
+    except ImportError:
+        tiebreaker_agent = None
+    tiebreaker_override = (
+        tiebreaker_agent.override(model=tiebreaker_m) if tiebreaker_agent is not None else nullcontext()
+    )
     with (
         research_planner_agent.override(model=TestModel(custom_output_args=planner or planner_args())),
         url_scorer_agent.override(model=TestModel(custom_output_args=scorer or scorer_args())),
@@ -209,6 +279,7 @@ def scripted_agents(
         verdict_only_agent.override(model=analyst_m),
         analyst_agent.override(model=analyst_m),
         auditor_agent.override(model=auditor_m),
+        tiebreaker_override,
         patch("researcher.decomposed.execute_searches", side_effect=search or fake_execute_searches()),
         patch.object(Agent, "override", side_effect=lambda **kw: nullcontext()),
     ):

@@ -508,7 +508,8 @@ def test_claim_force_on_a_published_claim_returns_it_to_draft_with_the_refresh_t
         tmp_path, stem="published-claim", statement="Probe Subject runs on hydro power",
         status="published", reviewer="reviewer@example.org",
     )
-    with scripted_agents(analyst=analyst_args(verdict="false")):
+    # The Evaluator agrees, so the analyst's verdict is the pipeline's and no tie-breaker runs.
+    with scripted_agents(analyst=analyst_args(verdict="false"), auditor=auditor_args(verdict="false")):
         result = _dr(tmp_path, *_draft_args("--claim", _claim_ref(claim_path, tmp_path), "--force"))
 
     assert result.exit_code == 0, result.output
@@ -1030,7 +1031,6 @@ def test_old_commands_are_gone() -> None:
 
 
 def test_old_path_modules_writers_checkpoints_and_scripts_are_gone() -> None:
-    import orchestrator.checkpoints as checkpoints
     import orchestrator.persistence as persistence
 
     for rel in (
@@ -1043,12 +1043,9 @@ def test_old_path_modules_writers_checkpoints_and_scripts_are_gone() -> None:
         assert not (REPO_ROOT / rel).exists(), f"{rel} still exists"
     for name in ("_write_draft_entity_file", "update_entity_enrichment"):
         assert not hasattr(persistence, name), f"persistence.{name} still exists"
-    for name in (
-        "review_onboard", "review_entity_enrichment", "review_entity_disambiguation",
-        "review_verification_status",
-    ):
-        for handler in (checkpoints.CheckpointHandler, checkpoints.AutoApproveCheckpointHandler):
-            assert not hasattr(handler, name), f"{handler.__name__}.{name} still exists"
+    # The checkpoint handlers, the onboard entity gates among them, went with RE-AT
+    # (Rules, findings file, tie-breaker): no run asks a person anything.
+    assert not (REPO_ROOT / "pipeline/orchestrator/checkpoints.py").exists()
 
 
 def test_no_module_outside_the_loop_imports_an_underscore_loop_name() -> None:

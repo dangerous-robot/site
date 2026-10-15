@@ -43,7 +43,7 @@ class TavilyRateLimitError(RuntimeError):
 
     The dispatcher in ``researcher/decomposed.py`` catches this and emits a
     ``StepError(error_type="tavily_rate_limited")`` per the StepError vocab
-    in ``orchestrator/checkpoints.py``.
+    in ``loop/errors.py``.
     """
 
 

@@ -12,7 +12,11 @@ differences and no others:
 - the ad hoc claim's ``title`` (and the sidecar's ``analyst_record.title``)
   becomes the operator's sentence instead of the analyst's title, and its
   file stem is ``slugify(statement)`` (plan § SP6a, "the one intended
-  difference").
+  difference");
+- the sidecar's ``audit`` block gains ``pipeline_verdict``,
+  ``pipeline_confidence`` and ``rule_applied`` (RE-AT, Rules, findings file,
+  tie-breaker); the scripted analyst and Evaluator agree, so they are the
+  analyst's verdict and confidence and ``agreed``.
 
 Volatile values (``as_of``, ``ran_at``, ``run_id``, the per-agent
 ``models_used`` read from the operator's ``.env``) are replaced before the
@@ -142,7 +146,22 @@ def run_criterion(repo_root: Path, command: list[str] | None = None):
 
 
 def _golden(case: str) -> dict:
-    return json.loads((GOLDEN_DIR / case / "golden.json").read_text(encoding="utf-8"))
+    """The RE-AR (One loop, one writer) golden plus the audit keys RE-AT adds.
+
+    The file stays as recorded at ``841df4b`` rather than being regenerated:
+    it is the pre-rebuild artifact the parity is measured against, and a
+    regenerated file would absorb any later drift instead of catching it.
+    The keys RE-AT (Rules, findings file, tie-breaker) adds are listed in the
+    module docstring and patched in here, so they are the only difference.
+    """
+    golden = json.loads((GOLDEN_DIR / case / "golden.json").read_text(encoding="utf-8"))
+    audit = golden["sidecar"]["audit"]
+    audit.update(
+        pipeline_verdict=audit["analyst_verdict"],
+        pipeline_confidence=audit["analyst_confidence"],
+        rule_applied="agreed",
+    )
+    return golden
 
 
 def test_criterion_backed_claim_matches_the_re_ar_golden_except_statement(tmp_path) -> None:

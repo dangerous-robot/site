@@ -30,7 +30,7 @@ Canonical role definitions live in [AGENTS.md § Agent Roles](../../AGENTS.md#ag
 | Role | Current status |
 |------|----------------|
 | **Research Lead** | Manual |
-| **Orchestrator** | `pipeline/orchestrator/` (`cli.py`, `persistence.py` (the one place that writes claim, source and sidecar files), `checkpoints.py`) |
+| **Orchestrator** | `pipeline/orchestrator/` (`cli.py`, `persistence.py` (the one place that writes claim, source, sidecar and findings files)) |
 | **Research loop** | `pipeline/loop/` (`run`, `rerun`, `ClaimSpec`, `VerifyConfig`, `StepError`); returns a result and writes nothing |
 | **Router** | Documented; v1 surface shipped via `docs/plans/completed/triage-agent.md`, full implementation tracked in `docs/UNSCHEDULED.md` § Router |
 | **Researcher** | Automated -- `pipeline/researcher/` |
@@ -102,7 +102,7 @@ These gaps are candidates for additional CI scripts or the Citation Auditor agen
 
 ## Claim Schema
 
-Canonical schema lives in `src/content.config.ts` and is documented in [content-model.md § Claim](content-model.md#claim). Notable fields: `topics` (1-3 slugs), `verdict`, `confidence`, `status` (`draft` | `published` | `archived` | `blocked`), `phase`, `blocked_reason`, `as_of`, `sources`, `recheck_cadence_days`, `audit` (sidecar).
+Canonical schema lives in `src/content.config.ts` and is documented in [content-model.md § Claim](content-model.md#claim). Notable fields: `topics` (1-3 slugs), `verdict`, `confidence`, `status` (`draft` | `published` | `archived` | `blocked`), `phase`, `blocked_reason`, `as_of`, `sources`, `recheck_cadence_days`, `audit` (sidecar; `audit.pipeline_verdict` is the verdict the pipeline settled on, `analyst_verdict` when absent). A run that is abandoned leaves no claim, so `blocked` is only for files already on disk; its finding lives in `research/findings/`.
 
 ## Licensing
 

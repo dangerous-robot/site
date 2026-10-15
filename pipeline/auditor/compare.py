@@ -81,6 +81,14 @@ def compare(
 
     needs_review = bool(_review_reasons(severity, conf_dist, len(assessment.evidence_gaps)))
 
+    settled: dict = {}
+    if verdict_agrees:
+        settled = {
+            "pipeline_verdict": primary_verdict,
+            "pipeline_confidence": primary_confidence,
+            "rule_applied": "agreed",
+        }
+
     return ComparisonResult(
         claim_id=claim_id,
         claim_file=claim_file,
@@ -94,4 +102,84 @@ def compare(
         confidence_agrees=confidence_agrees,
         verdict_severity=severity,
         needs_review=needs_review,
+        **settled,
     )
+
+
+# How strong a claim each verdict makes (Q-B5, the tie-breaker ordering): a
+# three-way split settles on the weakest. Polarity does not count, so
+# mostly-true and mostly-false rank together, as do true and false.
+VERDICT_STRENGTH: dict[Verdict, int] = {
+    Verdict.NOT_APPLICABLE: 0,
+    Verdict.UNVERIFIED: 1,
+    Verdict.MIXED: 2,
+    Verdict.MOSTLY_TRUE: 3,
+    Verdict.MOSTLY_FALSE: 3,
+    Verdict.TRUE: 4,
+    Verdict.FALSE: 4,
+}
+
+
+def needs_tiebreak(result: ComparisonResult) -> bool:
+    """True when the verdicts differ; evidence gaps alone never call the tie-breaker."""
+    return not result.verdict_agrees
+
+
+def _polarity(verdict: Verdict) -> int:
+    """-1 on the true side of the scale, 1 on the false side, 0 off it or in the middle."""
+    order = VERDICT_ORDER.get(verdict)
+    if order is None or order == VERDICT_ORDER[Verdict.MIXED]:
+        return 0
+    return -1 if order < VERDICT_ORDER[Verdict.MIXED] else 1
+
+
+def settle_verdict(result: ComparisonResult, tiebreak: IndependentAssessment | None) -> ComparisonResult:
+    """Settle a disagreement with the tie-breaker's blind assessment.
+
+    A tie-breaker verdict equal to either side's is the pipeline verdict, with
+    that side's confidence. Three distinct verdicts settle on the weakest by
+    ``VERDICT_STRENGTH``, with its side's confidence. A rank tie (mostly-true
+    against mostly-false) goes to the verdict on the tie-breaker's side of the
+    scale, then to the Evaluator's.
+
+    An agreement is returned unchanged; a disagreement with no assessment
+    raises ``ValueError``.
+    """
+    if result.verdict_agrees:
+        return result
+    if tiebreak is None:
+        raise ValueError("a verdict disagreement needs the tie-breaker's assessment to settle")
+    update: dict = {
+        "tiebreaker_verdict": tiebreak.verdict,
+        "tiebreaker_confidence": tiebreak.confidence,
+        "tiebreaker_reasoning": tiebreak.reasoning,
+    }
+    if tiebreak.verdict == result.primary_verdict:
+        update.update(
+            pipeline_verdict=result.primary_verdict,
+            pipeline_confidence=result.primary_confidence,
+            rule_applied="tiebreaker-matched-analyst",
+        )
+    elif tiebreak.verdict == result.assessed_verdict:
+        update.update(
+            pipeline_verdict=result.assessed_verdict,
+            pipeline_confidence=result.assessed_confidence,
+            rule_applied="tiebreaker-matched-evaluator",
+        )
+    else:
+        # Preference order on a rank tie: the tie-breaker, the Evaluator, the analyst.
+        sides = [
+            (tiebreak.verdict, tiebreak.confidence),
+            (result.assessed_verdict, result.assessed_confidence),
+            (result.primary_verdict, result.primary_confidence),
+        ]
+        weakest = min(VERDICT_STRENGTH[v] for v, _c in sides)
+        tied = [side for side in sides if VERDICT_STRENGTH[side[0]] == weakest]
+        same_side = [s for s in tied if _polarity(s[0]) == _polarity(tiebreak.verdict) != 0]
+        verdict, confidence = (same_side or tied)[0]
+        update.update(
+            pipeline_verdict=verdict,
+            pipeline_confidence=confidence,
+            rule_applied="three-way-split-weakest",
+        )
+    return result.model_copy(update=update)

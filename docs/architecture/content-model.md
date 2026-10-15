@@ -27,6 +27,9 @@ research/
   sources/
     {yyyy}/                   # year directory
       {slug}.md               # e.g. fli-safety-index.md
+  findings/
+    {yyyy}/                   # year directory
+      {run-id}.yaml           # one per abandoned, recovered or split run; not a site collection
 ```
 
 **Naming rules:**
@@ -129,7 +132,7 @@ The `audit` object has the shape:
 | `sources_consulted[].archive` | object | Optional. Outcome of the archive.org lookup the pipeline runs after ingesting a source; absent on sources reused from disk. `dr step-audit --write` carries it over |
 | `sources_consulted[].archive.status` | enum | `found` (the source got an `archived_url`), `failed` (no capture replays with HTTP 200 for the same page, rate-limited after one retry, Save Page Now returned no dated snapshot or captured an error page, another error, or the lookup's time limit) or `not-attempted` (run with `--skip-wayback`) |
 | `sources_consulted[].archive.error` | string | Optional. Why a `failed` lookup failed, e.g. `archive.org TimeGate check failed (HTTP 429)` or `archive.org capture is an error page (HTTP 404)` |
-| `audit` | object or null | Analyst/Evaluator verdict comparison block; `null` when the Evaluator did not grade the analysis on disk: a blocked run, or `dr step-analyze --write --force`, which clears it until `dr step-audit --write` grades the new analysis (the claim page then shows the Evaluator check as unavailable, and `dr review --approve` records no `verdict_override`) |
+| `audit` | object or null | Analyst/Evaluator verdict comparison block; `null` when the Evaluator did not grade the analysis on disk: `dr step-analyze --write --force` clears it until `dr step-audit --write` grades the new analysis (the claim page then shows the Evaluator check as unavailable, and `dr review --approve` records no `verdict_override`) |
 | `audit.analyst_verdict` | string | Verdict from the Analyst agent |
 | `audit.auditor_verdict` | string | Verdict from the Auditor agent |
 | `audit.analyst_confidence` | string | Confidence from the Analyst agent |
@@ -139,12 +142,18 @@ The `audit` object has the shape:
 | `audit.needs_review` | boolean | Whether human review is flagged |
 | `audit.auditor_reasoning` | string | Optional. The Evaluator's reasoning, shown on the claim page |
 | `audit.evidence_gaps` | string[] | Optional. Gaps the Evaluator found in the evidence, shown on the claim page |
+| `audit.pipeline_verdict` | string | Optional. The verdict the pipeline settled on: the agreed verdict, or the tie-breaker's rule result. Readers (lint, `dr review --approve`, the claim page) use `audit.analyst_verdict` when it is absent |
+| `audit.pipeline_confidence` | string | Optional. Confidence that goes with `pipeline_verdict` |
+| `audit.rule_applied` | string | Optional. Which rule settled the verdict: `agreed`, `tiebreaker-matched-analyst`, `tiebreaker-matched-evaluator` or `three-way-split-weakest` |
+| `audit.tiebreaker_verdict` | string | Optional. Written only when the tie-breaker ran |
+| `audit.tiebreaker_confidence` | string | Optional. Written only when the tie-breaker ran |
+| `audit.tiebreaker_reasoning` | string | Optional. The tie-breaker's reasoning; written only when it ran |
 | `audit.needs_review_reasons` | string[] | Optional. Why the claim was flagged: `verdict disagreement`, `confidence gap`, `2+ evidence gaps`; empty when `needs_review` is false |
 | `human_review.reviewed_at` | date or null | When a human reviewed |
 | `human_review.reviewer` | string or null | Reviewer identity |
 | `human_review.notes` | string or null | Human review notes |
 | `human_review.pr_url` | URL or null | PR where the review happened |
-| `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.analyst_verdict`; written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the analyst's only when this matches |
+| `human_review.verdict_override` | object or null | Optional. `{from, to}` when the reviewer's verdict differs from `audit.pipeline_verdict` (`audit.analyst_verdict` when absent); written by `dr review`. Lint `verdict-sidecar-mismatch` accepts a published verdict that differs from the pipeline verdict only when this matches |
 
 The forced rewrites `dr draft --claim --force`, `dr step-analyze --write --force` and `dr draft --force`, on a published claim return it to `status: draft`, reset `human_review` and write a top-level `refresh` block, which the site does not read (on an archived or blocked claim they reset `human_review` the same way, with no `refresh` block). It is present only while the refresh awaits re-approval; approval or archiving removes it, and `dr publish` skips the claim while it is present. A blocked or failed run writes nothing, so the claim and its sidecar stay as they were. If the verdict changed, approval requires a one-line summary and adds a `corrections` entry to the claim (`date`, `summary`, `previous_verdict`), newest first.
 
@@ -159,6 +168,27 @@ The pipeline also writes a top-level `analyst_record` block, which the site does
 Sidecar files are optional. Claims without a sidecar have no `audit` field.
 
 The Evaluator role is implemented in `pipeline/auditor/`; sidecar field names retain the `auditor_` prefix in v1 and will be renamed when the package directory is renamed (post-v1).
+
+### Findings file
+
+A run that is abandoned, recovered or split leaves one YAML record at `research/findings/<yyyy>/<run-id>.yaml`. The directory is tracked in git, sits outside every site collection loader (they read `claims/`, `entities/` and `sources/` only) and is skipped by `dr lint`. `dr findings` lists, counts and closes the records.
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `run_id` | string | One id per claim run; also the file name |
+| `date` | date | When the run happened |
+| `command` | string or null | The command that ran it, such as `dr draft` |
+| `claim_spec` | object | `statement`, `entity`, `criteria_slug`, `topics`, `grading_rule`: what a replay needs |
+| `claim_ref` | string or null | Set when a claim file exists for the run (a recovered, split or half-claim run) |
+| `config` | object | The run settings that shape results (`max_sources`, `candidate_pool_size`, `max_initial_queries`, `search_backend`, `research_origins`, `model`, `skip_wayback`) |
+| `models_used` | map | Agent name to model string |
+| `step` | enum | `research`, `ingest`, `analyse`, `evaluate`, `tiebreak`, `restate` or `write` |
+| `rule` | enum | `flaw-retry`, `transport-retry`, `config-fatal`, `half-claim`, `tiebreaker` or `replay` |
+| `error` | object | `error_type` and `message` |
+| `attempts` | number | How many times the step ran |
+| `outcome` | enum | `recovered`, `abandoned`, `split`, `half-claim` or `partial` |
+| `retries` | array | Every step that was retried on the way: `step`, `error_type`, `rule`, `attempts`. A half-claim after a tie-broken run also lists the split here (`step: tiebreak`, `error_type: verdict_split`) with its `message`, the three verdicts |
+| `closed` | object or null | `{date, by, note}` once `dr findings --close` has triaged it |
 
 ### Criterion
 

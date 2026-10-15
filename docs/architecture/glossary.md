@@ -4,7 +4,7 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 
 ## How the system works
 
-The system tracks four object types: **criteria** (a registry of claim sentences, each with a `grading_rule`), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation is open-loop: disagreements surface to the operator rather than being auto-resolved). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
+The system tracks four object types: **criteria** (a registry of claim sentences, each with a `grading_rule`), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation does not feed back into the Analyst; a verdict disagreement is settled by a blind tie-breaker, and every split, abandoned or recovered run leaves a finding). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
 
 For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
@@ -63,12 +63,13 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Ingestor** | `pipeline/ingestor/` | invoked by `dr draft`; standalone via `dr step-ingest` (`dr ingest` remains as a hidden deprecated alias) |
 | **Analyst** | `pipeline/analyst/` | invoked by `dr draft`; standalone via `dr step-analyze` |
 | **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
+| **Tie-breaker** | `pipeline/loop/tiebreaker/` | invoked by `dr draft` (and `dr step-audit`) on a disagreement; model slot `--tiebreaker-model` |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
-| (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates) |
+| (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates), `dr findings` (lists, counts and closes the findings file) |
 
 ## Model-tier discipline
 
-Agents default to the smallest model class that can defensibly handle the task; larger models are reserved for tasks that genuinely require them. Canonical statement: [`AGENTS.md` § How the system works](../../AGENTS.md). Each `.audit.yaml` sidecar records the per-agent model used in `models_used`, so the lineage of a published verdict is auditable. The concrete enforcement mechanism is open: option (b), per-agent tier caps in config, is the chosen direction — stubbed at [`plans/deferred/model-tier-enforcement_stub.md`](../plans/deferred/model-tier-enforcement_stub.md).
+Agents default to the smallest model class that can defensibly handle the task; larger models are reserved for tasks that genuinely require them. Canonical statement: [`AGENTS.md` § How the system works](../../AGENTS.md). Each `.audit.yaml` sidecar records the per-agent model used in `models_used`, so the lineage of a published verdict is auditable; it names the tie-breaker when that agent ran. The concrete enforcement mechanism is open: option (b), per-agent tier caps in config, is the chosen direction — stubbed at [`plans/deferred/model-tier-enforcement_stub.md`](../plans/deferred/model-tier-enforcement_stub.md).
 
 ## Roles
 
@@ -83,6 +84,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Grades the claim statement against the sources, independent of the analyst's verdict |
+| **Tie-breaker** | Grades the claim statement blind when the Analyst and Evaluator verdicts differ; the one agent above them that may use the frontier tier |
 
 ## Workflow
 
@@ -99,10 +101,12 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | Term | Meaning |
 |---|---|
 | **Audit sidecar** / `.audit.yaml` | Paired YAML file at the same path as a claim `.md`. Records the pipeline run (model, agents), sources consulted, analyst/evaluator verdicts, and human review state. Merged into the claim's `audit` field by the `claims-with-audit` content loader. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
-| **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the Analyst's. Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
+| **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the pipeline verdict (`audit.pipeline_verdict`, which the tie-breaker can set against the Analyst). Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
 | **Threshold gate** | Post-ingest check in the loop: if fewer than four usable sources are available, the run stops with a `blocked_reason`, the Analyst is not invoked, and nothing is written (no claim, no source file, no sidecar). (`pipeline/loop/run.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
-| **Checkpoint** | Human-in-the-loop hook implementing the `CheckpointHandler` protocol. v1 checkpoints: `review_disagreement`. Enabled with `--interactive`; tests use `AutoApproveCheckpointHandler`. |
+| **Tie-breaker** | Agent in `pipeline/loop/tiebreaker/` that runs only when the Analyst and Evaluator verdicts differ. It gets the Evaluator's blind bundle (no verdicts) on the frontier tier with a higher thinking budget. A verdict matching either side wins; a three-way split takes the weakest by strength. The sidecar records `tiebreaker_*`, `pipeline_verdict` and `rule_applied`. |
+| **Finding** | One YAML record per abandoned, recovered or split run (or half-claim) at `research/findings/<yyyy>/<run-id>.yaml`: the claim spec, config, step, rule, error, attempts and outcome. Listed by `dr findings`; `dr lint` ignores the directory. |
+| **Half-claim** | What a writer crash leaves: a claim without a sidecar, or a subject record without a claim. `dr findings` lists them; nothing deletes them automatically. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
 | **`max_initial_queries`** | Effort lever on `VerifyConfig` controlling how many search queries the Researcher's query planner generates per claim. The orchestrator hard-truncates the planner's output to this count before executing searches. Default: 7. |
 | **`llm_concurrency`** | Pipeline-level cap on concurrent LLM calls, set on `VerifyConfig` and enforced via `asyncio.Semaphore` created at each top-level entry point (`run` in `pipeline/loop/`; `rerun` creates none). Bounds peak LLM parallelism within one claim run. |
@@ -122,6 +126,7 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **Ingestor** | Fetch URL; extract content; classify source kind; produce source file |
 | **Analyst** | Propose draft verdict; write narrative; cite sources |
 | **Evaluator** | Grade the claim statement against the sources (the narrative is context, not the thing graded); flag disagreements |
+| **Tie-breaker** | Grade the claim statement blind, only on a disagreement; return a third verdict that settles it by rule |
 
 ## Object lifecycle (general)
 

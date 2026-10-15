@@ -1,4 +1,4 @@
-"""The one claim run: research, ingest, analyse, evaluate.
+"""The one claim run: research, ingest, analyse, evaluate, tie-break.
 
 ``run`` takes a ``ClaimSpec`` and a ``VerifyConfig`` and returns a
 ``VerificationResult``; ``rerun`` runs the Analyst or the Evaluator alone over
@@ -9,6 +9,7 @@ Everything not exported here is private to the package.
 """
 
 from loop.errors import StepError
+from loop.policy import ERROR_POLICY, STEP_ON_EXHAUSTION, Rule, classify_exception, rule_for
 from loop.spec import ClaimSpec, VerificationResult, VerifyConfig
 from loop.ingest import check_ingested_source, ingest_one, ingest_urls, merge_acquisition_writes
 from loop.analyse import analyse_claim, apply_entity_match, audit_claim
@@ -18,6 +19,9 @@ from loop.run import blocked_reason_label, rerun, run
 
 __all__ = [
     "ClaimSpec",
+    "ERROR_POLICY",
+    "Rule",
+    "STEP_ON_EXHAUSTION",
     "StepError",
     "VerificationResult",
     "VerifyConfig",
@@ -26,9 +30,11 @@ __all__ = [
     "audit_claim",
     "blocked_reason_label",
     "check_ingested_source",
+    "classify_exception",
     "ingest_one",
     "ingest_urls",
     "merge_acquisition_writes",
     "rerun",
+    "rule_for",
     "run",
 ]

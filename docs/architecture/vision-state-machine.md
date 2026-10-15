@@ -4,9 +4,9 @@
 
 ## Framing
 
-This project already behaves like a state machine, but only implicitly. Claims move through lifecycle states (draft, blocked, published, archived) and transient pipeline phases (researching, ingesting, analyzing, evaluating). Entities and sources have their own lifecycles (proposed, active, flagged, retired). Operators intervene at well-defined checkpoints. The vision is to make this implicit structure explicit, and to treat it as the central organizing model for the whole system.
+This project already behaves like a state machine, but only implicitly. Claims move through lifecycle states (draft, blocked, published, archived) and transient pipeline phases (researching, ingesting, analyzing, evaluating). Entities and sources have their own lifecycles (proposed, active, flagged, retired). The operator signs off at `dr review`; no run stops to ask a person anything. The vision is to make this implicit structure explicit, and to treat it as the central organizing model for the whole system.
 
-By "state machine" we mean the union of three things: the **claim lifecycle** (the durable status of a research output), the **pipeline phase** (where a claim currently sits in the four-agent process), and the **operator decision points** (the human-in-the-loop transitions that the pipeline is forbidden from auto-resolving). Together these form a single graph of named states and named transitions. Every agent action is a transition. Every operator review is a transition. Nothing moves without being a transition.
+By "state machine" we mean the union of three things: the **claim lifecycle** (the durable status of a research output), the **pipeline phase** (where a claim currently sits in the research, ingest, analysis and evaluation steps, with the tie-breaker on a disagreement), and the **operator decision points** (the human transitions, which today means sign-off at `dr review`; disagreements and failed runs are settled by rules, see principle 3). Together these form a single graph of named states and named transitions. Every agent action is a transition. Every operator review is a transition. Nothing moves without being a transition.
 
 ## Current shape
 
@@ -26,7 +26,7 @@ What is missing is a unified statement that these are facets of one model, and a
 
 **2. Transitions are first-class records.** State changes today are implicit in commit diffs and the audit sidecar's latest run. The vision is an append-only transition log per claim, recording cause (agent or operator), inputs read, outputs written, and resulting state. This is the substrate the improvement plan calls on for recheck history and supersession (see `docs/plans/deferred/research-outputs-improvement-plan.md`).
 
-**3. Open-loop at decision points.** Certain transitions are reserved for the operator: Analyst/Evaluator disagreement, novel blocked reasons, supersession of a published verdict. The pipeline halts and surfaces the question; it never auto-resolves. This is already the project's stance; the state-machine framing makes the halt points enumerable rather than ad-hoc.
+**3. Rules at decision points, the operator at sign-off.** A disagreement between Analyst and Evaluator is settled by a rule (a blind tie-breaker), a failed run by the error policy (retry, then abandon with a finding), and the operator's decision point is sign-off at `dr review`. Normal runs follow clear rules and ask nothing mid-run; the findings file carries what went wrong (Brandon's answers to Q2 and Q3 in the pipeline-rebuild interview). The state-machine framing makes each rule enumerable rather than ad hoc.
 
 **4. Build-time validation.** Invariants belong in CI, not only in runtime checks. A claim with `verdict: supported` and zero sources should fail the build, not be quietly corrected. Staleness past `recheck_cadence_days` should fail or warn at build time. Zod in `src/content.config.ts` is the schema authority; transition rules should compile down to checks that run alongside it.
 
