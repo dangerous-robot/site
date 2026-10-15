@@ -50,6 +50,9 @@ class VerifyConfig:
     auditor_model: str | None = None
     ingestor_model: str | None = None
     tiebreaker_model: str | None = None
+    # The restater runs on the Evaluator's slot: it falls back to
+    # ``auditor_model``, then ``model`` (``model_for``).
+    restater_model: str | None = None
     # The error policy's retry counts (``loop/policy.py``). A flaw retry runs
     # at once; a transport retry waits the matching ``transport_backoff_s``
     # entry, or the provider's ``retry-after`` when it sent one.
@@ -101,6 +104,14 @@ class VerifyConfig:
     auditor_timeout_s: float = 120.0
     # Longer than the Evaluator's: the tie-breaker runs with a higher thinking budget.
     tiebreaker_timeout_s: float = 300.0
+    # The restater reads up to ``restate_pool_size`` sources in one prompt,
+    # three times the Evaluator's usual pool, so it gets a longer limit.
+    restater_timeout_s: float = 180.0
+    # Sources sent to the restater: the run's consulted sources first, then
+    # the ranked ``research/sources/`` pool up to this many in all.
+    restate_pool_size: int = 24
+    # Candidates kept in the sidecar's ``restatement`` block.
+    restate_max_candidates: int = 5
     # Effort lever for decomposed researcher: more queries = wider net.
     max_initial_queries: int = 7
     # Integer cap for the shared asyncio.Semaphore created at each call site.
@@ -125,7 +136,13 @@ class VerifyConfig:
             )
 
     def model_for(self, agent: AgentName) -> str:
-        """Resolve the model spec for a given agent, falling back to ``model``."""
+        """Resolve the model spec for a given agent, falling back to ``model``.
+
+        The restater falls back to the Evaluator's model first: weighing
+        passages against a statement is the Evaluator's kind of work.
+        """
+        if agent == "restater":
+            return self.restater_model or self.auditor_model or self.model
         return getattr(self, f"{agent}_model") or self.model
 
 
@@ -188,6 +205,9 @@ class VerificationResult(BaseModel):
     # The level fit's note when it lowered the analyst's level (``loop/fit.py``),
     # else None. The writer records it as ``pipeline_run.level_clamp``.
     level_clamp: str | None = None
+    # The sidecar's ``restatement`` block for a weak or tie-broken verdict
+    # (``loop/restate.py``), or None when the restater did not run or failed.
+    restatement: dict | None = None
     # Ids in the analyst's ``cited_sources`` whose title the narrative never
     # names; recorded as ``analyst_record.uncited_by_title``.
     uncited_by_title: list[str] = Field(default_factory=list)

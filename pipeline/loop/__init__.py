@@ -1,4 +1,4 @@
-"""The one claim run: research, ingest, analyse, evaluate, tie-break.
+"""The one claim run: research, ingest, analyse, evaluate, tie-break, restate.
 
 ``run`` takes a ``ClaimSpec`` and a ``VerifyConfig`` and returns a
 ``VerificationResult``; ``rerun`` runs the Analyst or the Evaluator alone over

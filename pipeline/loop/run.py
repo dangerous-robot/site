@@ -1,9 +1,11 @@
-"""The claim run: ``run`` (research, ingest, analyse, evaluate, tie-break) and ``rerun`` (one agent).
+"""The claim run: ``run`` (research, ingest, analyse, evaluate, tie-break, restate) and ``rerun`` (one agent).
 
 Every step runs under the error policy (``loop/policy.py``): a failed step is
 retried by its rule with the earlier steps' outputs kept in memory, and a
 run that is abandoned, recovered or settled by the tie-breaker leaves a
-finding on ``VerificationResult.finding``. No step asks a person anything.
+finding on ``VerificationResult.finding``. A restater that fails after the
+verdict is settled costs only the restatement: the finding's outcome is
+``partial`` and the run is not abandoned. No step asks a person anything.
 """
 
 from __future__ import annotations
@@ -30,6 +32,7 @@ from loop.errors import StepError
 from loop.fit import fit_verdict_to_written_pool
 from loop.ingest import _addresses_with_aliases, _build_source_dict, _ingest_claim_sources
 from loop.policy import STEP_ON_EXHAUSTION, Rule, classify_exception, rule_for
+from loop.restate import needs_restatement, restate_step
 from loop.research import _apply_url_dedup, _research, _warn_uncovered
 from loop.spec import ClaimSpec, VerificationResult, VerifyConfig, _cfg_repo_root
 from orchestrator.entity_resolution import entity_identity_for
@@ -200,6 +203,7 @@ _STEP_AGENTS = {
     "analyse": "analyst",
     "evaluate": "auditor",
     "tiebreak": "tiebreaker",
+    "restate": "restater",
 }
 
 
@@ -267,13 +271,20 @@ class _Driver:
             rule = _rule_of(out.error_type)
             allowed = self._allowed_retries(rule)
             if attempts > allowed:
-                logger.warning(
-                    "Run abandoned at the %s step after %d attempt(s): %s: %s",
-                    name, attempts, out.error_type, out.message,
-                )
+                outcome = STEP_ON_EXHAUSTION[name]
+                if outcome == "abandoned":
+                    logger.warning(
+                        "Run abandoned at the %s step after %d attempt(s): %s: %s",
+                        name, attempts, out.error_type, out.message,
+                    )
+                else:
+                    logger.warning(
+                        "The %s step gave up after %d attempt(s); the run goes on (%s): %s: %s",
+                        name, attempts, outcome, out.error_type, out.message,
+                    )
                 self.finding = self._finding(
                     step=name, rule=rule.value, failure=out, attempts=attempts,
-                    outcome=STEP_ON_EXHAUSTION[name], retries=self.recovered,
+                    outcome=outcome, retries=self.recovered,
                 )
                 return None, out
             delay = self._delay(rule, out, attempts - 1)
@@ -438,6 +449,49 @@ async def _evaluate_and_settle(
     return True
 
 
+async def _restate(
+    driver: _Driver,
+    result: VerificationResult,
+    spec: ClaimSpec,
+    cfg: VerifyConfig,
+    *,
+    cited_ids: list[str],
+    trigger: str,
+) -> None:
+    """The restate step; on failure the run goes on with no block and a ``partial`` finding.
+
+    A failure after a tie-break replaces the run's ``split`` finding, so the
+    split is carried in the new finding's ``retries`` with its message; a
+    success after a tie-break adds the restater to the split finding, with
+    the retry when the restater needed one.
+    """
+    split = driver.finding if driver.finding is not None and driver.finding.outcome == "split" else None
+
+    async def attempt():
+        block, failure = await restate_step(result, spec, cfg, cited_ids=cited_ids, trigger=trigger)
+        return block if block is not None else _agent_failure(failure)
+
+    block, failed = await driver.step("restate", attempt)
+    if failed is None:
+        result.restatement = block
+        if split is not None:
+            # The split finding was built before the restater ran, so it
+            # names neither the restater's model nor a retry it needed.
+            split.models_used.setdefault("restater", cfg.model_for("restater"))
+            if driver.recovered and driver.recovered[-1][0] == "restate":
+                step, failure, rule, attempts = driver.recovered[-1]
+                split.retries.append({
+                    "step": step, "error_type": failure.error_type, "rule": rule.value, "attempts": attempts,
+                })
+        return
+    result.errors.append("Restater failed; the claim is written without a restatement")
+    if split is not None and driver.finding is not None:
+        driver.finding.retries.insert(0, {
+            "step": "tiebreak", "error_type": "verdict_split", "rule": Rule.TIEBREAKER.value,
+            "attempts": split.attempts, "message": split.error.get("message"),
+        })
+
+
 async def run(
     spec: ClaimSpec,
     config: VerifyConfig,
@@ -452,6 +506,7 @@ async def run(
     3. Analyst: synthesize sources into a claim with verdict
     4. Evaluator: independently assess the claim
     5. Tie-break a disagreement (``loop/tiebreaker/``)
+    6. Restate a weak or tie-broken verdict (``loop/restater/``)
 
     The Evaluator and the tie-breaker grade ``spec.statement``;
     ``spec.grading_rule`` reaches every agent that grades. Each step follows
@@ -631,6 +686,20 @@ async def run(
                 if cfg.show_progress:
                     progress("  ! %s", result.errors[-1])
                 return driver.finish(result)
+
+            # Step 5: restate a weak or tie-broken verdict. A failure here
+            # keeps the settled verdict; the claim is written without a block.
+            trigger = needs_restatement(result.consistency)
+            if trigger is not None:
+                say("  › Restating")
+                logger.info("Restating (%s)...", trigger)
+                await _restate(
+                    driver, result, spec, cfg,
+                    cited_ids=[sd["source_id"] for sd in cited_sources if sd.get("source_id")],
+                    trigger=trigger,
+                )
+                if result.restatement is None and cfg.show_progress:
+                    progress("  ! %s", result.errors[-1])
 
             if cfg.show_progress:
                 progress("Pipeline complete.")

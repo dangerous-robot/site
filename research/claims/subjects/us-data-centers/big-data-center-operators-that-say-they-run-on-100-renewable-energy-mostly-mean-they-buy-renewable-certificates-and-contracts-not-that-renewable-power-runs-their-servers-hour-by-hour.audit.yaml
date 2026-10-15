@@ -1,0 +1,367 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-15T03:14:45.365804+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 4f4c87c8be7348b59c93cae410033b39
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - major US data centers sustainability reports renewable energy certificates
+  - EPA Green Power Partnership data center renewable energy verification
+  - renewable energy certificates vs on-site solar wind data centers
+  - audits data centers renewable energy claims grid sourcing
+  - data centers 100% renewable REC disclosures case studies
+  - data center operators retract renewable energy usage statements
+  - third-party investigations data centers RECs hourly renewable energy mismatch
+  planner_rationale: The sub-questions collectively cover first-party and third-party
+    evidence, technical distinctions, audit findings, and counter-evidence to falsify
+    or support the claim about US data center operators' renewable energy usage.
+  candidates_seen: 59
+  urls_after_blocklist: 32
+sub_questions:
+- id: sq1
+  question: What first-party disclosures or sustainability reports do major US data
+    center operators publish about their renewable energyusage and sourcing?
+  rationale: Major data center operators may publicly document their energy sourcing
+    policies, including reliance on renewable energy certificates (RECs) vs. direct
+    renewable energy use, in disclosures or reports.
+  kind: coverage
+  queries:
+  - major US data centers sustainability reports renewable energy certificates
+  citations:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/operating-sustainably
+  - 2026/1165
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  snippet_only:
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/greenpowerpartnership
+  - 2026/green-power-partnership
+  - 2026/greenpower
+- id: sq2
+  question: Do third-party databases like EPAs Green Power Partnership or ESG aggregators
+    (e.g., Bloomberg Terminal, Moody’s ESG) document the real-time renewable energy
+    usage of these data centers, or their reliance on RECs?
+  rationale: Third-party databases often independently track and verify the accuracy
+    of sustainability claims related to energy usage in data centers.
+  kind: coverage
+  queries:
+  - EPA Green Power Partnership data center renewable energy verification
+  citations:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/operating-sustainably
+  - 2026/1165
+  - 2026/greenpowerpartnership
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  - 2026/green-power-partnership
+  - 2026/greenpower
+  snippet_only:
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+- id: sq3
+  question: How does the purchasing and reporting of Renewable Energy Certificates
+    (RECs) differ from consuming renewable energy directly in terms of hourly or on-site
+    generation?
+  rationale: This question addresses the technical distinction between claimed renewable
+    energy usage via RECs versus actual, measurable renewable energy consumption.
+  kind: coverage
+  queries:
+  - renewable energy certificates vs on-site solar wind data centers
+  citations:
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/operating-sustainably
+  - 2026/1165
+  - 2026/greenpowerpartnership
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  - 2026/green-power-partnership
+  snippet_only:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/greenpower
+- id: sq4
+  question: Have there been audits, studies, or news investigations demonstrating
+    a mismatch between US data center operators’ renewable energy claims (e.g., 100%
+    renewable) and their actual grid-sourced energy mix during peak server usage hours?
+  rationale: This question seeks evidence of discrepancies between claims and reality,
+    particularly through third-party audits or investigative reporting.
+  kind: coverage
+  queries:
+  - audits data centers renewable energy claims grid sourcing
+  - third-party investigations data centers RECs hourly renewable energy mismatch
+  citations:
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/operating-sustainably
+  - 2026/1165
+  - 2026/green-power-partnership
+  snippet_only:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/greenpowerpartnership
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  - 2026/greenpower
+- id: sq5
+  question: What are examples of data center operators that explicitly state they
+    purchase RECs while disclosing they do not achieve hour-by-hour renewable energy
+    matching for their operations?
+  rationale: Identifying specific entities that make this distinction directly strengthens
+    the claim’s grounding in real-world practice.
+  kind: coverage
+  queries:
+  - data centers 100% renewable REC disclosures case studies
+  citations:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/operating-sustainably
+  - 2026/1165
+  - 2026/greenpowerpartnership
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  - 2026/green-power-partnership
+  snippet_only:
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2026/greenpower
+- id: sq6
+  question: Are there retractions, corrections, or revisions in reports, news, or
+    regulatory filings where US data center operators walked back or clarified statements
+    about their 100% renewable energy usage?
+  rationale: Evidence that claiming entities have revised or clarified their statements
+    would strongly contradict their initial assertions.
+  kind: counter-evidence
+  queries:
+  - data center operators retract renewable energy usage statements
+  citations:
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  - 2026/1165
+  - 2026/greenpowerpartnership
+  snippet_only:
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+  - 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  - 2021/data-center-sustainability-beyond-ppas
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/powering-data-centers-with-clean-energy
+  - 2026/top-10-sustainable-data-centre-providers
+  - 2026/operating-sustainably
+  - 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  - 2026/green-power-partnership
+  - 2026/greenpower
+sources_consulted:
+- id: 2026/ironmountain-sustainability
+  url: https://www.ironmountain.com/data-centers/sustainability
+  title: Sustainability & Green Data Centers at Iron Mountain
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/renewable-energy-for-data-centers
+  url: https://uptimeinstitute.com/renewable-energy-for-data-centers
+  title: Renewable Energy for Data Centers
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  url: https://www.cedara.io/post/tracking-the-transition-to-renewable-energy-in-the-data-center-industry
+  title: Tracking the Transition to Renewable Energy Across Data Centers
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2021/data-center-sustainability-beyond-ppas
+  url: https://www.projectfinance.law/publications/2021/june/data-center-sustainability-beyond-ppas
+  title: 'Data Center Sustainability: Beyond PPAs'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/clean-energy-resources-meet-data-center-electricity-demand
+  url: https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
+  title: Clean Energy Resources to Meet Data Center Electricity Demand
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/powering-data-centers-with-clean-energy
+  url: https://elpc.org/projects/powering-data-centers-with-clean-energy
+  title: Powering Data Centers with Clean Energy
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: renewable energy certificates vs on-site solar wind data centers
+- id: 2026/top-10-sustainable-data-centre-providers
+  url: https://sustainabilitymag.com/top10/top-10-sustainable-data-centre-providers
+  title: Top 10 Sustainable Data Centre Providers
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  url: https://www.coresite.com/blog/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals
+  title: Colocation and Renewable Energy Certificates Can Help You Reach Sustainability
+    Goals
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/operating-sustainably
+  url: https://datacenters.google/operating-sustainably
+  title: Operating Sustainably
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/1165
+  url: https://www.idtechex.com/en/research-report/sustainability-for-data-centers/1165
+  title: 'Sustainability for Data Centers 2027-2037: Green Technologies, Market Forecasts,
+    and Players'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: major US data centers sustainability reports renewable energy certificates
+- id: 2026/greenpowerpartnership
+  url: https://en.wikipedia.org/wiki/Green_Power_Partnership
+  title: Green Power Partnership
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EPA Green Power Partnership data center renewable energy verification
+- id: 2023/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  url: https://aligneddc.com/press-release/us-environmental-protection-agency-recognizes-aligned-data-centers-for-leading-green-power-use
+  title: U.S. EPA Recognizes Aligned Data Centers for Leading Green Power Use
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EPA Green Power Partnership data center renewable energy verification
+- id: 2026/green-power-partnership
+  url: https://doee.dc.gov/service/green-power-partnership
+  title: Green Power Partnership
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org replay check failed (HTTP 429); archive.org CDX lookup failed
+      (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EPA Green Power Partnership data center renewable energy verification
+- id: 2026/greenpower
+  url: https://www.epa.gov/greenpower
+  title: Green Power Partnership
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: EPA Green Power Partnership data center renewable energy verification
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Iron Mountain’s claim of “100% matched renewable energy” and
+    CoreSite’s explanation of RECs show operators use certificate‑based accounting
+    rather than direct renewable supply. The Uptime Institute report explicitly warns
+    that reliance on renewable‑energy certificates is a common source of green‑washing,
+    confirming that many “100% renewable” statements refer to purchases rather than
+    hour‑by‑hour renewable power. The Top 10 list’s reference to Google’s “matched”
+    renewable electricity further supports the interpretation. While some providers
+    (e.g., Switch) achieve direct renewable use, the available sources collectively
+    indicate that the typical meaning of a 100% renewable claim is certificate‑based,
+    matching the claim’s wording.
+  evidence_gaps:
+  - No quantitative data on what proportion of big data‑center operators rely on RECs
+    versus on‑site renewable generation.
+  - Few sources explicitly state that the renewable power does not run the servers
+    hour‑by‑hour; the inference is based on definitions of “matched” renewable energy
+    and discussion of RECs.
+  - The source pool is limited to a handful of operators and industry analyses, not
+    a comprehensive survey of all large U.S. data‑center providers.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: mostly-true
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: Big data center operators that say they run on 100% renewable energy mostly
+    mean they buy renewable certificates and contracts, not that renewable power runs
+    their servers hour by hour.
+  seo_title: Data centers claim 100% renewable via RECs
+  verdict: mostly-true
+  cap_rationale: null
+  uncited_by_title:
+  - 2026/ironmountain-sustainability
+  - 2024/colocation-and-renewable-energy-certificates-can-help-you-reach-sustainability-goals

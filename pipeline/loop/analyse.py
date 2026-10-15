@@ -179,6 +179,7 @@ async def _run_agent_once(
     timeout_s: float,
     *,
     model_settings: dict | None = None,
+    deps=None,
 ) -> tuple:
     """Run an agent once under its time limit.
 
@@ -191,7 +192,7 @@ async def _run_agent_once(
     with capture_run_messages() as messages:
         try:
             res = await asyncio.wait_for(
-                agent.run(prompt, model_settings=model_settings), timeout=timeout_s
+                agent.run(prompt, deps=deps, model_settings=model_settings), timeout=timeout_s
             )
             return res.output, messages, None
         except Exception as exc:

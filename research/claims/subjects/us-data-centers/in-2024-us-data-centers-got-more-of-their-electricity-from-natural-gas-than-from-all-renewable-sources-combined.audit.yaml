@@ -1,0 +1,343 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-15T03:00:39.715660+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 7c8a2ea4f5604a538c0b7c4003ea3f89
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - US data centers natural gas electricity share 2024
+  - US data centers 2024 renewable energy sources reports
+  - EPA DOE data center energy reports 2024
+  - natural gas vs renewables US data centers 2023 2022
+  - Equinix Google AWS 2024 electricity sourcing data
+  - data center natural gas renewables 2024 disputes
+  - industry analysis US data centers energy mix changes 2024
+  planner_rationale: The sub-questions cover natural gas and renewables sourcing (sq1–sq3),
+    historical trends (sq4), and operator disclosures (sq5), while sq6 focuses on
+    counter-evidence. Queries target regulatory, industry, and expert sources to validate
+    or challenge the claim.
+  candidates_seen: 44
+  urls_kept: 22
+  urls_dropped: 21
+  scorer_rationale: "**Kept Candidates (Score >= 3 for at least one sub-question)**\n\
+    \n1. **[ IEO: Energy and AI (Energy Supply for AI) (sq1, sq2; score: 5) ]**\n\
+    \   - **sq1 (score: 5)**: Directly addresses natural gas as the largest source\
+    \ (40%) of electricity for U.S. data centers in 2024, citing primary-source-like\
+    \ data from the IEA.\n   - **sq2 (score: 5)**: Directly mentions renewables (24%\
+    \ of electricity) and provides comparative data for solar, wind, and other renewables.\n\
+    \   - Rationale: This is the most authoritative source among kept candidates,\
+    \ explicitly quantifying both natural gas and renewable shares for U.S. data centers\
+    \ in 2024.\n\n2. **[ Berkeley Lab’s 2024 Data Center Energy Usage Report (sq1,\
+    \ sq2, sq4; score: 4) ]**\n   - **sq1/sq2 (score: 4)**: Contextualizes energy\
+    \ mix growth but lacks *specific 2024 percentages* for natural gas vs. renewables\
+    \ (though highly relevant).\n   - **sq4 (score: 4)**: Provides historical growth\
+    \ trends (e.g., 2014–2023) for electricity consumption.\n\n3. **[ DOE Report on\
+    \ U.S. Data Center Energy Use (sq1, sq3, sq4; score: 4) ]**\n   - **sq1 (score:\
+    \ 4)**: Mentions load growth attribution but lacks direct 2024 energy mix data.\n\
+    \   - **sq3 (score: 4)**: Links to LBNL’s DOE-funded report, implying regulatory\
+    \ transparency.\n   - **sq4 (score: 3)**: Historical trends (2014–2023) are secondary\
+    \ to primary sources.\n\n4. **[ Peer Analytics/S&P Global Market Intelligence\
+    \ (sq1, sq2; score: 4) ]**\n   - **sq1 (score: 4)**: 2024 projection for U.S.\
+    \ data center electricity demand (280+ TWh) with context about renewables vs.\
+    \ natural gas.\n   - **sq2 (score: 4)**: Discusses renewable energy trends but\
+    \ lacks *exact* 2024 renewables share.\n\n5. **[ MUFG Americas (sq1, sq2; score:\
+    \ 5) ]**\n   - **sq1 (score: 5)**: Asserts natural gas supplied **41% of data\
+    \ center electricity in 2024** vs. renewables at 24% (direct match for the claim).\n\
+    \   - **sq2 (score: 4)**:ですね些匹cones                                 ձères.\n\n\
+    6. **[ Pew Research Center (sq1, sq2; score: 5) ]**\n   - **sq1 (score: 5)**:\
+    \ Directly states **natural gas (40%) vs. renewables (24%) in 2024** using IEA\
+    \ data (authoritative alignment).\n   - **sq2 (score: 5)**: Quantifies renewables\
+    \ share (24%) and contextualizes with nuclear/coal.\n\n-------------------------------------------------------------------------\n\
+    \n**Dropped Candidates (Score < 3 for all sub-questions)**\n\n1. **Facebook/Equinix\
+    \ LinkedIn Posts (forum/advocacy)**\n   - No data beyond anecdotal links to AI\
+    \ or gas; scored **1-2** for all sub-questions.\n\n2. **Academic/Third-Party Practical\
+    \ Studies** (e.g., arXiv, ClimateSolutions Law)\n   - Tallied **1-2** for all\
+    \ sub-questions: Speculative, advocacy-driven, or lacks 2024-specific data.\n\n\
+    3. **Dual-Purpose Investment/Market Reports** (Yahoo Finance, Investing.com)\n\
+    \   - Score **1-2** for all: Focus on general trends, not 2024 energy-mix quantification.\n\
+    \n4. **YouTube Video (Energy Gang on Gas vs. Renewables)"
+  urls_after_blocklist: 22
+sub_questions:
+- id: sq1
+  question: What was the total electricity supply from natural gas in US data centers
+    in 2024, as reported by industry sources or energy studies?
+  rationale: Assesses the primary claim component (natural gas usage) and covers first-party
+    and third-party sources like industry reports or energy studies.
+  kind: coverage
+  queries:
+  - US data centers natural gas electricity share 2024
+  citations:
+  - 2025/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom
+  - 2026/electricchoice-datacenters
+  - 2024/lbnl-2024-united-states-data-center-energy-usage-report1pdf
+  - 2026/ai-data-centers-us-electric-grid
+  - 2024/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers
+  - 2026/global-energy-demands-within-the-ai-regulatory-landscape
+  - 2026/data-centers-are-driving-a-surge-in-fossil-fuel-plants
+  - 2025/energy-supply-for-ai
+  - 2025/aichartweekly125pdf
+  - 2025/naturalgasdemandpdf
+  snippet_only: []
+- id: sq2
+  question: How much electricity did US data centers source from renewable energy
+    (e.g., solar, wind, hydro) in 2024, according to sustainability reports or third-party
+    assessments?
+  rationale: Evaluates the renewable energy portion of the claim, ensuring coverage
+    of all renewables combined as referenced in industry reports or ESG assessments.
+  kind: coverage
+  queries:
+  - US data centers 2024 renewable energy sources reports
+  citations:
+  - 2025/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/ai-data-center-power-surge-shifting-trends-toward-natural-gas
+  - 2026/global-energy-demands-within-the-ai-regulatory-landscape
+  - 2026/data-centers-are-driving-a-surge-in-fossil-fuel-plants
+  - 2025/energy-supply-for-ai
+  - 2025/aichartweekly125pdf
+  - 2025/naturalgasdemandpdf
+  snippet_only:
+  - 2024/lbnl-2024-united-states-data-center-energy-usage-report1pdf
+  - 2026/ai-data-centers-us-electric-grid
+  - 2026/powering-data-centers-with-clean-energy
+- id: sq3
+  question: Are there regulatory filings or transparency reports (e.g., from EPA,
+    DOE, or state energy commissions) that quantify 2024 electricity sources for US
+    data centers?
+  rationale: Validates the claim with official regulatory or governmental records,
+    adding credibility and ensuring alignment with authoritative data.
+  kind: coverage
+  queries:
+  - EPA DOE data center energy reports 2024
+  citations:
+  - 2024/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers
+  - 2026/data-centers-are-driving-a-surge-in-fossil-fuel-plants
+  snippet_only: []
+- id: sq4
+  question: What proportion of US data center electricity came from natural gas vs.
+    renewables in 2023 or earlier years, based on historical data?
+  rationale: Establishes a trend line to contrast 2024 data with prior years, helping
+    to contextualize the claim of increased reliance on natural gas.
+  kind: coverage
+  queries:
+  - natural gas vs renewables US data centers 2023 2022
+  citations:
+  - 2024/lbnl-2024-united-states-data-center-energy-usage-report1pdf
+  - 2026/ai-data-centers-us-electric-grid
+  - 2024/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers
+  - 2026/r48646
+  snippet_only:
+  - 2026/electricchoice-datacenters
+- id: sq5
+  question: Have prominent data center operators (e.g., Equinix, Google, Microsoft,
+    AWS) published specific 2024 electricity sourcing mixes for their US facilities?
+  rationale: Targets high-impact operators to determine if their disaggregated data
+    supports or contradicts the claim, covering first-party disclosure channels.
+  kind: coverage
+  queries:
+  - Equinix Google AWS 2024 electricity sourcing data
+  citations: []
+  snippet_only: []
+- id: sq6
+  question: Are there disputes, retractions, or conflicting claims about US data centers’
+    2024 reliance on natural gas vs. renewables from industry experts or watchdog
+    reports?
+  rationale: Identifies counter-evidence such as opposing analyses, methodological
+    critiques, or revised figures to test the claim's credibility.
+  kind: counter-evidence
+  queries:
+  - data center natural gas renewables 2024 disputes
+  - industry analysis US data centers energy mix changes 2024
+  citations:
+  - 2026/ai-data-center-power-surge-shifting-trends-toward-natural-gas
+  - 2026/global-energy-demands-within-the-ai-regulatory-landscape
+  snippet_only: []
+sources_consulted:
+- id: 2025/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom
+  url: https://www.pewresearch.org/short-reads/2025/10/24/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom
+  title: What We Know About Energy Use at U.S. Data Centers Amid the AI Boom
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: industry analysis US data centers energy mix changes 2024
+- id: 2026/electricchoice-datacenters
+  url: https://www.electricchoice.com/datacenters
+  title: Data Center Facilities and Electricity Consumption in the U.S.
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2024/lbnl-2024-united-states-data-center-energy-usage-report1pdf
+  url: https://eta-publications.lbl.gov/sites/default/files/2024-12/lbnl-2024-united-states-data-center-energy-usage-report_1.pdf
+  title: 2024 United States Data Center Energy Usage Report
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2026/ai-data-centers-us-electric-grid
+  url: https://www.belfercenter.org/research-analysis/ai-data-centers-us-electric-grid
+  title: 'AI, Data Centers, and the U.S. Electric Grid: A Watershed Moment'
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2026/powering-data-centers-with-clean-energy
+  url: https://elpc.org/projects/powering-data-centers-with-clean-energy
+  title: Powering Data Centers with Clean Energy
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers 2024 renewable energy sources reports
+- id: 2026/clean-energy-resources-meet-data-center-electricity-demand
+  url: https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
+  title: Clean Energy Resources to Meet Data Center Electricity Demand
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers 2024 renewable energy sources reports
+- id: 2024/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers
+  url: https://www.energy.gov/articles/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers
+  title: DOE Releases New Report Evaluating Increase in Electricity Demand from Data
+    Centers
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2026/ai-data-center-power-surge-shifting-trends-toward-natural-gas
+  url: https://www.americanactionforum.org/insight/ai-data-center-power-surge-shifting-trends-toward-natural-gas
+  title: 'AI Data Center Power Surge: Shifting Trends Toward Natural Gas'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: natural gas vs renewables US data centers 2023 2022
+- id: 2026/global-energy-demands-within-the-ai-regulatory-landscape
+  url: https://www.brookings.edu/articles/global-energy-demands-within-the-ai-regulatory-landscape
+  title: Global Energy Demands in the AI Regulatory Landscape
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: natural gas vs renewables US data centers 2023 2022
+- id: 2026/data-centers-are-driving-a-surge-in-fossil-fuel-plants
+  url: https://environmentamerica.org/center/resources/data-centers-are-driving-a-surge-in-fossil-fuel-plants
+  title: Data Centers Are Driving a Surge in Fossil Fuel Plants
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2026/r48646
+  url: https://www.congress.gov/crs-product/R48646
+  title: 'Data Centers and Their Energy Consumption: Frequently Asked Questions'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2025/energy-supply-for-ai
+  url: https://www.iea.org/reports/energy-and-ai/energy-supply-for-ai
+  title: Energy Supply for AI
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+- id: 2025/aichartweekly125pdf
+  url: https://www.mufgamericas.com/sites/default/files/document/2025-12/AI_Chart_Weekly_12_5.pdf
+  title: 'AI Chart Weekly: December 5, 2025'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: natural gas vs renewables US data centers 2023 2022
+- id: 2025/naturalgasdemandpdf
+  url: https://hamminstitute.org/site-files/documents/naturalgasdemand.pdf
+  title: 'Powering AI with American Energy: Natural Gas Demand'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers natural gas electricity share 2024
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+  auditor_reasoning: Source 1, a Pew Research Center report, states that natural gas
+    supplied over 40% of electricity for U.S. data centers in 2024 while renewables
+    accounted for about 24%. This directly shows that natural‑gas electricity was
+    greater than all renewable sources combined, supporting the claim. No other sources
+    address the 2024 fuel mix, but the Pew figure alone is sufficient to verify the
+    claim.
+  evidence_gaps:
+  - Only a single source (Pew Research Center) provides the electricity mix figures;
+    no additional independent sources or operator disclosures were found to corroborate
+    the percentages.
+  needs_review_reasons: []
+  pipeline_verdict: 'true'
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: In 2024, US data centers got more of their electricity from natural gas than
+    from all renewable sources combined.
+  seo_title: '2024 US data centers: gas > renewables'
+  verdict: 'true'
+  takeaway: US data centers relied more on natural gas than renewables in 2024, despite
+    sustainability goals.
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/what-we-know-about-energy-use-at-us-data-centers-amid-the-ai-boom
+  - 2024/lbnl-2024-united-states-data-center-energy-usage-report1pdf
+  - 2024/doe-releases-new-report-evaluating-increase-electricity-demand-data-centers

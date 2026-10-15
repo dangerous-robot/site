@@ -117,6 +117,26 @@ const auditSchema = z.object({
       to: z.enum(VERDICT_ORDER),
     }).nullable().optional(),
   }),
+  // The analyst's own output as written, kept beside the claim. Loose: the
+  // pipeline owns its fields and the site reads none of them.
+  analyst_record: z.object({
+    uncited_by_title: z.array(z.string()).optional(),
+  }).loose().optional(),
+  // Ranked restatement candidates for a weak or tie-broken verdict, until the
+  // claim is approved or archived. Loose so one off-list value from a model
+  // (a frame, say) cannot fail the site build.
+  restatement: z.object({
+    schema_version: z.number().optional(),
+    trigger: z.string().optional(),
+    why_unverified: z.string().optional(),
+    candidates: z.array(z.object({
+      rank: z.number(),
+      text: z.string(),
+    }).loose()).optional(),
+    picked: z.number().nullable().optional(),
+  }).loose().optional(),
+  // The ref of the claim this one restates (dr draft --restates).
+  restates: z.string().optional(),
 });
 
 

@@ -36,6 +36,17 @@ def _no_live_tiebreaker(monkeypatch):
     monkeypatch.delenv("DR_TIEBREAKER_MODEL", raising=False)
 
 
+@pytest.fixture(autouse=True)
+def _no_live_restater(monkeypatch):
+    """Keep a developer's ``DR_RESTATER_MODEL`` out of the unit tests.
+
+    The restater runs inside ``dr draft`` on every weak or tie-broken verdict
+    (RE-AU, Restate inside the loop), so the same leak as the tie-breaker's
+    applies. Tests that set the variable themselves still can.
+    """
+    monkeypatch.delenv("DR_RESTATER_MODEL", raising=False)
+
+
 @pytest.fixture(scope="session")
 def repo_root() -> Path:
     """Resolve the repository root once per test session."""

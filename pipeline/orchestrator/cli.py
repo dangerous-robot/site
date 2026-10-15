@@ -169,6 +169,7 @@ class _CategorizedGroup(click.Group):
 @click.option("--auditor-model", default=None, help="Override model for the auditor agent (falls back to --model)", envvar="DR_AUDITOR_MODEL")
 @click.option("--ingestor-model", default=None, help="Override model for the ingestor agent (falls back to --model)", envvar="DR_INGESTOR_MODEL")
 @click.option("--tiebreaker-model", default=None, help="Override model for the tie-breaker agent (falls back to --model)", envvar="DR_TIEBREAKER_MODEL")
+@click.option("--restater-model", default=None, help="Override model for the restater (falls back to --auditor-model, then --model)", envvar="DR_RESTATER_MODEL")
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -179,6 +180,7 @@ def main(
     auditor_model: str | None,
     ingestor_model: str | None,
     tiebreaker_model: str | None,
+    restater_model: str | None,
 ) -> None:
     """dr -- dangerousrobot.org research pipeline."""
     ctx.ensure_object(dict)
@@ -188,6 +190,7 @@ def main(
     ctx.obj["auditor_model"] = auditor_model
     ctx.obj["ingestor_model"] = ingestor_model
     ctx.obj["tiebreaker_model"] = tiebreaker_model
+    ctx.obj["restater_model"] = restater_model
     ctx.obj["verbose"] = verbose
     # Skip logging setup for the bare `dr` / `dr --help` paths so we don't
     # open file handles when the user is just inspecting usage.
@@ -840,6 +843,10 @@ def _print_verify_result(result) -> None:
                 click.echo(f"    - {gap}")
         click.echo("")
 
+    if result.restatement is not None or (result.finding is not None and result.finding.step == "restate"):
+        _print_restatement(result)
+        click.echo("")
+
     if result.blocked_reason is not None:
         click.echo("--- Blocked ---")
         click.echo(
@@ -872,8 +879,10 @@ def _print_verify_result(result) -> None:
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
 @click.option("--candidate-pool-size", default=None, type=int, help="Max URLs to attempt before stopping (default: VerifyConfig.candidate_pool_size)")
 @click.option("--skip-wayback/--wayback", default=False, help="Skip Wayback Machine")
-@click.option("--max-initial-queries", default=None, type=int, help="Max search queries for decomposed researcher (default: VerifyConfig.max_initial_queries)")
+@click.option("--max-initial-queries", default=None, type=click.IntRange(min=1), help="Max search queries for decomposed researcher, at least 1 (default: VerifyConfig.max_initial_queries)")
 @click.option("--llm-concurrency", default=None, type=int, help="Max concurrent LLM calls (default: VerifyConfig.llm_concurrency)")
+@click.option("--restates", "restates_ref", default=None, metavar="REF", help="Run candidate --pick N from the claim's restatement block as a new claim linked back with restates:")
+@click.option("--pick", "pick", default=None, type=click.IntRange(min=1), metavar="N", help="The rank of the restatement candidate to run (with --restates)")
 @click.pass_context
 def draft(
     ctx: click.Context,
@@ -890,11 +899,13 @@ def draft(
     skip_wayback: bool,
     max_initial_queries: int | None,
     llm_concurrency: int | None,
+    restates_ref: str | None,
+    pick: int | None,
 ) -> None:
     """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
-    Exactly one of --entity, --subject or --claim names what the claim is
-    about. The claim stores the sentence it checks as its statement (and as
+    Exactly one of --entity, --subject, --claim or --restates names what the
+    claim is about. The claim stores the sentence it checks as its statement (and as
     its title). A run abandoned by the error policy writes only its finding
     under research/findings/ and exits 1; a retried or tie-broken run writes
     the claim and its finding. A writer failure leaves a half-claim finding.
@@ -913,6 +924,10 @@ def draft(
     --claim REF --criterion SLUG attaches a new criterion to a draft: appends it to
                                  research/templates.yaml and sets criteria_slug; no
                                  model call
+    --restates REF --pick N      runs candidate N of the claim's restatement block as a
+                                 new ad hoc claim about the same entity, writes
+                                 restates: REF in its sidecar and records the pick on
+                                 the original
 
     \b
     Examples:
@@ -921,6 +936,7 @@ def draft(
         dr draft --subject us-data-centers "US data centers used more than 4% of US electricity in 2024"
         dr draft --claim chatgpt/renewable-energy-hosting --force
         dr draft --claim subjects/us-data-centers/<stem> --criterion data-centers-electricity-share
+        dr draft --restates subjects/us-data-centers/<stem> --pick 2
     """
     import re
 
@@ -932,22 +948,35 @@ def draft(
     from common.utils import slugify
     from loop import ClaimSpec, VerifyConfig, run
     from orchestrator.entity_resolution import ResolvedEntity, parse_entity_ref
-    from orchestrator.persistence import planned_claim_path, write_claim_run
+    from orchestrator.persistence import planned_claim_path, record_restatement_pick, write_claim_run
 
     logger.info(
-        "dr draft: entity=%s subject=%s criterion=%s claim=%s sentence=%s dry_run=%s force=%s",
-        entity_ref, subject_slug, criterion_slug, claim_ref, sentence, dry_run, force,
+        "dr draft: entity=%s subject=%s criterion=%s claim=%s restates=%s pick=%s sentence=%s dry_run=%s force=%s",
+        entity_ref, subject_slug, criterion_slug, claim_ref, restates_ref, pick, sentence, dry_run, force,
     )
 
     # Click cannot express this grammar, so it is checked here, before any
     # model call: every failure is a usage error (exit 2) naming the flag.
     modes = [flag for flag, value in (
         ("--entity", entity_ref), ("--subject", subject_slug), ("--claim", claim_ref),
+        ("--restates", restates_ref),
     ) if value is not None]
+    if pick is not None and restates_ref is None:
+        raise click.UsageError("--pick goes with --restates <claim-ref>")
     if not modes:
-        raise click.UsageError("one of --entity <ref>, --subject <slug> or --claim <ref> is required")
+        raise click.UsageError("one of --entity <ref>, --subject <slug>, --claim <ref> or --restates <ref> is required")
     if len(modes) > 1:
         raise click.UsageError(f"{' and '.join(modes)} cannot be combined; pass exactly one")
+    if restates_ref is not None:
+        if pick is None:
+            raise click.UsageError("--restates needs --pick <n>: the rank of the candidate to run")
+        if sentence is not None:
+            raise click.UsageError("SENTENCE is not taken with --restates: the candidate's text is the sentence")
+        if criterion_slug is not None:
+            raise click.UsageError(
+                "--criterion is not taken with --restates; attach one to the new claim with "
+                "dr draft --claim <new-ref> --criterion <slug>"
+            )
     has_sentence = bool(sentence and sentence.strip())
     attach = claim_ref is not None and criterion_slug is not None
     if criterion_slug is not None:
@@ -969,7 +998,7 @@ def draft(
                 f"--claim {claim_ref} writes over the existing claim: pass --force to write it, "
                 "--dry-run to print the run, or --criterion <slug> to attach a criterion"
             )
-    elif not has_sentence:
+    elif restates_ref is None and not has_sentence:
         raise click.UsageError(f"SENTENCE is required with {modes[0]}")
     if subject_slug is not None and not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", subject_slug):
         raise click.UsageError(f"--subject {subject_slug}: a slug is lowercase words joined by hyphens")
@@ -982,7 +1011,18 @@ def draft(
 
     claim_path: Path | None = None
     create_entity = False
-    if claim_ref is not None:
+    original_path: Path | None = None
+    if restates_ref is not None:
+        original_path, candidate_text, original_entity = _restatement_candidate(restates_ref, pick, root)
+        ref_label = original_entity
+        try:
+            resolved_entity = parse_entity_ref(original_entity, root)
+        except ValueError as exc:
+            click.echo(f"Error: --restates {restates_ref}: could not load entity {original_entity!r}: {exc}", err=True)
+            sys.exit(1)
+        spec = ClaimSpec(statement=candidate_text, entity=resolved_entity)
+        claim_slug = slugify(candidate_text)
+    elif claim_ref is not None:
         claim_path = _resolve_claim_path(claim_ref, root / "research" / "claims")
         if not claim_path.exists():
             click.echo(f"Error: claim file not found: {claim_ref} ({claim_path})", err=True)
@@ -1115,6 +1155,7 @@ def draft(
             # --claim writes back to the file it read, whatever its stem.
             target=claim_path,
             create_entity=create_entity,
+            restates=_claim_ref(original_path, root) if original_path is not None else None,
         )
     except FileExistsError as exc:
         click.echo(f"Error: {exc}. Use --force to overwrite it.", err=True)
@@ -1149,6 +1190,7 @@ def draft(
             f"Settled:    {c.pipeline_verdict.value} ({c.rule_applied}; analyst {c.primary_verdict.value}, "
             f"Evaluator {c.assessed_verdict.value}, tie-breaker {c.tiebreaker_verdict.value})"
         )
+    _print_restatement(result)
     click.echo(f"Analyst title: {a.verdict.title}")
     click.echo(f"Entity:     {a.entity.entity_name} ({a.entity.entity_type})")
     click.echo("")
@@ -1166,6 +1208,59 @@ def draft(
 
             reasons = ", ".join(needs_review_reasons(result.consistency))
             click.echo(f"Note: flagged for human review ({reasons}).")
+    if original_path is not None:
+        # Recorded only once the new claim is written: a dry run, an abandoned
+        # run or a refused write leaves the original's sidecar untouched.
+        try:
+            record_restatement_pick(original_path, pick)
+        except ValueError as exc:
+            click.echo(f"Warning: the pick was not recorded on {restates_ref}: {exc}", err=True)
+        # Printed as the sidecar key it wrote.
+        click.echo(f"restates: {_claim_ref(original_path, root)} (candidate {pick})")
+
+
+def _restatement_candidate(restates_ref: str, pick: int, root: Path) -> tuple[Path, str, str]:
+    """The original claim's path, candidate ``pick``'s text and the original's entity ref.
+
+    Exits 1 when the claim, its ``restatement`` block or the candidate is missing.
+    """
+    from common.frontmatter import parse_frontmatter
+    from common.sidecar import read_sidecar
+
+    def refuse(message: str):
+        click.echo(f"Error: {message}", err=True)
+        sys.exit(1)
+
+    claims_root = root / "research" / "claims"
+    original = _resolve_claim_path(restates_ref, claims_root)
+    if not original.exists():
+        refuse(f"claim file not found: {restates_ref} ({original})")
+    fm, _body = parse_frontmatter(original.read_text(encoding="utf-8"))
+    sidecar = read_sidecar(original) or {}
+    block = sidecar.get("restatement")
+    if not isinstance(block, dict):
+        refuse(f"no restatement block in {original.with_suffix('.audit.yaml')}; nothing to pick")
+    candidates = [c for c in block.get("candidates") or [] if isinstance(c, dict)]
+    chosen = next((c for c in candidates if c.get("rank") == pick), None)
+    if chosen is None or not str(chosen.get("text") or "").strip():
+        refuse(f"no candidate {pick} in the restatement block of {restates_ref}; it has {len(candidates)}")
+    return original, str(chosen["text"]).strip(), str(fm.get("entity") or "")
+
+
+def _print_restatement(result) -> None:
+    """The run's restatement candidates, or why there are none when the restater failed."""
+    block = result.restatement
+    finding = result.finding
+    if block is not None:
+        candidates = block.get("candidates") or []
+        click.echo(f"Restatement: {len(candidates)} candidates ({block.get('trigger')})")
+        for c in candidates:
+            click.echo(
+                f"  #{c['rank']} decisiveness {c['decisiveness']}/4 expected: "
+                f"{c['expected_verdict']} ({c['expected_confidence']})  \"{c['text']}\""
+            )
+    elif finding is not None and finding.step == "restate" and finding.outcome == "partial":
+        click.echo(f"Restatement: unavailable (finding {finding.run_id})")
 
 
 def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
@@ -1253,8 +1348,10 @@ def _record_half_claim(result, spec, config, root: Path, claim_ref: str, exc: Ba
     agents = ["researcher", "ingestor", "analyst", "auditor"]
     if result.consistency is not None and result.consistency.tiebreaker_verdict is not None:
         agents.append("tiebreaker")
+    if result.restatement is not None or (earlier is not None and earlier.step == "restate"):
+        agents.append("restater")
     retries = list(earlier.retries) if earlier is not None else []
-    if earlier is not None and earlier.outcome in ("recovered", "split"):
+    if earlier is not None and earlier.outcome in ("recovered", "split", "partial"):
         entry = {"step": earlier.step, "error_type": earlier.error.get("error_type"),
                  "rule": earlier.rule, "attempts": earlier.attempts}
         if earlier.outcome == "split":
@@ -2033,6 +2130,8 @@ def publish(
             sidecar_data["human_review"]["reviewer"] = None
             sidecar_data["human_review"]["notes"] = note_text
             sidecar_data["human_review"]["pr_url"] = None
+            # Publishing retires the restatement like approval does (`dr review`).
+            sidecar_data.pop("restatement", None)
             sidecar_path.write_text(
                 yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
                 encoding="utf-8",

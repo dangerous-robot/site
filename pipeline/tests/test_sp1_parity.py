@@ -20,10 +20,15 @@ differences and no others:
 - the sidecar's ``sub_questions`` block gains the harness plan's
   counter-evidence sub-question and, per entry, ``kind`` and ``snippet_only``;
   ``research.queries`` gains its query; ``analyst_record`` gains
-  ``uncited_by_title`` (RE-BA, Source pool rules; ``_apply_re_ba_differences``).
+  ``uncited_by_title`` (RE-BA, Source pool rules; ``_apply_re_ba_differences``);
+- the scripted ``mixed`` verdict is in the restater's trigger set, so the
+  sidecar gains a ``restatement`` block and lists the restater in
+  ``pipeline_run.agents`` and ``models_used`` (RE-AU, Restate inside the
+  loop; ``_apply_re_au_differences``).
 
 Volatile values (``as_of``, ``ran_at``, ``run_id``, the per-agent
-``models_used`` read from the operator's ``.env``) are replaced before the
+``models_used`` and ``restatement.model`` read from the operator's ``.env``)
+are replaced before the
 comparison. ``sources_consulted`` is compared in URL order because ingest
 runs two URLs at a time.
 """
@@ -64,6 +69,10 @@ def _normalize(obj):
             elif key == "models_used" and isinstance(value, dict):
                 # Per-agent models come from the operator's .env, not the fixture.
                 out[key] = {agent: "MODEL" for agent in value}
+            elif key == "restatement" and isinstance(value, dict):
+                # The restater runs on the Evaluator's slot, which .env may set
+                # (DR_AUDITOR_MODEL), so its recorded model is volatile too.
+                out[key] = _normalize({**value, "model": "MODEL"})
             elif key == "sources_consulted" and isinstance(value, list):
                 out[key] = sorted((_normalize(v) for v in value), key=lambda e: str(e.get("url", "")))
             else:
@@ -166,7 +175,28 @@ def _golden(case: str) -> dict:
         rule_applied="agreed",
     )
     _apply_re_ba_differences(golden["sidecar"])
+    _apply_re_au_differences(golden["sidecar"], CRITERION_STATEMENT if case == "criterion" else SENTENCE)
     return golden
+
+
+def _apply_re_au_differences(sidecar: dict, statement: str) -> None:
+    """The sidecar differences RE-AU (Restate inside the loop) adds, and no others.
+
+    The scripted analyst and Evaluator agree on ``mixed``, which is in the
+    restater's trigger set, so every harness run restates: the restater is
+    listed in ``pipeline_run.agents`` and ``models_used``, and the sidecar
+    carries one ``restatement`` block built from the harness restater's
+    scripted proposal (``tests.loop_harness.restater_args``) over the four
+    consulted sources and no on-disk source (the loop writes nothing, so the
+    fresh sources are not on disk yet when the restater runs).
+    """
+    from tests.loop_harness import expected_restatement_block
+
+    sidecar["pipeline_run"]["agents"].append("restater")
+    sidecar["models_used"]["restater"] = "MODEL"
+    sidecar["restatement"] = expected_restatement_block(
+        statement=statement, verdict="mixed", confidence="medium", consulted=4, model="MODEL",
+    )
 
 
 def _apply_re_ba_differences(sidecar: dict) -> None:

@@ -1,0 +1,377 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-15T03:04:35.539800+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - tiebreaker
+  - restater
+  run_id: 49ed4a98155a4e56a767a952e209be47
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - Gemini typical prompt energy consumption watts
+  - Google Gemini energy per prompt documentation
+  - ChatGPT energy usage per question watts
+  - OpenAI energy consumption single query
+  - third-party AI prompt energy benchmark Gemini ChatGPT
+  - data center energy use API calls Gemini
+  - scaling reports Gemini energy per inference
+  planner_rationale: The sub-questions cover the claim from direct energy usage documentation
+    (sq1, sq2), third-party validation (sq3), and potential falsifying evidence (sq4).
+  candidates_seen: 49
+  urls_kept: 19
+  urls_dropped: 30
+  scorer_rationale: "**Kept Candidates:**\n\n1. **Gemini-Specific Data (sq1):** All\
+    \ sources from Google, LinkedIn, and external summarizers explicitly cite Google's\
+    \ **0.24 Wh per prompt** for Gemini Apps text queries (e.g., cloud.google.com\
+    \ blog, MIT Technology Review, DataCenterDynamics). Most include Google's own\
+    \ methodology or direct quotes, scoring **5 (direct, primary-secondary)**.\n \
+    \  - Cross-checks: CNET, Yahoo Finance (Yahoo URL), and data journalism (EnergySage)\
+    \ reinforce consistency.\n\n2. **ChatGPT-Specific Data (sq2):** OpenAI's **0.34\
+    \ Wh per query** is well-documented across five+ sources (Medium, DevSustainability,\
+    \ Tech-Insider, Devera.ai, Earth Day), with **two** explicitly citing **Sam Altman’s\
+    \ blog (2025)**. These score **5 (direct, primary-secondary, multiple corroborations)**.\n\
+    \n3. **Third-Party Benchmarks (sq3):**\n   - **Devera.ai** compares Gemini (0.24\
+    \ Wh) vs. ChatGPT (0.34 Wh) using academic papers.\n   - **arXiv.org** (0.24 Wh\
+    \ Google, 0.5–3 Wh OpenAI) benchmark meta-analysis ofer**3**–**5** for theory\
+    \ + claims.\n   - **DevSustainability** contrasts OpenAI + Google data with per-token\
+    \ variances.\n   - **Hannah Ritchie (Substack)** synthesizes Google improvements\
+    \ (33x) with third-party views (sub-optimal.)\n\n4. **Scaling/Evidence Contradiction\
+    \ Checks (sq4):**\n   - **arXiv peak vs median** for Gemini/ChatGPT dissipateुटhันวาคม\
+    \ “tiny energy claims-yet-disspection-”card-sharp-disspite-missing google randomness.\
+    \ (e.g., 0.24 Wh median vs. hw cardiac range).\n   - **Devera.ai/TI** confirm\
+    \ 3–30x variations for long inputs (reasoning vs. summarization).\n   - Score\
+    \ diffs due to **system scope** (DC idle vs TPU) and **claim legitimacy** (Google\
+    \ 5 for transparency, secondary/linkedin aggregations 4).\n\n**Dropped Candidates:**\n\
+    1. **Redundant/Repost:** Facebook/LinkedIn reposts (not original data; 4:1 resp.\
+    \ dup labels).\n2. **Too Generic/Sparse:** WeForum, IEEE BlockTitle była ink kwaţ\
+    \ despeited blk-cl.matikaḉas common (ˈinterpretacióŋ: energie maţuŋawa\\yze e\
+    \ favourable , 03 ˌ\\ pessoas Merriment nimis\"Happy mighty age standt uţ mode/utilities.)\n\
+    3. **Tertiary/Advocacy:** Lists without Wh values (ProjetCelsius, AIEfficiency),\
+    \ or ulum so ohne \\ sparse أخيه\\no sotor \", or Immureal{split is thus Sagreoleve|\
+    \ \n%;sistemare coconutn (like 3MHBIT cell stock spreadingiw (/up g( scrape du\
+    \ technologyre).\n4. **Not Relevant (Avoid ML):** Broke off into topics about\
+    \ model training or cloud CdXx, or mislabels como competitor fwels (Grovers g(\\\
+    xmo like spesagainst qatCastP Bo The). dnidal طرف محارب (ش_insertió.plot time/upnilé.)\n\
+    5. **Unverified/Forum:** Inaccuracy, pipeline observ border (HN/StackOverflow).\n\
+    6. ** околниционной/Частной:** Gem**;*"
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: What is the documented electricity consumption (in watt-hours) of a single
+    text generation prompt for Google's Gemini model?
+  rationale: Directly assesses the claim's specific energy estimate for one of the
+    entities mentioned.
+  kind: coverage
+  queries:
+  - Gemini typical prompt energy consumption watts
+  - Google Gemini energy per prompt documentation
+  citations:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/google-gemini-ai-energy
+  - 2026/ai-energy-consumption
+  - 2025/250815734v1
+  - 2023/google-median-gemini-prompt-uses-024-watt-hours-of-power-and-consumes-026ml-of-water
+  - 2025/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  snippet_only: []
+- id: sq2
+  question: What is the documented electricity consumption (in watt-hours) of a single
+    text generation prompt for OpenAI's ChatGPT model?
+  rationale: Directly assesses the claim's specific energy estimate for the other
+    entity mentioned.
+  kind: coverage
+  queries:
+  - ChatGPT energy usage per question watts
+  - OpenAI energy consumption single query
+  citations:
+  - 2026/how-much-energy-exactly-does-chatgpt-use-0a0bdf2e4cd4
+  - 2026/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  - 2024/chatgpt-energy-usage-is-034-wh-per
+  - 2026/environmental-impact-ai-energy-carbon
+  snippet_only:
+  - 2026/the-true-price-of-every-chatgpt-prompt
+- id: sq3
+  question: Are there third-party studies or benchmarks comparing the carbon or energy
+    footprint of queries to Gemini or ChatGPT?
+  rationale: Evaluates independent verification or dispute of the claim's energy estimates.
+  kind: coverage
+  queries:
+  - third-party AI prompt energy benchmark Gemini ChatGPT
+  citations:
+  - 2026/ai-energy-consumption
+  - 2025/250815734v1
+  - 2026/how-much-energy-exactly-does-chatgpt-use-0a0bdf2e4cd4
+  - 2026/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  - 2026/energy-use-of-ai-inference-estimates
+  - 2026/environmental-impact-ai-energy-carbon
+  snippet_only: []
+- id: sq4
+  question: What evidence exists that a third of a watt-hour (or ~1 kJ) for a text
+    prompt is inconsistent withGemini or ChatGPT's infrastructure or scaling reports?
+  rationale: Targets contradictory or falsifying evidence by cross-referencing claimed
+    energy use with infrastructure capacity or scaling data.
+  kind: counter-evidence
+  queries:
+  - data center energy use API calls Gemini
+  - scaling reports Gemini energy per inference
+  citations:
+  - 2025/250815734v1
+  - 2026/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  - 2026/energy-use-of-ai-inference-estimates
+  snippet_only: []
+sources_consulted:
+- id: 2025/measuring-the-environmental-impact-of-ai-inference
+  url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference
+  title: How much energy does Google’s AI use? We did the math
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Gemini typical prompt energy consumption watts
+- id: 2025/google-gemini-ai-energy
+  url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy
+  title: Google Reveals Energy Use of Gemini AI Prompts
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Gemini typical prompt energy consumption watts
+- id: 2026/the-true-price-of-every-chatgpt-prompt
+  url: https://www.earthday.org/the-true-price-of-every-chatgpt-prompt
+  title: The True Price of Every ChatGPT Prompt
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT energy usage per question watts
+- id: 2026/ai-energy-consumption
+  url: https://aimultiple.com/ai-energy-consumption
+  title: AI Energy Consumption Statistics
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: scaling reports Gemini energy per inference
+- id: 2025/250815734v1
+  url: https://arxiv.org/html/2508.15734v1
+  title: Measuring the Environmental Impact of Delivering AI at Google Scale
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini energy per prompt documentation
+- id: 2026/how-much-energy-exactly-does-chatgpt-use-0a0bdf2e4cd4
+  url: https://medium.com/illumination/how-much-energy-exactly-does-chatgpt-use-0a0bdf2e4cd4
+  title: How Much Energy Exactly Does ChatGPT Use?
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT energy usage per question watts
+- id: 2026/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  url: https://tech-insider.org/ie/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  title: 'ChatGPT vs Gemini vs Claude: 42% Energy Gap [2026]'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: third-party AI prompt energy benchmark Gemini ChatGPT
+- id: 2026/energy-use-of-ai-inference-estimates
+  url: https://www.devsustainability.com/p/energy-use-of-ai-inference-estimates
+  title: 'Energy Use of AI Inference: Estimates and Efficiency Opportunities'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: scaling reports Gemini energy per inference
+- id: 2024/chatgpt-energy-usage-is-034-wh-per
+  url: https://www.devsustainability.com/p/chatgpt-energy-usage-is-034-wh-per
+  title: ChatGPT Energy Usage Is 0.34 Wh Per Query
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: ChatGPT energy usage per question watts
+- id: 2023/google-median-gemini-prompt-uses-024-watt-hours-of-power-and-consumes-026ml-of-water
+  url: https://www.datacenterdynamics.com/en/news/google-median-gemini-prompt-uses-024-watt-hours-of-power-and-consumes-026ml-of-water
+  title: 'Google: Median Gemini Prompt Energy and Water Impact'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Gemini typical prompt energy consumption watts
+- id: 2026/environmental-impact-ai-energy-carbon
+  url: https://devera.ai/resources/environmental-impact-ai-energy-carbon
+  title: 'AI Water & Energy Usage: ChatGPT vs Claude vs Gemini (2026)'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: third-party AI prompt energy benchmark Gemini ChatGPT
+- id: 2025/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  url: https://www.cnet.com/tech/services-and-software/how-much-energy-do-your-ai-prompts-consume-google-just-shared-its-gemini-numbers
+  title: How Much Energy Do Your AI Prompts Consume? Google Shares Its Gemini Numbers
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Gemini typical prompt energy consumption watts
+audit:
+  analyst_verdict: mostly-true
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Source 1 and 2 report that a median Gemini text prompt uses 0.24 Wh,
+    and sources 3, 5, and 7 report that a typical ChatGPT query uses about 0.34 Wh.
+    Both values are close to one‑third of a watt‑hour. Source 3 explicitly likens
+    0.34 Wh to the energy needed to run an LED bulb for about two minutes, and the
+    calculated range (0.24–0.34 Wh) corresponds to roughly 2–4 minutes of a 5‑10 W
+    LED bulb. Thus the claim’s quantitative estimate and the LED‑bulb analogy are
+    directly supported by the cited evidence.
+  evidence_gaps:
+  - Gemini energy figure (0.24 Wh) comes from Google's own reporting; no independent
+    measurement of Gemini prompts is provided.
+  - The LED‑bulb comparison is a derived calculation, not directly quoted in most
+    sources except the ChatGPT article that mentions ~2 minutes.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: mostly-true
+  pipeline_confidence: medium
+  rule_applied: tiebreaker-matched-analyst
+  tiebreaker_verdict: mostly-true
+  tiebreaker_confidence: low
+  tiebreaker_reasoning: Source 1 and 2 report that a median Gemini text prompt consumes
+    0.24 Wh, which is close to a third of a watt‑hour. Sources 3 and 7 report that
+    a typical ChatGPT query uses about 0.34 Wh, also roughly a third of a watt‑hour.
+    Source 3 explicitly likens 0.34 Wh to running a standard LED bulb for about two
+    minutes, supporting the “couple of minutes” analogy for ChatGPT. No source provides
+    the same LED‑bulb comparison for Gemini, so that part of the claim is inferred
+    rather than directly evidenced. Overall the claim’s main point—that typical prompts
+    for both models use roughly a third of a watt‑hour—is well‑supported, but the
+    LED‑bulb analogy for Gemini and reliance on self‑reported data reduce confidence.
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: A typical text prompt to Gemini or ChatGPT uses about a third of a watt-hour
+    of electricity, a couple of minutes of an LED bulb.
+  seo_title: Gemini/ChatGPT prompts ~0.3 Wh, ~2 min LED
+  verdict: mostly-true
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2026/ai-energy-consumption
+  - 2026/chatgpt-vs-gemini-vs-claude-energy-use-2026
+  - 2026/energy-use-of-ai-inference-estimates
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: tie-broken
+  original:
+    statement: A typical text prompt to Gemini or ChatGPT uses about a third of a
+      watt-hour of electricity, a couple of minutes of an LED bulb.
+    verdict: mostly-true
+    confidence: medium
+  pool:
+    consulted: 12
+    on_disk: 116
+    sent: 24
+  why_unverified: upstream-provider
+  why_unverified_note: The Gemini energy figure (0.24 Wh) originates from Google's
+    own reporting; no independent third‑party measurement of Gemini prompts is available.
+  candidates:
+  - rank: 1
+    text: Generative AI disclosed that its median Gemini Apps text prompt uses 0.24
+      watt‑hours of electricity per prompt.
+    frame: disclosure
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: self-reported
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Both a Google Cloud Blog article and an MIT Technology Review piece
+      report the same disclosed figure of 0.24 Wh for the median Gemini prompt.
+  - rank: 2
+    text: Generative AI text prompts typically consume about 0.3 watt-hours of electricity
+      per query.
+    frame: narrowed
+    expected_verdict: mostly-true
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Gemini’s median prompt uses 0.24 Wh and ChatGPT’s typical query uses
+      about 0.34 Wh; the average of these values is roughly 0.3 Wh, supporting the
+      stated typical consumption.
+  - rank: 3
+    text: Generative AI text prompts use roughly a third of a watt‑hour of electricity,
+      comparable to running a 5‑W LED bulb for two to four minutes.
+    frame: other
+    expected_verdict: mostly-true
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Both Gemini (0.24 Wh) and ChatGPT (0.34 Wh) are close to one‑third
+      of a watt‑hour; the ChatGPT article explicitly likens 0.34 Wh to two minutes
+      of LED lighting, which extends to the Gemini value as well.
+  - rank: 4
+    text: Generative AI's median Gemini prompt consumes 0.24 Wh of electricity, while
+      a typical ChatGPT query consumes about 0.34 Wh.
+    frame: supplier
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Direct statements from independent and first‑party sources give the
+      exact energy figures for Gemini (0.24 Wh) and ChatGPT (≈0.34 Wh).
+  dropped: []
+  picked: null

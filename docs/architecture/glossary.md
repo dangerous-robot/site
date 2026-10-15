@@ -64,6 +64,7 @@ The same work is described by three vocabularies: **role** (what should happen, 
 | **Analyst** | `pipeline/analyst/` | invoked by `dr draft`; standalone via `dr step-analyze` |
 | **Evaluator** | `pipeline/auditor/` (directory rename to `pipeline/evaluator/` deferred to post-v1) | invoked by `dr draft`; standalone via `dr step-audit` (`dr reassess` remains as a hidden deprecated alias) |
 | **Tie-breaker** | `pipeline/loop/tiebreaker/` | invoked by `dr draft` (and `dr step-audit`) on a disagreement; model slot `--tiebreaker-model` |
+| **Restater** | `pipeline/loop/restater/` | invoked by `dr draft` on a weak or tie-broken verdict; model slot `--restater-model`; a pick is run with `dr draft --restates <claim-ref> --pick <n>` |
 | **Linter** | `pipeline/linter/` (no LLM, no network) | `dr lint`; same code path runs in the `lint-content` CI job |
 | (sidecar/status only) | (no agent) | `dr review` (per-claim sign-off + optional status flip), `dr review-queue` (interactive walk of drafts awaiting sign-off), `dr publish` (bulk draft→published flip; bypasses individual reviewer recording), `dr stats` (read-only corpus aggregates), `dr findings` (lists, counts and closes the findings file) |
 
@@ -85,6 +86,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Grades the claim statement against the sources, independent of the analyst's verdict |
 | **Tie-breaker** | Grades the claim statement blind when the Analyst and Evaluator verdicts differ; the one agent above them that may use the frontier tier |
+| **Restater** | Proposes ranked restatements of a weak or tie-broken claim from the run's consulted sources and the source archive; never rewrites the claim |
 
 ## Workflow
 
@@ -104,7 +106,8 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **`human_review`** | Sub-object in the audit sidecar written by `dr review` and `dr publish`. Records `reviewed_at`, `reviewer`, `notes`, and `pr_url`, plus `verdict_override` when `dr review` approves a verdict that differs from the pipeline verdict (`audit.pipeline_verdict`, which the tie-breaker can set against the Analyst). Drives the "Reviewed" / "Unreviewed" badge on the rendered claim. |
 | **Threshold gate** | Post-ingest check in the loop: if fewer than four usable sources are available, the run stops with a `blocked_reason`, the Analyst is not invoked, and nothing is written (no claim, no source file, no sidecar). (`pipeline/loop/run.py`) |
 | **Blocklist** | Domain-level filter applied to candidate URLs before ingest. Lives at `research/blocklist.yaml`; consumed by the orchestrator. |
-| **Tie-breaker** | Agent in `pipeline/loop/tiebreaker/` that runs only when the Analyst and Evaluator verdicts differ. It gets the Evaluator's blind bundle (no verdicts) on the frontier tier with a higher thinking budget. A verdict matching either side wins; a three-way split takes the weakest by strength. The sidecar records `tiebreaker_*`, `pipeline_verdict` and `rule_applied`. |
+| **Tie-breaker** | Agent in `pipeline/loop/tiebreaker/` that runs only when the Analyst and Evaluator verdicts differ. It gets the Evaluator's blind bundle (no verdicts) with a higher thinking budget, on the `--tiebreaker-model` slot (the run's `--model` unless `DR_TIEBREAKER_MODEL` is set). A verdict matching either side wins; a three-way split takes the weakest by strength. The sidecar records `tiebreaker_*`, `pipeline_verdict` and `rule_applied`. |
+| **Restater** | Agent in `pipeline/loop/restater/` that runs after the verdict is settled, only when the pipeline verdict is `unverified`, `mixed` or `not-applicable` or the tie-breaker ran. It reads the run's consulted sources plus the best-matching sources in `research/sources/`, never a thesis to prove, and returns up to five candidate statements ranked by how decisively the evidence settles each in either direction. Its model slot is `--restater-model` (falls back to `--auditor-model`). A failure writes the claim without a `restatement` block and records a `partial` finding. Schema in [content-model.md § Claim Audit Sidecar](content-model.md#claim-audit-sidecar). |
 | **Finding** | One YAML record per abandoned, recovered or split run (or half-claim) at `research/findings/<yyyy>/<run-id>.yaml`: the claim spec, config, step, rule, error, attempts and outcome. Listed by `dr findings`; `dr lint` ignores the directory. |
 | **Half-claim** | What a writer crash leaves: a claim without a sidecar, or a subject record without a claim. `dr findings` lists them; nothing deletes them automatically. |
 | **Linter** (the package) | `pipeline/linter/` -- Python package that implements the static checks invoked by `dr lint` and the `lint-content` CI job. Distinct from the `dr lint` operator command. |
@@ -127,6 +130,7 @@ Implementation-level concepts that surface in operator workflows and audit artif
 | **Analyst** | Propose draft verdict; write narrative; cite sources |
 | **Evaluator** | Grade the claim statement against the sources (the narrative is context, not the thing graded); flag disagreements |
 | **Tie-breaker** | Grade the claim statement blind, only on a disagreement; return a third verdict that settles it by rule |
+| **Restater** | Propose ranked restatement candidates for a weak or tie-broken verdict, each with the verdict the pool would give it, the quoted passages it relies on and why the original is weak (`why_unverified`) |
 
 ## Object lifecycle (general)
 
@@ -165,6 +169,8 @@ Operator-facing pipeline-step terms. These describe pipeline mechanics, not clai
 | **Draft from a criterion** | Render a criterion's sentence once with the entity name, store it as `statement`, and run the loop; the claim takes `criteria_slug` and the criterion's topics and is written to `<entity-dir>/<criteria_slug>.md`. CLI: `dr draft --criterion <slug> --entity <ref>`. |
 | **Forced rerun** | Re-run an existing claim's stored `statement` and write back to the same path, keeping `criteria_slug`. CLI: `dr draft --claim <ref> --force`. |
 | **Attach a criterion** | Add a new criterion to `research/templates.yaml` from an ad hoc draft and set the draft's `criteria_slug`. Runs no pipeline agent and moves no file. CLI: `dr draft --claim <ref> --criterion <new-slug>`. |
+| **Restatement** | The ranked candidate statements the Restater writes into a weak or tie-broken draft's sidecar (the `restatement` block): each carries the verdict the pool would give it. The original stays as drafted. A pick is recorded as `restatement.picked`; approving or archiving the original removes the block. |
+| **Restated claim** | A new ad hoc claim run from a picked candidate with `dr draft --restates <claim-ref> --pick <n>`, linked to the original by the sidecar key `restates:`. It is a second run and needs its own sign-off. |
 | **Reassess** | Re-run the Evaluator against a published claim's current sources to flag verdicts that may no longer hold. CLI: `dr step-audit` (`dr reassess` is a hidden deprecated alias). |
 | **Lint** | Static content checks (no LLM, no network): missing required fields, orphaned claims, stale `next_recheck_due`. CLI: `dr lint`. Backed by `pipeline/linter/`. |
 | **Review** | Record human sign-off in the audit sidecar; optionally flip status. `dr review` (record only); `dr review --approve` (draft → published); `dr review --archive` (published → archived; also accepts blocked → archived). Every mode needs a person at a terminal: stdin must be a tty and the claim slug is typed back before the write. |

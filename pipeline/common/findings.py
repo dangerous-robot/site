@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 # The steps of a claim run, in run order. ``restate`` belongs to the restater
-# (not built yet); ``write`` is the writer after the loop.
+# (``loop/restater/``); ``write`` is the writer after the loop.
 STEPS: tuple[str, ...] = ("research", "ingest", "analyse", "evaluate", "tiebreak", "restate", "write")
 RULES: tuple[str, ...] = ("flaw-retry", "transport-retry", "config-fatal", "half-claim", "tiebreaker", "replay")
 OUTCOMES: tuple[str, ...] = ("recovered", "abandoned", "split", "half-claim", "partial")

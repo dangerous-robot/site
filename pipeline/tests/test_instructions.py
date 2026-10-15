@@ -65,3 +65,12 @@ class TestAgentInstructionsWiring:
         assert (agent_dir / "instructions.md").exists()
         expected = load_instructions(agent_dir, common("verdict-scale.md"))
         assert tiebreaker_agent._system_prompts[0] == expected
+
+    def test_restater_loads_instructions(self):
+        """RE-AU (Restate inside the loop): the restater uses the same layout, with the verdict scale appended."""
+        from common.instructions import common
+        from loop.restater.agent import restater_agent
+        agent_dir = Path(__file__).resolve().parent.parent / "loop" / "restater"
+        assert (agent_dir / "instructions.md").exists()
+        expected = load_instructions(agent_dir, common("verdict-scale.md"))
+        assert restater_agent._system_prompts[0] == expected

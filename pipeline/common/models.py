@@ -69,13 +69,14 @@ async def _log_infomaniak_response(response: httpx.Response) -> None:
         )
 
 
-AgentName = Literal["researcher", "analyst", "auditor", "ingestor", "tiebreaker"]
+AgentName = Literal["researcher", "analyst", "auditor", "ingestor", "tiebreaker", "restater"]
 # Canonical iteration order for the agents that participate in a single
-# claim verification (the tie-breaker runs only on a verdict disagreement).
+# claim verification (the tie-breaker runs only on a verdict disagreement,
+# the restater only on a weak or tie-broken verdict).
 # Used by VerifyConfig.model_for and CLI helpers that enumerate per-agent
 # overrides; adding an agent means editing this tuple and the matching
 # VerifyConfig fields.
-AGENT_NAMES: tuple[AgentName, ...] = ("researcher", "analyst", "auditor", "ingestor", "tiebreaker")
+AGENT_NAMES: tuple[AgentName, ...] = ("researcher", "analyst", "auditor", "ingestor", "tiebreaker", "restater")
 
 
 class Verdict(str, Enum):
@@ -206,7 +207,7 @@ class VerdictSeverity(str, Enum):
 DEFAULT_MODEL = "greenpt:gpt-oss-120b"
 
 
-FailureStep = Literal["research", "ingest", "analyst", "auditor", "tiebreaker"]
+FailureStep = Literal["research", "ingest", "analyst", "auditor", "tiebreaker", "restater"]
 
 
 @dataclass

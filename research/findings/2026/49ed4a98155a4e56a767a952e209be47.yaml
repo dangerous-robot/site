@@ -1,0 +1,36 @@
+run_id: 49ed4a98155a4e56a767a952e209be47
+date: 2026-10-14
+command: dr draft
+claim_spec:
+  statement: A typical text prompt to Gemini or ChatGPT uses about a third of a watt-hour
+    of electricity, a couple of minutes of an LED bulb.
+  entity: subjects/generative-ai
+  criteria_slug: null
+  topics: []
+  grading_rule: null
+claim_ref: subjects/generative-ai/a-typical-text-prompt-to-gemini-or-chatgpt-uses-about-a-third-of-a-watt-hour-of-electricity-a-couple-of-minutes-of-an-led-bulb
+config:
+  max_sources: 8
+  candidate_pool_size: 32
+  max_initial_queries: 7
+  search_backend: tavily
+  research_origins:
+  - tavily
+  - arxiv
+  model: greenpt:gpt-oss-120b
+  skip_wayback: false
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+step: tiebreak
+rule: tiebreaker
+error:
+  error_type: verdict_split
+  message: analyst mostly-true, evaluator true, tie-breaker mostly-true
+attempts: 1
+outcome: split
+retries: []
+closed: null

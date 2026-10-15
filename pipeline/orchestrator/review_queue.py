@@ -45,6 +45,9 @@ class QueueItem:
     seo_title: str           # short title for SERP (empty if not yet written)
     previous_verdict: str = ""      # published verdict before a pending refresh ("" if none)
     previous_reviewed_at: str = ""  # sign-off date of that published version
+    restatement: dict | None = None  # the sidecar's restatement block, when one was written
+    # Run id of the run's ``partial`` restate finding, when the restater failed; else "".
+    restatement_unavailable: str = ""
 
 
 def _slug_for(claim_path: Path, claims_root: Path) -> str:
@@ -52,8 +55,27 @@ def _slug_for(claim_path: Path, claims_root: Path) -> str:
     return str(rel).replace("\\", "/")
 
 
-def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueItem | None:
-    """Return a QueueItem if `claim_path` belongs in the publication queue, else None."""
+def _partial_restate_runs(repo_root: Path) -> set[str]:
+    """Run ids of every finding, open or closed, whose restater failed after the verdict settled."""
+    from orchestrator.persistence import load_findings
+
+    return {
+        f.run_id for f in load_findings(repo_root, include_closed=True)
+        if f.step == "restate" and f.outcome == "partial"
+    }
+
+
+def _build_item(
+    claim_path: Path,
+    claims_root: Path,
+    repo_root: Path,
+    partial_restate_runs: set[str] | None = None,
+) -> QueueItem | None:
+    """Return a QueueItem if `claim_path` belongs in the publication queue, else None.
+
+    ``partial_restate_runs`` are the run ids from ``_partial_restate_runs``;
+    a claim whose sidecar names one of them gets ``restatement_unavailable``.
+    """
     try:
         fm, _ = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
     except Exception:
@@ -93,6 +115,9 @@ def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueIt
         # branch is mostly hit by claims awaiting their next refresh.
         sources_ingested = sources_count
     rel_path = claim_path.relative_to(repo_root)
+    restatement = sidecar.get("restatement") if isinstance(sidecar.get("restatement"), dict) else None
+    run_id = str((sidecar.get("pipeline_run") or {}).get("run_id") or "")
+    unavailable = run_id if run_id and run_id in (partial_restate_runs or set()) else ""
 
     return QueueItem(
         claim_slug=_slug_for(claim_path, claims_root),
@@ -110,6 +135,8 @@ def _build_item(claim_path: Path, claims_root: Path, repo_root: Path) -> QueueIt
         seo_title=str(fm.get("seo_title") or ""),
         previous_verdict=str(previous.get("verdict") or ""),
         previous_reviewed_at=str(previous.get("reviewed_at") or ""),
+        restatement=restatement,
+        restatement_unavailable=unavailable,
     )
 
 
@@ -121,8 +148,9 @@ def find_publication_queue(
     """Return all draft claims with a sidecar but no human review yet."""
     claims_root = repo_root / "research" / "claims"
     items: list[QueueItem] = []
+    partial_runs = _partial_restate_runs(repo_root)
     for path in list_claims(repo_root, entity=filter_entity):
-        item = _build_item(path, claims_root, repo_root)
+        item = _build_item(path, claims_root, repo_root, partial_runs)
         if item is not None:
             items.append(item)
     return items

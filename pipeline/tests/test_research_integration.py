@@ -118,7 +118,8 @@ def test_draft_writes_sources_claim_and_sidecar_in_order(tmp_path, monkeypatch) 
     keys = list(sidecar)
     assert keys.index("sub_questions") == keys.index("research") + 1
     assert keys.index("sub_questions") == keys.index("sources_consulted") - 1
-    assert sidecar["pipeline_run"]["agents"] == ["researcher", "ingestor", "analyst", "auditor"]
+    # The harness verdict is mixed, so the restater runs (RE-AU, Restate inside the loop).
+    assert sidecar["pipeline_run"]["agents"] == ["researcher", "ingestor", "analyst", "auditor", "restater"]
     assert isinstance(sidecar["pipeline_run"]["run_id"], str) and len(sidecar["pipeline_run"]["run_id"]) == 32
     assert sidecar["audit"]["auditor_verdict"] == "mixed"
     assert sidecar["human_review"]["reviewed_at"] is None

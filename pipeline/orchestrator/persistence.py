@@ -812,6 +812,27 @@ def clear_audit(claim_path: Path) -> None:
     _edit_sidecar(claim_path, edit)
 
 
+def record_restatement_pick(claim_path: Path, n: int) -> None:
+    """Set ``restatement.picked`` to ``n`` in the claim's sidecar.
+
+    Raises ``ValueError`` when the sidecar has no ``restatement`` block or no
+    candidate has rank ``n``; the sidecar is then left unchanged.
+    """
+    def edit(data: dict) -> bool:
+        block = data.get("restatement")
+        if not isinstance(block, dict):
+            raise ValueError(f"no restatement block in {sidecar_path_for(claim_path)}")
+        ranks = [c.get("rank") for c in block.get("candidates") or [] if isinstance(c, dict)]
+        if n not in ranks:
+            raise ValueError(f"no candidate {n} in {sidecar_path_for(claim_path)} ({len(ranks)} candidates)")
+        block["picked"] = n
+        return True
+
+    if not sidecar_path_for(claim_path).exists():
+        raise ValueError(f"no sidecar for {claim_path}")
+    _edit_sidecar(claim_path, edit)
+
+
 def mark_forced_rewrite(
     claim_path: Path,
     current_source_ids: list[str] | None,
@@ -858,6 +879,7 @@ def mark_forced_rewrite(
 _SIDECAR_KEYS = frozenset({
     "schema_version", "pipeline_run", "models_used", "research", "sub_questions",
     "sources_consulted", "refresh", "audit", "human_review", "analyst_record",
+    "restatement",
 })
 
 
@@ -878,6 +900,8 @@ def _write_audit_sidecar(
     level_clamp: str | None = None,
     keep_other_models: bool = False,
     run_id: str | None = None,
+    restatement: dict | None = None,
+    restates: str | None = None,
 ) -> Path:
     """Write the .audit.yaml sidecar alongside a claim file.
 
@@ -902,9 +926,18 @@ def _write_audit_sidecar(
     ``run_id`` is written as ``pipeline_run.run_id``, so the sidecar names the
     run that wrote it.
 
+    ``restatement`` is the run's ``restatement`` block, written after
+    ``analyst_record``. The key is this function's, so a write that passes
+    none drops an existing block: a caller that rewrites the sidecar without
+    a new full run passes the existing block to keep it.
+
+    ``restates`` (the ref of the claim this one restates) is not this
+    function's key: it is carried forward like any other, and a passed value
+    replaces the carried one.
+
     Every other top-level key of the existing sidecar (one this function does
-    not write, such as a key a later tool added) is carried forward after
-    ``analyst_record``.
+    not write, such as a key a later tool added, or ``restates``) is carried
+    forward after ``analyst_record`` and ``restatement``.
 
     Returns the sidecar path.
     """
@@ -1042,7 +1075,11 @@ def _write_audit_sidecar(
     sidecar_data["human_review"] = human_review
     if analyst_record is not None:
         sidecar_data["analyst_record"] = analyst_record
+    if restatement is not None:
+        sidecar_data["restatement"] = restatement
     sidecar_data.update(carried)
+    if restates is not None:
+        sidecar_data["restates"] = restates
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),
@@ -1142,6 +1179,7 @@ def write_claim_run(
     ran_at: datetime.datetime | None = None,
     status: str = "draft",
     create_entity: bool = False,
+    restates: str | None = None,
 ) -> Path:
     """Write one claim run to disk, in the one write order; return the claim path.
 
@@ -1165,6 +1203,11 @@ def write_claim_run(
     inside the loop, after the cited filter and before the Evaluator; its
     note (``result.level_clamp``) is recorded here in
     ``pipeline_run.level_clamp``.
+
+    The sidecar's ``restatement`` block is the run's (``result.restatement``):
+    a run that did not restate drops an older block, and the restater is
+    listed among the agents only when its block is written. ``restates`` is
+    the ref of the claim this run restates (``dr draft --restates``).
 
     ``target`` is the claim file path; it defaults to the entity's claim
     directory plus ``claim_slug``. Raises ``ValueError`` for a run with no
@@ -1242,6 +1285,8 @@ def write_claim_run(
     agents_run = ["researcher", "ingestor", "analyst", "auditor"]
     if settled is not None and settled.tiebreaker_verdict is not None:
         agents_run.append("tiebreaker")
+    if result.restatement is not None:
+        agents_run.append("restater")
     _write_audit_sidecar(
         claim_path=written,
         comparison=result.consistency,
@@ -1266,6 +1311,8 @@ def write_claim_run(
         },
         level_clamp=level_clamp,
         run_id=config.run_id,
+        restatement=result.restatement,
+        restates=restates,
     )
     return written
 
@@ -1285,7 +1332,8 @@ def write_evaluator_rerun(
     other agents' ``models_used`` are carried forward from the existing
     sidecar. A source the existing sidecar does not list gets a minimal
     entry. When the rerun's disagreement went to the tie-breaker, it is
-    recorded beside the Evaluator.
+    recorded beside the Evaluator. The ``restatement`` block, pick included,
+    is carried unchanged: a rerun never restates.
     """
     sidecar_path = sidecar_path_for(claim_path)
     existing: dict = {}
@@ -1324,6 +1372,7 @@ def write_evaluator_rerun(
         level_clamp=(existing.get("pipeline_run") or {}).get("level_clamp"),
         keep_other_models=True,
         run_id=config.run_id,
+        restatement=existing.get("restatement"),
     )
 
 
@@ -1488,11 +1537,16 @@ def load_findings(repo_root: Path, include_closed: bool = False) -> list["Findin
 
     out: list[Finding] = []
     for path in _finding_files(repo_root):
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
+        # One bad file must not stop `dr findings` or `dr review-queue`.
+        try:
+            data = yaml.safe_load(path.read_text(encoding="utf-8"))
+            finding = Finding.from_dict(data) if isinstance(data, dict) else None
+        except (OSError, yaml.YAMLError, KeyError, TypeError, ValueError) as exc:
+            logger.warning("Skipped unreadable finding: %s (%s)", path, exc)
+            continue
+        if finding is None:
             logger.warning("Skipped unreadable finding: %s", path)
             continue
-        finding = Finding.from_dict(data)
         if finding.closed is None or include_closed:
             out.append(finding)
     return out

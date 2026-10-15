@@ -1,0 +1,199 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-10-10T22:57:39.209391+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  queries:
+  - US data centers renewable energy certification sustainability reports
+  - RE100 certified US data centers
+  - LEED data centers 50+ renewable energy percentage
+  - US data centers ESG renewable energy metrics
+  - Google Cloud US data centers renewable energy commitments
+  - Microsoft Azure 50% renewable energy data centers
+  - EPA ENERGY STAR certified data centers renewable energy share
+  planner_rationale: The subquestions cover first-party declarations (sq1), third-party
+    verification (sq2), and technical certification benchmarks (sq3) to comprehensively
+    assess the claim about US data centers.
+  candidates_seen: 61
+  urls_kept: 26
+  urls_dropped: 34
+  scorer_rationale: |-
+    **Scoring Rationale:**
+
+    1. **sq1**: Required first-party sources (e.g., sustainability reports, website claims) explicitly detailing renewable energy usage for US data centers. Many candidates addressed this, including Iron Mountain, Google, Microsoft, Aligned, and CyrusOne, which explicitly mention projects (e.g., Iron Mountain’s 5 US Energy Star-certified sites, Google’s full renewable energy match).
+
+       - **Kept high-confidence URLs**:
+         - [`https://www.ironmountain.com/data-centers/sustainability`](https://www.ironmountain.com/data-centers/sustainability) (Energy Star certificates),
+         - [`https://datacenters.google/operating-sustainably`](https://datacenters.google/operating-sustainably),
+         - [`https://datacenters.google/energy`](https://datacenters.google/energy),
+         - [`https://datacenters.microsoft.com/sustainability/efficiency`](https://datacenters.microsoft.com/sustainability/efficiency),
+         - [`https://publicpolicy.google/energy`](https://publicpolicy.google/energy).
+
+    2. **sq2**: Required third-party verification (e.g., GRESB, ESG databases, or ESG reports) listing US data centers by name. Only **GRESB** and **Energy Star’s enrollment data sources** theoretically could meet this requirement, but the abstractness of GRESB’s content and the lack of a list of names in each candidate snippet dropped this route. GretaTechMedia’s and Data Center Magazine’s lack of granularity (e.g., no exact numbers/centers) also crowds out their relevance. `Uptime Institute` and `Green Building Initiative` mentioned third-party certifications but did not list centers by name or count.
+
+       - Rationale: Only `https://uptimeinstitute.com/renewable-energy-for-data-centers` scored **2/3** for SQ2 due to vague references to databases. All others dropped.
+
+    3. **sq3**: Required specific certifications (e.g., LEED, RE100, EPA ENERGY STAR) tied to 50%+ renewable energy adoption, **plus counts of compliant facilities**.
+       - **High-confidence URLs**:
+         - [`https://aligneddc.com/sustainability`](https://aligneddc.com/sustainability) (100% renewable-matched energy, meets 50% threshold),
+         - [`https://datacentermagazine.com/top10/top-10-data-centres-using-100-renewable-energy`](https://datacentermagazine.com/top10/top-10-data-centres-using-100-renewable-energy) (lists certifications),
+         - [`https://www.socomec.us/en-us/solutions/business/data-centers/green-data-centers-balancing-performance-and-environmental-resposibility`](https://www.socomec.us/en-us/solutions/business/data-centers/green-data-centers-balancing-performance-and-environmental-resposibility) (EXPLICITLY cited LEED certifications for data centers),
+         - [`https://publicpolicy.google/energy`](https://publicpolicy.google/energy) (Numerical commitments via "
+  urls_after_blocklist: 26
+sub_questions:
+- id: sq1
+  question: Which US data centers hold certifications for running on 50% or greater
+    renewable energy, according to first-party declarations (e.g., sustainability
+    reports, website claims)?
+  rationale: Identifies self-reported first-party claims by US data centers regarding
+    renewable energy usage, which directly addresses the claim's threshold.
+  queries:
+  - US data centers renewable energy certification sustainability reports
+  - Google Cloud US data centers renewable energy commitments
+  - Microsoft Azure 50% renewable energy data centers
+  citations:
+  - 2026/sustainability
+  - 2026/energy
+  - 2026/efficiency
+  - 2026/ironmountain-sustainability
+  - 2026/renewable-energy-for-data-centers
+- id: sq2
+  question: How many US data centers are listed in third-party databases (e.g., ESG
+    ratings, sustainability indices) as powered by 50%+ renewable energy?
+  rationale: Third-party databases like ESG aggregators provide independent verification
+    of renewable energy claims, covering transparency beyond self-reports.
+  queries:
+  - RE100 certified US data centers
+  - US data centers ESG renewable energy metrics
+  citations:
+  - 2026/renewable-energy-for-data-centers
+- id: sq3
+  question: Are there technical or operational standards (e.g., LEED, RE100, EPA ENERGY
+    STAR) that certify US data centers meeting 50%+ renewable energy criteria, and
+    how many comply?
+  rationale: Certifications like RE100 or LEED Energy certify renewable energy adoption,
+    providing a concrete metric to validate the claim.
+  queries:
+  - LEED data centers 50+ renewable energy percentage
+  - EPA ENERGY STAR certified data centers renewable energy share
+  citations:
+  - 2026/clean-energy-resources-meet-data-center-electricity-demand
+  - 2026/datacenters
+  - 2021/data-center-sustainability-beyond-ppas
+sources_consulted:
+- id: 2026/clean-energy-resources-meet-data-center-electricity-demand
+  url: https://www.energy.gov/oe/clean-energy-resources-meet-data-center-electricity-demand
+  title: Clean Energy Resources to Meet Data Center Electricity Demand
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers renewable energy certification sustainability reports
+- id: 2026/sustainability
+  url: https://datacenters.microsoft.com/sustainability
+  title: Microsoft Datacenter Sustainability
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Microsoft Azure 50% renewable energy data centers
+- id: 2026/energy
+  url: https://datacenters.google/energy
+  title: Google's Energy Innovations and Initiatives
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Cloud US data centers renewable energy commitments
+- id: 2026/efficiency
+  url: https://datacenters.microsoft.com/sustainability/efficiency
+  title: Measuring Energy and Water Efficiency for Microsoft Datacenters
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Microsoft Azure 50% renewable energy data centers
+- id: 2026/ironmountain-sustainability
+  url: https://www.ironmountain.com/data-centers/sustainability
+  title: Sustainability & Green Data Centers at Iron Mountain
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers renewable energy certification sustainability reports
+- id: 2026/datacenters
+  url: https://thegbi.org/assessment-certification/green-globes-certification/top-building-types/datacenters
+  title: Green Globes Certification for Data Centers
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: US data centers renewable energy certification sustainability reports
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/renewable-energy-for-data-centers
+  url: https://uptimeinstitute.com/renewable-energy-for-data-centers
+  title: Renewable Energy for Data Centers
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: US data centers renewable energy certification sustainability reports
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2021/data-center-sustainability-beyond-ppas
+  url: https://www.projectfinance.law/publications/2021/june/data-center-sustainability-beyond-ppas
+  title: 'Data Center Sustainability: Beyond PPAs'
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers renewable energy certification sustainability reports
+audit:
+  analyst_verdict: unverified
+  auditor_verdict: 'true'
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Review of all eight sources shows they discuss renewable‑energy
+    goals, certifications (LEED, Green Globes, BREEAM) and industry trends, but none
+    present a specific tally of U.S. data‑center facilities that are certified to
+    operate on at least 50% renewable energy. The narrative correctly notes the absence
+    of such a quantitative count, and the sources do not contradict that observation.
+  evidence_gaps: []
+  needs_review_reasons:
+  - verdict disagreement
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: There are fewer than 10 US data centers that are certified to run on 50%
+    or greater renewable energy power sources.
+  seo_title: Under 10 US data centers 50%+ renewable
+  verdict: unverified
+  takeaway: ''
+  cap_rationale: null

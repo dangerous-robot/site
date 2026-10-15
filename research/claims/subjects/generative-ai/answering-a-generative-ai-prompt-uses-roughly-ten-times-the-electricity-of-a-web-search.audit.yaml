@@ -1,161 +1,153 @@
 schema_version: 1
 pipeline_run:
-  ran_at: '2026-10-11T02:58:31.642364+00:00'
+  ran_at: '2026-10-15T03:08:21.435697+00:00'
   model: greenpt:gpt-oss-120b
   agents:
   - researcher
   - ingestor
   - analyst
   - auditor
+  - restater
+  run_id: e7efedd5082f4391b5d44c67bf906425
 models_used:
   researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
   analyst: greenpt:gpt-oss-120b
   auditor: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
 research:
   mode: decomposed
   tool_outcomes: []
   queries:
-  - energy cost per generative AI prompt research paper
-  - electricity usage web search measurement
-  - generative AI inference vs search energy efficiency
-  - OpenAI energy transparency report
-  - Mistral AI sustainability disclosures energy use
-  - academic study generative AI electricity consumption web comparison
-  - Generative AI prompt energy consumption benchmarks
-  planner_rationale: The sub-questions cover the claim by addressing energy estimates
-    for Generative AI prompts, baseline energy usage for web searches, technical differences
-    in energy efficiency, and industry-specific transparency reports, ensuring all
-    axes of the claim are addressed.
-  candidates_seen: 57
-  urls_kept: 17
-  urls_dropped: 46
-  scorer_rationale: "**Scoring Rationale:**\n\n### Kept Candidates:\n1. **Direct Energy\
-    \ Estimates for Generative AI Prompts (sq1):**\n   - The candidates reproducibly\
-    \ report per-prompt energy consumption for generative AI (e.g., Google’s 0.24\
-    \ Wh for Gemini, OpenAI’s 0.34 Wh, and academic benchmarks ranging from 0.07 Wh–23.8\
-    \ Wh like in [arXiv:2505.09598](https://arxiv.org/html/2505.09598v1)). Decisions\
-    \ were based on publisher quality (primary or secondary) and explicit mention\
-    \ of energy values.\n\n2. **Energy Consumption for Web Searches (sq2):**\n   -\
-    \ The study [ceur-ws.org/Vol-1404/paper_20.pdf](https://ceur-ws.org/Vol-1404/paper_20.pdf)\
-    \ provides empirical query energy for search engines (≤0.00004 kWh per query),\
-    \ and [arXiv:2407.16894v2](https://arxiv.org/html/2407.16894v2) contrasts AI prompts\
-    \ with AI-augmented summary queries, citing energy differences. Kanoppi’s [comparison](https://kanoppi.co/search-engines-vs-ai-energy-consumption-compared)\
-    \ aligns with the 10x claim.\n\n3. **Technical Efficiency Differences (sq3):**\n\
-    \   - Most papers converge on the efficiency gap between AI inference and search\
-    \ (e.g., [arXiv:2505.09598](https://arxiv.org/html/2505.09598v1)’s 200x gap for\
-    \ reasoning models, [SciDirect’s Green Prompting paper](https://www.sciencedirect.com/science/article/pii/S2666498426000293)\
-    \ showing 32–48% reductions via optimization). The [Microsoft study](https://www.microsoft.com/en-us/research/publication/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute)\
-    \ highlights batching’s 45–85% energy reduction potential.\n\n4. **Third-Party\
-    \ Transparency Disclosures (sq4):**\n   - Google, OpenAI, and Mistral’s reports\
-    \ are kept for **publicly disclosed** per-prompt energy counts (e.g., Altman’s\
-    \ 0.34 Wh for ChatGPT, Mistral’s Le Chat 1.14 gCO₂e for 400-tokens). Reddit/forum\
-    \ links were dropped as they lack primary provenance.\n\n\n### Dropped Candidates:\n\
-    1. **No Specific Claim Alignment:**\n   - Content deviated entirely (e.g., tech\
-    \ finder for browser energy, Duke/EnergySage’s home-meter promotions, or unsupported\
-    \ forum posts like Reddit/EverythingScience/AIWars).\n   - IEA and MIT Technology\
-    \ Review duplicated kept sources without critical new data.\n   - EIA’s intent\
-    \ (metrics for consumers) conflicted with the *per-query* focus.\n\n2. **Lack\
-    \ of Per-Promt/Per-Query Data:**\n   - Broader analyses (e.g., training energy,\
-    \ data center growth) excluded due to **non-addressing** of sub-question-specific\
-    \ figures.\n   - Examples: OpenAI memoranda, SM Energy’s sustainability reports.<"
-  urls_after_blocklist: 16
+  - generative AI energy consumption per prompt
+  - comparative energy use AI vs web search research
+  - third-party benchmarks AI electricity usage
+  - energy consumption AI generative models policy reports
+  - OpenAI energy usage documentation
+  - energy estimates Google generative AI responses
+  - retracted claims AI energy consumption disputes
+  planner_rationale: 'The sub-questions cover the claim from multiple angles: published
+    research (sq1), third-party benchmarks (sq2), first-party disclosures (sq3), counter-evidence
+    (sq4), and technical mechanisms like hosting providers (sq5). This ensures a comprehensive
+    assessment of the claim.'
+  candidates_seen: 53
+  urls_kept: 23
+  urls_dropped: 16
+  scorer_rationale: "**Primary Relevance Breakdown:**\n\n1. **sq1 (Research papers\
+    \ quantifying energy consumption comparisons):**\n   - Only **ScienceDirect's\
+    \ paper** (URL: [link](https://www.sciencedirect.com/science/article/pii/S2666498426000293))\
+    \ explicitly presents empirical data quantifying the energy differential between\
+    \ AI responses and baseline requests. Scored **5** due to direct empirical grounding.\n\
+    \n2. **sq2 (Third-party energy benchmarks supporting the 10x claim):**\n   - Highest\
+    \ scores (4+): **IEEE Spectrum** ([link](https://spectrum.ieee.org/ai-energy-use)),\
+    \ **NPR** ([link](https://www.npr.org/2024/07/12/g-s1-9545/...)), **Kanoppi**\
+    \ ([link](https://kanoppi.co/search-engines-vs-ai-energy-consumption-compared)),\
+    \ **Reddit (EverythingScience)** (score 2; dropped due to forum), **Sustainability\
+    \ Magazine** ([link](https://sustainabilitymag.com/news/google-ai-search-uses-10x-more-energy...)),\
+    \ **IEA Reports** ([link](https://www.iea.org/reports/energy-and-ai)), **Brookings**\
+    \ ([link](https://www.brookings.edu/articles/global-energy-demands-within-the-ai-regulatory-landscape)),\
+    \ **LinkedIn (Mark Butcher)** ([link](https://www.linkedin.com/posts/markbutcher_chatgpt-energy-per-prompt...)),\
+    \ **Scientific American** ([link](https://www.scientificamerican.com/article/what-do-googles-ai-answers-cost-the-environment)).\n\
+    \   - Scored 3: **National Centre for AI** (generic statistics).\n   - Lower scores\
+    \ (<3): Forum-focused or uncredentialed tertiary sources (e.g., Substack comments)\
+    \ were dropped.\n\n3. **sq3 (Provider Technical Documents):**\n   - **Google Cloud\
+    \ Blog** ([link](https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference))\
+    \ (score 5) and **OpenAI User Energy Dashboard** ([link](https://community.openai.com/t/users-energy-usage-dashboard/1254737))\
+    \ (score 4) are gold-standard first-party sources. **MIT Tech Review** ([link](https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy))\
+    \ and **Epoch AI** ([link](https://epoch.ai/gradient-updates/how-much-energy-does-chatgpt-use))\
+    \ (score 3) also qualify as technically robust.\n\n4. **sq4 (Dispute/correction\
+    \ statements):**\n   - **arXiv paper** ([link](https://arxiv.org/html/2407.16894v2)),\
+    \ **ITIF report** ([link](https://itif.org/publications/2024/01/29/rethinking-concerns-about-ai-energy-use)),\
+    \ **TechPolicy.Press** ([link](https://techpolicy.press/the-great-green-ai-hoax-machine)),\
+    \ and **IEA reports** ([links](https://www.iea.org/reports/energy-and-ai)) scored\
+    \ 4 for discussing contextual adjustments (e.g., inflated claims, updated estimates).\n\
+    \n5. **sq5 (Cloud provider/data center measurement practices):**\n   - **Google\
+    \ Cloud Blog** (first-party) and **Brookings** (regulatory) scored highest (5/4)\
+    \ for operational detail. **Kanoppi/Youtube** ([link](https://www.youtube.com/watch?v=XqAW9BM9Ly8)),\
+    \ **NPR**, and **Michigan Engineering** ([link](https://news.engin.umich.edu/2026/02/ai-energy-use-new-tools-show-...))\
+    \ complement with scaling/consumption comparisons.\n\n**Key Drops:**\n- Forum\
+    \ content (**Reddit, substack.com/**), tertiary advocacy (**Hannah Ritchie’s comments**),\
+    \ and repetitive duplicates (e.g., forum recaps of benchmarked reports).\n- Excluded\
+    \ non-primary ‘AI’ data (e.g., creative visual generation, off-topic energy debates).\n\
+    \n**Outliers:**\nThe **ScienceDirect paper**唯一提供了直接的**订阅工程量评估**数据，远超过常规协议值。Google\
+    \ Cloud Blog（第一代能耗数据）和Kanopping公版表均读取了科学社区察觉期。"
+  urls_after_blocklist: 22
 sub_questions:
 - id: sq1
-  question: What are the reported energy consumption estimates for processing a single
-    generative AI prompt, cited by primary sources like research papers or lab publications?
-  rationale: This targets the entity's (Generative AI) first-party or authoritative
-    third-party estimates of energy usage per prompt.
+  question: What published research papers quantify the energy consumption of generative
+    AI prompt responses compared to web searches?
+  rationale: Research papers often provide empirically grounded comparisons between
+    AI workloads and baseline operations like web searches.
+  kind: coverage
   queries:
-  - energy cost per generative AI prompt research paper
-  - Generative AI prompt energy consumption benchmarks
+  - generative AI energy consumption per prompt
+  - comparative energy use AI vs web search research
+  citations:
+  - 2026/s2666498426000293
+  snippet_only: []
+- id: sq2
+  question: Do third-party energy consumption benchmarks (e.g., from ML research labs
+    or tech policy reports) support the claim of a 10x electricity difference?
+  rationale: Third-party benchmarks are objective and can validate or challenge the
+    claim without bias from a single source.
+  kind: coverage
+  queries:
+  - third-party benchmarks AI electricity usage
+  - energy consumption AI generative models policy reports
   citations:
   - 2026/ai-energy-use
-  - 2025/250509598v2
-  - 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
-  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
-  - 2025/measuring-the-environmental-impact-of-ai-inference
-  - 2025/google-gemini-ai-energy
-  - 2026/the-true-price-of-every-chatgpt-prompt
-- id: sq2
-  question: How much electricity does a typical web search consume, according to data
-    center research (e.g., Google, Microsoft, or academic studies)?
-  rationale: Establishes the baseline comparison (web search energy usage) for the
-    claim.
-  queries:
-  - electricity usage web search measurement
-  citations:
-  - 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
+  - 2024/240716894v2
+  - 2025/energy-demand-from-ai
+  - 2025/energy-and-ai
+  - 2024/what-do-googles-ai-answers-cost-the-environment
+  - 2024/rethinking-concerns-about-ai-energy-use
+  - 2026/search-engines-vs-ai-energy-consumption-compared
+  snippet_only: []
 - id: sq3
-  question: Are there measurable differences in energy efficiency between generative
-    AI inference and traditional search engine queries, based on technical papers
-    or benchmarking studies?
-  rationale: Explores the underlying technical mechanism driving energy differences
-    between the two processes.
+  question: Which technical documents or whitepapers from generative AI providers
+    (e.g., OpenAI, Google) disclose energy usage estimates?
+  rationale: First-party sources may explicitly state or imply energy usage for their
+    systems, aiding direct verification.
+  kind: coverage
   queries:
-  - generative AI inference vs search energy efficiency
-  - academic study generative AI electricity consumption web comparison
+  - OpenAI energy usage documentation
+  - energy estimates Google generative AI responses
   citations:
-  - 2025/250509598v2
-  - 2026/s2542435126001145
-  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
-- id: sq4
-  question: Do transparency reports or sustainability disclosures from major Generative
-    AI providers (e.g., OpenAI, Mistral) quantify the energy cost of prompt responses
-    vs. other AI tasks?
-  rationale: Checks for industry-specific disclosures that directly address the claim's
-    comparison.
-  queries:
-  - OpenAI energy transparency report
-  - Mistral AI sustainability disclosures energy use
-  citations:
-  - 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
-  - 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
   - 2025/measuring-the-environmental-impact-of-ai-inference
   - 2025/google-gemini-ai-energy
+  - 2026/ai-energy-consumption
+  - 2026/ai-energy-use-new-tools-show-which-model-consumes-the-most-power-and-why
+  snippet_only: []
+- id: sq4
+  question: Are there any dispute, correction, or updated statements from energy research
+    groups about earlier claims of high AI energy consumption?
+  rationale: Counter-evidence queries ensure we identify retraction or conflicting
+    findings that would invalidate the claim.
+  kind: counter-evidence
+  queries:
+  - retracted claims AI energy consumption disputes
+  citations:
+  - 2024/240716894v2
+  - 2025/energy-demand-from-ai
+  - 2024/what-do-googles-ai-answers-cost-the-environment
+  - 2024/rethinking-concerns-about-ai-energy-use
+  snippet_only:
+  - 2025/energy-and-ai
+- id: sq5
+  question: How do cloud providers or data centers measure the energy consumption
+    of AI workloads versus traditional web queries?
+  rationale: Underlying technical mechanisms, such as hosting provider practices,
+    provide granular insights into energy differentials.
+  kind: coverage
+  queries: []
+  citations:
+  - 2025/measuring-the-environmental-impact-of-ai-inference
+  - 2025/energy-demand-from-ai
+  - 2025/energy-and-ai
+  - 2026/ai-energy-use-new-tools-show-which-model-consumes-the-most-power-and-why
+  - 2026/search-engines-vs-ai-energy-consumption-compared
+  snippet_only: []
 sources_consulted:
-- id: 2026/ai-energy-use
-  url: https://spectrum.ieee.org/ai-energy-use
-  title: The Hidden Behemoth Behind Every AI Answer
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: energy cost per generative AI prompt research paper
-- id: 2025/250509598v2
-  url: https://arxiv.org/html/2505.09598v1
-  title: How Hungry is AI? Benchmarking Energy, Water, and Carbon Footprint of LLM
-    Inference
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: energy cost per generative AI prompt research paper
-- id: 2025/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
-  url: https://blogs.dal.ca/openthink/the-hidden-cost-of-ai-conversations-understanding-llm-inference-energy-consumption
-  title: 'The Hidden Cost of AI Conversations: Understanding LLM Inference Energy
-    Consumption'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI inference vs search energy efficiency
-- id: 2026/s2542435126001145
-  url: https://www.sciencedirect.com/science/article/pii/S2542435126001145
-  title: Energy use of AI inference, efficiency pathways, and test-time scaling
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI inference vs search energy efficiency
-- id: 2025/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
-  url: https://www.microsoft.com/en-us/research/publication/energy-use-of-ai-inference-efficiency-pathways-and-test-time-compute
-  title: 'Energy Use of AI Inference: Efficiency Pathways and Test-Time Compute'
-  ingested: true
-  acquisition:
-    stage: research
-    origin: tavily
-    query: generative AI inference vs search energy efficiency
 - id: 2025/measuring-the-environmental-impact-of-ai-inference
   url: https://cloud.google.com/blog/products/infrastructure/measuring-the-environmental-impact-of-ai-inference
   title: How much energy does Google’s AI use? We did the math
@@ -163,47 +155,141 @@ sources_consulted:
   acquisition:
     stage: research
     origin: tavily
-    query: generative AI inference vs search energy efficiency
+    query: generative AI energy consumption per prompt
+- id: 2026/ai-energy-use
+  url: https://spectrum.ieee.org/ai-energy-use
+  title: The Hidden Behemoth Behind Every AI Answer
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: generative AI energy consumption per prompt
 - id: 2025/google-gemini-ai-energy
   url: https://www.technologyreview.com/2025/08/21/1122288/google-gemini-ai-energy
   title: Google Reveals Energy Use of Gemini AI Prompts
   ingested: true
-  archive:
-    status: found
   acquisition:
     stage: research
     origin: tavily
-    query: energy cost per generative AI prompt research paper
-- id: 2026/the-true-price-of-every-chatgpt-prompt
-  url: https://www.earthday.org/the-true-price-of-every-chatgpt-prompt
-  title: The True Price of Every ChatGPT Prompt
+    query: generative AI energy consumption per prompt
+- id: 2026/ai-energy-consumption
+  url: https://aimultiple.com/ai-energy-consumption
+  title: AI Energy Consumption Statistics
+  ingested: true
+  acquisition:
+    stage: research
+    origin: tavily
+    query: generative AI energy consumption per prompt
+- id: 2024/240716894v2
+  url: https://arxiv.org/html/2407.16894v2
+  title: Estimating the Increase in Emissions caused by AI-augmented Search
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: comparative energy use AI vs web search research
+- id: 2026/s2666498426000293
+  url: https://www.sciencedirect.com/science/article/pii/S2666498426000293
+  title: Green prompt engineering for sustainable generative AI
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: generative AI energy consumption per prompt
+- id: 2025/energy-demand-from-ai
+  url: https://www.iea.org/reports/energy-and-ai/energy-demand-from-ai
+  title: Energy Demand from AI
   ingested: true
   archive:
     status: found
   acquisition:
     stage: research
     origin: tavily
-    query: energy cost per generative AI prompt research paper
+    query: third-party benchmarks AI electricity usage
+- id: 2025/energy-and-ai
+  url: https://www.iea.org/reports/energy-and-ai
+  title: Energy and AI
+  ingested: true
+  archive:
+    status: found
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption AI generative models policy reports
+- id: 2026/ai-energy-use-new-tools-show-which-model-consumes-the-most-power-and-why
+  url: https://news.engin.umich.edu/2026/02/ai-energy-use-new-tools-show-which-model-consumes-the-most-power-and-why
+  title: 'AI Energy Use: New Tools Show Which Model Consumes the Most Power, and Why'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy consumption AI generative models policy reports
+- id: 2024/what-do-googles-ai-answers-cost-the-environment
+  url: https://www.scientificamerican.com/article/what-do-googles-ai-answers-cost-the-environment
+  title: What Do Google’s AI Answers Cost the Environment?
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: energy estimates Google generative AI responses
+- id: 2024/rethinking-concerns-about-ai-energy-use
+  url: https://itif.org/publications/2024/01/29/rethinking-concerns-about-ai-energy-use
+  title: Rethinking Concerns About AI’s Energy Use
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retracted claims AI energy consumption disputes
+- id: 2026/search-engines-vs-ai-energy-consumption-compared
+  url: https://kanoppi.co/search-engines-vs-ai-energy-consumption-compared
+  title: 'Search Engines vs AI: Energy Consumption Compared'
+  ingested: true
+  archive:
+    status: failed
+    error: archive.org TimeGate check failed (HTTP 429)
+  acquisition:
+    stage: research
+    origin: tavily
+    query: comparative energy use AI vs web search research
 audit:
-  analyst_verdict: unverified
-  auditor_verdict: 'true'
-  analyst_confidence: low
-  auditor_confidence: high
-  verdict_agrees: false
-  confidence_agrees: false
+  analyst_verdict: mixed
+  auditor_verdict: mixed
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
   needs_review: true
-  auditor_reasoning: All eight sources quantify the electricity consumption of a single
-    generative‑AI prompt, reporting figures between 0.24 and 0.34 Wh. None of these
-    sources include any measurement or estimate of the electricity used by a typical
-    web search. Therefore the narrative’s assertion that the web‑search baseline is
-    unaddressed in the provided evidence is accurate, and we indeed lack the data
-    to verify the ten‑times‑more claim.
+  auditor_reasoning: Source 4 (Kanoppi) explicitly reports a 10× higher electricity
+    use for a ChatGPT query versus a Google search, directly supporting the claim.
+    However, Source 1 (AIMultiple) reports a 4–5× multiplier, Source 3 (Scientific
+    American) cites a 30× increase, and Source 2 (arXiv) estimates a 60–70× increase.
+    These contradictory estimates mean the claim is only partially supported and could
+    mislead readers about the typical magnitude, leading to a mixed verdict.
   evidence_gaps:
-  - The claim about AI prompts using ~10× more electricity than a web search cannot
-    be evaluated because none of the supplied sources provide data on typical web‑search
-    energy use.
+  - Variability in AI models and search engines considered across sources; no single
+    source directly confirms a universal 10× factor.
+  - Methodological details of energy calculations differ and are not disclosed, limiting
+    comparability.
   needs_review_reasons:
-  - verdict disagreement
+  - 2+ evidence gaps
+  pipeline_verdict: mixed
+  pipeline_confidence: medium
+  rule_applied: agreed
 human_review:
   reviewed_at: null
   reviewer: null
@@ -211,8 +297,79 @@ human_review:
   pr_url: null
 analyst_record:
   title: Answering a generative AI prompt uses roughly ten times the electricity of
-    a web search
-  seo_title: AI prompt uses ~10× web search electricity
-  verdict: unverified
+    a web search.
+  seo_title: Gen AI prompts use ~10× power of search
+  verdict: mixed
   takeaway: ''
   cap_rationale: null
+  uncited_by_title: []
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: weak-verdict
+  original:
+    statement: Answering a generative AI prompt uses roughly ten times the electricity
+      of a web search.
+    verdict: mixed
+    confidence: medium
+  pool:
+    consulted: 12
+    on_disk: 123
+    sent: 24
+  why_unverified: quantifier-unsupported
+  why_unverified_note: The original claim fixes a ten‑fold multiplier, but sources
+    present a wide range (4–5×, 10×, 30×, 60–70×), so the specific quantitative claim
+    is not uniformly supported.
+  candidates:
+  - rank: 1
+    text: Generative AI prompts consume roughly four to five times the electricity
+      of a web search.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: The AIMultiple report directly states a 4–5× increase, with no contradictory
+      sources for this specific multiplier.
+  - rank: 2
+    text: Generative AI prompts use about sixty times the electricity of a web search.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: The arXiv study directly reports a 60–70× increase, with no contradictory
+      evidence for this specific estimate.
+  - rank: 3
+    text: Generative AI prompts use about ten times the electricity of a web search.
+    frame: narrowed
+    expected_verdict: mixed
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Kanoppi reports a 10× multiplier, while AIMultiple (4–5×), Scientific
+      American (30×), and an arXiv study (60–70×) give higher factors, leading to
+      a mixed overall assessment.
+  - rank: 4
+    text: Generative AI prompts use about thirty times the electricity of a web search.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting: []
+    rationale: Scientific American provides a direct estimate of a 30× multiplier,
+      and no source directly disputes this figure.
+  dropped: []
+  picked: null

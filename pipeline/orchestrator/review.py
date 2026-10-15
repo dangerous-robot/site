@@ -272,9 +272,12 @@ def approve_claim(
     review["notes"] = notes or ("archived" if mode == "archive" else None)
     review["pr_url"] = pr_url
     review["verdict_override"] = _verdict_override(fm, sidecar_data)
-    # Approving or archiving ends the refresh; a sign-off alone leaves it pending.
+    # Approving or archiving ends the refresh and retires the restatement
+    # candidates (the claim goes live or away as it stands); a sign-off alone
+    # leaves both. ``restates`` is the claim's link to its original and stays.
     if mode in ("approve", "archive"):
         sidecar_data.pop("refresh", None)
+        sidecar_data.pop("restatement", None)
 
     sidecar_path.write_text(
         yaml.safe_dump(sidecar_data, sort_keys=False, allow_unicode=True),

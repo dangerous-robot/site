@@ -122,6 +122,152 @@ def auditor_args(
     }
 
 
+def candidate(
+    text: str,
+    *,
+    frame: str = "narrowed",
+    expected_verdict: str = "true",
+    expected_confidence: str = "medium",
+    level: str = "independently-verified",
+    decisiveness: int = 3,
+    supporting: list[dict] | None = None,
+    contradicting: list[dict] | None = None,
+    needs_new_research: bool = False,
+    rationale: str = "Report 1 states the share directly.",
+) -> dict:
+    """One ``RestatementCandidate`` as the restater's scripted output gives it."""
+    return {
+        "text": text,
+        "frame": frame,
+        "expected_verdict": expected_verdict,
+        "expected_confidence": expected_confidence,
+        "verification_level_estimate": level,
+        "decisiveness": decisiveness,
+        "supporting": list(supporting or []),
+        "contradicting": list(contradicting or []),
+        "needs_new_research": needs_new_research,
+        "rationale": rationale,
+    }
+
+
+RESTATER_CANDIDATES = [
+    candidate(f"{ENTITY_NAME} data centers used 183 terawatt-hours of electricity in 2024.", frame="measurement"),
+    candidate(
+        f"{ENTITY_NAME} publishes the electricity its data centers use each year.",
+        frame="disclosure", expected_confidence="low", level="self-reported", decisiveness=2,
+        rationale="Report 2 is the entity's own figure.",
+    ),
+]
+
+
+def restater_args(
+    *,
+    candidates: list[dict] | None = None,
+    why_unverified: str = "quantifier-unsupported",
+    note: str = "No source gives the national share; the sources give the total in terawatt-hours.",
+) -> dict:
+    """The restater's scripted ``RestatementProposal`` (``custom_output_args``)."""
+    return {
+        "why_unverified": why_unverified,
+        "why_unverified_note": note,
+        "candidates": list(candidates if candidates is not None else RESTATER_CANDIDATES),
+    }
+
+
+def default_restater_model() -> FunctionModel:
+    """The harness restater when a test scripts none: ``restater_args()`` naming the run's entity.
+
+    The restater's prompt carries the line ``Entity: <name>`` (RE-AU, Restate
+    inside the loop), and the same-entity rule drops a candidate that names
+    neither the entity nor anything the original statement names. A test on
+    another entity (``test_claim_path.py``, ``test_source_pool_rules.py``)
+    would otherwise get every default candidate dropped and a ``partial``
+    finding it never asked for, so the default candidates take the entity
+    name from the prompt (``ENTITY_NAME`` when the line is missing).
+    """
+    import re
+
+    async def _fn(messages, info: AgentInfo) -> ModelResponse:
+        prompt = "\n".join(
+            str(p.content) for m in messages for p in getattr(m, "parts", []) if isinstance(p, UserPromptPart)
+        )
+        found = re.search(r"^Entity: (.+?)\s*$", prompt, re.MULTILINE)
+        name = found.group(1) if found else ENTITY_NAME
+        args = restater_args(candidates=[
+            {**c, "text": c["text"].replace(ENTITY_NAME, name)} for c in RESTATER_CANDIDATES
+        ])
+        return ModelResponse(parts=[ToolCallPart(tool_name=info.output_tools[0].name, args=args)])
+
+    return FunctionModel(_fn)
+
+
+def evaluated_candidate(raw: dict, rank: int, **overrides) -> dict:
+    """``raw`` as the loop's code-side checks write it into the sidecar block.
+
+    With no verified supporting quote the decisiveness is capped at 2 (plan
+    ``docs/plans/completed/claim-restate_superseded.md`` § The agent,
+    code-side checks); every
+    evidence ref gains ``quote_verified``. ``overrides`` set what a case's
+    checks change.
+    """
+    def refs(items: list[dict]) -> list[dict]:
+        return [{"source": r["source"], "quote": r["quote"], "quote_verified": r.get("quote_verified", False),
+                 "note": r["note"]} for r in items]
+
+    out = {
+        "rank": rank,
+        "text": raw["text"],
+        "frame": raw["frame"],
+        "expected_verdict": raw["expected_verdict"],
+        "expected_confidence": raw["expected_confidence"],
+        "verification_level_estimate": raw["verification_level_estimate"],
+        "decisiveness": min(raw["decisiveness"], 2),
+        "needs_new_research": raw["needs_new_research"] or min(raw["decisiveness"], 2) <= 1,
+        "supporting": refs(raw["supporting"]),
+        "contradicting": refs(raw["contradicting"]),
+        "rationale": raw["rationale"],
+    }
+    out.update(overrides)
+    return out
+
+
+def expected_restatement_block(
+    *,
+    statement: str = SENTENCE,
+    verdict: str = "mixed",
+    confidence: str = "medium",
+    trigger: str = "weak-verdict",
+    consulted: int = 4,
+    on_disk: int = 0,
+    sent: int | None = None,
+    model: str = "test",
+    args: dict | None = None,
+) -> dict:
+    """The sidecar ``restatement`` block ``write_claim_run`` writes for a scripted run.
+
+    The harness candidates carry no evidence refs, so both come out at
+    decisiveness 2 and keep the scripted order (ties keep ``needs_new_research``
+    false first, then candidate text order).
+    """
+    args = args or restater_args()
+    ranked = sorted(
+        args["candidates"],
+        key=lambda c: (-min(c["decisiveness"], 2), c["needs_new_research"] or min(c["decisiveness"], 2) <= 1, c["text"]),
+    )
+    return {
+        "schema_version": 1,
+        "model": model,
+        "trigger": trigger,
+        "original": {"statement": statement, "verdict": verdict, "confidence": confidence},
+        "pool": {"consulted": consulted, "on_disk": on_disk, "sent": sent if sent is not None else consulted + on_disk},
+        "why_unverified": args["why_unverified"],
+        "why_unverified_note": args["why_unverified_note"],
+        "candidates": [evaluated_candidate(c, i + 1) for i, c in enumerate(ranked)],
+        "dropped": [],
+        "picked": None,
+    }
+
+
 def fake_execute_searches(urls: list[str] | None = None, page_text: dict[str, str] | None = None):
     """A stand-in for ``researcher.decomposed.execute_searches`` returning scripted candidates."""
     from researcher.scorer import SearchCandidate
@@ -262,6 +408,8 @@ def scripted_agents(
     search=None,
     tiebreaker: dict | None = None,
     tiebreaker_model=None,
+    restater: dict | None = None,
+    restater_model=None,
 ):
     """Put every agent on a scripted model and patch the search executor.
 
@@ -270,8 +418,12 @@ def scripted_agents(
     for a ``TestModel``. ``tiebreaker`` and ``tiebreaker_model`` do the same
     for the tie-breaker (RE-AT, Rules, findings file, tie-breaker); with
     neither, the tie-breaker answers ``mixed`` at medium confidence, so a
-    scripted disagreement still settles. The loop's own ``Agent.override``
-    calls are made no-ops so the scripted models survive them.
+    scripted disagreement still settles. ``restater`` and ``restater_model``
+    do the same for the restater (RE-AU, Restate inside the loop); with
+    neither it is ``default_restater_model()``: ``restater_args()`` with the
+    run's entity name in each candidate, so a weak scripted verdict on any
+    entity still gets a block. The loop's own
+    ``Agent.override`` calls are made no-ops so the scripted models survive them.
     """
     from analyst.agent import analyst_agent, verdict_only_agent
     from auditor.agent import auditor_agent
@@ -282,6 +434,9 @@ def scripted_agents(
     analyst_m = analyst_model or TestModel(custom_output_args=analyst or analyst_args())
     auditor_m = auditor_model or TestModel(custom_output_args=auditor or auditor_args())
     tiebreaker_m = tiebreaker_model or TestModel(custom_output_args=tiebreaker or auditor_args())
+    restater_m = restater_model or (
+        TestModel(custom_output_args=restater) if restater is not None else default_restater_model()
+    )
     # The package lands with RE-AT; until then the override is skipped so the
     # harness still imports at the base commit.
     try:
@@ -291,6 +446,14 @@ def scripted_agents(
     tiebreaker_override = (
         tiebreaker_agent.override(model=tiebreaker_m) if tiebreaker_agent is not None else nullcontext()
     )
+    # The restater package lands with RE-AU; the same import guard.
+    try:
+        from loop.restater.agent import restater_agent
+    except ImportError:
+        restater_agent = None
+    restater_override = (
+        restater_agent.override(model=restater_m) if restater_agent is not None else nullcontext()
+    )
     with (
         research_planner_agent.override(model=TestModel(custom_output_args=planner or planner_args())),
         url_scorer_agent.override(model=TestModel(custom_output_args=scorer or scorer_args())),
@@ -299,6 +462,7 @@ def scripted_agents(
         analyst_agent.override(model=analyst_m),
         auditor_agent.override(model=auditor_m),
         tiebreaker_override,
+        restater_override,
         patch("researcher.decomposed.execute_searches", side_effect=search or fake_execute_searches()),
         patch.object(Agent, "override", side_effect=lambda **kw: nullcontext()),
     ):

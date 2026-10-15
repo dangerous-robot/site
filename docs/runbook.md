@@ -101,9 +101,20 @@ An abandoned, recovered or tie-broken run leaves a record under `research/findin
 4. A half-claim is a crash between the writes. A claim without a sidecar is replaced with `uv run dr draft --claim <ref> --force`; a subject record with no claim is reused by the next `dr draft --subject <slug>`, or removed by hand. The tools never delete anything.
 5. Commit the finding files you want kept; `dr lint` ignores the directory.
 
+## Picking a restatement
+
+A draft with a weak verdict (`unverified`, `mixed`, `not-applicable`) or a tie-broken one carries ranked restatement candidates in its sidecar. The original stays as drafted. Until `dr review` renders the candidates (RE-AV (Review packet)), read them in the file.
+
+1. Read the `restatement:` block in `research/claims/<entity-dir>/<claim-slug>.audit.yaml`: `why_unverified`, then each candidate's `rank`, `text`, `expected_verdict`, `decisiveness` (0 to 4) and `supporting` quotes. `dr review-queue --format json` carries the same block per claim. A candidate with `needs_new_research: true` is a lead, not a finding; running it does the research.
+2. Run the pick before you approve or archive the original, since both remove the block: `uv run dr draft --restates <entity-dir>/<claim-slug> --pick <n>`. There is no sentence to type; the text and the entity come from the sidecar. It runs the candidate as a new draft (a second run and a second sign-off), writes `restates:` in the new sidecar and records `restatement.picked: <n>` on the original. It is refused before any model call when the block or candidate `<n>` is missing. `--dry-run` shows the run without writing; `--force` replaces an existing draft at the same path.
+3. Attach a criterion to the new draft: `uv run dr draft --claim <new-ref> --criterion <slug>`, as in "Adding a product or subject".
+4. Sign off the new draft (`uv run dr review-queue`). Decide the original separately: approve it, archive it or leave it as a draft.
+
+"Restatement unavailable (finding `<run-id>`)" in the `dr draft` output, or a non-empty `restatement_unavailable` field (the run id) in `dr review-queue --format json`, means the Restater failed after its retries; the claim was still written, without a `restatement` block, and the run left a `partial` finding. Read it with `uv run dr findings` and triage it as in "Triaging findings".
+
 ## Model slots
 
-Every agent runs on `--model` unless its own override is set: `--researcher-model` (`DR_RESEARCHER_MODEL`), `--analyst-model` (`DR_ANALYST_MODEL`), `--auditor-model` (`DR_AUDITOR_MODEL`), `--ingestor-model` (`DR_INGESTOR_MODEL`) and `--tiebreaker-model` (`DR_TIEBREAKER_MODEL`). These are options of `dr` itself, so they go before the subcommand (`uv run dr --tiebreaker-model <model> draft ...`). The tie-breaker is the third judge when the analyst and the Evaluator disagree. Without `DR_TIEBREAKER_MODEL` it runs on the same model as the rest of the run, so set that variable to a stronger model if you want a disagreement settled by a different one.
+Every agent runs on `--model` unless its own override is set: `--researcher-model` (`DR_RESEARCHER_MODEL`), `--analyst-model` (`DR_ANALYST_MODEL`), `--auditor-model` (`DR_AUDITOR_MODEL`), `--ingestor-model` (`DR_INGESTOR_MODEL`), `--tiebreaker-model` (`DR_TIEBREAKER_MODEL`) and `--restater-model` (`DR_RESTATER_MODEL`, which falls back to `--auditor-model`, then `--model`). These are options of `dr` itself, so they go before the subcommand (`uv run dr --tiebreaker-model <model> draft ...`). The tie-breaker is the third judge when the analyst and the Evaluator disagree. Without `DR_TIEBREAKER_MODEL` it runs on the same model as the rest of the run, so set that variable to a stronger model if you want a disagreement settled by a different one.
 
 ## Archive links for sources
 
