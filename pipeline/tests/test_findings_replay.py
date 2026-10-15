@@ -858,6 +858,49 @@ def test_a_criterion_draft_finding_the_criterion_no_longer_allows_is_not_replaye
     assert list(_findings(tmp_path)) == [RUN_OLD]
 
 
+@pytest.mark.parametrize("entity", ["companies/probe-co", "products/../Companies/probe-co"])
+def test_a_draft_finding_on_a_company_is_not_replayed(tmp_path, monkeypatch, entity) -> None:
+    """dr draft refuses a company in every mode RE-AY (Companies out), so its replay does too."""
+    from orchestrator.cli import _COMPANY_REFUSAL
+
+    write_entity(tmp_path, "companies/probe-co", "Probe Co")
+    write_entity(tmp_path, "products/probe-product", "Probe Product")
+    _write_finding(tmp_path, entity=entity, statement="Probe Co publishes an annual energy report")
+    called = _tripwire(monkeypatch)
+
+    result = _replay(tmp_path, "--finding", RUN_OLD)
+
+    assert result.exit_code == 1, result.output
+    assert called == []
+    (line,) = _lines_for(result.stdout, RUN_OLD)
+    assert line == f"{RUN_OLD}: not replayed: {_COMPANY_REFUSAL}", line
+    assert written_claims(tmp_path) == []
+    assert list(_findings(tmp_path)) == [RUN_OLD]
+
+
+def test_a_criterion_draft_finding_whose_criterion_is_now_inactive_is_not_replayed(tmp_path, monkeypatch) -> None:
+    """dr draft --criterion takes active criteria only; ``inactive: true`` keeps one loadable by slug."""
+    write_entity(tmp_path)
+    templates = {
+        "templates": [{
+            "slug": "probe-criterion", "text": "SUBJECT is a probe", "entity_type": "subject",
+            "topics": ["environmental-impact"], "core": True, "subjects": [ENTITY_REF], "inactive": True,
+        }],
+    }
+    (tmp_path / "research" / "templates.yaml").write_text(yaml.safe_dump(templates), encoding="utf-8")
+    _write_finding(tmp_path, criteria_slug="probe-criterion")
+    called = _tripwire(monkeypatch)
+
+    result = _replay(tmp_path, "--finding", RUN_OLD)
+
+    assert result.exit_code == 1, result.output
+    assert called == []
+    (line,) = _lines_for(result.stdout, RUN_OLD)
+    assert line.startswith(f"{RUN_OLD}: not replayed: criterion probe-criterion"), line
+    assert "no active criterion" in line
+    assert written_claims(tmp_path) == []
+
+
 # --------------------------------------------------------------------------- #
 # Grammar                                                                          #
 # --------------------------------------------------------------------------- #

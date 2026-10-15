@@ -48,15 +48,14 @@ The `writing` collection holds blog posts for `/writing`. Posts are authored by 
 ```
 research/
   claims/
-    anthropic/existential-safety-score.md
-    ecosia/renewable-energy-hosting.md
+    ecosia-ai/renewable-energy-hosting.md
     greenpt/renewable-energy-hosting.md
+    subjects/ai-model-producers/ai-producers-existential-score.md
   entities/
-    companies/anthropic.md
-    companies/ecosia.md
-    companies/greenpt.md
-    products/...
-    subjects/...
+    companies/ecosia.md        # parent record, not a claim target
+    products/ecosia-ai.md
+    products/greenpt.md
+    subjects/ai-model-producers.md
   sources/
     2025/earthday-chatgpt-prompt-cost.md
     2025/fli-safety-index.md

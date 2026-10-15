@@ -7,6 +7,8 @@ with the entity name. ``grading_rule`` is the per-criterion text both the
 Analyst and the Evaluator get; ``notes`` is reader-facing and the pipeline
 does not send it. A ``vocabulary`` map in the YAML is read by the site only
 (home page bolding, the matrix check); the pipeline ignores it.
+``inactive: true`` keeps a criterion loadable by slug (site, lint, review)
+while the pipeline's per-type list (``templates_for_entity_type``) skips it.
 """
 
 from __future__ import annotations
@@ -43,6 +45,8 @@ class TemplateRecord:
     core: bool
     notes: str = ""
     grading_rule: str = ""
+    # True keeps the criterion for the site (loaded by slug) but out of the per-type list.
+    inactive: bool = False
     # For entity_type == "subject", the list of subject refs (e.g. "subjects/ai-model-producers")
     # this template applies to. Required and non-empty for subject templates; forbidden for
     # company/product templates. Each entry must match ^subjects/[a-z0-9-]+$.
@@ -81,6 +85,7 @@ def load_templates(repo_root: Path) -> list[TemplateRecord]:
             core=entry["core"],
             notes=entry.get("notes") or "",
             grading_rule=entry.get("grading_rule") or "",
+            inactive=bool(entry.get("inactive", False)),
             subjects=list(entry.get("subjects") or []),
         )
         for entry in data["templates"]
@@ -92,7 +97,7 @@ def templates_for_entity_type(
     entity_type: str,
     entity_slug: str | None = None,
 ) -> list[TemplateRecord]:
-    """Filter templates by entity_type (core only).
+    """Filter templates by entity_type (core only; ``inactive`` criteria are skipped).
 
     For ``company`` and ``product``, ``entity_slug`` is ignored and behavior matches
     the historical "all core templates of that type" rule.
@@ -102,7 +107,7 @@ def templates_for_entity_type(
     ``entity_slug=None`` no fan-out is possible, so the function returns ``[]``;
     returning all subject templates would silently break the N:M pairing.
     """
-    typed_core = [t for t in templates if t.entity_type == entity_type and t.core]
+    typed_core = [t for t in templates if t.entity_type == entity_type and t.core and not t.inactive]
     if entity_type != "subject":
         return typed_core
     if entity_slug is None:

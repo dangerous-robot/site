@@ -85,15 +85,17 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
     and grading rule, which a run that never started did not record.
 
     Raises ``ReplayNotStarted`` when the original command would refuse the
-    run today: the entity does not load, the claim the finding names is
-    missing or now live (a ``dr draft`` finding), not live (a ``dr recheck``
-    finding), or sits off its entity's path, or a new draft's file now exists.
+    run today: the entity is a company or does not load (a ``dr draft``
+    finding), the entity does not load (a ``dr recheck`` finding), the claim
+    the finding names is missing or now live (a ``dr draft`` finding), not
+    live (a ``dr recheck`` finding), or sits off its entity's path, or a new
+    draft's file now exists.
     """
     from common.frontmatter import parse_frontmatter
     from common.models import EntityType
     from common.utils import slugify
     from loop import ClaimSpec
-    from orchestrator.cli import _claim_spec_for, _live_status
+    from orchestrator.cli import _COMPANY_REFUSAL, _claim_spec_for, _live_status, _names_company
     from orchestrator.entity_resolution import ResolvedEntity, parse_entity_ref
     from orchestrator.persistence import planned_claim_path
     from orchestrator.recheck import cadence_days
@@ -103,6 +105,9 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
     entity_ref = record.get("entity")
     if not statement or not entity_ref:
         raise ReplayNotStarted("the finding records no statement or entity")
+    if finding.command == "dr draft" and _names_company(entity_ref, repo_root):
+        # dr draft refuses a company in every mode; dr recheck does not, so its findings still replay.
+        raise ReplayNotStarted(_COMPANY_REFUSAL)
 
     create_entity = False
     try:
@@ -196,8 +201,8 @@ def replay_target(finding: Finding, repo_root: Path) -> ReplayTarget:
 def _check_criterion(spec: ClaimSpec, repo_root: Path) -> None:
     """The checks ``dr draft --criterion <slug> --entity <ref>`` makes before any model call.
 
-    A new draft for a criterion runs only while the criterion is still in
-    ``research/templates.yaml``, for this kind of entity and, for a subject,
+    A new draft for a criterion runs only while the criterion is still active
+    in ``research/templates.yaml`` (not ``inactive: true``), for this kind of entity and, for a subject,
     with this subject listed.
     """
     from common.templates import get_template, load_templates
@@ -207,7 +212,7 @@ def _check_criterion(spec: ClaimSpec, repo_root: Path) -> None:
         template = get_template(load_templates(repo_root), slug)
     except Exception as exc:
         raise ReplayNotStarted(f"criterion {slug}: could not read research/templates.yaml: {exc}") from exc
-    if template is None:
+    if template is None or template.inactive:
         raise ReplayNotStarted(f"criterion {slug}: no active criterion with that slug in research/templates.yaml")
     entity_type = spec.entity.entity_type.value
     if template.entity_type != entity_type:

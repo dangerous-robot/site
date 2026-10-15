@@ -614,6 +614,52 @@ def _recheck_sources(source_ids: tuple[str, ...], root: Path) -> int:
     return asyncio.run(_run())
 
 
+# One text for every dr draft mode, with no ref in it, so each refusal prints the same line.
+_COMPANY_REFUSAL = (
+    "a company is not a claim target: dr draft writes claims about products and subjects; "
+    "company files are read-only parent records"
+)
+
+
+def _names_company(entity_ref: str | None, root: Path) -> bool:
+    """True when ``entity_ref`` names a company, however it is spelled.
+
+    Needs no entity file on disk. Two checks:
+
+    - the raw first segment: ``parse_entity_ref`` takes the entity type from
+      it, so ``companies/../products/x`` is a company-typed run;
+    - where the entity file would be: ``load_entity`` opens
+      ``research/entities/<ref>.md`` as typed, so ``products/../companies/x``,
+      ``products/../../entities/companies/x`` and a detour through the repo's
+      own directory name all open a company file. The resolved path is
+      compared case-folded because a case-insensitive file system (macOS)
+      opens ``Companies/x`` too and ``Path.resolve`` keeps the typed casing.
+    """
+    ref = entity_ref or ""
+    if ref.split("/", 1)[0].casefold() == "companies":
+        return True
+    entities = root / "research" / "entities"
+    file_path = str((entities / f"{ref}.md").resolve()).casefold()
+    companies_dir = str((entities / "companies").resolve()).casefold()
+    return file_path.startswith(companies_dir + os.sep)
+
+
+def _refuse_company(entity_ref: str | None, root: Path) -> None:
+    """Raise the shared usage error (exit 2) when ``entity_ref`` names a company (``_names_company``).
+
+    Runs on the ref before entity resolution and the criterion lookup.
+    ``_refuse_company_type`` checks the resolved type as a backstop.
+    """
+    if _names_company(entity_ref, root):
+        raise click.UsageError(_COMPANY_REFUSAL)
+
+
+def _refuse_company_type(entity_type: str) -> None:
+    """The same usage error for an entity that resolved to the company type, however its ref was spelled."""
+    if entity_type == "company":  # EntityType is a str enum
+        raise click.UsageError(_COMPANY_REFUSAL)
+
+
 def _claim_spec_for(claim_path: Path, claim_ref: str, root: Path):
     """The ``ClaimSpec`` that re-runs a stored claim: its statement, entity, criterion, topics and grading rule.
 
@@ -990,7 +1036,7 @@ def _write_recheck(
 
 @main.command("step-analyze")
 @click.option("--claim", "claim_ref", required=True,
-    help="Claim to re-analyze: entity/slug (e.g. microsoft/corporate-structure)")
+    help="Claim to re-analyze: entity/slug (e.g. ecosia-ai/renewable-energy-hosting)")
 @click.option("--write", "do_write", is_flag=True,
     help="Write analyst output to the claim file (default: read-only)")
 @click.option("--force", is_flag=True,
@@ -1016,8 +1062,8 @@ def step_analyze(
     since it graded the old analysis; run ``dr step-audit --write`` after.
 
     Example:
-        dr step-analyze --claim microsoft/corporate-structure
-        dr step-analyze --claim microsoft/corporate-structure --write --force
+        dr step-analyze --claim ecosia-ai/renewable-energy-hosting
+        dr step-analyze --claim ecosia-ai/renewable-energy-hosting --write --force
     """
     logger.info("dr step-analyze: claim=%s do_write=%s force=%s", claim_ref, do_write, force)
 
@@ -1290,10 +1336,12 @@ def draft(
     """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
 
     Exactly one of --entity, --subject, --claim or --restates names what the
-    claim is about. The claim stores the sentence it checks as its statement (and as
-    its title). A run abandoned by the error policy writes only its finding
-    under research/findings/ and exits 1; a retried or tie-broken run writes
-    the claim and its finding. A writer failure leaves a half-claim finding.
+    claim is about. A company entity is refused in every mode (usage error,
+    nothing written): companies are parent records, not claim targets. The
+    claim stores the sentence it checks as its statement (and as its title).
+    A run abandoned by the error policy writes only its finding under
+    research/findings/ and exits 1; a retried or tie-broken run writes the
+    claim and its finding. A writer failure leaves a half-claim finding.
 
     \b
     --entity REF SENTENCE        an ad hoc claim at <entity-dir>/<slugified sentence>.md
@@ -1328,6 +1376,7 @@ def draft(
     import re
 
     from common.content_loader import resolve_repo_root
+    from common.frontmatter import parse_frontmatter
     from common.models import EntityType
     from common.sidecar import sidecar_path_for
     from common.templates import get_template, load_templates, render_statement
@@ -1391,6 +1440,8 @@ def draft(
 
     root = Path(repo_root) if repo_root else resolve_repo_root()
 
+    _refuse_company(entity_ref, root)
+
     if attach:
         _attach_criterion(claim_ref, criterion_slug, root)
         return
@@ -1400,6 +1451,10 @@ def draft(
     original_path: Path | None = None
     pick_holder: Path | None = None
     if restates_ref is not None:
+        # Refused on the original's entity: before the block and candidate lookups, which exit 1.
+        restates_path = _resolve_claim_path(restates_ref, root / "research" / "claims")
+        if restates_path.exists():
+            _refuse_company(parse_frontmatter(restates_path.read_text(encoding="utf-8"))[0].get("entity"), root)
         original_path, pick_holder, candidate_text, original_entity = _restatement_candidate(restates_ref, pick, root)
         ref_label = original_entity
         try:
@@ -1407,6 +1462,7 @@ def draft(
         except ValueError as exc:
             click.echo(f"Error: --restates {restates_ref}: could not load entity {original_entity!r}: {exc}", err=True)
             sys.exit(1)
+        _refuse_company_type(resolved_entity.entity_type)
         spec = ClaimSpec(statement=candidate_text, entity=resolved_entity)
         claim_slug = slugify(candidate_text)
         planned = planned_claim_path(resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root)
@@ -1421,6 +1477,8 @@ def draft(
         if not claim_path.exists():
             click.echo(f"Error: claim file not found: {claim_ref} ({claim_path})", err=True)
             sys.exit(1)
+        # Company and product claims share research/claims/<slug>/, so only entity: tells them apart.
+        _refuse_company(parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0].get("entity"), root)
         spec = _claim_spec_for(claim_path, claim_ref, root)
         resolved_entity = spec.entity
         claim_slug = claim_path.stem
@@ -1450,12 +1508,13 @@ def draft(
             resolved_entity = parse_entity_ref(entity_ref, root)
         except ValueError as exc:
             raise click.UsageError(f"--entity {entity_ref}: {exc}") from exc
+        _refuse_company_type(resolved_entity.entity_type)
         if criterion_slug is not None:
             try:
                 template = get_template(load_templates(root), criterion_slug)
             except Exception as exc:
                 raise click.UsageError(f"--criterion {criterion_slug}: could not read research/templates.yaml: {exc}") from exc
-            if template is None:
+            if template is None or template.inactive:
                 raise click.UsageError(
                     f"--criterion {criterion_slug}: no active criterion with that slug in research/templates.yaml"
                 )
@@ -1480,6 +1539,8 @@ def draft(
         else:
             spec = ClaimSpec(statement=sentence, entity=resolved_entity)
             claim_slug = slugify(sentence)
+
+    _refuse_company_type(resolved_entity.entity_type)
 
     if not dry_run:
         # Refused before the paid loop; the writer checks the same two things again.
@@ -1670,7 +1731,8 @@ def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
 
     Appends the criterion built from the claim's stored statement to
     ``research/templates.yaml`` and writes ``criteria_slug`` into the claim.
-    Runs no loop and calls no model. Each refusal exits 1 and changes nothing.
+    Runs no loop and calls no model. Each refusal exits 1 and changes nothing,
+    except a company claim, which gets the shared usage error (exit 2).
     """
     from common.frontmatter import claim_statement, parse_frontmatter
     from common.templates import criterion_entry_for
@@ -1685,18 +1747,18 @@ def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
     if not claim_path.exists():
         refuse(f"claim file not found: {claim_ref} ({claim_path})")
     fm, _body = parse_frontmatter(claim_path.read_text(encoding="utf-8"))
+    claim_entity = fm.get("entity", "")
+    _refuse_company(claim_entity, root)
     if fm.get("criteria_slug"):
         refuse(f"{claim_ref} already has criteria_slug {fm['criteria_slug']!r}; nothing to attach")
     status = fm.get("status", "draft")
     if status != "draft":
         refuse(f"{claim_ref} is {status}, not a draft; a criterion is attached before sign-off")
-    claim_entity = fm.get("entity", "")
-    if claim_entity.startswith("companies/"):
-        refuse(f"{claim_ref} is about a company ({claim_entity}); claims are drafted for products and subjects")
     try:
         resolved = parse_entity_ref(claim_entity, root)
     except ValueError as exc:
         refuse(f"{claim_ref}: could not load entity {claim_entity!r}: {exc}")
+    _refuse_company_type(resolved.entity_type)
     entry = criterion_entry_for(claim_statement(fm), resolved, slug, list(fm.get("topics") or []))
     # The claim is written first and restored if the registry write fails, so no
     # failure leaves a registry entry that no claim carries.

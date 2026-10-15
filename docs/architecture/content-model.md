@@ -8,7 +8,7 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 
 | Type | Purpose | Base path |
 |------|---------|-----------|
-| **Entity** | A stable subject we make claims about (company, product, or subject) | `research/entities/` |
+| **Entity** | A stable thing we make claims about (a product or a subject); a company file is a read-only parent record, not a claim target | `research/entities/` |
 | **Claim** | A single factual assertion about an entity, with verdict and evidence | `research/claims/` |
 | **Source** | A citable reference -- cite once, reference from many claims | `research/sources/` |
 | **Criterion** | A registry entry: a claim sentence applied uniformly across entities, with a `grading_rule` | `research/templates.yaml` |
@@ -18,11 +18,11 @@ Schemas are defined in `src/content.config.ts` and enforced at build time by Ast
 ```
 research/
   entities/
-    companies/{slug}.md      # e.g. anthropic.md
+    companies/{slug}.md      # e.g. anthropic.md; read-only parent record, no claims
     products/{slug}.md
     subjects/{slug}.md
   claims/
-    {entity-slug}/            # matches the entity filename
+    {entity-slug}/            # matches a product or subject filename; no company has one
       {claim-id}.md           # e.g. existential-safety-score.md
   sources/
     {yyyy}/                   # year directory
@@ -35,7 +35,7 @@ research/
 **Naming rules:**
 
 - Lowercase kebab-case for all slugs
-- Entity files sit in a subdirectory matching their type (`companies/`, `products/`, `subjects/`)
+- Entity files sit in a subdirectory matching their type (`companies/`, `products/`, `subjects/`); only products and subjects are claim targets (`dr draft` refuses a company in every mode)
 - Claim files are grouped by entity slug (the entity filename without extension)
 - Source files are grouped by publication year
 
@@ -53,7 +53,7 @@ research/
 | `aliases` | string[] | no | Alternate names (e.g. product names associated with a company) |
 | `description` | string | yes | Short description of the entity |
 | `founded` | number | no | Founding year; integer between 1800 and the current year (checked at build time) |
-| `parent_company` | string | no | Slug ref of the form `companies/{slug}` pointing at another entity |
+| `parent_company` | string | no | Slug ref of the form `companies/{slug}` pointing at a company record; the pipeline uses it to match first-party sources (`entity_identity_for`), and the company is not a claim target |
 | `search_hints` | object | no | Optional `include` and `exclude` string arrays; hints for the pipeline's source searches |
 | `sec_cik` | string | no | SEC CIK identifier; must be a 10-digit string |
 
@@ -66,7 +66,7 @@ The Markdown body provides extended context about the entity.
 | `title` | string | yes | Human-readable claim statement; equals `statement` on every claim the pipeline writes |
 | `statement` | string | no | The sentence the loop re-runs and the Evaluator grades. For `dr draft --criterion` it is the criterion's text rendered once with the entity name and the file is `<entity-dir>/<criteria_slug>.md`; for an ad hoc claim it is the operator's sentence and the file is `<entity-dir>/<slugify(statement)>.md`; `dr draft --claim --force` re-runs it and keeps the existing path. Claims written before it existed fall back to `title` |
 | `seo_title` | string | no | Short title for `<title>` tags (≤42 chars, leaving room for ` - Dangerous Robot`). Analyst writes this on every generated claim; a forced rewrite (`dr draft --claim --force`) keeps an operator's value (one that differs from the analyst's last `seo_title`, recorded in the sidecar's `analyst_record`) while the claim's statement is unchanged; `analyst_record.title` records the statement. Falls back to `title` if absent. |
-| `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `companies/anthropic`) |
+| `entity` | string | yes | Path-style reference to entity: `{type}/{slug}` (e.g. `products/claude`); a `companies/` ref is refused by `dr draft` |
 | `topics` | enum[] | yes | 1-3 slugs from the topic taxonomy (see [Claim Topic Taxonomy](#claim-topic-taxonomy) below) |
 | `verdict` | enum | yes | `true`, `mostly-true`, `mixed`, `mostly-false`, `false`, `unverified`, `not-applicable` |
 | `confidence` | enum | yes | `high`, `medium`, `low` |
@@ -242,8 +242,9 @@ Criteria are loaded from a single YAML file (`research/templates.yaml`), not via
 | `notes` | string | no | Shown on the public criteria page; the pipeline no longer sends it to the agents (`grading_rule` replaces that); write it as public text |
 | `grading_rule` | string | no | Grading guidance sent to the Analyst and the Evaluator with the claim text (scope, verdict mapping, narrative coverage), never cited as evidence. Seeded from `notes` for the active criteria that had one, each marked `# TODO Brandon: rewrite as a grading rule` |
 | `vocabulary` | map | no | Site-only: the home page bolds its terms and the matrix check reads it. The pipeline ignores it and no slot is rendered into a claim's `statement` |
+| `inactive` | boolean | no (default: false) | The pipeline's per-type list (`templates_for_entity_type`) skips the criterion; the site still loads it by slug. `dr draft --criterion` refuses an inactive criterion for every entity type ("no active criterion"), and `dr findings --replay` does not replay a criterion draft whose criterion is now inactive; a company entity is refused earlier, by the company refusal. Used only by `corporate-structure`, which the Responsible AI matrix's ownership row is keyed on; `dr draft` refuses a company entity in any case |
 
-Subject-type criteria use `subjects` for explicit pairing with subject entities; company/product criteria match by `entity_type` alone.
+Subject-type criteria use `subjects` for explicit pairing with subject entities; product criteria match by `entity_type` alone (a `company` criterion is never drafted: companies are not a claim target).
 
 ## Relationships
 
@@ -254,7 +255,7 @@ Entity  <----  Claim  ---->  Source(s)
            Criterion (optional)
 ```
 
-- **Claim to Entity:** Each claim has an `entity` field that references an entity by its path relative to `research/entities/` (without `.md`). Example: `companies/anthropic`.
+- **Claim to Entity:** Each claim has an `entity` field that references an entity by its path relative to `research/entities/` (without `.md`). Example: `products/claude`.
 - **Claim to Source:** Each claim has a `sources` array containing source IDs. A source ID is its path relative to `research/sources/` (without `.md`). Example: `2025/fli-safety-index`.
 - **Source to Claim:** Sources are referenced by ID from claims. There is no back-reference in the source file -- the relationship is one-directional in the data, resolved at query time.
 - **Claim to Criterion:** A `criteria_slug` on a claim links it back to the criterion it was drafted from or had attached. The relationship is optional and one-directional.
@@ -291,7 +292,7 @@ description: AI safety company and developer of the Claude family of large langu
 ```yaml
 ---
 title: No AI company scores above D on existential safety
-entity: companies/anthropic
+entity: subjects/ai-model-producers
 topics:
   - ai-safety
 verdict: "true"

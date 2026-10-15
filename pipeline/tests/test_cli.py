@@ -123,10 +123,10 @@ class TestDraftBraveKeyCheck:
         pass
 
     def _invoke(self, monkeypatch, tmp_path, backend: str):
-        path = tmp_path / "research" / "entities" / "companies" / "acme.md"
+        path = tmp_path / "research" / "entities" / "products" / "acme.md"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(
-            "---\nname: Acme\ntype: company\ndescription: A test entity.\n---\n",
+            "---\nname: Acme\ntype: product\ndescription: A test entity.\n---\n",
             encoding="utf-8",
         )
         reached = self._Reached
@@ -138,7 +138,7 @@ class TestDraftBraveKeyCheck:
         monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", backend)
         monkeypatch.delenv("BRAVE_WEB_SEARCH_API_KEY", raising=False)
         return CliRunner().invoke(main, [
-            "--model", "test", "draft", "--entity", "companies/acme", "x",
+            "--model", "test", "draft", "--entity", "products/acme", "x",
             "--repo-root", str(tmp_path),
         ])
 

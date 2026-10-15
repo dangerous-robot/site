@@ -68,7 +68,9 @@ class TestResponsibleAIPageCriteria:
     Reads the live registry on purpose: the guard is on the file the page builds from.
     """
 
-    @pytest.mark.parametrize("slug", ["financial-transparency", "open-source-models-only"])
+    # financial-transparency is a company criterion and companies are not a claim target, so it
+    # is inactive; the matrix's "Published financials" row has no active criterion now.
+    @pytest.mark.parametrize("slug", ["open-source-models-only"])
     def test_claim_with_page_criterion_passes_lint(self, repo_root: Path, slug: str) -> None:
         claim = repo_root / "research" / "claims" / "fixture" / f"{slug}.md"
         fms = {str(claim): {"criteria_slug": slug}}

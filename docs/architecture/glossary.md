@@ -4,7 +4,7 @@ Canonical vocabulary for the dangerousrobot.org project. See also [AGENTS.md](..
 
 ## How the system works
 
-The system tracks four object types: **criteria** (a registry of claim sentences, each with a `grading_rule`), **entities** (companies, products, subjects), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation does not feed back into the Analyst; a verdict disagreement is settled by a blind tie-breaker, and every split, abandoned, recovered or partial run leaves a finding). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
+The system tracks four object types: **criteria** (a registry of claim sentences, each with a `grading_rule`), **entities** (products and subjects are what claims are about; companies are read-only parent records), **sources** (citable references, which can enter from outside or be produced inside the pipeline), and **claims** (verdicts about entities, generated from the other three; claims are the only output type). Anything to investigate enters a queue. Agents match incoming work to relevant items, gather and archive sources, propose a draft verdict, and evaluate it independently (the evaluation does not feed back into the Analyst; a verdict disagreement is settled by a blind tie-breaker, and every split, abandoned, recovered or partial run leaves a finding). The operator reviews and publishes the combined verdict, archives it, or sends it back for rework. Every step is recorded and reproducible. Small decisions are made by small models; large models are used only when the task demands it.
 
 For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
@@ -12,7 +12,7 @@ For the operator-facing v1 rules, see `AGENTS.md` § How the system works.
 
 | Term | What it is | Lives at |
 |---|---|---|
-| **Entity** | A stable subject (company, product, or subject) that claims are about | `research/entities/{type}/{slug}.md` |
+| **Entity** | A stable thing that claims are about (a product or a subject). A company is a read-only parent record that feeds first-party source matching, not a claim target | `research/entities/{type}/{slug}.md` |
 | **Claim** | A single factual assertion with a verdict, confidence, evidence links, and recheck schedule | `research/claims/{entity-slug}/{claim-id}.md` |
 | **Source** | A citable reference -- "cite once, reference many" | `research/sources/{yyyy}/{slug}.md` |
 | **Criterion** | A registry entry in `research/templates.yaml`: a claim sentence applied uniformly across entities, with a `grading_rule` that the Analyst and the Evaluator both receive | `research/templates.yaml` |
@@ -82,7 +82,7 @@ Roles describe *what* should happen. They can be filled by humans or automation.
 | **Research Lead** | Assigns tasks, never edits claims directly |
 | **Orchestrator** | Owns the claim lifecycle: advances `phase`, stops a run on threshold breach (nothing is written), manages queue (`pipeline/orchestrator/`) |
 | **Router** | Dispatches small classifications; matches new sources to criteria/claims; triggers blocked routing on `< 4` sources; stale flagging (v1 surface shipped via `docs/plans/completed/triage-agent.md`; full implementation tracked in `docs/UNSCHEDULED.md` § Router) |
-| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. The planner always adds a counter-evidence sub-question (what would falsify the claim) with its own query. Entity context (including `parent_company` when set) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. |
+| **Researcher** | Finds relevant URLs for a given claim topic. Internally orchestrates a 3-step pipeline (query planner → search executor → URL scorer), all tool-free by design, with effort controlled by `max_initial_queries`. The planner always adds a counter-evidence sub-question (what would falsify the claim) with its own query. Entity context (including `parent_company` when set, used for matching only) is injected into both the planner and scorer prompts. Each search candidate is classified with a `publisher_quality` label before scoring. |
 | **Ingestor** | Converts a URL into a source file |
 | **Analyst** | Proposes verdict and narrative given a claim and its sources |
 | **Evaluator** | Grades the claim statement against the sources, independent of the analyst's verdict |

@@ -1,22 +1,18 @@
 templates:
-  # Active: 5 company + 8 product, plus the subject templates below
+  # Active: 8 product plus the subject templates below; `corporate-structure` is kept for the site only (inactive)
   # Remaining templates deferred to inactive_templates below
 
-  # --- Company ---
-
-  - slug: publishes-sustainability-report
-    text: "COMPANY publishes a sustainability or ESG report"
-    entity_type: company
-    topics: [environmental-impact]
-    core: true
-    notes: "Environmental analog of financial transparency"
-    grading_rule: "Environmental analog of financial transparency"  # TODO Brandon: rewrite as a grading rule
+  # --- Company (site only: companies are not a claim target) ---
 
   - slug: corporate-structure
     text: "COMPANY has STRUCTURE corporate structure"
     entity_type: company
     topics: [industry-analysis]
     core: true
+    # The pipeline drafts no company claims, so the per-type list skips this criterion.
+    # It stays under `templates:` because the Responsible AI matrix's ownership row is keyed
+    # on it and validated against its `vocabulary` at build time (src/lib/matrixCheck.ts).
+    inactive: true
     notes: "Controlled vocabulary; ownership determines incentives"
     grading_rule: "Controlled vocabulary; ownership determines incentives"  # TODO Brandon: rewrite as a grading rule
     vocabulary:
@@ -28,30 +24,6 @@ templates:
         - employee-owned
         - steward-ownership
         - cooperative
-
-  - slug: contributes-to-ai-safety
-    text: "COMPANY contributes to AI safety causes"
-    entity_type: company
-    topics: [ai-safety]
-    core: true
-    notes: "Verifiable from financial disclosures or public commitments"
-    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
-
-  - slug: contributes-to-environmental-causes
-    text: "COMPANY contributes to environmental causes"
-    entity_type: company
-    topics: [environmental-impact]
-    core: true
-    notes: "Verifiable from financial disclosures or public commitments"
-    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
-
-  - slug: financial-transparency
-    text: "COMPANY provides financial transparency"
-    entity_type: company
-    topics: [industry-analysis]
-    core: true
-    notes: "Public financials, revenue breakdowns, cost disclosures"
-    grading_rule: "Public financials, revenue breakdowns, cost disclosures"  # TODO Brandon: rewrite as a grading rule
 
   # --- Product ---
 
@@ -148,11 +120,50 @@ templates:
     core: true
 
 
-# Deferred: post-v0.1.0
+# Deferred and retired criteria (the company block is retired: companies are not a claim target).
 # To reactivate, move entries back into `templates` above.
 # Neither the Python pipeline nor the Astro loader reads this key.
 
 inactive_templates:
+
+  # --- Company: companies are not a claim target; each entry below was active until then ---
+
+  # Moved: a company criterion; no matrix row is keyed on it.
+  - slug: publishes-sustainability-report
+    text: "COMPANY publishes a sustainability or ESG report"
+    entity_type: company
+    topics: [environmental-impact]
+    core: true
+    notes: "Environmental analog of financial transparency"
+    grading_rule: "Environmental analog of financial transparency"  # TODO Brandon: rewrite as a grading rule
+
+  # Moved: a company criterion; no matrix row is keyed on it.
+  - slug: contributes-to-ai-safety
+    text: "COMPANY contributes to AI safety causes"
+    entity_type: company
+    topics: [ai-safety]
+    core: true
+    notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
+
+  # Moved: a company criterion; no matrix row is keyed on it.
+  - slug: contributes-to-environmental-causes
+    text: "COMPANY contributes to environmental causes"
+    entity_type: company
+    topics: [environmental-impact]
+    core: true
+    notes: "Verifiable from financial disclosures or public commitments"
+    grading_rule: "Verifiable from financial disclosures or public commitments"  # TODO Brandon: rewrite as a grading rule
+
+  # Moved: a company criterion. The matrix row keyed financial-transparency ("Published financials")
+  # has no criterion: field, so the build does not look this entry up.
+  - slug: financial-transparency
+    text: "COMPANY provides financial transparency"
+    entity_type: company
+    topics: [industry-analysis]
+    core: true
+    notes: "Public financials, revenue breakdowns, cost disclosures"
+    grading_rule: "Public financials, revenue breakdowns, cost disclosures"  # TODO Brandon: rewrite as a grading rule
 
   # --- Environmental Impact (Product) ---
 

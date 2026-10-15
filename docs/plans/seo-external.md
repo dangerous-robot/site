@@ -181,7 +181,7 @@ TreadLightly AI (treadlightly.ai) is made by the same person who runs Dangerous 
 
 Most link-worthy pages after the flip:
 - Individual claim pages with published verdicts (deepest, most citable)
-- Entity pages (for example `/research/entities/companies/openai`) as a source hub for all claims about that company
+- Entity pages (for example `/research/entities/products/chatgpt`) as a source hub for all claims about that product or subject
 - `/research/criteria` pages explaining the evaluation framework
 
 Action: audit which TreadLightly AI pages make assertions about AI company environmental claims and add or update source links to point at dangerousrobot.org claim pages rather than primary sources directly.

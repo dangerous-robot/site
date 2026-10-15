@@ -367,6 +367,7 @@ const criteria = defineCollection({
     grading_rule: z.string().optional(),
     subjects: z.array(z.string().regex(/^subjects\/[a-z0-9-]+$/)).optional(),
     vocabulary: z.record(z.string(), z.array(z.string())).optional(),
+    inactive: z.boolean().optional(),
   }).superRefine((data, ctx) => {
     const isSubject = data.entity_type === 'subject';
     const hasSubjects = !!data.subjects && data.subjects.length > 0;
