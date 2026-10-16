@@ -52,9 +52,15 @@ def _make_cfg(
     max_sources: int = 12,
     research_timeout_s: float = 60.0,
 ):
-    """Build a minimal VerifyConfig-like object for unit tests."""
+    """Build a minimal VerifyConfig-like object for unit tests.
+
+    ``model="test"`` resolves to pydantic-ai's TestModel: the default model
+    needs a provider key, and an agent call a test forgot to patch must not
+    reach a real provider.
+    """
     from loop import VerifyConfig
     return VerifyConfig(
+        model="test",
         max_initial_queries=max_initial_queries,
         llm_concurrency=llm_concurrency,
         max_sources=max_sources,
@@ -927,7 +933,7 @@ async def test_topics_flow_through_to_select_research_origins() -> None:
     breaks, arxiv silently never fires even when configured."""
     from loop import VerifyConfig
 
-    cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
+    cfg = VerifyConfig(model="test", research_origins=["tavily", "arxiv"], max_initial_queries=2)
 
     # No-op execute_searches to skip the actual search call.
     async def _noop_execute(queries, client, **_kw):
@@ -963,7 +969,7 @@ async def test_topics_default_to_empty_when_unset() -> None:
     and renders it as an empty list to the selector."""
     from loop import VerifyConfig
 
-    cfg = VerifyConfig(research_origins=["tavily", "arxiv"], max_initial_queries=2)
+    cfg = VerifyConfig(model="test", research_origins=["tavily", "arxiv"], max_initial_queries=2)
 
     async def _noop_execute(queries, client, **_kw):
         return []
