@@ -396,7 +396,7 @@ Found while reading the five `verdict: unverified` claims and their sidecars for
 | Work Item | Plan | Notes |
 |-----------|------|-------|
 | Viro `verification_level: claimed` should be `self-reported` | (none) | First-party `kind: documentation` is in the pool; see `docs/architecture/source-quality.md`. Content fix at review time. Triage: Responsible AI chatbots; keep; 2026-10-10 |
-| Size the narrative-grading effect on published sidecars | (none) | `ecosia-ai/renewable-energy-hosting` shows the Evaluator grading the narrative on a `mixed` analyst verdict, so the effect is not limited to `unverified` claims. A read-only `dr step-audit` sweep (pre-rebuild name; now `dr draft --claim <ref> --rerun evaluator --dry-run`, one claim at a time) of all published claims would show which Evaluator labels change on their next refresh. Triage: Responsible AI chatbots; keep; 2026-10-10 |
+| Size the narrative-grading effect on published sidecars | (none) | `ecosia-ai/renewable-energy-hosting` shows the Evaluator grading the narrative on a `mixed` analyst verdict, so the effect is not limited to `unverified` claims. A read-only `dr step-audit` sweep (pre-rebuild name; now `dr draft --claim <ref> --rerun evaluator --paid-dry-run`, one claim at a time) of all published claims would show which Evaluator labels change on their next refresh. Triage: Responsible AI chatbots; keep; 2026-10-10 |
 
 ---
 

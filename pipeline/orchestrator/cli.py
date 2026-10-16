@@ -913,7 +913,7 @@ def _print_draft_plan(
     if spec.criteria_slug:
         click.echo(f"Criterion: {spec.criteria_slug}")
     state = "overwrites the draft there" if target.exists() else "new file"
-    click.echo(f"Claim:     {_rel(target, root)} ({state})")
+    click.echo(f"Claim:     {_claim_ref(target, root)} at {_rel(target, root)} ({state})")
     if create_entity:
         click.echo(f"Subject:   writes {_rel(root / 'research' / 'entities' / f'{entity.entity_ref}.md', root)} (no record yet)")
     if original_path is not None:

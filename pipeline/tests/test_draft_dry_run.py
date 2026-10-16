@@ -174,7 +174,10 @@ def test_dry_run_prints_what_a_real_run_would_do(tmp_path, tripwire) -> None:
     assert result.exit_code == 0, result.output
     out = result.output
     assert "Probe Product publishes its energy use" in out
-    assert "research/claims/probe-product/probe-product-publishes-its-energy-use.md (new file)" in out
+    assert (
+        "probe-product/probe-product-publishes-its-energy-use at "
+        "research/claims/probe-product/probe-product-publishes-its-energy-use.md (new file)"
+    ) in out
     assert "analyst test-analyst" in out
     assert "researcher test" in out
     assert "tavily" in out

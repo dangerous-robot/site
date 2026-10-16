@@ -748,7 +748,7 @@ async def test_lookup_time_limit_records_failed(archive_case, stub_ingest_model,
 @pytest.mark.asyncio
 async def test_no_capture_when_saves_are_off(archive_case, stub_ingest_model_calling_wayback) -> None:
     """From ``test_no_capture_when_saves_are_off``: ``allow_save=False`` (``dr draft
-    --dry-run``) keeps both the model's tool and the lookup in code to TimeGate."""
+    --paid-dry-run``) keeps both the model's tool and the lookup in code to TimeGate."""
     import httpx
     import respx
 
