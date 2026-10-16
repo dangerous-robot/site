@@ -554,3 +554,103 @@ def test_rerun_evaluator_records_a_tie_broken_disagreement(tmp_path) -> None:
     assert finding["outcome"] == "split"
     assert finding["command"] == "dr draft --rerun evaluator"
     assert finding["claim_ref"] == "subjects/example/claim"
+
+
+# --------------------------------------------------------------------------- #
+# Thinking level on the wire                                                       #
+# --------------------------------------------------------------------------- #
+
+
+async def _wire_bodies(tmp_path, monkeypatch, **config) -> tuple[list[dict], list[dict]]:
+    """Run a disagreement with the Evaluator and the tie-breaker on ``greenpt:gpt-oss-120b``.
+
+    respx answers every chat request, so nothing leaves the machine; the
+    PydanticAI settings only show their effect in the JSON the client sends.
+    Returns the (Evaluator, tie-breaker) request bodies.
+    """
+    import json
+
+    import httpx
+    import respx
+
+    import loop
+    from common.models import resolve_model
+
+    monkeypatch.setenv("GREENPT_API_KEY", "test-key")
+    resolve_model.cache_clear()
+    write_entity(tmp_path)
+    reply = {
+        "id": "chatcmpl-test",
+        "object": "chat.completion",
+        "created": 0,
+        "model": "gpt-oss-120b",
+        "choices": [{
+            "index": 0,
+            "finish_reason": "tool_calls",
+            "message": {"role": "assistant", "content": None, "tool_calls": [{
+                "id": "call-1",
+                "type": "function",
+                "function": {"name": "final_result", "arguments": json.dumps(auditor_args(verdict="true", confidence="high"))},
+            }]},
+        }],
+        "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+    }
+    try:
+        with respx.mock(assert_all_called=False) as mock:
+            route = mock.post("https://api.greenpt.ai/v1/chat/completions").mock(return_value=httpx.Response(200, json=reply))
+            with scripted_agents(
+                analyst=analyst_args(verdict="mixed", confidence="medium", narrative=NARRATIVE),
+                auditor_model=resolve_model("greenpt:gpt-oss-120b"),
+                tiebreaker_model=resolve_model("greenpt:gpt-oss-120b"),
+            ):
+                await loop.run(claim_spec(tmp_path), _config(tmp_path, **config))
+    finally:
+        resolve_model.cache_clear()
+
+    bodies = [json.loads(call.request.content) for call in route.calls]
+    tiebreaker = [b for b in bodies if "deciding reviewer" in b["messages"][0]["content"]]
+    evaluator = [b for b in bodies if b not in tiebreaker]
+    return evaluator, tiebreaker
+
+
+@pytest.mark.asyncio
+async def test_tiebreaker_thinking_level_reaches_the_request(tmp_path, monkeypatch) -> None:
+    evaluator, tiebreaker = await _wire_bodies(tmp_path, monkeypatch)
+
+    assert len(tiebreaker) == 1 and evaluator, "both agents reached the gateway"
+    assert tiebreaker[0]["reasoning_effort"] == "high"
+    assert all("reasoning_effort" not in b for b in evaluator), "the Evaluator keeps the model's default"
+    # gpt-oss answers in prose unless the output tool is forced, so the effort must change nothing else.
+    assert tiebreaker[0]["tool_choice"] == evaluator[0]["tool_choice"] == "required"
+    assert set(tiebreaker[0]) - {"reasoning_effort"} == set(evaluator[0])
+
+
+@pytest.mark.asyncio
+async def test_tiebreaker_thinking_none_sends_no_reasoning_effort(tmp_path, monkeypatch) -> None:
+    _, tiebreaker = await _wire_bodies(tmp_path, monkeypatch, tiebreaker_thinking=None)
+
+    assert len(tiebreaker) == 1
+    assert "reasoning_effort" not in tiebreaker[0]
+
+
+@pytest.mark.parametrize(("model", "warned"), [("greenpt:some-chat-model", True), ("greenpt:gpt-oss-120b", False)])
+@pytest.mark.asyncio
+async def test_a_tiebreaker_model_that_drops_thinking_logs_a_warning(tmp_path, monkeypatch, caplog, model, warned) -> None:
+    """PydanticAI drops ``thinking`` silently for a model whose profile declares no reasoning support."""
+    import logging
+
+    import loop
+    from common.models import resolve_model
+
+    monkeypatch.setenv("GREENPT_API_KEY", "test-key")
+    resolve_model.cache_clear()
+    write_entity(tmp_path)
+    try:
+        with caplog.at_level(logging.WARNING, logger="loop.analyse"), scripted_agents(
+            analyst=analyst_args(verdict="mixed"), auditor=auditor_args(verdict="true"),
+        ):
+            await loop.run(claim_spec(tmp_path), _config(tmp_path, tiebreaker_model=model))
+    finally:
+        resolve_model.cache_clear()
+
+    assert any("thinking" in r.getMessage() and model in r.getMessage() for r in caplog.records) is warned

@@ -169,6 +169,23 @@ class TestResolveModel:
         assert isinstance(model, OpenAIChatModel)
         assert model.model_name == "gpt-oss-120b"
 
+    def test_greenpt_gpt_oss_accepts_thinking_and_keeps_the_openai_profile(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """gpt-oss takes ``reasoning_effort``; only that flag may differ from the
+        provider's default profile, or every GreenPT agent's tool schemas change."""
+        import dataclasses
+
+        from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.providers.openai import OpenAIProvider
+
+        monkeypatch.setenv("GREENPT_API_KEY", "test-key")
+        resolve_model.cache_clear()
+        model = resolve_model("greenpt:gpt-oss-120b")
+        default = OpenAIChatModel("gpt-oss-120b", provider=OpenAIProvider(api_key="test-key")).profile
+        assert model.profile.supports_thinking is True
+        assert dataclasses.replace(model.profile, supports_thinking=False) == default
+
     def test_greenpt_missing_key_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("GREENPT_API_KEY", raising=False)
         resolve_model.cache_clear()

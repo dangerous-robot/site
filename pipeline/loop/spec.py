@@ -67,7 +67,9 @@ class VerifyConfig:
     url_retries: int = 1
     url_retry_delay_s: float = 2.0
     # PydanticAI's portable thinking level for the tie-breaker; None leaves the
-    # model's default (for a gateway that rejects reasoning settings).
+    # model's default (for a gateway that rejects reasoning settings). A model
+    # whose profile declares no reasoning support drops it; ``_tiebreak`` warns
+    # for the models ``resolve_model`` builds, not for passthrough spec strings.
     tiebreaker_thinking: str | None = "high"
     # target successes to pass to the analyst
     max_sources: int = 8

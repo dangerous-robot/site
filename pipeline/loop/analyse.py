@@ -22,7 +22,9 @@ from auditor.agent import auditor_agent, build_auditor_prompt
 from auditor.bundle import build_bundle
 from auditor.compare import compare
 from auditor.models import ClaimBundle, ComparisonResult, IndependentAssessment
-from common.models import EntityType, FailureInfo, FailureStep, Independence, SubQuestion, resolve_model
+from common.models import (
+    EntityType, FailureInfo, FailureStep, Independence, SubQuestion, drops_thinking, resolve_model,
+)
 from common.source_classification import (
     entity_affiliated,
     entity_first_party_reason,
@@ -347,8 +349,15 @@ async def _tiebreak(
     prompt = build_tiebreaker_prompt(_evaluator_bundle(statement, analyst_out, sources, criterion_notes))
     model_spec = cfg.model_for("tiebreaker")
     settings = {"thinking": cfg.tiebreaker_thinking} if cfg.tiebreaker_thinking else None
+    model = resolve_model(model_spec)
+    if settings and drops_thinking(model):
+        logger.warning(
+            "Tie-breaker thinking level %r is not sent: PydanticAI's profile for %s "
+            "declares no reasoning support, so it runs at the model's default",
+            cfg.tiebreaker_thinking, model_spec,
+        )
 
-    with tiebreaker_agent.override(model=resolve_model(model_spec)):
+    with tiebreaker_agent.override(model=model):
         assessment, _, exc = await _run_agent_once(
             tiebreaker_agent, prompt, cfg.tiebreaker_timeout_s, model_settings=settings,
         )
