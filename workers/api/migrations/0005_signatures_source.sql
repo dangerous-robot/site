@@ -4,13 +4,14 @@
 -- same before and after this migration.
 ALTER TABLE signatures ADD COLUMN source TEXT NOT NULL DEFAULT 'web' CHECK (source IN ('web', 'email'));
 
--- Messages to sign@ acted on per sender domain per UTC day, for the per-domain cap.
--- Counts replies that leave no signature row (unknown petition, no name) too. The
--- domain is stored hashed, so the table is not a readable list of who wrote in;
--- the daily cron deletes past days.
+-- Messages to sign@ acted on per UTC day, per sender address and per registered
+-- domain, for the caps. Counts replies that leave no signature row (unknown petition,
+-- no name) too. Keys are SHA-256 hashes, so the table holds no address or domain in
+-- plain text (a guessed domain can still be checked against it); the daily cron
+-- deletes past days.
 CREATE TABLE email_in_counts (
-  day          TEXT NOT NULL,
-  domain_hash  TEXT NOT NULL,
-  n            INTEGER NOT NULL,
-  PRIMARY KEY (day, domain_hash)
+  day       TEXT NOT NULL,
+  key_hash  TEXT NOT NULL,
+  n         INTEGER NOT NULL,
+  PRIMARY KEY (day, key_hash)
 ) WITHOUT ROWID;

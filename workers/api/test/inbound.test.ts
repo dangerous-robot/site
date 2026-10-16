@@ -4,6 +4,7 @@ import {
   cloudflareDmarc,
   decodeEncodedWords,
   isAutoSubmitted,
+  orgDomain,
   parseFrom,
   parseHeaders,
   parseSubject,
@@ -34,6 +35,10 @@ describe('readHeaderBlock', () => {
     expect(await readHeaderBlock(stream(`A: ${'x'.repeat(200)}\r\n\r\n`), 100)).toBeNull();
   });
 
+  it('ends at a mixed blank line too', async () => {
+    expect(await readHeaderBlock(stream('A: 1\n\r\nFrom: body@example.com'))).toBe('A: 1');
+  });
+
   it('accepts a message with no body', async () => {
     expect(await readHeaderBlock(stream('A: 1\r\nB: 2\r\n'))).toBe('A: 1\r\nB: 2\r\n');
   });
@@ -46,6 +51,10 @@ describe('parseHeaders', () => {
       { name: 'X-A', value: 'first second\tthird' },
       { name: 'received', value: 'two' },
     ]);
+  });
+
+  it('stops at the first empty line', () => {
+    expect(parseHeaders('A: 1\r\n\r\nFrom: body@example.com')).toEqual([{ name: 'A', value: '1' }]);
   });
 });
 
@@ -78,8 +87,27 @@ describe('cloudflareDmarc', () => {
   });
 
   it('does not split inside quoted strings or comments', () => {
-    const v = h('Authentication-Results: mx.cloudflare.net; dkim=fail reason="x; dmarc=pass header.from=evil.example"; spf=none (a; dmarc=pass); dmarc=fail header.from=example.com');
+    const v = h('Authentication-Results: mx.cloudflare.net; dkim=fail reason="x; y"; spf=none (a; b); dmarc=fail header.from=example.com');
     expect(cloudflareDmarc(v)).toEqual({ result: 'fail', headerFrom: 'example.com' });
+  });
+
+  it('refuses a result naming dmarc or header.from twice anywhere, comments and quotes included', () => {
+    const v = h('Authentication-Results: mx.cloudflare.net; dkim=fail reason="x; dmarc=pass header.from=evil.example"; dmarc=fail header.from=example.com');
+    expect(cloudflareDmarc(v)).toMatchObject({ result: 'ambiguous' });
+    // policy.dmarc and smtp.mailfrom are other words.
+    expect(cloudflareDmarc(h(CF))).toMatchObject({ result: 'pass' });
+  });
+
+  it('refuses a pass injected through fields the sender controls, whatever the comment and quote nesting', () => {
+    // An open ( in a sender-chosen field swallows Cloudflare's own result; a later
+    // sender-chosen field closes it and adds a pass.
+    for (const v of [
+      'ARC-Authentication-Results: i=1; mx.cloudflare.net; dkim=fail header.d=attacker.com header.s=s1 header.b=ab(c; dmarc=fail header.from=victim.com; spf=pass smtp.mailfrom="x);dmarc=pass header.from=victim.com \\""@attacker.com',
+      'ARC-Authentication-Results: i=1; mx.cloudflare.net; dkim=fail header.d=attacker.com header.s=x((; dmarc=fail header.from=victim.com; spf=pass (domain of x)); dmarc=pass header.from=victim.com @attacker.com) smtp.mailfrom=a@attacker.com',
+      'Authentication-Results: mx.cloudflare.net; dkim=fail header.s=a(; dmarc=fail header.from=victim.com; spf=pass smtp.mailfrom=x);dmarc(x)=pass header.from(y)=victim.com@attacker.com',
+    ]) {
+      expect(cloudflareDmarc(h(v))?.result ?? null, v).not.toBe('pass');
+    }
   });
 
   it('refuses a result with two dmarc entries or none', () => {
@@ -168,5 +196,14 @@ describe('isAutoSubmitted', () => {
     expect(auto('Precedence', 'junk')).toBe(true);
     expect(auto('Auto-Submitted', 'No')).toBe(false);
     expect(auto('Precedence', 'first-class')).toBe(false);
+  });
+});
+
+describe('orgDomain', () => {
+  it('keys subdomains to the registered domain, with common two-label suffixes', () => {
+    expect(orgDomain('example.com')).toBe('example.com');
+    expect(orgDomain('a1.mail.attacker.com')).toBe('attacker.com');
+    expect(orgDomain('mail.example.co.uk')).toBe('example.co.uk');
+    expect(orgDomain('example.co.uk')).toBe('example.co.uk');
   });
 });

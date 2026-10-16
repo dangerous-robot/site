@@ -610,7 +610,7 @@ describe('no-JS path', () => {
   });
 
   it('encodes a hostile name in both the page and the mailto: link (T1)', async () => {
-    const name = 'Eve&cc=x@example.com%0A"q\'<b>|x?bcc=y@example.com#';
+    const name = 'Eve&cc=x@example.com%0A"q\'<b>/x?bcc=y@example.com#';
     const res = await sign({ json: false, turnstile: '', name, updates: true });
     expect(res.status).toBe(200);
     const html = await res.text();
@@ -620,7 +620,12 @@ describe('no-JS path', () => {
     expect(href.split('?')).toHaveLength(2);
     expect(subject).toBe(`Sign ${SLUG} | Name: ${name} | Show my name: no | Updates: yes`);
     expect(html).not.toContain('<b>');
-    expect(html).toContain('Name: Eve&amp;cc=x@example.com%0A&quot;q&#39;&lt;b&gt;|x?bcc=y@example.com#');
+    expect(html).toContain('Name: Eve&amp;cc=x@example.com%0A&quot;q&#39;&lt;b&gt;/x?bcc=y@example.com#');
+  });
+
+  it('turns a pipe in the name into a slash, so the subject always reads back (T1, T10)', async () => {
+    const res = await sign({ json: false, turnstile: null, name: 'Jane | Updates: yes' });
+    expect(mailtoSubject(await res.text()).subject).toBe(`Sign ${SLUG} | Name: Jane / Updates: yes | Show my name: no | Updates: no`);
   });
 
   it('still refuses a JSON request without a token with 403 (T1)', async () => {

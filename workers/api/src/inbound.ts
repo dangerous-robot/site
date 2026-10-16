@@ -52,7 +52,7 @@ export async function readHeaderBlock(raw: ReadableStream<Uint8Array>, maxBytes 
 
 function blankLineAt(b: Uint8Array, from: number): number {
   for (let i = from; i < b.length - 1; i++) {
-    if (b[i] === 10 && b[i + 1] === 10) return i;
+    if (b[i] === 10 && (b[i + 1] === 10 || (b[i + 1] === 13 && b[i + 2] === 10))) return i;
     if (b[i] === 13 && b[i + 1] === 10 && b[i + 2] === 13 && b[i + 3] === 10) return i;
   }
   return -1;
@@ -67,6 +67,7 @@ export function parseHeaders(block: string): RawHeader[] {
   const out: RawHeader[] = [];
   let current: RawHeader | null = null;
   for (const line of block.split(/\r?\n/)) {
+    if (line === '') break;
     if (/^[ \t]/.test(line)) {
       if (current) current.value += line;
       continue;
@@ -139,6 +140,13 @@ export interface DmarcResult {
 export function cloudflareDmarc(headers: RawHeader[]): DmarcResult | null {
   const top = headers.find((h) => /^(arc-)?authentication-results$/i.test(h.name));
   if (!top) return null;
+  // Fields Cloudflare copies from the sender (envelope address, DKIM selector) can open or
+  // close a comment or quote, hiding Cloudflare's own result and exposing an injected one
+  // to the parser below. Counted on the raw text, any injected result is a second one.
+  const count = (re: RegExp) => top.value.match(re)?.length ?? 0;
+  if (count(/(?<![\w.-])dmarc(?![\w-])/gi) > 1 || count(/(?<![\w.-])header\.from(?![\w-])/gi) > 1) {
+    return { result: 'ambiguous', headerFrom: null };
+  }
   const parts = splitOutside(top.value, ';');
   if (!parts) return null;
   let i = 0;
@@ -159,6 +167,24 @@ export function cloudflareDmarc(headers: RawHeader[]): DmarcResult | null {
     result: method.slice('dmarc='.length).toLowerCase(),
     headerFrom: from.length === 1 ? from[0].slice('header.from='.length).replace(/^"|"$/g, '').toLowerCase() : null,
   };
+}
+
+// Public suffixes under which people register names (example.co.uk). A suffix missing
+// here makes its domains share one cap key: stricter, never looser.
+const TWO_LABEL_SUFFIXES = new Set([
+  'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'ltd.uk', 'plc.uk', 'net.uk',
+  'com.au', 'net.au', 'org.au', 'edu.au', 'co.nz', 'org.nz', 'co.jp', 'ne.jp', 'or.jp',
+  'co.za', 'com.br', 'com.mx', 'co.in', 'co.kr', 'com.cn', 'com.tw', 'com.sg', 'com.hk',
+]);
+
+/**
+ * The registered domain, for the per-domain cap: DMARC passes for any subdomain a domain
+ * owner signs, so a cap on the full From domain would be one cap per minted subdomain.
+ */
+export function orgDomain(domain: string): string {
+  const labels = domain.split('.');
+  const keep = labels.length > 2 && TWO_LABEL_SUFFIXES.has(labels.slice(-2).join('.')) ? 3 : 2;
+  return labels.slice(-keep).join('.');
 }
 
 export interface FromAddress {

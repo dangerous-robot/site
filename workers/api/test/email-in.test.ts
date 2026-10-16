@@ -1,6 +1,6 @@
 import { applyD1Migrations, env, reset } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker, { DOMAIN_DAILY_CAP, HOURLY_EMAIL_CAP, sendReminders } from '../src/index';
+import worker, { ADDRESS_DAILY_CAP, DOMAIN_DAILY_CAP, HOURLY_EMAIL_CAP, sendReminders } from '../src/index';
 
 const SITE = 'https://dangerousrobot.org';
 const API = 'https://api.dangerousrobot.org';
@@ -282,6 +282,23 @@ describe('sign by email: caps', () => {
     expect((await rows()).filter((r) => r.email.endsWith('@gmail.com'))).toHaveLength(DOMAIN_DAILY_CAP + 1);
   });
 
+  it('counts subdomains of one registered domain together', async () => {
+    for (let i = 0; i < DOMAIN_DAILY_CAP; i++) {
+      expect((await deliver({ from: `p@a${i}.attacker.example` })).setReject).not.toHaveBeenCalled();
+    }
+    expect((await deliver({ from: 'p@zz.attacker.example' })).setReject).toHaveBeenCalledWith(expect.stringContaining('Too many'));
+  });
+
+  it(`answers at most ${ADDRESS_DAILY_CAP} messages a day from one address, large providers included`, async () => {
+    for (let i = 0; i < ADDRESS_DAILY_CAP; i++) await deliver({ from: 'busy@gmail.com', subject: 'junk' });
+    expect(sentEmails).toHaveLength(ADDRESS_DAILY_CAP);
+    const over = await deliver({ from: 'Busy@Gmail.com', subject: 'junk' });
+    expect(over.setReject).toHaveBeenCalledWith(expect.stringContaining('Too many'));
+    expect(sentEmails).toHaveLength(ADDRESS_DAILY_CAP);
+    // Another address at the same provider is unaffected.
+    expect((await deliver({ from: 'calm@gmail.com' })).setReject).not.toHaveBeenCalled();
+  });
+
   it('stops replies to one domain at the cap, unknown petitions included (T13)', async () => {
     for (let i = 0; i < DOMAIN_DAILY_CAP; i++) await deliver({ from: `u${i}@small.example`, subject: 'Sign nope | Name: X' });
     expect(sentEmails).toHaveLength(DOMAIN_DAILY_CAP);
@@ -351,6 +368,18 @@ describe('sign by email: petitions', () => {
     expect(sentEmails[0].text).toContain('could not tell which petition');
     expect(sentEmails[1].text).toContain('could not tell which petition');
     expect(sentEmails[2].text).toContain('closed on 2026-12-01');
+  });
+});
+
+describe('sign by email: errors', () => {
+  it('rejects rather than drops a message it cannot process, logging only a code', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    await env.DB.prepare('DROP TABLE email_in_counts').run();
+    const msg = await deliver({ from: 'ada@small.example' });
+    expect(msg.setReject).toHaveBeenCalledWith(expect.stringContaining('contact@dangerousrobot.org'));
+    expect(log).toHaveBeenCalledWith('email-sign: error');
+    expect(sentEmails).toHaveLength(0);
   });
 });
 

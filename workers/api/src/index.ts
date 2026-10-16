@@ -6,6 +6,7 @@ import {
   decodeEncodedWords,
   isAutoSubmitted,
   isPlainAddress,
+  orgDomain,
   parseFrom,
   parseHeaders,
   parseSubject,
@@ -37,16 +38,20 @@ export const SITEVERIFY_TIMEOUT_MS = 5000;
 // What a genuine token from the live sign form reports; the form sets the action.
 const TURNSTILE_HOSTNAME = 'dangerousrobot.org';
 const TURNSTILE_ACTION = 'petition-sign';
-// Messages to sign@ acted on per sender domain per UTC day. Anyone who owns a domain can
-// mint addresses that pass DMARC; this bounds the signatures and replies one domain gets.
+// Messages to sign@ acted on per registered domain per UTC day. Anyone who owns a domain
+// can mint addresses that pass DMARC; this bounds the signatures and replies one domain gets.
 export const DOMAIN_DAILY_CAP = 20;
-// Large mailbox providers, where one domain is millions of separate people.
+// Per address per UTC day, large providers included. Replies share HOURLY_EMAIL_CAP with
+// the web form, so without this one mailbox could use it up and stall web sign-ups.
+export const ADDRESS_DAILY_CAP = 5;
+// Large mailbox providers, where one domain is millions of separate people. Exact match.
 const CAP_EXEMPT_DOMAINS = new Set([
   'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
   'icloud.com', 'me.com', 'mac.com', 'yahoo.com', 'proton.me', 'protonmail.com', 'pm.me',
 ]);
 const NOT_VERIFIED = 'We could not confirm this message came from your address. Write to contact@dangerousrobot.org.';
-const DOMAIN_CAPPED = 'Too many messages from your domain today. Please try again tomorrow, or write to contact@dangerousrobot.org.';
+const CAPPED = 'Too many messages from your address or domain today. Please try again tomorrow, or write to contact@dangerousrobot.org.';
+const FAILED = 'We could not process this message. Please try again later, or write to contact@dangerousrobot.org.';
 
 interface Petition {
   slug: string;
@@ -83,7 +88,15 @@ export default {
   // Messages to sign@dangerousrobot.org, routed here by an Email Routing rule.
   async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
     // Outcome codes only: Workers Logs is on, and the privacy page promises name, email and consents only.
-    console.log(`email-sign: ${await signByEmail(message, env)}`);
+    let outcome: string;
+    try {
+      outcome = await signByEmail(message, env);
+    } catch {
+      // Rejected rather than silently dropped, so the sender hears it did not work.
+      message.setReject(FAILED);
+      outcome = 'error';
+    }
+    console.log(`email-sign: ${outcome}`);
   },
 };
 
@@ -242,7 +255,8 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     // A plain form POST with no token is a reader without JS: offer to sign by email.
     // Nothing is stored or sent until a message from their address arrives.
     if (!(request.headers.get('Accept') ?? '').includes('application/json')) {
-      return lastStepPage(buildSubject({ slug, name, showName, wantsUpdates }), petition.post_url);
+      // A pipe could start a field of its own (`Jane | Updates: yes`); a slash reads the same.
+      return lastStepPage(buildSubject({ slug, name: name.replaceAll('|', '/'), showName, wantsUpdates }), petition.post_url);
     }
     return reply(request, env, 403, 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.', petition.post_url);
   }
@@ -324,18 +338,18 @@ export async function signByEmail(message: ForwardableEmailMessage, env: Env, no
   }
   if (isAutoSubmitted(headers)) return 'auto';
 
-  if (!CAP_EXEMPT_DOMAINS.has(domain)) {
-    // Counted before acting, so a domain over the cap gets neither a signature nor a reply.
-    const count = await env.DB.prepare(
-      `INSERT INTO email_in_counts (day, domain_hash, n) VALUES (?, ?, 1)
-       ON CONFLICT (day, domain_hash) DO UPDATE SET n = n + 1 RETURNING n`,
-    )
-      .bind(utcDay(now), await sha256(domain))
-      .first<{ n: number }>();
-    if (count!.n > DOMAIN_DAILY_CAP) {
-      message.setReject(DOMAIN_CAPPED);
-      return 'capped';
-    }
+  // Counted before acting, so an address or domain over its cap gets neither a signature nor a reply.
+  const caps: [string, number][] = [[`address:${from.address}`, ADDRESS_DAILY_CAP]];
+  if (!CAP_EXEMPT_DOMAINS.has(domain)) caps.push([`domain:${orgDomain(domain)}`, DOMAIN_DAILY_CAP]);
+  const day = utcDay(now);
+  const bump = env.DB.prepare(
+    `INSERT INTO email_in_counts (day, key_hash, n) VALUES (?, ?, 1)
+     ON CONFLICT (day, key_hash) DO UPDATE SET n = n + 1 RETURNING n`,
+  );
+  const counts = await env.DB.batch<{ n: number }>(await Promise.all(caps.map(async ([key]) => bump.bind(day, await sha256(key)))));
+  if (counts.some((r, i) => r.results[0].n > caps[i][1])) {
+    message.setReject(CAPPED);
+    return 'capped';
   }
 
   const answer = async (outcome: string, mail: Email) => `${outcome} reply=${await sendCapped(env, mail, now)}`;
