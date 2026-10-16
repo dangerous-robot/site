@@ -224,13 +224,23 @@ const names = state?.names ?? [];
     // who never sign never contact Cloudflare's challenge servers. api.js must come
     // from this exact URL (Cloudflare does not support proxied or cached copies).
     const BOT_CHECK_FAILED =
-      'The bot check could not load. Please reload the page, or write to contact@dangerousrobot.org.';
+      'The bot check did not finish. Please reload the page, or write to contact@dangerousrobot.org.';
     const w = window as TurnstileWindow;
     const widgetBox = form.querySelector<HTMLElement>('[data-turnstile]')!;
     let widgetId: string | undefined;
+    let botCheck: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
     // Set when Sign is pressed before the check has a token; the form then sends
     // itself as soon as the token arrives.
     let sendWhenReady = false;
+
+    // A blocked script or a widget error must not leave Sign waiting for a token
+    // that will never come.
+    function botCheckFailed() {
+      botCheck = 'failed';
+      sendWhenReady = false;
+      form.querySelector('button')!.disabled = false;
+      status.textContent = BOT_CHECK_FAILED;
+    }
 
     function renderWidget() {
       if (!w.turnstile) return;
@@ -251,23 +261,19 @@ const names = state?.names ?? [];
             form.requestSubmit();
           }
         },
-        'error-callback': () => {
-          sendWhenReady = false;
-          form.querySelector('button')!.disabled = false;
-          status.textContent = BOT_CHECK_FAILED;
-        },
+        'error-callback': botCheckFailed,
       });
+      botCheck = 'ready';
     }
 
     function loadTurnstile() {
-      if (!TURNSTILE_SITE_KEY) return;
+      if (!TURNSTILE_SITE_KEY || botCheck !== 'idle') return;
+      botCheck = 'loading';
       w.drTurnstileReady = renderWidget;
       const script = document.createElement('script');
       script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=drTurnstileReady';
       script.async = true;
-      script.onerror = () => {
-        status.textContent = BOT_CHECK_FAILED;
-      };
+      script.onerror = botCheckFailed;
       document.head.append(script);
     }
 
@@ -286,6 +292,11 @@ const names = state?.names ?? [];
       status.textContent = '';
       // Tokens are single use and the Worker refuses a form without one.
       if (TURNSTILE_SITE_KEY && !new FormData(form).get('cf-turnstile-response')) {
+        if (botCheck === 'failed') {
+          botCheckFailed();
+          return;
+        }
+        loadTurnstile();
         sendWhenReady = true;
         status.textContent = 'Checking that you are not a bot. Your signature will send in a moment.';
         return;
