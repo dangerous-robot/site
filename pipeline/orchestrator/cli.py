@@ -90,14 +90,22 @@ def _check_provider_api_keys(models: str | Iterable[str]) -> None:
 
 
 def _check_search_key(config) -> None:
-    """Fail before any model call when the Brave backend has no key.
+    """Fail before any model call when the search backend has no usable key.
 
     The researcher only discovers a missing key at search time, after the
-    planner's paid model call has already run.
+    planner's paid model call has already run. Tavily falls back to Brave per
+    query, so it needs either key; any other backend runs as Brave.
     """
-    if config.search_backend == "brave" and not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
+    has_brave = bool(os.environ.get("BRAVE_WEB_SEARCH_API_KEY"))
+    if config.search_backend == "tavily":
+        if not has_brave and not os.environ.get("TAVILY_API_KEY"):
+            raise click.UsageError(
+                "TAVILY_API_KEY and BRAVE_WEB_SEARCH_API_KEY are both unset; RESEARCH_SEARCH_BACKEND "
+                "is tavily, which falls back to Brave, so set one of them"
+            )
+    elif not has_brave:
         raise click.UsageError(
-            "BRAVE_WEB_SEARCH_API_KEY is not set and RESEARCH_SEARCH_BACKEND is brave"
+            f"BRAVE_WEB_SEARCH_API_KEY is not set and RESEARCH_SEARCH_BACKEND is {config.search_backend}"
         )
 
 
@@ -940,7 +948,7 @@ def _print_draft_plan(
 @click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
 @click.option("--subject", "subject_slug", default=None, metavar="SLUG", help="Subject the sentence is about; the subject record is written with the claim when none exists")
 @click.option("--criterion", "criterion_slug", default=None, metavar="SLUG", help="Draft the criterion's sentence for --entity, or attach it to --claim")
-@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft claim's stored statement in place (needs --force, --dry-run or --paid-dry-run), rerun one agent with --rerun, or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim or --rerun")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft claim's stored statement in place (needs --force or --paid-dry-run; --force --dry-run checks it for free), rerun one agent with --rerun, or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim or --rerun")
 @click.option("--dry-run", is_flag=True, help="Free check: run every check that would refuse the run or its write and print what a real run would do; no model call, no search call, nothing written")
 @click.option("--paid-dry-run", is_flag=True, help="Paid: run the loop with its model and search calls and print the result; write nothing and never ask archive.org to capture a page")
 @click.option("--force", is_flag=True, help="Overwrite the claim file if present (with --source: the source file of the same URL); a published or archived claim is refused (dr recheck --claim writes a pending draft)")
@@ -1139,10 +1147,11 @@ def draft(
     elif claim_ref is not None:
         if sentence is not None:
             raise click.UsageError("SENTENCE is not taken with --claim: the claim's stored statement is re-run")
-        if not (force or no_write):
+        # --dry-run alone is refused like the real run it checks; with --force it checks that run.
+        if not (force or paid_dry_run):
             raise click.UsageError(
-                f"--claim {claim_ref} writes over the existing claim: pass --force to write it, "
-                "--dry-run to check it for free, --paid-dry-run to print the run, "
+                f"--claim {claim_ref} writes over the existing claim: pass --force to write it "
+                "(add --dry-run to check it for free), --paid-dry-run to print the run, "
                 "or --criterion <slug> to attach a criterion"
             )
     elif restates_ref is None and not has_sentence:

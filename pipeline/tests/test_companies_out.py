@@ -200,7 +200,7 @@ def _mode_args(mode: str, claim_ref: str) -> list[str]:
         "criterion-moved": ["draft", "--criterion", MOVED_COMPANY_SLUGS[0], "--entity", COMPANY_REF],
         "criterion-kept": ["draft", "--criterion", KEPT_COMPANY_SLUG, "--entity", COMPANY_REF],
         "claim-force": ["draft", "--claim", claim_ref, "--force"],
-        "claim-dry-run": ["draft", "--claim", claim_ref, "--dry-run"],
+        "claim-dry-run": ["draft", "--claim", claim_ref, "--force", "--dry-run"],
         "claim-paid-dry-run": ["draft", "--claim", claim_ref, "--paid-dry-run"],
         "claim-attach": ["draft", "--claim", claim_ref, "--criterion", "probe-co-energy-report"],
         "restates": ["draft", "--restates", claim_ref, "--pick", "1"],

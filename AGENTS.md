@@ -206,7 +206,7 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 |----------|----------|---------|-------|
 | `BRAVE_WEB_SEARCH_API_KEY` | Recommended | Researcher (`search_brave`) | The fallback backend: used when `RESEARCH_SEARCH_BACKEND=brave` or when Tavily is selected but unavailable. |
 | `RESEARCH_SEARCH_BACKEND` | No (default `tavily`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
-| `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
+| `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start); with neither key set, `dr draft`, `dr recheck` and `dr findings --replay` refuse before any model call. |
 
 **arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; on by default since 2026-05-09 (commit `74c1512`; default `["tavily", "arxiv"]` in `pipeline/loop/spec.py`). Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
 

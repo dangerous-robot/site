@@ -37,6 +37,19 @@ def _no_live_tiebreaker(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _search_key_for_cli_runs(request, monkeypatch):
+    """Give ``dr`` commands a search key so ``_check_search_key`` lets scripted runs start.
+
+    The check refuses a run with no usable search key, and every scripted run
+    patches the search itself. A dummy, not the developer's key, so no unit
+    test can spend real search credit; acceptance tests keep the real key they
+    search with. Tests of the check set or delete the variables themselves.
+    """
+    if request.node.get_closest_marker("acceptance") is None:
+        monkeypatch.setenv("TAVILY_API_KEY", "unit-test-dummy")
+
+
+@pytest.fixture(autouse=True)
 def _no_live_restater(monkeypatch):
     """Keep a developer's ``DR_RESTATER_MODEL`` out of the unit tests.
 

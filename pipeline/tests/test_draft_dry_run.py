@@ -124,7 +124,7 @@ MODES = {
     "subject-existing": ["draft", "--subject", "probe-subject", "Probe subjects use energy"],
     "subject-new": ["draft", "--subject", "brand-new-subject", "Brand new subjects use energy"],
     "criterion": ["draft", "--criterion", "renewable-energy-hosting", "--entity", PRODUCT_REF],
-    "claim": ["draft", "--claim", CLAIM_REF],
+    "claim": ["draft", "--claim", CLAIM_REF, "--force"],
     "restates": ["draft", "--restates", CLAIM_REF, "--pick", "1"],
     "rerun-analyst": ["draft", "--claim", CLAIM_REF, "--rerun", "analyst"],
     "rerun-evaluator": ["draft", "--claim", CLAIM_REF, "--rerun", "evaluator"],
@@ -214,7 +214,7 @@ def test_dry_run_refuses_a_published_claim_like_force_does(tmp_path, tripwire) -
 
 def test_dry_run_refuses_a_missing_claim(tmp_path, tripwire) -> None:
     root = _repo(tmp_path)
-    _assert_refused(root, tripwire, ["draft", "--claim", "probe-product/no-such-claim", "--dry-run"], 1, "not found")
+    _assert_refused(root, tripwire, ["draft", "--claim", "probe-product/no-such-claim", "--force", "--dry-run"], 1, "not found")
 
 
 def test_dry_run_refuses_an_existing_claim_without_force(tmp_path, tripwire) -> None:
@@ -248,6 +248,32 @@ def test_dry_run_refuses_brave_without_its_key(tmp_path, tripwire, monkeypatch) 
     monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "brave")
     monkeypatch.delenv("BRAVE_WEB_SEARCH_API_KEY", raising=False)
     _assert_refused(root, tripwire, [*MODES["entity"], "--dry-run"], 2, "BRAVE_WEB_SEARCH_API_KEY")
+
+
+def test_dry_run_refuses_tavily_when_no_search_key_is_set(tmp_path, tripwire, monkeypatch) -> None:
+    """Tavily falls back to Brave per query; with neither key the real run would pay for the planner, then fail."""
+    root = _repo(tmp_path)
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.delenv("BRAVE_WEB_SEARCH_API_KEY", raising=False)
+    for flags in (("--dry-run",), ("--paid-dry-run",), ()):
+        _assert_refused(root, tripwire, [*MODES["entity"], *flags], 2, "TAVILY_API_KEY")
+
+
+def test_dry_run_takes_tavily_with_only_the_brave_key(tmp_path, tripwire, monkeypatch) -> None:
+    root = _repo(tmp_path)
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.setenv("BRAVE_WEB_SEARCH_API_KEY", "dummy")
+    result = _dr(root, *MODES["entity"], "--dry-run")
+    assert result.exit_code == 0, result.output
+    assert "falls back to Brave" in result.output
+
+
+def test_claim_dry_run_without_force_is_the_real_runs_usage_error(tmp_path, tripwire) -> None:
+    """The real ``--claim REF`` without ``--force`` is a usage error, so the free check is too."""
+    root = _repo(tmp_path)
+    real = _dr(root, "draft", "--claim", CLAIM_REF)
+    assert real.exit_code == 2, real.output
+    _assert_refused(root, tripwire, ["draft", "--claim", CLAIM_REF, "--dry-run"], 2, "--force")
 
 
 def test_dry_run_and_paid_dry_run_together_are_a_usage_error(tmp_path, tripwire) -> None:
