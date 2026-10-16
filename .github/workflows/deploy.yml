@@ -42,6 +42,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Without the Turnstile site key the sign form cannot pass the Worker's
+      # bot check, so signing would break; stop here and keep the live site.
+      - name: Require the Turnstile site key
+        run: |
+          if [ -z "$PUBLIC_TURNSTILE_SITE_KEY" ]; then
+            echo "::error::Set the TURNSTILE_SITE_KEY repository variable (Settings > Secrets and variables > Actions > Variables)."
+            exit 1
+          fi
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
       # The key goes to this step and the check below only. WATCH_EXPECT_KEY
       # makes a missing key a warning annotation; the build still succeeds
       # and publishes the /watch empty state.
@@ -49,6 +59,7 @@ jobs:
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           WATCH_EXPECT_KEY: '1'
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ vars.TURNSTILE_SITE_KEY }}
       # Needs the key to scan dist/ for its exact value.
       - run: npm run check:watch
         env:

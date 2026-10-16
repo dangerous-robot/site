@@ -21,6 +21,10 @@ interface Props {
 }
 const { slug, statement } = Astro.props;
 
+// The Worker refuses a sign-up without a bot check token, and the check needs scripts.
+const NO_SCRIPT_TEXT =
+  "Signing needs JavaScript, for a bot check that stops scripts from signing up other people's email addresses.";
+
 // Build-time snapshot for readers without JS. The Worker may be down or the
 // petition row not created yet; the build must not fail on that.
 const state = await fetchPetitionState(slug);
@@ -73,7 +77,15 @@ const names = state?.names ?? [];
           <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
         </div>
         <input type="hidden" name="elapsed" value="" />
-        <button type="submit">Sign</button>
+        <noscript>
+          <p class="petition-noscript">{NO_SCRIPT_TEXT}</p>
+        </noscript>
+        <div class="petition-submit">
+          {/* The script renders Cloudflare Turnstile here once the reader starts the
+              form; it adds the cf-turnstile-response field the Worker verifies. */}
+          <div class="petition-turnstile" data-turnstile></div>
+          <button type="submit">Sign</button>
+        </div>
       </form>
       <p class="petition-status" role="status" aria-live="polite" tabindex="-1"></p>
       <dialog class="petition-dialog" aria-labelledby="petition-dialog-title" aria-describedby="petition-dialog-text">
@@ -109,8 +121,17 @@ const names = state?.names ?? [];
     formatCount,
     signatureWord,
     statusLabel,
+    TURNSTILE_SITE_KEY,
     type PetitionState,
   } from '../lib/petition';
+
+  // The parts of Cloudflare's Turnstile API this form uses.
+  interface Turnstile {
+    render(el: HTMLElement, options: Record<string, unknown>): string;
+    reset(id: string): void;
+    remove(id: string): void;
+  }
+  type TurnstileWindow = Window & { turnstile?: Turnstile; drTurnstileReady?: () => void };
 
   const section = document.querySelector<HTMLElement>('section.petition');
   if (section) {
@@ -199,11 +220,117 @@ const names = state?.names ?? [];
 
     fetchPetitionState(slug!).then((s) => s && render(s));
 
+    // Bot check. Turnstile loads only once the reader starts the form, so readers
+    // who never sign never contact Cloudflare's challenge servers. api.js must come
+    // from this exact URL (Cloudflare does not support proxied or cached copies).
+    const BOT_CHECK_FAILED =
+      'The bot check did not finish. Please reload the page, or write to contact@dangerousrobot.org.';
+    const w = window as TurnstileWindow;
+    const widgetBox = form.querySelector<HTMLElement>('[data-turnstile]')!;
+    let widgetId: string | undefined;
+    let botCheck: 'idle' | 'loading' | 'ready' | 'failed' = 'idle';
+    // Set when Sign is pressed before the check has a token; the form then sends
+    // itself as soon as the token arrives.
+    let sendWhenReady = false;
+    let waitTimer: ReturnType<typeof setTimeout> | undefined;
+    // Turnstile retries most errors itself, so a wait outlives a few retries
+    // (about 8 seconds apart) before Sign is handed back.
+    const WAIT_LIMIT_MS = 30_000;
+
+    function stopWaiting(message: string) {
+      sendWhenReady = false;
+      clearTimeout(waitTimer);
+      form.querySelector('button')!.disabled = false;
+      status.textContent = message;
+    }
+
+    // For errors Turnstile will not recover from: a blocked script, a render that
+    // throws, or a site key or domain it refuses. Sign must not wait on a token
+    // that cannot come.
+    function botCheckFailed() {
+      botCheck = 'failed';
+      stopWaiting(BOT_CHECK_FAILED);
+    }
+
+    // Codes Cloudflare lists as not retried: a bad or disabled site key, an
+    // unauthorized domain, a wrong clock or cached challenge. Others it retries.
+    function isFinalError(code: string): boolean {
+      return /^(1101|1102|2001|400)/.test(code);
+    }
+
+    function renderWidget() {
+      if (!w.turnstile) return;
+      if (widgetId !== undefined) w.turnstile.remove(widgetId);
+      botCheck = 'ready';
+      try {
+        widgetId = w.turnstile.render(widgetBox, {
+          sitekey: TURNSTILE_SITE_KEY,
+          // The Worker requires this action (TURNSTILE_ACTION in workers/api/src/index.ts).
+          action: 'petition-sign',
+          // The site's own theme toggle, not the OS setting that theme "auto" follows.
+          theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+          // Flexible fills the column but needs 300px; narrower phones get compact.
+          // Measures the form: the widget box has no size of its own yet.
+          size: form.clientWidth >= 300 ? 'flexible' : 'compact',
+          // Most readers pass without a click, so the widget shows only when one is needed.
+          appearance: 'interaction-only',
+          callback: () => {
+            if (sendWhenReady) {
+              stopWaiting('');
+              form.requestSubmit();
+            }
+          },
+          // Other errors are left to Turnstile's own retry; WAIT_LIMIT_MS bounds the wait.
+          'error-callback': (code: string) => {
+            if (isFinalError(String(code))) botCheckFailed();
+          },
+        });
+      } catch {
+        botCheckFailed();
+      }
+    }
+
+    function loadTurnstile() {
+      if (!TURNSTILE_SITE_KEY || botCheck !== 'idle') return;
+      botCheck = 'loading';
+      w.drTurnstileReady = renderWidget;
+      const script = document.createElement('script');
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=drTurnstileReady';
+      script.async = true;
+      script.onerror = botCheckFailed;
+      document.head.append(script);
+    }
+
+    form.addEventListener('focusin', loadTurnstile, { once: true });
+    new ResizeObserver(() => widgetBox.classList.toggle('is-shown', widgetBox.offsetHeight > 0)).observe(widgetBox);
+    new MutationObserver(renderWidget).observe(document.documentElement, { attributeFilter: ['data-theme'] });
+
+    function resetWidget() {
+      if (w.turnstile && widgetId !== undefined) w.turnstile.reset(widgetId);
+    }
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const button = form.querySelector('button')!;
       button.disabled = true;
       status.textContent = '';
+      // Tokens are single use and the Worker refuses a form without one.
+      if (TURNSTILE_SITE_KEY && !new FormData(form).get('cf-turnstile-response')) {
+        if (botCheck === 'failed') {
+          botCheckFailed();
+          return;
+        }
+        loadTurnstile();
+        sendWhenReady = true;
+        clearTimeout(waitTimer);
+        waitTimer = setTimeout(
+          () => sendWhenReady && stopWaiting('The bot check has not finished. Press Sign to try again, or reload the page.'),
+          WAIT_LIMIT_MS,
+        );
+        status.textContent =
+          'Checking that you are not a bot. If a check box appears above the Sign button, click it. Your signature then sends.';
+        return;
+      }
       elapsedInput.value = String(Math.round(performance.now() - loadedAt));
       try {
         // URL-encoded body + Accept header keeps this a CORS "simple" request (no preflight).
@@ -223,6 +350,8 @@ const names = state?.names ?? [];
       } catch {
         status.textContent = 'Could not reach the server. Please try again.';
       }
+      // The Worker may have spent the token on this attempt; a retry needs a fresh one.
+      resetWidget();
       button.disabled = false;
     });
   }
@@ -363,8 +492,21 @@ const names = state?.names ?? [];
     overflow: hidden;
   }
 
+  /* The widget box has no height before Turnstile loads and while the check runs
+     unseen (interaction-only). It shares a block with the Sign button, outside the
+     form's grid, so it adds no gap until the script marks it shown. The widget's
+     iframe takes its colors from the theme passed at render. */
+  .petition-turnstile.is-shown {
+    margin-bottom: var(--space-md);
+  }
+
+  .petition-noscript {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
   .petition-form button {
-    justify-self: start;
     padding-inline: var(--space-lg);
     background: transparent;
     border-color: var(--color-accent);

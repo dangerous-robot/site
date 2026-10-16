@@ -40,10 +40,13 @@ import { YOUTUBE_TERMS_URL } from '../lib/watch/contract';
     <p>
       Your IP address is used for a moment to slow down repeat attempts. It is not saved with your signature.
     </p>
+    <p>
+      When you start filling in the form, Cloudflare Turnstile checks that a person, not a script, is signing. This makes it hard to use the form to send email to strangers. For the check, Cloudflare reads your IP address and details about your browser. See the <a href="https://www.cloudflare.com/turnstile-privacy-policy/">Turnstile Privacy Addendum</a>.
+    </p>
 
     <h3>Who can read it</h3>
     <p>
-      Only Dangerous Robot and the petition's authors. Cloudflare stores the list, Resend delivers the confirmation email, and updates are sent from a petition author's Gmail account, with every address hidden from the other recipients. The public list shows only the names of signers who chose to be listed.
+      Only Dangerous Robot and the petition's authors. Cloudflare stores the list and runs the bot check (Cloudflare Turnstile), Resend delivers the confirmation email, and updates are sent from a petition author's Gmail account, with every address hidden from the other recipients. The public list shows only the names of signers who chose to be listed.
     </p>
 
     <h3>How long we keep it</h3>

@@ -13,6 +13,7 @@ export default defineConfig(async () => {
             // Pinned so a local .dev.vars (EMAIL_MODE=log) cannot change test behavior.
             EMAIL_MODE: 'resend',
             RESEND_API_KEY: 'test-key',
+            TURNSTILE_SECRET_KEY: 'test-turnstile-secret',
           },
         },
       }),

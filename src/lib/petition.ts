@@ -12,6 +12,11 @@ export interface PetitionState {
 
 export const PETITION_API: string = import.meta.env.PUBLIC_PETITION_API ?? 'https://api.dangerousrobot.org';
 
+// Public Turnstile site key for the sign form's bot check. No fallback: a test key
+// shipped by mistake would show a widget whose tokens the live Worker rejects.
+// The deploy workflow refuses to build without it; .env.example has the test key.
+export const TURNSTILE_SITE_KEY: string = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
 // The Worker deletes unconfirmed signatures after UNCONFIRMED_TTL_DAYS
 // (workers/api/src/index.ts) and sends this same sentence to the no-JS page.
 // The site keeps its own copy so the modal is right whichever deploys first.

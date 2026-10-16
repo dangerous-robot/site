@@ -20,6 +20,13 @@ const REMINDERS_PER_RUN = 20;
 const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
 const EMAIL_MAX = 254;
+const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+// Turnstile's documented token limit; anything longer is not a real token.
+const TURNSTILE_TOKEN_MAX = 2048;
+export const SITEVERIFY_TIMEOUT_MS = 5000;
+// What a genuine token from the live sign form reports; the form sets the action.
+const TURNSTILE_HOSTNAME = 'dangerousrobot.org';
+const TURNSTILE_ACTION = 'petition-sign';
 
 interface Petition {
   slug: string;
@@ -178,7 +185,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (field('website') !== '') return checkEmail();
   // Milliseconds the page was open, measured by the browser's own monotonic clock
   // (not compared against ours, so a skewed client clock cannot drop a signer).
-  // Absent for the no-JS form, which is accepted.
+  // Absent means no page script set it; the bot check below still applies.
   const elapsed = Number(field('elapsed'));
   if (elapsed > 0 && elapsed < MIN_FILL_MS) return checkEmail();
 
@@ -198,6 +205,22 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
   const showName = form.get('show_name') === 'on';
   const wantsUpdates = form.get('updates') === 'on';
+
+  // After the field checks, so a typo does not spend the single-use token; before the
+  // cap, the insert and the email, so a script without a passing check sends nothing.
+  const check = await verifyTurnstile(env, field('cf-turnstile-response'), request.headers.get('CF-Connecting-IP'));
+  if (check === 'missing') {
+    const message = (request.headers.get('Accept') ?? '').includes('application/json')
+      ? 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.'
+      : 'Signing needs JavaScript, for a bot check that stops scripts from signing up other people\'s email addresses. Please turn on JavaScript and sign again, or write to contact@dangerousrobot.org.';
+    return reply(request, env, 403, message, petition.post_url);
+  }
+  if (check === 'failed') {
+    return reply(request, env, 403, 'The bot check did not pass. Please reload the page and try again.', petition.post_url);
+  }
+  if (check === 'error') {
+    return reply(request, env, 503, 'We could not run the bot check. Please try again in a minute.', petition.post_url);
+  }
 
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
   const now = Date.now();
@@ -236,6 +259,45 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(new Date(now).toISOString()).run();
   }
   return checkEmail();
+}
+
+/**
+ * Asks Turnstile whether the widget's token is genuine. Fails closed: a missing secret,
+ * a network error, a timeout or an unreadable answer all refuse the signature. Logs
+ * carry error codes only, never the token or the secret.
+ */
+async function verifyTurnstile(env: Env, token: string, ip: string | null): Promise<'ok' | 'missing' | 'failed' | 'error'> {
+  if (!token) return 'missing';
+  if (token.length > TURNSTILE_TOKEN_MAX) return 'failed';
+  if (!env.TURNSTILE_SECRET_KEY) {
+    console.error('turnstile: TURNSTILE_SECRET_KEY is not set; refusing to sign');
+    return 'error';
+  }
+  const body = new URLSearchParams({ secret: env.TURNSTILE_SECRET_KEY, response: token });
+  if (ip) body.set('remoteip', ip);
+  try {
+    const res = await fetch(SITEVERIFY_URL, { method: 'POST', body, signal: AbortSignal.timeout(SITEVERIFY_TIMEOUT_MS) });
+    if (!res.ok) {
+      console.error(`turnstile: siteverify returned ${res.status}`);
+      return 'error';
+    }
+    const result = (await res.json()) as { success?: unknown; 'error-codes'?: unknown; hostname?: unknown; action?: unknown };
+    if (result.success !== true) {
+      console.warn(`turnstile: token rejected ${JSON.stringify(result['error-codes'] ?? [])}`);
+      return 'failed';
+    }
+    // A token solved on another site, or for another widget on this key, is not a sign-up.
+    const hostname = env.TURNSTILE_HOSTNAME ?? TURNSTILE_HOSTNAME;
+    const action = env.TURNSTILE_ACTION ?? TURNSTILE_ACTION;
+    if (result.hostname !== hostname || (result.action ?? '') !== action) {
+      console.warn(`turnstile: token for ${JSON.stringify(result.hostname)} / ${JSON.stringify(result.action)} refused`);
+      return 'failed';
+    }
+    return 'ok';
+  } catch (err) {
+    console.error(`turnstile: siteverify unreachable (${err instanceof Error ? err.name : 'unknown error'})`);
+    return 'error';
+  }
 }
 
 async function tokenLanding(env: Env, slug: string, action: 'confirm' | 'remove', token: string | null): Promise<Response> {
