@@ -6,7 +6,7 @@ PydanticAI Model instances when needed.
 
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
 from functools import lru_cache
 from typing import TYPE_CHECKING, Literal
@@ -267,6 +267,33 @@ def _model_needs_native_output(model_id: str) -> bool:
     return "gemma3n" in lower or "gpt-oss-120b" in lower
 
 
+def _model_accepts_reasoning_effort(model_id: str) -> bool:
+    """True for models that take OpenAI's ``reasoning_effort`` on chat requests.
+
+    PydanticAI's OpenAI profile only declares reasoning support for OpenAI's
+    own o-series and gpt-5 ids, so for any other id it drops the portable
+    ``thinking`` setting without a word. gpt-oss is a reasoning model with
+    low/medium/high effort levels, so it is declared here.
+    """
+    return "gpt-oss" in model_id.lower()
+
+
+def drops_thinking(model: "Model | str") -> bool:
+    """True when PydanticAI would drop the portable ``thinking`` setting for ``model``.
+
+    Only built models are checked: a spec string goes to PydanticAI's own
+    provider, whose profiles declare that provider's reasoning models.
+    """
+    from pydantic_ai.models import Model
+    from pydantic_ai.models.fallback import FallbackModel
+
+    legs = model.models if isinstance(model, FallbackModel) else [model]
+    return any(
+        isinstance(m, Model) and not (m.profile.supports_thinking or m.profile.thinking_always_enabled)
+        for m in legs
+    )
+
+
 @lru_cache(maxsize=None)
 def resolve_model(spec: str) -> "Model | str":
     """Map a model spec string to a PydanticAI Model or pass it through.
@@ -296,6 +323,7 @@ def resolve_model(spec: str) -> "Model | str":
         return FallbackModel(*legs)
     if spec.startswith("greenpt:"):
         from pydantic_ai.models.openai import OpenAIChatModel
+        from pydantic_ai.profiles.openai import OpenAIModelProfile
         from pydantic_ai.providers.openai import OpenAIProvider
 
         model_id = spec.split(":", 1)[1]
@@ -304,7 +332,14 @@ def resolve_model(spec: str) -> "Model | str":
         except KeyError as e:
             raise RuntimeError(f"GreenPT provider requires {e.args[0]}") from e
         provider = OpenAIProvider(base_url="https://api.greenpt.ai/v1", api_key=api_key)
-        return OpenAIChatModel(model_id, provider=provider)
+        if not _model_accepts_reasoning_effort(model_id):
+            return OpenAIChatModel(model_id, provider=provider)
+        # Built from the provider's profile so only the thinking flag changes;
+        # a bare profile would drop the OpenAI JSON schema handling.
+        profile = replace(
+            OpenAIModelProfile.from_profile(provider.model_profile(model_id)), supports_thinking=True
+        )
+        return OpenAIChatModel(model_id, provider=provider, profile=profile)
     if spec.startswith("infomaniak:"):
         from pydantic_ai.models.openai import OpenAIChatModel
         from pydantic_ai.profiles.openai import OpenAIModelProfile
