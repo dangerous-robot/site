@@ -1706,6 +1706,15 @@ def _queue_tag_editor(tags: list[str]):
     return edit
 
 
+def _git_reviewer_email(monkeypatch) -> None:
+    """Give the queue's `a` a reviewer: it has no --reviewer, so approval reads `git config
+    user.email`. Moving HOME hides only the global config; the checkout's own config (set
+    locally, absent in CI) would otherwise decide the outcome."""
+    monkeypatch.setenv("GIT_CONFIG_COUNT", "1")
+    monkeypatch.setenv("GIT_CONFIG_KEY_0", "user.email")
+    monkeypatch.setenv("GIT_CONFIG_VALUE_0", REVIEWER)
+
+
 @pytest.mark.usefixtures("human_at_terminal")
 def test_a_tag_edit_made_in_the_review_queue_on_a_pending_recheck_survives_approval(tmp_path, monkeypatch) -> None:
     """The review queue lists the pending draft; `e` edits its tags, `a` promotes it. The live
@@ -1715,6 +1724,7 @@ def test_a_tag_edit_made_in_the_review_queue_on_a_pending_recheck_survives_appro
     live, pending = _recheck_unchanged(tmp_path, {"tags": ["energy"]})
     monkeypatch.setattr(review_queue_mod, "_run_editor_blocking", _queue_tag_editor(["energy", "highlight"]))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    _git_reviewer_email(monkeypatch)
 
     walk = _dr(tmp_path, "review", input="e\ns\na\n")
 
@@ -1725,6 +1735,7 @@ def test_a_tag_edit_made_in_the_review_queue_on_a_pending_recheck_survives_appro
     assert promoted["status"] == "published"
     assert promoted["tags"] == ["energy", "highlight"]
     assert "seeded_live" not in _sidecar(live)
+    assert _sidecar(live)["human_review"]["reviewer"] == REVIEWER
 
 
 def test_promotion_takes_live_tags_edited_after_seeding_over_unchanged_pending_tags(tmp_path) -> None:
@@ -2153,6 +2164,7 @@ def test_a_review_queue_tag_edit_on_a_pending_draft_from_an_evaluator_rerun_surv
     assert pending.exists()
     monkeypatch.setattr(review_queue_mod, "_run_editor_blocking", _queue_tag_editor(["energy", "highlight"]))
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    _git_reviewer_email(monkeypatch)
 
     walk = _dr(tmp_path, "review", input="e\ns\na\n")
 

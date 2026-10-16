@@ -197,6 +197,8 @@ class TestResolveModel:
         (passthrough string) to cover both shapes the splitter produces."""
         monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
         monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
+        # FallbackModel builds the Anthropic client up front, which needs a key.
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         resolve_model.cache_clear()
         from pydantic_ai.models.fallback import FallbackModel
         from pydantic_ai.models.openai import OpenAIChatModel
@@ -215,6 +217,7 @@ class TestResolveModel:
     def test_fallback_spec_trims_whitespace(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("INFOMANIAK_API_KEY", "test-key")
         monkeypatch.setenv("INFOMANIAK_PRODUCT_ID", "test-pid")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
         resolve_model.cache_clear()
         from pydantic_ai.models.fallback import FallbackModel
 

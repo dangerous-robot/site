@@ -661,8 +661,9 @@ def test_r_then_a_keeps_the_pick_so_the_printed_command_runs(tmp_path, monkeypat
     assert "status: published" in claim_path.read_text(encoding="utf-8")
     assert _sidecar(claim_path)["restatement"]["picked"] == 2
 
+    # `--model test`: the provider key check runs before the scripted agents take over.
     with scripted_agents(analyst=analyst_args(verdict="true"), auditor=auditor_args(verdict="true")):
-        draft = _dr(tmp_path, "draft", "--restates", SLUG, "--pick", "2", "--paid-dry-run", "--skip-wayback")
+        draft = _dr(tmp_path, "--model", "test", "draft", "--restates", SLUG, "--pick", "2", "--paid-dry-run", "--skip-wayback")
     assert draft.exit_code == 0, draft.output
     assert CANDIDATE_TEXTS[1] in draft.output
 
