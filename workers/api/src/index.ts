@@ -23,7 +23,10 @@ const EMAIL_MAX = 254;
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 // Turnstile's documented token limit; anything longer is not a real token.
 const TURNSTILE_TOKEN_MAX = 2048;
-const SITEVERIFY_TIMEOUT_MS = 5000;
+export const SITEVERIFY_TIMEOUT_MS = 5000;
+// What a genuine token from the live sign form reports; the form sets the action.
+const TURNSTILE_HOSTNAME = 'dangerousrobot.org';
+const TURNSTILE_ACTION = 'petition-sign';
 
 interface Petition {
   slug: string;
@@ -278,10 +281,19 @@ async function verifyTurnstile(env: Env, token: string, ip: string | null): Prom
       console.error(`turnstile: siteverify returned ${res.status}`);
       return 'error';
     }
-    const result = (await res.json()) as { success?: unknown; 'error-codes'?: unknown };
-    if (result.success === true) return 'ok';
-    console.warn(`turnstile: token rejected ${JSON.stringify(result['error-codes'] ?? [])}`);
-    return 'failed';
+    const result = (await res.json()) as { success?: unknown; 'error-codes'?: unknown; hostname?: unknown; action?: unknown };
+    if (result.success !== true) {
+      console.warn(`turnstile: token rejected ${JSON.stringify(result['error-codes'] ?? [])}`);
+      return 'failed';
+    }
+    // A token solved on another site, or for another widget on this key, is not a sign-up.
+    const hostname = env.TURNSTILE_HOSTNAME ?? TURNSTILE_HOSTNAME;
+    const action = env.TURNSTILE_ACTION ?? TURNSTILE_ACTION;
+    if (result.hostname !== hostname || (result.action ?? '') !== action) {
+      console.warn(`turnstile: token for ${JSON.stringify(result.hostname)} / ${JSON.stringify(result.action)} refused`);
+      return 'failed';
+    }
+    return 'ok';
   } catch (err) {
     console.error(`turnstile: siteverify unreachable (${err instanceof Error ? err.name : 'unknown error'})`);
     return 'error';

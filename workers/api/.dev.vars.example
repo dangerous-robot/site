@@ -5,3 +5,7 @@ ALLOWED_ORIGINS=https://dangerousrobot.org,http://localhost:4321
 # Cloudflare's always-pass Turnstile test secret. It accepts only the dummy token from the
 # test site key (PUBLIC_TURNSTILE_SITE_KEY in the root .env.example), never a real one.
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
+# Test-key answers report hostname example.com and no action. Production leaves both unset,
+# so the Worker requires dangerousrobot.org and petition-sign.
+TURNSTILE_HOSTNAME=example.com
+TURNSTILE_ACTION=

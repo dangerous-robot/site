@@ -1,6 +1,6 @@
 import { applyD1Migrations, env, reset } from 'cloudflare:test';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import worker, { cleanup, HOURLY_EMAIL_CAP, sendReminders } from '../src/index';
+import worker, { cleanup, HOURLY_EMAIL_CAP, sendReminders, SITEVERIFY_TIMEOUT_MS } from '../src/index';
 
 const SITE = 'https://dangerousrobot.org';
 const API = 'https://api.dangerousrobot.org';
@@ -22,8 +22,10 @@ const GOOD_TOKEN = 'good-turnstile-token';
 /** Pinned in vitest.config.ts. */
 const TEST_SECRET = 'test-turnstile-secret';
 /** How the stand-in siteverify answers: judge the token, throw, or answer like an outage. */
-let siteverifyMode: 'judge' | 'throw' | 'http500' | 'not-json' = 'judge';
+let siteverifyMode: 'judge' | 'throw' | 'http500' | 'not-json' | 'hang' = 'judge';
 let siteverifyCalls: URLSearchParams[] = [];
+/** Hostname and action the stand-in siteverify reports for a passing token. */
+let siteverifyClaims: { hostname?: string; action?: string } = {};
 
 beforeEach(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
@@ -36,6 +38,7 @@ beforeEach(async () => {
   resendStatus = 200;
   siteverifyMode = 'judge';
   siteverifyCalls = [];
+  siteverifyClaims = { hostname: 'dangerousrobot.org', action: 'petition-sign' };
   // Stand in for Turnstile's siteverify and the Resend API so tests see the exact
   // requests the Worker sends. Siteverify passes only GOOD_TOKEN with TEST_SECRET.
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
@@ -46,8 +49,17 @@ beforeEach(async () => {
       if (siteverifyMode === 'throw') throw new TypeError('network down');
       if (siteverifyMode === 'http500') return new Response('upstream error', { status: 500 });
       if (siteverifyMode === 'not-json') return new Response('<html>', { status: 200 });
+      // Never answers; settles only when the Worker's abort signal fires.
+      if (siteverifyMode === 'hang') {
+        return new Promise<Response>((_, reject) => {
+          const signal = init!.signal!;
+          signal.addEventListener('abort', () => reject(signal.reason));
+        });
+      }
       const success = form.get('secret') === TEST_SECRET && form.get('response') === GOOD_TOKEN;
-      return Response.json({ success, 'error-codes': success ? [] : ['invalid-input-response'] });
+      return Response.json(
+        success ? { success, 'error-codes': [], ...siteverifyClaims } : { success, 'error-codes': ['invalid-input-response'] },
+      );
     }
     expect(url).toBe('https://api.resend.com/emails');
     sentEmails.push(JSON.parse(String(init!.body)));
@@ -474,6 +486,53 @@ describe('bot check (Turnstile)', () => {
       expect(res.status, mode).toBe(503);
       expect(((await res.json()) as { error: string }).error).toContain('could not run the bot check');
     }
+    await expectNothingStored();
+  });
+
+  it('refuses a passing token solved on another hostname', async () => {
+    siteverifyClaims.hostname = 'evil.example';
+    const res = await sign();
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: string }).error).toContain('bot check');
+    await expectNothingStored();
+  });
+
+  it('refuses a passing token issued for another action', async () => {
+    for (const action of ['other-form', undefined]) {
+      siteverifyClaims.action = action;
+      expect((await sign()).status, String(action)).toBe(403);
+    }
+    await expectNothingStored();
+  });
+
+  it('accepts the test-key answer only when the Worker is configured for it', async () => {
+    siteverifyClaims = { hostname: 'example.com' };
+    expect((await sign()).status).toBe(403);
+    const body = new URLSearchParams({ name: 'Ada', email: 'dev@example.org', 'cf-turnstile-response': GOOD_TOKEN });
+    const res = await worker.fetch(
+      new Request(`${API}/petitions/${SLUG}/sign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', 'CF-Connecting-IP': '10.7.7.7' },
+        body,
+      }),
+      { ...env, TURNSTILE_HOSTNAME: 'example.com', TURNSTILE_ACTION: '' },
+    );
+    expect(res.status).toBe(200);
+    expect(await rowCount()).toBe(1);
+  });
+
+  it('fails closed when siteverify does not answer before the timeout', async () => {
+    siteverifyMode = 'hang';
+    // Stands in for the real timer so the test need not wait 5 seconds; the signal
+    // fires the way AbortSignal.timeout's does, with a TimeoutError.
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(new DOMException('timed out', 'TimeoutError')), 10);
+      return controller.signal;
+    });
+    const res = await sign();
+    expect(timeout).toHaveBeenCalledWith(SITEVERIFY_TIMEOUT_MS);
+    expect(res.status).toBe(503);
     await expectNothingStored();
   });
 

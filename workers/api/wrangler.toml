@@ -25,6 +25,8 @@ simple = { limit = 5, period = 60 }
 crons = ["17 * * * *"]
 
 # Secrets (set with `wrangler secret put`): RESEND_API_KEY, TURNSTILE_SECRET_KEY.
+# TURNSTILE_HOSTNAME and TURNSTILE_ACTION stay unset here: the code defaults are the
+# production values. .dev.vars sets them for Cloudflare's test keys.
 # Local overrides live in .dev.vars (see .dev.vars.example).
 [vars]
 # Base of the confirm and remove links. The daily reminder has no request to read it from.
