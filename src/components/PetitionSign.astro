@@ -21,9 +21,10 @@ interface Props {
 }
 const { slug, statement } = Astro.props;
 
-// The Worker refuses a sign-up without a bot check token, and the check needs scripts.
+// The bot check needs scripts. Without a token the Worker answers with a page that
+// offers to sign by email instead (sign@dangerousrobot.org, workers/api/src/pages.ts).
 const NO_SCRIPT_TEXT =
-  "Signing needs JavaScript, for a bot check that stops scripts from signing up other people's email addresses.";
+  'Without JavaScript, signing takes one more step. Press Sign and we will show you a short email to send from your address. Sending it is what confirms your signature.';
 
 // Build-time snapshot for readers without JS. The Worker may be down or the
 // petition row not created yet; the build must not fail on that.
@@ -88,6 +89,7 @@ const names = state?.names ?? [];
         </div>
       </form>
       <p class="petition-status" role="status" aria-live="polite" tabindex="-1"></p>
+      <button type="button" class="petition-email-sign" data-email-sign hidden>Sign by email instead</button>
       <dialog class="petition-dialog" aria-labelledby="petition-dialog-title" aria-describedby="petition-dialog-text">
         <h3 id="petition-dialog-title">One more step</h3>
         <p id="petition-dialog-text">{CHECK_EMAIL_TEXT}</p>
@@ -159,6 +161,7 @@ const names = state?.names ?? [];
     // time from performance.now() is immune to a wrong system clock.
     const loadedAt = performance.now();
     const elapsedInput = form.querySelector<HTMLInputElement>('input[name="elapsed"]')!;
+    const emailSign = section.querySelector<HTMLButtonElement>('[data-email-sign]')!;
 
     // Clip a long roll and offer the rest behind a button. Measured, not
     // counted: whether ~150 names overflow depends on name length and width.
@@ -237,11 +240,23 @@ const names = state?.names ?? [];
     // (about 8 seconds apart) before Sign is handed back.
     const WAIT_LIMIT_MS = 30_000;
 
-    function stopWaiting(message: string) {
+    // For readers who cannot pass the bot check: a plain form POST with no token gets the
+    // Worker's sign-by-email page, the same one readers without JS see.
+    emailSign.addEventListener('click', () => {
+      if (!form.reportValidity()) return;
+      // A leftover token would send the form down the web path instead of to that page.
+      form.querySelectorAll('[name="cf-turnstile-response"]').forEach((el) => el.remove());
+      elapsedInput.value = String(Math.round(performance.now() - loadedAt));
+      // Native submit: skips the fetch handler below and its Accept: application/json.
+      form.submit();
+    });
+
+    function stopWaiting(message: string, offerEmail = false) {
       sendWhenReady = false;
       clearTimeout(waitTimer);
       form.querySelector('button')!.disabled = false;
       status.textContent = message;
+      emailSign.hidden = !offerEmail;
     }
 
     // For errors Turnstile will not recover from: a blocked script, a render that
@@ -249,7 +264,7 @@ const names = state?.names ?? [];
     // that cannot come.
     function botCheckFailed() {
       botCheck = 'failed';
-      stopWaiting(BOT_CHECK_FAILED);
+      stopWaiting(BOT_CHECK_FAILED, true);
     }
 
     // Codes Cloudflare lists as not retried: a bad or disabled site key, an
@@ -314,6 +329,7 @@ const names = state?.names ?? [];
       const button = form.querySelector('button')!;
       button.disabled = true;
       status.textContent = '';
+      emailSign.hidden = true;
       // Tokens are single use and the Worker refuses a form without one.
       if (TURNSTILE_SITE_KEY && !new FormData(form).get('cf-turnstile-response')) {
         if (botCheck === 'failed') {
@@ -324,7 +340,7 @@ const names = state?.names ?? [];
         sendWhenReady = true;
         clearTimeout(waitTimer);
         waitTimer = setTimeout(
-          () => sendWhenReady && stopWaiting('The bot check has not finished. Press Sign to try again, or reload the page.'),
+          () => sendWhenReady && stopWaiting('The bot check has not finished. Press Sign to try again, or reload the page.', true),
           WAIT_LIMIT_MS,
         );
         status.textContent =
@@ -347,6 +363,8 @@ const names = state?.names ?? [];
           return;
         }
         status.textContent = body.error ?? 'Something went wrong. Please try again.';
+        // 403 is the Worker refusing the bot check token.
+        emailSign.hidden = res.status !== 403;
       } catch {
         status.textContent = 'Could not reach the server. Please try again.';
       }
@@ -532,6 +550,19 @@ const names = state?.names ?? [];
     outline: none;
   }
 
+  /* Sits right under the bot check message it belongs to. */
+  .petition-status:has(+ .petition-email-sign:not([hidden])) {
+    margin-bottom: var(--space-xs);
+  }
+
+  .petition-email-sign {
+    margin-bottom: var(--space-lg);
+  }
+
+  .petition-email-sign[hidden] {
+    display: none;
+  }
+
   .petition-dialog {
     max-width: min(28rem, calc(100vw - 2 * var(--space-md)));
     padding: var(--space-lg);
@@ -621,8 +652,9 @@ const names = state?.names ?? [];
     color: var(--color-text-muted);
   }
 
-  .petition-roll__toggle {
-    margin-top: var(--space-sm);
+  /* Text buttons: accent text, no box, as for links. */
+  .petition-roll__toggle,
+  .petition-email-sign {
     padding: var(--space-xs) 0;
     border: 0;
     background: none;
@@ -632,7 +664,12 @@ const names = state?.names ?? [];
     cursor: pointer;
   }
 
-  .petition-roll__toggle:hover {
+  .petition-roll__toggle {
+    margin-top: var(--space-sm);
+  }
+
+  .petition-roll__toggle:hover,
+  .petition-email-sign:hover {
     text-decoration: underline;
     text-underline-offset: 2px;
   }
