@@ -620,6 +620,9 @@ async def test_tiebreaker_thinking_level_reaches_the_request(tmp_path, monkeypat
     assert len(tiebreaker) == 1 and evaluator, "both agents reached the gateway"
     assert tiebreaker[0]["reasoning_effort"] == "high"
     assert all("reasoning_effort" not in b for b in evaluator), "the Evaluator keeps the model's default"
+    # gpt-oss answers in prose unless the output tool is forced, so the effort must change nothing else.
+    assert tiebreaker[0]["tool_choice"] == evaluator[0]["tool_choice"] == "required"
+    assert set(tiebreaker[0]) - {"reasoning_effort"} == set(evaluator[0])
 
 
 @pytest.mark.asyncio
