@@ -139,10 +139,10 @@ def _dr(tmp_path, *args: str):
     return CliRunner().invoke(main, [*_models(), *args, "--repo-root", str(tmp_path)])
 
 
-def _draft(tmp_path, *extra: str, dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
+def _draft(tmp_path, *extra: str, paid_dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
     args = ["draft", *mode, sentence, "--skip-wayback"]
-    if dry_run:
-        args.insert(1, "--dry-run")
+    if paid_dry_run:
+        args.insert(1, "--paid-dry-run")
     return _dr(tmp_path, *args, *extra)
 
 
@@ -341,14 +341,14 @@ def test_restater_model_option_reaches_the_config(tmp_path, monkeypatch) -> None
     monkeypatch.setattr("loop.run", _capture)
     monkeypatch.setenv("DR_RESTATER_MODEL", "test")
     CliRunner().invoke(main, [
-        "--model", "test", "draft", "--dry-run", "--entity", ENTITY_REF, SENTENCE, "--repo-root", str(tmp_path),
+        "--model", "test", "draft", "--paid-dry-run", "--entity", ENTITY_REF, SENTENCE, "--repo-root", str(tmp_path),
     ])
     assert seen["config"].restater_model == "test"
 
     seen.clear()
     monkeypatch.delenv("DR_RESTATER_MODEL")
     CliRunner().invoke(main, [
-        "--model", "test", "--restater-model", "test", "draft", "--dry-run", "--entity", ENTITY_REF, SENTENCE,
+        "--model", "test", "--restater-model", "test", "draft", "--paid-dry-run", "--entity", ENTITY_REF, SENTENCE,
         "--repo-root", str(tmp_path),
     ])
     assert seen["config"].restater_model == "test"
@@ -854,7 +854,7 @@ def test_dry_run_prints_the_candidates_and_writes_nothing(tmp_path) -> None:
 
     write_entity(tmp_path)
     with scripted_agents(analyst=analyst_args(verdict="unverified"), auditor=auditor_args(verdict="unverified")):
-        result = _draft(tmp_path, dry_run=True)
+        result = _draft(tmp_path, paid_dry_run=True)
     assert result.exit_code == 0, result.output
     assert "Restatement:" in result.output
     for c in RESTATER_CANDIDATES:
@@ -993,7 +993,7 @@ def test_restates_pick_runs_the_candidate_as_a_new_claim_with_the_link(tmp_path)
 def test_restates_pick_dry_run_writes_nothing_and_records_no_pick(tmp_path) -> None:
     original, ref = _picked_fixture(tmp_path)
     with scripted_agents(analyst=analyst_args(verdict="true"), auditor=auditor_args(verdict="true")):
-        result = _dr(tmp_path, "draft", "--restates", ref, "--pick", "1", "--dry-run", "--skip-wayback")
+        result = _dr(tmp_path, "draft", "--restates", ref, "--pick", "1", "--paid-dry-run", "--skip-wayback")
     assert result.exit_code == 0, result.output
     assert written_claims(tmp_path) == [original]
     assert written_sources(tmp_path) == []
@@ -1180,12 +1180,12 @@ def test_max_initial_queries_below_one_is_a_usage_error_before_the_loop(tmp_path
     """BA-2: ``--max-initial-queries 0`` used to plan nothing silently."""
     write_entity(tmp_path)
     called = _tripwire(monkeypatch)
-    result = _draft(tmp_path, "--max-initial-queries", "0", dry_run=True)
+    result = _draft(tmp_path, "--max-initial-queries", "0", paid_dry_run=True)
     assert result.exit_code == 2, result.output
     assert called == []
 
     reached = _tripwire(monkeypatch)
-    _draft(tmp_path, "--max-initial-queries", "1", dry_run=True)
+    _draft(tmp_path, "--max-initial-queries", "1", paid_dry_run=True)
     assert reached == ["run"], "1 is the lowest allowed value"
 
 

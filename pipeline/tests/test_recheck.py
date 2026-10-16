@@ -1158,7 +1158,7 @@ def test_r_on_a_pending_recheck_records_the_pick_there_and_the_printed_command_r
     assert _bytes(live, _sidecar_path(live)) == live_before
 
     with scripted_agents():
-        dry = _dr(tmp_path, "draft", "--restates", _ref("live-claim"), "--pick", "2", "--dry-run", "--skip-wayback")
+        dry = _dr(tmp_path, "draft", "--restates", _ref("live-claim"), "--pick", "2", "--paid-dry-run", "--skip-wayback")
     assert dry.exit_code == 0, dry.output
     assert PENDING_CANDIDATES[1] in dry.output
     assert LIVE_CANDIDATES[1] not in dry.output

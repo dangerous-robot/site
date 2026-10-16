@@ -748,7 +748,7 @@ def test_claim_dry_run_reruns_the_statement_and_writes_nothing(tmp_path) -> None
     claim_before, sidecar_before = claim_path.read_bytes(), sidecar_path.read_bytes()
     ctx, analyst_prompts, _auditor_prompts = _capturing()
     with ctx:
-        result = _dr(tmp_path, *_draft_args("--claim", _claim_ref(claim_path, tmp_path), "--dry-run"))
+        result = _dr(tmp_path, *_draft_args("--claim", _claim_ref(claim_path, tmp_path), "--paid-dry-run"))
 
     assert result.exit_code == 0, result.output
     assert any("Some statement" in p for p in analyst_prompts)
@@ -922,7 +922,7 @@ def test_rerun_analyst_reads_the_stored_statement(tmp_path) -> None:
     claim_path, _ = _write_claim(tmp_path, stem="water-use", statement=stored, title="An older title")
     ctx, analyst_prompts, _auditor_prompts = _capturing()
     with ctx:
-        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "analyst", "--dry-run")
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "analyst", "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert any(stored in p for p in analyst_prompts)
@@ -936,7 +936,7 @@ def test_rerun_evaluator_grades_the_stored_statement(tmp_path) -> None:
     claim_path, _ = _write_claim(tmp_path, stem="water-use", statement=stored, title="An older title")
     ctx, _analyst_prompts, auditor_prompts = _capturing()
     with ctx:
-        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "evaluator", "--dry-run")
+        result = _dr(tmp_path, "draft", "--claim", _claim_ref(claim_path, tmp_path), "--rerun", "evaluator", "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert any(f"## Claim\n{stored}\n" in p for p in auditor_prompts)
@@ -1004,7 +1004,7 @@ def test_old_commands_are_gone() -> None:
         gone = CliRunner().invoke(main, [name, "--help"])
         assert gone.exit_code != 0, f"dr {name} still exists"
     draft_help = CliRunner().invoke(main, ["draft", "--help"]).output
-    for flag in ("--criterion", "--subject", "--claim", "--entity", "--dry-run", "--force"):
+    for flag in ("--criterion", "--subject", "--claim", "--entity", "--dry-run", "--paid-dry-run", "--force"):
         assert flag in draft_help
 
 

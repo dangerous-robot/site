@@ -43,6 +43,6 @@ Resolved by RE-AW (Recheck). `dr recheck --due` re-runs every published claim wh
 
 **Where**: `pipeline/loop/` (the run) and `pipeline/orchestrator/persistence.py` (the writer)
 
-Resolved by RE-AR (One loop, one writer). `dr draft` in every form (including `--claim --force`) calls `loop.run`, which writes nothing, and then the one write function `write_claim_run`. No module under `pipeline/loop/` imports a writer, so a dry run cannot write by a flipped conditional.
+Resolved by RE-AR (One loop, one writer). `dr draft` in every form (including `--claim --force`) calls `loop.run`, which writes nothing, and then the one write function `write_claim_run`. No module under `pipeline/loop/` imports a writer, so a paid dry run (`dr draft --paid-dry-run`) cannot write by a flipped conditional.
 
-Two tests pin the dry-run guarantee in `pipeline/tests/test_loop_probe_safety.py`: `test_dry_run_reaches_no_writer_and_no_archive_save` (no `_write_*` function, no `persist_sources`, no archive save is reached, and `allow_save` is `False`) and `test_dry_run_with_wayback_on_never_asks_for_a_capture`. `test_loop_package_imports_no_writer` in the same file pins the import rule.
+Two tests pin the paid dry-run guarantee in `pipeline/tests/test_loop_probe_safety.py`: `test_dry_run_reaches_no_writer_and_no_archive_save` (no `_write_*` function, no `persist_sources`, no archive save is reached, and `allow_save` is `False`) and `test_dry_run_with_wayback_on_never_asks_for_a_capture`. `test_loop_package_imports_no_writer` in the same file pins the import rule.

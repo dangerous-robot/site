@@ -9,8 +9,9 @@ is a tripwire on the public ``loop.run``, which no refused mode may reach.
 Covered:
 
 - every ``dr draft`` mode whose entity is a company (``--entity``, its
-  ``--dry-run``, ``--criterion ... --entity`` with a moved slug and with
-  ``corporate-structure``, ``--claim`` with ``--force`` and ``--dry-run``,
+  ``--dry-run`` and ``--paid-dry-run``, ``--criterion ... --entity`` with a
+  moved slug and with ``corporate-structure``, ``--claim`` with ``--force``,
+  ``--dry-run`` and ``--paid-dry-run``,
   ``--claim --criterion`` attach, ``--restates --pick``, including a
   company claim with no restatement block or no such candidate, and an
   attach on a published claim or one that has ``criteria_slug``) exits 2 with one
@@ -195,22 +196,25 @@ def _mode_args(mode: str, claim_ref: str) -> list[str]:
     return {
         "entity": ["draft", "--entity", COMPANY_REF, COMPANY_SENTENCE],
         "entity-dry-run": ["draft", "--dry-run", "--entity", COMPANY_REF, COMPANY_SENTENCE],
+        "entity-paid-dry-run": ["draft", "--paid-dry-run", "--entity", COMPANY_REF, COMPANY_SENTENCE],
         "criterion-moved": ["draft", "--criterion", MOVED_COMPANY_SLUGS[0], "--entity", COMPANY_REF],
         "criterion-kept": ["draft", "--criterion", KEPT_COMPANY_SLUG, "--entity", COMPANY_REF],
         "claim-force": ["draft", "--claim", claim_ref, "--force"],
         "claim-dry-run": ["draft", "--claim", claim_ref, "--dry-run"],
+        "claim-paid-dry-run": ["draft", "--claim", claim_ref, "--paid-dry-run"],
         "claim-attach": ["draft", "--claim", claim_ref, "--criterion", "probe-co-energy-report"],
         "restates": ["draft", "--restates", claim_ref, "--pick", "1"],
         "rerun-analyst": ["draft", "--claim", claim_ref, "--rerun", "analyst"],
         "rerun-evaluator": ["draft", "--claim", claim_ref, "--rerun", "evaluator"],
         "rerun-evaluator-dry-run": ["draft", "--claim", claim_ref, "--rerun", "evaluator", "--dry-run"],
+        "rerun-evaluator-paid-dry-run": ["draft", "--claim", claim_ref, "--rerun", "evaluator", "--paid-dry-run"],
     }[mode] + ["--skip-wayback"] * (mode != "claim-attach")
 
 
 ALL_MODES = (
-    "entity", "entity-dry-run", "criterion-moved", "criterion-kept",
-    "claim-force", "claim-dry-run", "claim-attach", "restates",
-    "rerun-analyst", "rerun-evaluator", "rerun-evaluator-dry-run",
+    "entity", "entity-dry-run", "entity-paid-dry-run", "criterion-moved", "criterion-kept",
+    "claim-force", "claim-dry-run", "claim-paid-dry-run", "claim-attach", "restates",
+    "rerun-analyst", "rerun-evaluator", "rerun-evaluator-dry-run", "rerun-evaluator-paid-dry-run",
 )
 
 
@@ -404,7 +408,7 @@ def test_control_a_product_entity_still_reaches_the_loop(tmp_path, monkeypatch) 
     monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")  # a developer .env naming brave would stop at the key check
     called = _tripwire(monkeypatch)
 
-    result = _dr(tmp_path, "draft", "--dry-run", "--entity", PRODUCT_REF, "Probe Product runs on wind", "--skip-wayback")
+    result = _dr(tmp_path, "draft", "--paid-dry-run", "--entity", PRODUCT_REF, "Probe Product runs on wind", "--skip-wayback")
 
     assert called == ["run"], result.output
 
@@ -417,7 +421,7 @@ def test_control_a_product_claim_in_the_same_flat_layout_still_reaches_the_loop(
     monkeypatch.setenv("RESEARCH_SEARCH_BACKEND", "tavily")
     called = _tripwire(monkeypatch)
 
-    result = _dr(tmp_path, "draft", "--claim", product_claim, "--dry-run", "--skip-wayback")
+    result = _dr(tmp_path, "draft", "--claim", product_claim, "--paid-dry-run", "--skip-wayback")
 
     assert called == ["run"], result.output
 

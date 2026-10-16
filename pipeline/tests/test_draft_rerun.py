@@ -17,7 +17,7 @@ are public names; nothing here patches a private name under ``pipeline/loop/``.
 Shapes pinned here (the design's § 2):
 
 - ``--rerun`` goes with ``--claim`` only, takes no SENTENCE, ``--criterion``,
-  ``--restates``, ``--source`` or ``--force``, and writes unless ``--dry-run``;
+  ``--restates``, ``--source`` or ``--force``, and writes unless ``--dry-run`` or ``--paid-dry-run``;
 - a draft is rewritten in place; a published or archived claim gets a
   pending pair at ``research/pending/<ref>.md`` plus ``.audit.yaml``;
 - ``--rerun analyst`` nulls ``audit``, replaces the analyst's
@@ -473,7 +473,7 @@ def test_rerun_analyst_dry_run_prints_the_level_and_resolved_citations_and_write
     ))
 
     with scripted_agents(analyst_model=model):
-        result = _rerun(tmp_path, "analyst", "--dry-run")
+        result = _rerun(tmp_path, "analyst", "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert _snapshot(tmp_path) == before
@@ -660,7 +660,7 @@ def test_rerun_sends_the_grading_rule_and_not_notes(tmp_path, agent) -> None:
         agents = scripted_agents(auditor_model=capturing_model(captured, auditor_args()))
 
     with agents:
-        result = _rerun(tmp_path, agent, "--dry-run")
+        result = _rerun(tmp_path, agent, "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     prompt = "\n".join(captured)
@@ -710,7 +710,7 @@ def test_rerun_without_a_grading_rule_sends_none(tmp_path, agent, criteria_slug,
         agents = scripted_agents(auditor_model=capturing_model(captured, auditor_args()))
 
     with agents:
-        result = _rerun(tmp_path, agent, "--dry-run")
+        result = _rerun(tmp_path, agent, "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert captured, "the agent never ran"
@@ -777,7 +777,7 @@ def test_rerun_evaluator_dry_run_on_a_published_claim_writes_nothing(tmp_path) -
     before = _snapshot(tmp_path)
 
     with scripted_agents(auditor=auditor_args(verdict="false")):
-        result = _rerun(tmp_path, "evaluator", "--dry-run")
+        result = _rerun(tmp_path, "evaluator", "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert _snapshot(tmp_path) == before
@@ -828,12 +828,12 @@ def test_rerun_evaluator_from_an_existing_pending_draft_grades_the_pending_analy
     assert _sidecar(pending)["seeded_live"] == seeded, "the Evaluator's sidecar write keeps the seed record"
 
 
-@pytest.mark.parametrize("dry_run", [True, False])
-def test_rerun_of_a_claim_with_an_unknown_status_is_refused_before_any_model_call(tmp_path, entry_spy, dry_run) -> None:
+@pytest.mark.parametrize("flags", [(), ("--dry-run",), ("--paid-dry-run",)], ids=["write", "dry-run", "paid-dry-run"])
+def test_rerun_of_a_claim_with_an_unknown_status_is_refused_before_any_model_call(tmp_path, entry_spy, flags) -> None:
     _repo(tmp_path, status="blocked")
     before = _snapshot(tmp_path)
 
-    result = _rerun(tmp_path, "evaluator", *(["--dry-run"] if dry_run else []))
+    result = _rerun(tmp_path, "evaluator", *flags)
 
     assert result.exit_code == 1, result.output
     assert entry_spy == []

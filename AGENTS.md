@@ -173,7 +173,7 @@ uv run dr lint --entity ecosia-ai
 uv run dr review --claim ecosia-ai/renewable-energy-hosting
 ```
 
-The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
+The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. `dr draft --dry-run` makes no model or search call and writes nothing: it runs the checks that would refuse the real run and prints what that run would do. `dr draft --paid-dry-run` runs the paid loop and writes nothing. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
 
 Agents: do not run the `dr review` walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off; a sign-off is Brandon's. `dr review --format text|json` is read-only and safe for an agent.
 

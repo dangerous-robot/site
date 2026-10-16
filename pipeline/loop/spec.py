@@ -75,7 +75,7 @@ class VerifyConfig:
     # Wayback on by default so a paywalled or blocked primary source can still
     # be read from web.archive.org during the run.
     skip_wayback: bool = False
-    # False when the run writes nothing (``dr draft --dry-run``): archive lookups
+    # False when the run writes nothing (``dr draft --paid-dry-run``): archive lookups
     # check TimeGate only and never ask Save Page Now to capture a page.
     allow_save: bool = True
     # ``dr recheck`` sets the claim's cadence here: a cached source whose
