@@ -1,3 +1,5 @@
+import { SIGN_ADDRESS } from './inbound';
+
 // Worker-served pages for the no-JS sign result and the email links.
 // Inline styles only: these pages load nothing from outside api.dangerousrobot.org.
 // Colors and fonts mirror src/styles/tokens.css.
@@ -10,6 +12,7 @@ main { max-width:36rem; margin:0 auto; padding:3rem 1rem; }
 h1 { font:normal 1.6rem/1.3 Georgia,"Times New Roman",Times,serif; color:var(--heading); margin:0 0 1rem; }
 p { margin:0 0 1rem; }
 a { color:var(--accent); }
+code { font-family:"SF Mono","Fira Code","Cascadia Code",Consolas,monospace; font-size:.9rem; overflow-wrap:anywhere; }
 form { margin:0 0 1.5rem; }
 button { font:inherit; font-size:.9rem; padding:.5rem 1.5rem; border:1px solid var(--accent); border-radius:6px; background:transparent; color:var(--accent); cursor:pointer; }
 button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
@@ -52,4 +55,19 @@ ${backLink(postUrl)}`);
 export function messagePage(heading: string, text: string | string[], postUrl: string | null, status = 200): Response {
   const paragraphs = (Array.isArray(text) ? text : [text]).map((p) => `<p>${escapeHtml(p)}</p>`).join('');
   return page(heading, `<h1>${escapeHtml(heading)}</h1>${paragraphs}${postUrl ? backLink(postUrl) : ''}`, status);
+}
+
+/**
+ * The no-JS sign path: a prefilled email the reader sends from their own address. The
+ * subject is percent-encoded, so nothing in a name can add a recipient or a header field.
+ */
+export function lastStepPage(subject: string, postUrl: string): Response {
+  const href = `mailto:${SIGN_ADDRESS}?subject=${encodeURIComponent(subject)}`;
+  return page('One more step', `<h1>One more step</h1>
+<p>To sign without JavaScript, send this email from the address you want to sign with. We send nothing until it arrives.</p>
+<p><a href="${escapeHtml(href)}">Open the email in my mail app</a></p>
+<p>Or copy these into a new email:<br>To: <code>${SIGN_ADDRESS}</code><br>Subject: <code>${escapeHtml(subject)}</code></p>
+<p>You can change your name or choices in the subject before sending. We will reply once with a link to remove your signature.</p>
+<p>If you cannot send it, write to contact@dangerousrobot.org.</p>
+${backLink(postUrl)}`);
 }
