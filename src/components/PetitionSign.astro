@@ -232,38 +232,62 @@ const names = state?.names ?? [];
     // Set when Sign is pressed before the check has a token; the form then sends
     // itself as soon as the token arrives.
     let sendWhenReady = false;
+    let waitTimer: ReturnType<typeof setTimeout> | undefined;
+    // Turnstile retries most errors itself, so a wait outlives a few retries
+    // (about 8 seconds apart) before Sign is handed back.
+    const WAIT_LIMIT_MS = 30_000;
 
-    // A blocked script or a widget error must not leave Sign waiting for a token
-    // that will never come.
+    function stopWaiting(message: string) {
+      sendWhenReady = false;
+      clearTimeout(waitTimer);
+      form.querySelector('button')!.disabled = false;
+      status.textContent = message;
+    }
+
+    // For errors Turnstile will not recover from: a blocked script, a render that
+    // throws, or a site key or domain it refuses. Sign must not wait on a token
+    // that cannot come.
     function botCheckFailed() {
       botCheck = 'failed';
-      sendWhenReady = false;
-      form.querySelector('button')!.disabled = false;
-      status.textContent = BOT_CHECK_FAILED;
+      stopWaiting(BOT_CHECK_FAILED);
+    }
+
+    // Codes Cloudflare lists as not retried: a bad or disabled site key, an
+    // unauthorized domain, a wrong clock or cached challenge. Others it retries.
+    function isFinalError(code: string): boolean {
+      return /^(1101|1102|2001|400)/.test(code);
     }
 
     function renderWidget() {
       if (!w.turnstile) return;
       if (widgetId !== undefined) w.turnstile.remove(widgetId);
-      widgetId = w.turnstile.render(widgetBox, {
-        sitekey: TURNSTILE_SITE_KEY,
-        action: 'petition-sign',
-        // The site's own theme toggle, not the OS setting that theme "auto" follows.
-        theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
-        // Flexible fills the column but needs 300px; narrower phones get compact.
-        // Measures the form: the widget box has no size of its own yet.
-        size: form.clientWidth >= 300 ? 'flexible' : 'compact',
-        // Most readers pass without a click, so the widget shows only when one is needed.
-        appearance: 'interaction-only',
-        callback: () => {
-          if (sendWhenReady) {
-            sendWhenReady = false;
-            form.requestSubmit();
-          }
-        },
-        'error-callback': botCheckFailed,
-      });
       botCheck = 'ready';
+      try {
+        widgetId = w.turnstile.render(widgetBox, {
+          sitekey: TURNSTILE_SITE_KEY,
+          // The Worker requires this action (TURNSTILE_ACTION in workers/api/src/index.ts).
+          action: 'petition-sign',
+          // The site's own theme toggle, not the OS setting that theme "auto" follows.
+          theme: document.documentElement.dataset.theme === 'light' ? 'light' : 'dark',
+          // Flexible fills the column but needs 300px; narrower phones get compact.
+          // Measures the form: the widget box has no size of its own yet.
+          size: form.clientWidth >= 300 ? 'flexible' : 'compact',
+          // Most readers pass without a click, so the widget shows only when one is needed.
+          appearance: 'interaction-only',
+          callback: () => {
+            if (sendWhenReady) {
+              stopWaiting('');
+              form.requestSubmit();
+            }
+          },
+          // Other errors are left to Turnstile's own retry; WAIT_LIMIT_MS bounds the wait.
+          'error-callback': (code: string) => {
+            if (isFinalError(String(code))) botCheckFailed();
+          },
+        });
+      } catch {
+        botCheckFailed();
+      }
     }
 
     function loadTurnstile() {
@@ -298,7 +322,13 @@ const names = state?.names ?? [];
         }
         loadTurnstile();
         sendWhenReady = true;
-        status.textContent = 'Checking that you are not a bot. Your signature will send in a moment.';
+        clearTimeout(waitTimer);
+        waitTimer = setTimeout(
+          () => sendWhenReady && stopWaiting('The bot check has not finished. Press Sign to try again, or reload the page.'),
+          WAIT_LIMIT_MS,
+        );
+        status.textContent =
+          'Checking that you are not a bot. If a check box appears above the Sign button, click it. Your signature then sends.';
         return;
       }
       elapsedInput.value = String(Math.round(performance.now() - loadedAt));
