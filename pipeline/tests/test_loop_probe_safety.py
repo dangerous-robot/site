@@ -7,7 +7,7 @@ Two import-level checks and one zero-write run:
   ``fit_verdict_to_written_pool`` are allowed);
 - ``orchestrator/cli.py`` reaches the loop only through its public names,
   so no command calls a loop step by a private name;
-- ``dr draft --dry-run`` on scripted inputs reaches no writer and no archive
+- ``dr draft --paid-dry-run`` on scripted inputs reaches no writer and no archive
   save, and runs the loop with ``allow_save`` False.
 """
 
@@ -319,7 +319,7 @@ def test_dry_run_reaches_no_writer_and_no_archive_save(tmp_path, monkeypatch) ->
 
     with scripted_agents(), _offline_archive():
         result = CliRunner().invoke(main, [
-            "--model", "test", "draft", "--dry-run", "--entity", "subjects/probe-subject", SENTENCE,
+            "--model", "test", "draft", "--paid-dry-run", "--entity", "subjects/probe-subject", SENTENCE,
             "--repo-root", str(tmp_path),
         ])
 
@@ -335,7 +335,7 @@ def test_dry_run_reaches_no_writer_and_no_archive_save(tmp_path, monkeypatch) ->
 
 
 def test_dry_run_with_wayback_on_never_asks_for_a_capture(tmp_path, monkeypatch) -> None:
-    """``--dry-run`` keeps the archive lookup but never Save Page Now, even with ``--wayback``."""
+    """``--paid-dry-run`` keeps the archive lookup but never Save Page Now, even with ``--wayback``."""
     from orchestrator.cli import main
 
     write_entity(tmp_path)
@@ -343,7 +343,7 @@ def test_dry_run_with_wayback_on_never_asks_for_a_capture(tmp_path, monkeypatch)
 
     with scripted_agents(ingestor=_save_asking_ingest_model()), _offline_archive() as router:
         result = CliRunner().invoke(main, [
-            "--model", "test", "draft", "--dry-run", "--wayback", "--entity", "subjects/probe-subject",
+            "--model", "test", "draft", "--paid-dry-run", "--wayback", "--entity", "subjects/probe-subject",
             SENTENCE, "--repo-root", str(tmp_path),
         ])
         # respx clears call counts when the router exits, so read them here.

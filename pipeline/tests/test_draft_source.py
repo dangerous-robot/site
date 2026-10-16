@@ -16,10 +16,10 @@ Shapes pinned here (the design's § 2):
 - ``--source URL`` is a mode of ``dr draft``: no SENTENCE, no other mode
   flag, no ``--rerun``; it runs no loop and writes no claim, sidecar or finding;
 - it writes one file at ``research/sources/<year>/<slug>.md`` and prints
-  ``Wrote <path>``; ``--dry-run`` prints the Markdown and writes nothing;
+  ``Wrote <path>``; ``--paid-dry-run`` prints the Markdown and writes nothing;
 - ``--force`` overwrites an existing file only when it holds the same URL;
 - archive.org is asked to capture only when the command writes
-  (``--dry-run`` checks TimeGate only); ``--skip-wayback`` makes no archive request.
+  (``--paid-dry-run`` checks TimeGate only); ``--skip-wayback`` makes no archive request.
 """
 
 from __future__ import annotations
@@ -184,7 +184,7 @@ def test_source_dry_run_prints_the_markdown_and_writes_nothing(tmp_path) -> None
     before = _snapshot(tmp_path)
 
     result = _source_run(tmp_path, URL, {"return_value": httpx.Response(200, html=_HTML)}, _source_args(URL),
-                         "--dry-run")
+                         "--paid-dry-run")
 
     assert result.exit_code == 0, result.output
     assert f"url: {URL}" in result.output
@@ -282,7 +282,7 @@ def test_source_dry_run_prints_the_snapshot_and_never_saves(tmp_path, stub_inges
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         mock.get(_timegate_re()).mock(return_value=httpx.Response(302, headers={"location": _SNAPSHOT}))
         save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
-        result = _page_source(tmp_path, "--dry-run", "--wayback")
+        result = _page_source(tmp_path, "--paid-dry-run", "--wayback")
 
     assert result.exit_code == 0, result.output
     assert f"archived_url: {_SNAPSHOT}" in result.output
@@ -296,7 +296,7 @@ def test_source_dry_run_model_wayback_check_makes_no_capture(tmp_path, stub_inge
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         timegate = mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
         save = mock.get(_save_re()).mock(return_value=httpx.Response(302, headers={"location": _SNAPSHOT}))
-        result = _page_source(tmp_path, "--dry-run", "--wayback")
+        result = _page_source(tmp_path, "--paid-dry-run", "--wayback")
 
     assert result.exit_code == 0, result.output
     assert timegate.call_count == 2
@@ -309,7 +309,7 @@ def test_source_dry_run_miss_reports_it_without_a_capture(tmp_path, stub_ingest_
         mock.get(_PAGE_URL).mock(return_value=httpx.Response(200, html=_PAGE))
         mock.get(_timegate_re()).mock(return_value=httpx.Response(404))
         save = mock.get(_save_re()).mock(return_value=httpx.Response(200))
-        result = _page_source(tmp_path, "--dry-run", "--wayback")
+        result = _page_source(tmp_path, "--paid-dry-run", "--wayback")
 
     assert result.exit_code == 0, result.output
     assert "archived_url" not in result.output

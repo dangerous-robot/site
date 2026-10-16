@@ -90,14 +90,22 @@ def _check_provider_api_keys(models: str | Iterable[str]) -> None:
 
 
 def _check_search_key(config) -> None:
-    """Fail before any model call when the Brave backend has no key.
+    """Fail before any model call when the search backend has no usable key.
 
     The researcher only discovers a missing key at search time, after the
-    planner's paid model call has already run.
+    planner's paid model call has already run. Tavily falls back to Brave per
+    query, so it needs either key; any other backend runs as Brave.
     """
-    if config.search_backend == "brave" and not os.environ.get("BRAVE_WEB_SEARCH_API_KEY"):
+    has_brave = bool(os.environ.get("BRAVE_WEB_SEARCH_API_KEY"))
+    if config.search_backend == "tavily":
+        if not has_brave and not os.environ.get("TAVILY_API_KEY"):
+            raise click.UsageError(
+                "TAVILY_API_KEY and BRAVE_WEB_SEARCH_API_KEY are both unset; RESEARCH_SEARCH_BACKEND "
+                "is tavily, which falls back to Brave, so set one of them"
+            )
+    elif not has_brave:
         raise click.UsageError(
-            "BRAVE_WEB_SEARCH_API_KEY is not set and RESEARCH_SEARCH_BACKEND is brave"
+            f"BRAVE_WEB_SEARCH_API_KEY is not set and RESEARCH_SEARCH_BACKEND is {config.search_backend}"
         )
 
 
@@ -808,7 +816,7 @@ def _write_recheck(
 
 
 # --------------------------------------------------------------------------- #
-# Run report, shared by dr draft --dry-run                                      #
+# Run report, shared by dr draft --paid-dry-run                                 #
 # --------------------------------------------------------------------------- #
 
 def _print_verify_result(result) -> None:
@@ -889,6 +897,48 @@ def _print_verify_result(result) -> None:
     hr()
 
 
+def _rel(path: Path, root: Path) -> str:
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return str(path)
+
+
+def _print_dry_run_header(mode: str) -> None:
+    click.echo("Dry run: no model call, no search call, nothing written. A real run makes paid calls.")
+    click.echo(f"Mode:      {mode}")
+
+
+def _print_draft_plan(
+    spec, config, root: Path, *, mode: str, target: Path, ref_label: str, create_entity: bool,
+    original_path: Path | None, pick_holder: Path | None, pick: int | None,
+) -> None:
+    """What ``dr draft`` would run and write, printed by ``--dry-run`` after every refusal check passed."""
+    _print_dry_run_header(mode)
+    entity = spec.entity
+    click.echo(f"Entity:    {entity.entity_name} ({entity.entity_type.value}, {ref_label})")
+    click.echo(f"Statement: {spec.statement}")
+    if spec.criteria_slug:
+        click.echo(f"Criterion: {spec.criteria_slug}")
+    state = "overwrites the draft there" if target.exists() else "new file"
+    click.echo(f"Claim:     {_claim_ref(target, root)} at {_rel(target, root)} ({state})")
+    if create_entity:
+        click.echo(f"Subject:   writes {_rel(root / 'research' / 'entities' / f'{entity.entity_ref}.md', root)} (no record yet)")
+    if original_path is not None:
+        holder_status = _live_status(pick_holder) if pick_holder == original_path else None
+        recorded = (
+            f"not recorded: the original is {holder_status}" if holder_status is not None
+            else f"recorded on {_rel(pick_holder, root)} after the write"
+        )
+        click.echo(f"Restates:  {_claim_ref(original_path, root)}, candidate {pick}; the pick is {recorded}")
+    click.echo("Models:    " + ", ".join(f"{agent} {config.model_for(agent)}" for agent in AGENT_NAMES))
+    backend = config.search_backend
+    if backend == "tavily" and not os.environ.get("TAVILY_API_KEY"):
+        backend += " (TAVILY_API_KEY not set: every query falls back to Brave)"
+    click.echo(f"Search:    {backend}; up to {config.max_initial_queries} queries, {config.max_sources} sources")
+    click.echo(f"Archive:   {'off (--skip-wayback)' if config.skip_wayback else 'lookup, and a capture when none exists'}")
+
+
 # --------------------------------------------------------------------------- #
 # dr draft                                                                      #
 # --------------------------------------------------------------------------- #
@@ -898,8 +948,9 @@ def _print_verify_result(result) -> None:
 @click.option("--entity", "entity_ref", default=None, metavar="REF", help="Entity the sentence is about, as a type/slug ref naming an entity file (e.g. products/chatgpt)")
 @click.option("--subject", "subject_slug", default=None, metavar="SLUG", help="Subject the sentence is about; the subject record is written with the claim when none exists")
 @click.option("--criterion", "criterion_slug", default=None, metavar="SLUG", help="Draft the criterion's sentence for --entity, or attach it to --claim")
-@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft claim's stored statement in place (needs --force or --dry-run), rerun one agent with --rerun, or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim or --rerun")
-@click.option("--dry-run", is_flag=True, help="Run the loop and print the result; write nothing and never ask archive.org to capture a page")
+@click.option("--claim", "claim_ref", default=None, metavar="REF", help="Re-run a draft claim's stored statement in place (needs --force or --paid-dry-run; --force --dry-run checks it for free), rerun one agent with --rerun, or attach a criterion with --criterion; a published or archived claim reruns with dr recheck --claim or --rerun")
+@click.option("--dry-run", is_flag=True, help="Free check: run every check that would refuse the run or its write and print what a real run would do; no model call, no search call, nothing written")
+@click.option("--paid-dry-run", is_flag=True, help="Paid: run the loop with its model and search calls and print the result; write nothing and never ask archive.org to capture a page")
 @click.option("--force", is_flag=True, help="Overwrite the claim file if present (with --source: the source file of the same URL); a published or archived claim is refused (dr recheck --claim writes a pending draft)")
 @click.option("--repo-root", default=None, type=click.Path(exists=True))
 @click.option("--max-sources", default=None, type=int, help="Target number of successful sources to pass to the analyst (default: VerifyConfig.max_sources)")
@@ -920,6 +971,7 @@ def draft(
     criterion_slug: str | None,
     claim_ref: str | None,
     dry_run: bool,
+    paid_dry_run: bool,
     force: bool,
     repo_root: str | None,
     max_sources: int | None,
@@ -932,7 +984,12 @@ def draft(
     rerun_agent: str | None,
     source_url: str | None,
 ) -> None:
-    """Run the loop on one claim and write it as a draft (--dry-run writes nothing).
+    """Run the loop on one claim and write it as a draft.
+
+    --dry-run makes no model or search call and writes nothing: it runs the
+    checks that would refuse the run or its write, exits nonzero when one
+    would, and prints what a real run would do. --paid-dry-run runs the loop
+    (paid model and search calls), prints the result and writes nothing.
 
     Exactly one of --entity, --subject, --claim, --restates or --source names
     what the run is about. A company entity is refused in every mode (usage
@@ -952,8 +1009,8 @@ def draft(
                                  research/entities/subjects/SLUG.md with the claim
                                  when it is missing
     --claim REF --force          re-runs a draft claim's stored statement and
-                                 writes back to the same path (--dry-run prints the run
-                                 instead); a published or archived claim is refused:
+                                 writes back to the same path (--paid-dry-run prints the
+                                 run instead); a published or archived claim is refused:
                                  dr recheck --claim REF writes a pending draft
     --claim REF --rerun analyst|evaluator
                                  reruns one agent over the claim's stored sources (no
@@ -970,8 +1027,8 @@ def draft(
                                  restates: REF in its sidecar and records the pick on
                                  the original (not on a published or archived one)
     --source URL                 ingests one page into research/sources/<year>/<slug>.md
-                                 and writes nothing else; --dry-run prints it and never
-                                 asks archive.org to capture the page
+                                 and writes nothing else; --paid-dry-run prints it and
+                                 never asks archive.org to capture the page
 
     \b
     Examples:
@@ -998,9 +1055,9 @@ def draft(
 
     logger.info(
         "dr draft: entity=%s subject=%s criterion=%s claim=%s restates=%s pick=%s rerun=%s source=%s "
-        "sentence=%s dry_run=%s force=%s",
+        "sentence=%s dry_run=%s paid_dry_run=%s force=%s",
         entity_ref, subject_slug, criterion_slug, claim_ref, restates_ref, pick, rerun_agent, source_url,
-        sentence, dry_run, force,
+        sentence, dry_run, paid_dry_run, force,
     )
 
     # Click cannot express this grammar, so it is checked here, before any
@@ -1017,6 +1074,9 @@ def draft(
         )
     if len(modes) > 1:
         raise click.UsageError(f"{' and '.join(modes)} cannot be combined; pass exactly one")
+    if dry_run and paid_dry_run:
+        raise click.UsageError("--dry-run and --paid-dry-run cannot be combined; pass one")
+    no_write = dry_run or paid_dry_run
     # --rerun and --source run no research, so they are checked first and
     # dispatched before the loop's grammar below.
     research_flags = [flag for flag, value in (
@@ -1033,7 +1093,7 @@ def draft(
                 "--criterion is not taken with --rerun; attach one with dr draft --claim <ref> --criterion <slug>"
             )
         if force:
-            raise click.UsageError("--rerun writes without --force (--dry-run prints the run instead); drop --force")
+            raise click.UsageError("--rerun writes without --force (--paid-dry-run prints the run instead); drop --force")
         if research_flags:
             raise click.UsageError(f"--rerun searches nothing; it does not take {research_flags[0]}")
     if source_url is not None:
@@ -1041,8 +1101,8 @@ def draft(
             raise click.UsageError("SENTENCE is not taken with --source: it ingests one page")
         if criterion_slug is not None:
             raise click.UsageError("--criterion is not taken with --source: it writes no claim")
-        if force and dry_run:
-            raise click.UsageError("--force overwrites the source file; it does not go with --dry-run")
+        if force and no_write:
+            raise click.UsageError("--force overwrites the source file; it does not go with --dry-run or --paid-dry-run")
         if research_flags:
             raise click.UsageError(f"--source ingests one page; it does not take {research_flags[0]}")
         if not source_url.startswith(("http://", "https://")):
@@ -1050,10 +1110,11 @@ def draft(
     if rerun_agent is not None or source_url is not None:
         root = Path(repo_root) if repo_root else resolve_repo_root()
         if rerun_agent is not None:
-            _rerun_claim(ctx, claim_ref, rerun_agent, root, dry_run=dry_run)
+            _rerun_claim(ctx, claim_ref, rerun_agent, root, dry_run=dry_run, paid_dry_run=paid_dry_run)
             return
         exit_code = _ingest_source(
-            ctx, source_url, write=not dry_run, force=force, skip_wayback=skip_wayback, root=root,
+            ctx, source_url, write=not no_write, force=force, skip_wayback=skip_wayback, root=root,
+            check_only=dry_run,
         )
         if exit_code:
             sys.exit(exit_code)
@@ -1079,15 +1140,19 @@ def draft(
             raise click.UsageError("SENTENCE is not taken with --criterion: the criterion's text is the sentence")
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", criterion_slug):
             raise click.UsageError(f"--criterion {criterion_slug}: a slug is lowercase words joined by hyphens")
-        if attach and (force or dry_run):
-            raise click.UsageError("--claim with --criterion runs no loop and writes no claim run; drop --force and --dry-run")
+        if attach and (force or no_write):
+            raise click.UsageError(
+                "--claim with --criterion runs no loop and writes no claim run; drop --force, --dry-run and --paid-dry-run"
+            )
     elif claim_ref is not None:
         if sentence is not None:
             raise click.UsageError("SENTENCE is not taken with --claim: the claim's stored statement is re-run")
-        if not (force or dry_run):
+        # --dry-run alone is refused like the real run it checks; with --force it checks that run.
+        if not (force or paid_dry_run):
             raise click.UsageError(
-                f"--claim {claim_ref} writes over the existing claim: pass --force to write it, "
-                "--dry-run to print the run, or --criterion <slug> to attach a criterion"
+                f"--claim {claim_ref} writes over the existing claim: pass --force to write it "
+                "(add --dry-run to check it for free), --paid-dry-run to print the run, "
+                "or --criterion <slug> to attach a criterion"
             )
     elif restates_ref is None and not has_sentence:
         raise click.UsageError(f"SENTENCE is required with {modes[0]}")
@@ -1198,7 +1263,9 @@ def draft(
 
     _refuse_company_type(resolved_entity.entity_type)
 
-    if not dry_run:
+    # The free dry run takes these checks too, so it fails exactly where the
+    # real run would; only the paid dry run, which writes nothing, skips them.
+    if not paid_dry_run:
         # Refused before the paid loop; the writer checks the same two things again.
         planned = planned_claim_path(resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root)
         if claim_path is not None and planned.resolve() != claim_path.resolve():
@@ -1231,19 +1298,30 @@ def draft(
         skip_wayback=skip_wayback,
         repo_root=str(root),
         # A dry run writes nothing, so archive lookups check TimeGate only.
-        allow_save=not dry_run,
+        allow_save=not no_write,
         show_progress=True,
         **overrides,
         **_ctx_per_agent_kwargs(ctx),
     )
     _check_search_key(config)
 
+    if dry_run:
+        target = claim_path or planned_claim_path(
+            resolved_entity.entity_ref, resolved_entity.entity_name, claim_slug, root,
+        )
+        _print_draft_plan(
+            spec, config, root, mode="--criterion --entity" if criterion_slug else modes[0], target=target,
+            ref_label=ref_label, create_entity=create_entity, original_path=original_path,
+            pick_holder=pick_holder, pick=pick,
+        )
+        return
+
     click.echo(f"Entity: {resolved_entity.entity_name} ({resolved_entity.entity_type.value})")
-    progress("Drafting claim: %s (%s)%s", spec.statement, ref_label, " [dry run]" if dry_run else "")
+    progress("Drafting claim: %s (%s)%s", spec.statement, ref_label, " [paid dry run]" if paid_dry_run else "")
     result = asyncio.run(run(spec, config))
     existing_ref = _claim_ref(claim_path, root) if claim_path is not None else None
 
-    if dry_run:
+    if paid_dry_run:
         _record_finding(result.finding, root, command="dr draft", dry_run=True)
         _print_verify_result(result)
         return
@@ -1441,17 +1519,31 @@ def _attach_criterion(claim_ref: str, slug: str, root: Path) -> None:
     click.echo(f"Attached to {claim_path}")
 
 
-def _ingest_source(ctx: click.Context, url: str, *, write: bool, force: bool, skip_wayback: bool, root: Path) -> int:
+def _ingest_source(
+    ctx: click.Context, url: str, *, write: bool, force: bool, skip_wayback: bool, root: Path,
+    check_only: bool = False,
+) -> int:
     """``dr draft --source URL``: fetch one page, structure it with the ingestor agent, and write or print it; return the exit code.
 
     Writes one file, research/sources/<year>/<slug>.md, and nothing else: no
     claim, sidecar or finding, and no loop run. ``write=False``
-    (``--dry-run``) prints the Markdown and never asks archive.org to capture
-    the page. Without ``force`` an existing file at the slug is refused; with
-    it, only a file holding the same URL is overwritten.
+    (``--paid-dry-run``) prints the Markdown and never asks archive.org to
+    capture the page. ``check_only`` (``--dry-run``) checks the model key and
+    prints the plan without fetching anything. Without ``force`` an existing
+    file at the slug is refused; with it, only a file holding the same URL is
+    overwritten.
     """
     ingestor_model = ctx.obj.get("ingestor_model") or ctx.obj["model"]
     _check_provider_api_keys(ingestor_model)
+    if check_only:
+        _print_dry_run_header("--source")
+        click.echo(f"Source:    {url}")
+        click.echo(f"Models:    ingestor {ingestor_model}")
+        # The year and slug come from the ingested page, so a free check
+        # cannot say whether the write would collide with an existing file.
+        click.echo("Writes:    research/sources/<year>/<slug>.md; the year and slug come from the page")
+        click.echo(f"Archive:   {'off (--skip-wayback)' if skip_wayback else 'lookup, and a capture when none exists'}")
+        return 0
 
     import httpx
     from ingestor.agent import IngestorDeps, archive_after_ingest, ingestor_agent
@@ -1497,7 +1589,7 @@ def _ingest_source(ctx: click.Context, url: str, *, write: bool, force: bool, sk
 
             archive = await archive_after_ingest(sf, deps)
             if archive["status"] == "failed":
-                hint = "" if capture else " (Save Page Now runs only without --dry-run)"
+                hint = "" if capture else " (Save Page Now runs only without --paid-dry-run)"
                 click.echo(f"Archive lookup failed for {url}: {archive['error']}{hint}", err=True)
 
             markdown = source_markdown(sf)
@@ -1581,7 +1673,9 @@ def _print_analyst_rerun(result) -> None:
 
 
 
-def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, dry_run: bool) -> None:
+def _rerun_claim(
+    ctx: click.Context, claim_ref: str, agent: str, root: Path, *, dry_run: bool, paid_dry_run: bool,
+) -> None:
     """``dr draft --claim REF --rerun analyst|evaluator``: one agent over the claim's stored sources, then the writer.
 
     Calls ``loop.rerun`` only: no search, no ingest. The analyst assesses
@@ -1592,8 +1686,9 @@ def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, 
     draft under research/pending/ (``write_pending_rerun``) and its live
     files are never opened for writing. A claim that already has a pending
     draft is rerun from that draft, the newest version of the claim. A
-    rerun that fails or is abandoned writes only its finding and exits 1;
-    ``--dry-run`` prints the run and writes nothing.
+    rerun that fails or is abandoned writes only its finding and exits 1.
+    ``--dry-run`` runs the checks and prints the plan without a model call;
+    ``--paid-dry-run`` prints the run and writes nothing.
     """
     from common.frontmatter import parse_frontmatter
     from common.sidecar import sidecar_path_for
@@ -1618,11 +1713,11 @@ def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, 
     pending = pending_path_for(live_path, root) if live_status is not None else None
     read_path = pending if pending is not None and pending.exists() else live_path
 
-    # Before the dry-run branch: a claim no command may write is not graded either.
+    # Before the paid dry run: a claim no command may write is not graded either.
     _refuse_unknown_status(live_path)
     spec = _claim_spec_for(read_path, ref, root)
     _refuse_company_type(spec.entity.entity_type)
-    if not dry_run:
+    if not paid_dry_run:
         # Refused before the model call; the writer checks it again.
         planned = planned_claim_path(spec.entity.entity_ref, spec.entity.entity_name, live_path.stem, root)
         if planned.resolve() != live_path.resolve():
@@ -1656,7 +1751,25 @@ def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, 
         analysis = _stored_analysis(fm, body, root)
 
     cfg = VerifyConfig(model=ctx.obj["model"], repo_root=str(root), **_ctx_per_agent_kwargs(ctx))
-    progress("Rerunning the %s: %s (%s)%s", agent, spec.statement, ref, " [dry run]" if dry_run else "")
+    if dry_run:
+        _print_dry_run_header(f"--claim --rerun {agent}")
+        click.echo(f"Statement: {spec.statement}")
+        click.echo(f"Claim:     {ref} (read from {_rel(read_path, root)})")
+        click.echo(f"Sources:   {len(sources)} stored; no search, no ingest")
+        if agent == "analyst":
+            click.echo(f"Models:    analyst {cfg.model_for('analyst')}")
+            writes = "the claim and its sidecar in place; the sidecar's audit becomes null"
+        else:
+            click.echo(
+                f"Models:    auditor {cfg.model_for('auditor')}, tiebreaker {cfg.model_for('tiebreaker')} "
+                "(when the verdicts differ)"
+            )
+            writes = "the sidecar in place, and the claim's verdict when the tie-breaker settles on another"
+        if live_status is not None:
+            writes = f"a pending draft at {_rel(pending, root)} (the claim is {live_status})"
+        click.echo(f"Writes:    {writes}")
+        return
+    progress("Rerunning the %s: %s (%s)%s", agent, spec.statement, ref, " [paid dry run]" if paid_dry_run else "")
     result = asyncio.run(rerun(spec, cfg, sources, agent=agent, analyst_output=analysis))
 
     finding = result.finding
@@ -1689,10 +1802,10 @@ def _rerun_claim(ctx: click.Context, claim_ref: str, agent: str, root: Path, *, 
 
     # Named apart from a full `dr draft` run, which `dr findings --replay` would rerun in full.
     command = f"dr draft --rerun {agent}"
-    if dry_run or not ran:
-        _record_finding(finding, root, command=command, dry_run=dry_run, claim_ref=ref)
+    if paid_dry_run or not ran:
+        _record_finding(finding, root, command=command, dry_run=paid_dry_run, claim_ref=ref)
         if not ran:
-            click.echo("Nothing was written." if not dry_run else "Nothing was written (dry run).", err=True)
+            click.echo("Nothing was written." if not paid_dry_run else "Nothing was written (dry run).", err=True)
             sys.exit(1)
         return
 

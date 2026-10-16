@@ -134,7 +134,7 @@ def test_tiebreaker_model_option_reaches_the_config(tmp_path, monkeypatch) -> No
     monkeypatch.setattr("loop.run", _capture)
     monkeypatch.setenv("DR_TIEBREAKER_MODEL", "test")
     CliRunner().invoke(main, [
-        "--model", "test", "draft", "--dry-run", "--entity", ENTITY_REF, SENTENCE, "--repo-root", str(tmp_path),
+        "--model", "test", "draft", "--paid-dry-run", "--entity", ENTITY_REF, SENTENCE, "--repo-root", str(tmp_path),
     ])
     assert seen["config"].tiebreaker_model == "test"
     assert seen["config"].model_for("tiebreaker") == "test"
@@ -142,7 +142,7 @@ def test_tiebreaker_model_option_reaches_the_config(tmp_path, monkeypatch) -> No
     seen.clear()
     monkeypatch.delenv("DR_TIEBREAKER_MODEL")
     CliRunner().invoke(main, [
-        "--model", "test", "--tiebreaker-model", "test", "draft", "--dry-run", "--entity", ENTITY_REF, SENTENCE,
+        "--model", "test", "--tiebreaker-model", "test", "draft", "--paid-dry-run", "--entity", ENTITY_REF, SENTENCE,
         "--repo-root", str(tmp_path),
     ])
     assert seen["config"].tiebreaker_model == "test"

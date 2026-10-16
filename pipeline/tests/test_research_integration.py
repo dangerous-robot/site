@@ -48,7 +48,7 @@ CLAIM_STEM = slugify(SENTENCE)
 EXPECTED_SOURCE_IDS = ["2026/report", "2026/second-report", "2026/third-report", "2026/fourth-report"]
 
 
-def _draft(tmp_path, *extra: str, dry_run: bool = False):
+def _draft(tmp_path, *extra: str, paid_dry_run: bool = False):
     from orchestrator.cli import main
 
     # --skip-wayback keeps the run offline: no archive.org lookup or capture.
@@ -56,8 +56,8 @@ def _draft(tmp_path, *extra: str, dry_run: bool = False):
         "--model", "test", "draft", "--entity", ENTITY_REF, SENTENCE, "--skip-wayback",
         "--repo-root", str(tmp_path),
     ]
-    if dry_run:
-        args.insert(3, "--dry-run")
+    if paid_dry_run:
+        args.insert(3, "--paid-dry-run")
     return CliRunner().invoke(main, [*args, *extra])
 
 

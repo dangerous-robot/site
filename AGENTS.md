@@ -173,7 +173,7 @@ uv run dr lint --entity ecosia-ai
 uv run dr review --claim ecosia-ai/renewable-energy-hosting
 ```
 
-The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
+The five commands are `dr draft`, `dr recheck`, `dr review`, `dr findings` and `dr lint`. `dr draft --dry-run` makes no model or search call and writes nothing: it runs the checks that would refuse the real run and prints what that run would do. `dr draft --paid-dry-run` runs the paid loop and writes nothing. Their flags, what each writes, which can ask archive.org to capture a page, and the run rules are in `docs/architecture/pipeline-commands.md`; `dr <command> --help` has examples.
 
 Agents: do not run the `dr review` walkthrough or a sign-off, do not wrap them in a pty (`script`, `expect`, Python `pty`) and do not edit a sidecar's `human_review` by hand. Every sign-off needs a person at a terminal (stdin must be a tty and the claim slug is typed back before anything is written), so a piped command cannot sign off; a sign-off is Brandon's. `dr review --format text|json` is read-only and safe for an agent.
 
@@ -206,7 +206,7 @@ Pipeline behavior is gated by these environment variables. Required vars must be
 |----------|----------|---------|-------|
 | `BRAVE_WEB_SEARCH_API_KEY` | Recommended | Researcher (`search_brave`) | The fallback backend: used when `RESEARCH_SEARCH_BACKEND=brave` or when Tavily is selected but unavailable. |
 | `RESEARCH_SEARCH_BACKEND` | No (default `tavily`) | Researcher (`execute_searches`) | Selects the search backend. Accepts `brave` or `tavily`. Unknown values fall back to `brave` with a warning. |
-| `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start). |
+| `TAVILY_API_KEY` | Yes (for the default backend) | Researcher (`search_tavily`) | Needed for the default `tavily` backend. If unset while Tavily is selected, every query falls back to Brave (one warning logged at run start); with neither key set, `dr draft`, `dr recheck` and `dr findings --replay` refuse before any model call. |
 
 **arXiv (Path 2)** is the only academic origin in Tier 1. It is unauthenticated -- no env var to set. Activated by including `'arxiv'` in `VerifyConfig.research_origins`; on by default since 2026-05-09 (commit `74c1512`; default `["tavily", "arxiv"]` in `pipeline/loop/spec.py`). Tier 2 will add Semantic Scholar (`SEMANTIC_SCHOLAR_API_KEY`, optional) and OpenAlex (`OPENALEX_MAILTO`, polite-pool email) alongside the affiliation-override work.
 

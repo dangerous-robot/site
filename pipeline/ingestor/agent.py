@@ -44,8 +44,8 @@ class IngestorDeps:
     # what ``fetch_failure_reason`` requires.
     requested_url: str
     skip_wayback: bool = False
-    # False for commands that write nothing (``dr draft --source --dry-run``,
-    # ``dr draft --dry-run``): archive lookups then use existing captures only
+    # False for commands that write nothing (``dr draft --source --paid-dry-run``,
+    # ``dr draft --paid-dry-run``): archive lookups then use existing captures only
     # and never ask Save Page Now to capture a page.
     allow_save: bool = True
     today: datetime.date = field(default_factory=datetime.date.today)

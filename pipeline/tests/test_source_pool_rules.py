@@ -93,15 +93,15 @@ NULL_BODY = UnexpectedModelBehavior(
 # --------------------------------------------------------------------------- #
 
 
-def _draft(tmp_path, *extra: str, dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
+def _draft(tmp_path, *extra: str, paid_dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
     from orchestrator.cli import main
 
     agents = [f"--{a}-model" for a in ("researcher", "analyst", "auditor", "ingestor", "tiebreaker")]
     models = [x for flag in agents for x in (flag, "test")]
     args = ["--model", "test", *models, "draft", *mode, *([sentence] if sentence else []),
             "--skip-wayback", "--repo-root", str(tmp_path)]
-    if dry_run:
-        args.insert(args.index("draft") + 1, "--dry-run")
+    if paid_dry_run:
+        args.insert(args.index("draft") + 1, "--paid-dry-run")
     return CliRunner().invoke(main, [*args, *extra])
 
 

@@ -21,7 +21,7 @@ Covered:
 - the threshold cases carried from the RE-AR review (three sources is below
   the line, four is not; the terminal-fetch histogram; every page timing out
   is a transport failure, not a flaw);
-- ``dr draft --dry-run`` prints the finding and writes nothing; an abandoned
+- ``dr draft --paid-dry-run`` prints the finding and writes nothing; an abandoned
   ``dr draft`` writes only the finding;
 - a writer crash leaves a half-claim finding and ``dr findings`` lists the
   half-claim (and a subject record with no claim) without deleting anything;
@@ -83,15 +83,15 @@ async def _run(tmp_path, **config_overrides):
     return await loop.run(claim_spec(tmp_path), _config(tmp_path, **config_overrides))
 
 
-def _draft(tmp_path, *extra: str, dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
+def _draft(tmp_path, *extra: str, paid_dry_run: bool = False, sentence: str = SENTENCE, mode=("--entity", ENTITY_REF)):
     from orchestrator.cli import main
 
     # Every agent named on the command line, so a developer's .env (DR_*_MODEL) cannot leak in.
     agents = [f"--{a}-model" for a in ("researcher", "analyst", "auditor", "ingestor", "tiebreaker")]
     models = [x for flag in agents for x in (flag, "test")]
     args = ["--model", "test", *models, "draft", *mode, sentence, "--skip-wayback", "--repo-root", str(tmp_path)]
-    if dry_run:
-        args.insert(args.index("draft") + 1, "--dry-run")
+    if paid_dry_run:
+        args.insert(args.index("draft") + 1, "--paid-dry-run")
     return CliRunner().invoke(main, [*args, *extra])
 
 
@@ -448,7 +448,7 @@ def test_dry_run_prints_the_finding_and_writes_nothing(tmp_path) -> None:
     write_entity(tmp_path)
     three = URLS[:3]
     with scripted_agents(scorer=scorer_args(three), search=fake_execute_searches(three)):
-        result = _draft(tmp_path, dry_run=True)
+        result = _draft(tmp_path, paid_dry_run=True)
 
     assert "abandoned" in result.output
     assert "insufficient_sources" in result.output
@@ -500,7 +500,7 @@ def test_abandoned_subject_draft_leaves_no_subject_record(tmp_path) -> None:
     record = tmp_path / "research" / "entities" / "subjects" / "probe-sp2.md"
     with scripted_agents(scorer=scorer_args(three), search=fake_execute_searches(three)):
         abandoned = _draft(tmp_path, mode=("--subject", "probe-sp2"))
-        dry = _draft(tmp_path, dry_run=True, mode=("--subject", "probe-sp2"))
+        dry = _draft(tmp_path, paid_dry_run=True, mode=("--subject", "probe-sp2"))
     assert abandoned.exit_code == 1
     assert dry.exit_code == 0, dry.output
     assert not record.exists()

@@ -730,7 +730,7 @@ class TestSelectResearchOrigins:
         assert _select_research_origins(cfg, ["data-privacy"]) == []
 
     def test_empty_topics_excludes_arxiv(self) -> None:
-        """No criterion context (e.g., ``dr draft --dry-run``) keeps academic
+        """No criterion context (e.g., ``dr draft --entity``) keeps academic
         origins off; the operator can re-run dr draft --claim --force once a
         ``criteria_slug`` exists."""
         from loop import VerifyConfig
