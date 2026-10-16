@@ -17,6 +17,14 @@ interface SentEmail {
 let sentEmails: SentEmail[] = [];
 let resendStatus = 200;
 
+const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+const GOOD_TOKEN = 'good-turnstile-token';
+/** Pinned in vitest.config.ts. */
+const TEST_SECRET = 'test-turnstile-secret';
+/** How the stand-in siteverify answers: judge the token, throw, or answer like an outage. */
+let siteverifyMode: 'judge' | 'throw' | 'http500' | 'not-json' = 'judge';
+let siteverifyCalls: URLSearchParams[] = [];
+
 beforeEach(async () => {
   await applyD1Migrations(env.DB, env.TEST_MIGRATIONS);
   await env.DB.prepare(
@@ -26,9 +34,22 @@ beforeEach(async () => {
     .run();
   sentEmails = [];
   resendStatus = 200;
-  // Stand in for the Resend API so tests see the exact request the Worker sends.
+  siteverifyMode = 'judge';
+  siteverifyCalls = [];
+  // Stand in for Turnstile's siteverify and the Resend API so tests see the exact
+  // requests the Worker sends. Siteverify passes only GOOD_TOKEN with TEST_SECRET.
   vi.spyOn(globalThis, 'fetch').mockImplementation(async (input, init) => {
-    expect(String(input instanceof Request ? input.url : input)).toBe('https://api.resend.com/emails');
+    const url = String(input instanceof Request ? input.url : input);
+    if (url === SITEVERIFY) {
+      const form = new URLSearchParams(String(init!.body));
+      siteverifyCalls.push(form);
+      if (siteverifyMode === 'throw') throw new TypeError('network down');
+      if (siteverifyMode === 'http500') return new Response('upstream error', { status: 500 });
+      if (siteverifyMode === 'not-json') return new Response('<html>', { status: 200 });
+      const success = form.get('secret') === TEST_SECRET && form.get('response') === GOOD_TOKEN;
+      return Response.json({ success, 'error-codes': success ? [] : ['invalid-input-response'] });
+    }
+    expect(url).toBe('https://api.resend.com/emails');
     sentEmails.push(JSON.parse(String(init!.body)));
     return new Response('{}', { status: resendStatus });
   });
@@ -55,6 +76,8 @@ interface SignOpts {
   json?: boolean;
   ip?: string;
   origin?: string | null;
+  /** Turnstile token; null leaves the field out. Defaults to one siteverify accepts. */
+  turnstile?: string | null;
 }
 
 function sign(o: SignOpts = {}): Promise<Response> {
@@ -64,6 +87,7 @@ function sign(o: SignOpts = {}): Promise<Response> {
     website: o.honeypot ?? '',
     elapsed: String(o.elapsed ?? 10_000),
   });
+  if (o.turnstile !== null) body.set('cf-turnstile-response', o.turnstile ?? GOOD_TOKEN);
   if (typeof o.consent === 'string') body.set('show_name', o.consent);
   else if (o.consent) body.set('show_name', 'on');
   if (typeof o.updates === 'string') body.set('updates', o.updates);
@@ -354,8 +378,8 @@ describe('spam layers', () => {
     expect(await rowCount()).toBe(0);
   });
 
-  it('accepts a submission with no timestamp (the no-JS form)', async () => {
-    const body = new URLSearchParams({ name: 'No Script', email: 'nojs@example.org' });
+  it('accepts a submission with no timestamp when the bot check passes', async () => {
+    const body = new URLSearchParams({ name: 'No Timestamp', email: 'nots@example.org', 'cf-turnstile-response': GOOD_TOKEN });
     const res = await call(`/petitions/${SLUG}/sign`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'CF-Connecting-IP': '10.9.9.9' },
@@ -406,6 +430,89 @@ describe('spam layers', () => {
   });
 });
 
+describe('bot check (Turnstile)', () => {
+  async function expectNothingStored() {
+    expect(await rowCount()).toBe(0);
+    expect(sentEmails).toHaveLength(0);
+  }
+
+  it('signs when siteverify accepts the token, sending the secret, token and client IP', async () => {
+    expect((await sign({ ip: '198.51.100.7' })).status).toBe(200);
+    expect(siteverifyCalls).toHaveLength(1);
+    expect(Object.fromEntries(siteverifyCalls[0])).toEqual({ secret: TEST_SECRET, response: GOOD_TOKEN, remoteip: '198.51.100.7' });
+    expect(await rowCount()).toBe(1);
+    expect(sentEmails).toHaveLength(1);
+  });
+
+  it('refuses a token siteverify rejects', async () => {
+    const res = await sign({ turnstile: 'forged-token' });
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { error: string }).error).toContain('bot check');
+    await expectNothingStored();
+  });
+
+  it('refuses a missing or empty token without calling siteverify', async () => {
+    for (const turnstile of [null, '', '   ']) {
+      const res = await sign({ turnstile });
+      expect(res.status, JSON.stringify(turnstile)).toBe(403);
+      expect(((await res.json()) as { error: string }).error).toContain('bot check');
+    }
+    expect(siteverifyCalls).toHaveLength(0);
+    await expectNothingStored();
+  });
+
+  it('refuses an overlong token without calling siteverify', async () => {
+    expect((await sign({ turnstile: 'x'.repeat(2049) })).status).toBe(403);
+    expect(siteverifyCalls).toHaveLength(0);
+    await expectNothingStored();
+  });
+
+  it('fails closed when siteverify cannot be reached or answers badly', async () => {
+    for (const mode of ['throw', 'http500', 'not-json'] as const) {
+      siteverifyMode = mode;
+      const res = await sign();
+      expect(res.status, mode).toBe(503);
+      expect(((await res.json()) as { error: string }).error).toContain('could not run the bot check');
+    }
+    await expectNothingStored();
+  });
+
+  it('fails closed when the Worker has no Turnstile secret', async () => {
+    const body = new URLSearchParams({ name: 'Ada', email: 'nosecret@example.org', 'cf-turnstile-response': GOOD_TOKEN });
+    const res = await worker.fetch(
+      new Request(`${API}/petitions/${SLUG}/sign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json', 'CF-Connecting-IP': '10.8.8.8' },
+        body,
+      }),
+      { ...env, TURNSTILE_SECRET_KEY: undefined },
+    );
+    expect(res.status).toBe(503);
+    expect(siteverifyCalls).toHaveLength(0);
+    await expectNothingStored();
+  });
+
+  it('does not spend a siteverify call on a honeypot hit or an invalid email', async () => {
+    await sign({ honeypot: 'http://spam.example' });
+    await sign({ email: 'not-an-email' });
+    expect(siteverifyCalls).toHaveLength(0);
+  });
+
+  it('never writes the token or the secret to the log', async () => {
+    const logged: unknown[] = [];
+    for (const method of ['log', 'info', 'warn', 'error', 'debug'] as const) {
+      vi.spyOn(console, method).mockImplementation((...args) => void logged.push(...args));
+    }
+    await sign({ turnstile: 'forged-token' });
+    siteverifyMode = 'throw';
+    await sign();
+    const text = logged.map((x) => (x instanceof Error ? `${x.message} ${x.stack}` : String(x))).join('\n');
+    expect(text).not.toContain('forged-token');
+    expect(text).not.toContain(GOOD_TOKEN);
+    expect(text).not.toContain(TEST_SECRET);
+  });
+});
+
 describe('closed petitions', () => {
   it('refuses new signatures and reports closed status', async () => {
     await closePetition();
@@ -417,6 +524,18 @@ describe('closed petitions', () => {
 });
 
 describe('no-JS path', () => {
+  it('refuses a form POST without a bot check token with a page that explains why', async () => {
+    const res = await sign({ json: false, turnstile: null });
+    expect(res.status).toBe(403);
+    expect(res.headers.get('Content-Type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('needs JavaScript');
+    expect(html).toContain('contact@dangerousrobot.org');
+    expect(html).toContain(`href="${SITE}/writing/pledge"`);
+    expect(await rowCount()).toBe(0);
+    expect(sentEmails).toHaveLength(0);
+  });
+
   it('returns a check-your-email page that links back to the post', async () => {
     const res = await sign({ json: false });
     expect(res.headers.get('Content-Type')).toContain('text/html');

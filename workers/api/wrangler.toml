@@ -24,7 +24,7 @@ simple = { limit = 5, period = 60 }
 [triggers]
 crons = ["17 * * * *"]
 
-# Secret (set with `wrangler secret put`): RESEND_API_KEY.
+# Secrets (set with `wrangler secret put`): RESEND_API_KEY, TURNSTILE_SECRET_KEY.
 # Local overrides live in .dev.vars (see .dev.vars.example).
 [vars]
 # Base of the confirm and remove links. The daily reminder has no request to read it from.
