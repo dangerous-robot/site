@@ -358,6 +358,8 @@ Helper: `python3 scripts/release-gate/work_item.py status | start | hotfix | fin
 - Superpowers writes design specs and plans to **`docs/plans/drafts/`** in this repo (specs as `<topic>-design.md`, plans as `<topic>.md`), never to `docs/superpowers/`. Promotion and review-history rules above apply unchanged.
 - Order for new work: `release-triage` → `brainstorming` → `writing-plans` → `work_item.py start` → implement. Triage comes first because the release decision shapes the plan's scope.
 
+**Paid runs.** Any `dr` command that calls a model or a search provider costs money. An agent runs one only when Brandon or the plan it is carrying out allows it, within the stated budget. If that run hits its request cap or fails, the agent stops and asks Brandon before any further paid run, even when budget is left. Review agents never run paid commands.
+
 **Bending the gate** is a human act, by design: `RELEASE_GATE=off claude` disables it for one session; the gated and exempt path lists live at the top of `scripts/release-gate/release_common.py`; `HOTFIX_TTL_HOURS` sets the hotfix window. Agents do not route around it with shell writes (`sed -i`, `cat >`); the gate intercepts tool edits only, and that gap is a known limitation, not a loophole to use.
 
 ## Architecture Docs
