@@ -163,7 +163,11 @@ def test_dry_run_on_a_published_claim_rerun_reports_the_pending_draft(tmp_path, 
     assert "research/pending/probe-product/runs-on-wind-power.md" in result.output
 
 
-def test_dry_run_prints_what_a_real_run_would_do(tmp_path, tripwire) -> None:
+def test_dry_run_prints_what_a_real_run_would_do(tmp_path, tripwire, monkeypatch) -> None:
+    # The CLI loads the repo .env at import, and its per-agent model names
+    # would outrank the --model passed here.
+    for agent in ("RESEARCHER", "INGESTOR", "ANALYST", "AUDITOR"):
+        monkeypatch.delenv(f"DR_{agent}_MODEL", raising=False)
     root = _repo(tmp_path)
 
     result = _dr(
