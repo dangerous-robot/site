@@ -121,6 +121,57 @@ def petition_stop_updates(ctx, email, local=False):
     print(f"Updates stopped on {len(rows)} signature(s): {', '.join(r['petition_slug'] for r in rows) or 'none matched'}")
 
 
+_SIGNATURE_COLUMNS = "id, name, email, display_consent, updates_consent, created_at, confirmed_at"
+
+
+def _print_signatures(rows, none_message):
+    if not rows:
+        print(none_message)
+        return
+    columns = _SIGNATURE_COLUMNS.split(", ")
+    widths = {c: max(len(c), *(len(str(r[c] if r[c] is not None else "")) for r in rows)) for c in columns}
+    print("  ".join(c.ljust(widths[c]) for c in columns))
+    for row in rows:
+        print("  ".join(str(row[c] if row[c] is not None else "").ljust(widths[c]) for c in columns))
+    print(f"{len(rows)} signature(s); display_consent 1 = name may be shown publicly", file=sys.stderr)
+
+
+@task(
+    help={
+        "petition": "The petition's slug",
+        "names": "Comma-separated names or surnames to look up; case-insensitive, partial match",
+        "ids": "Comma-separated signature ids to confirm, taken from a --names lookup",
+        "local": "Use the local dev database",
+    }
+)
+def petition_confirm(ctx, petition, names="", ids="", local=False):
+    """Confirm signatures by hand when the confirmation email was not acted on: look up by name, then confirm by id."""
+    if bool(names) == bool(ids):
+        raise SystemExit("Give --names to look signatures up, or --ids to confirm them, not both")
+    scope = f"petition_slug = {_sql_str(petition)}"
+    if names:
+        terms = [n.strip().lower() for n in names.split(",") if n.strip()]
+        match = " OR ".join(f"lower(name) LIKE {_sql_str('%' + t + '%')}" for t in terms)
+        rows = _d1(ctx, f"SELECT {_SIGNATURE_COLUMNS} FROM signatures WHERE {scope} AND ({match}) ORDER BY name", local)
+        _print_signatures(rows, "No signatures matched.")
+        return
+    try:
+        id_list = ", ".join(str(int(i)) for i in ids.split(","))
+    except ValueError:
+        raise SystemExit("--ids must be integers, comma-separated") from None
+    # Same timestamp shape as the Worker's confirm handler (toISOString), since the
+    # thank-you page ranks signers by comparing confirmed_at as text.
+    rows = _d1(
+        ctx,
+        f"UPDATE signatures SET confirmed_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now')"
+        f" WHERE {scope} AND id IN ({id_list}) AND confirmed_at IS NULL"
+        f" AND (SELECT status FROM petitions WHERE slug = petition_slug) = 'open'"
+        f" RETURNING {_SIGNATURE_COLUMNS}",
+        local,
+    )
+    _print_signatures(rows, "Nothing confirmed: ids not on this petition, already confirmed, or the petition is closed.")
+
+
 @task
 def clean(ctx):
     """Remove build artifacts and caches."""
@@ -276,5 +327,6 @@ ns.add_task(clean)
 ns.add_task(worker_deploy)
 ns.add_task(petition_emails)
 ns.add_task(petition_stop_updates)
+ns.add_task(petition_confirm)
 ns.add_collection(test_ns)
 ns.add_collection(audit_ns)
