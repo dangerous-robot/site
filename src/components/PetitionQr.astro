@@ -54,11 +54,11 @@ const svg = await qrSvg(url);
   /* A phone is already in hand: drop the code and the scan clause, keep only
      the flyer link (capitalised, since it now starts the line), or nothing. */
   @media (max-width: 640px) {
-    .petition-qr:not([data-flyer]) {
+    [data-size='page'].petition-qr:not([data-flyer]) {
       display: none;
     }
-    .petition-qr__tile,
-    .petition-qr__scan {
+    [data-size='page'] .petition-qr__tile,
+    [data-size='page'] .petition-qr__scan {
       display: none;
     }
     .petition-qr__caption::first-letter {
