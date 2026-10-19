@@ -19,7 +19,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 
 - [x] T0: Promote the plan and register the work item (2026-10-18)
 - [x] T1: QR SVG helper (`src/lib/qr.ts`)
-- [ ] T2: Flyer files helper (`src/lib/flyer.ts`)
+- [x] T2: Flyer files helper (`src/lib/flyer.ts`)
 - [ ] T3: `PetitionQr` component in the sign block
 - [ ] T4: Flyer page route, out of the sitemap; QR decode e2e test
 - [ ] T5: `inv flyers` render task; first PDF committed
@@ -218,7 +218,7 @@ git commit -m "feat(site): QR SVG helper with the DR logo in the centre (SITE-BC
   - `export function writeFlyerManifest(manifest: FlyerManifest, flyersDir = FLYERS_DIR): void` (writes `{slug}.json`, two-space indented, trailing newline)
   - `export function pdfPageCount(pdf: Buffer): number` (count of `/Type /Page` objects that are not `/Pages`; Chromium writes these headers uncompressed; regex `/\/Type\s*\/Page(?![s\w])/g`)
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```ts
 import { describe, test, beforeEach, afterEach } from 'node:test';
@@ -288,21 +288,21 @@ describe('flyer helpers', () => {
 });
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `npm run test:site`
 Expected: FAIL, `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '<repo>/src/lib/flyer' imported from <repo>/src/lib/flyer.test.ts`.
 
-- [ ] **Step 3: Implement the functions above in `src/lib/flyer.ts`**
+- [x] **Step 3: Implement the functions above in `src/lib/flyer.ts`**
 
 Front matter: the text between the first two `---` lines, parsed with `js-yaml` `load`; a file without a block or without `petition` is skipped. The file-name and `slug`-key checks apply only to files that pass the `petition`-key filter; a badly named file without `petition` is skipped like any other.
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `npm run test:site`
 Expected: PASS, seven `flyer helpers` tests.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/lib/flyer.ts src/lib/flyer.test.ts docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md
