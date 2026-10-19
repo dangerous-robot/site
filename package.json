@@ -46,6 +46,7 @@
     "esbuild": "^0.28.1",
     "markdownlint-cli2": "^0.23.3",
     "tsx": "^4.19.4",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "zxing-wasm": "^2.2.4"
   }
 }

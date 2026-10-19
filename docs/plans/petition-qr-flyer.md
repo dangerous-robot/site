@@ -21,7 +21,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T1: QR SVG helper (`src/lib/qr.ts`)
 - [x] T2: Flyer files helper (`src/lib/flyer.ts`)
 - [x] T3: `PetitionQr` component in the sign block
-- [ ] T4: Flyer page route, out of the sitemap; QR decode e2e test
+- [x] T4: Flyer page route, out of the sitemap; QR decode e2e test
 - [ ] T5: `inv flyers` render task; first PDF committed
 - [ ] T6: `check:flyers` in the check chain and both workflows
 - [ ] T7: Docs, backlog, finish
@@ -364,15 +364,15 @@ git commit -m "feat(site): QR code beside the petition tally (SITE-BC)"
 - Consumes: `getActions` (`src/lib/actions.ts`); `petitionUrl` (T2); `render` from `astro:content`; `PetitionQr` (T3) with `size="flyer"`; `formatPostDate` (`src/lib/writing.ts`); `Base`; `@fontsource/space-grotesk/400.css`.
 - Produces: the route `/petitions/{slug}/flyer` (built as `dist/petitions/{slug}/flyer/index.html`) for every action with a `petition` field (drafts included in dev, dropped in production, as `getActions` does). Root element `<div class="flyer" data-theme="light">`. The e2e spec `tests/e2e/petition-qr.spec.ts` (A12): three tests, page tile at 1280px and 768px and the flyer tile, each decoded to `petitionUrl('prohibit-ai-self-improvement')`.
 
-- [ ] **Step 1: Create the page**
+- [x] **Step 1: Create the page**
 
 `getStaticPaths` mirrors `[slug].astro`. `import '@fontsource/space-grotesk/400.css'` in the frontmatter. `<Base title={\`${title} flyer\`} description={description} layout="bare" chrome="minimal" noindex>`. Markup, top to bottom: `<h1 class="flyer__title">` title; `<p class="flyer__byline">` "Written by {author}{ai_assisted && ', with AI assistance'} · {formatPostDate(pubDate)}"; `<blockquote class="flyer__statement">` with `petition_statement` (omit the block when unset); `<div class="flyer__body"><Content /></div>`; `<footer class="flyer__sign">` with `<PetitionQr url={pageUrl} size="flyer" />` and a `<div>` holding `<h2>Sign the pledge</h2>`, `<p>Scan the code or go to</p>`, `<p class="flyer__url"><span>dangerousrobot.org</span><span>/petitions/{slug}</span></p>`; `<div class="flyer__issuer"><img src="/dr-logo.png" alt="" width="48" height="48"><span class="flyer__wordmark">Dangerous Robot</span></div>`. Styles per § Design Flyer page: `@page`, the `.flyer` box in in/pt with `height: 11in` and no `overflow: hidden`, `print-color-adjust: exact`, the font-family overrides for `.flyer`, `.flyer h1`, `.flyer h2`, `.flyer h3`, `.flyer blockquote` and `.flyer p` (the global rules set Georgia and rem sizes), the two-column body, the sign band and issuer row, plus `@media screen { body { background: #888 } .flyer { margin: 2rem auto; box-shadow: 0 0 1rem rgb(0 0 0 / 0.3) } }` so the page previews as a sheet in a browser. Hide Base's footer and the accessibility control on this page: `:global(.a11y-root), :global(.site-footer) { display: none }`.
 
-- [ ] **Step 2: Exclude from the sitemap**
+- [x] **Step 2: Exclude from the sitemap**
 
 In `astro.config.ts`'s sitemap `filter`, as the first statement (before the `INDEX_ALPHA_DETAIL_PAGES` early return): `if (/\/flyer\/?$/.test(new URL(page).pathname)) return false;`. Sitemap entries have no trailing slash under `trailingSlash: "never"`, hence the optional slash.
 
-- [ ] **Step 3: Build and verify**
+- [x] **Step 3: Build and verify**
 
 Run: `npm run build && test -f dist/petitions/prohibit-ai-self-improvement/flyer/index.html && grep -c -e '<form' -e data-names -e petition-roll -e data-count -e api.dangerousrobot.org -e challenges.cloudflare.com dist/petitions/prohibit-ai-self-improvement/flyer/index.html; grep -c 'noindex' dist/petitions/prohibit-ai-self-improvement/flyer/index.html; grep -c '/flyer<' dist/sitemap-0.xml; grep -c 'class="petition-qr__caption' dist/petitions/prohibit-ai-self-improvement/flyer/index.html`
 Expected: `0`, `1`, `0`, `0` (no forbidden strings, one `noindex` meta, no sitemap entry, no caption on the flyer tile).
@@ -382,11 +382,11 @@ Control for the first zero (the same grep must find the strings where they do ex
 Run: `grep -c -e '<form' -e data-names -e petition-roll -e data-count -e api.dangerousrobot.org -e challenges.cloudflare.com dist/petitions/prohibit-ai-self-improvement/index.html`
 Expected: `1` or more.
 
-- [ ] **Step 4: Preview as a sheet, in dark mode too**
+- [x] **Step 4: Preview as a sheet, in dark mode too**
 
 Open `http://localhost:4321/petitions/prohibit-ai-self-improvement/flyer` in Chrome with the site theme set to dark, then File > Print preview, Letter, no margins: one page, white background, dark text, nothing clipped, Space Grotesk everywhere (no serif anywhere), accent colour only on the two rules, the QR at 2.1in with the logo in its centre, the URL on two lines with no mid-word break. If it spills, apply § Design's shrink order (paragraph margins, body 10 → 9.5pt, statement 17 → 16pt, title 28 → 26pt), never the QR. Screenshot to the scratchpad.
 
-- [ ] **Step 5: QR decode e2e test (A12)**
+- [x] **Step 5: QR decode e2e test (A12)**
 
 Precondition: Operator step 2 (Playwright's Chromium). Check first:
 
@@ -445,7 +445,7 @@ test('the flyer QR decodes to the page URL', async ({ page }) => {
 Run: `npm run test:e2e -- petition-qr`
 Expected: `3 passed` (the run builds the site into `node_modules/.cache/watch-e2e/4329/dist` first; allow a few minutes). A failure here means the overlay is unreadable: do not change `QR_LOGO_FRACTION` upward; raise it in the handoff note.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/pages/petitions/[slug]/flyer.astro astro.config.ts tests/e2e/petition-qr.spec.ts package.json package-lock.json docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md

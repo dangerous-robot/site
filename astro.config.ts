@@ -41,6 +41,8 @@ export default defineConfig({
       // but skipping them in the sitemap saves Googlebot crawl budget. Flip the
       // flag in src/lib/seo.ts when alpha ends to re-include them.
       filter: (page) => {
+        // Print-only flyer pages are noindex; entries carry no trailing slash under "never".
+        if (/\/flyer\/?$/.test(new URL(page).pathname)) return false;
         if (INDEX_ALPHA_DETAIL_PAGES) return true;
         const pathname = new URL(page).pathname;
         return !isAlphaDetailPath(pathname);
