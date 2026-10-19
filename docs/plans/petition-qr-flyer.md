@@ -20,7 +20,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T0: Promote the plan and register the work item (2026-10-18)
 - [x] T1: QR SVG helper (`src/lib/qr.ts`)
 - [x] T2: Flyer files helper (`src/lib/flyer.ts`)
-- [ ] T3: `PetitionQr` component in the sign block
+- [x] T3: `PetitionQr` component in the sign block
 - [ ] T4: Flyer page route, out of the sitemap; QR decode e2e test
 - [ ] T5: `inv flyers` render task; first PDF committed
 - [ ] T6: `check:flyers` in the check chain and both workflows
@@ -319,35 +319,35 @@ git commit -m "feat(site): flyer path, fingerprint and manifest helpers (SITE-BC
 - Consumes: `qrSvg` (T1); `flyerPdfPath`, `petitionUrl`, `FLYER_LINK_TEXT`, `FLYERS_DIR` (T2).
 - Produces: `PetitionQr.astro` with `interface Props { url: string; flyerHref?: string; size?: 'page' | 'flyer' }` (default `page`) rendering `<figure class="petition-qr" data-size={size} data-flyer={flyerHref ? '' : undefined}>` containing `<div class="petition-qr__tile">` with the SVG (`set:html`) and, for `size="page"` only, `<figcaption class="petition-qr__caption"><span class="petition-qr__scan">Scan to open this page on a phone{flyerHref ? ', or ' : '.'}</span>{flyerHref && <><a href={flyerHref}>{FLYER_LINK_TEXT}</a>.</>}</figcaption>` (no `download` attribute: the browser's PDF viewer has Print one click away). `size="flyer"` renders the tile alone. `PetitionSign.astro` gains props `pageUrl: string` and `flyerHref?: string` and renders `<PetitionQr>` at the end of `.petition-tally`, wrapped in `{!closed && (...)}`. The page computes `pageUrl = petitionUrl(action.id)` (A10).
 
-- [ ] **Step 1: Take the baseline**
+- [x] **Step 1: Take the baseline**
 
 There is no component test runner; the check is the built HTML (T6's `check-flyers.ts` makes it permanent, T4 step 5's e2e test decodes it). Build and grep:
 
 Run: `npm run build && grep -c 'class="petition-qr' dist/petitions/prohibit-ai-self-improvement/index.html`
 Expected before the change: `0`.
 
-- [ ] **Step 2: Create `PetitionQr.astro`**
+- [x] **Step 2: Create `PetitionQr.astro`**
 
 Styles (scoped), per § Design Page: `.petition-qr { display: grid; gap: var(--space-xs); justify-items: start; margin: var(--space-lg) 0 0; }`; `.petition-qr__tile { width: 8rem; height: 8rem; padding: 0; box-sizing: border-box; background: #fff; border: 1px solid var(--color-border); border-radius: var(--radius-sm); }` with the SVG filling it (`svg { display: block; width: 100%; height: 100%; }`); `.petition-qr__caption { margin: 0; font-size: var(--font-size-sm); color: var(--color-text-muted); text-wrap: pretty; }` with the link in the site's default link style; `@media (max-width: 640px) { .petition-qr:not([data-flyer]) { display: none; } .petition-qr__tile, .petition-qr__scan { display: none; } .petition-qr__caption::first-letter { text-transform: uppercase; } }`; `[data-size="flyer"] { margin: 0; gap: 0; } [data-size="flyer"] .petition-qr__tile { width: 2.1in; height: 2.1in; border: 0; border-radius: 0; }`. No padding anywhere: the SVG's own quiet zone is the margin. No theme filter on the SVG or its `<image>`.
 
-- [ ] **Step 3: Wire it into the sign block and the page**
+- [x] **Step 3: Wire it into the sign block and the page**
 
 In `[slug].astro`: `const pageUrl = petitionUrl(action.id);` and `const flyerHref = existsSync(join(FLYERS_DIR, \`${action.id}.pdf\`)) ? flyerPdfPath(action.id) : undefined;` passed to `<PetitionSign>` (`petitionUrl` throws on a bad id, so the lookup cannot leave `public/flyers/`). In `PetitionSign.astro`: render `{!closed && <PetitionQr url={pageUrl} flyerHref={flyerHref} />}` after `.petition-tally__status`. The sign block's 640px breakpoint stacks the board into one column already; the component's own 640px rule hides the tile there. Nothing else changes.
 
-- [ ] **Step 4: Build and verify**
+- [x] **Step 4: Build and verify**
 
 Run: `npm run build && grep -c 'class="petition-qr' dist/petitions/prohibit-ai-self-improvement/index.html && grep -c 'print a flyer' dist/petitions/prohibit-ai-self-improvement/index.html`
 Expected: `1` then `0` (the figure is one line because `qrSvg` is trimmed; no PDF exists yet, so no link: Review Focus 2). Also `npm run check:types` passes.
 
-- [ ] **Step 5: Hidden when closed**
+- [x] **Step 5: Hidden when closed**
 
 Temporarily point `PUBLIC_PETITION_API` at a local stub that returns `{"status":"closed","closed_at":"2026-10-01T00:00:00Z","count":3,"names":[]}` (for example `python3 -m http.server` in a scratchpad folder serving a `petitions/prohibit-ai-self-improvement` file), build, and confirm `grep -c 'class="petition-qr' dist/petitions/prohibit-ai-self-improvement/index.html` prints `0`. Record the result in the commit message body. Nothing from the stub is staged.
 
-- [ ] **Step 6: Screenshot in light and dark mode**
+- [x] **Step 6: Screenshot in light and dark mode**
 
 With `inv dev` on port 4321, take `/petitions/prohibit-ai-self-improvement#sign` at 1200px and 400px widths, light and dark (`document.documentElement.dataset.theme = 'dark'`). Check at 1200px: the tile is white with a visible border in light mode and white on the dark surface in dark mode, the logo black, the tile's left edge aligned with the count, the caption reads "Scan to open this page on a phone." (no link yet). Check at 400px: no tile, no caption, no figure at all (no PDF yet, so `data-flyer` is absent), and no horizontal overflow. Keep the screenshots under the scratchpad and name them in the handoff note.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/components/PetitionQr.astro src/components/PetitionSign.astro src/pages/petitions/[slug].astro docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md

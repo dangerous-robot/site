@@ -1,9 +1,12 @@
 ---
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { render } from 'astro:content';
 import Base from '../../layouts/Base.astro';
 import PostArticle from '../../components/PostArticle.astro';
 import PetitionSign from '../../components/PetitionSign.astro';
 import { getActions, type Action } from '../../lib/actions';
+import { FLYERS_DIR, flyerPdfPath, petitionUrl } from '../../lib/flyer';
 import { postShareImage } from '../../lib/share-image';
 
 export async function getStaticPaths() {
@@ -16,6 +19,9 @@ const { action } = Astro.props;
 const { title, description, petition, petition_statement, image } = action.data;
 const share = await postShareImage(image);
 const { Content } = await render(action);
+// petitionUrl throws on a bad id, so the lookup below cannot leave public/flyers/.
+const pageUrl = petitionUrl(action.id);
+const flyerHref = existsSync(join(FLYERS_DIR, `${action.id}.pdf`)) ? flyerPdfPath(action.id) : undefined;
 ---
 <Base title={title} description={description} layout="reading" {...share}>
   <PostArticle
@@ -23,7 +29,7 @@ const { Content } = await render(action);
     crumbs={[{ label: 'Home', href: '/' }, { label: 'Petitions' }]}
     back={{ href: '/', label: 'Home' }}
   >
-    <PetitionSign slot="before" slug={petition} statement={petition_statement} />
+    <PetitionSign slot="before" slug={petition} statement={petition_statement} pageUrl={pageUrl} flyerHref={flyerHref} />
     <Content />
   </PostArticle>
 </Base>

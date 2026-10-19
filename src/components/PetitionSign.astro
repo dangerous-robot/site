@@ -13,13 +13,18 @@ import {
   signatureWord,
   statusLabel,
 } from '../lib/petition';
+import PetitionQr from './PetitionQr.astro';
 
 interface Props {
   slug: string;
   /** The text signers put their name to. Shown above the tally when set. */
   statement?: string;
+  /** The page's own URL, for the QR code. */
+  pageUrl: string;
+  /** The printable flyer PDF, when one exists. */
+  flyerHref?: string;
 }
-const { slug, statement } = Astro.props;
+const { slug, statement, pageUrl, flyerHref } = Astro.props;
 
 // The Worker refuses a sign-up without a bot check token, and the check needs scripts.
 const NO_SCRIPT_TEXT =
@@ -53,6 +58,7 @@ const names = state?.names ?? [];
           {closedLine}
         </time>
       </p>
+      {!closed && <PetitionQr url={pageUrl} flyerHref={flyerHref} />}
     </div>
 
     <div class="petition-sign">
