@@ -201,6 +201,8 @@ After a petition closes the email is gone (unless the signer asked for updates),
 
 **Stop updates on request.** `inv petition-stop-updates <address>` turns updates off on every petition that address signed; the signature stays. On a closed petition, the next daily cleanup then deletes the address.
 
+**Report.** `inv petition-report --petition <slug>` lists every signature on a petition in two groups, confirmed then unconfirmed, with columns email, date signed, show? (name may be shown publicly), updates? (ticked the updates box), reminder? (the 4-day reminder went out before they confirmed), and a count line: total, confirmed, unconfirmed, on the update list (confirmed and ticked updates), reminded. Emails of a closed petition show as `(deleted)` once the daily cleanup has run. Read-only, but it prints addresses, so do not redirect it into the repo.
+
 **Confirm by hand.** When a signer says they signed but never confirmed (the email went to spam, or they replied instead), `inv petition-confirm --petition <slug> --names "Ford, Childs"` lists matching signatures (partial, case-insensitive name match) with their id and whether the name may be shown publicly (`display_consent` 1); then `inv petition-confirm --petition <slug> --ids 12,15` sets `confirmed_at` on those rows. Rows already confirmed, or on a closed petition, are left alone. A confirmed signer who ticked updates joins the update list at once.
 
 **Confirmation reminders.** The daily cron (11:17 UTC) emails unconfirmed signers once, 4 days after signing, at most 20 a run, with fresh links that replace the first email's. Nothing to run; reminders count against Resend's daily quota but not the form's hourly cap.

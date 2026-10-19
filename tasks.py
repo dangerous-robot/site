@@ -124,15 +124,21 @@ def petition_stop_updates(ctx, email, local=False):
 _SIGNATURE_COLUMNS = "id, name, email, display_consent, updates_consent, created_at, confirmed_at"
 
 
+def _column_widths(columns, cells):
+    return [max(len(c), *(len(row[i]) for row in cells)) for i, c in enumerate(columns)]
+
+
+def _print_table(columns, cells, widths=None):
+    widths = widths or _column_widths(columns, cells)
+    for line in [columns, *cells]:
+        print("  ".join(v.ljust(w) for v, w in zip(line, widths)).rstrip())
+
+
 def _print_signatures(rows, none_message):
     if not rows:
         print(none_message)
         return
-    columns = list(rows[0])
-    cells = [["" if v is None else str(v) for v in row.values()] for row in rows]
-    widths = [max(len(c), *(len(row[i]) for row in cells)) for i, c in enumerate(columns)]
-    for line in [columns, *cells]:
-        print("  ".join(v.ljust(w) for v, w in zip(line, widths)))
+    _print_table(list(rows[0]), [["" if v is None else str(v) for v in row.values()] for row in rows])
     print(f"{len(rows)} signature(s); display_consent 1 = name may be shown publicly", file=sys.stderr)
 
 
@@ -173,6 +179,54 @@ def petition_confirm(ctx, petition, names="", ids="", local=False):
         local,
     )
     _print_signatures(rows, "Nothing confirmed: ids not on this petition, already confirmed, or the petition is closed.")
+
+
+@task(help={"petition": "The petition's slug", "local": "Use the local dev database"})
+def petition_report(ctx, petition, local=False):
+    """List every signature on a petition, confirmed first, then unconfirmed, with counts."""
+    rows = _d1(
+        ctx,
+        "SELECT email, created_at, display_consent, updates_consent, reminded_at, confirmed_at"
+        f" FROM signatures WHERE petition_slug = {_sql_str(petition)} ORDER BY created_at",
+        local,
+    )
+    if not rows:
+        print("No signatures on this petition.")
+        return
+    confirmed = [r for r in rows if r["confirmed_at"] is not None]
+    unconfirmed = [r for r in rows if r["confirmed_at"] is None]
+    columns = ["email", "date", "show?", "updates?", "reminder?"]
+
+    def yes_no(value):
+        return "yes" if value else "no"
+
+    def cells(group):
+        # The daily cleanup nulls emails once a petition closes; the row stays.
+        return [
+            [
+                r["email"] or "(deleted)",
+                r["created_at"][:10],
+                yes_no(r["display_consent"]),
+                yes_no(r["updates_consent"]),
+                yes_no(r["reminded_at"]),
+            ]
+            for r in group
+        ]
+
+    groups = (("Confirmed", cells(confirmed)), ("Unconfirmed", cells(unconfirmed)))
+    # One set of widths so the two tables line up.
+    widths = _column_widths(columns, [row for _, group in groups for row in group])
+    for label, group in groups:
+        print(f"{label} ({len(group)})")
+        if group:
+            _print_table(columns, group, widths)
+        print()
+    on_update_list = sum(1 for r in confirmed if r["updates_consent"])
+    reminded = sum(1 for r in rows if r["reminded_at"] is not None)
+    print(
+        f"{len(rows)} signature(s): {len(confirmed)} confirmed, {len(unconfirmed)} unconfirmed,"
+        f" {on_update_list} on the update list, {reminded} reminded"
+    )
 
 
 @task
@@ -331,5 +385,6 @@ ns.add_task(worker_deploy)
 ns.add_task(petition_emails)
 ns.add_task(petition_stop_updates)
 ns.add_task(petition_confirm)
+ns.add_task(petition_report)
 ns.add_collection(test_ns)
 ns.add_collection(audit_ns)
