@@ -181,47 +181,46 @@ def petition_confirm(ctx, petition, names="", ids="", local=False):
     _print_signatures(rows, "Nothing confirmed: ids not on this petition, already confirmed, or the petition is closed.")
 
 
+_REPORT_COLUMNS = ["email", "date", "show?", "updates?", "reminder?"]
+
+
+def _report_cells(row):
+    yes_no = ("no", "yes")
+    return [
+        # The daily cleanup nulls emails once a petition closes; the row stays.
+        row["email"] or "(deleted)",
+        row["created_at"][:10],
+        yes_no[bool(row["display_consent"])],
+        yes_no[bool(row["updates_consent"])],
+        yes_no[bool(row["reminded_at"])],
+    ]
+
+
 @task(help={"petition": "The petition's slug", "local": "Use the local dev database"})
 def petition_report(ctx, petition, local=False):
     """List every signature on a petition, confirmed first, then unconfirmed, with counts."""
+    # on_update_list comes from the update_recipients view so the double opt-in
+    # rule stays defined once (migration 0004), as petition-emails reads it.
     rows = _d1(
         ctx,
-        "SELECT email, created_at, display_consent, updates_consent, reminded_at, confirmed_at"
+        "SELECT email, created_at, display_consent, updates_consent, reminded_at, confirmed_at,"
+        " id IN (SELECT id FROM update_recipients) AS on_update_list"
         f" FROM signatures WHERE petition_slug = {_sql_str(petition)} ORDER BY created_at",
         local,
     )
     if not rows:
         print("No signatures on this petition.")
         return
-    confirmed = [r for r in rows if r["confirmed_at"] is not None]
-    unconfirmed = [r for r in rows if r["confirmed_at"] is None]
-    columns = ["email", "date", "show?", "updates?", "reminder?"]
-
-    def yes_no(value):
-        return "yes" if value else "no"
-
-    def cells(group):
-        # The daily cleanup nulls emails once a petition closes; the row stays.
-        return [
-            [
-                r["email"] or "(deleted)",
-                r["created_at"][:10],
-                yes_no(r["display_consent"]),
-                yes_no(r["updates_consent"]),
-                yes_no(r["reminded_at"]),
-            ]
-            for r in group
-        ]
-
-    groups = (("Confirmed", cells(confirmed)), ("Unconfirmed", cells(unconfirmed)))
+    confirmed = [_report_cells(r) for r in rows if r["confirmed_at"] is not None]
+    unconfirmed = [_report_cells(r) for r in rows if r["confirmed_at"] is None]
     # One set of widths so the two tables line up.
-    widths = _column_widths(columns, [row for _, group in groups for row in group])
-    for label, group in groups:
-        print(f"{label} ({len(group)})")
-        if group:
-            _print_table(columns, group, widths)
+    widths = _column_widths(_REPORT_COLUMNS, confirmed + unconfirmed)
+    for label, cells in (("Confirmed", confirmed), ("Unconfirmed", unconfirmed)):
+        print(f"{label} ({len(cells)})")
+        if cells:
+            _print_table(_REPORT_COLUMNS, cells, widths)
         print()
-    on_update_list = sum(1 for r in confirmed if r["updates_consent"])
+    on_update_list = sum(r["on_update_list"] for r in rows)
     reminded = sum(1 for r in rows if r["reminded_at"] is not None)
     print(
         f"{len(rows)} signature(s): {len(confirmed)} confirmed, {len(unconfirmed)} unconfirmed,"
