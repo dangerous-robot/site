@@ -329,6 +329,8 @@ async function confirm(request: Request, env: Env, slug: string): Promise<Respon
   if (!confirmedAt) {
     if (petition.status === 'closed') return messagePage('Petition closed', closedText(petition), petition.post_url, 409);
     // COALESCE keeps the first timestamp if a concurrent confirm (a link scanner) won the race.
+    // `inv petition-confirm` (tasks.py) writes the same timestamp format by hand; the rank
+    // query below compares confirmed_at as text, so change both together.
     const updated = await env.DB.prepare('UPDATE signatures SET confirmed_at = COALESCE(confirmed_at, ?) WHERE id = ? RETURNING confirmed_at')
       .bind(new Date().toISOString(), sig.id)
       .first<{ confirmed_at: string }>();

@@ -128,11 +128,11 @@ def _print_signatures(rows, none_message):
     if not rows:
         print(none_message)
         return
-    columns = _SIGNATURE_COLUMNS.split(", ")
-    widths = {c: max(len(c), *(len(str(r[c] if r[c] is not None else "")) for r in rows)) for c in columns}
-    print("  ".join(c.ljust(widths[c]) for c in columns))
-    for row in rows:
-        print("  ".join(str(row[c] if row[c] is not None else "").ljust(widths[c]) for c in columns))
+    columns = list(rows[0])
+    cells = [["" if v is None else str(v) for v in row.values()] for row in rows]
+    widths = [max(len(c), *(len(row[i]) for row in cells)) for i, c in enumerate(columns)]
+    for line in [columns, *cells]:
+        print("  ".join(v.ljust(w) for v, w in zip(line, widths)))
     print(f"{len(rows)} signature(s); display_consent 1 = name may be shown publicly", file=sys.stderr)
 
 
@@ -147,11 +147,14 @@ def _print_signatures(rows, none_message):
 def petition_confirm(ctx, petition, names="", ids="", local=False):
     """Confirm signatures by hand when the confirmation email was not acted on: look up by name, then confirm by id."""
     if bool(names) == bool(ids):
-        raise SystemExit("Give --names to look signatures up, or --ids to confirm them, not both")
+        raise SystemExit("Give exactly one of --names (look signatures up) or --ids (confirm them)")
     scope = f"petition_slug = {_sql_str(petition)}"
     if names:
-        terms = [n.strip().lower() for n in names.split(",") if n.strip()]
-        match = " OR ".join(f"lower(name) LIKE {_sql_str('%' + t + '%')}" for t in terms)
+        terms = [n.strip() for n in names.split(",") if n.strip()]
+        if not terms:
+            raise SystemExit("--names has no names in it")
+        # SQLite LIKE ignores case on its own.
+        match = " OR ".join(f"name LIKE {_sql_str('%' + t + '%')}" for t in terms)
         rows = _d1(ctx, f"SELECT {_SIGNATURE_COLUMNS} FROM signatures WHERE {scope} AND ({match}) ORDER BY name", local)
         _print_signatures(rows, "No signatures matched.")
         return
