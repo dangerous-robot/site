@@ -217,7 +217,8 @@ const pageUrl = petitionUrl(action.id);
     height: 0.38in;
   }
 
-  /* The nav's .site-name, in absolute units. */
+  /* The nav's .site-name, in absolute units, without its accent left bar:
+     the accent appears only on the two rules (A15). */
   .flyer__wordmark {
     font-family: 'Orbitron';
     font-size: 10pt;
@@ -225,8 +226,6 @@ const pageUrl = petitionUrl(action.id);
     line-height: 1;
     letter-spacing: 0.03em;
     color: var(--color-text);
-    border-left: 2px solid var(--color-accent);
-    padding-left: 0.1in;
   }
 
   :global(.a11y-root),
