@@ -1,6 +1,6 @@
 # Pledge QR code and print flyer
 
-**Status**: `ready` (approved by Brandon 2026-10-18; revised the same day from three reviewer reports: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten; roadmap item SITE-BC (Pledge QR code and print flyer); see Review history)
+**Status**: `in progress` (approved by Brandon 2026-10-18; revised the same day from three reviewer reports: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten; roadmap item SITE-BC (Pledge QR code and print flyer); see Review history)
 **Last updated**: 2026-10-18
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -18,7 +18,7 @@
 Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 
 - [x] T0: Promote the plan and register the work item (2026-10-18)
-- [ ] T1: QR SVG helper (`src/lib/qr.ts`)
+- [x] T1: QR SVG helper (`src/lib/qr.ts`)
 - [ ] T2: Flyer files helper (`src/lib/flyer.ts`)
 - [ ] T3: `PetitionQr` component in the sign block
 - [ ] T4: Flyer page route, out of the sitemap; QR decode e2e test
@@ -122,7 +122,7 @@ Runs once Brandon approves this draft.
 - Consumes: `qrcode` (`QRCode.toString(text, { type: 'svg', errorCorrectionLevel: 'H' })` resolves to an SVG string ending in `</svg>\n`, with `viewBox="0 0 N N"`, N = modules plus the default 4-module margin on each side (57 for the current URL, a version 8 code), containing a background `<path fill="#ffffff">` and the dark-module `<path stroke="#000000">`; no `role`, `<title>` or `<rect>`).
 - Produces: `export async function qrSvg(url: string): Promise<string>`; `export const QR_LOGO_HREF = '/dr-logo.png'`; `export const QR_LOGO_FRACTION = 0.14`. The returned SVG ends in `</svg>` (trailing newline trimmed, A18), has `role="img"`, an `<title>` "QR code for {url}" with `&`, `<`, `>` and `"` XML-escaped as its first child, `qrcode`'s background and module paths, then a white `<rect fill="#fff">` and an `<image href="/dr-logo.png">` centred, sized from `QR_LOGO_FRACTION` of the viewBox width (the rect 1.12 times the image).
 
-- [ ] **Step 1: Add the dependency and audit it**
+- [x] **Step 1: Add the dependency and audit it**
 
 ```bash
 npm install qrcode@^1.5.4
@@ -132,7 +132,7 @@ npm audit --omit=dev
 
 Expected from the audit: `found 0 vulnerabilities`. Record the audit line in the commit body; if an advisory is accepted instead, add a row to `docs/UNSCHEDULED.md` § Security follow-ups in the same commit (A16). The install adds a second `yargs` 15 tree used only by `qrcode`'s CLI; keep the caret, as every other entry does.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```ts
 import { describe, test } from 'node:test';
@@ -173,21 +173,21 @@ describe('qrSvg', () => {
 });
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `npm run test:site`
 Expected: FAIL, `Error [ERR_MODULE_NOT_FOUND]: Cannot find module '<repo>/src/lib/qr' imported from <repo>/src/lib/qr.test.ts`.
 
-- [ ] **Step 4: Implement `qrSvg(url: string): Promise<string>` in `src/lib/qr.ts`**
+- [x] **Step 4: Implement `qrSvg(url: string): Promise<string>` in `src/lib/qr.ts`**
 
 Validate with `new URL(url)` and throw when `protocol` is not `https:`; insert the string as passed (not `.href`) into the title after XML-escaping `&`, `<`, `>` and `"`. Trim the trailing newline from the string `qrcode` returns. Write the `<image>` attributes in the order `href`, `width`, `height`, `x`, `y`, as the test reads them; the rect's fill is the literal `#fff` (`#ffffff` fails the test). Insert the rect and image before the closing `</svg>`, and add `role="img"` and the `<title>` to the opening tag and as its first child.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npm run test:site`
 Expected: PASS, four `qrSvg` tests.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add package.json package-lock.json src/lib/qr.ts src/lib/qr.test.ts docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md
