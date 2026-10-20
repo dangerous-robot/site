@@ -23,7 +23,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T3: `PetitionQr` component in the sign block
 - [x] T4: Flyer page route, out of the sitemap; QR decode e2e test
 - [x] T4b: Closed petition has no flyer page; flyer PDFs are not crawled
-- [ ] T5: `inv flyers` render task; first PDF committed
+- [x] T5: `inv flyers` render task; first PDF committed
 - [ ] T6: `check:flyers` in the check chain and both workflows
 - [ ] T7: Docs, backlog, finish
 
@@ -564,7 +564,7 @@ Run `inv flyers` again and `git diff --stat public/flyers/`: only `generated` ch
 
 Temporarily add `<p style="height: 6in"></p>` to the flyer body in `flyer.astro`, run `inv flyers`: exit code 1, the message names the slug and the file, and `git status public/flyers/` shows no change. Revert the temporary edit before committing.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts/render-flyers.ts tasks.py package.json public/flyers/prohibit-ai-self-improvement.pdf public/flyers/prohibit-ai-self-improvement.json docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md

@@ -52,6 +52,15 @@ def check(ctx):
 
 
 @task
+def flyers(ctx):
+    """Render each open petition's one-page flyer PDF into public/flyers/ (commit the result)."""
+    out = "node_modules/.cache/flyers/dist"
+    ctx.run(f"npm run build -- --outDir {out}", pty=True)
+    # UTC so the PDF's CreationDate carries no local timezone offset.
+    ctx.run(f"npm run flyers -- --dist {out}", pty=True, env={"TZ": "UTC"})
+
+
+@task
 def worker_deploy(ctx):
     """Type-check, test, migrate and deploy the dr-api petition Worker.
 
@@ -379,6 +388,7 @@ ns.add_task(dev)
 ns.add_task(build)
 ns.add_task(lint)
 ns.add_task(check)
+ns.add_task(flyers)
 ns.add_task(clean)
 ns.add_task(worker_deploy)
 ns.add_task(petition_emails)
