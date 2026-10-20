@@ -209,6 +209,14 @@ After a petition closes the email is gone (unless the signer asked for updates),
 
 **Then rebuild the site.** The petition page carries the signer list as it stood at the last build (`src/components/PetitionSign.astro` reads it from the Worker at build time). Readers with JavaScript load the live list, so the name leaves their view at once; readers without JavaScript and search crawlers keep seeing it until the next deploy. Check the row count above first, because the build reads the live database. A deploy runs on a push to `main` or a manual run of the "Deploy to GitHub Pages" workflow (`docs/architecture/ci-deploy.md`); with nothing to push, start one from the repository's Actions tab or with `gh workflow run deploy.yml --ref main`.
 
+**Flyer.** Each open petition page links a one-page print flyer, `public/flyers/<slug>.pdf`, with a manifest beside it (`<slug>.json`). After any change to a petition's Markdown, its URL or the flyer templates (`src/pages/petitions/[slug]/flyer.astro`, `src/components/PetitionQr.astro`, `src/lib/qr.ts`), and after opening a new petition, run from the repo root (not `workers/api/`):
+
+```bash
+inv flyers
+```
+
+It builds the site, renders each open petition's flyer with Playwright's Chromium (`npx playwright install chromium` once per machine) and refuses to write a PDF longer than one page; shorten the text if it says so. Commit everything under `public/flyers/`. `npm run check:flyers`, in `npm run check`, CI and the deploy build, fails when a flyer is missing or out of date, so a stale flyer can be committed but never deployed; it is not in `inv check` or the pre-commit hook. Global CSS changes do not trip it, so rerun `inv flyers` by hand after those. After a rerun that changes the QR code or its layout, scan the PDF with a phone, from the screen and from a printed sheet at about half a metre, before committing. A closed petition gets no flyer page and no link (`inv flyers` skips it); its files may stay in `public/flyers/`, and `public/robots.txt` keeps `/flyers/` out of crawlers. Delete a flyer's files only when its petition action is renamed, drafted or deleted (`check:flyers` names them). Change `QR_LOGO_FRACTION` in `src/lib/qr.ts` only with `npm run test:e2e -- petition-qr` passing (it decodes the codes with the logo in place).
+
 **Local testing.** `cp .dev.vars.example .dev.vars` (emails print to the terminal instead of sending), `npx wrangler d1 migrations apply dr-api --local`, insert a petition row without `--remote`, then `npx wrangler dev`. Start the site with `PUBLIC_PETITION_API=http://localhost:8787` so the sign block talks to the local Worker. Unit tests: `npm test`.
 
 ## Content pipeline

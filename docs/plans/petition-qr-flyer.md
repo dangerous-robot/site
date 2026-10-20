@@ -1,6 +1,6 @@
 # Pledge QR code and print flyer
 
-**Status**: `in progress` (approved by Brandon 2026-10-18; revised the same day from three reviewer reports: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten; roadmap item SITE-BC (Pledge QR code and print flyer); see Review history)
+**Status**: `done` (2026-10-19; approved by Brandon 2026-10-18; revised the same day from three reviewer reports: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten; roadmap item SITE-BC (Pledge QR code and print flyer); see Review history)
 **Last updated**: 2026-10-19
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
@@ -25,7 +25,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T4b: Closed petition has no flyer page; flyer PDFs are not crawled
 - [x] T5: `inv flyers` render task; first PDF committed
 - [x] T6: `check:flyers` in the check chain and both workflows
-- [ ] T7: Docs, backlog, finish
+- [x] T7: Docs, backlog, finish
 
 ## Decisions
 
@@ -72,7 +72,7 @@ Calls made by the agent (override freely):
 - Byline, as the page shows it (A5): Space Grotesk 400, 7.5pt, uppercase, letter-spacing 0.08em, muted, margin 0 0 0.25in.
 - Statement (omitted when unset): `border-top: 2px solid var(--color-accent)`, padding-top 0.2in, Space Grotesk 400 italic (synthesised oblique: the family ships no italic; Q2), 17pt, line-height 1.3, max-width 6.3in, margin 0 0 0.3in.
 - Definitions (`<Content />`): `columns: 2; column-gap: 0.4in; column-fill: balance`; the Markdown's `<h3><strong>Definitions</strong></h3>` becomes a label spanning both columns (`column-span: all`, Space Grotesk 600 10.5pt uppercase, letter-spacing 0.04em, `strong { font-weight: inherit }`, margin 0 0 0.12in); paragraphs 10pt/1.4, `break-inside: avoid`, margin 0 0 0.1in; the last paragraph (today "Please consider adding yourself as a signatory.") spans both columns in Space Grotesk 400 12pt, margin-top 0.12in, as the lead-in to the sign band.
-- Sign band: `margin-top: auto` (takes the slack, so nothing pools mid-page), `border-top: 2px solid var(--color-accent)`, padding-top 0.2in, grid `2.1in 1fr`, column-gap 0.4in, `align-items: center`. Left: `<PetitionQr size="flyer">`, the SVG at 2.1in square, no padding or border (quiet zone inside; module about 0.94mm). Right: "Sign the pledge" Space Grotesk 600 18pt, margin 0 0 0.06in; "Scan the code or go to" Space Grotesk 400 11.5pt muted, margin 0 0 0.08in; the URL in Space Grotesk 600 13pt, black, as two block spans, host (`dangerousrobot.org`) then path (`/petitions/{slug}`), `overflow-wrap: normal` (the path sets about 3.9in and fits the 4.4in column).
+- Sign band: `margin-top: auto` (takes the slack, so nothing pools mid-page), `border-top: 2px solid var(--color-accent)`, padding-top 0.2in, grid `2.1in 1fr`, column-gap 0.4in, `align-items: center`. Left: `<PetitionQr size="flyer">`, the SVG at 2.1in square, no padding or border (quiet zone inside; module about 0.94mm). Right: "Sign the pledge" Space Grotesk 600 18pt, margin 0 0 0.06in; "Scan the code or go to" Space Grotesk 400 11.5pt muted, margin 0 0 0.08in; the URL in Space Grotesk 600 13pt, `var(--color-text)`, as two block spans, host (`dangerousrobot.org`) then path (`/petitions/{slug}`), `overflow-wrap: normal` (the path sets about 3.9in and fits the 4.4in column).
 - Issuer row: margin-top 0.25in, `border-top: 1px solid var(--color-border)`, padding-top 0.12in, flex, `align-items: center`, gap 0.12in: `dr-logo.png` at 0.38in, then "Dangerous Robot" in Orbitron 700 10pt, letter-spacing 0.03em (lift of `.site-name` without its accent left bar: the accent appears only on the two rules, A15). Nothing else on the row (Decision 4 fixes the content).
 
 Budget: about 9.5in of the 9.8in available for the current petition (estimated at 9.35in for a serif; Space Grotesk at 10pt sets a touch wider), so the one-page check has a little slack. If a petition spills, shrink in this order: paragraph margins, body 10 → 9.5pt, statement 17 → 16pt, title 28 → 26pt; never the QR below 2in. If more than 1in of slack remains, grow the QR to 2.4in first. On screen (`@media screen`) the sheet previews on a `#888` body with `margin: 2rem auto` and a soft shadow. The render script refuses a PDF with more than one page.
@@ -629,12 +629,12 @@ git commit -m "ci: check:flyers fails when a petition flyer is missing, stale or
 **Files:**
 - Modify: `docs/architecture/petitions.md` (Pieces table: QR component, flyer page, `public/flyers/`, render and check scripts, the decode e2e test; Routes: the flyer page), `docs/architecture/site.md` (the `npm run check` chain and CI step lists; the e2e spec list), `docs/runbook.md` ("Petitions" section: a "Flyer" paragraph: when to run `inv flyers`, commit `public/flyers/`, that `check:flyers` blocks a stale deploy, that a closed petition keeps its flyer files but gets no flyer page and no link, and `robots.txt` keeps `/flyers/` out of crawlers (A4, A19), the phone-scan check after a rerun, and that `QR_LOGO_FRACTION` changes only with the e2e decode test passing), `docs/UNSCHEDULED.md` (record any follow-up that came up during T1 to T6, with a triage marker; if none, no change, and say so in the commit body), `docs/v1.0.0-roadmap.md` (SITE-BC checklist, status `done` with commit refs; fix the prose: the link reads "print a flyer (PDF)" (A6) and `check:flyers` runs in `npm run check` and both workflows, not `inv check` (A11)), `public/robots.txt` is already done (T4b), this plan (status checklist, Status line; Design: the printed URL colour is `var(--color-text)`, as the code has it).
 
-- [ ] **Step 1: Write the doc changes**
-- [ ] **Step 2: Run `npm run check` end to end**
+- [x] **Step 1: Write the doc changes**
+- [x] **Step 2: Run `npm run check` end to end**
 
 Expected: every step passes, including `check:flyers`.
 
-- [ ] **Step 3: Commit, then finish the work item**
+- [x] **Step 3: Commit, then finish the work item**
 
 ```bash
 git add docs/architecture/petitions.md docs/architecture/site.md docs/runbook.md docs/UNSCHEDULED.md docs/v1.0.0-roadmap.md docs/plans/petition-qr-flyer.md

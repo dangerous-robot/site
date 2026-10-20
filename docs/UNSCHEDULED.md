@@ -560,3 +560,12 @@ Deferred from the 2026-10-04 build review of `workers/api/` ([petition-signature
 | One-click unsubscribe for campaign updates | Gmail and Yahoo expect `List-Unsubscribe` and `List-Unsubscribe-Post` headers (one-click unsubscribe) on non-transactional mail. Today updates go by hand from a petition author's Gmail with addresses hidden (`/privacy#petitions`), where headers cannot be set, and opt-out is `inv petition-stop-updates`. Needed if updates move to Resend or volume grows: a Worker unsubscribe endpoint plus the headers on each send. Triage: none; keep; 2026-10-13 |
 | Register dangerousrobot.org in Google Postmaster Tools | Shows the Gmail spam-complaint rate and domain reputation for petition emails, which the daily Google DMARC reports do not (those show only that SPF and DKIM pass). Operator task: add the domain and its DNS TXT verification record. Data appears only at meaningful volume (roughly 100+ messages a day). Triage: none; keep; 2026-10-13 |
 | Send from a real address instead of `no-reply@` | `MAIL_FROM` in `workers/api/wrangler.toml` is `no-reply@dangerousrobot.org`; Reply-To already goes to `contact@`. A monitored sender such as `petitions@` is a small trust signal for recipients and mail filters. Needs the address set up and a Worker deploy. Triage: none; keep; 2026-10-13 |
+
+## Petition flyer follow-ups
+
+From the SITE-BC (Pledge QR code and print flyer) build reviews, 2026-10-19 ([petition-qr-flyer.md](plans/completed/petition-qr-flyer.md)). None block anything today.
+
+| Work Item | Notes |
+|-----------|-------|
+| Flyer links print in the accent colour | Links inside a petition body keep the site's accent link colour on the flyer (`src/pages/petitions/[slug]/flyer.astro` sets no `a` rule), which breaks the flyer's accent-only-on-the-rules rule and may fade on a black-and-white copy. The current pledge has no links. Fix: `.flyer a { color: inherit }` plus an underline, then rerun `inv flyers`. Triage: none; keep; 2026-10-19 |
+| QR title escaping test covers only `&` | `src/lib/qr.test.ts` checks that `qrSvg` escapes `&` in the SVG `<title>`; `<`, `>` and quotes are not tested. `petitionUrl` refuses such slugs today, so this guards a later caller. Triage: Security; keep; 2026-10-19 |

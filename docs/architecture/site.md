@@ -346,9 +346,11 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 | `npm run check:citations` | `tsx scripts/check-citations.ts`                   | Validate source references in claims     |
 | `npm run check:reviewers` | `tsx scripts/check-reviewer-display.ts`            | Check reviewer mentions in `dist/` (handle, profile links) |
 | `npm run check:watch` | `tsx scripts/check-watch-page.ts`                       | Check `/watch` in `dist/` and scan `dist/` for API key leaks |
+| `npm run check:flyers` | `tsx scripts/check-flyers.ts`                          | After a build: each open petition's flyer PDF in `public/flyers/` exists, is current and is linked; a closed one has no flyer page or link; no orphan flyer files |
+| `npm run flyers`    | `tsx scripts/render-flyers.ts --dist <dir>`               | Render the petition flyer PDFs from a built site; run through `inv flyers`, which builds first |
 | `npm run test:site` | `tsx --test 'src/lib/**/*.test.ts'`                       | Unit tests                               |
-| `npm run test:e2e`  | `playwright test`                                         | `/watch` browser tests                   |
-| `npm run check`     | `check:types + test:site + build + lint:md + check:citations + check:reviewers + check:watch` | Local quality gate (CI's `check` job runs all but check:reviewers) |
+| `npm run test:e2e`  | `playwright test`                                         | `/watch` browser tests and the petition QR decode test |
+| `npm run check`     | `check:types + test:site + build + lint:md + check:citations + check:reviewers + check:watch + check:flyers` | Local quality gate (CI's `check` job runs all but check:reviewers) |
 
 ### Tests
 
@@ -357,10 +359,10 @@ The `public/CNAME` file is copied as-is to `dist/CNAME` during the build, which 
 | Layer | Command | What it covers |
 |-------|---------|----------------|
 | Unit | `npm run test:site` (`node:test`, `src/lib/**/*.test.ts`) | Duration parsing, the API client (paging, batching, retry, error mapping, key redaction, no `Referer` header), normalizing and dropping, mode resolution and log lines, URL state, list width limits and the now-playing line |
-| Browser | `npm run test:e2e` (Playwright, Chromium, `tests/e2e/`) | Playlist switcher, video list, resizer, player, layout at each breakpoint, and flows across them, against a fixture build served on its own port (`WATCH_E2E_PORT`, default 4329, not the 4321 that `inv dev` uses). See [ci-deploy.md](ci-deploy.md#watch-page-checks). |
+| Browser | `npm run test:e2e` (Playwright, Chromium, `tests/e2e/`) | Playlist switcher, video list, resizer, player, layout at each breakpoint, and flows across them, against a fixture build served on its own port (`WATCH_E2E_PORT`, default 4329, not the 4321 that `inv dev` uses). See [ci-deploy.md](ci-deploy.md#watch-page-checks). `tests/e2e/petition-qr.spec.ts` decodes the petition page's QR code (at 1280px and 768px) and the flyer page's with `zxing-wasm` and expects the page URL; it skips when the built page says the petition is closed. |
 | Dist | `npm run check:watch` after a build | The built `/watch` page matches its data mode, and no API key reached `dist/` |
 
-`inv check` and the pre-commit hook run the unit tests and the dist check; browser tests run in CI's `e2e` job and on demand.
+`inv check` and the pre-commit hook run the unit tests and the dist check; browser tests run in CI's `e2e` job and on demand. `check:flyers` is not in `inv check` (a pledge edit would block every commit until a new PDF was rendered); it runs in `npm run check`, CI's `check` job and the deploy build, so a stale flyer can be committed but not shipped.
 
 ## Deployment
 
@@ -369,7 +371,7 @@ The deploy pipeline is in `.github/workflows/deploy.yml`. It runs on every push 
 Jobs:
 
 1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the CI checks gate every deploy.
-2. **build** -- Checkout, setup Node 22, `npm ci`, `npm run build` (with the `YOUTUBE_API_KEY` secret), `npm run check:watch` in deploy context, upload `dist/` as a Pages artifact.
+2. **build** -- Checkout, setup Node 22, `npm ci`, `npm run build` (with the `YOUTUBE_API_KEY` secret), `npm run check:watch` in deploy context, `npm run check:flyers`, remove `dist/admin`, upload `dist/` as a Pages artifact.
 3. **deploy** -- Deploys to the `github-pages` environment via `actions/deploy-pages@v5`.
 
 The same CI workflow (`.github/workflows/ci.yml`) also runs on PRs. See [ci-deploy.md](ci-deploy.md) for details.
