@@ -47,6 +47,9 @@ function localFile(pathname: string): string | null {
   return existsSync(file) && statSync(file).isFile() ? file : null;
 }
 
+// Throwing (not exiting) inside the loop lets the finally close Chromium.
+class Refusal extends Error {}
+
 async function render(browser: Browser, slug: string, tmp: string): Promise<string[]> {
   const foreign: string[] = [];
   const context = await browser.newContext({ colorScheme: 'light', serviceWorkers: 'block' });
@@ -62,7 +65,12 @@ async function render(browser: Browser, slug: string, tmp: string): Promise<stri
       const file = localFile(url.pathname);
       return file ? route.fulfill({ path: file }) : route.fulfill({ status: 404 });
     });
-    await page.goto(ORIGIN + flyerPagePath(slug), { waitUntil: 'load' });
+    // goto does not throw on a 404, and a 404's empty body prints as a blank
+    // page that passes every gate below.
+    const response = await page.goto(ORIGIN + flyerPagePath(slug), { waitUntil: 'load' });
+    if (!response?.ok()) {
+      throw new Refusal(`flyer page for ${slug} answered ${response?.status() ?? 'nothing'}: is the petition closed, or did the build fail?`);
+    }
     await page.evaluate(() => document.fonts.ready.then(() => undefined));
     await page.pdf({ path: tmp, format: 'Letter', printBackground: true, preferCSSPageSize: true });
   } finally {
@@ -83,9 +91,6 @@ try {
   fail('Chromium did not start: run npx playwright install chromium');
 }
 
-// Throwing (not exiting) inside the loop lets the finally close Chromium.
-class Refusal extends Error {}
-
 try {
   for (const { slug, text } of actions) {
     const built = path.join(dir, 'petitions', slug, 'index.html');
@@ -93,6 +98,12 @@ try {
     if (readFileSync(built, 'utf8').includes('data-status="closed"')) {
       console.log(`skip ${slug}: closed (A4)`);
       continue;
+    }
+    // The petition page and the flyer route each fetch the petition state at
+    // build time, so they can disagree; an open page with no flyer is refused.
+    const flyerBuilt = path.join(dir, 'petitions', slug, 'flyer', 'index.html');
+    if (!existsSync(flyerBuilt)) {
+      throw new Refusal(`no flyer page for ${slug} at ${flyerBuilt}: is the petition closed, or did the build fail?`);
     }
 
     // Rendered aside and moved only once every gate passes, so a refusal
