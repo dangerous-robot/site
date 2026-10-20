@@ -29,7 +29,9 @@ if (!process.argv.includes('--dist') || !distArg) fail('usage: tsx scripts/rende
 // Absolute, so the containment test below compares like with like.
 const dir = path.resolve(distArg);
 
-// Machine details a PDF must never carry into a public, committed file.
+// Machine details a PDF must never carry into a public, committed file. The
+// scan reads raw bytes, so it sees the uncompressed parts (the Info dictionary,
+// object headers) but not text inside Flate streams: a tripwire, not a proof.
 const machineStrings: [string, string][] = (
   [['hostname', os.hostname()], ['user name', os.userInfo().username], ['home directory', os.homedir()]] as [string, string][]
 ).filter(([, value]) => value.length > 0);
