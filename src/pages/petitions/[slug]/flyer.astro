@@ -1,17 +1,23 @@
 ---
 // One US Letter sheet per petition, rendered to PDF by `inv flyers`. Print
-// only: noindex, out of the sitemap, and no form, count or network calls.
+// only: noindex, out of the sitemap, and no form, count or network calls in
+// the page. A petition the build-time snapshot says is closed gets no flyer
+// page; no snapshot (Worker down) builds it as open.
 import '@fontsource/space-grotesk/400.css';
 import { render } from 'astro:content';
 import Base from '../../../layouts/Base.astro';
 import PetitionQr from '../../../components/PetitionQr.astro';
 import { getActions, type Action } from '../../../lib/actions';
+import { fetchPetitionState } from '../../../lib/petition';
 import { petitionUrl } from '../../../lib/flyer';
 import { formatPostDate } from '../../../lib/writing';
 
 export async function getStaticPaths() {
   const actions = await getActions();
-  return actions.map((action) => ({ params: { slug: action.id }, props: { action } }));
+  const states = await Promise.all(actions.map((action) => fetchPetitionState(action.data.petition)));
+  return actions
+    .filter((_, i) => states[i]?.status !== 'closed')
+    .map((action) => ({ params: { slug: action.id }, props: { action } }));
 }
 
 interface Props { action: Action }

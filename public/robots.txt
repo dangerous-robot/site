@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /admin/
+Disallow: /flyers/
 
 Sitemap: https://dangerousrobot.org/sitemap-index.xml

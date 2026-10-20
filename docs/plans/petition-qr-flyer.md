@@ -1,7 +1,7 @@
 # Pledge QR code and print flyer
 
 **Status**: `in progress` (approved by Brandon 2026-10-18; revised the same day from three reviewer reports: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten; roadmap item SITE-BC (Pledge QR code and print flyer); see Review history)
-**Last updated**: 2026-10-18
+**Last updated**: 2026-10-19
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -22,6 +22,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T2: Flyer files helper (`src/lib/flyer.ts`)
 - [x] T3: `PetitionQr` component in the sign block
 - [x] T4: Flyer page route, out of the sitemap; QR decode e2e test
+- [x] T4b: Closed petition has no flyer page; flyer PDFs are not crawled
 - [ ] T5: `inv flyers` render task; first PDF committed
 - [ ] T6: `check:flyers` in the check chain and both workflows
 - [ ] T7: Docs, backlog, finish
@@ -35,6 +36,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 | 3 | URL in the QR code | The plain page URL, no tracking parameter |
 | 4 | Flyer content | Title, byline, pledge statement, definitions, QR code with the URL under it, DR logo. No article image, no form, no live count |
 | 5 | Release | Minor; rides the beta line as SITE-BC (Pledge QR code and print flyer) |
+| 6 | Closed petition (Brandon, 2026-10-19) | No flyer page. The PDF may stay under `public/flyers/`, but nothing links it and crawlers are kept off it |
 
 Calls made by the agent (override freely):
 
@@ -43,7 +45,7 @@ Calls made by the agent (override freely):
 | A1 | QR error correction level H, so the logo may cover the centre. `QR_LOGO_FRACTION = 0.14`: the logo square is 14% of the code's viewBox width on a white square 1.12 times the logo. The limit is the artwork, not the codeword budget: the robot's eye (white ring, black pupil) resembles a finder pattern, and at 22% zxing-cpp failed to decode at every size tested while 13% to 14% decoded at every size (phone decoders were not tested; "likely to fail on some scanners"). The e2e decode test (A12) gates any later increase; masking the eye in the overlay is a brand change and Brandon's call (Q1). `qrcode`'s default quiet zone of 4 modules is kept |
 | A2 | The logo is the black-on-transparent `public/dr-logo.png`, referenced by path, on both the site and the flyer (black on white scans in every theme) |
 | A3 | On the page, the QR code sits at the end of the tally column, under the count and status chip: an 8rem bordered white tile and one caption sentence that carries the flyer link. No URL line (it is the page's own address). Below 640px the tile is hidden and only the flyer link line remains. In dark mode the tile stays white and the logo black, with no theme filter |
-| A4 | A closed petition (build-time snapshot says `closed`) shows no QR code and no flyer link, and `check:flyers` requires `public/flyers/{slug}.pdf` and `.json` to be absent (git history keeps them; the failure message says to delete them), so a poster inviting signatures to a closed petition cannot stay public. `inv flyers` skips a closed petition and prints the skip. No snapshot (Worker down): shown and rendered as open |
+| A4 | A closed petition (build-time snapshot says `closed`) shows no QR code and no flyer link on its page, and has no flyer page: `flyer.astro`'s `getStaticPaths` fetches the same snapshot and drops closed petitions, so `/petitions/{slug}/flyer` is not built (404). `public/flyers/{slug}.pdf` and `.json` may stay (Decision 6); `check:flyers` requires only that the page does not link the PDF and that `dist/petitions/{slug}/flyer/` is absent, and runs no staleness check for a closed petition. `inv flyers` skips a closed petition and prints the skip. No snapshot (Worker down): shown, built and rendered as open |
 | A5 | The flyer page keeps the article body as written, including its final "Please consider adding yourself as a signatory." line, and shows the byline with "with AI assistance" when the post is flagged, as the page does |
 | A6 | Link text constant `FLYER_LINK_TEXT = 'print a flyer (PDF)'`, lower-case because it sits inside the caption sentence "Scan to open this page on a phone, or print a flyer (PDF)."; below 640px, where the link is the whole line, `::first-letter` capitalises it. Brandon asked for "print flyer (or better)"; change the one constant if a better phrase comes up |
 | A7 | The PDF is keyed by the page slug (the action id), not the Worker petition slug; they are equal today but mean different things. Action file names are lowercase kebab-case, so the file name and the collection id agree (`listPetitionActions` reads file names and enforces that, A17) |
@@ -53,10 +55,11 @@ Calls made by the agent (override freely):
 | A11 | Where `check:flyers` runs. The pre-commit hook runs `inv check` on every commit, so putting the check there would block any commit that touches a petition's Markdown (a one-word fix included) until Chromium has rendered a new PDF. Brandon chose a check that "warns"; the plan therefore runs `check:flyers` in `npm run check`, `ci.yml` and `deploy.yml` (a stale flyer can be committed, never shipped) and leaves `inv check` alone. Brandon may move it into `inv check` if he prefers the hard stop |
 | A12 | QR decode gate. A Playwright e2e test, `tests/e2e/petition-qr.spec.ts`, screenshots the `.petition-qr__tile` element on the petition page at 1280px and 768px (both above the 640px hide point) and on the flyer page, decodes each with `zxing-wasm` 2.x (devDependency; `readBarcodes` takes the PNG bytes directly; the `.wasm` is read from `node_modules`, since the package otherwise fetches it from jsDelivr, and no network is touched) and asserts the text equals `petitionUrl(slug)`. The two page tests skip themselves when the built page says the petition is closed (A4 hides the tile), so a closure cannot block deploys; the flyer test always runs. It runs with the other specs (`npm run test:e2e`; ci.yml's `e2e` job on pull requests and, through deploy.yml's `workflow_call`, on every push to main) in the site's default dark theme. It is the gate for any later change to `QR_LOGO_FRACTION` or the overlay |
 | A13 | Flyer fonts. Only the site's shipped OFL fonts appear inside `.flyer`: Space Grotesk 400 (flyer.astro imports `@fontsource/space-grotesk/400.css`) for prose, statement and byline, Space Grotesk 600 (loaded by Base) for title, labels and URL, Orbitron 700 for the wordmark. No Georgia, no `system-ui`, no `--font-mono`, no fallback list, so a missing face fails the `pdffonts` gate instead of substituting. This is a deliberate deviation from the site's serif heading face: the flyer is print, must render the same on every machine, and the committed PDF must not embed Apple or Microsoft system faces |
-| A14 | Orphan flyers. Every file under `public/flyers/` must be `{slug}.pdf` or `{slug}.json` for a non-draft petition action that is open; anything else (renamed, drafted, deleted or closed petition) fails `check:flyers` with `orphan flyer public/flyers/{name}: delete it`. PDFs on GitHub Pages cannot be `noindex`ed, so deletion is the only control |
+| A14 | Orphan flyers. Every file under `public/flyers/` must be `{slug}.pdf` or `{slug}.json` for a non-draft petition action, open or closed; anything else (renamed, drafted or deleted petition) fails `check:flyers` with `orphan flyer public/flyers/{name}: delete it` |
 | A15 | Layout pins. Inside `.flyer` every size is `in` or `pt` (the root font size is 16, 18 or 20px per viewer, so rem would move the layout between machines); `.flyer` is `height: 11in` with no `overflow: hidden` (a spill must become page 2 so the render script refuses it); `print-color-adjust: exact`; the printed QR is 2.1in square with no CSS padding (scans from arm's length, about half a metre; never below 2in); the accent colour appears only on the two rules; the web tile is 8rem, bordered, no padding; the shrink order in § Design decides what gives when a petition spills |
 | A16 | Render and check hardening. The route handler never calls `route.continue()` or `route.fallback()`; a request whose origin is not `http://flyer.local` gets 404 and is counted, and the script exits 1 if the count is non-zero; same-origin paths are `decodeURIComponent`ed, resolved with `path.resolve(dir, '.' + p)` and 404ed unless the result starts with `dir + sep`; the context has `serviceWorkers: 'block'` and `chromium.launch()` takes no `args`. The flyer HTML may contain none of `<form`, `data-names`, `petition-roll`, `data-count`, `api.dangerousrobot.org`, `challenges.cloudflare.com`. The script fails if the PDF bytes contain `os.hostname()`, `os.userInfo().username` or `os.homedir()`; `pdfinfo` must show the page title, no Author and 1 page; the Invoke task runs the script with `TZ=UTC`. `npm audit --omit=dev` runs after each runtime install; an accepted advisory gets a row in `docs/UNSCHEDULED.md` § Security follow-ups. The deploy.yml step has no `env:` block and sits before `rm -rf dist/admin`; zizmor runs before and after with the exact command in T6 step 7 |
 | A17 | Slug rule. `listPetitionActions` throws on a file name that fails `/^[a-z0-9]+(-[a-z0-9]+)*$/` and on a front matter `slug` key (Astro's glob loader would route the page under that id instead of the file name, breaking A7); `petitionUrl` applies the same regex. `qrSvg` XML-escapes the `<title>` text (`set:html` is the only unescaped sink this plan adds) |
+| A19 | Flyer PDFs are not crawled. `public/robots.txt` gets `Disallow: /flyers/`: a PDF on GitHub Pages can carry no `noindex` meta or `X-Robots-Tag` header, and the flyer is a print copy reached from the page link, not a search destination, so the rule covers open and closed petitions alike (Decision 6: "not linked or indexed"). A closed petition's PDF is then unlinked and uncrawled; git history is not needed to keep it |
 | A18 | Verification details. `qrSvg` returns the SVG without `qrcode`'s trailing newline, so the figure stays on one line of built HTML and the plan's `grep -c` counts hold; the T1 coverage assertion divides by the module count (`n - 8`) and is a sanity bound, the e2e decode being the real gate; the test's white rect is the literal `#fff`; the render script answers files with `route.fulfill({ path })` (Playwright infers the content type); Operator step 2 (Chromium install) is a precondition of T4 step 5 and T5 step 4; the expected failure message in T1 step 3 and T2 step 2 is the ESM form |
 
 ## Design
@@ -76,14 +79,14 @@ Budget: about 9.5in of the 9.8in available for the current petition (estimated a
 
 **Files under `public/flyers/`.** `{slug}.pdf` and `{slug}.json` (`{ "slug", "url", "fingerprint", "generated" }`), both committed. `inv flyers` regenerates every open published petition's pair and skips closed ones.
 
-**Check.** `npm run check:flyers`, after `npm run build`, for every non-draft action with a `petition` field: if the built page's status chip says closed, the page must not link the PDF and `public/flyers/{slug}.pdf` and `.json` must be absent (message: delete them); otherwise the PDF exists, the manifest's fingerprint and URL match the current ones, `dist/petitions/{slug}/flyer/index.html` exists, contains the QR figure and none of the forbidden strings (A16), and `dist/petitions/{slug}/index.html` links the PDF. Then every file in `public/flyers/` must belong to an open, non-draft petition action (A14). Any failure names `inv flyers` or says what to delete.
+**Check.** `npm run check:flyers`, after `npm run build`, for every non-draft action with a `petition` field: if the built page's status chip says closed, the page must not link the PDF and `dist/petitions/{slug}/flyer/index.html` must not exist (the flyer files under `public/flyers/` may stay, A4); otherwise the PDF exists, the manifest's fingerprint and URL match the current ones, `dist/petitions/{slug}/flyer/index.html` exists, contains the QR figure and none of the forbidden strings (A16), and `dist/petitions/{slug}/index.html` links the PDF. Then every file in `public/flyers/` must belong to a non-draft petition action, open or closed (A14). Any failure names `inv flyers` or says what to delete.
 
 ## Global Constraints
 
 - Node `>=22.12.0`; Astro `^7.3.8`; new dependencies `qrcode@^1.5.4` (runtime), `@types/qrcode@^1.5.5` (dev) and `zxing-wasm@^2.2.4` (dev, e2e only). No other new packages; `@fontsource/space-grotesk` is already installed and the flyer imports one more weight file from it. `qrcode` is CommonJS with no `exports` map: use `import QRCode from 'qrcode'` (default import), which works under the Astro build and `tsx --test`. Never import `pngjs` (a transitive dependency of `qrcode`): `zxing-wasm` decodes PNG bytes itself.
 - `src/lib/petition.ts` ships to the browser and must stay free of Node APIs; the new helpers go in their own files.
 - Site unit tests use `node:test` via `npm run test:site` (`src/lib/**/*.test.ts`); e2e tests use `npm run test:e2e` (Playwright, builds the site into `node_modules/.cache/watch-e2e/<port>/dist` and previews it on port 4329).
-- The flyer page is `noindex` and out of the sitemap; `public/robots.txt` is unchanged.
+- The flyer page is `noindex` and out of the sitemap, and is not built for a closed petition (A4); `public/robots.txt` gains `Disallow: /flyers/` (A19) and nothing else.
 - Copy: caption "Scan to open this page on a phone, or print a flyer (PDF)." with `FLYER_LINK_TEXT = 'print a flyer (PDF)'` (A6); "Sign the pledge"; "Scan the code or go to"; wordmark "Dangerous Robot".
 - Fonts inside `.flyer`: Space Grotesk 400 and 600, Orbitron 700, nothing else (A13); the `pdffonts` gate in T5 step 4 enforces it.
 - No `cd &&` in Invoke tasks or docs; `inv flyers` runs from the repo root and runs the render script with `TZ=UTC`.
@@ -96,7 +99,7 @@ Budget: about 9.5in of the 9.8in available for the current petition (estimated a
 
 1. The pledge text is edited and deployed without rerunning `inv flyers`: `check:flyers` must fail in CI with a message naming `inv flyers` (T6 step 2, which edits the Markdown, not the manifest).
 2. A new petition is published before anyone renders its flyer: the page must show the QR code with no flyer link, and `check:flyers` must fail for the missing PDF (T3 step 4, T6 step 3).
-3. A closed petition: the QR code and the flyer link disappear, the rest of the sign block is unchanged, `check:flyers` demands the flyer files be deleted and passes once they are, and a flyer file with no open petition fails as an orphan (T3 step 5, T6 steps 4 and 5); the e2e page tests skip rather than fail on a closed petition (T4 step 5).
+3. A closed petition: the QR code and the flyer link disappear, the rest of the sign block is unchanged, the flyer page is not built (T4b step 3), `check:flyers` passes with the flyer files still present and fails if a flyer page exists for it, and a flyer file with no petition action fails as an orphan (T3 step 5, T6 steps 4 and 5); the e2e page tests skip rather than fail on a closed petition (T4 step 5).
 4. The QR code actually decodes with the logo in place: the e2e test decodes the web tile at two widths and the flyer tile to the page URL in the default dark theme (T4 step 5), the committed PDF embeds only SpaceGrotesk and Orbitron faces and Brandon's phone scan passes before the PDF is committed (T5 step 4), and the flyer page prints light whatever the viewer's theme (T4 step 4).
 5. A longer statement or an extra definition pushes the flyer to two pages: the render script must refuse to write a two-page PDF, leave the committed PDF untouched, and say what to shorten (T5 step 7).
 
@@ -452,6 +455,51 @@ git add src/pages/petitions/[slug]/flyer.astro astro.config.ts tests/e2e/petitio
 git commit -m "feat(site): one-page flyer route per petition and QR decode e2e test (SITE-BC)"
 ```
 
+### T4b: Closed petition has no flyer page; flyer PDFs are not crawled
+
+Added 2026-10-19 after Brandon's Decision 6. Runs after T5 steps 1 to 7 (done) and before T5 step 8, because `flyer.astro` is in the flyer fingerprint (A8) and the PDF must be re-rendered before it is committed.
+
+**Files:**
+- Modify: `src/pages/petitions/[slug]/flyer.astro` (`getStaticPaths`), `public/robots.txt`
+
+**Interfaces:**
+- Consumes: `fetchPetitionState` (`src/lib/petition.ts`, the build-time snapshot `PetitionSign.astro` already uses; returns `null` when the Worker is down); `getActions`.
+- Produces: `getStaticPaths` in `flyer.astro` keeps an action only when `(await fetchPetitionState(action.data.petition))?.status !== 'closed'`, so a closed petition has no `/petitions/{slug}/flyer` route and `dist/petitions/{slug}/flyer/` is not built; `public/robots.txt` has `Disallow: /flyers/` on the line after `Disallow: /admin/`.
+
+- [x] **Step 1: Filter closed petitions out of the flyer route**
+
+In `flyer.astro`'s `getStaticPaths`, fetch the snapshot per action (sequentially or with `Promise.all`) and drop the closed ones; keep the comment at the top of the file in step with A4 (print only, not built when closed). No snapshot means open.
+
+- [x] **Step 2: robots.txt**
+
+Add `Disallow: /flyers/` after `Disallow: /admin/` in `public/robots.txt`. Nothing else changes.
+
+- [x] **Step 3: Build and verify, open and closed**
+
+Run: `npm run build && test -f dist/petitions/prohibit-ai-self-improvement/flyer/index.html && echo open-flyer-built; grep -c 'Disallow: /flyers/' dist/robots.txt`
+Expected: `open-flyer-built`, then `1`.
+
+Closed: with the stub from T3 step 5 (`PUBLIC_PETITION_API` pointing at a local server whose `petitions/prohibit-ai-self-improvement` answers `{"status":"closed","closed_at":"2026-10-01T00:00:00Z","count":3,"names":[]}`), build again.
+
+Run: `test ! -e dist/petitions/prohibit-ai-self-improvement/flyer && echo closed-flyer-absent; grep -c 'class="petition-qr' dist/petitions/prohibit-ai-self-improvement/index.html`
+Expected: `closed-flyer-absent`, then `0`. Then rebuild without the stub and confirm `open-flyer-built` again. Nothing from the stub is staged.
+
+- [x] **Step 4: Decode test still passes**
+
+Run: `npm run test:e2e -- petition-qr`
+Expected: `3 passed`.
+
+- [x] **Step 5: Re-render the flyer**
+
+`flyer.astro` is a fingerprinted template, so run `inv flyers`, then the T5 step 4 gates again (`pdfinfo` title, no Author, 1 page, Letter; `pdffonts` count of faces outside SpaceGrotesk and Orbitron is `0`; `grep -ac "$(whoami)"` is `0` with the `Skia` control at `1` or more), and confirm the manifest is current: `npx tsx -e` computing `flyerFingerprint(text, petitionUrl(slug))` equals the JSON's `fingerprint`. The QR content is unchanged by this task, so Brandon's scan of 2026-10-19 stands; the PDF and manifest stay uncommitted until T5 step 8.
+
+- [x] **Step 6: Commit**
+
+```bash
+git add 'src/pages/petitions/[slug]/flyer.astro' public/robots.txt docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md
+git commit -m "feat(site): no flyer page for a closed petition; flyer PDFs are not crawled (SITE-BC)"
+```
+
 ### T5: `inv flyers` render task; first PDF committed
 
 **Files:**
@@ -462,16 +510,16 @@ git commit -m "feat(site): one-page flyer route per petition and QR decode e2e t
 - Consumes: `chromium` from `@playwright/test`; `node:os`, `node:path`; `listPetitionActions`, `flyerPagePath`, `flyerFingerprint`, `writeFlyerManifest`, `pdfPageCount`, `petitionUrl`, `FLYERS_DIR` (T2).
 - Produces: `scripts/render-flyers.ts --dist <dir>`: for each non-draft petition action, reads `<dir>/petitions/{slug}/index.html`; if it contains `data-status="closed"`, prints `skip {slug}: closed (A4)` and moves on. Otherwise opens `http://flyer.local{flyerPagePath(slug)}` in a fresh context from `chromium.launch()` with no `args` (`newContext({ colorScheme: 'light', serviceWorkers: 'block' })`), with every request answered by one `page.route('**/*', ...)` handler that never calls `route.continue()` or `route.fallback()`: a request whose `url.origin` is not `http://flyer.local` is fulfilled with `status: 404` and counted; a same-origin request has its `decodeURIComponent(pathname)` resolved with `path.resolve(dir, '.' + p)`, gets 404 unless the result starts with `dir + sep`, maps a directory (with or without a trailing slash) to its `index.html`, and is answered with `route.fulfill({ path })` for an existing file (Playwright infers the content type) or `status: 404`. The script waits for `document.fonts.ready`, then `page.pdf({ path: <tmp>, format: 'Letter', printBackground: true, preferCSSPageSize: true })` into a temporary file under `node_modules/.cache/flyers/`. Refusals, each leaving the committed files untouched and exiting 1: foreign-origin count above zero (`flyer for {slug} requested {n} foreign URL(s): {list}`); `pdfPageCount` not 1 (`flyer for {slug} runs to N pages: shorten the text or apply the shrink order in src/pages/petitions/[slug]/flyer.astro`); the PDF bytes containing `os.hostname()`, `os.userInfo().username` or `os.homedir()` (`flyer for {slug} embeds a machine name or path`). Otherwise move it to `public/flyers/{slug}.pdf`, write the manifest (`url: petitionUrl(slug)`, `fingerprint: flyerFingerprint(text, url)`, `generated` ISO date-time) and print both paths. On a Chromium launch failure, print `npx playwright install chromium`.
 
-- [ ] **Step 1: Confirm Chromium is installed (Operator step 2)**
+- [x] **Step 1: Confirm Chromium is installed (Operator step 2)**
 
 Run: `test -x "$(node -e "console.log(require('@playwright/test').chromium.executablePath())")" && echo chromium ok`
 Expected: `chromium ok`. Nothing printed: stop and ask Brandon to run Operator step 2; nothing below works without it.
 
-- [ ] **Step 2: Write `scripts/render-flyers.ts`**
+- [x] **Step 2: Write `scripts/render-flyers.ts`**
 
 Per the Produces block.
 
-- [ ] **Step 3: Add the Invoke task and npm script**
+- [x] **Step 3: Add the Invoke task and npm script**
 
 `tasks.py`, next to `check`:
 
@@ -487,7 +535,7 @@ def flyers(ctx):
 
 Register it with `ns.add_task(flyers)`.
 
-- [ ] **Step 4: Render the first flyer and gate it**
+- [x] **Step 4: Render the first flyer and gate it**
 
 Run: `inv flyers`
 Expected: prints `public/flyers/prohibit-ai-self-improvement.pdf` and `.json`. Open the PDF: one Letter page, logo visible in the QR's centre, URL on two lines matching the page. Then the gates:
@@ -503,16 +551,16 @@ Expected: `0` then `1` or more (the second line proves `grep -a` reads the PDF; 
 
 Operator gate (Brandon): scan the PDF's QR from the screen and from a printed sheet at arm's length, about half a metre, with an iPhone and an Android phone where available; each must open the petition page. The agent pauses here and does not run step 8 until the handoff note says "scanned OK". A failed scan goes to Brandon with the e2e result (T4 step 5) attached; it is his call between a smaller logo and masking the eye (Q1).
 
-- [ ] **Step 5: Confirm the page now links the PDF**
+- [x] **Step 5: Confirm the page now links the PDF**
 
 Run: `npm run build && grep -c 'href="/flyers/prohibit-ai-self-improvement.pdf"' dist/petitions/prohibit-ai-self-improvement/index.html && grep -c 'print a flyer (PDF)</a>.' dist/petitions/prohibit-ai-self-improvement/index.html`
 Expected: `1` then `1`.
 
-- [ ] **Step 6: Rerun is a no-op on the manifest fingerprint**
+- [x] **Step 6: Rerun is a no-op on the manifest fingerprint**
 
 Run `inv flyers` again and `git diff --stat public/flyers/`: only `generated` changes in the JSON (the PDF bytes may differ by timestamp; that is fine).
 
-- [ ] **Step 7: Refuses a second page**
+- [x] **Step 7: Refuses a second page**
 
 Temporarily add `<p style="height: 6in"></p>` to the flyer body in `flyer.astro`, run `inv flyers`: exit code 1, the message names the slug and the file, and `git status public/flyers/` shows no change. Revert the temporary edit before committing.
 
@@ -533,7 +581,7 @@ The commit body records the `pdfinfo` and `pdffonts` results and "scanned OK" wi
 
 **Interfaces:**
 - Consumes: `listPetitionActions`, `flyerFingerprint`, `flyerState`, `flyerPdfPath`, `flyerPagePath`, `petitionUrl`, `FLYERS_DIR` (T2). Env `FLYER_CHECK_DIST` overrides `dist`, as `WATCH_CHECK_DIST` does.
-- Produces: exit 1 with one line per failure. For each non-draft petition action, read `dist/petitions/{slug}/index.html`; if it contains `data-status="closed"`, require that it does not contain `href="{flyerPdfPath(slug)}"` and that `public/flyers/{slug}.pdf` and `.json` are absent (`closed petition {slug}: delete public/flyers/{slug}.pdf and public/flyers/{slug}.json (git history keeps them)`), then continue to the next action; otherwise require `flyerState(slug, flyerFingerprint(text, petitionUrl(slug)))` is `current` (report `missing` or `stale`, ending "run `inv flyers` and commit public/flyers/"), the manifest's `url` equals `petitionUrl(slug)`, `dist/petitions/{slug}/flyer/index.html` exists, contains `class="petition-qr` and none of `<form`, `data-names`, `petition-roll`, `data-count`, `api.dangerousrobot.org`, `challenges.cloudflare.com` (A16), and the petition page contains `href="{flyerPdfPath(slug)}"`. Then every entry of `public/flyers/` must be `{slug}.pdf` or `{slug}.json` for an open action checked above; anything else fails `orphan flyer public/flyers/{name}: delete it` (A14). Exit 0 prints "flyers: N petition(s) current, M closed".
+- Produces: exit 1 with one line per failure. For each non-draft petition action, read `dist/petitions/{slug}/index.html`; if it contains `data-status="closed"`, require that it does not contain `href="{flyerPdfPath(slug)}"` (`closed petition {slug}: the page links the flyer PDF`) and that `dist/petitions/{slug}/flyer/index.html` does not exist (`closed petition {slug}: dist/petitions/{slug}/flyer/index.html exists; flyer.astro must drop closed petitions (A4)`), leave `public/flyers/{slug}.*` alone (A4), then continue to the next action; otherwise require `flyerState(slug, flyerFingerprint(text, petitionUrl(slug)))` is `current` (report `missing` or `stale`, ending "run `inv flyers` and commit public/flyers/"), the manifest's `url` equals `petitionUrl(slug)`, `dist/petitions/{slug}/flyer/index.html` exists, contains `class="petition-qr` and none of `<form`, `data-names`, `petition-roll`, `data-count`, `api.dangerousrobot.org`, `challenges.cloudflare.com` (A16), and the petition page contains `href="{flyerPdfPath(slug)}"`. Then every entry of `public/flyers/` must be `{slug}.pdf` or `{slug}.json` for a non-draft petition action, open or closed; anything else fails `orphan flyer public/flyers/{name}: delete it` (A14). Exit 0 prints "flyers: N petition(s) current, M closed".
 
 - [ ] **Step 1: Write the script**
 
@@ -547,13 +595,14 @@ Run `npm run build` once. Append one line to `src/content/actions/prohibit-ai-se
 
 Move the PDF aside, run `npm run check:flyers`: exit 1, `missing`. Move it back.
 
-- [ ] **Step 4: Prove a closed petition demands deletion, then passes (Review Focus 3)**
+- [ ] **Step 4: Prove a closed petition passes with its files in place, and fails if its flyer page exists (Review Focus 3)**
 
-With the closed stub from T3 step 5, build, run `npm run check:flyers`: exit 1, `closed petition prohibit-ai-self-improvement: delete public/flyers/...`. Move both flyer files to the scratchpad, run again: exit 0, `flyers: 0 petition(s) current, 1 closed`. Move them back, rebuild without the stub.
+With the closed stub from T3 step 5, build, run `npm run check:flyers`: exit 0, `flyers: 0 petition(s) current, 1 closed`, with `public/flyers/prohibit-ai-self-improvement.pdf` and `.json` still present. Negative control: `mkdir -p dist/petitions/prohibit-ai-self-improvement/flyer && touch dist/petitions/prohibit-ai-self-improvement/flyer/index.html`, run again: exit 1, `closed petition prohibit-ai-self-improvement: dist/petitions/prohibit-ai-self-improvement/flyer/index.html exists; flyer.astro must drop closed petitions (A4)`. Remove the stub directory from `dist/`, rebuild without the stub.
 
 - [ ] **Step 5: Prove an orphan fails (A14)**
 
 Run: `cp public/flyers/prohibit-ai-self-improvement.json public/flyers/nope.json && npm run check:flyers; rm public/flyers/nope.json`
+(`nope` is not a petition action; a closed petition's own files are not orphans, step 4 covered that.)
 Expected: exit 1 with `orphan flyer public/flyers/nope.json: delete it`.
 
 - [ ] **Step 6: Prove it passes**
@@ -578,7 +627,7 @@ git commit -m "ci: check:flyers fails when a petition flyer is missing, stale or
 ### T7: Docs, backlog, finish
 
 **Files:**
-- Modify: `docs/architecture/petitions.md` (Pieces table: QR component, flyer page, `public/flyers/`, render and check scripts, the decode e2e test; Routes: the flyer page), `docs/architecture/site.md` (the `npm run check` chain and CI step lists; the e2e spec list), `docs/runbook.md` ("Petitions" section: a "Flyer" paragraph: when to run `inv flyers`, commit `public/flyers/`, that `check:flyers` blocks a stale deploy, that a closed petition's flyer files must be deleted, the phone-scan check after a rerun, and that `QR_LOGO_FRACTION` changes only with the e2e decode test passing), `docs/UNSCHEDULED.md` (record any follow-up that came up during T1 to T6, with a triage marker; if none, no change, and say so in the commit body), `docs/v1.0.0-roadmap.md` (SITE-BC checklist, status `done` with commit refs), this plan (status checklist, Status line).
+- Modify: `docs/architecture/petitions.md` (Pieces table: QR component, flyer page, `public/flyers/`, render and check scripts, the decode e2e test; Routes: the flyer page), `docs/architecture/site.md` (the `npm run check` chain and CI step lists; the e2e spec list), `docs/runbook.md` ("Petitions" section: a "Flyer" paragraph: when to run `inv flyers`, commit `public/flyers/`, that `check:flyers` blocks a stale deploy, that a closed petition keeps its flyer files but gets no flyer page and no link, and `robots.txt` keeps `/flyers/` out of crawlers (A4, A19), the phone-scan check after a rerun, and that `QR_LOGO_FRACTION` changes only with the e2e decode test passing), `docs/UNSCHEDULED.md` (record any follow-up that came up during T1 to T6, with a triage marker; if none, no change, and say so in the commit body), `docs/v1.0.0-roadmap.md` (SITE-BC checklist, status `done` with commit refs; fix the prose: the link reads "print a flyer (PDF)" (A6) and `check:flyers` runs in `npm run check` and both workflows, not `inv check` (A11)), `public/robots.txt` is already done (T4b), this plan (status checklist, Status line; Design: the printed URL colour is `var(--color-text)`, as the code has it).
 
 - [ ] **Step 1: Write the doc changes**
 - [ ] **Step 2: Run `npm run check` end to end**
@@ -623,4 +672,5 @@ Then AGENTS.md rule 5: with every task ticked, `git mv docs/plans/petition-qr-fl
 | 2026-10-18 | agent (claude-fable-5-1), layout reviewer | full | iterated: absolute units and fixed height on the flyer, 2.1in printed QR, 8rem bordered web tile, one caption sentence and no URL line on the page, tile hidden below 640px, flyer composition with sign band, issuer row and shrink order, greyscale rules (A3, A15; § Design replaced) |
 | 2026-10-18 | agent (claude-fable-5-1), security reviewer | full | iterated: XML-escaped title and slug rule (A17), shipped-fonts-only flyer with a `pdffonts` gate (A13), locked-down route handler, forbidden strings in the flyer HTML, `pdfinfo` and byte scan, `TZ=UTC`, `npm audit --omit=dev`, workflow step placement and zizmor command (A16), closed petitions delete their files and orphan flyers fail (A4, A14) |
 | 2026-10-18 | agent (claude-fable-5-1), accuracy reviewer | full | iterated: logo fraction 0.22 → 0.14 after the 22% overlay failed to decode (A1), e2e decode gate (A12), A10 rewritten as observed (live 301), trimmed `qrSvg` so `grep -c` holds, coverage assertion over the module count, `#fff` literal, `route.fulfill({ path })`, Chromium install as a precondition, ESM error wording (A18), phone scan moved before the PDF commit |
+| 2026-10-19 | Brandon (scan gate and Decision 6) | T4 to T6 | scanned OK; closed petition gets no flyer page, its PDF may stay but is never linked or indexed: A4, A14 rewritten, A19 added, T4b added, T6 steps 4 and 5 and T7 rewritten |
 | 2026-10-18 | agent (claude-fable-5-1), editor | full | folded the three reports into the plan: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten, `petitionUrl` moved to T2, e2e test added to T4, T5 and T6 gates and steps rewritten, Open questions section added (Q1 eye mask, Q2 statement italic) |
