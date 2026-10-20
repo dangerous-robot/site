@@ -47,7 +47,12 @@ for (const width of [1280, 768]) {
   });
 }
 
+// A closed petition has no flyer route (A4), so the flyer test reads the
+// status from the petition page first; without the skip a closure would
+// fail every deploy on a 404.
 test('the flyer QR decodes to the page URL', async ({ page }) => {
+  await page.goto(`/petitions/${SLUG}`);
+  test.skip((await page.locator('[data-status="closed"]').count()) > 0, 'a closed petition has no flyer page (A4)');
   await page.goto(`/petitions/${SLUG}/flyer`);
   await page.waitForLoadState('networkidle');
   await expectDarkTheme(page);
