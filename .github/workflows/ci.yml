@@ -28,6 +28,7 @@ jobs:
       - run: npm run test:site
       - run: npm run build
       - run: npm run check:watch
+      - run: npm run check:flyers
       - run: npm run lint:md
       - run: npm run check:citations
 

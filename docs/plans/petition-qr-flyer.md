@@ -24,7 +24,7 @@ Ticked as tasks land (AGENTS.md rule 4). Task ids are the headings below.
 - [x] T4: Flyer page route, out of the sitemap; QR decode e2e test
 - [x] T4b: Closed petition has no flyer page; flyer PDFs are not crawled
 - [x] T5: `inv flyers` render task; first PDF committed
-- [ ] T6: `check:flyers` in the check chain and both workflows
+- [x] T6: `check:flyers` in the check chain and both workflows
 - [ ] T7: Docs, backlog, finish
 
 ## Decisions
@@ -583,41 +583,41 @@ The commit body records the `pdfinfo` and `pdffonts` results and "scanned OK" wi
 - Consumes: `listPetitionActions`, `flyerFingerprint`, `flyerState`, `flyerPdfPath`, `flyerPagePath`, `petitionUrl`, `FLYERS_DIR` (T2). Env `FLYER_CHECK_DIST` overrides `dist`, as `WATCH_CHECK_DIST` does.
 - Produces: exit 1 with one line per failure. For each non-draft petition action, read `dist/petitions/{slug}/index.html`; if it contains `data-status="closed"`, require that it does not contain `href="{flyerPdfPath(slug)}"` (`closed petition {slug}: the page links the flyer PDF`) and that `dist/petitions/{slug}/flyer/index.html` does not exist (`closed petition {slug}: dist/petitions/{slug}/flyer/index.html exists; flyer.astro must drop closed petitions (A4)`), leave `public/flyers/{slug}.*` alone (A4), then continue to the next action; otherwise require `flyerState(slug, flyerFingerprint(text, petitionUrl(slug)))` is `current` (report `missing` or `stale`, ending "run `inv flyers` and commit public/flyers/"), the manifest's `url` equals `petitionUrl(slug)`, `dist/petitions/{slug}/flyer/index.html` exists, contains `class="petition-qr` and none of `<form`, `data-names`, `petition-roll`, `data-count`, `api.dangerousrobot.org`, `challenges.cloudflare.com` (A16), and the petition page contains `href="{flyerPdfPath(slug)}"`. Then every entry of `public/flyers/` must be `{slug}.pdf` or `{slug}.json` for a non-draft petition action, open or closed; anything else fails `orphan flyer public/flyers/{name}: delete it` (A14). Exit 0 prints "flyers: N petition(s) current, M closed".
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 Same shape as `scripts/check-watch-page.ts`: collect `errors`, print, exit.
 
-- [ ] **Step 2: Prove it fails on a stale flyer (Review Focus 1)**
+- [x] **Step 2: Prove it fails on a stale flyer (Review Focus 1)**
 
 Run `npm run build` once. Append one line to `src/content/actions/prohibit-ai-self-improvement.md`, run `npm run check:flyers`: exit 1, the message says `stale` and names `inv flyers`. Restore the file with `git checkout -- src/content/actions/prohibit-ai-self-improvement.md`.
 
-- [ ] **Step 3: Prove it fails on a missing PDF (Review Focus 2)**
+- [x] **Step 3: Prove it fails on a missing PDF (Review Focus 2)**
 
 Move the PDF aside, run `npm run check:flyers`: exit 1, `missing`. Move it back.
 
-- [ ] **Step 4: Prove a closed petition passes with its files in place, and fails if its flyer page exists (Review Focus 3)**
+- [x] **Step 4: Prove a closed petition passes with its files in place, and fails if its flyer page exists (Review Focus 3)**
 
 With the closed stub from T3 step 5, build, run `npm run check:flyers`: exit 0, `flyers: 0 petition(s) current, 1 closed`, with `public/flyers/prohibit-ai-self-improvement.pdf` and `.json` still present. Negative control: `mkdir -p dist/petitions/prohibit-ai-self-improvement/flyer && touch dist/petitions/prohibit-ai-self-improvement/flyer/index.html`, run again: exit 1, `closed petition prohibit-ai-self-improvement: dist/petitions/prohibit-ai-self-improvement/flyer/index.html exists; flyer.astro must drop closed petitions (A4)`. Remove the stub directory from `dist/`, rebuild without the stub.
 
-- [ ] **Step 5: Prove an orphan fails (A14)**
+- [x] **Step 5: Prove an orphan fails (A14)**
 
 Run: `cp public/flyers/prohibit-ai-self-improvement.json public/flyers/nope.json && npm run check:flyers; rm public/flyers/nope.json`
 (`nope` is not a petition action; a closed petition's own files are not orphans, step 4 covered that.)
 Expected: exit 1 with `orphan flyer public/flyers/nope.json: delete it`.
 
-- [ ] **Step 6: Prove it passes**
+- [x] **Step 6: Prove it passes**
 
 Run: `npm run check:flyers`
 Expected: `flyers: 1 petition(s) current, 0 closed`, exit 0.
 
-- [ ] **Step 7: Wire it in**
+- [x] **Step 7: Wire it in**
 
 Before editing, copy the current workflows to `<scratchpad>/zizmor-head/.github/workflows/` and run the control: `uvx zizmor --no-progress --format plain --min-severity low <scratchpad>/zizmor-head/.github/workflows`. Then: `package.json` `check` chain gets `&& npm run check:flyers` after `check:watch`; `ci.yml`'s `check` job gets `- run: npm run check:flyers` after its `check:watch` step; `deploy.yml` gets the same step after its `check:watch` step, with no `env:` block (the neighbouring `check:watch` step carries `YOUTUBE_API_KEY`; do not copy it) and before `rm -rf dist/admin` and `upload-pages-artifact`; `inv check` is left as is (A11).
 
 Run: `uvx zizmor --no-progress --format plain --min-severity low .github/workflows`
 Expected: the same finding list as the control run (the pre-existing `unpinned-uses` findings belong to the SHA-pinning row in `docs/UNSCHEDULED.md`, not to this item); no new finding.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add scripts/check-flyers.ts package.json .github/workflows/ci.yml .github/workflows/deploy.yml docs/plans/petition-qr-flyer.md docs/v1.0.0-roadmap.md

@@ -65,6 +65,7 @@ jobs:
         env:
           YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
           WATCH_CHECK_CONTEXT: deploy
+      - run: npm run check:flyers
       # The CMS admin page is for local editing only; keep it off the live site.
       - run: rm -rf dist/admin && test ! -e dist/admin
       - uses: actions/upload-pages-artifact@v5

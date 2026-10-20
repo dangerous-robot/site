@@ -16,7 +16,8 @@
     "test:e2e": "playwright test",
     "check:watch": "tsx scripts/check-watch-page.ts",
     "flyers": "tsx scripts/render-flyers.ts",
-    "check": "npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch"
+    "check:flyers": "tsx scripts/check-flyers.ts",
+    "check": "npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers"
   },
   "engines": {
     "node": ">=22.12.0"
