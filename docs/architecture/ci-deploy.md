@@ -14,10 +14,11 @@ Four jobs run in parallel on `ubuntu-latest`:
 2. `npm run test:site` -- unit tests (`node:test`)
 3. `npm run build` -- Astro site build (catches template/config errors)
 4. `npm run check:watch` -- `/watch` dist check (see [Watch page checks](#watch-page-checks))
-5. `npm run lint:md` -- Markdown linting on research content
-6. `npm run check:citations` -- Citation integrity check
+5. `npm run check:flyers` -- petition flyer check (see [Petition flyer check](#petition-flyer-check))
+6. `npm run lint:md` -- Markdown linting on research content
+7. `npm run check:citations` -- Citation integrity check
 
-**`e2e`** (Node 22). Runs the `/watch` browser tests:
+**`e2e`** (Node 22). Runs the browser tests (`/watch` and the petition QR decode test):
 
 1. `npm ci`, then `npx playwright install --with-deps chromium`.
 2. `npm run test:e2e` -- Playwright builds the site with fixture data and serves it on port 4329 (see [Watch page checks](#watch-page-checks)).
@@ -46,7 +47,7 @@ If any job fails, the PR check fails.
 Three-job pipeline:
 
 1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content` and `pipeline-tests` jobs gate every deploy.
-2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
+2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, runs `npm run check:flyers`, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
 ### Weekly scheduled deploy
@@ -74,13 +75,13 @@ Key settings:
 
 ## Quality Checks (`npm run check`)
 
-The `check` script chains seven stages in order:
+The `check` script chains eight stages in order:
 
 ```bash
-npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch
+npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers
 ```
 
-Run it locally before pushing. The CI `check` job runs all of these except check:reviewers. `inv check` runs check:types, test:site, build, check:watch, lint:md and check:citations, then the pipeline's pytest suite; it does not run check:reviewers. The pre-commit hook (`scripts/git-hooks/pre-commit`, installed by symlink into `.git/hooks/`; see `docs/runbook.md` § Linting and the pre-commit hook) runs `dr lint` first, then `inv check`, and fails the commit when `.venv/bin/dr` is missing. Browser tests (`npm run test:e2e`) are in none of these; CI runs them in the `e2e` job. (CI's `lint-content` job is separate; it runs the same `dr lint` entry point as the hook and `inv audit`.)
+Run it locally before pushing. The CI `check` job runs all of these except check:reviewers. `inv check` runs check:types, test:site, build, check:watch, lint:md and check:citations, then the pipeline's pytest suite; it does not run check:reviewers or check:flyers. check:flyers is left out so a pledge edit does not block every commit until a new flyer PDF is rendered; it runs in `npm run check`, CI's `check` job and the deploy `build` job, so a stale flyer can be committed but not deployed. The pre-commit hook (`scripts/git-hooks/pre-commit`, installed by symlink into `.git/hooks/`; see `docs/runbook.md` § Linting and the pre-commit hook) runs `dr lint` first, then `inv check`, and fails the commit when `.venv/bin/dr` is missing. Browser tests (`npm run test:e2e`) are in none of these; CI runs them in the `e2e` job. (CI's `lint-content` job is separate; it runs the same `dr lint` entry point as the hook and `inv audit`.)
 
 ### Stage 1: Types
 
@@ -112,6 +113,10 @@ Lints all Markdown files under `research/`. See [Markdown Linting](#markdown-lin
 
 `tsx scripts/check-watch-page.ts` -- checks the built `/watch` page and scans `dist/` for API key leaks. See [Watch page checks](#watch-page-checks).
 
+### Stage 8: Petition Flyers
+
+`tsx scripts/check-flyers.ts` -- see [Petition flyer check](#petition-flyer-check).
+
 ## Watch Page Checks
 
 **Dist check** (`npm run check:watch`, `scripts/check-watch-page.ts`). Run after a build. It reads `dist/`, or the directory in `WATCH_CHECK_DIST`. It fails when:
@@ -132,6 +137,12 @@ An empty or failed playlist, and live mode with no thumbnails, print GitHub `::w
 - Each run builds into its own directory, `node_modules/.cache/watch-e2e/<port>/dist`, with test results beside it in `test-results/` (both are created by the run), then serves it with `astro preview`.
 - `WATCH_E2E_REUSE_BUILD=1` skips the build when that directory already holds one, for runs where only spec files changed. CI ignores it.
 - `tests/e2e/helpers.ts` routes every request to another origin: `i.ytimg.com` gets generated images, `youtube-nocookie.com` a blank page, and anything else is blocked and fails the test. No test touches the network.
+
+## Petition Flyer Check
+
+`npm run check:flyers` (`scripts/check-flyers.ts`) runs after a build and reads `dist/`, or the directory in `FLYER_CHECK_DIST`. It fails when an open petition's flyer PDF in `public/flyers/` is missing, out of date (its fingerprint covers the pledge text, the petition URL and the flyer template files), or not linked from the petition page; when an open petition's flyer page has no QR code or contains a form or live data; when a closed petition still has a flyer page or a link to its PDF (the PDF file itself may stay, and `public/robots.txt` keeps `/flyers/` out of crawlers); or when `public/flyers/` holds a file no petition owns. The fix for a stale flyer is `inv flyers`, then committing `public/flyers/`. See [`petitions.md`](petitions.md) and `docs/runbook.md` § Petitions: open, close, export, remove.
+
+The browser test `tests/e2e/petition-qr.spec.ts` decodes the QR code on the petition page and on the flyer page and expects the page URL; it skips when the built page says the petition is closed. It runs with the `/watch` specs in `npm run test:e2e`.
 
 ## Citation Integrity
 
@@ -185,6 +196,7 @@ All other `markdownlint` defaults are enforced.
 | `check:reviewers`  | `tsx scripts/check-reviewer-display.ts`              | Check reviewer mentions in `dist/`               |
 | `check:types`      | `astro check`                                        | Type-check the site                              |
 | `check:watch`      | `tsx scripts/check-watch-page.ts`                    | Check `/watch` in `dist/` and scan for key leaks |
+| `check:flyers`     | `tsx scripts/check-flyers.ts`                        | Check petition flyer PDFs and links against `dist/` |
 | `test:site`        | `tsx --test 'src/lib/**/*.test.ts'`                  | Unit tests                                       |
-| `test:e2e`         | `playwright test`                                    | `/watch` browser tests (Chromium, fixture build) |
-| `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |
+| `test:e2e`         | `playwright test`                                    | `/watch` browser tests and the petition QR decode test (Chromium, fixture build) |
+| `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |
