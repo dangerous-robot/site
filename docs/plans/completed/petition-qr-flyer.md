@@ -646,6 +646,8 @@ Then AGENTS.md rule 5: with every task ticked, `git mv docs/plans/petition-qr-fl
 
 ## Open questions for Brandon
 
+Both settled 2026-10-20: Brandon kept the 14% logo (Q1) and the italic statement (Q2) as shipped, and confirmed A6 (link text) and A11 (`check:flyers` outside `inv check`) as written.
+
 - Q1 (logo size versus eye mask): the plan ships the logo at 14% of the code (A1), which decoded in every test. The alternative is 22% with the robot's eye masked by a white circle in the overlay, which also decoded; that changes the mark, so it is not a task here. Either way the e2e decode test (A12) is the gate.
 - Q2 (statement italic or upright): `PetitionSign.astro`'s comment says "Upright, not italic: the statement is a declaration" and its style sets `font-style: italic`. The flyer keeps italic to match what renders today (as a synthesised oblique, since Space Grotesk has no italic face). Say which you want and both get the same treatment.
 
@@ -673,4 +675,5 @@ Then AGENTS.md rule 5: with every task ticked, `git mv docs/plans/petition-qr-fl
 | 2026-10-18 | agent (claude-fable-5-1), security reviewer | full | iterated: XML-escaped title and slug rule (A17), shipped-fonts-only flyer with a `pdffonts` gate (A13), locked-down route handler, forbidden strings in the flyer HTML, `pdfinfo` and byte scan, `TZ=UTC`, `npm audit --omit=dev`, workflow step placement and zizmor command (A16), closed petitions delete their files and orphan flyers fail (A4, A14) |
 | 2026-10-18 | agent (claude-fable-5-1), accuracy reviewer | full | iterated: logo fraction 0.22 → 0.14 after the 22% overlay failed to decode (A1), e2e decode gate (A12), A10 rewritten as observed (live 301), trimmed `qrSvg` so `grep -c` holds, coverage assertion over the module count, `#fff` literal, `route.fulfill({ path })`, Chromium install as a precondition, ESM error wording (A18), phone scan moved before the PDF commit |
 | 2026-10-19 | Brandon (scan gate and Decision 6) | T4 to T6 | scanned OK; closed petition gets no flyer page, its PDF may stay but is never linked or indexed: A4, A14 rewritten, A19 added, T4b added, T6 steps 4 and 5 and T7 rewritten |
+| 2026-10-20 | Brandon | open calls | A6 link text, A11 check placement, Q1 logo size, Q2 italic statement all kept as shipped; nothing left open |
 | 2026-10-18 | agent (claude-fable-5-1), editor | full | folded the three reports into the plan: calls A12 to A18 added, A1, A3, A4, A6, A10 rewritten, `petitionUrl` moved to T2, e2e test added to T4, T5 and T6 gates and steps rewritten, Open questions section added (Q1 eye mask, Q2 statement italic) |
