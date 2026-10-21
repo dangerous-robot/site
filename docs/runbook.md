@@ -249,6 +249,22 @@ ln -sf ../../scripts/git-hooks/pre-commit .git/hooks/pre-commit
 
 The hook calls the root `.venv/bin/dr` and fails the commit when it is missing, so run `uv sync` at the repo root first. In a git worktree `.git` is a file, so link the hook into the directory `git rev-parse --git-path hooks` prints instead.
 
+## Releasing
+
+Every push of `main` is a release: `VERSION.md` says each deploy bumps the beta number and gets a tag, and the deploy workflow refuses to build a commit that is not tagged (`scripts/check-release-tag.sh`, `docs/architecture/ci-deploy.md` § Release Tag Check). Local commits need nothing; before a push, from the repo root:
+
+1. Set the first line of `VERSION.md` to the new version (`1.0.0-beta.N`, or `1.0.0-beta.N.1` for a patch while the next beta is in progress).
+2. Add the row to the Releases table of the active roadmap (`docs/v1.0.0-roadmap.md`) with the version in backticks, what shipped and "Tagged YYYY-MM-DD".
+3. Commit, then tag and push in one command, so the branch never arrives without its tag:
+
+```bash
+bash scripts/check-release-tag.sh   # fails until the tag exists; run after tagging to confirm
+git tag -a v1.0.0-beta.N -m "v1.0.0-beta.N"
+git push --atomic origin main v1.0.0-beta.N
+```
+
+A push without the tag reaches `origin` but the deploy fails at its first build step and the live site keeps the previous release; tag the commit and push the tag, then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
+
 ## Environment variables
 
 `AGENTS.md` § Environment variables lists the variables the pipeline reads (search backend, API keys). The model slots and their `DR_*` variables are under Model slots above.

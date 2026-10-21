@@ -47,7 +47,7 @@ If any job fails, the PR check fails.
 Three-job pipeline:
 
 1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content` and `pipeline-tests` jobs gate every deploy.
-2. **build** -- Depends on `verify`. Checks out the repo, installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, runs `npm run check:flyers`, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
+2. **build** -- Depends on `verify`. Checks out the repo, runs the release tag check (below), installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, runs `npm run check:flyers`, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
 ### Weekly scheduled deploy
@@ -144,6 +144,10 @@ An empty or failed playlist, and live mode with no thumbnails, print GitHub `::w
 
 The browser test `tests/e2e/petition-qr.spec.ts` decodes the QR code on the petition page and on the flyer page and expects the page URL; it skips when the built page says the petition is closed. It runs with the `/watch` specs in `npm run test:e2e`.
 
+## Release Tag Check
+
+`bash scripts/check-release-tag.sh <commit>` runs first in the deploy `build` job against the pushed commit. `VERSION.md` says every deploy bumps the beta number and gets a tag, and this step enforces it: the build fails unless the tag `v<first line of VERSION.md>` points at that commit and the active roadmap (the `Active release:` line of `VERSION.md`) has a Releases row for that version. The runner's checkout is shallow, so the script fetches that one tag over https before checking. The failure message prints the bump-and-tag steps. Run it locally with no argument to check `HEAD`; it exits 1 on an untagged commit. See `docs/runbook.md` § Releasing.
+
 ## Citation Integrity
 
 `scripts/check-citations.ts` validates that claim files reference real sources.
@@ -197,6 +201,7 @@ All other `markdownlint` defaults are enforced.
 | `check:types`      | `astro check`                                        | Type-check the site                              |
 | `check:watch`      | `tsx scripts/check-watch-page.ts`                    | Check `/watch` in `dist/` and scan for key leaks |
 | `check:flyers`     | `tsx scripts/check-flyers.ts`                        | Check petition flyer PDFs and links against `dist/` |
+| (deploy only)      | `bash scripts/check-release-tag.sh <commit>`         | Refuse an untagged deploy: tag `v<VERSION.md>` at the commit, Releases row present |
 | `test:site`        | `tsx --test 'src/lib/**/*.test.ts'`                  | Unit tests                                       |
 | `test:e2e`         | `playwright test`                                    | `/watch` browser tests and the petition QR decode test (Chromium, fixture build) |
 | `check`            | `npm run check:types && npm run test:site && npm run build && npm run lint:md && npm run check:citations && npm run check:reviewers && npm run check:watch && npm run check:flyers` | Run the full local quality gate (CI's `check` job runs all but check:reviewers) |

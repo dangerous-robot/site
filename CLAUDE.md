@@ -26,6 +26,7 @@ Keep each session's running note in `handoff/` at the repo root (git-ignored), n
 ## Git Conventions
 
 - Never push to `origin` without Brandon's explicit approval for that push; earlier approval in a session does not carry over. Local commits are fine. The same goes for other remote-affecting actions (remote branch deletion, PRs, tags).
+- Every push of `main` is a tagged release: bump `VERSION.md`, add the roadmap Releases row, tag `v<version>`, push branch and tag together (`docs/runbook.md` § Releasing). The deploy refuses an untagged commit.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, etc.)
 - Squash merge to main for clean history
 
