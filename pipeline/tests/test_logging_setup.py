@@ -269,16 +269,29 @@ def test_progress_does_not_duplicate_on_console_under_verbose(
     )
 
 
-def test_timestamp_is_utc(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("TZ", "America/Los_Angeles")
+def test_timestamp_is_utc(tmp_path: Path) -> None:
+    # Not monkeypatch.setenv: its teardown restores TZ without calling tzset(),
+    # and glibc's localtime_r reads TZ only at tzset(), so every later
+    # date.today() in the session would stay Pacific (module-level TODAY
+    # constants computed at collection are UTC on CI; six recheck tests failed
+    # this way in the evening Pacific). Restore the clock ourselves.
+    previous = os.environ.get("TZ")
+    os.environ["TZ"] = "America/Los_Angeles"
     if hasattr(time, "tzset"):
         time.tzset()
+    try:
+        configure_logging(verbose=False, repo_root=tmp_path)
+        log = logging.getLogger("test.utc")
+        log.info("ts")
 
-    configure_logging(verbose=False, repo_root=tmp_path)
-    log = logging.getLogger("test.utc")
-    log.info("ts")
-
-    records = _read_jsonl(tmp_path / "logs" / "debug.log")
-    assert records[0]["ts"].endswith("+00:00"), f"timestamp not UTC: {records[0]['ts']!r}"
-    info_text = (tmp_path / "logs" / "info.log").read_text(encoding="utf-8")
-    assert "Z" in info_text, "info.log timestamp should end with 'Z' (UTC)"
+        records = _read_jsonl(tmp_path / "logs" / "debug.log")
+        assert records[0]["ts"].endswith("+00:00"), f"timestamp not UTC: {records[0]['ts']!r}"
+        info_text = (tmp_path / "logs" / "info.log").read_text(encoding="utf-8")
+        assert "Z" in info_text, "info.log timestamp should end with 'Z' (UTC)"
+    finally:
+        if previous is None:
+            os.environ.pop("TZ", None)
+        else:
+            os.environ["TZ"] = previous
+        if hasattr(time, "tzset"):
+            time.tzset()
