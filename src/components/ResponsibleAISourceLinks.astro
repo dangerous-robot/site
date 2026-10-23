@@ -1,6 +1,6 @@
 ---
 // "Sources: <publisher>, <publisher>." for a list of source paths; nothing for an empty list.
-import { sourceInfo, type EvidenceLookups } from '../lib/matrixEvidence';
+import { pageHref, sourceInfo, type EvidenceLookups } from '../lib/matrixEvidence';
 
 interface Props {
   paths?: string[];
@@ -12,7 +12,7 @@ const { paths = [], lookups } = Astro.props;
 {paths.length > 0 && (
   <>
     {' '}Sources: {paths.map((path, i) => (
-      <>{i > 0 && ', '}<a href={path}>{sourceInfo(path, lookups)?.publisher ?? path}</a></>
+      <>{i > 0 && ', '}<a href={pageHref(path)}>{sourceInfo(path, lookups)?.publisher ?? path}</a></>
     ))}.
   </>
 )}

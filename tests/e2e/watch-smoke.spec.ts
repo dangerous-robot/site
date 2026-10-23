@@ -9,12 +9,12 @@ import { expect, panel, test, watchRoot } from './helpers';
 const SLUGS = FIXTURE_PLAYLISTS.map((p) => p.slug);
 
 test('loads the fixture playlists without player requests', async ({ page, network }) => {
-  const response = await page.goto('/watch');
+  const response = await page.goto('/watch/');
   expect(response?.status()).toBe(200);
   const root = watchRoot(page);
   await expect(root).toHaveAttribute('data-watch-mode', 'fixture');
   // client/main.ts ran: the URL names the server's default playlist.
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Watch' })).toHaveCount(1);
 
   const optionSlugs = await root.getByTestId(TESTID.option).evaluateAll((els) => els.map((e) => e.getAttribute('data-playlist')));
@@ -35,7 +35,7 @@ test('loads the fixture playlists without player requests', async ({ page, netwo
 test('a failed playlist links to YouTube from its empty state', async ({ page }) => {
   const failed = FIXTURE_PLAYLISTS.find((p) => p.status === 'failed');
   if (!failed) throw new Error('the fixture has no failed playlist');
-  await page.goto(`/watch?list=${failed.slug}`);
+  await page.goto(`/watch/?list=${failed.slug}`);
   await expect(panel(page, failed.slug)).toBeVisible();
   await expect(panel(page, 'alpha')).toBeHidden();
   const link = panel(page, failed.slug).getByTestId(TESTID.empty).getByRole('link', { name: 'See the playlist on YouTube' });
@@ -46,7 +46,7 @@ test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
   test('every panel shows under its heading and every row links to YouTube', async ({ page }) => {
-    await page.goto('/watch');
+    await page.goto('/watch/');
     const root = watchRoot(page);
     const panels = root.getByTestId(TESTID.panel);
     await expect(panels).toHaveCount(FIXTURE_PLAYLISTS.length);

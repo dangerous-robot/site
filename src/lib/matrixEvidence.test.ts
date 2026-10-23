@@ -6,6 +6,7 @@ import {
   cellTier,
   checkRecordLine,
   citedId,
+  pageHref,
   lowerLabel,
   popupContent,
   rowKind,
@@ -52,6 +53,15 @@ const OWNER = { name: 'Big Co', kind: 'publicly-traded' as const };
 function feature(over: Partial<MatrixFeature> = {}): MatrixFeature {
   return { key: 'renewable-hosting', label: 'Hosted on renewable energy', group: 'environmental', polarity: 'same', cells: {}, ...over };
 }
+
+describe('pageHref', () => {
+  test('adds the trailing slash before any fragment or query, once', () => {
+    assert.equal(pageHref(CLAIM_PATH), `${CLAIM_PATH}/`);
+    assert.equal(pageHref(`${CLAIM_PATH}/`), `${CLAIM_PATH}/`);
+    assert.equal(pageHref('/values#our-contradictions'), '/values/#our-contradictions');
+    assert.equal(pageHref('/research/claims?q=x'), '/research/claims/?q=x');
+  });
+});
 
 describe('citedId', () => {
   test('strips the rendered prefix', () => {
@@ -245,7 +255,7 @@ describe('popupContent', () => {
     assert.equal(c.verdict, 'true');
     assert.equal(c.confidence, 'High');
     assert.equal(c.asOf, '2026-09-28');
-    assert.deepEqual(c.link, { href: CLAIM_PATH, text: 'Open claim page', srText: 'for GreenPT, hosted on renewable energy' });
+    assert.deepEqual(c.link, { href: `${CLAIM_PATH}/`, text: 'Open claim page', srText: 'for GreenPT, hosted on renewable energy' });
   });
   test('one source: publisher and accessed date, link to the Evidence entry', () => {
     const c = popupContent({ type: 'no', sources: [SRC_A] }, greenpt, row, lookups([], [source('2026/a')]));

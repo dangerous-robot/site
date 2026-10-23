@@ -98,7 +98,7 @@ const critCategoriesSorted = [...critByCategory.keys()].sort();
 const typeParent = getEntityParent(entity.data.type);
 const entityCrumbs = [
   { label: "Home", href: "/" },
-  { label: "Research", href: "/research" },
+  { label: "Research", href: "/research/" },
   ...(typeParent ? [typeParent] : []),
 ];
 
@@ -150,7 +150,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
                 {derivedProducts.map((product, i) => (
                   <>
                     {i > 0 && <span class="fact-sep"> &middot; </span>}
-                    <a href={`/research/entities/${product.id}`}>{product.data.name}</a>
+                    <a href={`/research/entities/${product.id}/`}>{product.data.name}</a>
                   </>
                 ))}
               </dd>
@@ -181,7 +181,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
               {claimsByCategory.get(cat)!.map((claim) => (
                 <li>
                   <VerdictBadge verdict={claim.data.verdict} size="sm" />
-                  <a href={`/research/claims/${claim.id}`}>
+                  <a href={`/research/claims/${claim.id}/`}>
                     {claim.data.title}
                   </a>
                 </li>
@@ -208,7 +208,7 @@ const entityDescription = `Dangerous Robot tracks ${entity.data.name} AI ${entit
                 const topClaim = entityClaims[0];
                 return (
                   <div class="std-row">
-                    <a href={`/research/criteria/${std.id}`} class="std-text">{std.data.text}</a>
+                    <a href={`/research/criteria/${std.id}/`} class="std-text">{std.data.text}</a>
                     <div class="std-verdict">
                       {topClaim
                         ? <VerdictBadge verdict={topClaim.verdict} size="sm" />

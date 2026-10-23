@@ -8,7 +8,7 @@ import { card, currentRows, expect, test, watchRoot } from './helpers';
 const [FIRST, SECOND, THIRD] = fixturePlaylist('alpha').videoIds;
 
 test('each row shows its cover, duration, title and "channel · date"', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   const first = card(page, FIRST);
   await expect(first).toHaveAttribute('href', `https://www.youtube.com/watch?v=${FIRST}&list=PLfixtureAlpha01`);
   await expect(first.getByTestId(TESTID.thumbTitle)).toHaveText(`Fixture video ${FIRST}`);
@@ -21,7 +21,7 @@ test('each row shows its cover, duration, title and "channel · date"', async ({
 });
 
 test('the video in the player is current from first load', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   await expect(currentRows(page)).toHaveCount(1);
   await expect(card(page, FIRST)).toHaveAttribute('aria-current', 'true');
   await expect(card(page, FIRST).locator('.watch-thumb__playing')).toBeVisible();
@@ -29,14 +29,14 @@ test('the video in the player is current from first load', async ({ page }) => {
 });
 
 test('a deep-linked poster marks its own row', async ({ page }) => {
-  await page.goto(`/watch?list=alpha&v=${SECOND}`);
+  await page.goto(`/watch/?list=alpha&v=${SECOND}`);
   await expect(page).toHaveURL(new RegExp(`v=${SECOND}`));
   await expect(card(page, SECOND)).toHaveAttribute('aria-current', 'true');
   await expect(currentRows(page)).toHaveCount(1);
 });
 
 test('a click or Enter plays in the page, updates ?v= and moves the one mark', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   const root = watchRoot(page);
   const second = card(page, SECOND);
   const third = card(page, THIRD);
@@ -45,7 +45,7 @@ test('a click or Enter plays in the page, updates ?v= and moves the one mark', a
   const embed = root.getByTestId(TESTID.iframe);
   await second.click();
   await expect(embed).toHaveAttribute('src', new RegExp(`/embed/${SECOND}\\?`));
-  await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+  await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
   await expect(second).toHaveAttribute('aria-current', 'true');
   await expect(second.getByText('Playing', { exact: true })).toBeVisible();
   await expect(card(page, FIRST)).not.toHaveAttribute('aria-current');
@@ -54,7 +54,7 @@ test('a click or Enter plays in the page, updates ?v= and moves the one mark', a
   await third.focus();
   await page.keyboard.press('Enter');
   await expect(embed).toHaveAttribute('src', new RegExp(`/embed/${THIRD}\\?`));
-  await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+  await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${THIRD}$`));
   await expect(third).toHaveAttribute('aria-current', 'true');
   await expect(second).not.toHaveAttribute('aria-current');
   await expect(second.getByText('Playing', { exact: true })).toBeHidden();
@@ -62,7 +62,7 @@ test('a click or Enter plays in the page, updates ?v= and moves the one mark', a
 });
 
 test('a row keeps its height when it becomes current', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   const second = card(page, SECOND);
   await expect(second).not.toHaveAttribute('aria-current');
   const before = await second.boundingBox();
@@ -74,7 +74,7 @@ test('a row keeps its height when it becomes current', async ({ page }) => {
 });
 
 test('modified and middle clicks keep the YouTube link and do not play', async ({ page }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   await expect(card(page, FIRST)).toHaveAttribute('aria-current', 'true');
   // Runs after the page's own handlers (bubble phase on window): records
   // whether the page cancelled the click, then cancels it so no tab opens
@@ -100,7 +100,7 @@ test('modified and middle clicks keep the YouTube link and do not play', async (
     ...Array.from({ length: 3 }, () => ({ type: 'click', prevented: false })),
     { type: 'auxclick', prevented: false },
   ]);
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
   await expect(page.locator('iframe')).toHaveCount(0);
   await expect(currentRows(page)).toHaveCount(1);
   await expect(card(page, FIRST)).toHaveAttribute('aria-current', 'true');

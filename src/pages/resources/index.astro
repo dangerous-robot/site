@@ -11,9 +11,9 @@ const OUR_RESOURCES = [
   ...LISTED.map((id) => {
     const entry = byId.get(id);
     if (!entry) throw new Error(`Resources hub: no resource "${id}".`);
-    return { href: `/resources/${id}`, title: entry.data.title, description: entry.data.description };
+    return { href: `/resources/${id}/`, title: entry.data.title, description: entry.data.description };
   }),
-  { href: '/writing', title: 'Writing', description: WRITING_LEDE },
+  { href: '/writing/', title: 'Writing', description: WRITING_LEDE },
 ];
 
 const FURTHER_READING = [

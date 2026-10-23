@@ -60,6 +60,6 @@ describe('flyer helpers', () => {
   });
   test('paths', () => {
     assert.equal(flyerPdfPath('p'), '/flyers/p.pdf');
-    assert.equal(flyerPagePath('p'), '/petitions/p/flyer');
+    assert.equal(flyerPagePath('p'), '/petitions/p/flyer/');
   });
 });

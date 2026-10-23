@@ -23,7 +23,7 @@ const REVIEWER_HANDLES: Record<string, string> = {
 };
 
 export function profileHref(person: Person): string {
-  return `/people/${person.handle}`;
+  return `/people/${person.handle}/`;
 }
 
 export function operator(): Person {

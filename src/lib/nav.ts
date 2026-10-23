@@ -5,28 +5,28 @@ export type Section = { href: string; label: string; links: NavLink[]; primary?:
 /** The site nav. Base.astro renders it on every standard-chrome page; the homepage menu takes its short labels from here. */
 export const SECTIONS: Section[] = [
   {
-    href: '/research',
+    href: '/research/',
     label: 'Research',
     // Out of the primary nav until the research pages are reworked.
     primary: false,
     links: [
-      { href: '/research/topics',      label: 'Topics' },
-      { href: '/research/claims',      label: 'Claims' },
-      { href: '/research/companies',   label: 'Companies' },
-      { href: '/research/products',    label: 'Products' },
+      { href: '/research/topics/',      label: 'Topics' },
+      { href: '/research/claims/',      label: 'Claims' },
+      { href: '/research/companies/',   label: 'Companies' },
+      { href: '/research/products/',    label: 'Products' },
     ],
   },
   {
-    href: '/resources',
+    href: '/resources/',
     label: 'Resources',
     links: [
-      { href: '/resources/ai-safety',      label: 'AI Safety Index' },
-      { href: '/resources/responsible-ai', label: 'Responsible AI' },
+      { href: '/resources/ai-safety/',      label: 'AI Safety Index' },
+      { href: '/resources/responsible-ai/', label: 'Responsible AI' },
     ],
   },
   // The pledge holds Writing's place while the site is in beta (docs/decisions.md "Menus: temporary guide links during the beta").
-  { href: '/petitions/prohibit-ai-self-improvement', label: 'Pledge', links: [] },
-  { href: '/about',   label: 'About',   links: [] },
+  { href: '/petitions/prohibit-ai-self-improvement/', label: 'Pledge', links: [] },
+  { href: '/about/',   label: 'About',   links: [] },
 ];
 
 /** The sections the top row and the collapsed dropdown list. Both derive from this, so they list the same pages. */
@@ -36,9 +36,9 @@ export const TOP_LINKS: NavLink[] = PRIMARY_SECTIONS.map(({ href, label }) => ({
 
 /** Footer links, one row. Credits, GitHub and the version live on the About page. */
 export const FOOTER_LINKS: NavLink[] = [
-  { href: '/about',                label: 'About' },
-  { href: '/values',               label: 'Values' },
-  { href: '/privacy',              label: 'Privacy' },
+  { href: '/about/',                label: 'About' },
+  { href: '/values/',               label: 'Values' },
+  { href: '/privacy/',              label: 'Privacy' },
   { href: 'https://creativecommons.org/licenses/by/4.0/', label: 'CC-BY-4.0', external: true },
 ];
 

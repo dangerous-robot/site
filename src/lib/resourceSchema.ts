@@ -107,7 +107,7 @@ export function buildResourceSchema(entry: ResourceEntry): Record<string, unknow
   const { title, description, layout, pubDate } = entry.data;
   const data = entry.data.data as Record<string, unknown> | undefined;
 
-  const url = `${SITE_ORIGIN}/resources/${entry.id}`;
+  const url = `${SITE_ORIGIN}/resources/${entry.id}/`;
   const datePublished = pubDate.toISOString();
   const dateModified = collectFreshestDate(data) ?? datePublished;
 

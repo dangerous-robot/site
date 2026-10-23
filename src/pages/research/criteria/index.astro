@@ -47,7 +47,7 @@ const topicFacet = {
         follow-up (same workaround in src/components/ClaimRow.astro). */}
     {rows.map(row => (
       <a
-        href={`/research/criteria/${row.slug}`}
+        href={`/research/criteria/${row.slug}/`}
         class="criteria-row"
         data-filterable
         data-text={row.text.toLowerCase()}

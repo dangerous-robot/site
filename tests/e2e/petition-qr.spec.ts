@@ -37,7 +37,7 @@ test.beforeEach(async ({ context, baseURL }) => {
 for (const width of [1280, 768]) {
   test(`the page QR decodes to the page URL at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto(`/petitions/${SLUG}`);
+    await page.goto(`/petitions/${SLUG}/`);
     test.skip((await page.locator('[data-status="closed"]').count()) > 0, 'a closed petition shows no QR (A4)');
     await page.waitForLoadState('networkidle'); // the logo <image> must be painted
     await expectDarkTheme(page);
@@ -51,9 +51,9 @@ for (const width of [1280, 768]) {
 // status from the petition page first; without the skip a closure would
 // fail every deploy on a 404.
 test('the flyer QR decodes to the page URL', async ({ page }) => {
-  await page.goto(`/petitions/${SLUG}`);
+  await page.goto(`/petitions/${SLUG}/`);
   test.skip((await page.locator('[data-status="closed"]').count()) > 0, 'a closed petition has no flyer page (A4)');
-  await page.goto(`/petitions/${SLUG}/flyer`);
+  await page.goto(`/petitions/${SLUG}/flyer/`);
   await page.waitForLoadState('networkidle');
   await expectDarkTheme(page);
   expect(await decode(await page.locator('.petition-qr__tile').screenshot())).toBe(EXPECTED);

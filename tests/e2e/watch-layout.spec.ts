@@ -30,7 +30,7 @@ test.describe('the resizer', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test('is a focusable separator with its limits', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const handle = resizer(page);
     await expect(handle).toHaveAttribute('role', 'separator');
     await expect(handle).toHaveAttribute('tabindex', '0');
@@ -40,7 +40,7 @@ test.describe('the resizer', () => {
   });
 
   test('arrow keys step, Shift steps further, Home and End jump, and both ends clamp', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await resizer(page).focus();
     let width: number = LIST_WIDTH.initial;
 
@@ -73,7 +73,7 @@ test.describe('the resizer', () => {
   });
 
   test('a mouse drag resizes the column and clamps at both ends', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const box = await resizer(page).boundingBox();
     if (!box) throw new Error('resizer has no box');
     const x = box.x + box.width / 2;
@@ -99,7 +99,7 @@ test.describe('at 1280x800', () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test('the page fills the window without scrolling; the columns sit side by side', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await expect(resizer(page)).toBeVisible();
     const size = await scrollSize(page);
     expect(size.scroll).toBe(size.inner);
@@ -118,7 +118,7 @@ test.describe('in a window under 600px tall', () => {
   test.use({ viewport: { width: 1280, height: 500 } });
 
   test('the page scrolls instead of shrinking', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const size = await scrollSize(page);
     expect(size.scroll).toBeGreaterThan(size.inner);
     expect(await page.evaluate(() => document.body.getBoundingClientRect().height)).toBeGreaterThanOrEqual(600);
@@ -132,7 +132,7 @@ test.describe(`at ${BREAKPOINT_STACK_PX}px wide and down`, () => {
   test.use({ viewport: STACKED });
 
   test('stacks the player above the switcher above the list, hides the resizer and scrolls the page', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const root = watchRoot(page);
     await expect(resizer(page)).toBeHidden();
     const frame = await root.getByTestId(TESTID.player).boundingBox();

@@ -3,7 +3,7 @@
 // reviewed published claims.
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
-import { PEOPLE, reviewerHandle } from '../src/lib/reviewers';
+import { PEOPLE, profileHref, reviewerHandle } from '../src/lib/reviewers';
 
 // Override only to run the check against a scratch copy of the build.
 const DIST = process.env.REVIEWER_CHECK_DIST ?? 'dist';
@@ -43,7 +43,7 @@ for (const person of PEOPLE) {
       continue;
     }
     if (!html.includes('review-state reviewed')) continue;
-    if (!html.includes(`href="/people/${person.handle}"`)) errors.push(`${file}: reviewer line does not link /people/${person.handle}`);
+    if (!html.includes(`href="${profileHref(person)}"`)) errors.push(`${file}: reviewer line does not link ${profileHref(person)}`);
     if (!html.includes(`>${person.handle}</a>`)) errors.push(`${file}: reviewer line does not show the handle ${person.handle}`);
     const status = html.match(/data-claim-status="([^"]*)"/)?.[1];
     if (status === undefined) errors.push(`${file}: reviewed claim page has no data-claim-status`);

@@ -20,7 +20,7 @@ const lede = WRITING_LEDE;
       : <ul class="post-list">
           {posts.map((post) => (
             <li>
-              <a href={`/writing/${post.id}`} class="post-item">
+              <a href={`/writing/${post.id}/`} class="post-item">
                 <span class="post-title">
                   {post.data.title}
                   {post.data.draft && <span class="draft-tag">Draft</span>}

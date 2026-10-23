@@ -85,6 +85,17 @@ export interface EvidenceLookups {
 }
 
 
+/**
+ * The link form of a page path the matrix data cites: the site's URLs end in a
+ * slash, and the data keeps the bare form, so this adds one before any `#` or `?`.
+ */
+export function pageHref(path: string): string {
+  const cut = path.search(/[#?]/);
+  const page = cut < 0 ? path : path.slice(0, cut);
+  const rest = cut < 0 ? '' : path.slice(cut);
+  return (page.endsWith('/') ? page : `${page}/`) + rest;
+}
+
 /** The collection id behind a rendered citation path, or null when the path has the wrong prefix. */
 export function citedId(path: string, kind: 'claim' | 'source'): string | null {
   const prefix = kind === 'claim' ? CLAIM_PATH_PREFIX : SOURCE_PATH_PREFIX;
@@ -273,7 +284,7 @@ export function popupContent<T extends Cited>(
     content.verdict = claim.verdict;
     content.confidence = CONFIDENCE_LABELS[claim.confidence];
     content.asOf = isoDate(claim.as_of);
-    content.link = { href: cited.claim!, text: 'Open claim page', srText: `for ${forWhom}` };
+    content.link = { href: pageHref(cited.claim!), text: 'Open claim page', srText: `for ${forWhom}` };
   } else if (tier === 'source') {
     const first = sourceInfo(sourcePaths[0], lookups);
     const more = sourcePaths.length - 1;

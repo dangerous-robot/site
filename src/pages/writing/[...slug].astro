@@ -19,8 +19,8 @@ const { Content } = await render(post);
 <Base title={title} description={description} layout="reading" {...share}>
   <PostArticle
     {...post.data}
-    crumbs={[{ label: 'Home', href: '/' }, { label: 'Writing', href: '/writing' }]}
-    back={{ href: '/writing', label: 'All writing' }}
+    crumbs={[{ label: 'Home', href: '/' }, { label: 'Writing', href: '/writing/' }]}
+    back={{ href: '/writing/', label: 'All writing' }}
   >
     <Content />
   </PostArticle>

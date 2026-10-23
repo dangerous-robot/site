@@ -85,28 +85,28 @@ const fmtVerdict = (v: string) =>
 const menuEntries: { href: string; label: string; note: string; short?: string; inList?: false }[] = [
   {
     // Dropdown only: the spotlight already shows it above the list.
-    href: '/petitions/prohibit-ai-self-improvement',
+    href: '/petitions/prohibit-ai-self-improvement/',
     label: 'Sign the self-improvement pledge',
     note: 'Support a law that stops AI from improving itself without human control.',
     inList: false,
   },
   {
-    href: '/resources/ai-safety',
+    href: '/resources/ai-safety/',
     label: 'How AI companies score on safety',
     note: 'The Future of Life Institute’s index: the best grade is a C+.',
   },
   {
-    href: '/resources/responsible-ai',
+    href: '/resources/responsible-ai/',
     label: 'Which chatbots behave responsibly',
     note: 'GreenPT, Ecosia AI, Euria and others compared on privacy, environment and transparency.',
   },
   {
-    href: '/values',
+    href: '/values/',
     label: 'What this site stands for',
     note: 'Where this site stands, in plain words.',
   },
   {
-    href: '/resources',
+    href: '/resources/',
     label: 'All resources',
     note: 'Our guides and writing, plus good material elsewhere.',
   },
@@ -187,7 +187,7 @@ function toExhibit(claim: Claim | undefined) {
   return {
     verdict: claim.data.verdict as string,
     titleHtml: boldInTitle(claim.data.title, claim.data.entity, claim.data.criteria_slug),
-    href: `/research/claims/${claim.id}`,
+    href: `/research/claims/${claim.id}/`,
   };
 }
 
@@ -224,7 +224,7 @@ const websiteSchema = {
     '@type': 'SearchAction',
     target: {
       '@type': 'EntryPoint',
-      urlTemplate: 'https://dangerousrobot.org/research/claims?q={search_term_string}',
+      urlTemplate: 'https://dangerousrobot.org/research/claims/?q={search_term_string}',
     },
     'query-input': 'required name=search_term_string',
   },
@@ -374,7 +374,7 @@ const websiteSchema = {
         </div>
 
         <div class="trust__aside">
-          <a class="menu__link menu__link--statement" href="/writing/why-dangerous-robot-exists">
+          <a class="menu__link menu__link--statement" href="/writing/why-dangerous-robot-exists/">
             <span class="menu__label">Why Dangerous Robot exists</span>
             <span class="menu__note">The full statement, in one piece.</span>
           </a>

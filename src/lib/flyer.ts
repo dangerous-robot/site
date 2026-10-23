@@ -17,7 +17,7 @@ export function petitionUrl(slug: string): string {
 }
 
 export const flyerPdfPath = (slug: string): string => `/flyers/${slug}.pdf`;
-export const flyerPagePath = (slug: string): string => `/petitions/${slug}/flyer`;
+export const flyerPagePath = (slug: string): string => `/petitions/${slug}/flyer/`;
 
 export interface FlyerManifest { slug: string; url: string; fingerprint: string; generated: string }
 export interface PetitionAction { slug: string; draft: boolean; text: string }

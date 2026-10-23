@@ -8,4 +8,4 @@ export async function getActions(): Promise<Action[]> {
   return actions.sort((a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime());
 }
 
-export const petitionHref = (action: Action) => `/petitions/${action.id}`;
+export const petitionHref = (action: Action) => `/petitions/${action.id}/`;

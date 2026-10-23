@@ -46,7 +46,7 @@ async function settleScroll(page: Page): Promise<void> {
 }
 
 test('a deep link shows that poster, from its playlist, and no embed', async ({ page, network }) => {
-  await page.goto('/watch?list=alpha&v=fxAlpha0002');
+  await page.goto('/watch/?list=alpha&v=fxAlpha0002');
   const p = player(page);
   await expect(p).toHaveAttribute('data-video-id', 'fxAlpha0002');
   await expect(p).toHaveAttribute('data-playlist', 'alpha');
@@ -60,33 +60,33 @@ test('a deep link shows that poster, from its playlist, and no embed', async ({ 
   await expect(p.getByRole('link', { name: 'Back to video list' })).toHaveCount(0);
   await expect(notice(page)).toBeHidden();
   // A known deep-linked v counts as loaded, so the URL keeps it.
-  await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha&v=fxAlpha0002$/);
   await page.waitForLoadState('networkidle');
   await expect(page.locator('iframe')).toHaveCount(0);
   expect(embedRequests(network.requests)).toEqual([]);
 });
 
 test('arrival by deep link sets the poster: v alone, and list alone', async ({ page }) => {
-  await page.goto('/watch?v=fxAlpha0002');
+  await page.goto('/watch/?v=fxAlpha0002');
   await expect(player(page)).toHaveAttribute('data-video-id', 'fxAlpha0002');
-  await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha&v=fxAlpha0002$/);
 
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   await expect(player(page)).toHaveAttribute('data-video-id', SHORT);
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
 });
 
 test('an unknown v shows the notice and drops v from the URL', async ({ page }) => {
-  await page.goto('/watch?list=alpha&v=zzUnknown00');
+  await page.goto('/watch/?list=alpha&v=zzUnknown00');
   await expect(notice(page)).toBeVisible();
   await expect(notice(page)).toHaveText('That video is no longer in this playlist.');
   await expect(player(page)).toHaveAttribute('data-video-id', SHORT);
-  await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+  await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
 });
 
 test('arriving on a playlist with no videos hides the player and marks no row', async ({ page }) => {
-  await page.goto(`/watch?list=${EMPTY}`);
-  await expect(page).toHaveURL(new RegExp(`/watch\\?list=${EMPTY}$`));
+  await page.goto(`/watch/?list=${EMPTY}`);
+  await expect(page).toHaveURL(new RegExp(`/watch/\\?list=${EMPTY}$`));
   await expect(player(page)).toBeHidden();
   await expect(notice(page)).toBeHidden();
   await expect(nowPlaying(page)).toBeDisabled();
@@ -95,7 +95,7 @@ test('arriving on a playlist with no videos hides the player and marks no row', 
 });
 
 test('after arriving on an empty playlist, switching to one with videos poses its first video', async ({ page }) => {
-  await page.goto(`/watch?list=${EMPTY}`);
+  await page.goto(`/watch/?list=${EMPTY}`);
   await expect(player(page)).toBeHidden();
   await pickPlaylist(page, 'alpha');
   await expect(player(page)).toBeVisible();
@@ -106,15 +106,15 @@ test('after arriving on an empty playlist, switching to one with videos poses it
 });
 
 test('an unknown v on a playlist with no videos still shows the notice and drops v', async ({ page }) => {
-  await page.goto(`/watch?list=${EMPTY}&v=zzUnknown00`);
-  await expect(page).toHaveURL(new RegExp(`/watch\\?list=${EMPTY}$`));
+  await page.goto(`/watch/?list=${EMPTY}&v=zzUnknown00`);
+  await expect(page).toHaveURL(new RegExp(`/watch/\\?list=${EMPTY}$`));
   await expect(notice(page)).toBeVisible();
   await expect(notice(page)).toHaveText('That video is no longer in this playlist.');
   await expect(player(page)).toBeHidden();
 });
 
 test('Play loads one nocookie embed, focuses the title and names the video in the URL', async ({ page, network }) => {
-  await page.goto('/watch?list=alpha');
+  await page.goto('/watch/?list=alpha');
   await page.waitForLoadState('networkidle');
   expect(embedRequests(network.requests)).toEqual([]);
 
@@ -137,7 +137,7 @@ test('Play loads one nocookie embed, focuses the title and names the video in th
   await expect(p.getByTestId(TESTID.play)).toBeHidden();
   await expect(p.getByTestId(TESTID.playerTitle)).toBeFocused();
   // watch:play reached the page controller: the video now counts as loaded.
-  await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SHORT}$`));
+  await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SHORT}$`));
   // Positive control for the empty request list above.
   await expect.poll(() => embedRequests(network.requests).length).toBeGreaterThan(0);
 });
@@ -146,7 +146,7 @@ test.describe('poster Play with the frame less than half in view', () => {
   test.use({ viewport: STACKED_SHORT });
 
   async function scrollFrameMostlyOut(page: Page): Promise<void> {
-    await page.goto(`/watch?list=alpha`);
+    await page.goto(`/watch/?list=alpha`);
     await page.getByTestId(TESTID.playerFrame).evaluate((el) => {
       const r = el.getBoundingClientRect();
       window.scrollTo({ top: window.scrollY + r.top + r.height * 0.8, behavior: 'instant' });
@@ -166,11 +166,11 @@ test.describe('poster Play with the frame less than half in view', () => {
     // give a wrongly ungated embed time to appear.
     await page.waitForTimeout(300);
     await expect(page.getByTestId(TESTID.iframe)).toHaveCount(0);
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
 
     await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
     await expect(page.getByTestId(TESTID.iframe)).toHaveCount(1);
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SHORT}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SHORT}$`));
   });
 
   test('scrolls with the site scroll-behavior: smooth, or instant under either reduce setting', async ({ page }) => {
@@ -217,7 +217,7 @@ test.describe('at a 320px viewport', () => {
   test.use({ viewport: { width: 320, height: 640 } });
 
   test('the player frame and embed are at least 200x200', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const frame = page.getByTestId(TESTID.playerFrame);
     const box = await frame.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(200);
@@ -231,12 +231,12 @@ test.describe('at a 320px viewport', () => {
 });
 
 test('Show more appears only for an overflowing description and toggles', async ({ page }) => {
-  await page.goto(`/watch?list=alpha&v=${SHORT}`);
+  await page.goto(`/watch/?list=alpha&v=${SHORT}`);
   const p = player(page);
   await expect(p.getByTestId(TESTID.playerTitle)).toHaveText(`Fixture video ${SHORT}`);
   await expect(p.locator('.watch-player__more')).toBeHidden();
 
-  await page.goto(`/watch?list=alpha&v=${LONG}`);
+  await page.goto(`/watch/?list=alpha&v=${LONG}`);
   const more = p.getByRole('button', { name: 'Show more' });
   await expect(more).toBeVisible();
   await expect(more).toHaveAttribute('aria-expanded', 'false');
@@ -261,7 +261,7 @@ test.describe('in the stacked layout', () => {
   test.use({ viewport: { width: 800, height: 600 } });
 
   test('picking the video that is already playing keeps its embed and only brings the player back', async ({ page, network }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const second = card(page, 'fxAlpha0002');
     await second.click();
     const iframe = page.getByTestId(TESTID.iframe);
@@ -290,6 +290,6 @@ test.describe('in the stacked layout', () => {
       }, `[data-testid="${TESTID.iframe}"]`),
     ).toBe(true);
     expect(embedRequests(network.requests)).toHaveLength(requestsBefore);
-    await expect(page).toHaveURL(/\/watch\?list=alpha&v=fxAlpha0002$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha&v=fxAlpha0002$/);
   });
 });

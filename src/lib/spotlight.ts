@@ -28,7 +28,7 @@ export async function getSpotlight(): Promise<Spotlight | undefined> {
   const candidates: Spotlight[] = [
     ...posts.filter((p) => p.data.featured).map((p) => ({
       label: 'Writing',
-      href: `/writing/${p.id}`,
+      href: `/writing/${p.id}/`,
       title: p.data.title,
       description: p.data.description,
       pubDate: p.data.pubDate,
@@ -45,7 +45,7 @@ export async function getSpotlight(): Promise<Spotlight | undefined> {
     })),
     ...resources.filter((r) => r.data.featured).map((r) => ({
       label: 'Resource',
-      href: `/resources/${r.id}`,
+      href: `/resources/${r.id}/`,
       title: r.data.title,
       description: r.data.description,
       pubDate: r.data.pubDate,

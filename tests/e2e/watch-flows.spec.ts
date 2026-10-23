@@ -78,7 +78,7 @@ async function scrollTopTo(page: Page, target: Locator, offset: number): Promise
  * which leaves the player less than half in view. The player's own scroll is
  * stubbed unless `selfScroll` is set, so only the test brings it back.
  */
-async function openWithThirdRowInView(page: Page, path = '/watch?list=alpha', { selfScroll = false } = {}): Promise<Locator> {
+async function openWithThirdRowInView(page: Page, path = '/watch/?list=alpha', { selfScroll = false } = {}): Promise<Locator> {
   if (!selfScroll) await stubScrollIntoView(page);
   await page.goto(path);
   const third = card(page, THIRD);
@@ -112,7 +112,7 @@ test.describe('picking a row with the player in view', () => {
   test.use({ viewport: WIDE });
 
   test('inserts exactly one embed in the same task as the click', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     const second = card(page, SECOND);
     expect(await frameRatio(page)).toBeGreaterThanOrEqual(PLAYER_MIN_VISIBLE_RATIO);
     await expect(second).toBeInViewport();
@@ -129,11 +129,11 @@ test.describe('picking a row with the player in view', () => {
     await expect(embeds(page)).toHaveCount(1);
     await expect(page.locator('iframe')).toHaveCount(1);
     await expect(second).toHaveAttribute('aria-current', 'true');
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
   });
 
   test('poster Play keeps the matching row as the one current row', async ({ page }) => {
-    await page.goto(`/watch?list=alpha&v=${SECOND}`);
+    await page.goto(`/watch/?list=alpha&v=${SECOND}`);
     await expect(player(page)).toHaveAttribute('data-video-id', SECOND);
     await expect(card(page, SECOND)).toHaveAttribute('aria-current', 'true');
 
@@ -159,16 +159,16 @@ test.describe('picking a row with the player out of view', () => {
     await page.waitForTimeout(300);
     await expect(page.locator('iframe')).toHaveCount(0);
     expect(embedRequests(network)).toEqual([]);
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
 
     await scrollToY(page, 0);
     await expect(embeds(page)).toHaveCount(1);
     await expect(embeds(page)).toHaveAttribute('src', new RegExp(`/embed/${THIRD}\\?`));
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${THIRD}$`));
   });
 
   test('scrolls the player into view on its own, then inserts the embed', async ({ page }) => {
-    const third = await openWithThirdRowInView(page, '/watch?list=alpha', { selfScroll: true });
+    const third = await openWithThirdRowInView(page, '/watch/?list=alpha', { selfScroll: true });
 
     await third.click();
     await expect(embeds(page)).toHaveCount(1);
@@ -179,8 +179,8 @@ test.describe('picking a row with the player out of view', () => {
   // A pick moves ?v= only once its embed goes in, so the URL never names a
   // picked video that did not start.
   for (const [arrival, path, url] of [
-    ['nothing loaded', '/watch?list=alpha', /\/watch\?list=alpha$/],
-    ['a deep-linked poster', `/watch?list=alpha&v=${FIRST}`, new RegExp(`/watch\\?list=alpha&v=${FIRST}$`)],
+    ['nothing loaded', '/watch/?list=alpha', /\/watch\/\?list=alpha$/],
+    ['a deep-linked poster', `/watch/?list=alpha&v=${FIRST}`, new RegExp(`/watch/\\?list=alpha&v=${FIRST}$`)],
   ] as const) {
     test(`a pick whose player never comes into view leaves ?v= alone (${arrival})`, async ({ page, network }) => {
       const third = await openWithThirdRowInView(page, path);
@@ -202,16 +202,16 @@ test.describe('picking a row with the player out of view', () => {
     await third.click();
     await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
     await switchQuietly(page, 'bravo');
-    await expect(page).toHaveURL(/\/watch\?list=bravo$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=bravo$/);
     await switchQuietly(page, 'alpha');
     await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
     await expect(third).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('iframe')).toHaveCount(0);
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
 
     await scrollToY(page, 0);
     await expect(embeds(page)).toHaveAttribute('src', new RegExp(`/embed/${THIRD}\\?`));
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${THIRD}$`));
   });
 
   test('a second pick while the first waits gives exactly one embed, of the second video', async ({ page, network }) => {
@@ -243,11 +243,11 @@ test.describe('switching playlists', () => {
   test.use({ viewport: WIDE });
 
   test('never moves the poster; ?list= follows the switch until a video is loaded', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await expect(player(page)).toHaveAttribute('data-video-id', FIRST);
 
     await pickPlaylist(page, 'bravo');
-    await expect(page).toHaveURL(/\/watch\?list=bravo$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=bravo$/);
     await expect(player(page)).toBeVisible();
     await expect(player(page)).toHaveAttribute('data-video-id', FIRST);
     await expect(player(page).getByTestId(TESTID.playerFrom)).toHaveText(await playlistName(page, 'alpha'));
@@ -255,30 +255,30 @@ test.describe('switching playlists', () => {
   });
 
   test('once a video plays, neither the player, its embed nor the URL change', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await card(page, SECOND).click();
     await expect(embeds(page)).toHaveCount(1);
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
     await rememberEmbed(page);
 
     await pickPlaylist(page, 'bravo');
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
     await pickPlaylist(page, 'alpha');
     await expect(player(page)).toHaveAttribute('data-video-id', SECOND);
     await expect(player(page).getByTestId(TESTID.playerTitle)).toHaveText(`Fixture video ${SECOND}`);
     await expect(card(page, SECOND)).toHaveAttribute('aria-current', 'true');
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
     expect(await sameEmbedAsRemembered(page)).toBe(true);
   });
 
   test('a deep-linked video keeps its poster through playlist switches', async ({ page }) => {
-    await page.goto(`/watch?list=alpha&v=${THIRD}`);
+    await page.goto(`/watch/?list=alpha&v=${THIRD}`);
     await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
 
     await pickPlaylist(page, 'bravo');
     await pickPlaylist(page, 'alpha');
     await expect(player(page)).toHaveAttribute('data-video-id', THIRD);
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${THIRD}$`));
     await expect(page.locator('iframe')).toHaveCount(0);
   });
 });

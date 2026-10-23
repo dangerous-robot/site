@@ -40,7 +40,8 @@ export default defineConfig({
     // reads as the server exiting. It also skips Astro's one-preview lock,
     // which would block parallel runs on other ports.
     command: `${reuseBuild ? '' : build}npm run preview -- --ignore-lock --outDir ${outDir} --port ${port} --host 127.0.0.1`,
-    url: `${baseURL}/watch`,
+    // The preview server 404s a page path without its trailing slash.
+    url: `${baseURL}/watch/`,
     // Fixture data keeps the run offline even when a key is in .env.
     env: { WATCH_DATA: 'fixture' },
     reuseExistingServer: false,

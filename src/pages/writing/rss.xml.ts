@@ -10,8 +10,6 @@ export async function GET(context: APIContext) {
     title: WRITING_FEED_TITLE,
     description: WRITING_LEDE,
     site: context.site!,
-    // Matches trailingSlash: "never" in astro.config.ts.
-    trailingSlash: false,
     xmlns: { atom: 'http://www.w3.org/2005/Atom' },
     customData: `<language>en-us</language><atom:link href="${selfUrl}" rel="self" type="application/rss+xml"/>`,
     items: posts.map((post) => ({
@@ -19,7 +17,7 @@ export async function GET(context: APIContext) {
       description: post.data.description,
       pubDate: post.data.pubDate,
       categories: post.data.tags,
-      link: `/writing/${post.id}`,
+      link: `/writing/${post.id}/`,
     })),
   });
 }

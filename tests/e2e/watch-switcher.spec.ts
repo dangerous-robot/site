@@ -68,7 +68,7 @@ async function expectClosed(page: Page): Promise<void> {
 
 test.describe('the menu', () => {
   test('opens over a scrim with focus on the first other playlist; Escape closes it to the trigger', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await expect(trigger(page)).toHaveAttribute('aria-controls', 'watch-menu');
     await expectClosed(page);
 
@@ -89,7 +89,7 @@ test.describe('the menu', () => {
   });
 
   test('a scrim click closes it and returns focus to the trigger', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await trigger(page).click();
     await expect(menu(page)).toBeVisible();
 
@@ -106,7 +106,7 @@ test.describe('the menu', () => {
   });
 
   test('a second trigger click closes it', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await trigger(page).click();
     await expect(menu(page)).toBeVisible();
     await trigger(page).click();
@@ -114,7 +114,7 @@ test.describe('the menu', () => {
   });
 
   test('ArrowUp and ArrowDown move among the visible options and wrap; Enter picks', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await trigger(page).focus();
     await page.keyboard.press('Enter');
     await expect(option(page, 'bravo')).toBeFocused();
@@ -129,7 +129,7 @@ test.describe('the menu', () => {
       await expect(option(page, focused)).toBeFocused();
       // Moving focus picks nothing.
       await expectSelected(page, 'alpha');
-      await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+      await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
     }
 
     await page.keyboard.press('ArrowDown');
@@ -137,11 +137,11 @@ test.describe('the menu', () => {
     await expectClosed(page);
     await expect(trigger(page)).toBeFocused();
     await expectSelected(page, 'charlie');
-    await expect(page).toHaveURL(/\/watch\?list=charlie$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=charlie$/);
   });
 
   test('tabbing out of the menu closes it', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await trigger(page).click();
     await expect(option(page, 'bravo')).toBeFocused();
     await page.keyboard.press('Tab');
@@ -155,16 +155,16 @@ test.describe('the menu', () => {
 
 test.describe('picking a playlist', () => {
   test('swaps the panel, "N of M", the trigger card and ?list=, and announces it', async ({ page }) => {
-    await page.goto('/watch');
+    await page.goto('/watch/');
     const status = watchRoot(page).getByTestId(TESTID.status);
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
     await expectSelected(page, 'alpha');
 
     await pickPlaylist(page, 'bravo');
     await expectClosed(page);
     await expect(trigger(page)).toBeFocused();
     await expectSelected(page, 'bravo');
-    await expect(page).toHaveURL(/\/watch\?list=bravo$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=bravo$/);
     await expect(status).toHaveText(`${await playlistName(page, 'bravo')}, no videos to show.`);
     // The menu now offers alpha and charlie.
     await trigger(page).click();
@@ -176,26 +176,26 @@ test.describe('picking a playlist', () => {
     expect(n).toBeGreaterThan(1);
     await option(page, 'alpha').click();
     await expectSelected(page, 'alpha');
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
     await expect(status).toHaveText(`${await playlistName(page, 'alpha')}, ${n} videos.`);
   });
 
   test('a ?list= deep link selects that playlist without announcing', async ({ page }) => {
-    await page.goto('/watch?list=bravo');
+    await page.goto('/watch/?list=bravo');
     await expectSelected(page, 'bravo');
-    await expect(page).toHaveURL(/\/watch\?list=bravo$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=bravo$/);
     await expect(watchRoot(page).getByTestId(TESTID.status)).toHaveText('');
   });
 
   test('an unknown ?list= falls back to the default playlist and leaves the URL', async ({ page }) => {
-    await page.goto('/watch?list=nope');
+    await page.goto('/watch/?list=nope');
     await expectSelected(page, 'alpha');
-    await expect(page).toHaveURL(/\/watch\?list=alpha$/);
+    await expect(page).toHaveURL(/\/watch\/\?list=alpha$/);
     expect(page.url()).not.toContain('nope');
   });
 
   test('the menu option holding the video in the player shows the playing glyph', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await pickPlaylist(page, 'bravo');
     await trigger(page).click();
     await expect(option(page, 'alpha').locator(`.${CLASS.optionPlaying}`)).toBeVisible();
@@ -206,7 +206,7 @@ test.describe('picking a playlist', () => {
 
 test.describe('scroll position', () => {
   test('each playlist keeps its own list scroll position', async ({ page }) => {
-    await page.goto('/watch?list=alpha');
+    await page.goto('/watch/?list=alpha');
     await shortLists(page);
     const scroller = lists(page);
     await scroller.evaluate((el) => {
@@ -224,7 +224,7 @@ test.describe('scroll position', () => {
 
 test.describe('the now-playing line', () => {
   test('in the same playlist it names the video and scrolls to and focuses its row', async ({ page }) => {
-    await page.goto(`/watch?list=alpha`);
+    await page.goto(`/watch/?list=alpha`);
     await card(page, THIRD).click();
     await expect(card(page, THIRD)).toHaveAttribute('aria-current', 'true');
     const np = nowPlaying(page);
@@ -238,11 +238,11 @@ test.describe('the now-playing line', () => {
     await expect(card(page, THIRD)).toBeFocused();
     await expect.poll(() => lists(page).evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     await expect(card(page, THIRD)).toBeInViewport();
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${THIRD}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${THIRD}$`));
   });
 
   test('in another playlist it offers the way back, then switches and focuses the row', async ({ page }) => {
-    await page.goto(`/watch?list=alpha&v=${SECOND}`);
+    await page.goto(`/watch/?list=alpha&v=${SECOND}`);
     await pickPlaylist(page, 'bravo');
     const np = nowPlaying(page);
     const alphaName = await playlistName(page, 'alpha');
@@ -255,11 +255,11 @@ test.describe('the now-playing line', () => {
     await expect(card(page, SECOND)).toBeFocused();
     await expect(card(page, SECOND)).toBeInViewport();
     await expect(np).toHaveText(`Now playing: Fixture video ${SECOND}`);
-    await expect(page).toHaveURL(new RegExp(`/watch\\?list=alpha&v=${SECOND}$`));
+    await expect(page).toHaveURL(new RegExp(`/watch/\\?list=alpha&v=${SECOND}$`));
   });
 
   test('is disabled and hidden, but keeps its place, when nothing is in the player', async ({ page }) => {
-    await page.goto('/watch?list=bravo');
+    await page.goto('/watch/?list=bravo');
     const np = nowPlaying(page);
     await expect(np).toBeDisabled();
     await expect(np).toBeHidden();
@@ -268,7 +268,7 @@ test.describe('the now-playing line', () => {
   });
 
   test('keeps its height and the row heights through video and playlist changes', async ({ page }) => {
-    await page.goto('/watch?list=bravo');
+    await page.goto('/watch/?list=bravo');
     const np = nowPlaying(page);
     const heights = async () => ({
       np: (await np.boundingBox())?.height,

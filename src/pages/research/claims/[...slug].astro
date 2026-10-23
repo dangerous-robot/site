@@ -51,9 +51,9 @@ const madeBy = resolveMadeBy(entityEntry, entityMap);
 
 const claimCrumbs = [
   { label: "Home", href: "/" },
-  { label: "Research", href: "/research" },
+  { label: "Research", href: "/research/" },
   ...(typeParent ? [typeParent] : []),
-  { label: entityLabel, href: `/research/entities/${claim.data.entity}` },
+  { label: entityLabel, href: `/research/entities/${claim.data.entity}/` },
 ];
 
 const asOfDate = claim.data.as_of instanceof Date
@@ -123,7 +123,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
         </p>
       )}
       <div class="meta">
-        <VerdictBadge verdict={claim.data.verdict} href="/research#methodology" />
+        <VerdictBadge verdict={claim.data.verdict} href="/research/#methodology" />
         <span class="confidence">{CONFIDENCE_LABELS[claim.data.confidence]} confidence</span>
         <span class="as-of">{asOfDate}</span>
         <span class={isReviewed ? "review-state reviewed" : "review-state unreviewed"}>
@@ -181,7 +181,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
                   return (
                     <li>
                       {meta
-                        ? <a href={`/research/sources/${src.id}`}>{src.title}</a>
+                        ? <a href={`/research/sources/${src.id}/`}>{src.title}</a>
                         : <a href={src.url} target="_blank" rel="noopener noreferrer">{src.title} ↗</a>}
                       {meta && (
                         <span class="source-meta">
@@ -277,7 +277,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
         <ul class="source-list">
           {claim.data.sources.map((sourceRef: string) => (
             <li>
-              <a href={`/research/sources/${sourceRef}`}>{sourceRef}</a>
+              <a href={`/research/sources/${sourceRef}/`}>{sourceRef}</a>
             </li>
           ))}
         </ul>
@@ -286,7 +286,7 @@ const claimPageTitle = claim.data.seo_title ?? claim.data.title;
 
     {matchedCriteria && (
       <p class="criterion-ref">
-        Criterion: <a href={`/research/criteria/${matchedCriteria.id}`}>{matchedCriteria.data.text}</a>
+        Criterion: <a href={`/research/criteria/${matchedCriteria.id}/`}>{matchedCriteria.data.text}</a>
       </p>
     )}
 

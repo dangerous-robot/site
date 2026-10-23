@@ -6,7 +6,7 @@ import remarkResearchMarkup from "./src/lib/remarkResearchMarkup";
 
 export default defineConfig({
   site: "https://dangerousrobot.org",
-  trailingSlash: "never",
+  trailingSlash: "always",
   // Astro 7's default ('jsx') drops whitespace between inline elements, which
   // would glue adjacent links, badges and spans together across the site.
   compressHTML: true,
@@ -30,7 +30,7 @@ export default defineConfig({
     "/sources/[...slug]": "/research/sources/[...slug]",
     "/criteria": "/research/criteria",
     "/criteria/[slug]": "/research/criteria/[slug]",
-    "/writing/pledge-prohibit-ai-self-improvement-pledge": "/petitions/prohibit-ai-self-improvement",
+    "/writing/pledge-prohibit-ai-self-improvement-pledge": "/petitions/prohibit-ai-self-improvement/",
   },
   integrations: [
     sitemap({
@@ -42,31 +42,30 @@ export default defineConfig({
       // re-included when Brandon flips `INDEX_ALPHA_DETAIL_PAGES` (src/lib/seo.ts)
       // after 1.0.0.
       filter: (page) => {
-        // Print-only flyer pages are noindex; entries carry no trailing slash under "never".
+        // Print-only flyer pages are noindex; the pattern matches with or without a trailing slash.
         if (/\/flyer\/?$/.test(new URL(page).pathname)) return false;
         if (INDEX_ALPHA_DETAIL_PAGES) return true;
         const pathname = new URL(page).pathname;
         return !isAlphaDetailPath(pathname);
       },
       serialize(item) {
-        if (item.url.includes("/research/claims/")) {
+        const path = new URL(item.url).pathname;
+        // Index pages end in a slash too, so detail patterns need a segment after the prefix.
+        if (/^\/research\/claims\/.+/.test(path)) {
           return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.9 };
         }
         if (
-          item.url.includes("/research/entities/") ||
-          item.url.includes("/research/companies/") ||
-          item.url.includes("/research/products/") ||
-          item.url.includes("/research/subjects/")
+          /^\/research\/(entities|companies|products|subjects)\/.+/.test(path)
         ) {
           return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.8 };
         }
-        if (item.url === "https://dangerousrobot.org/research/sources") {
+        if (path === "/research/sources/") {
           return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.5 };
         }
-        if (item.url.includes("/research/sources/")) {
+        if (/^\/research\/sources\/.+/.test(path)) {
           return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.4 };
         }
-        if (item.url.includes("/resources/") || item.url.endsWith("/resources")) {
+        if (path.startsWith("/resources/")) {
           return { ...item, changefreq: ChangeFreqEnum.MONTHLY, priority: 0.7 };
         }
         return { ...item, changefreq: ChangeFreqEnum.WEEKLY, priority: 0.7 };

@@ -13,6 +13,7 @@ import {
   cellEvidence,
   checkRecordLine,
   evidenceId,
+  pageHref,
   sourceInfo,
   SUMMARY_COLUMNS,
   summarySubject,
@@ -90,7 +91,7 @@ const entries: Entry[] = [
             <ResponsibleAIWePrefer ideal={ideal} />
             {ideal.note && <span class="ra-evidence__note"> {ideal.note}</span>}
             {ideal.position && (
-              <span class="ra-evidence__muted"> Position: <a href={ideal.position}>{positionHeading(ideal.position)}</a>.</span>
+              <span class="ra-evidence__muted"> Position: <a href={pageHref(ideal.position)}>{positionHeading(ideal.position)}</a>.</span>
             )}
             <span class="ra-evidence__muted"><ResponsibleAISourceLinks paths={ideal.sources} lookups={lookups} /></span>
           </p>
@@ -113,7 +114,7 @@ const entries: Entry[] = [
                   <span class="ra-evidence__detail">
                     <VerdictBadge verdict={ev.claim.verdict} size="sm" />
                     <span>Confidence: {CONFIDENCE_LABELS[ev.claim.confidence]}, as of {isoDate(ev.claim.as_of)}.</span>
-                    <a href={cited.claim}>Claim page</a>
+                    <a href={pageHref(cited.claim!)}>Claim page</a>
                     {ev.reviewer && (
                       <span class="ra-evidence__muted">Reviewed and approved by <a href={profileHref(ev.reviewer)}>{ev.reviewer.handle}</a>.</span>
                     )}
@@ -125,7 +126,7 @@ const entries: Entry[] = [
                       const info = sourceInfo(path, lookups);
                       return (
                         <span>
-                          <a href={path}>{info?.title ?? path}</a>
+                          <a href={pageHref(path)}>{info?.title ?? path}</a>
                           {info && (
                             <span class="ra-evidence__muted">
                               {' '}({info.publisher}, accessed {isoDate(info.accessed_date)}{info.archived_url && <>, <a href={info.archived_url} target="_blank" rel="noopener noreferrer">archived copy</a></>})

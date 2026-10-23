@@ -54,7 +54,7 @@ const ogImageAbsolute = new URL(ogImage, Astro.site).href;
 
 const pathname = Astro.url.pathname;
 const currentSection = SECTIONS.find(
-  (s) => pathname === s.href || pathname.startsWith(s.href + '/') || s.links.some(l => pathname === l.href),
+  (s) => pathname.startsWith(s.href) || s.links.some(l => pathname === l.href),
 ) ?? null;
 const navLinks: NavLink[] = currentSection?.links ?? [];
 // Collapsed, the dropdown is the only nav, so a non-primary section still lists itself on its own pages.
