@@ -2,7 +2,7 @@ import { describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { qrSvg, QR_LOGO_FRACTION, QR_LOGO_HREF } from './qr';
 
-const URL = 'https://dangerousrobot.org/petitions/prohibit-ai-self-improvement';
+const URL = 'https://dangerousrobot.org/petitions/prohibit-ai-self-improvement/';
 
 describe('qrSvg', () => {
   test('is one svg with a title naming the url and no trailing newline', async () => {

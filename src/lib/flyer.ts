@@ -13,7 +13,7 @@ export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 // in scripts; the page and the scripts share this one function.
 export function petitionUrl(slug: string): string {
   if (!SLUG_RE.test(slug)) throw new Error(`petitionUrl: bad slug: ${slug}`);
-  return `https://dangerousrobot.org/petitions/${slug}`;
+  return `https://dangerousrobot.org/petitions/${slug}/`;
 }
 
 export const flyerPdfPath = (slug: string): string => `/flyers/${slug}.pdf`;

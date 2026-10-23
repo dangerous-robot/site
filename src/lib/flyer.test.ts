@@ -29,8 +29,8 @@ describe('flyer helpers', () => {
     writeFileSync(join(actions, 'aliased.md'), '---\ntitle: A\npetition: z\nslug: other\n---\n');
     assert.throws(() => listPetitionActions(actions), /aliased\.md/);
   });
-  test('petitionUrl builds the slashless page url and rejects a bad slug', () => {
-    assert.equal(petitionUrl('p'), 'https://dangerousrobot.org/petitions/p');
+  test('petitionUrl builds the page url with its trailing slash and rejects a bad slug', () => {
+    assert.equal(petitionUrl('p'), 'https://dangerousrobot.org/petitions/p/');
     assert.throws(() => petitionUrl('../x'));
     assert.throws(() => petitionUrl('Upper'));
   });
