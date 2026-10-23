@@ -27,18 +27,19 @@ export const INDEX_ALPHA_DETAIL_PAGES = false as boolean;
  * exact: list/index pages like /research/claims and /research/sources
  * do NOT match.
  *
- * - /research/claims/{entity}/{claim}, where {entity} is not `subjects`
- * - /research/claims/subjects/{subject}/{claim}
+ * - /research/claims/{a}/{b}[/...]: any claim page two or more segments
+ *   deep, such as /research/claims/{entity}/{claim} and
+ *   /research/claims/subjects/{subject}/{claim}
  * - /research/sources/{yyyy}/{slug}
  * - /research/entities/{anything-after}
  *
- * The `subjects/` prefix is matched only with a claim slug after the subject,
- * so a /research/claims/subjects or /research/claims/subjects/{subject} list
- * page (none exists today) would stay indexable.
+ * The claims loader walks research/claims recursively, so a claim can sit
+ * at any depth. A lookahead excludes /research/claims/subjects/{subject}, so
+ * that list shape (none exists today) would stay indexable, as would
+ * /research/claims/subjects, which is only one segment deep.
  */
 const ALPHA_DETAIL_PATTERNS: readonly RegExp[] = [
-  /^\/research\/claims\/(?!subjects\/)[^/]+\/[^/]+\/?$/,
-  /^\/research\/claims\/subjects\/[^/]+\/[^/]+\/?$/,
+  /^\/research\/claims\/(?!subjects\/[^/]+\/?$)[^/]+(?:\/[^/]+)+\/?$/,
   /^\/research\/sources\/\d{4}\/[^/]+\/?$/,
   /^\/research\/entities\/.+/,
 ];

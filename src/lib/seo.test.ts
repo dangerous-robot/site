@@ -7,6 +7,10 @@ const CLAIM_PAGES = [
   '/research/claims/acme/some-claim/',
   '/research/claims/subjects/ai-safety/some-claim',
   '/research/claims/subjects/ai-safety/some-claim/',
+  '/research/claims/acme/nested/some-claim',
+  '/research/claims/acme/nested/some-claim/',
+  '/research/claims/subjects/ai-safety/nested/some-claim',
+  '/research/claims/subjects/ai-safety/nested/some-claim/',
 ];
 
 const LIST_PAGES = [
