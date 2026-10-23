@@ -4,16 +4,16 @@ export const SITE_DESCRIPTION =
 /**
  * SEO indexing controls for pre-release detail pages.
  *
- * Detail pages under /research/claims/{entity}/{claim},
- * /research/sources/{yyyy}/{slug}, and /research/entities/{type}/{slug} are generated
- * from AI agent research and may be incomplete or wrong. We do not
- * want them in the search index until the content stabilizes.
+ * Claim pages at any depth under /research/claims/ (including
+ * /research/claims/subjects/{subject}/{claim}), /research/sources/{yyyy}/{slug},
+ * and /research/entities/{type}/{slug} are generated from AI agent research
+ * and may be incomplete or wrong. We do not want them in the search index
+ * until the content stabilizes.
  *
- * Flip trigger: decided in the plan for roadmap item SITE-J (the Responsible AI
- * chatbots page backed by claims); see docs/decisions.md. Until then
- * these pages stay noindexed. To flip, set the flag below to true (and
- * rebuild + redeploy) to make these pages indexable and re-include them
- * in the sitemap. The flag name keeps its historical
+ * Flip trigger: Brandon's call after 1.0.0 (docs/decisions.md, "Indexing
+ * after 1.0.0"). Until then these pages stay noindexed. To flip, set the
+ * flag below to true (and rebuild + redeploy) to make these pages indexable
+ * and re-include them in the sitemap. The flag name keeps its historical
  * `ALPHA` spelling.
  *
  * URLs are stable across the flip. Already-published pages remain
@@ -27,12 +27,19 @@ export const INDEX_ALPHA_DETAIL_PAGES = false as boolean;
  * exact: list/index pages like /research/claims and /research/sources
  * do NOT match.
  *
- * - /research/claims/{entity}/{claim}
+ * - /research/claims/{a}/{b}[/...]: any claim page two or more segments
+ *   deep, such as /research/claims/{entity}/{claim} and
+ *   /research/claims/subjects/{subject}/{claim}
  * - /research/sources/{yyyy}/{slug}
  * - /research/entities/{anything-after}
+ *
+ * The claims loader walks research/claims recursively, so a claim can sit
+ * at any depth. A lookahead excludes /research/claims/subjects/{subject}, so
+ * that list shape (none exists today) would stay indexable, as would
+ * /research/claims/subjects, which is only one segment deep.
  */
 const ALPHA_DETAIL_PATTERNS: readonly RegExp[] = [
-  /^\/research\/claims\/[^/]+\/[^/]+\/?$/,
+  /^\/research\/claims\/(?!subjects\/[^/]+\/?$)[^/]+(?:\/[^/]+)+\/?$/,
   /^\/research\/sources\/\d{4}\/[^/]+\/?$/,
   /^\/research\/entities\/.+/,
 ];
