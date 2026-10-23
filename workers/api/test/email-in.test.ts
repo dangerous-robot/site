@@ -223,6 +223,21 @@ describe('sign by email: sender checks', () => {
     );
   });
 
+  it('rejects a Cloudflare result whose arc=pass comment repeats dmarc=pass, logging dmarc-fail; the same header without it signs (control)', async () => {
+    // Gmail writes this shape. Whether Cloudflare's own header carries it is unknown until
+    // a live message is read; until then the refuse-duplicates rule rejects it, and this
+    // test is the one to change if the parser learns to skip the comment.
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const nested = (arc: boolean) =>
+      'ARC-Authentication-Results: i=1; mx.cloudflare.net;\r\n dkim=pass header.d=example.com header.s=s1 header.b=abc;\r\n' +
+      (arc ? ' arc=pass (i=1 spf=pass dmarc=pass header.from=example.com);\r\n' : '') +
+      ' dmarc=pass (p=NONE sp=QUARANTINE dis=NONE) header.from=example.com';
+    await expectRejectedSilently(await deliver({ auth: nested(true) }));
+    expect(log).toHaveBeenCalledWith('email-sign: dmarc-fail');
+    expect((await deliver({ auth: nested(false) })).setReject).not.toHaveBeenCalled();
+    expect(await rows()).toHaveLength(1);
+  });
+
   it('rejects two From headers or a From with two addresses', async () => {
     await expectRejectedSilently(await deliver({ extra: ['From: Victim <victim@example.com>'] }));
     await expectRejectedSilently(await deliver({ from: 'ada@example.com, victim@example.com' }));
