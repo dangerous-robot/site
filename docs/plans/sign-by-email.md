@@ -18,7 +18,7 @@
 Ticked as tasks land (AGENTS.md Plans & Backlog rule 4). Task ids are the headings below. Items marked **Brandon** need the Cloudflare dashboard, wrangler or a live mailbox, which agents cannot use.
 
 - [x] T0: Register the work item; promote this plan
-- [ ] T1: Merge the Worker branch into `main`
+- [x] T1: Merge the Worker branch into `main`
 - [ ] T2: Merge the site branch into `main`; confirm the QR code survived
 - [ ] T2b: Extend the probe so the header test can be read against production's parser
 - [ ] T3: **Brandon:** header test with the probe Worker (go or no-go)
@@ -140,13 +140,13 @@ python3 scripts/release-gate/work_item.py start --title "Sign by email" --kind m
 **Interfaces:**
 - Produces: `signByEmail(message: ForwardableEmailMessage, env: Env, now?: Date): Promise<string>` (outcome code), `lastStepPage(subject: string, postUrl: string)`, `buildSubject({ slug, name, showName, wantsUpdates }): string`, `parseSubject(subject: string): SignSubject | null`, `cloudflareDmarc(headers: RawHeader[]): DmarcResult | null`, constants `SIGN_ADDRESS` (`inbound.ts`), `DOMAIN_DAILY_CAP = 20` and `ADDRESS_DAILY_CAP = 5` (`index.ts`); `HOURLY_EMAIL_CAP = 30` already exists on `main`.
 
-- [ ] **Step 1: Check the checkout** with `ListAgents` and `git status --short`; the only expected untracked paths are Brandon's (`docs/pixabay-terms-202418Nov.md`, `public/images/writing/`). A peer or a dirty tracked file: stop and ask.
-- [ ] **Step 2: Merge** on `main`: `git merge --no-ff feat/site-aq-sign-by-email -m "feat(api): sign by email for readers without JavaScript (SITE-BG)"`. Expected: no conflicts (dry run 2026-10-23 with `git merge-tree --write-tree main feat/site-aq-sign-by-email` was clean). No hook runs on a merge commit; Step 3 is the check.
-- [ ] **Step 3: Run the Worker tests** from `workers/api/`: `npm test`. Expected: 114 passed, as recorded on the branch 2026-10-16 (`main` alone has 61 in `petitions.test.ts`), 0 failed. Then `npm run check:types` (`tsc --noEmit`, in `workers/api/package.json`): clean.
-- [ ] **Step 4: Extend the hostile-name test** ("encodes a hostile name in both the page and the mailto: link (T1)", `workers/api/test/petitions.test.ts`, near line 612) with two assertions from the neighbouring tokenless case (near line 595): `SELECT count(*) FROM signatures` is 0 and no `fetch` to Resend happened.
-- [ ] **Step 5: Run it**: `npm test -- -t "hostile name"`. Expected: PASS (the branch stores and sends nothing on that path; the assertions pin it).
-- [ ] **Step 6: Commit** the test file only: `git commit -m "test(api): the hostile-name last-step case stores and sends nothing (SITE-BG)" -- workers/api/test/petitions.test.ts`.
-- [ ] **Step 7: Tick the roadmap line** "Worker branch merged" in SITE-BG (Sign by email) with the merge commit id; commit `docs/v1.0.0-roadmap.md`.
+- [x] **Step 1: Check the checkout** with `ListAgents` and `git status --short`; the only expected untracked paths are Brandon's (`docs/pixabay-terms-202418Nov.md`, `public/images/writing/`). A peer or a dirty tracked file: stop and ask.
+- [x] **Step 2: Merge** on `main`: `git merge --no-ff feat/site-aq-sign-by-email -m "feat(api): sign by email for readers without JavaScript (SITE-BG)"`. Expected: no conflicts (dry run 2026-10-23 with `git merge-tree --write-tree main feat/site-aq-sign-by-email` was clean). No hook runs on a merge commit; Step 3 is the check.
+- [x] **Step 3: Run the Worker tests** from `workers/api/`: `npm test`. Expected: 114 passed, as recorded on the branch 2026-10-16 (`main` alone has 61 in `petitions.test.ts`), 0 failed. Then `npm run check:types` (`tsc --noEmit`, in `workers/api/package.json`): clean.
+- [x] **Step 4: Extend the hostile-name test** ("encodes a hostile name in both the page and the mailto: link (T1)", `workers/api/test/petitions.test.ts`, near line 612) with two assertions from the neighbouring tokenless case (near line 595): `SELECT count(*) FROM signatures` is 0 and no `fetch` to Resend happened.
+- [x] **Step 5: Run it**: `npm test -- -t "hostile name"`. Expected: PASS (the branch stores and sends nothing on that path; the assertions pin it).
+- [x] **Step 6: Commit** the test file only: `git commit -m "test(api): the hostile-name last-step case stores and sends nothing (SITE-BG)" -- workers/api/test/petitions.test.ts`.
+- [x] **Step 7: Tick the roadmap line** "Worker branch merged" in SITE-BG (Sign by email) with the merge commit id; commit `docs/v1.0.0-roadmap.md`.
 
 ### T2: Merge the site branch into `main`; confirm the QR code survived
 
