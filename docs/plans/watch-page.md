@@ -1,6 +1,6 @@
 # Watch page (SITE-AM) implementation plan
 
-**Work item**: SITE-AM (Watch page), `docs/v1.0.0-roadmap.md`, beta.8, kind `minor`.
+**Work item**: SITE-AM (Watch page), `docs/v1.0.0-roadmap.md`, beta.9, kind `minor`.
 **Inputs**: `docs/plans/watch-page-ui-spec.md` (UI spec, moved there from `docs/plans/drafts/` in T0; owns markup, CSS, timings and test hooks, except where § 4 "Overrides to the UI spec" says otherwise), `docs/plans/drafts/watch-page-research-design.md`, `docs/plans/drafts/watch-page-research-architecture.md` (local-only background; every test and rule this plan needs is restated here).
 **Drafted**: 2026-10-12 against the working tree at that date.
 
