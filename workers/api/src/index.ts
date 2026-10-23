@@ -1,6 +1,18 @@
 import type { Env } from './env';
-import { confirmationEmail, sendEmail } from './email';
-import { actionPage, messagePage } from './pages';
+import { confirmationEmail, notSignedEmail, receiptEmail, sendEmail, type Email } from './email';
+import {
+  buildSubject,
+  cloudflareDmarc,
+  decodeEncodedWords,
+  isAutoSubmitted,
+  isPlainAddress,
+  orgDomain,
+  parseFrom,
+  parseHeaders,
+  parseSubject,
+  readHeaderBlock,
+} from './inbound';
+import { actionPage, lastStepPage, messagePage } from './pages';
 
 const MIN_FILL_MS = 3000;
 // An unconfirmed address gets at most one confirmation email per window, so the
@@ -19,7 +31,6 @@ const REMINDER_AFTER_DAYS = 4;
 const REMINDERS_PER_RUN = 20;
 const DAY_MS = 86_400_000;
 const NAME_MAX = 100;
-const EMAIL_MAX = 254;
 const SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 // Turnstile's documented token limit; anything longer is not a real token.
 const TURNSTILE_TOKEN_MAX = 2048;
@@ -27,6 +38,20 @@ export const SITEVERIFY_TIMEOUT_MS = 5000;
 // What a genuine token from the live sign form reports; the form sets the action.
 const TURNSTILE_HOSTNAME = 'dangerousrobot.org';
 const TURNSTILE_ACTION = 'petition-sign';
+// Messages to sign@ acted on per registered domain per UTC day. Anyone who owns a domain
+// can mint addresses that pass DMARC; this bounds the signatures and replies one domain gets.
+export const DOMAIN_DAILY_CAP = 20;
+// Per address per UTC day, large providers included. Replies share HOURLY_EMAIL_CAP with
+// the web form, so without this one mailbox could use it up and stall web sign-ups.
+export const ADDRESS_DAILY_CAP = 5;
+// Large mailbox providers, where one domain is millions of separate people. Exact match.
+const CAP_EXEMPT_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com', 'msn.com',
+  'icloud.com', 'me.com', 'mac.com', 'yahoo.com', 'proton.me', 'protonmail.com', 'pm.me',
+]);
+const NOT_VERIFIED = 'We could not confirm this message came from your address. Write to contact@dangerousrobot.org.';
+const CAPPED = 'Too many messages from your address or domain today. Please try again tomorrow, or write to contact@dangerousrobot.org.';
+const FAILED = 'We could not process this message. Please try again later, or write to contact@dangerousrobot.org.';
 
 interface Petition {
   slug: string;
@@ -59,6 +84,20 @@ export default {
     await cleanup(env);
     await sendReminders(env);
   },
+
+  // Messages to sign@dangerousrobot.org, routed here by an Email Routing rule.
+  async email(message: ForwardableEmailMessage, env: Env): Promise<void> {
+    // Outcome codes only: Workers Logs is on, and the privacy page promises name, email and consents only.
+    let outcome: string;
+    try {
+      outcome = await signByEmail(message, env);
+    } catch {
+      // Rejected rather than silently dropped, so the sender hears it did not work.
+      message.setReject(FAILED);
+      outcome = 'error';
+    }
+    console.log(`email-sign: ${outcome}`);
+  },
 };
 
 export async function cleanup(env: Env, now = new Date()): Promise<void> {
@@ -73,6 +112,12 @@ export async function cleanup(env: Env, now = new Date()): Promise<void> {
          AND id NOT IN (SELECT id FROM update_recipients)`,
     ),
   ]);
+  // Apart from the batch above, so the web cleanup still runs if migration 0005 is not applied yet.
+  try {
+    await env.DB.prepare('DELETE FROM email_in_counts WHERE day < ?').bind(utcDay(now)).run();
+  } catch {
+    console.error('cleanup: could not prune email_in_counts');
+  }
 }
 
 interface DueReminder {
@@ -196,10 +241,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   if (!name || name.length > NAME_MAX || /[\u0000-\u001f]/.test(name)) {
     return reply(request, env, 400, `Please enter your name (up to ${NAME_MAX} characters).`, petition.post_url);
   }
-  // Plain addresses only. A looser check let `"x"<victim@...>` and `<victim@...>`
-  // through as distinct emails that a mail API could deliver to the same inbox,
-  // and let shell metacharacters reach the runbook's removal command.
-  if (email.length > EMAIL_MAX || !/^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(email)) {
+  if (!isPlainAddress(email)) {
     return reply(request, env, 400, 'Please enter a valid email address.', petition.post_url);
   }
   // A checked box sends "on"; anything else (absent, empty, "0") is no consent.
@@ -210,10 +252,13 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   // cap, the insert and the email, so a script without a passing check sends nothing.
   const check = await verifyTurnstile(env, field('cf-turnstile-response'), request.headers.get('CF-Connecting-IP'));
   if (check === 'missing') {
-    const message = (request.headers.get('Accept') ?? '').includes('application/json')
-      ? 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.'
-      : 'Signing needs JavaScript, for a bot check that stops scripts from signing up other people\'s email addresses. Please turn on JavaScript and sign again, or write to contact@dangerousrobot.org.';
-    return reply(request, env, 403, message, petition.post_url);
+    // A plain form POST with no token is a reader without JS: offer to sign by email.
+    // Nothing is stored or sent until a message from their address arrives.
+    if (!(request.headers.get('Accept') ?? '').includes('application/json')) {
+      // A pipe could start a field of its own (`Jane | Updates: yes`); a slash reads the same.
+      return lastStepPage(buildSubject({ slug, name: name.replaceAll('|', '/'), showName, wantsUpdates }), petition.post_url);
+    }
+    return reply(request, env, 403, 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.', petition.post_url);
   }
   if (check === 'failed') {
     return reply(request, env, 403, 'The bot check did not pass. Please reload the page and try again.', petition.post_url);
@@ -224,10 +269,7 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
 
   // Concurrent requests can overshoot by a few; close enough for a ceiling.
   const now = Date.now();
-  const recent = await env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends WHERE sent_at > ?')
-    .bind(new Date(now - CAP_WINDOW_MS).toISOString())
-    .first<{ n: number }>();
-  if (recent!.n >= HOURLY_EMAIL_CAP) {
+  if (await hourlyCapReached(env, now)) {
     return reply(request, env, 429, 'A lot of people are signing right now. Please try again in an hour.', petition.post_url);
   }
 
@@ -259,6 +301,150 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
     await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(new Date(now).toISOString()).run();
   }
   return checkEmail();
+}
+
+function hourlyCapReached(env: Env, now: number): Promise<boolean> {
+  return env.DB.prepare('SELECT COUNT(*) AS n FROM email_sends WHERE sent_at > ?')
+    .bind(new Date(now - CAP_WINDOW_MS).toISOString())
+    .first<{ n: number }>()
+    .then((r) => r!.n >= HOURLY_EMAIL_CAP);
+}
+
+/**
+ * Signs from a message to sign@ whose From domain passed DMARC by Cloudflare's own check.
+ * Order matters: the sender check comes first, the caps come before any reply, and every
+ * reply goes to the From address that just passed. Returns the outcome code for the log
+ * (ok, no-auth-header, bad-from, dmarc-fail, auto, capped, unknown-petition, closed,
+ * no-name), plus `reply=sent|capped|failed` when a reply was attempted.
+ */
+export async function signByEmail(message: ForwardableEmailMessage, env: Env, now = new Date()): Promise<string> {
+  const block = await readHeaderBlock(message.raw);
+  const headers = block === null ? [] : parseHeaders(block);
+  const auth = cloudflareDmarc(headers);
+  if (!auth) {
+    message.setReject(NOT_VERIFIED);
+    return 'no-auth-header';
+  }
+  // The header From, not message.from (the envelope sender), is what the signer sees and DMARC covers.
+  const from = parseFrom(headers);
+  if (!from) {
+    message.setReject(NOT_VERIFIED);
+    return 'bad-from';
+  }
+  const domain = from.address.slice(from.address.indexOf('@') + 1);
+  if (auth.result !== 'pass' || auth.headerFrom !== domain) {
+    message.setReject(NOT_VERIFIED);
+    return 'dmarc-fail';
+  }
+  if (isAutoSubmitted(headers)) return 'auto';
+
+  // Counted before acting, so an address or domain over its cap gets neither a signature nor a reply.
+  const caps: [string, number][] = [[`address:${from.address}`, ADDRESS_DAILY_CAP]];
+  if (!CAP_EXEMPT_DOMAINS.has(domain)) caps.push([`domain:${orgDomain(domain)}`, DOMAIN_DAILY_CAP]);
+  const day = utcDay(now);
+  const bump = env.DB.prepare(
+    `INSERT INTO email_in_counts (day, key_hash, n) VALUES (?, ?, 1)
+     ON CONFLICT (day, key_hash) DO UPDATE SET n = n + 1 RETURNING n`,
+  );
+  const counts = await env.DB.batch<{ n: number }>(await Promise.all(caps.map(async ([key]) => bump.bind(day, await sha256(key)))));
+  if (counts.some((r, i) => r.results[0].n > caps[i][1])) {
+    message.setReject(CAPPED);
+    return 'capped';
+  }
+
+  const answer = async (outcome: string, mail: Email) => `${outcome} reply=${await sendCapped(env, mail, now)}`;
+  const subjectHeader = headers.find((h) => h.name.toLowerCase() === 'subject')?.value ?? '';
+  const subject = parseSubject(decodeEncodedWords(subjectHeader));
+  const petition = subject ? await loadPetition(env, subject.slug) : null;
+  if (!subject || !petition) {
+    return answer(
+      'unknown-petition',
+      notSignedEmail(
+        from.address,
+        'We could not find that petition',
+        'We could not tell which petition your email to sign@dangerousrobot.org is for. Please start from the petition page on dangerousrobot.org: its Sign button fills in the subject line for you.',
+      ),
+    );
+  }
+  if (petition.status === 'closed') {
+    return answer('closed', notSignedEmail(from.address, `Petition closed: ${petition.title}`, closedText(petition)));
+  }
+  const name = [subject.name, from.displayName].map((n) => n.replace(/\s+/g, ' ').trim()).find(validName);
+  if (!name) {
+    return answer(
+      'no-name',
+      notSignedEmail(
+        from.address,
+        `Your name is needed: ${petition.title}`,
+        `Your email reached us, but we could not find your name in the subject line or on your address. Please send it again with your name in the subject, like this: Sign ${petition.slug} | Name: Your Name | Show my name: no | Updates: no (up to ${NAME_MAX} characters).`,
+      ),
+    );
+  }
+
+  // A new row is confirmed at once (the message proved the address). An unconfirmed web row
+  // is confirmed and takes the emailed name and choices; a confirmed row keeps its data.
+  // The token hash of an existing row is left alone here: its removal link must keep
+  // working unless the receipt with the new link actually goes out.
+  const token = newToken();
+  const tokenHash = await sha256(token);
+  const at = now.toISOString();
+  type Sig = { id: number; token_hash: string; name: string; display_consent: number; updates_consent: number };
+  const sig =
+    (await env.DB.prepare(
+      `INSERT INTO signatures (petition_slug, name, email, display_consent, updates_consent, created_at, confirmed_at, token_hash, source)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'email')
+       ON CONFLICT (petition_slug, email) DO UPDATE SET
+         name = excluded.name, display_consent = excluded.display_consent, updates_consent = excluded.updates_consent,
+         confirmed_at = excluded.confirmed_at, source = 'email'
+       WHERE signatures.confirmed_at IS NULL
+       RETURNING id, token_hash, name, display_consent, updates_consent`,
+    )
+      .bind(petition.slug, name, from.address, subject.showName ? 1 : 0, subject.wantsUpdates ? 1 : 0, at, at, tokenHash)
+      .first<Sig>()) ??
+    (await env.DB.prepare('SELECT id, token_hash, name, display_consent, updates_consent FROM signatures WHERE petition_slug = ? AND email = ?')
+      .bind(petition.slug, from.address)
+      .first<Sig>());
+  if (!sig) return 'ok reply=none';
+
+  const sent = await sendCapped(
+    env,
+    receiptEmail({
+      to: from.address,
+      title: petition.title,
+      name: sig.name,
+      showName: sig.display_consent === 1,
+      wantsUpdates: sig.updates_consent === 1,
+      removeUrl: tokenLinks(env, petition.slug, token).removeUrl,
+    }),
+    now,
+  );
+  if (sent === 'sent' && sig.token_hash !== tokenHash) {
+    await env.DB.prepare('UPDATE signatures SET token_hash = ? WHERE id = ? AND token_hash = ?').bind(tokenHash, sig.id, sig.token_hash).run();
+  }
+  return `ok reply=${sent}`;
+}
+
+function validName(name: string): boolean {
+  return name !== '' && name.length <= NAME_MAX && !/[\u0000-\u001f]/.test(name);
+}
+
+/**
+ * Sends one reply under the site-wide hourly cap, logging it in email_sends like the web
+ * form's emails. Never logs the error: Resend's error text can carry the address.
+ */
+async function sendCapped(env: Env, mail: Email, now: Date): Promise<'sent' | 'capped' | 'failed'> {
+  if (await hourlyCapReached(env, now.getTime())) return 'capped';
+  try {
+    await sendEmail(env, mail);
+  } catch {
+    return 'failed';
+  }
+  await env.DB.prepare('INSERT INTO email_sends (sent_at) VALUES (?)').bind(now.toISOString()).run();
+  return 'sent';
+}
+
+function utcDay(d: Date): string {
+  return d.toISOString().slice(0, 10);
 }
 
 /**
