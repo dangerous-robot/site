@@ -38,8 +38,9 @@ export default defineConfig({
       priority: 0.7,
       // Exclude alpha-stage detail pages while INDEX_ALPHA_DETAIL_PAGES is false.
       // Pages still ship with <meta name="robots" content="noindex,nofollow">,
-      // but skipping them in the sitemap saves Googlebot crawl budget. Flip the
-      // flag in src/lib/seo.ts when alpha ends to re-include them.
+      // but skipping them in the sitemap saves Googlebot crawl budget. They are
+      // re-included when Brandon flips `INDEX_ALPHA_DETAIL_PAGES` (src/lib/seo.ts)
+      // after 1.0.0.
       filter: (page) => {
         // Print-only flyer pages are noindex; entries carry no trailing slash under "never".
         if (/\/flyer\/?$/.test(new URL(page).pathname)) return false;
