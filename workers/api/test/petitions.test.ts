@@ -621,6 +621,8 @@ describe('no-JS path', () => {
     expect(subject).toBe(`Sign ${SLUG} | Name: ${name} | Show my name: no | Updates: yes`);
     expect(html).not.toContain('<b>');
     expect(html).toContain('Name: Eve&amp;cc=x@example.com%0A&quot;q&#39;&lt;b&gt;/x?bcc=y@example.com#');
+    expect(await rowCount()).toBe(0);
+    expect(sentEmails).toHaveLength(0);
   });
 
   it('turns a pipe in the name into a slash, so the subject always reads back (T1, T10)', async () => {
