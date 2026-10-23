@@ -20,7 +20,7 @@ Ticked as tasks land (AGENTS.md Plans & Backlog rule 4). Task ids are the headin
 - [x] T0: Register the work item; promote this plan
 - [x] T1: Merge the Worker branch into `main`
 - [x] T2: Merge the site branch into `main`; confirm the QR code survived
-- [ ] T2b: Extend the probe so the header test can be read against production's parser
+- [x] T2b: Extend the probe so the header test can be read against production's parser
 - [ ] T3: **Brandon:** header test with the probe Worker (go or no-go)
 - [ ] T4: Settle the two findings the header test answers (fail-open rule; Workers Logs and sender addresses)
 - [ ] T5: **Brandon:** migration 0005, routing rule `sign@`, Worker deploy, live check
