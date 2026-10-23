@@ -14,7 +14,7 @@
 
 **Known gap.** Subject claim pages (`/research/claims/subjects/{subject}/{claim}`) are indexable and listed in the sitemap today, against the decision above. The claim pattern in `src/lib/seo.ts:35` matches two path segments after `/research/claims/`; subject claims have three. Checked live 2026-10-09: `/research/claims/subjects/ai-model-producers/ai-producers-existential-score` serves `index,follow` and appears in `sitemap-0.xml`. The fix is SITE-Y (Subject claim noindex) in the roadmap. Until it lands, leave subject claim pages out of every Request Indexing list.
 
-**Known gap, URL form.** Every page except `/` 301s to its trailing-slash form (`/about` → `/about/`) while the canonical tag and the sitemap use the no-slash form (`trailingSlash: "never"` in `astro.config.ts`, GitHub Pages serving `about/index.html`). Checked live 2026-10-09. Google tolerates it, but every sitemap URL is a redirect. Decided 2026-10-09 (`docs/decisions.md` "URLs end in a slash"); the fix is SITE-Z (Trailing-slash URLs) in the roadmap. Run N4 after it lands.
+**URL form.** Page URLs end in a slash (`/about/`), the form GitHub Pages serves (`docs/decisions.md` "URLs end in a slash"). `trailingSlash: "always"` in `astro.config.ts` puts that form in canonical tags, the sitemap and internal links; the change is SITE-Z (Trailing-slash URLs) in the roadmap, on `main` and live from the release that carries it. Run N4 (Request Indexing) once that release is deployed.
 
 ---
 

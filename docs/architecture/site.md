@@ -385,7 +385,7 @@ The same CI workflow (`.github/workflows/ci.yml`) also runs on PRs. See [ci-depl
 `astro.config.ts` declares:
 
 - `site: "https://dangerousrobot.org"` -- used by Astro for canonical URLs and sitemap generation.
-- `trailingSlash: "never"` -- canonical URL form.
+- `trailingSlash: "always"` -- canonical URL form: page URLs end in a slash (`/about/`), the form GitHub Pages serves, in canonical tags, the sitemap and internal links. Files (`/writing/rss.xml`, images, PDFs) keep their own names.
 - `redirects: { ... }` -- the old-URL-to-`/research/*` map described under "URL restructure" above.
 - `integrations: [sitemap({ ... })]` -- per-section `serialize()` priorities and a `filter` that defers to `src/lib/seo.ts` for alpha-noindex paths.
 

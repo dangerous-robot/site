@@ -29,26 +29,26 @@ What to do next, in order, is in [`plans/seo-external.md`](plans/seo-external.md
 
 For each URL Google has not indexed: **URL Inspection → Test live URL →
 Request Indexing**. Check first with `scripts/seo/inspect-urls.sh` or URL
-Inspection; skip pages already indexed. Every URL below except `/` currently
-301s to its trailing-slash form while the canonical tag and sitemap use the
-no-slash form; the fix is SITE-Z (Trailing-slash URLs) in the roadmap.
-Request indexing after it lands. In priority order:
+Inspection; skip pages already indexed. Page URLs end in a slash: canonical
+tags, the sitemap and internal links use that form (SITE-Z, Trailing-slash
+URLs, on `main` and live from the release that carries it), so request each
+URL below exactly as written, once that release is deployed. In priority order:
 
-1. `/resources/responsible-ai` (the page SITE-J, Responsible AI chatbots, is building)
-2. `/resources`, `/resources/ai-safety`, `/resources/should-i`,
-   `/resources/turn-off-ai`, `/resources/ai-safety-winter-2025`
-3. `/` (homepage), `/writing`, `/writing/why-dangerous-robot-exists`,
-   `/petitions/prohibit-ai-self-improvement`, `/about`
-4. `/research` (research hub), `/research/criteria`, `/research/topics`,
-   `/research/claims`, `/research/companies`, `/research/products`,
-   `/research/subjects`, `/research/sources`
+1. `/resources/responsible-ai/` (the page SITE-J, Responsible AI chatbots, is building)
+2. `/resources/`, `/resources/ai-safety/`, `/resources/should-i/`,
+   `/resources/turn-off-ai/`, `/resources/ai-safety-winter-2025/`
+3. `/` (homepage), `/writing/`, `/writing/why-dangerous-robot-exists/`,
+   `/petitions/prohibit-ai-self-improvement/`, `/about/`
+4. `/research/` (research hub), `/research/criteria/`, `/research/topics/`,
+   `/research/claims/`, `/research/companies/`, `/research/products/`,
+   `/research/subjects/`, `/research/sources/`
 
 Do not request indexing for claim, source or entity pages until the indexing
 flip (see "Pre-release noindex policy"), including the subject claim pages
 that are indexable today by mistake.
 
-`scripts/seo/request-indexing-queue.txt` holds an older 10-URL queue in a
-different order; use the list above.
+`scripts/seo/request-indexing-queue.txt` holds 14 of these as full URLs, in
+the same order.
 
 Google rate-limits Request Indexing to ~10/day per property; pace accordingly.
 
