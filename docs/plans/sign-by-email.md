@@ -19,7 +19,7 @@ Ticked as tasks land (AGENTS.md Plans & Backlog rule 4). Task ids are the headin
 
 - [x] T0: Register the work item; promote this plan
 - [x] T1: Merge the Worker branch into `main`
-- [ ] T2: Merge the site branch into `main`; confirm the QR code survived
+- [x] T2: Merge the site branch into `main`; confirm the QR code survived
 - [ ] T2b: Extend the probe so the header test can be read against production's parser
 - [ ] T3: **Brandon:** header test with the probe Worker (go or no-go)
 - [ ] T4: Settle the two findings the header test answers (fail-open rule; Workers Logs and sender addresses)
@@ -154,11 +154,11 @@ python3 scripts/release-gate/work_item.py start --title "Sign by email" --kind m
 - Merge: `feat/site-aq-sign-by-email-site` (modifies `src/components/PetitionSign.astro`, `src/pages/privacy.astro`)
 - Test: `tests/e2e/petition-qr.spec.ts` (existing), `npm run check`
 
-- [ ] **Step 1: Merge** on `main`: `git merge --no-ff feat/site-aq-sign-by-email-site -m "feat(site): sign-by-email copy, privacy note and bot-check fallback (SITE-BG)"`. Expected: no conflicts (dry run 2026-10-23 clean).
-- [ ] **Step 2: Confirm the three-way merge kept the QR work**: `grep -c 'PetitionQr\|flyerHref\|data-email-sign' src/components/PetitionSign.astro`. Expected: 6 (the dry-run merge result had 6; the branch alone has none of the first two).
-- [ ] **Step 3: Run the site checks**: `npm run check` (exit 0) and `npm run test:e2e -- petition-qr` (the QR decode spec; expected: pass, or self-skip only if the live petition is closed).
-- [ ] **Step 4: Look at the form** on `inv dev` (port 4321, do not start a second server if one runs): with scripts off, the `<noscript>` text reads as in § Design; with scripts on, the "Sign by email instead" button is hidden until a bot-check failure. Take one screenshot of each state for the handoff note.
-- [ ] **Step 5: Tick the roadmap line** "Site branch merged; QR tile and flyer link still render" with the merge commit id; commit `docs/v1.0.0-roadmap.md`.
+- [x] **Step 1: Merge** on `main`: `git merge --no-ff feat/site-aq-sign-by-email-site -m "feat(site): sign-by-email copy, privacy note and bot-check fallback (SITE-BG)"`. Expected: no conflicts (dry run 2026-10-23 clean).
+- [x] **Step 2: Confirm the three-way merge kept the QR work**: `grep -c 'PetitionQr\|flyerHref\|data-email-sign' src/components/PetitionSign.astro`. Expected: 6 (the dry-run merge result had 6; the branch alone has none of the first two).
+- [x] **Step 3: Run the site checks**: `npm run check` (exit 0) and `npm run test:e2e -- petition-qr` (the QR decode spec; expected: pass, or self-skip only if the live petition is closed).
+- [x] **Step 4: Look at the form** on `inv dev` (port 4321, do not start a second server if one runs): with scripts off, the `<noscript>` text reads as in § Design; with scripts on, the "Sign by email instead" button is hidden until a bot-check failure. Take one screenshot of each state for the handoff note.
+- [x] **Step 5: Tick the roadmap line** "Site branch merged; QR tile and flyer link still render" with the merge commit id; commit `docs/v1.0.0-roadmap.md`.
 
 ### T2b: Extend the probe so the header test can be read against production's parser
 
