@@ -153,17 +153,20 @@ Which dashboard setting produces each behavior is unverified.
 ## Pre-release noindex policy
 
 Detail pages under `/research/claims/{entity}/{claim}`,
+`/research/claims/subjects/{subject}/{claim}`,
 `/research/sources/{yyyy}/{slug}`, and `/research/entities/{type}/{slug}` are
 generated from AI agent research. Until the indexing flip below they are:
 
 1. Served with `<meta name="robots" content="noindex,nofollow">`.
 2. Excluded from `sitemap-index.xml` / `sitemap-0.xml`.
 
-**Known gap:** subject claim pages, `/research/claims/subjects/{subject}/{claim}`,
-are not covered. The claim pattern in `src/lib/seo.ts:35` matches two path
-segments after `/research/claims/`; subject claims have three. Checked live
-2026-10-09: they serve `index,follow` and are in `sitemap-0.xml`. A code fix
-is needed; until then, do not request indexing for them.
+**Subject claim pages until the next deploy:** on main, the claim pattern in
+`src/lib/seo.ts` matches a claim page at any depth under `/research/claims/`,
+so subject claim pages are noindexed and left out of the sitemap. Production
+still runs the older two-segment pattern: checked live 2026-10-09, they serve
+`index,follow` and are in `sitemap-0.xml`. Do not request indexing for them
+until the after-deploy check in SITE-Y (Subject claim noindex),
+`docs/v1.0.0-roadmap.md`, passes.
 
 URLs are stable: already-published pages remain accessible at the same paths.
 Internal navigation, deep links, and direct visits all still work; the pages
