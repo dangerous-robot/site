@@ -69,30 +69,6 @@ Related (2026-10-04): URL dedup missed a different URL that landed on an existin
 
 ---
 
-## PDF attachment as alternate source content surface
-
-Goal: Let a locally-attached PDF stand in for an unreachable URL (401/402/403/451 origins) as a content surface for both the ingestion agent and the human reviewer. Pairs with the fail-fast plan — when the ingestor can't fetch, a pre-attached PDF is the fallback.
-
-| Work Item | Plan | Notes |
-|-----------|------|-------|
-| PDF attachment core (ingestion + model) | [source-pdf-attachment.md](plans/deferred/source-pdf-attachment.md) | `pdfs:` frontmatter block, `_attachments.yaml` manifest, `pdf_read` tool, `dr attach-pdf` CLI, sha256 integrity lint Same plan as the Deferred plans row `source-pdf-attachment.md`. Triage: none; propose drop; 2026-10-23 |
-| PDF attachment publish surface | [source-quality-followups.md § PDF publish surface](plans/deferred/source-quality-followups.md#pdf-publish-surface-drafted-post-attachment) | Site renders `republish: true` PDFs with download link; `_headers` `noindex`; depends on core landing Same plan as the Deferred plans row `source-quality-followups.md`. Triage: none; propose drop; 2026-10-23 |
-
----
-
-## AI Research Audit Trail
-
-Goal: On each `/claims/[slug]` page, show a collapsible section with which agent ran the research, what sources were consulted, when a human reviewed it, and whether the verdict changed from draft. Builds reader trust by making the AI+human process visible.
-
-Architecture: sidecar `.audit.yaml` file per claim, written by the pipeline after the auditor runs, consumed by a custom Astro loader. Full 3-stage architectural review completed.
-
-| Work Item | Plan | Notes |
-|-----------|------|-------|
-| ~~Extended fields, backfill, orphan CI (Stage 2); append-only history (Stage 3)~~ | [audit-trail-extensions.md](plans/deferred/audit-trail-extensions.md) | **Deferred** 2026-10-06; see Deferred plans Same plan as the Deferred plans row `audit-trail-extensions.md`. Triage: none; propose drop; 2026-10-23 |
-
-
----
-
 ## Security follow-ups
 
 The dependency advisories below were deferred when the high and critical fixes landed in `3f69aed`.
@@ -214,7 +190,6 @@ From architectural review (2026-04-18) and TODO.md:
 
 ### Deferred content (unsourced)
 
-- **Structure chatbot comparison table** -- Comparison data exists in `parallax-ai/frontend/src/lib/comparison-data.ts` (transparency + feature comparisons across 5 competitors). Treat as unsourced claims; need source files backing each cell before publishing. The Responsible AI chatbots page (SITE-J (Responsible AI chatbots), beta.7) is that comparison, with sourced cells. Triage: Responsible AI chatbots; propose drop; 2026-10-23
 - **Structure AI Product Card data** -- Transparency/nutrition-label data exists in `parallax-ai/frontend/src/app/transparency/page.tsx` (models, energy, ethics, commitments). Treat as unsourced claims; need source files for each assertion. Triage: none; keep; 2026-10-23
 
 ### Site gaps
@@ -273,7 +248,6 @@ Carried from the retired 2026-04-22 follow-up doc. Everything else in that doc s
 - **B Lab / B Corp profiles** -- classified as `secondary`; confirm. Triage: Responsible AI chatbots; keep; 2026-10-23
 - **UNESCO, NTIA, UNFCCC** -- classified as `secondary`; confirm. Triage: Responsible AI chatbots; keep; 2026-10-23
 - **IBM, Deloitte reports** -- classified as `secondary`; some may lean tertiary. Spot-check. Triage: Responsible AI chatbots; keep; 2026-10-23
-- **Entity's own pages** -- the classifier ignores the claim's entity, so brave.com pages on a Brave claim come out `secondary`, hence `independent` (a claim-refresh review finding of 2026-10-04, fixed in `ff6a919`). That fix relabels the entity's own pages for the claim (entity match, [claim-refresh-integrity-fixes.md](plans/completed/claim-refresh-integrity-fixes.md) E1 and E2). Triage: Responsible AI chatbots; propose drop; 2026-10-23
 
 ---
 
@@ -283,8 +257,6 @@ From UI redesign plan (2026-04-24). Current implementation shows reviewer count 
 
 | Work Item | Notes |
 |-----------|-------|
-| Multi-reviewer tracking | Change `human_review` from single object to array of `{ reviewed_at, reviewer, notes, pr_url }`. Meta row count (`✓ N reviewers`) derives from array length. Requires schema version bump and backfill script. Same assumption as RE-F (Human sign-off, remaining), deferred: one reviewer. Triage: none; propose drop; 2026-10-23 |
-| Sign-off count in list views | Once multi-reviewer array exists, surface count in `ClaimRow` and entity detail claim lists as a trust signal. Depends on multi-reviewer tracking. Triage: none; propose drop; 2026-10-23 |
 | Verdict change history | Append-only `history` array in `.audit.yaml` recording each pipeline run's verdict+confidence output. Site renders a timeline on the claim detail page. Requires pipeline write changes. Triage: Reader participation; keep; 2026-10-23 |
 | Show-your-work reasoning panel (was Q11) | Reasoning-transparency scope carried over from the retired `pre-launch-questions.md`; partially implemented, treated as in flight. Open sub-decisions: inline analyst narrative on every claim vs. expand-on-click; auditor disagreement excerpts always visible vs. only when the verdict was contested; whether to expose the actual instruction text the analyst saw. Triage: Reader participation; keep; 2026-10-23 |
 
@@ -298,7 +270,6 @@ Cleanup items surfaced during the v0.1.0 vocab + multi-topic + claim-lifecycle l
 
 | Work Item | Notes |
 |-----------|-------|
-| Vocabulary sweep through `pipeline/loop/run.py` | Lingering "Auditor" references in `run`'s function docstring and inline comments (pre-rebuild home: `verify_claim` in `pipeline/orchestrator/pipeline.py`). The vocab landing PR was scoped to module-level docstrings only; this is the in-function follow-up. Triage: Simplicity and clarity; propose drop; 2026-10-23 |
 | Multi-topic faceted filtering | `src/components/ClaimRow.astro` and `src/pages/criteria/index.astro` set `data-topic={topics[0]}` because `FilterBar` matches one attribute value per facet. Multi-topic claims/criteria filter only on their first topic. Fix needs richer `FilterBar` matching (split-by-space) or a different markup shape. Triage: none; keep; 2026-10-23 |
 | Delete `research/claims/.gitkeep` after first regen | The bridge file was added in commit `1394bc6` so Astro's `walkMdFiles` doesn't ENOENT before regeneration. Once regenerated claims exist, delete the bridge. Triage: Simplicity and clarity; keep; 2026-10-23 |
 | Consider `pipeline/auditor/` → `pipeline/evaluator/` directory rename | Doc rename Auditor → Evaluator landed in `7943577`; the Python package keeps its old name for v1. Tracked in `docs/plans/completed/v0.1.0-vocab-workflow-landing.md` as deferred. Triage: Simplicity and clarity; keep; 2026-10-23 |
