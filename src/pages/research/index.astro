@@ -24,14 +24,6 @@ const faqSchema = {
   "mainEntity": [
     {
       "@type": "Question",
-      "name": "What is this site?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": `Dangerous Robot is a guide to the danger, with evidence you can check. This research record is that evidence: claims about AI, the sources behind each one, and the verdict on each. A person reviews and approves every published claim. The goal is to verify what AI companies and products actually do, especially around environmental impact, safety practices, and transparency.`,
-      },
-    },
-    {
-      "@type": "Question",
       "name": "What topics are covered?",
       "acceptedAnswer": {
         "@type": "Answer",
@@ -72,18 +64,10 @@ const faqSchema = {
     },
     {
       "@type": "Question",
-      "name": "What is the content license?",
+      "name": "Who runs this, and what conflicts of interest exist?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Research content is published under CC-BY-4.0. Site code is MIT licensed.",
-      },
-    },
-    {
-      "@type": "Question",
-      "name": "What conflicts of interest exist?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": `Dangerous Robot is run by ${op.handle}. He also makes TreadLightlyAI, an AI chatbot. TreadLightlyAI appears on this site under the same criteria and sources as every other product, and the site publishes no verdict on claims about it. No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or paid advisory role with the AI companies covered.`,
+        "text": `${op.handle} runs Dangerous Robot and makes TreadLightlyAI, an AI chatbot. No verdict is paid, sponsored, or commissioned. The full disclosure, including his financial holdings, is on the About page.`,
       },
     },
   ],
@@ -125,7 +109,8 @@ const faqSchema = {
         Dangerous Robot tracks claims about AI companies and products: what they
         say about energy use, environmental impact, safety practices, and
         transparency, checked against public sources by an AI-assisted pipeline
-        with human review on every published verdict.
+        with human review on every published verdict. What the site is, who
+        runs it, and the content license are on the <a href="/about/">About page</a>.
       </p>
     </section>
 
@@ -154,24 +139,6 @@ const faqSchema = {
 
     <section id="faq" class="faq-section">
       <h2 class="faq-heading">Frequently asked questions</h2>
-
-      <details>
-        <summary>What is this site?</summary>
-        <div class="answer">
-          <p>
-            Dangerous Robot is a guide to the danger, with evidence you can
-            check. This research record is that evidence: claims about AI, the
-            sources behind each one, and the verdict on each.
-            A person reviews and approves every published claim.
-            <a href="/about/">More about the site</a>.
-          </p>
-          <p>
-            The goal is to make it easier to verify what AI companies and
-            products actually do, especially around environmental impact,
-            safety practices, and transparency.
-          </p>
-        </div>
-      </details>
 
       <details>
         <summary>What topics are covered?</summary>
@@ -355,35 +322,14 @@ const faqSchema = {
         </div>
       </details>
 
-      <details>
-        <summary>What is the content license?</summary>
-        <div class="answer">
-          <p>
-            Research content is published under
-            <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">CC-BY-4.0</a>.
-            Site code is MIT licensed. Sources are cited inline on each claim page.
-          </p>
-        </div>
-      </details>
-
       <details id="conflicts-of-interest">
-        <summary>What conflicts of interest exist?</summary>
+        <summary>Who runs this, and what conflicts of interest exist?</summary>
         <div class="answer">
           <p>
-            Dangerous Robot is run by <a href={profileHref(op)}>{op.handle}</a>.
-            He also makes <a href="https://treadlightly.ai" target="_blank" rel="noopener noreferrer">TreadLightlyAI</a>, an AI chatbot.
-            TreadLightlyAI appears on this site under the same criteria and sources as every other
-            product, and the site publishes no verdict on claims about it.
-          </p>
-          <p>
-            No verdict is paid, sponsored, or commissioned. The operator holds no equity, debt, or
-            paid advisory role with the AI companies covered here, and will note it on the relevant
-            entity page if that changes.
-          </p>
-          <p>
-            If a verdict looks shaped by this, flag it on
-            <a href="https://github.com/dangerous-robot/site" target="_blank" rel="noopener noreferrer">GitHub</a>
-            with the claim slug and your reasoning.
+            <a href={profileHref(op)}>{op.handle}</a> runs Dangerous Robot and makes TreadLightlyAI,
+            an AI chatbot. No verdict is paid, sponsored, or commissioned. The full disclosure,
+            including his financial holdings, is on the
+            <a href="/about/#who-runs-this">About page</a>.
           </p>
         </div>
       </details>
