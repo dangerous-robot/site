@@ -63,6 +63,9 @@ Claude outputs/
 # Session handoff notes (CLAUDE.md "Session handoff notes"): local working state, never committed.
 /handoff/
 
+# Daily petition report (~/.local/bin/petition-status-report.sh): signer names and emails, never committed.
+/petition-reports/
+
 # Image candidate drop folder (.claude/skills/image-candidate): downloads land here, the skill files them under media/candidates/.
 /image-inbox/
 # Image originals stay on the maintainer's machine: the repo is public, and stock licences (Pixabay,
