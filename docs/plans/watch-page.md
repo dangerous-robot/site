@@ -675,22 +675,22 @@ Cross-lane coupling between F and G: lane F owns the thumb markup (G tests again
 | Manual `workflow_dispatch` deploy (T21) | Green. The build log shows a `fetched ... videos` line with n > 0 for each seed playlist and `mode=live playlists=3`. No watch warning annotation. `check:watch` runs with `WATCH_CHECK_CONTEXT=deploy`. |
 | First scheduled run (T20) | Builds main HEAD; `verify`, `build` and `deploy` green; `mode=live playlists=3` |
 
-**Manual browser check** (live build, then production), at 375px (phone), 860px (stacked) and 1280x800 (desktop), plus a window under 600px tall:
+**Manual browser check** (live build, then production), at 375px (phone), 860px (stacked) and 1280x800 (desktop), plus a window under 600px tall (production 2026-10-30, all pass after the contrast fix 21f4e62, re-checked 2026-10-31):
 
-- [ ] All three seed playlists appear in the switcher menu in D11 order, with name, creator, video count and description.
-- [ ] Rows show a thumbnail with duration badge, a two-line title, and channel and date. There is no horizontal scroll at 375px.
-- [ ] No iframe and no `youtube-nocookie.com` request before Play (DevTools Network).
-- [ ] The menu opens over a scrim, Escape and a scrim click close it, and focus returns to the playlist card. Switching playlists keeps each list's scroll position and never changes the video in the player.
-- [ ] The status line reads "Now playing: ..." or "Back to now playing in ..." and takes you to the current row. Nothing shifts when the current video changes.
-- [ ] The resize handle drags between 300 and 560px and answers arrow keys; it is gone when the columns stack.
-- [ ] At 1280x800 the page itself does not scroll; under 600px tall it does. On a phone, picking a row far down scrolls the player into view and starts playback only once it is at least half on screen.
-- [ ] Keyboard only: skip link, playlist card, menu (arrows, Escape), status line, rows, resize handle, Play, "Show more", "Watch on YouTube". Focus is always visible.
-- [ ] Deep links: `?list=far-ai-research-highlights&v=<id>` opens that poster. A bogus `v` shows the notice. A bogus `list` falls back.
-- [ ] Copying the URL after playing a video and opening it in a new tab shows the same poster, without autoplay.
-- [ ] All four themes (dark, light, both high-contrast). The player box stays black and text contrast holds.
-- [ ] `/privacy` shows the `/watch` exception with the YouTube Terms of Service and Google Privacy Policy links.
-- [ ] `/watch` is not in the nav.
-- [ ] With JS disabled, every playlist's panel shows and thumbnails are links to youtube.com.
+- [x] All three seed playlists appear in the switcher menu in D11 order, with name, creator, video count and description.
+- [x] Rows show a thumbnail with duration badge, a two-line title, and channel and date. There is no horizontal scroll at 375px.
+- [x] No iframe and no `youtube-nocookie.com` request before Play (DevTools Network).
+- [x] The menu opens over a scrim, Escape and a scrim click close it, and focus returns to the playlist card. Switching playlists keeps each list's scroll position and never changes the video in the player.
+- [x] The status line reads "Now playing: ..." or "Back to now playing in ..." and takes you to the current row. Nothing shifts when the current video changes.
+- [x] The resize handle drags between 300 and 560px and answers arrow keys; it is gone when the columns stack.
+- [x] At 1280x800 the page itself does not scroll; under 600px tall it does. On a phone, picking a row far down scrolls the player into view and starts playback only once it is at least half on screen.
+- [x] Keyboard only: skip link, playlist card, menu (arrows, Escape), status line, rows, resize handle, Play, "Show more", "Watch on YouTube". Focus is always visible.
+- [x] Deep links: `?list=far-ai-research-highlights&v=<id>` opens that poster. A bogus `v` shows the notice. A bogus `list` falls back.
+- [x] Copying the URL after playing a video and opening it in a new tab shows the same poster, without autoplay.
+- [x] All four themes (dark, light, both high-contrast). The player box stays black and text contrast holds.
+- [x] `/privacy` shows the `/watch` exception with the YouTube Terms of Service and Google Privacy Policy links.
+- [x] `/watch` is not in the nav.
+- [x] With JS disabled, every playlist's panel shows and thumbnails are links to youtube.com.
 
 ## 9. Risks
 
