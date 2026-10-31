@@ -163,4 +163,9 @@ const meta = [video.channel, video.durationSpoken, `published ${video.publishedT
     font-size: var(--font-size-2xs);
     color: var(--color-text-faint);
   }
+
+  /* Faint text drops under 4.5:1 on the selected background in the dark theme. */
+  .watch-thumb[aria-current="true"] .watch-thumb__meta {
+    color: var(--color-text-muted);
+  }
 </style>
