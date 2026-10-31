@@ -1,7 +1,6 @@
 import type { Env } from './env';
 import { confirmationEmail, notSignedEmail, receiptEmail, sendEmail, type Email } from './email';
 import {
-  buildSubject,
   cloudflareDmarc,
   decodeEncodedWords,
   isAutoSubmitted,
@@ -12,7 +11,7 @@ import {
   parseSubject,
   readHeaderBlock,
 } from './inbound';
-import { actionPage, lastStepPage, messagePage } from './pages';
+import { actionPage, messagePage } from './pages';
 
 const MIN_FILL_MS = 3000;
 // An unconfirmed address gets at most one confirmation email per window, so the
@@ -251,13 +250,10 @@ async function sign(request: Request, env: Env, slug: string): Promise<Response>
   // cap, the insert and the email, so a script without a passing check sends nothing.
   const check = await verifyTurnstile(env, field('cf-turnstile-response'), request.headers.get('CF-Connecting-IP'));
   if (check === 'missing') {
-    // A plain form POST with no token is a reader without JS: offer to sign by email.
-    // Nothing is stored or sent until a message from their address arrives.
-    if (!(request.headers.get('Accept') ?? '').includes('application/json')) {
-      // A pipe could start a field of its own (`Jane | Updates: yes`); a slash reads the same.
-      return lastStepPage(buildSubject({ slug, name: name.replaceAll('|', '/'), showName, wantsUpdates }), petition.post_url);
-    }
-    return reply(request, env, 403, 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.', petition.post_url);
+    const message = (request.headers.get('Accept') ?? '').includes('application/json')
+      ? 'The bot check has not finished. Please wait for it, or reload the page, then press Sign again.'
+      : 'Signing needs JavaScript, for a bot check that stops scripts from signing up other people\'s email addresses. Please turn on JavaScript and sign again, or write to contact@dangerousrobot.org.';
+    return reply(request, env, 403, message, petition.post_url);
   }
   if (check === 'failed') {
     return reply(request, env, 403, 'The bot check did not pass. Please reload the page and try again.', petition.post_url);

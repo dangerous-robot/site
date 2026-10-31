@@ -583,60 +583,25 @@ describe('closed petitions', () => {
 });
 
 describe('no-JS path', () => {
-  /** The subject inside the page's mailto: link, decoded the way a mail app reads it. */
-  function mailtoSubject(html: string): { href: string; subject: string } {
-    const href = /href="(mailto:[^"]*)"/.exec(html)![1].replaceAll('&amp;', '&').replaceAll('&#39;', "'").replaceAll('&quot;', '"');
-    const m = /^mailto:([^?]*)\?subject=([^&]*)$/.exec(href);
-    expect(m, href).not.toBeNull();
-    expect(m![1]).toBe('sign@dangerousrobot.org');
-    return { href, subject: decodeURIComponent(m![2]) };
-  }
-
-  it('answers a form POST without a bot check token with a sign-by-email page, storing and sending nothing (T1)', async () => {
-    const res = await sign({ json: false, turnstile: null, name: 'Ada Lovelace', consent: true });
-    expect(res.status).toBe(200);
+  it('refuses a form POST without a bot check token with a page that explains why', async () => {
+    const res = await sign({ json: false, turnstile: null });
+    expect(res.status).toBe(403);
     expect(res.headers.get('Content-Type')).toContain('text/html');
     const html = await res.text();
-    expect(html).toContain('One more step');
-    expect(html).toContain('sign@dangerousrobot.org');
+    expect(html).toContain('needs JavaScript');
     expect(html).toContain('contact@dangerousrobot.org');
     expect(html).toContain(`href="${SITE}/writing/pledge"`);
-    const expected = `Sign ${SLUG} | Name: Ada Lovelace | Show my name: yes | Updates: no`;
-    expect(mailtoSubject(html).subject).toBe(expected);
-    expect(html).toContain(`<code>${expected}</code>`);
-    expect(await rowCount()).toBe(0);
-    expect(sentEmails).toHaveLength(0);
-    expect(siteverifyCalls).toHaveLength(0);
-  });
-
-  it('encodes a hostile name in both the page and the mailto: link (T1)', async () => {
-    const name = 'Eve&cc=x@example.com%0A"q\'<b>/x?bcc=y@example.com#';
-    const res = await sign({ json: false, turnstile: '', name, updates: true });
-    expect(res.status).toBe(200);
-    const html = await res.text();
-    const { href, subject } = mailtoSubject(html);
-    // One recipient, one header field: no raw &, ?, # or newline escapes outside the subject value.
-    expect(href).not.toMatch(/[&#\s]/);
-    expect(href.split('?')).toHaveLength(2);
-    expect(subject).toBe(`Sign ${SLUG} | Name: ${name} | Show my name: no | Updates: yes`);
-    expect(html).not.toContain('<b>');
-    expect(html).toContain('Name: Eve&amp;cc=x@example.com%0A&quot;q&#39;&lt;b&gt;/x?bcc=y@example.com#');
     expect(await rowCount()).toBe(0);
     expect(sentEmails).toHaveLength(0);
   });
 
-  it('turns a pipe in the name into a slash, so the subject always reads back (T1, T10)', async () => {
-    const res = await sign({ json: false, turnstile: null, name: 'Jane | Updates: yes' });
-    expect(mailtoSubject(await res.text()).subject).toBe(`Sign ${SLUG} | Name: Jane / Updates: yes | Show my name: no | Updates: no`);
-  });
-
-  it('still refuses a JSON request without a token with 403 (T1)', async () => {
+  it('refuses a JSON request without a token with 403', async () => {
     const res = await sign({ turnstile: null });
     expect(res.status).toBe(403);
     expect(((await res.json()) as { error: string }).error).toContain('bot check has not finished');
   });
 
-  it('still refuses a no-JS POST whose token fails, with the old page', async () => {
+  it('refuses a no-JS POST whose token fails', async () => {
     const res = await sign({ json: false, turnstile: 'forged-token' });
     expect(res.status).toBe(403);
     expect(await res.text()).toContain('The bot check did not pass');

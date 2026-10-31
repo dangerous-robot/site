@@ -50,8 +50,8 @@ it('signs, confirms, cleans up and reminds on the schema before 0005', async () 
   expect((await post('/petitions/pledge/sign', { ...form, email: 'late@example.org' })).status).toBe(200);
   const token = /confirm\?t=([0-9a-f]+)/.exec(sent[0].text)![1];
   expect((await post('/petitions/pledge/confirm', { t: token }, 'text/html')).status).toBe(200);
-  // The tokenless no-JS page needs no schema change either.
-  expect((await post('/petitions/pledge/sign', { name: 'Ada', email: 'x@example.org' }, 'text/html')).status).toBe(200);
+  // The tokenless no-JS refusal needs no schema change either.
+  expect((await post('/petitions/pledge/sign', { name: 'Ada', email: 'x@example.org' }, 'text/html')).status).toBe(403);
 
   const error = vi.spyOn(console, 'error').mockImplementation(() => {});
   await sendReminders(env, new Date(Date.now() + 5 * 86_400_000));
