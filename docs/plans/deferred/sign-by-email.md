@@ -1,7 +1,8 @@
 # Sign by email for readers without JavaScript
 
-**Status**: `ready` (2026-10-23; roadmap item SITE-BG (Sign by email); design approved by Brandon 2026-10-16, code built on three local branches the same day, deferred 2026-10-16, revived 2026-10-23 for beta.9)
-**Last updated**: 2026-10-23
+**Deferred**: 2026-10-30, Brandon set it aside for a few releases, before the header test (T3). Shipped to `main`, not deployed: the Worker merge a47d612 (email handler, parser, migration 0005, tests) and its test commit; the site copy merge 41a0411 was reverted in 325bbf0 (partial back-out, decision S5).
+**Status**: `deferred` (roadmap item SITE-BG (Sign by email); design approved by Brandon 2026-10-16, code built 2026-10-16, deferred 2026-10-16, revived 2026-10-23 for beta.9, deferred again 2026-10-30)
+**Last updated**: 2026-10-30
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -26,6 +27,7 @@ Ticked as tasks land (AGENTS.md Plans & Backlog rule 4). Task ids are the headin
 - [ ] T5: **Brandon:** migration 0005, routing rule `sign@`, Worker deploy, live check
 - [ ] T6: Docs, backlog, worktree cleanup, finish
 - [ ] T7 (only on a no-go): back the merged code out before the beta.9 push
+- [x] Deferred before T3: partial back-out (T7's partial alternative) applied in 325bbf0. To revive: `git revert 325bbf0` restores the site copy, the sign-by-email page on a tokenless POST and its tests, then resume at T3
 
 ## Decisions
 
@@ -48,6 +50,7 @@ Made by Brandon unless noted. The IDs are the design note's; each is glossed whe
 | S2 | Merge order (agent call, override freely) | Merge both branches into `main` before the header test. Merging is inert here: the Worker deploys only through `inv worker-deploy`, and the site only on the beta.9 push, which Brandon is holding. T7 names the back-out if the test fails. The alternative, holding the merge until the test passes, costs nothing today (the merge is clean) but leaves the branches drifting from `main` |
 | S3 | Probe Worker replaces the live Worker during the test (agent call) | Accepted. `git diff ccd982b main -- workers/api/src/index.ts` shows the probe's base differs from `main` by two comment lines only, so production behaviour is unchanged while the probe is deployed, except that mail to `sign-test@` is logged and rejected |
 | S4 | What runs in production between the header test and the real deploy (agent call, from review finding 2) | The probe Worker stays deployed from T3 until T5. After T1 and T2, `main`'s Worker already answers a tokenless POST with the last-step page, so redeploying `main` before migration 0005 and the `sign@` rule exist would send readers to an unrouted address. The probe without its `sign-test@` rule behaves exactly like the beta.8 Worker (S3) |
+| S5 | Back-out when deferred before the header test | Partial (T7's partial alternative): site copy merge reverted and the tokenless form POST back to the 403 page naming contact@, in 325bbf0. The email handler, parser, migration 0005 and their tests stay on `main`; with no routing rule for `sign@` the handler is never called, so the Worker can deploy from `main` (answer yes to migration 0005) and ship SITE-BI (Petition unconfirmed limit back to 7 days) on its own (Brandon, 2026-10-30) |
 
 ## Design
 
