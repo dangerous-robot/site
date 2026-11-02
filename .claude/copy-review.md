@@ -33,7 +33,7 @@ off-voice lines on purpose.
 | DR4 | The reader written as a dupe or already beaten ("You've already handed over your life") | SEV-2 | mission-and-voice.md § Voice rule 4 |
 | DR5 | Spelling out the consequence of the one-reviewer limit, or dressing it or the contradictions as a virtue or a brag | SEV-2 | mission-and-voice.md § Voice rule 8 |
 | DR6 | Abstract where the drip should be listed: "every aspect of modern society", "our lives", "hard drives" | SEV-3 | mission-and-voice.md § Voice rule 7 |
-| DR7 | The industry's words for itself or tribe words: "tech leaders", "innovators", "billionaires", "shaped by"; "arms race" on sourced pages | SEV-4 | mission-and-voice.md § Voice rule 6 |
+| DR7 | The industry's words for itself or tribe words: "tech leaders", "innovators", "billionaires"; "arms race" on sourced pages; a weather verb that hides who decides ("is being shaped by", "is transforming"): name the actor, do not swap the verb | SEV-4 | mission-and-voice.md § Voice rule 6 |
 | DR8 | Vendor diction: "powered by AI" (decided: "built with the help of AI"); "agency", "autonomy", "stakeholders" for plain words; "felony"; "TreadLightly AI" as two words | SEV-4 | mission-and-voice.md § Voice rule 1 |
 | DR9 | Site word list: "crucial", "landscape", "navigate" (the rest of that list is AT6, AT7, AT18) | SEV-4 | mission-and-voice.md § Mechanics |
 | DR10 | Internal vocabulary on the site: "operator" for the person who reviews (name the person), "crossroads" for a decision (say "decision" or name it), "GSI" (spell out "general superintelligence") | SEV-4 | mission-and-voice.md § Voice rule 1 (GSI), rule 8 (operator), § Mechanics (crossroads) |
