@@ -44,3 +44,4 @@ off-voice lines on purpose.
 | ** | M1 (em dash) | never |
 | src/pages/index.astro | AT19 (staccato fragments) | off: one sentence per line in the hero, by decision (mission-and-voice.md § Mechanics) |
 | src/pages/privacy.astro | AT3 (list of what isn't) | off: legal lists are information |
+| src/pages/values.astro | DR1 (forecast or generalization with no source) | off: the page states the site's positions by design (mission-and-voice.md § Voice rule 2, editorial pages may take a side) |
