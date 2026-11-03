@@ -32,7 +32,7 @@ Dangerous Robot is a guide to AI's dangers, with evidence you can check. It is n
 - Guides are the primary content. A guide cites claims where claims exist and sources otherwise, and it says what you can do.
 - Every claim shows its sources, a verdict and a confidence level. The verdict vocabulary is True, Mostly true, Mixed, Mostly false, False, Unverified and N/A. Confidence is High, Medium or Low. No new labels. A verdict is our reading of the public record as of the date shown. Every source links to an archived copy where one exists.
 - AI assisted, human accountable. Agents search, fetch and draft. A person reviews and approves every claim before it is published. Each published claim carries the reviewer's handle, linked to a profile page with their full name and the claims they reviewed. Copy about who reviews says a person reviews, without naming one. Posts carry a byline that says whether AI drafted the text. The signal of human involvement is accountability and authorship, never a claim that AI was not used.
-- The site takes a side and says so. The Values page states four positions, uncited and signed. Research pages (guides, claims, sources) are sourced; writing and petitions argue from the Values positions and say so. On existential risk the site holds that AI carries some such risk, because the people building these systems say so on the record; how large, how likely and when, it does not state as settled, and research pages carry no opinion on it.
+- The site takes a side and says so. The Values page states five positions, uncited and signed. Research pages (guides, claims, sources) are sourced; writing and petitions argue from the Values positions and say so. On existential risk the site holds that AI carries some such risk, because the people building these systems say so on the record; how large, how likely and when, it does not state as settled, and research pages carry no opinion on it.
 - Conflicts are disclosed in one sentence wherever TreadLightlyAI appears in a list or comparison, and the site publishes no verdict on claims about it.
 - Corrections are public. A correction note stays on the claim, and the prior verdict stays visible.
 - Action is content. Petitions are a content type, and the first is the pledge to support laws that stop AI systems from improving their own capabilities without human control.
@@ -156,7 +156,7 @@ Quoted from `docs/decisions.md` (the "Decided copy" entry and later entries). Th
 | Verdict statement | A verdict is our reading of the public record as of the date shown. AI agents draft it; the person named on the claim approves it. Every source is listed, and you can check them. One person reviews everything today. If we are wrong, tell us here. |
 | Reviewer line | Reviewed and approved by brandon-f |
 | Bylines | Written by Brandon Faloona, with AI assistance / Written by Brandon Faloona |
-| The four positions (About, Values) | AI safety is unsolved. AI is fueling environmental destruction. AI outcomes are being decided by a small group of people. Staying human and connected to each other will be essential. |
+| The five positions (About, Values) | AI safety is unsolved. AI is fueling environmental destruction. AI outcomes are being decided by a small group of people. People have a right to informed choices about AI. Staying human and connected to each other will be essential. |
 
 ## The bench
 
