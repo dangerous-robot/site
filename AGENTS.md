@@ -19,6 +19,7 @@ For the generalized vision, see `docs/architecture/glossary.md` § How the syste
 ## Writing conventions
 
 - Rarely use em dash characters. Prefer commas, colons, or parentheses instead.
+- Before Brandon reads page copy, UI strings, docs or notes written here, run `/copy-review` (personal skill, `~/.claude/skills/copy-review/`; this repo's config is `.claude/copy-review.md`).
 - Refer to developers, operators, contributors, maintainers and users by role ("the user", "a contributor"), with they/them pronouns. Name a specific person only when something is uniquely about them, such as a photo credit.
 
 ## UI & Design Standards
