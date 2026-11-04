@@ -638,6 +638,26 @@ def test_replay_of_a_draft_rerun_finding_rewrites_the_draft_in_place(tmp_path, m
     assert _findings(tmp_path)[RUN_OLD]["closed"]["by"] == "replay"
 
 
+def test_replay_of_a_draft_rerun_finding_clears_the_drafts_sign_off(tmp_path, monkeypatch) -> None:
+    """The replay is a forced rewrite of the draft, so the reviewer's sign-off on the old verdict goes."""
+    stem = slugify(SENTENCE)
+    existing = _write_claim(tmp_path, stem, status="draft")
+    sidecar_path = existing.with_suffix(".audit.yaml")
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["human_review"].update(reviewed_at="2026-10-02", reviewer="reviewer@example.org",
+                                   verdict_override="mixed")
+    sidecar_path.write_text(yaml.safe_dump(sidecar, sort_keys=False, allow_unicode=True), encoding="utf-8")
+    _write_finding(tmp_path, claim_ref=f"{ENTITY_REF}/{stem}")
+    _spy_run(monkeypatch)
+
+    with scripted_agents():
+        result = _replay(tmp_path, "--finding", RUN_OLD)
+
+    assert result.exit_code == 0, result.output
+    review = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))["human_review"]
+    assert review == {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
+
+
 def test_replay_of_a_half_claim_finding_writes_the_missing_sidecar_in_place(tmp_path, monkeypatch) -> None:
     """A writer crash between claim and sidecar: the replay is dr draft --claim <ref> --force."""
     stem = slugify(SENTENCE)

@@ -6,9 +6,10 @@ All four agents on scripted models, driven through ``dr draft`` and
 - ``dr draft --entity`` writes the cited sources, the claim and the sidecar
   in the one write order, with the claim's ``sources:`` in the researcher's
   URL order and the sidecar carrying ``pipeline_run.run_id``;
-- ``dr draft --force`` on a draft keeps its sign-off and the operator's
-  fields (a published or archived claim is refused from RE-AW (Recheck) on;
-  its rerun, refresh trail and crash cases are in ``test_recheck.py``);
+- ``dr draft --force`` on a draft clears its sign-off, so the new verdict
+  goes back to the ``dr review`` queue, and keeps the operator's fields (a
+  published or archived claim is refused from RE-AW (Recheck) on; its rerun,
+  refresh trail and crash cases are in ``test_recheck.py``);
 - a criterion's grading text reaches both the Analyst and the Evaluator;
 - a blocked or failed run writes nothing, so no orphan source files are left;
 - the command's grammar: SENTENCE with ``--entity``, an entity file that
@@ -233,17 +234,62 @@ def test_forced_rewrite_of_a_draft_runs_in_the_one_write_order(tmp_path, monkeyp
     assert parse_frontmatter(claim_path.read_text(encoding="utf-8"))[0]["status"] == "draft"
 
 
-def test_forced_rewrite_of_a_draft_keeps_its_review(tmp_path) -> None:
+def _sign_off_with_override(sidecar_path: Path) -> None:
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    sidecar["human_review"].update(notes="Checked by hand.", pr_url="https://example.org/pr/1",
+                                   verdict_override="mixed")
+    sidecar_path.write_text(yaml.safe_dump(sidecar), encoding="utf-8")
+
+
+def test_forced_rewrite_of_a_draft_clears_its_sign_off(tmp_path) -> None:
+    """The reviewer signed a verdict the rewrite replaces, so no part of the sign-off is kept."""
     write_entity(tmp_path)
     _claim_path, sidecar_path = _publish(tmp_path, status="draft")
+    _sign_off_with_override(sidecar_path)
 
     with scripted_agents():
         result = _draft(tmp_path, "--force")
 
     assert result.exit_code == 0, result.output
     sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
-    assert sidecar["human_review"]["reviewer"] == "reviewer@example.org"
+    assert sidecar["human_review"] == {"reviewed_at": None, "reviewer": None, "notes": None, "pr_url": None}
     assert "refresh" not in sidecar
+
+
+def test_forced_rewrite_puts_a_signed_draft_back_in_the_review_queue(tmp_path) -> None:
+    from orchestrator.review_queue import find_publication_queue
+
+    write_entity(tmp_path)
+    claim_path, _sidecar_path = _publish(tmp_path, status="draft")
+    assert find_publication_queue(tmp_path) == []
+
+    with scripted_agents():
+        result = _draft(tmp_path, "--force")
+
+    assert result.exit_code == 0, result.output
+    assert [item.path for item in find_publication_queue(tmp_path)] == [claim_path.relative_to(tmp_path).as_posix()]
+
+
+def test_forced_rewrite_stopped_before_the_sidecar_write_leaves_no_sign_off(tmp_path, monkeypatch) -> None:
+    """The sign-off is cleared before the claim write, so a stop between the claim
+    and sidecar writes never leaves the old sign-off beside the new verdict."""
+    import orchestrator.persistence as persistence
+
+    write_entity(tmp_path)
+    claim_path, sidecar_path = _publish(tmp_path, status="draft")
+    before = claim_path.read_text(encoding="utf-8")
+
+    def _stop(*args, **kwargs):
+        raise OSError("scripted stop before the sidecar write")
+
+    monkeypatch.setattr(persistence, "_write_audit_sidecar", _stop)
+    with scripted_agents():
+        _draft(tmp_path, "--force")
+
+    assert claim_path.read_text(encoding="utf-8") != before
+    sidecar = yaml.safe_load(sidecar_path.read_text(encoding="utf-8"))
+    assert sidecar["human_review"]["reviewed_at"] is None
+    assert sidecar["human_review"]["reviewer"] is None
 
 
 def test_forced_rewrite_refuses_an_unparseable_claim(tmp_path) -> None:
