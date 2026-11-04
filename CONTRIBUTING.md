@@ -21,6 +21,18 @@ Requires Node 22+.
 - **Code from outside contributors**: open a PR; it is squash-merged to main
 - **Research content**: committed to main after a person signs it off at `dr review`; no PR stands between a draft and the live site
 
+## Suggesting a source
+
+Open a [Submit a source](https://github.com/dangerous-robot/site/issues/new?template=submit-source.md) issue. It asks for the URL, what the source says, the company, product, or subject it relates to, and its kind (primary, secondary, or tertiary). A person reviews each submission before the source is ingested; not every submission becomes a citation.
+
+Without a GitHub account, email <contact@dangerousrobot.org> with the subject "Source suggestion: [page or claim]" and include the same details.
+
+## Requesting a claim
+
+Open a [Request a claim](https://github.com/dangerous-robot/site/issues/new?template=request-claim.md) issue. Write the claim as one sentence the public record can show to be true or false, and name the company, product, or subject it is about. A person reads each request and decides whether to research it. A researched request runs through the pipeline below like any other claim.
+
+Without a GitHub account, email <contact@dangerousrobot.org> with the subject "Claim request: [the claim in one sentence]".
+
 ## First contribution: adding a claim about an existing entity
 
 The minimal happy path for adding a new claim to an entity that already exists under `research/entities/`.

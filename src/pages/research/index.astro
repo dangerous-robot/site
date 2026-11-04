@@ -51,7 +51,7 @@ const faqSchema = {
       "name": "How does work enter this site?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Six channels put new research in the queue: a new criterion (an operator drafts its claim for one entity at a time), a new product or subject (an operator drafts claims about it one at a time), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission via GitHub issue, and a public claim request (planned, not yet live). None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
+        "text": "Six channels put new research in the queue: a new criterion (an operator drafts its claim for one entity at a time), a new product or subject (an operator drafts claims about it one at a time), a new source (matches to existing criteria or claims), a topic or URL drop (free-form work for triage), a public source submission, and a public claim request. Both public paths accept a GitHub issue or an email to contact@dangerousrobot.org. None of these channels publish anything directly; every claim goes through the methodology pipeline before appearing on the site.",
       },
     },
     {
@@ -288,10 +288,10 @@ const faqSchema = {
               <strong>A topic or URL drop.</strong> An operator adds free-form work to the queue file for triage and routing.
             </li>
             <li>
-              <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. An operator reviews and ingests if accepted.
+              <strong>A public source submission.</strong> Anyone can propose a source via a <a href="https://github.com/dangerous-robot/site/issues/new?template=submit-source.md">GitHub issue</a>. An operator reviews and ingests if accepted. Without a GitHub account, email <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a> with the subject "Source suggestion: [page or claim]".
             </li>
             <li>
-              <strong>A public claim request.</strong> Planned, not yet live. Anyone will be able to propose a claim worth investigating; an operator triages.
+              <strong>A public claim request.</strong> Anyone can propose a claim worth investigating via a <a href="https://github.com/dangerous-robot/site/issues/new?template=request-claim.md">GitHub issue</a>; an operator triages. Without a GitHub account, email <a href="mailto:contact@dangerousrobot.org">contact@dangerousrobot.org</a> with the subject "Claim request: [the claim in one sentence]".
             </li>
           </ol>
           <p>None of these channels publish anything directly. Every claim goes through the methodology pipeline above before it appears on the site.</p>

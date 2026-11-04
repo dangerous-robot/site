@@ -30,7 +30,7 @@ const topicStats = CATEGORIES.map(cat => {
       <a href={`/research/topics/${stat.topic}/`} class="topic-card">
         <div class="topic-header">
           <span class="topic-label">{stat.label}</span>
-          <span class="topic-count">{stat.count} claims</span>
+          <span class="topic-count">{stat.count} claim{stat.count !== 1 ? 's' : ''}</span>
         </div>
         <VerdictDistribution verdicts={stat.verdicts} />
         {stat.sample.length > 0 && (
