@@ -265,6 +265,113 @@ git push --atomic origin main v1.0.0-beta.N
 
 A push without the tag reaches `origin` but the deploy fails at its first build step and the live site keeps the previous release; tag the commit and push the tag, then rerun the deploy from the Actions tab or with `gh workflow run deploy.yml --ref main`.
 
+## Separate agent credentials (OPS-K)
+
+Operator steps for OPS-K (Separate agent credentials, `docs/v1.0.0-roadmap.md`): agent sessions push with a deploy key that only reaches this repo and call `gh` with a read-only token, so an agent cannot change repo settings or branch protection. Brandon runs every step by hand, in order. Today `origin` is the SSH alias `github-dangerousrobot` (`git remote -v`), which pushes as the `dangerous-robot` owner account, and `gh` holds the owner logins.
+
+Items marked **(check against the GitHub docs)** were not verified from the repo or from `gh --help` (gh 2.72.0).
+
+**1. Deploy key for agent pushes.**
+
+1. Make a key with no passphrase (agents push without a prompt; the key reaches only this repo):
+
+```bash
+ssh-keygen -t ed25519 -C "dangerous-robot/site agent push" -N "" -f ~/.ssh/dr_site_agent_deploy
+```
+
+2. Add `~/.ssh/dr_site_agent_deploy.pub` in the repo's Settings > Deploy keys > Add deploy key, with **Allow write access** ticked. Use the settings page rather than `gh repo deploy-key add --allow-write`: `gh repo deploy-key add --help` says a key added through gh is tied to gh's token and is removed if that token or the GitHub CLI app's access is revoked, while a key added on the settings page depends on no gh login. A deploy key belongs to one repository **(check against the GitHub docs)**.
+3. Add a second alias to `~/.ssh/config`, modeled on the existing `github-dangerousrobot` entry (that entry was not read for this runbook):
+
+```
+Host github-dangerousrobot-agent
+  HostName github.com
+  User git
+  IdentityFile ~/.ssh/dr_site_agent_deploy
+  IdentitiesOnly yes
+```
+
+4. Point this checkout's `origin` at it (worktrees share the setting):
+
+```bash
+git -C ~/dev/ai/dangerous-robot/site remote set-url origin github-dangerousrobot-agent:dangerous-robot/site.git
+```
+
+The owner alias `github-dangerousrobot` stays for pushes by hand. An agent can still name it explicitly, so keep its key behind a passphrase that agent sessions do not have cached.
+
+**2. Read-only token for agent `gh` calls.**
+
+1. Signed in as `dangerous-robot`, create a fine-grained personal access token (Settings > Developer settings > Fine-grained tokens): resource owner `dangerous-robot`, **Only select repositories** with `dangerous-robot/site`, expiry 90 days, permissions read-only: Metadata, Contents, Issues, Pull requests, Actions (for `gh run list` and `gh run view`) **(check the permission names against the GitHub docs)**. No Administration permission.
+2. Save it where agents cannot read it, for example `~/dev/secrets/dr-site-agent-gh-token`, mode 600. Put the expiry date in your calendar.
+3. Give agents the token as `GH_TOKEN` in the environment that starts agent sessions (the shell function or script that launches `claude`), for example:
+
+```bash
+GH_TOKEN="$(cat ~/dev/secrets/dr-site-agent-gh-token)" claude
+```
+
+Do not export it in `~/.zshrc`: every `gh` call by hand would then run as the agent.
+
+**Recommended: `GH_TOKEN`, not a second `gh auth login --with-token`.** `gh auth login --help` says to favor `GH_TOKEN` for fine-grained tokens, and `gh help environment` says it takes precedence over stored credentials. The token also belongs to the `dangerous-robot` account, so logging it in with `gh auth login` would put it under the same account name as the owner's full login and likely replace it **(check against the GitHub docs)**.
+
+**3. Owner logins in a separate `gh` profile.**
+
+Move the owner logins (`dangerous-robot`, and `bfaloona`, an admin) out of the default `gh` config, so an agent shell without `GH_TOKEN` is not logged in at all instead of falling back to the owner.
+
+1. Log out of the default profile first: the macOS keychain may hold one entry per account for every profile, and logging out later could delete the owner profile's entry **(check against the GitHub docs)**.
+
+```bash
+gh auth logout --hostname github.com --user dangerous-robot
+gh auth logout --hostname github.com --user bfaloona
+```
+
+2. Log in to the owner profile and give it an alias in `~/.zshrc`:
+
+```bash
+GH_CONFIG_DIR=~/.config/gh-owner gh auth login --hostname github.com --git-protocol ssh
+GH_CONFIG_DIR=~/.config/gh-owner gh auth login --hostname github.com --git-protocol ssh   # second account
+alias gh-owner='GH_CONFIG_DIR=$HOME/.config/gh-owner gh'
+```
+
+3. Switch accounts inside it by hand: `gh-owner auth switch --user dangerous-robot` (or `--user bfaloona`). The commands elsewhere in this runbook that change repo settings (labels, interaction limits) now run as `gh-owner`.
+
+Anything that runs `gh` unattended in your own shell (hooks, scheduled jobs) loses its login at step 1; give it `GH_TOKEN` or `GH_CONFIG_DIR` explicitly. `gh auth:*` is already off the agent allow list (`docs/v1.0.0-roadmap.md:164`), so an agent's `gh auth` call asks you first.
+
+This narrows what an agent does by default. Agents still run as your macOS user, so it is not a hard boundary.
+
+**4. Branch protection on `main`.**
+
+Blocks force pushes and branch deletion, including for admins, and requires no pull request and no status check. A required check would block every release: every release is a direct push of `main` with a tag (CLAUDE.md § Git Conventions), and `ci.yml` runs only on `pull_request` and `workflow_call`, never on a push.
+
+```bash
+gh-owner api -X PUT repos/dangerous-robot/site/branches/main/protection --input - <<'EOF'
+{
+  "required_status_checks": null,
+  "enforce_admins": true,
+  "required_pull_request_reviews": null,
+  "restrictions": null,
+  "allow_force_pushes": false,
+  "allow_deletions": false
+}
+EOF
+```
+
+The `null` values need `--input`; `-f` sends strings. Field names follow the classic branch protection endpoint **(check against the GitHub docs)**. On the settings page instead: Settings > Branches > add a classic rule for `main`, leave "Require a pull request" and "Require status checks" off, turn on "Do not allow bypassing the above settings", leave "Allow force pushes" and "Allow deletions" off **(check the labels against the GitHub docs)**. Tags are not covered by this rule.
+
+**5. Verify each step.**
+
+| Step | Command | Pass |
+|---|---|---|
+| 1 | `ssh -T github-dangerousrobot-agent` | the greeting names `dangerous-robot/site` (a deploy key's greeting names the repo, **check against the GitHub docs**) |
+| 1 | `git -C ~/dev/ai/dangerous-robot/site push --dry-run origin main` | no permission error; the next agent release push is the full proof |
+| 2 | in an agent session: `gh auth status` | the account is from `GH_TOKEN` |
+| 2 | in an agent session: `gh issue list -R dangerous-robot/site --limit 1` | exit 0 (the read works, so the next check's failure means something) |
+| 2 | in an agent session: `gh api -X PATCH repos/dangerous-robot/site -f description="$(gh repo view dangerous-robot/site --json description --jq .description)"` | fails. Sets the description to its current value, so a success changes nothing but means the token can write: revoke it. GitHub may answer 404 rather than 403 for a write it refuses |
+| 3 | `env -u GH_TOKEN gh auth status` | not logged in |
+| 3 | `gh-owner auth status` | both owner accounts, one active |
+| 4 | `gh-owner api repos/dangerous-robot/site/branches/main/protection --jq '{admins: .enforce_admins.enabled, force: .allow_force_pushes.enabled, delete: .allow_deletions.enabled, prs: .required_pull_request_reviews, checks: .required_status_checks}'` | `admins: true`, `force: false`, `delete: false`, `prs` and `checks` null |
+| 4 | in an agent session: `gh api repos/dangerous-robot/site/branches/main/protection` | fails (the token has no Administration permission; whether a read-only token can read this endpoint, **check against the GitHub docs**) |
+
+Then tick the OPS-K checklist in `docs/v1.0.0-roadmap.md`.
+
 ## Environment variables
 
 `AGENTS.md` § Environment variables lists the variables the pipeline reads (search backend, API keys). The model slots and their `DR_*` variables are under Model slots above.
