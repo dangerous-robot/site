@@ -6,7 +6,7 @@ How continuous integration, deployment, and quality checks work for the Dangerou
 
 **Trigger:** Pull requests targeting `main`. The workflow also declares `workflow_call`, so the deploy pipeline can reuse it as a verification gate.
 
-Four jobs run in parallel on `ubuntu-latest`:
+Five jobs run in parallel on `ubuntu-latest`:
 
 **`check`** (Node 22). The job sets `WATCH_DATA: fixture`, so `/watch` is built from the invented fixture data with no network and no API key. Steps run sequentially so a failure in an earlier step short-circuits the rest:
 
@@ -38,6 +38,13 @@ The checkout, setup-node and upload-artifact steps in `e2e` are pinned by commit
 1. Installs `uv` the same way as `lint-content` and runs `uv sync --locked`.
 2. Runs `uv run python -m pytest -m 'not acceptance'` from `pipeline/`, so pytest reads that directory's `pyproject.toml`. Acceptance tests call live APIs and need keys, so CI leaves them out.
 
+**`worker-tests`** (Node 22, 10-minute limit). Runs the petition Worker's checks from `workers/api/`, which has its own `package.json` and lockfile:
+
+1. `npm ci` (setup-node caches against `workers/api/package-lock.json`), then `npm run check:types` (`tsc --noEmit`).
+2. `npm test` -- the Vitest suite, run inside workerd by `@cloudflare/vitest-pool-workers`. `vitest.config.ts` reads `./migrations` relative to the working directory, so the job sets `working-directory: workers/api`. It needs no secrets: the config passes stand-in keys as bindings, and the tests replace `fetch`, so Turnstile and Resend are never called.
+
+The checkout and setup-node steps use the same SHA pins as `e2e`. The job only tests the Worker; deploying it stays manual (`inv worker-deploy`).
+
 If any job fails, the PR check fails.
 
 ## Deploy Workflow (`.github/workflows/deploy.yml`)
@@ -46,7 +53,7 @@ If any job fails, the PR check fails.
 
 Three-job pipeline:
 
-1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content` and `pipeline-tests` jobs gate every deploy.
+1. **verify** -- Reuses the CI workflow (`ci.yml`) via `workflow_call`, so the same `check`, `e2e`, `lint-content`, `pipeline-tests` and `worker-tests` jobs gate every deploy.
 2. **build** -- Depends on `verify`. Checks out the repo, runs the release tag check (below), installs deps, runs `npm run build` with the YouTube key, runs `npm run check:watch` in deploy context, runs `npm run check:flyers`, removes `dist/admin`, and uploads `dist/` as a Pages artifact.
 3. **deploy** -- Depends on `build`. Deploys the artifact to GitHub Pages using `actions/deploy-pages@v5`.
 
@@ -54,7 +61,7 @@ Three-job pipeline:
 
 `/watch` shows playlist and video data fetched from the YouTube Data API at build time. The YouTube API Services Developer Policies allow that data to be stored for at most 30 days, and nothing from the API is committed, so the page is rebuilt every week.
 
-A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e`, `lint-content` or `pipeline-tests`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
+A scheduled run uses the same jobs as a push deploy, with no job conditions and no checkout options: it checks out the latest commit on `main`, which the push deploy for that commit has already shipped, so the only change it publishes is fresher YouTube data. Because it goes through `verify`, a red `main` (`check`, `e2e`, `lint-content`, `pipeline-tests` or `worker-tests`) also blocks the weekly refresh, and the last good deploy stays live. Playwright retries a failed test once in CI, so one flaky test does not block it.
 
 GitHub turns off scheduled workflows in a public repository after 60 days with no repository activity. The weekly refresh then stops and the `/watch` data grows older than the 30 days allowed; if that happens, re-enable the "Deploy to GitHub Pages" workflow in the repository's Actions tab.
 

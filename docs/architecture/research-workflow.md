@@ -81,7 +81,7 @@ Operator-visible fields on `VerifyConfig` (`pipeline/loop/spec.py`) controlling 
 
 ## Quality Gates
 
-Every push to `main` (the deploy workflow calls it before publishing) and every PR to `main` run a CI workflow (`.github/workflows/ci.yml`) whose four jobs (`check`, `e2e`, `lint-content`, `pipeline-tests`) include these five checks (the `e2e` job also runs the browser tests, `npm run test:e2e`):
+Every push to `main` (the deploy workflow calls it before publishing) and every PR to `main` run a CI workflow (`.github/workflows/ci.yml`) whose five jobs (`check`, `e2e`, `lint-content`, `pipeline-tests`, `worker-tests`) include these five checks (the `e2e` job also runs the browser tests, `npm run test:e2e`):
 
 1. **Astro build** (`npm run build`) -- Validates all content against Zod schemas. A claim with a missing required field, invalid verdict value, or malformed date will fail the build.
 2. **Markdown lint** (`npm run lint:md`) -- Runs `markdownlint-cli2` against `research/**/*.md`.

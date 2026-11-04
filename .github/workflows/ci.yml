@@ -134,3 +134,27 @@ jobs:
       - name: Run pipeline unit tests
         run: uv run python -m pytest -m 'not acceptance'
         working-directory: pipeline
+
+  # The petition Worker has its own package.json and lockfile. Its Vitest
+  # suite runs inside workerd with stand-in keys from vitest.config.ts and a
+  # replaced fetch, so it needs no secrets.
+  worker-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        # vitest.config.ts reads ./migrations relative to the working directory.
+        working-directory: workers/api
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          # wrangler requires Node 22 or later.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: workers/api/package-lock.json
+      - run: npm ci
+      - run: npm run check:types
+      - run: npm test

@@ -57,4 +57,4 @@ Honeypot field, a 3-second minimum fill time (the page script sends how long the
 
 ## Tests
 
-`workers/api/test/petitions.test.ts` runs inside the Workers runtime through `@cloudflare/vitest-pool-workers`, against a fresh local D1 per test. Run with `npm test` in `workers/api/`. These tests are not in CI yet.
+`workers/api/test/petitions.test.ts` runs inside the Workers runtime through `@cloudflare/vitest-pool-workers`, against a fresh local D1 per test. Run with `npm test` in `workers/api/`. CI runs them in the `worker-tests` job, which gates every site deploy (see [CI & Deploy](ci-deploy.md)).
