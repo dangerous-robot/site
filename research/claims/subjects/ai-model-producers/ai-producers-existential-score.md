@@ -1,6 +1,6 @@
 ---
-title: Most major AI Model Producers score D or worse on existential safety in the latest
-  FLI AI Safety Index
+title: None of the major AI Model Producers score above D+ on existential safety in
+  the latest FLI AI Safety Index
 entity: subjects/ai-model-producers
 topics:
 - ai-safety
@@ -9,7 +9,7 @@ verdict: 'true'
 confidence: high
 verification_level: independently-verified
 takeaway: ''
-seo_title: AI Models score D on existential threats
+seo_title: No AI maker scores above D+ on safety
 criteria_slug: ai-producers-existential-score
 status: published
 as_of: '2026-05-10'

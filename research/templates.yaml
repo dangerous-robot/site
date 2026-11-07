@@ -101,7 +101,7 @@ templates:
     core: true
 
   - slug: ai-producers-existential-score
-    text: "Most major ENTITY score D or worse on existential safety in the latest FLI AI Safety Index"
+    text: "None of the major ENTITY score above D+ on existential safety in the latest FLI AI Safety Index"
     entity_type: subject
     subjects: [subjects/ai-model-producers]
     topics: [ai-safety, industry-analysis]
