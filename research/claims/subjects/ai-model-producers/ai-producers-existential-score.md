@@ -1,6 +1,6 @@
 ---
-title: Most major AI Model Producers score D or worse on FLI's 2025 AI Safety Index
-  for Existential Threat
+title: Most major AI Model Producers score D or worse on existential safety in the latest
+  FLI AI Safety Index
 entity: subjects/ai-model-producers
 topics:
 - ai-safety
