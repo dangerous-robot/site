@@ -80,6 +80,20 @@ Key settings:
 - **Permissions:** `contents: read`, `pages: write`, `id-token: write` (OIDC for Pages).
 - **Custom domain:** A `CNAME` file in `public/` maps to `dangerousrobot.org`.
 
+## Scheduled Recheck Workflow (`.github/workflows/recheck.yml`)
+
+**Trigger:** the weekly schedule (`cron: '17 7 * * 1'`, Mondays 07:17 UTC, an hour after the deploy schedule) or manual dispatch. It deploys nothing.
+
+One job, `recheck`, with `timeout-minutes: 120` (a starting value, not a measurement: each due claim runs the full loop with archive.org captures). It checks out `main` with full history (`fetch-depth: 0`, so the script can tell whether the last batch's branch is merged), installs the pipeline with `uv sync --locked`, and runs `scripts/scheduled-recheck.sh`, which runs `dr recheck --due` and `dr findings` and pushes every change under `research/` to the `actions/recheck` branch. The operator procedure, the skip rule and the secrets are in `docs/runbook.md` § Scheduled rechecks.
+
+Key settings:
+
+- **Permissions:** `contents: read` at the top level; the job holds `contents: write`, which the script uses only for the push to `actions/recheck`. The checkout keeps no credentials (`persist-credentials: false`); the script sends `GITHUB_TOKEN` on its own fetch and push calls, as `actions/checkout` does.
+- **Concurrency group:** `recheck` with `cancel-in-progress: false`, so a long paid run and the next scheduled run never overlap.
+- **Secrets:** `GREENPT_API_KEY` and `TAVILY_API_KEY`, passed to the recheck step only.
+- **No downstream runs:** a push made with `GITHUB_TOKEN` triggers no workflow, so `actions/recheck` gets no CI; `ci.yml` runs when the batch reaches `main`.
+- **Inactivity rule:** the same 60-day rule as the weekly deploy applies; see that section.
+
 ## Quality Checks (`npm run check`)
 
 The `check` script chains eight stages in order:

@@ -86,12 +86,22 @@ If you change the verdict with `e` before approving, approval records the change
 
 ## Scheduled rechecks
 
-No job runs `dr recheck` yet; the job is a backlog row in `docs/UNSCHEDULED.md`. A job that does must do the following.
+The `Scheduled recheck` workflow (`.github/workflows/recheck.yml`) runs `scripts/scheduled-recheck.sh` on Mondays at 07:17 UTC, an hour after the weekly deploy, and on a manual dispatch from the Actions tab. Every run with a claim due is a paid run. The job:
 
-1. Run `uv run dr recheck --due` in `pipeline/`, then `uv run dr findings`. The command exits 0 unless it failed to start, so read the summary lines and the findings, not the exit code, to see which claims were abandoned.
-2. Provide the provider keys for the models in use as GitHub Actions repository secrets, named as the environment variables the pipeline reads (the model-to-variable mapping is `_required_env_for_model` in `pipeline/orchestrator/cli.py`; `_check_provider_api_keys` fails the run before any model call when one is missing). When `search_backend` is `brave`, also provide the Brave key (`_check_search_key`); the default `tavily` backend needs `TAVILY_API_KEY`, and Brave is its fallback. Today only `YOUTUBE_API_KEY` exists as a repository secret (`docs/architecture/ci-deploy.md`).
-3. Commit the pending drafts (`research/pending/`), the new sources and the findings to an Actions branch, never to main. Fetch that branch locally and review it with `dr review`; nothing is promoted without a person at a terminal.
-4. Do not run `dr review` or any sign-off in the job.
+1. Skips, green, while the `actions/recheck` branch has commits not in `main`: the last batch is still unreviewed.
+2. Runs `uv run dr recheck --due`, then `uv run dr findings`, in `pipeline/`. The command exits 0 unless it failed to start, so read the summary lines and the findings (both are copied into the run's step summary), not the exit code, to see which claims were abandoned.
+3. Commits every change under `research/` (pending drafts, new sources, findings) as `github-actions[bot]` and pushes it to `actions/recheck`, never to `main`. A run with nothing due pushes nothing.
+4. Never runs `dr review` or any sign-off.
+
+Secrets: `GREENPT_API_KEY` and `TAVILY_API_KEY` as GitHub Actions repository secrets, read by the recheck step only. The names are the environment variables the pipeline reads (`_required_env_for_model` in `pipeline/orchestrator/cli.py` maps each configured model to its variable; `_check_provider_api_keys` fails the run before any model call when one is missing). A model from another provider needs that provider's variable added to the step and to the secrets; when `search_backend` is `brave`, add the Brave key (`_check_search_key`). A run with nothing due never reads the keys.
+
+Reviewing a batch:
+
+1. `git fetch origin actions/recheck` and check the branch out in a worktree under `site-worktrees/` (use the main checkout's `pipeline/.venv`).
+2. There, `uv run dr review` from `pipeline/`; approve or leave each pending draft as usual, and close the run's findings (§ Triaging findings).
+3. Commit the sign-offs on the branch and merge it into `main`; it ships with the next tagged release (§ Releasing). Once the branch is merged the next scheduled run proceeds; deleting the branch is optional.
+
+A push made with the workflow's own token starts no other workflow, so the branch gets no CI run; its content is checked when it merges to `main`. GitHub turns off scheduled workflows in a public repository after 60 days without repository activity; if a Monday run goes missing, re-enable "Scheduled recheck" in the Actions tab. To exercise the job without a paid run, set `DR` to a stub command (the variables are listed at the top of the script) and `RECHECK_PUSH=0`, in a throwaway clone.
 
 ## Adding a product or subject
 
