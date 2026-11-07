@@ -386,6 +386,13 @@ Found by the design, cross-review, implementation and review passes of the beta.
 
 ---
 
+## Recheck findings (2026-11-07)
+
+| Item | Detail |
+|---|---|
+| The researcher cites dangerousrobot.org's own claim pages as sources | Run `67b7e7a9` (`dr recheck --claim subjects/ai-model-producers/ai-producers-existential-score`, 2026-11-07) ingested `https://dangerousrobot.org/research/claims/subjects/ai-model-producers/ai-producers-existential-score/`, the live page of the claim being rechecked, as source `2026/ai-producers-existential-score` with `independence: independent`, and the analyst cited it ("A 2026 Dangerous Robot report similarly states..."). Nothing in `pipeline/researcher/` or `pipeline/loop/` excludes the site's own domain (`grep dangerousrobot pipeline/` finds no rule). Fix: drop `dangerousrobot.org` and `treadlightly.ai` results in the researcher before ingest, and a `dr lint` check that no source `url` is on either domain. Triage: Responsible AI chatbots; propose schedule; 2026-11-07 |
+| A big PDF fails ingest with "Exceeded maximum output retries" | Same run: `https://futureoflife.org/wp-content/uploads/2025/12/AI-Safety-Index-Report_131225_Full_Report_Digital.pdf` failed twice in the ingestor model step, so the sub-question about the index's existential-safety criteria had no source and the verdict went to the tie-breaker. The Summer 2026 FLI page itself ingested but both of its key quotes were dropped as not found on the page. Check what the ingestor sends for a long PDF (truncation or chunking) before the next recheck of an index-backed claim. Triage: Responsible AI chatbots; keep; 2026-11-07 |
+
 ## Pipeline rebuild close findings (2026-10-15)
 
 Found by the Phase 4 close reviews of the pipeline rebuild (`docs/plans/completed/pipeline-rebuild.md`; RE-AR (One loop, one writer) to RE-AZ (Findings replay) and RE-BA (Source pool rules)) and left unfixed in the close fixes (`8f427c4`).
