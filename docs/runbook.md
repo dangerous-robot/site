@@ -58,9 +58,10 @@ Readers report errors through the GitHub issue form `.github/ISSUE_TEMPLATE/corr
 ```bash
 gh label create correction -R dangerous-robot/site --description "Reader-reported error on a page or claim"
 gh label create source-submission -R dangerous-robot/site --description "Reader-submitted source"
+gh label create claim-request -R dangerous-robot/site --description "Reader-requested claim"
 ```
 
-Legal and safety matters go to `contact@dangerousrobot.org`, a domain alias the operator creates and points at an inbox. It is the only non-public contact path and is shown on `/about#contact`.
+Legal and safety matters go to `contact@dangerousrobot.org`, a domain alias the operator creates and points at an inbox. The same address takes corrections, source submissions and claim requests from readers without a GitHub account (subject lines on `/corrections`, the research index and `CONTRIBUTING.md`); it is shown on `/about#contact`.
 
 **Interaction limits (operator setting, not code).** To keep the correction form and the issue tracker usable, limit who can open issues and comment on the repo. This is a GitHub setting, not part of the site build:
 
