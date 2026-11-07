@@ -1,0 +1,143 @@
+---
+// Static picture of how a claim moves from a question to a published verdict.
+// Hand-drawn SVG, no script. Every label is real text; <desc> is the text alternative.
+// Colors come from the theme tokens through the classes below, so the four themes
+// and Windows forced-colors mode need no extra rules in the markup.
+---
+<figure class="pipeline-diagram">
+  <svg
+    viewBox="0 0 320 612"
+    role="img"
+    aria-labelledby="pipeline-diagram-title"
+    aria-describedby="pipeline-diagram-desc"
+    class="pd"
+  >
+    <title id="pipeline-diagram-title">How a claim moves from a question to a published verdict</title>
+    <desc id="pipeline-diagram-desc">
+      A person names the claim and the product or subject it is about. A researcher agent searches the web, and arXiv for academic topics. An ingestor agent fetches and stores each source, from archive.org when the live page fails. The run stops, and nothing is written, when it finds fewer than 4 usable sources or a grading agent fails after retries. An analyst agent weighs the sources and drafts a verdict, confidence and summary. An evaluator agent grades the claim again from the same sources, without seeing the draft's verdict. Only when the two verdicts differ, a third blind verdict settles it. When the verdict is weak or tie-broken, a restater agent also proposes rewordings of the claim for the reviewer; it never changes the claim, and its failure leaves the claim written. A person reads the draft and its sources and approves it. A draft that is not approved stays a draft for rework or a rerun. The published verdict appears on the site with the reviewer's name.
+    </desc>
+    <defs>
+      <marker id="pd-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+        <path class="pd-arrow" d="M0 0 L8 4 L0 8 Z" />
+      </marker>
+    </defs>
+
+    <!-- spine lines, top to bottom; each ends in an arrowhead at the next node -->
+    <line class="pd-line" x1="28" y1="52" x2="28" y2="70" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="120" x2="28" y2="138" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="188" x2="28" y2="270" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="320" x2="28" y2="338" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="388" x2="28" y2="458" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="508" x2="28" y2="566" marker-end="url(#pd-arrow)" />
+    <!-- elbows to the side steps -->
+    <line class="pd-line" x1="28" y1="230" x2="54" y2="230" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="424" x2="54" y2="424" marker-end="url(#pd-arrow)" />
+    <line class="pd-line" x1="28" y1="538" x2="54" y2="538" marker-end="url(#pd-arrow)" />
+
+    <!-- N1 Question -->
+    <rect class="pd-box pd-human" x="8" y="4" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="21">Question</text>
+    <text class="pd-text pd-tag" x="302" y="21" text-anchor="end">Person</text>
+    <text class="pd-text" x="18" y="35">A person names the claim and the product</text>
+    <text class="pd-text" x="18" y="47">or subject it is about</text>
+
+    <!-- N2 Researcher -->
+    <rect class="pd-box" x="8" y="72" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="89">Researcher</text>
+    <text class="pd-text" x="18" y="103">Searches the web, and arXiv for academic</text>
+    <text class="pd-text" x="18" y="115">topics</text>
+
+    <!-- N3 Ingestor -->
+    <rect class="pd-box" x="8" y="140" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="157">Ingestor</text>
+    <text class="pd-text" x="18" y="171">Fetches and stores each source, from</text>
+    <text class="pd-text" x="18" y="183">archive.org when the live page fails</text>
+
+    <!-- N3a Stopped (side) -->
+    <rect class="pd-box pd-side" x="56" y="200" width="256" height="60" rx="4" />
+    <text class="pd-muted pd-role" x="66" y="217">Stopped</text>
+    <text class="pd-muted" x="66" y="231">Fewer than 4 usable sources, or an</text>
+    <text class="pd-muted" x="66" y="243">agent failed after retries;</text>
+    <text class="pd-muted" x="66" y="255">nothing is written</text>
+
+    <!-- N4 Analyst -->
+    <rect class="pd-box" x="8" y="272" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="289">Analyst</text>
+    <text class="pd-text" x="18" y="303">Weighs the sources and drafts a verdict,</text>
+    <text class="pd-text" x="18" y="315">confidence and summary</text>
+
+    <!-- N5 Evaluator -->
+    <rect class="pd-box" x="8" y="340" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="357">Evaluator</text>
+    <text class="pd-text" x="18" y="371">Grades the claim again from the same</text>
+    <text class="pd-text" x="18" y="383">sources, without the draft's verdict</text>
+
+    <!-- N5a Tie-breaker (side) -->
+    <rect class="pd-box pd-side-auto" x="56" y="400" width="256" height="48" rx="4" />
+    <text class="pd-text pd-role" x="66" y="417">Tie-breaker</text>
+    <text class="pd-text" x="66" y="431">Only when the two verdicts differ;</text>
+    <text class="pd-text" x="66" y="443">a third blind verdict settles it</text>
+
+    <!-- N6 Human review -->
+    <rect class="pd-box pd-human" x="8" y="460" width="304" height="48" rx="4" />
+    <text class="pd-text pd-role" x="18" y="477">Human review</text>
+    <text class="pd-text pd-tag" x="302" y="477" text-anchor="end">Person</text>
+    <text class="pd-text" x="18" y="491">A person reads the draft and its sources</text>
+    <text class="pd-text" x="18" y="503">and approves it</text>
+
+    <!-- N6a Not approved (side) -->
+    <rect class="pd-box pd-side" x="56" y="520" width="256" height="36" rx="4" />
+    <text class="pd-muted pd-role" x="66" y="537">Not approved</text>
+    <text class="pd-muted" x="66" y="551">Stays a draft for rework or a rerun</text>
+
+    <!-- N7 Published verdict -->
+    <rect class="pd-box pd-terminal" x="8" y="568" width="304" height="36" rx="4" />
+    <text class="pd-text pd-role" x="18" y="585">Published verdict</text>
+    <text class="pd-text" x="18" y="599">On the site with the reviewer's name</text>
+  </svg>
+</figure>
+
+<style>
+.pipeline-diagram {
+  margin: var(--space-md) 0 var(--space-lg);
+  max-width: 28rem;
+}
+.pd {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-body);
+  font-size: 12px;
+}
+.pd-box {
+  fill: var(--color-surface);
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+.pd-human {
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+.pd-terminal {
+  stroke: var(--color-text-heading);
+  stroke-width: 2;
+}
+.pd-side {
+  stroke-dasharray: 4 3;
+}
+.pd-text { fill: var(--color-text); }
+.pd-muted { fill: var(--color-text-muted); }
+.pd-role { font-weight: 700; }
+.pd-tag { fill: var(--color-accent); }
+.pd-line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.pd-arrow { fill: var(--color-text-muted); }
+
+@media (forced-colors: active) {
+  .pd-box { fill: Canvas; stroke: CanvasText; }
+  .pd-text, .pd-muted, .pd-tag, .pd-arrow { fill: CanvasText; }
+  .pd-line { stroke: CanvasText; }
+}
+</style>

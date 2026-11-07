@@ -2,6 +2,7 @@
 import Base from '../../layouts/Base.astro';
 import { operator, profileHref } from '../../lib/reviewers';
 import { jsonForScript } from '../../lib/jsonForScript';
+import PipelineDiagram from '../../components/PipelineDiagram.astro';
 
 const op = operator();
 
@@ -211,6 +212,7 @@ const faqSchema = {
               built into the site.
             </li>
           </ol>
+          <PipelineDiagram />
 
           <h3>Verdicts</h3>
           <ul>
