@@ -12,6 +12,7 @@ from analyst.citations import NO_CITATION_FIELDS, find_citation_references
 from common.models import INDEPENDENT_SOURCES_REQUIRED, SELF_REPORTED_BASIS_KINDS, ClaimStatus, Confidence, Independence, VerificationLevel
 from common.sidecar import pipeline_verdict_of
 from common.source_classification import effective_independence
+from common.utils import host_matches, url_host
 from orchestrator.persistence import CLAIM_FRONTMATTER_KEYS, ENTITY_FRONTMATTER_KEYS
 
 from .models import LintIssue
@@ -33,6 +34,12 @@ ENTITY_DIR_TO_TYPE = {
     "products": "product",
     "subjects": "subject",
 }
+# The site's own host. The researcher drops it before ingest
+# (research/blocklist.yaml); this check catches a stored source that got
+# past it, since a claim page quoting itself is not evidence. The parent's
+# treadlightly.ai is not here: it is the first-party source for claims
+# about TreadLightly AI.
+OWN_SITE_HOSTS = ("dangerousrobot.org",)
 
 
 def check_orphaned_claims(
@@ -670,6 +677,25 @@ def check_unreferenced_sources(
                 severity="warning",
                 message=f'source "{src_id}" is not cited by any claim or page',
                 hint="remove the file or add it to a claim's sources: list",
+            ))
+    return issues
+
+
+def check_own_site_source(
+    source_id_to_path: dict[str, Path],
+    source_fms_by_id: dict[str, dict[str, Any]],
+) -> list[LintIssue]:
+    """Error for a source whose ``url`` is on the site's own hosts."""
+    issues = []
+    for src_id, src_path in sorted(source_id_to_path.items()):
+        host = url_host(source_fms_by_id.get(src_id, {}).get("url"))
+        if host and any(host_matches(host, own) for own in OWN_SITE_HOSTS):
+            issues.append(LintIssue(
+                path=str(src_path),
+                check_id="own-site-source",
+                severity="error",
+                message=f'source "{src_id}" is a page on {host}, the site itself',
+                hint="remove the file and the claim's sources: entry; the site's own pages are not independent sources",
             ))
     return issues
 

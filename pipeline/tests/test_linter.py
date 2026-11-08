@@ -22,6 +22,7 @@ from linter.checks import (
     check_missing_required_fields,
     check_missing_seo_title,
     check_orphaned_claims,
+    check_own_site_source,
     check_placeholder_website,
     check_published_criterion,
     check_published_review_signoff,
@@ -383,6 +384,43 @@ class TestUnreferencedSources:
         src = _p("research/sources/2025/foo.md")
         issues = check_unreferenced_sources([claim], fms, {"2025/foo": src})
         assert len(issues) == 1
+
+
+class TestOwnSiteSource:
+    """A stored source on the site's own hosts is an error (the 2026-11-07 recheck
+    ingested the live page of the claim it was rechecking)."""
+
+    SRC = _p("research/sources/2026/self.md")
+
+    def _issues(self, url: str | None) -> list[LintIssue]:
+        fm = {"url": url} if url is not None else {}
+        return check_own_site_source({"2026/self": self.SRC}, {"2026/self": fm})
+
+    @pytest.mark.parametrize("url", [
+        "https://dangerousrobot.org/research/claims/subjects/x/y/",
+        "https://www.dangerousrobot.org/about/",
+        "http://beta.dangerousrobot.org/post",
+    ])
+    def test_own_host_is_an_error(self, url: str) -> None:
+        issues = self._issues(url)
+        assert len(issues) == 1
+        assert issues[0].check_id == "own-site-source"
+        assert issues[0].severity == "error"
+        assert "2026/self" in issues[0].message
+
+    @pytest.mark.parametrize("url", [
+        "https://futureoflife.org/ai-safety-index-summer-2026/",
+        "https://notdangerousrobot.org/page",
+        "https://example.com/dangerousrobot.org",
+        # The parent's site is the first-party source for claims about it.
+        "https://treadlightly.ai/pricing/",
+        "",
+    ])
+    def test_other_hosts_pass(self, url: str) -> None:
+        assert self._issues(url) == []
+
+    def test_source_without_url_passes(self) -> None:
+        assert self._issues(None) == []
 
 
 class TestUnreferencedSourcesCitedByPages:

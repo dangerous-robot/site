@@ -25,6 +25,7 @@ from .checks import (
     check_missing_required_fields,
     check_missing_seo_title,
     check_orphaned_claims,
+    check_own_site_source,
     check_placeholder_website,
     check_published_criterion,
     check_published_review_signoff,
@@ -164,6 +165,7 @@ def run_all_checks(
     )
     issues += check_verification_level_pool(claim_files, claim_fms, source_fms_by_id)
     issues += check_unreferenced_sources(claim_files, claim_fms, source_id_to_path, repo_root)
+    issues += check_own_site_source(source_id_to_path, source_fms_by_id)
     issues += check_unreferenced_entities(claim_files, claim_fms, entity_id_to_path)
 
     return issues, files_checked

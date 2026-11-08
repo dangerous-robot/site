@@ -25,6 +25,7 @@ from ingestor.tools.web_fetch import (
     TERMINAL_STATUS_CODES,
     TerminalFetchError,
     extract_page_data,
+    truncate_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -199,6 +200,7 @@ async def web_fetch(ctx: RunContext[IngestorDeps], url: str) -> dict:
     prefetched = deps.prefetched_bodies.get(url)
     if prefetched:
         logger.info("Prefetch hit (Tavily raw_content): %s", url)
+        prefetched = truncate_text(prefetched)
         record_text(prefetched)
         return {
             "title": "",

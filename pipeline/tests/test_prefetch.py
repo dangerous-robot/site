@@ -57,6 +57,22 @@ class TestWebFetchShortCircuit:
         assert "error" not in result
 
     @pytest.mark.asyncio
+    async def test_long_prefetched_body_is_capped_like_a_fetched_page(self) -> None:
+        """A prefetched body gets the same 50,000-character cap as fetched HTML,
+        in the tool result and in the text the quote check reads. Without it a
+        long arXiv page or report overflows the ingestor model's context."""
+        url = "https://arxiv.org/html/2512.01166v3"
+        body = "word " * 60_000
+
+        async with httpx.AsyncClient() as client:
+            ctx = _make_ctx(client, {url: body})
+            result = await web_fetch(ctx, url)
+
+        assert len(result["text"]) <= 50_100
+        assert result["text"].endswith("[truncated]")
+        assert ctx.deps.fetched_text[url] == result["text"]
+
+    @pytest.mark.asyncio
     async def test_empty_body_falls_through_to_live_fetch(self) -> None:
         """An empty/missing prefetched body must not short-circuit; the
         normal httpx path runs."""
