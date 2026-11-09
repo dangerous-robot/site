@@ -41,7 +41,7 @@ templates:
     topics: [data-privacy]
     core: true
     notes: "Covers default behavior; opt-out options noted in narrative"
-    grading_rule: "Covers default behavior; opt-out options noted in narrative"  # TODO Brandon: rewrite as a grading rule
+    grading_rule: "Grade the default for a consumer account: true when conversations are not used for training unless the user opts in; false when they are used unless the user opts out; mixed when the default differs by account type or region. Describe the opt-out or opt-in control in the narrative; it does not change the verdict."
 
   - slug: discloses-models-used
     text: "PRODUCT discloses which models it uses"
