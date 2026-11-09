@@ -1,0 +1,690 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T22:47:54.246372+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 1b93604262a54a9790701159ca26a10a
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://www.law360.com/pulse/ai-tracker
+    title: Pulse
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/change.org/posts/fake-ai-generated-case-law-reached-real-criminal-filings-in-california-sign-to-d/1520060356816265
+    title: Fake AI-generated case law reached real criminal filings ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.msba.org/site/site/content/News-and-Publications/News/General-News/Massachusetts_Lawyer-Sanctioned_for_AI_Generated-Fictitious_Cases.aspx
+    title: Massachusetts Lawyer Sanctioned for AI-Generated Fictitious Case Citations  |
+      Maryland State Bar Association
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reuters.com/technology/artificial-intelligence/ai-hallucinations-court-papers-spell-trouble-lawyers-2025-02-18
+    title: AI 'hallucinations' in court papers spell trouble for lawyers
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/law/comments/13sre67/fake_aigenerated_citations_in_federal_court
+    title: 'Fake AI-Generated Citations in Federal Court : r/law'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.dentons.com/en/insights/alerts/2026/march/3/landmark-ai-rulings-impacting-all
+    title: Dentons - Landmark AI Rulings Impacting All
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.lawxyai.com/articles/lawyers-ai-fake-citations-what-to-know
+    title: 'Lawyers, AI & Fake Citations: What to Know'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.link.springer.com/article/10.1186/s40537-024-01046-w
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.nexlaw.ai/blog/best-ai-tools-verify-legal-citations-2026
+    title: Best AI Tools to Verify Legal Citations (2026) | NexLaw
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://lawlibguides.luc.edu/GenerativeAI/LegalPractice
+    title: Generative AI and Legal Practice - Generative AI in the Legal Field - LibGuides
+      at Loyola University Chicago Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.leanlaw.co/blog/the-hallucination-problem-a-checklist-for-verifying-ai-generated-legal-citations
+    title: 'AI Citation Verification: A Law Firm Checklist | LeanLaw'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.aallnet.org/lispsis/resources-publications/ai-best-practices
+    title: Best Practices for Using AI in Legal Research - Legal Information Services
+      to the Public SIS
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/Engadget/posts/ai-companies-have-quickly-readied-tools-to-assist-in-the-research-legal-cases-af/1633449188449770
+    title: AI companies have quickly readied tools to assist in the ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://hai.stanford.edu/news/ai-trial-legal-models-hallucinate-1-out-6-or-more-benchmarking-queries
+    title: 'AI on Trial: Legal Models Hallucinate in 1 out of 6 (or More) Benchmarking
+      Queries | Stanford HAI'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.foxnews.com/politics/apparent-ai-mistakes-force-two-judges-retract-separate-rulings
+    title: Federal judges withdraw rulings after lawyers submit apparent AI-generated
+      errors | Fox News
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.akerman.com/en/perspectives/the-challenges-of-integrating-ai-generated-evidence-into-the-legal-system.html
+    title: The Challenges of Integrating AI-Generated Evidence Into the Legal System
+      - Akerman LLP
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.revealdata.com/blog/understanding-the-risks-of-ai-generated-evidence-in-litigation
+    title: Understanding the Risks of AI-Generated Evidence in Litigation
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessattorneychicago.com/when-ai-generated-evidence-enters-the-courtroom-a-new-legal-risk-for-businesses-and-litigators
+    title: 'When AI-Generated Evidence Enters the Courtroom: A New Legal Risk for
+      Businesses and Litigators — Chicago Business Attorney Blog — March 1, 2026'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.attorneyjournals.com/how-to-identify-ai-generated-evidence-and-hold-counsel-accountable
+    title: How to Identify AI-Generated Evidence and Hold Counsel Accountable
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.purduegloballawschool.edu/blog/news/ai-legal-practice-risks
+    title: 'AI in Legal Practice: Risks, Ethics & Client Impact | Purdue Global Law
+      School'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://lawreview.law.lsu.edu/archives/3457
+    title: Can You Believe Your Eyes? Fake Evidence, Fake Cases, and AI’s Challenge
+      to Judicial Truth | Louisiana Law Review
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/matt-caplan-litigation_as-a-litigator-how-courts-handle-ai-generated-activity-7369462144301498370-afBx
+    title: As a litigator, how courts handle AI-generated evidence is more interesting
+      to me than how AI will impact our practice (eventually there will be reliable
+      tools we can all use to manage document… | Matt Caplan
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://hls.harvard.edu/today/does-ai-threaten-to-destabilize-the-criminal-trial
+    title: Does AI ‘threaten to destabilize’ the criminal trial? - Harvard Law School
+      | Harvard Law School
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.wshblaw.com/experience-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+    title: First Published Opinion on AI-Fabricated Citations in Legal Briefs
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/upsoclpositive/posts/a-lawyer-once-filed-a-brief-in-a-federal-court-in-new-york-citing-seven-cases-no/1139429705376482
+    title: A lawyer once filed a brief in a federal court in New York ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.nexlaw.ai/blog/using-ai-to-check-ai-citations-not-verification
+    title: Using AI to Check AI Citations Is Not Verification | NexLaw | NexLaw
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://holonlaw.com/ai/ai-legal-ethics-federal-courts
+    title: 'AI Legal Ethics: The Federal Courts’ Emerging Rulebook | Holon Law'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.sixthcircuitappellateblog.com/recent-cases/sixth-circuit-sanctions-attorneys-for-fake-citations-what-does-this-mean-for-use-of-ai
+    title: Sixth Circuit Sanctions Attorneys for Fake Citations – What Does This Mean
+      for Use of AI? | Sixth Circuit Appellate Blog
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ropesgray.com/en/sites/artificial-intelligence-court-order-tracker
+    title: Standing Orders, Local Rules, and Decisions on the Use of AI
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=jHSqtxGZ_UQ
+    title: 2 Ohio attorneys facing sanctions for legal briefs containing AI-generated
+      falsehoods
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.enjuris.com/blog/news/ai-evidence-personal-injury-law
+    title: 'AI-Generated Evidence in Court: Legal & Ethical Issues'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/legal-soft-launches-initiative-free-180900760.html
+    title: Legal Soft Launches Initiative to Provide Free Virtual Assistants to Bar
+      Associations Nationwide
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/response-bar-associations-not-cause-090325248.html
+    title: 'Response: Bar Associations Are Not the Cause of Lawyers'' Economic Challenges'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ca.investing.com/news/stock-market-news/law-firm-probes-spirit-aerosystems-and-mobileye-for-legal-violations-93CH-3229648
+    title: Law firm probes Spirit AeroSystems and Mobileye for legal violations
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.aiforlawyersacademy.com/blog/state-bar-ai-rules
+    title: 'State Bar AI Rules for Lawyers 2026: State-by-State Guide (CA, NY, FL,
+      TX, CO) | AI for Lawyers Academy'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://notionforlawyers.com/blog/state-bar-ai-ethics-opinions-tracker
+    title: State Bar AI Ethics Opinions List and Tracker (2026)
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.americanbar.org/groups/law_practice/resources/law-technology-today/2025/ai-legal-issues-and-concerns-for-legal-practitioners
+    title: Top Six AI Legal Issues and Concerns For Legal Practitioners
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - courts AI generated citations legal filings documented cases
+  - lawyers fined AI citations legal filings
+  - legal journals AI-generated citations tracking reports
+  - retracted AI citations in court filings disputed cases
+  - bar associations AI legal filings policy violations 2023 2024
+  - AI-generated evidence legal ethics disputes
+  - AI citations in briefs court rulings or corrections
+  planner_rationale: The sub-questions cover the scope, validation, and third-party
+    documentation of the claim, while explicitly addressing potential counter-evidence
+    to test its validity.
+  candidates_seen: 60
+  urls_kept: 13
+  urls_dropped: 37
+  scorer_rationale: "The selected candidates were scored based on their relevance\
+    \ to each sub-question, with a focus on authoritative evidence and third-party\
+    \ tracking of AI-generated citations in legal filings. \n**Sub-question 1 (sq1):**\
+    \ Candidates like those reporting specific case counts (e.g., **Business Attorney\
+    \ Chicago, NexLaw, and the Damien Charlotin database**) provide direct figures\
+    \ for documented incidents of AI-generated citations in legal filings, which aligns\
+    \ with the need to assess the current state of known cases. For instance, **https://www.businessattorneychicago.com/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business**\
+    \ documents 1,598 court proceedings as of June 2026, a key data point for sq1.\n\
+    \n**Sub-question 2 (sq2):** Multiple sources confirm disciplinary actions, including\
+    \ fines and sanctions imposed on lawyers. For example, **The Daily Record** and\
+    \ **Reuters** detail specific instances, such as a $10,000 fine in California\
+    \ and a $12,000 fine in a Kansas case, while **Business Attorney Chicago** aggregates\
+    \ these incidents to provide broader context, reinforcing that these cases meet\
+    \ the need to validate claims about disciplinary enforcement.\n\n**Sub-question\
+    \ 3 (sq3):** While no candidates explicitly list 'legal journals, bar associations,\
+    \ or AI ethics organizations' as primary sources, references to trackers like\
+    \ **Damien Charlotin’s database** in multiple candidates indicate third-party\
+    \ verification methods. This implies that such authoritative bodies exist and\
+    \ collaborate in monitoring these incidents, indirectly addressing the sub-question.\n\
+    \n**Sub-question 4 (sq4):** Contradictory or disputed cases involving AI-generated\
+    \ citations are referenced in candidates such as **Legal IO** and **Barnes & Thornburg**,\
+    \ which discuss cases being retracted or corrected, and the **Charlotin database**\
+    \ explicitly tracks flawed citations. These serve as examples of unreliable AI-generated\
+    \ content, directly supporting the need for retractions or corrections.\n\n**Overall**,\
+    \ the rationale revolves around using candidates with primary sources of documented\
+    \ figures, fines, third-party verification methods, and retractions to align each\
+    \ sub-question’s requirements."
+  urls_after_blocklist: 12
+sub_questions:
+- id: sq1
+  question: How many documented cases of AI-generated citations in legal filings have
+    been identified by courts or legal associations as of 2024?
+  rationale: Assesses the current state of known cases, which serves as the baseline
+    for the mid-2026 claim.
+  kind: coverage
+  queries:
+  - courts AI generated citations legal filings documented cases
+  - AI citations in briefs court rulings or corrections
+  citations:
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2026/hallucinations
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2026/ai-generated-evidence-threat-public-trust-courts
+  - 2026/ai-citation-errors-legal-research-2026
+  - 2026/why-lawyers-keep-citing-fake-cases-invented-by-ai
+  snippet_only:
+  - 2025/california-lawyer-ai-fake-citations-fine
+- id: sq2
+  question: Have any courts or legal bodies worldwide formally addressed or fined
+    lawyers for submitting AI-generated citations in filings?
+  rationale: Evaluates whether disciplinary actions or fines have already occurred,
+    which may validate or undermine the claim’s projection.
+  kind: coverage
+  queries:
+  - lawyers fined AI citations legal filings
+  citations:
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2025/california-lawyer-ai-fake-citations-fine
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2025/court-sanctions-attorneys-for-submitting-brief-with-ai-generated-false-citations
+  - 2025/fake-case-citations-land-two-attorneys-in-hot-water-over-ai-misuse
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2026/ai-generated-evidence-threat-public-trust-courts
+  - 2026/why-lawyers-keep-citing-fake-cases-invented-by-ai
+  snippet_only: []
+- id: sq3
+  question: What third-party sources, such as legal journals, bar associations, or
+    AI ethics organizations, track or report instances of AI-generated content in
+    legal filings?
+  rationale: Identifies authoritative databases or reports that monitor trends in
+    AI misuse in legal contexts.
+  kind: coverage
+  queries:
+  - legal journals AI-generated citations tracking reports
+  - bar associations AI legal filings policy violations 2023 2024
+  citations: []
+  snippet_only: []
+- id: sq4
+  question: Are there any known retractions, corrections, or disputed cases involving
+    AI-generated citations in legal filings?
+  rationale: Seeks instances where AI-generated citations were later found unreliable
+    or disputed, which could contradict the claim.
+  kind: counter-evidence
+  queries:
+  - retracted AI citations in court filings disputed cases
+  - AI-generated evidence legal ethics disputes
+  citations:
+  - 2026/hallucinations
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2025/fake-case-citations-land-two-attorneys-in-hot-water-over-ai-misuse
+  snippet_only:
+  - 2025/court-sanctions-attorneys-for-submitting-brief-with-ai-generated-false-citations
+sources_consulted:
+- id: 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  url: https://www.businessattorneychicago.com/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  title: 'AI Is Writing Legal Filings—Some Are Completely Made Up: Implications for
+    Businesses'
+  ingested: true
+  quotes:
+  - text: As of June 9, 2026, researchers have documented 1,598 court proceedings
+      worldwide in which AI-generated content... was submitted to a court.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: In June 2026, a federal judge in Mississippi... canceled the trial entirely
+      and suspended both lead attorneys from practicing in that district for two years.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: You cannot tell from the outside of a law firm which of these approaches
+      your attorney is using. But you can ask.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: The best use of AI in legal practice is as a tool that amplifies the attorney’s
+      capabilities, not as a replacement for the verification and judgment that professional
+      accountability requires.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI generated citations legal filings documented cases
+- id: 2025/california-lawyer-ai-fake-citations-fine
+  url: https://thedailyrecord.com/2025/10/13/california-lawyer-ai-fake-citations-fine
+  title: California Attorney Fined $10k for Filing Appeal with AI-Generated Fake Legal
+    Citations
+  ingested: true
+  quotes:
+  - text: No brief, pleading, motion, or any other paper filed in any court should
+      contain any citations... that the attorney responsible for submitting the pleading
+      has not personally read and verified.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: Large language models confidently state falsehoods as facts, particularly
+      when there are no supporting facts.
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: lawyers fined AI citations legal filings
+- id: 2026/hallucinations
+  url: https://www.damiencharlotin.com/hallucinations
+  title: AI Hallucination Cases
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: This database tracks legal decisions where the use of AI, whether established
+      or merely alleged, is addressed in more than a passing reference by the court
+      or tribunal.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Notably, this does not cover mere allegations of hallucinations, but only
+      cases where the court or tribunal has explicitly found (or implied) that a party
+      relied on hallucinated content.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: While seeking to be exhaustive, it is a work in progress and will expand
+      as new examples emerge.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: legal journals AI-generated citations tracking reports
+- id: 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  url: https://www.wshblaw.com/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  title: First Published Opinion on AI-Fabricated Citations in Legal Briefs
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: There is no room in our court system for the submission of fake, hallucinated
+      court citations, facts, or law.
+    found: true
+    checked_against: page
+    passage: 'invents facts or law, and lawyers repeat those inventions to a court,
+      the integrity of the judicial process is at risk. The opinion concluded with
+      a clear admonition, "There is no room in our court system for the submission
+      of fake, hallucinated court citations, facts, or law. And it is entirely preventable
+      by competent counsel who do their jobs properly and competently." #### Conclusion
+      The'
+  - text: the duty of candor— to clients, courts and the law, remains unchanged.
+    found: true
+    checked_against: page
+    passage: 'a powerful reminder. The justice system depends on the honesty of counsel.
+      As technology evolves, so must vigilance. The duty of candor- to clients, courts
+      and the law, remains unchanged. ## Author * [![Danielle L. Kuck](/assets/images-t1794009748/64916.webp)](/professionals-danielle-kuck)
+      [Danielle'
+  - text: '"attorneys have a non-delegable duty to personally read and verify every
+      authority they cite— a duty that cannot be outsourced to law clerks, interns,
+      or technology."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI generated citations legal filings documented cases
+- id: 2025/court-sanctions-attorneys-for-submitting-brief-with-ai-generated-false-citations
+  url: https://btlaw.com/en/insights/alerts/2025/court-sanctions-attorneys-for-submitting-brief-with-ai-generated-false-citations
+  title: Court Sanctions Attorneys for Submitting Brief with AI-Generated False Citations
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Federal Rule of Civil Procedure 11 requires attorneys to verify the accuracy
+      of court filings — including those prepared or supplemented with AI tools.
+    found: true
+    checked_against: page
+    passage: '--- ##### Highlights * Federal Rule of Civil Procedure 11 requires attorneys
+      to verify the accuracy of court filings - including those prepared or supplemented
+      with AI tools. * All outputs from AI used in legal research must be closely
+      scrutinized to ensure their accuracy. * Failure to verify'
+  - text: The attorneys argued that they had used an AI tool to supplement their legal
+      research but failed to verify its outputs.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The brief contained defective citations, including misquoted cases, misstated
+      holdings, and references to non-existent cases.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The court held that the repetition of errors demonstrates counsel’s practice
+      of utilizing AI without verification.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: The court imposed a $3,000 sanction against both attorneys for submitting
+      the brief with AI-generated errors.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AI citations in briefs court rulings or corrections
+- id: 2025/fake-case-citations-land-two-attorneys-in-hot-water-over-ai-misuse
+  url: https://www.legal.io/blog/5609086/Fake-Case-Citations-Land-Two-Attorneys-in-Hot-Water-Over-AI-Misuse
+  title: Fake Case Citations Land Two Attorneys in Hot Water Over AI Misuse
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Attorneys are referencing cases that don''t exist and typically what''s
+      happening is that these individuals are using AI platforms that really aren''t
+      meant for legal research."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Most people are treating AI as the last step in legal research and really
+      it should be step one or two of 10 steps.
+    found: true
+    checked_against: page
+    passage: if you're using LEXIS or Westlaw, there was a study last summer that
+      showed they get it wrong about 30% of the time." He added, "Most people are
+      treating AI as the last step in legal research and really it should be step
+      one or two of 10 steps." This is not the first time courts have encountered
+      AI-generated citations. A New York case in 2023 became the first
+  - text: '"The fake cases being submitted into court will continue until the sanctions
+      go beyond fines and include suspensions or other actions by State Bar associations."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retracted AI citations in court filings disputed cases
+- id: 2026/lawyer-fined-using-ai-legal-fake-citations
+  url: https://spellbook.com/learn/lawyer-fined-using-ai-legal-fake-citations
+  title: Lawyer Fined for Using AI-Generated Legal Documents with Fake Citations
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: A lawyer is sanctioned for using AI when the lawyer signs a filing containing
+      authority the AI invented and nobody verified it.
+    found: true
+    checked_against: page
+    passage: 'Citations](https://cdn.prod.website-files.com/66fc4a00d70e086034b669c5/69d433eb1360b5cc7aee09bf_33.png)
+      In this post: A lawyer is sanctioned for using AI when the lawyer signs a filing
+      containing authority the AI invented and nobody verified it. Courts worldwide
+      have logged more than 2,100 decisions involving authority an AI invented or
+      misstated. Where an'
+  - text: 'The duty is non-delegable in the sense that matters: a partner who signs
+      a brief drafted by a junior associate, a contract attorney or a vendor has certified
+      it personally.'
+    found: true
+    checked_against: page
+    passage: 'the check, because the signing attorney carries the duty regardless
+      of who did the work. ### The supervision point The duty is non-delegable in
+      the sense that matters: a partner who signs a brief drafted by a junior associate,
+      a contract attorney or a vendor has certified it personally. ## How much are
+      lawyers fined for AI fake citations How much a lawyer is fined for AI fake citations
+      depends on the'
+  - text: The sanctions in the record are imposed under the signature rules that already
+      governed filings, which means the exposure attaches at the point of certification.
+    found: true
+    checked_against: page
+    passage: in legal trouble for using AI, though the trouble follows from filing
+      unverified output rather than from using the tool. The sanctions in the record
+      are imposed under the signature rules that already governed filings, which means
+      the exposure attaches at the point of certification. Using a tool to draft and
+      then verifying the authorities is not sanctionable conduct in any of the logged
+      decisions.
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI generated citations legal filings documented cases
+- id: 2026/ai-generated-evidence-threat-public-trust-courts
+  url: https://www.ncsc.org/resources-courts/ai-generated-evidence-threat-public-trust-courts
+  title: AI-Generated Evidence Threats Public Trust in Courts
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"No one verified the evidence," she said. Prosecutors eventually dropped
+      the charges, but only after eight months of legal proceedings.'
+    found: true
+    checked_against: page
+    passage: ex-boyfriend allegedly fabricated AI-generated text messages that led
+      to her arrest for violating a protective order. "No one verified the evidence,"
+      she said. Prosecutors eventually dropped the charges, but only after eight months
+      of legal proceedings. ![Screenshot of fake group message and recreated AI
+  - text: We're in a whole new frontier.
+    found: true
+    checked_against: page
+    passage: '"Now do I, as a judge, have to question a source of evidence that has
+      traditionally been reliable?" Yew asked. "We''re in a whole new frontier." This
+      same risk applies to other filings which are handled administratively, selectively
+      including aid eligibility,'
+  - text: If you're in a trial court presenting a case and you're afraid as a litigant
+      or as a party, maybe the other side is using evidence that's been altered by
+      artificial intelligence — does the judge know?
+    found: true
+    checked_against: page
+    passage: 'the core concern in ABC News interview: "If you''re in a trial court
+      presenting a case and you''re afraid as a litigant or as a party, maybe the
+      other side is using evidence that''s been altered by artificial intelligence
+      - does the judge know? Does the judge understand how this could impact my case?"
+      The issue, she said, cuts to whether people believe the legal'
+  - text: Fabricated evidence is not a new problem for courts, but the technology
+      to produce it has never been so accessible or inexpensive as it is now, especially
+      for photos, audio, and video.
+    found: true
+    checked_against: page
+    passage: about fabricated and doctored documents submitted into evidence. Fabricated
+      evidence is not a new problem for courts, but the technology to produce it has
+      never been so accessible or inexpensive as it is now, especially for photos,
+      audio, and video. By the standards of today's AI capabilities, the video from
+      *Mendones*is incredibly primitive. Today, anyone with an
+  - text: The judicial system's de facto legitimacy rests on public confidence that
+      disputes will be resolved based on facts.
+    found: true
+    checked_against: page
+    passage: However, realizing those benefits requires maintaining the integrity
+      of evidence that underpins trust in the courts. The judicial system's de facto
+      legitimacy rests on public confidence that disputes will be resolved based on
+      facts. If litigants believe fabricated evidence can prevail - or that legitimate
+      proof will be wrongly dismissed as
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI generated citations legal filings documented cases
+- id: 2026/ai-citation-errors-legal-research-2026
+  url: https://www.nexlaw.ai/blog/ai-citation-errors-legal-research-2026
+  title: 'AI Citation Errors in Legal Research: 4 Risks Lawyers Need to Catch Before
+    Filing in 2026'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"AI citation errors in legal research fall into four types: fabricated
+      cases that do not exist, real cases cited for the wrong legal proposition, fabricated
+      quotations from real cases, and blended authorities mixing elements from multiple
+      cases."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Researchers have identified over 1,174 documented court cases involving
+      AI hallucination errors in legal filings as of early 2026."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Courts have sanctioned attorneys for AI citation errors, including cases
+      like Lacey v. State Farm with $31,100 in penalties."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retracted AI citations in court filings disputed cases
+- id: 2026/why-lawyers-keep-citing-fake-cases-invented-by-ai
+  url: https://www.scientificamerican.com/article/why-lawyers-keep-citing-fake-cases-invented-by-ai
+  title: Why Lawyers Keep Citing Fake Cases Invented by AI
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Humans essentially have a tendency to believe that machines have more
+      knowledge than they do, don’t break and are infallible."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"AI guidance has a quite specific ability to engender biases."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"They don’t ever get to the ground truth. They don’t have any reason to
+      question it because they carry on in their lives thinking that AI tool is correct—because
+      ‘Why wouldn’t it be?’"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retracted AI citations in court filings disputed cases
+audit:
+  analyst_verdict: 'true'
+  auditor_verdict: 'true'
+  analyst_confidence: high
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: false
+  needs_review: true
+  auditor_reasoning: 'Multiple sources document AI‑generated fabricated citations
+    in over a thousand court proceedings worldwide by mid‑2026 (Source 1: 1,598 cases;
+    Source 3: 2,217 cases; Source 8: over 1,400 instances). Several articles report
+    attorneys being financially sanctioned for such misconduct, including a $10,000
+    fine in California (Source 2) and a $3,000 sanction in a federal case (Source 5),
+    confirming that some lawyers were indeed fined.'
+  evidence_gaps:
+  - The exact total number of filings varies across sources (1,598, 2,217, >1,400)
+    and may include overlapping cases, so the precise figure "more than a thousand"
+    cannot be pinpointed but is consistently exceeded.
+  - The sources do not provide a comprehensive global registry; counts are based on
+    specific datasets and reports, leaving a possibility of missing or double‑counted
+    cases.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: 'true'
+  pipeline_confidence: high
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: By mid-2026, courts worldwide had caught AI-invented citations in more than
+    a thousand filings, and some lawyers were fined.
+  seo_title: Courts catch 1000+ AI citations, fined
+  verdict: 'true'
+  takeaway: AI‑generated fake citations have already flooded courts worldwide, leading
+    to sanctions.
+  cap_rationale: null
+  uncited_by_title:
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2025/california-lawyer-ai-fake-citations-fine
+  - 2026/hallucinations
+  - 2026/publication-first-published-opinion-on-ai-fabricated-citations-in-legal-briefs
+  - 2025/court-sanctions-attorneys-for-submitting-brief-with-ai-generated-false-citations
+  - 2025/fake-case-citations-land-two-attorneys-in-hot-water-over-ai-misuse
+  - 2026/lawyer-fined-using-ai-legal-fake-citations
+  - 2026/why-lawyers-keep-citing-fake-cases-invented-by-ai
