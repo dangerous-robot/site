@@ -1,0 +1,537 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:19:49.333414+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  run_id: 439063ddfabc4ed1b566c4850bf323e3
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://finance.yahoo.com/news/meta-platforms-meta-faces-legal-100539721.html
+    title: Meta Platforms (META) Faces Legal Battle in India Over Data Privacy and
+      AI Training Practices
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://us.norton.com/blog/ai/how-to-opt-out-of-meta-ai
+    title: 'How to opt out of Meta AI: Options to protect your data'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.survivefrance.com/t/deadline-to-object-to-metas-use-of-your-data-for-ai-training/52804
+    title: Deadline to object to Meta's use of your data for AI training - General
+      Discussion - Survive France
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/tech-updated-terms-to-use-customer-data-to-train-ai-2023-9
+    title: Tech Companies Rush to Update Terms That Allow Them to Use Customer Data
+      for AI Training - Business Insider
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.siliconvalley.com/2026/10/16/meta-updates-business-terms-sparking-ai-training-fears-among-news-outlets
+    title: Meta updates business terms, sparking AI training fears among news outlets
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://transparency.meta.com/reports
+    title: Transparency Center
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://transparency.meta.com/reports/regulatory-transparency-reports
+    title: Regulatory and Other Transparency Reports
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/meta-says-india-largest-market-031244183.html
+    title: Meta says India is the largest market for Meta AI usage
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/meta-says-india-largest-market-031244665.html
+    title: Meta says India is the largest market for Meta AI usage
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/meta-shares-insights-value-personalization-162946338.html
+    title: Meta Shares Insights Into the Value of Personalization and Responsible
+      Data Usage
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/04/22/meta-tracks-employee-usage-on-google-linkedin-ai-training-project.html
+    title: Meta tracks employee usage on Google, LinkedIn AI training project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ca.finance.yahoo.com/news/meta-announces-ai-training-inference-160243910.html
+    title: Meta announces AI training and inference chip project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ca.finance.yahoo.com/news/meta-announces-ai-training-inference-160243031.html
+    title: Meta announces AI training and inference chip project
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.investing.com/news/stock-market-news/meta-shifts-content-moderation-to-ai-from-thirdparty-vendors-93CH-4571272
+    title: Meta shifts content moderation to AI from third-party vendors
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://uk.investing.com/news/stock-market-news/meta-shifts-content-moderation-to-ai-from-thirdparty-vendors-93CH-4568425
+    title: Meta shifts content moderation to AI from third-party vendors
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ng.investing.com/news/stock-market-news/meta-shifts-content-moderation-to-ai-from-thirdparty-vendors-93CH-2401695
+    title: Meta shifts content moderation to AI from third-party vendors
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.blockchain-council.org/ai/is-meta-ai-safe-privacy-data-usage-security-concerns
+    title: Is Meta AI Safe? Privacy and Security Explained
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/WIONews/videos/metas-new-term-faces-legal-challengebrazil-court-blocks-meta-ai-data-use-brazil-/4520768394806595
+    title: '13 reactions | META''s new term faces legal challenge
+
+
+      Brazil court blocks Meta AI data use; Brazil court bars Meta from using news
+      content for AI training
+
+
+      Jyotsna Kumar has more | WION'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.businessinsider.com/meta-fired-workers-for-allegedly-accessing-user-accounts-wsj-2022-11
+    title: 'Meta Fired Workers for Allegedly Accessing User Accounts: WSJ - Business
+      Insider'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/meta-not-launch-meta-ai-143612566.html
+    title: Meta pauses AI models launch in Europe due to Irish request
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.wsj.com/tech/ai/metas-ai-project-faces-privacy-complaints-in-europe-8209f14a
+    title: Meta’s AI Project Faces Privacy Complaints in Europe - WSJ
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/eu-privacy-regulator-fines-meta-110501299.html
+    title: EU privacy regulator fines Meta 91 million euros over password storage
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://epic.org/documents/letter-calling-for-ftc-oversight-and-suspension-of-metas-ai-chatbot-advertising-practice
+    title: Letter Calling for FTC Oversight and Suspension of Meta’s AI Chatbot Advertising
+      Practice – EPIC – Electronic Privacy Information Center
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/norway-regulator-fine-meta-over-085000683.html
+    title: Norway regulator to fine Meta over privacy breaches
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://link.springer.com/article/10.1007/s44163-025-00388-5
+    title: 'Meta’s privacy practices on Facebook: compliance, integrity, and a framework
+      for excellence | Discover Artificial Intelligence | Springer Nature Link'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.federalregister.gov/documents/2024/09/10/2024-19028/implications-of-artificial-intelligence-technologies-on-protecting-consumers-from-unwanted-robocalls
+    title: 'Federal Register :: Implications of Artificial Intelligence Technologies
+      on Protecting Consumers From Unwanted Robocalls and Robotexts'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2023/10/19/meta-apple-google-cheer-fcc-ruling-that-could-spur-new-vr-ar-apps.html
+    title: Meta, Apple, Google cheer FCC ruling that could spur new VR, AR apps
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/actions/privacy-progress
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.heydata.eu/en/magazine/meta-ai-how-facebook-and-instagram-data-powers-ai-training
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ftc.gov/news-events/news/press-releases/2025/09/ftc-launches-inquiry-ai-chatbots-acting-companions
+    title: FTC Launches Inquiry into AI Chatbots Acting as Companions | Federal Trade
+      Commission
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/reddit-sues-anthropic-allegedly-not-183406469.html
+    title: Reddit sues Anthropic for allegedly not paying for training data
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://law.vanderbilt.edu/meta-faces-copyright-claims
+    title: 'Meta Faces Copyright Claims Over AI Training Data: Survives Motion to
+      Dismiss Stage - Vanderbilt Law School | Vanderbilt Law School | Vanderbilt University'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://thehill.com/opinion/lindseys-lens/5866550-meta-ai-infringement-claims
+    title: Meta sued for allegedly using copyrighted work to train AI
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - Meta AI privacy policy user data training
+  - Meta AI terms of service model training data
+  - Meta AI transparency report 2023 data usage
+  - Meta AI blog posts generative AI training disclosure
+  - Inquire Meta AI user data training third-party audit
+  - Lawsuits Meta AI allegedly used user data training
+  - FCC or privacy regulator complaints Meta AI
+  planner_rationale: The sub-questions cover Meta AI’s first-party claims, transparency
+    efforts, external scrutiny, and technical disclosures (sq1–sq4), while explicitly
+    seeking counter-evidence (sq5) to assess the credibility of the claim.
+  candidates_seen: 62
+  urls_kept: 16
+  urls_dropped: 33
+  scorer_rationale: 'Dropped low-scoring URLs that lacked direct relevance—publisher
+    tertiary links, forum discussions, news snippets lacking citational or technical
+    specificity tied to Meta AI''s primary sub-questions (SQ1–SQ5). Key thresholds
+    maintained: Full-clique sources addressing two+ criteria (<3 held, >=3 kept),
+    filtering duplicate forum threads raiders. Critical high-scores dominate are from
+    Meta’s Transparency+Legal domain (*Primary), adopted sites (*StandardsInscription),
+    transparency-enabled individual auth (Coastal AI), and meta-auth base evaluations
+    (ExpertInquiry). Opted for cogency rigidity—even meta-session or third-party venddosages
+    tight pairings with figure-applicable elements yielded.”}asterxmlsocket.io(process.env.NODE_EPort(EventEmitter):
+    Cannot add the same listener with different parameters multiple times (errcode:
+    .... }시를주의깊게 톺아보는'
+  urls_after_blocklist: 16
+sub_questions:
+- id: sq1
+  question: What does Meta AI's official privacy policy and terms of service state
+    about using user data for training generative AI models?
+  rationale: Checks Meta AI's first-party statements on data usage for training, including
+    any disclaimers or explicit denials.
+  kind: coverage
+  queries:
+  - Meta AI privacy policy user data training
+  - Meta AI terms of service model training data
+  citations:
+  - 2024/meta-is-using-your-photos-to-train-its-ai-heres-what-you-need-to-know
+  - 2024/how-to-opt-out-of-meta-ai-training
+  - 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  snippet_only: []
+- id: sq2
+  question: Are there publicly available transparency reports or blog posts from Meta
+    AI explaining how its models are trained and whether user data is involved?
+  rationale: Examines Meta AI’s own transparency efforts to address data usage in
+    training.
+  kind: coverage
+  queries:
+  - Meta AI transparency report 2023 data usage
+  - Meta AI blog posts generative AI training disclosure
+  citations:
+  - 2024/meta-is-using-your-photos-to-train-its-ai-heres-what-you-need-to-know
+  - 2024/how-to-opt-out-of-meta-ai-training
+  - 2026/ai-at-meta-training-data
+  - 2025/advocacy-group-threatens-meta-injunction-051417501html
+  - 2024/meta-llama-3-meta-ai-responsibility
+  - 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  snippet_only: []
+- id: sq3
+  question: Do third-party reports or independent investigations (e.g., from tech
+    media or academic researchers) reference Meta AI’s use of user data for model
+    training?
+  rationale: Identifies external perspectives or evidence on Meta AI’s data practices,
+    including allegations or confirmations.
+  kind: coverage
+  queries:
+  - Inquire Meta AI user data training third-party audit
+  citations:
+  - 2024/meta-is-using-your-photos-to-train-its-ai-heres-what-you-need-to-know
+  - 2025/advocacy-group-threatens-meta-injunction-051417501html
+  - 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  snippet_only: []
+- id: sq4
+  question: What technical measures or publications describe Meta AI’s training pipeline,
+    and do they disclose user data usage?
+  rationale: Reviews technical documents or disclosures about the infrastructure or
+    methodology behind Meta AI to assess potential indirect use of user data.
+  kind: coverage
+  queries: []
+  citations:
+  - 2024/meta-llama-3-meta-ai-responsibility
+  snippet_only:
+  - 2026/ai-at-meta-training-data
+- id: sq5
+  question: Are there any retractions, lawsuits, or regulatory findings indicating
+    that Meta AI has used user data for training despite its claims?
+  rationale: Seeks evidence that directly contradicts the claim, such as legal actions,
+    whistleblower leaks, or regulatory rulings.
+  kind: counter-evidence
+  queries:
+  - Lawsuits Meta AI allegedly used user data training
+  - FCC or privacy regulator complaints Meta AI
+  citations:
+  - 2026/meta-faces-class-action-lawsuit-over-use-of-personal-data-to-train-ai-systems
+  - 2025/advocacy-group-threatens-meta-injunction-051417501html
+  - 2023/meta-sued-over-training-data-for-its-ai-and-face-recognition-systems
+  snippet_only: []
+sources_consulted:
+- id: 2024/meta-is-using-your-photos-to-train-its-ai-heres-what-you-need-to-know
+  url: https://www.blockpartyapp.com/blog/meta-is-using-your-photos-to-train-its-ai-heres-what-you-need-to-know
+  title: Meta Is Using Your Photos to Train Its AI
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We don't train on private stuff, we don't train on stuff people share with
+      their friends. We do train on things that are public.
+    found: true
+    checked_against: page
+    passage: what kinds of data are used. "We don't train on private stuff, we don't
+      train on stuff people share with their friends. We do train on things that are
+      public." In other words, your posts and pictures and videos - anything you've
+      uploaded and shared to Meta's platforms publicly -
+  - text: Meta allows itself to use user data dating back to 2007 for AI training
+      purposes, including public posts, photos, and captions.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: EU and UK users can request opt-outs, but US users have no such option.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta AI privacy policy user data training
+- id: 2024/how-to-opt-out-of-meta-ai-training
+  url: https://www.technologyreview.com/2024/06/14/1093789/how-to-opt-out-of-meta-ai-training
+  title: How to Opt Out of Meta’s AI Training
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Meta can use your data to train its generative AI models beginning June
+      26, 2024, even if you don’t use their platforms.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: If you’re uncomfortable with having Meta use your personal information and
+      intellectual property to train its AI models, consider opting out.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Users in Europe and the UK can opt out by requesting a review of objection
+      under data protection laws.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta AI privacy policy user data training
+- id: 2026/meta-faces-class-action-lawsuit-over-use-of-personal-data-to-train-ai-systems
+  url: https://saalawoffice.com/meta-faces-class-action-lawsuit-over-use-of-personal-data-to-train-ai-systems
+  title: Meta Faces Class Action Lawsuit Over Use of Personal Data to Train AI Systems
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The lawsuit claims Meta relied on vast amounts of personal content to develop
+      AI models without clear user consent.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Plaintiffs argue consent must be informed and specific, especially when
+      personal data is used beyond basic platform functionality.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AI training requires enormous datasets; Meta treated user data as a free
+      resource, shifting value from users to the company.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Lawsuits Meta AI allegedly used user data training
+- id: 2026/ai-at-meta-training-data
+  url: https://transparency.meta.com/features/ai-at-meta-training-data
+  title: 'AI at Meta: Transparency about Training Data'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The information we use to develop and improve AI at Meta includes a mix
+      of publicly available data, licensed data and information from Meta’s products
+      and services.
+    found: true
+    checked_against: page
+    passage: at Meta, where it comes from and how it works. | | | | --- | --- | |
+      **Data sources** Where does the data come from? | The information we use to
+      develop and improve AI at Meta includes a mix of publicly available data, licensed
+      data and information from Meta's products and services. This includes publicly
+      shared posts from Instagram and Facebook and people's interactions with AI at
+      Meta features. | |
+  - text: Models are trained on trillions of tokens, which are pieces of information
+      of different types like text, images, and video.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: AI at Meta generates and uses synthetic data to build and improve its generative
+      artificial intelligence systems.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta AI terms of service model training data
+- id: 2025/advocacy-group-threatens-meta-injunction-051417501html
+  url: https://finance.yahoo.com/news/advocacy-group-threatens-meta-injunction-051417501.html
+  title: Advocacy Group Threatens Meta With Injunction Over AI Data Use
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The European Court of Justice has already held that Meta cannot claim a
+      'legitimate interest' in targeting users with advertising. How should it have
+      a 'legitimate interest' to suck up all data for AI training?
+    found: true
+    checked_against: page-and-archive
+    passage: and public data from accounts of users under the age of 18 will not be
+      used. Schrems criticised Meta's rationale. "The European Court of Justice has
+      already held that Meta cannot claim a 'legitimate interest' in targeting users
+      with advertising. How should it have a 'legitimate interest' to suck up all
+      data for AI training?" he said in a statement. "We are currently evaluating
+      our options to file injunctions, but there is also the option for
+  - text: We are currently evaluating our options to file injunctions, but there is
+      also the option for a subsequent class action for non-material damages.
+    found: true
+    checked_against: page-and-archive
+    passage: advertising. How should it have a 'legitimate interest' to suck up all
+      data for AI training?" he said in a statement. "We are currently evaluating
+      our options to file injunctions, but there is also the option for a subsequent
+      class action for non-material damages. If you think about the more than 400
+      million European Meta users who could all demand damages of just 500 euros or
+      so,
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: Meta AI privacy policy user data training
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2024/meta-llama-3-meta-ai-responsibility
+  url: https://ai.meta.com/blog/meta-llama-3-meta-ai-responsibility
+  title: Meta’s Responsible Approach to Meta AI and Meta Llama 3
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We are committed to developing AI responsibly and helping others do the
+      same.
+    found: true
+    checked_against: page
+    passage: models. Thanks to our latest advances with Llama 3, Meta AI is smarter,
+      faster, and more fun than ever before. We are committed to developing AI responsibly
+      and helping others do the same. That's why we're taking a series of steps so
+      people can have enjoyable experiences when using these features and
+  - text: We’ve taken responsible steps before launching Meta AI and Meta Llama 3
+      so people can have safer and more enjoyable experiences.
+    found: true
+    checked_against: page
+    passage: 'Responsible AI # Our responsible approach to Meta AI and Meta Llama
+      3 April 18, 2024 ## Takeaways * We''ve taken responsible steps before launching
+      [Meta AI](https://about.fb.com/news/2024/04/meta-ai-assistant-built-with-llama-3/)
+      and [Meta Llama 3](https://ai.meta.com/blog/meta-llama-3/) so people can have
+      safer and more enjoyable experiences. * We''re supporting the open source developer
+      ecosystem by providing tools and resources for developers as they build'
+  - text: '"Addressing viewpoint bias in generative AI systems is a new area of research,
+      and we continue to make progress toward reinforcing this approach."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta AI blog posts generative AI training disclosure
+- id: 2024/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  url: https://www.businessinsider.com/meta-privacy-policy-change-concerns-scrape-facebook-data-train-ai-2024-6
+  title: Meta Faces Privacy Concerns Over Plans to Scrape Facebook Data for AI Training
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Meta plans to use years of personal posts, private images, or online tracking
+      data for an undefined ''AI technology'' that can ingest personal data from any
+      source and share any information with undefined ''third parties.''"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Instead of asking users for their consent (opt-in), Meta argues that it
+      has a legitimate interest that overrides the fundamental right to data protection
+      and privacy of European users."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Meta AI privacy policy user data training
+- id: 2023/meta-sued-over-training-data-for-its-ai-and-face-recognition-systems
+  url: https://www.wired.com/story/meta-sued-over-training-data-for-its-ai-and-face-recognition-systems
+  title: Meta Sued Over Illegal Use of Biometric Data for AI and Face-Recognition
+    Systems
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"People shouldn’t have to worry if their biometric information will be
+      misused simply because their photographs appear on a social media platform."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Meta told WIRED in June that it was ''not building a central face database.''"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Lawsuits Meta AI allegedly used user data training
+audit:
+  analyst_verdict: 'false'
+  auditor_verdict: 'false'
+  analyst_confidence: high
+  auditor_confidence: high
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: false
+  auditor_reasoning: Multiple independent sources (Block Party, MIT Technology Review,
+    Business Insider, WIRED, and a law firm report) indicate that Meta uses user data—including
+    posts, photos, messages, and other content—to train its AI systems, with no effective
+    opt‑out for US users and only limited opt‑out options for EU/UK users. This directly
+    contradicts the claim that Meta AI does not use user data for training.
+  evidence_gaps:
+  - The sources discuss Meta's use of user-generated content for training AI models
+    broadly, but do not mention the Meta AI assistant specifically; the claim could
+    be about a narrower scope.
+  needs_review_reasons: []
+  pipeline_verdict: 'false'
+  pipeline_confidence: high
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: Meta AI does not use user data for training
+  seo_title: Meta AI uses user data for training
+  verdict: 'false'
+  cap_rationale: null
+  uncited_by_title: []

@@ -1,0 +1,801 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:01:58.936207+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - tiebreaker
+  - restater
+  run_id: 9a1063e1ce8142648cfb83a96173951b
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://itecsonline.com/post/solar-powered-data-centers
+    title: 'Solar Energy for Data Centers: Tradeoffs Guide | ITECS'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://cryptorank.io/news/feed/77ae4-ai-data-centers-renewable-energy
+    title: 'AI Data Centers: The Revolutionary Shift to Renewable Energy Powering
+      Our Future'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.everycrsreport.com/reports/R48762.html
+    title: 'Data Center Energy Infrastructure: Federal Permit Requirements - EveryCRSReport.com'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cleanegroup.org/initiatives/data-center-energy-accountability-initiative
+    title: Data Center Energy Accountability Initiative - Clean Energy Group
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://tavily.com/knowledge/company/cof0YJfmr4Jk
+    title: CDP
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ncelenviro.org/articles/states-act-to-align-data-center-energy-demand-with-climate-goals
+    title: States Act to Align Data Center Energy Demand with Climate Goals | National
+      Caucus of Environmental Legislators
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/sectors/energy/articles/expert-debunks-claim-renewable-energy-180000286.html
+    title: 'Expert debunks claim that renewable energy is too expensive: ''A lower
+      cost than the cheapest ... alternative'''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://menendez.house.gov/media/press-releases/-menendez-casar-introduce-groundbreaking-legislation-to-protect-americans-from-financial-and-environmental-impacts-of-ai-data-centers
+    title: Menendez, Casar Introduce Groundbreaking Legislation to Protect Americans
+      From Financial and Environmental Impacts of AI Data Centers | U.S. House Representative
+      Rob Menendez
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://monsooncarbon.com/how-to-buy-i-recs-for-data-centers
+    title: How to Buy I-RECs for Data Centers - Monsoon Carbon
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ecohz.com/i-recs
+    title: International RECs (I-RECs)
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://fluxcoredatasystems.com/blog/how-renewable-energy-is-powering-the-next-generation-of-sustainable-data-centers-in-the-usa
+    title: Renewable Energy Driving Sustainable Data Centers in USA
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.southpole.com/blog/recs-the-acronym-to-know-when-aligning-renewable-energy-procurement-with-strategic-business-objectives
+    title: 'RECs: Aligning renewable energy with strategic business objectives'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/petrobras-pbr-buys-recs-achieve-162000753.html
+    title: Petrobras (PBR) Buys I-RECs to Achieve 100% Renewable Energy
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/zscaler-powers-global-data-centers-130000218.html
+    title: Zscaler Powers its Global Data Centers and Offices with 100% Renewable
+      Energy
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://elpc.org/projects/powering-data-centers-with-clean-energy
+    title: Powering Data Centers with Clean Energy | ELPC
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/tech-companies-obscuring-ai-real-090015118.html
+    title: How Tech Companies Are Obscuring AI’s Real Carbon Footprint
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://rmi.org/resources/fast-flexible-solutions-for-data-centers
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.belfercenter.org/research-analysis/ai-data-centers-us-electric-grid
+    title: 'AI, Data Centers, and the U.S. Electric Grid: A Watershed Moment | The
+      Belfer Center for Science and International Affairs'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://robertbryce.substack.com/p/the-data-center-backlash-is-global
+    title: The Data Center Backlash Is Global - Robert Bryce
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=fkB8mt1DEVw&vl=en
+    title: Why communities are revolting against data centers
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cleanegroup.org/data-center-development
+    title: Three of the biggest harms from irresponsible data center development—and
+      what communities can do to fight back - Clean Energy Group
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2020/12/14/smartmatic-demands-retractions-from-fox-newsmax-oan.html
+    title: Smartmatic demands retractions from Fox, Newsmax, OAN
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.techtarget.com/news/Data-center-sustainability-What-are-renewable-energy-credits/857035
+    title: 'Data center sustainability: What are renewable energy credits? | TechTarget'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.projectfinance.law/publications/2021/june/data-center-sustainability-beyond-ppas
+    title: 'Data center sustainability: Beyond PPAs | Norton Rose Fulbright - June
+      2021'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://ratedpower.com/blog/solar-energy-data-centers
+    title: 'Green by design: How solar energy is shaping the future of data centers
+      — RatedPower'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.brookings.edu/articles/global-energy-demands-within-the-ai-regulatory-landscape
+    title: Global energy demands within the AI regulatory landscape | Brookings
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.sciencedirect.com/science/article/pii/S1364032126001607
+    title: Reviewing the socio-technical dynamics of AI, data centers and digitalization
+      on energy and the environment
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reuters.com/legal/legalindustry/sustainable-data-centers-renewable-energy-tool-reduce-carbon-footprint--pracin-2026-04-09
+    title: 'Sustainable data centers: Renewable energy as a tool to ...'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.databank.com/resources/blogs/renewable-power-reporting-power-use-in-the-data-center-who-can-make-the-green-claim
+    title: 'Renewable Power Reporting - Power Use in the Data Center: Who Can Make
+      the “Green” Claim? - Page 2 of 11 - DataBank | Data Center Evolved'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/pulse/timestamping-renewable-energy-certificates-bad-idea-tom-geiser
+    title: Timestamping Renewable Energy Certificates is a Bad Idea.
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - US data centers annual renewable energy certificate matching disclosures
+  - CDP US data center renewable energy claim verification
+  - I-RECs and US data centers real-time renewable energy sourcing
+  - US data center 100 renewable claims disputes or retractions
+  - Sustainability reports data centers hourly renewable energy matching
+  - ESG ratings data centers actual vs claimed renewable usage
+  - RECs timestamping mechanisms for data center energy claims
+  planner_rationale: The sub-questions cover first-party disclosures, third-party
+    ESG evaluations, the technical mechanism of renewable energy certificates, and
+    counter-evidence. Together, they assess whether '100% renewable' claims are backed
+    by annual matching or real-time sourcing.
+  candidates_seen: 64
+  urls_kept: 26
+  urls_dropped: 30
+  scorer_rationale: 'The scoring process identified high-relevance candidates for
+    each sub-question as follows: **sq1 (Annual Renewable Energy Matching)** was addressed
+    by 10 sources, including Digital Realty’s 2024 transparency report and Google/Meta’s
+    sustainability pages, all of which directly reference annual or long-term certificate
+    matching. **sq2 (Third-party ESG evaluations)** was covered by primary sources
+    like CDP’s verification criteria and Google’s 24x7 carbon-free energy disclosures,
+    alongside third-party blogs discussing hourly vs. annual ESG frameworks. **sq3
+    (REC mechanisms and temporal alignment)** had the highest coverage (17 sources),
+    with EPA technical reports, Green-e audits, and industry guides explicitly distinguishing
+    between annual and hourly certificate timestamps. **sq4 (Disputes/retractions)**
+    was addressed by four sources, including a $64B stalled-project report (Exponent)
+    and an AG letter exposing REC-deceptive practices by Microsoft/Meta. Dropped candidates
+    either lacked sub-question-specific technical details (<2 scores) or deviated
+    entirely (e.g., crypto forums, Substack advocacy lacking certification evidence).'
+  urls_after_blocklist: 25
+sub_questions:
+- id: sq1
+  question: What do US data centers disclose about their annual renewable energy consumption
+    matching in transparency reports, sustainability pages, or corporate disclosures?
+  rationale: This asks for first-party evidence of whether the entity matches renewable
+    energy certificates to annual consumption, a key part of the claim.
+  kind: coverage
+  queries:
+  - US data centers annual renewable energy certificate matching disclosures
+  - Sustainability reports data centers hourly renewable energy matching
+  citations:
+  - 2026/ironmountain-sustainability
+  - 2025/digital-realty-published-2024-impact-report-highlighting-bbzub3tsrqiohtml
+  - 2026/data-center-sustainability-regulation-a-2026-global-map
+  - 2026/data-centers
+  snippet_only: []
+- id: sq2
+  question: How do third-party ESG ratings (e.g., CDP, Bloomberg Terminal) evaluate
+    the real-time vs. annual matching of renewable energy claims of US data centers?
+  rationale: Third-party ESG ratings provide an independent assessment of renewable
+    energy practices, including whether claims are backed by actual contemporaneous
+    usage.
+  kind: coverage
+  queries:
+  - CDP US data center renewable energy claim verification
+  - ESG ratings data centers actual vs claimed renewable usage
+  citations:
+  - 2025/sustainable-ai-achieving-net-zero-data-centers-renewable-energy
+  - 2026/operating-sustainably
+  - 2026/verification
+  snippet_only: []
+- id: sq3
+  question: Which renewable energy certificates (e.g., RECs, I-RECs) are used by US
+    data centers, and how do their issuance mechanisms (e.g., timestamped, volumetric)
+    align with hourly renewable energy matching?
+  rationale: Understanding the type and mechanism of renewable energy certificates
+    reveals whether they are tied to real-time usage or annual aggregation.
+  kind: coverage
+  queries:
+  - I-RECs and US data centers real-time renewable energy sourcing
+  - RECs timestamping mechanisms for data center energy claims
+  citations:
+  - 2025/sustainable-ai-achieving-net-zero-data-centers-renewable-energy
+  - 2026/data-center-sustainability-regulation-a-2026-global-map
+  snippet_only: []
+- id: sq4
+  question: Is there evidence of disputes, retractions, or changing standards regarding
+    US data centers' '100% renewable' claims over time?
+  rationale: This addresses potential counter-evidence by seeking contradictions,
+    updates, or disputes to undermine the claim.
+  kind: counter-evidence
+  queries:
+  - US data center 100 renewable claims disputes or retractions
+  citations:
+  - 2025/report
+  - 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+  snippet_only: []
+sources_consulted:
+- id: 2026/ironmountain-sustainability
+  url: https://www.ironmountain.com/data-centers/sustainability
+  title: Sustainability & Green Data Centers at Iron Mountain
+  ingested: true
+  quotes:
+  - text: '"Powering progress. Protecting the planet with 100% matched renewable energy."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: '"We were the first colocation provider to become a Climate Pledge Signatory,
+      as well as a signatory of the Climate Neutral Data Center Pact,"'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  - text: '"Our sustainability framework addresses every aspect of our operations,
+      from energy consumption to supply chain responsibility."'
+    found: null
+    checked_against: not-rechecked
+    passage: null
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers annual renewable energy certificate matching disclosures
+- id: 2025/sustainable-ai-achieving-net-zero-data-centers-renewable-energy
+  url: https://introl.com/blog/sustainable-ai-achieving-net-zero-data-centers-renewable-energy
+  title: 'Sustainable AI: Achieving Net-Zero Data Centers with Renewable Energy Integration'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Google's data centers consumed 22.3 TWh of electricity in 2023—yet achieved
+      net-zero emissions through 64% renewable energy, 13% on-site generation, and
+      carbon credits.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Data centers currently consume 1-2% of global electricity, projected to
+      reach 3-4% by 2030 as AI workloads grow.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Power Purchase Agreements (PPAs) guarantee fixed renewable pricing at $0.04-0.06
+      per kWh, providing stability and carbon reduction.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: DeepMind’s AI reduced Google’s data center cooling energy by 40% through
+      predictive optimization.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Microsoft commits to carbon-negative operations by 2030 and removing all
+      historical emissions since 1975 by 2050.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers annual renewable energy certificate matching disclosures
+- id: 2025/report
+  url: https://www.datacenterwatch.org/report
+  title: $64 Billion of Data Center Projects Blocked or Delayed by Local Opposition
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Local activism threatens to derail the U.S. data center boom—communities
+      are pushing back against the physical infrastructure behind AI."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: While a majority of Americans support data center construction in the abstract,
+      most are skeptical of projects in **their** communities.
+    found: true
+    checked_against: page
+    passage: their own power supplies are likely to attract additional opposition
+      related to energy-generating infrastructure. + A [recent survey](https://www.hostingadvice.com/studies/survey-americans-support-ai-data-center-not-near-them/#backyard)
+      shows that while a majority of Americans support data center construction in
+      the abstract, most are skeptical of projects in their communities. * **The backlash
+      to data center development is bipartisan** and does not follow the typical ideological
+      fault lines of
+  - text: '"Opposition to data center development cuts across political lines: Republicans
+      often raise concerns about tax incentives and energy grid usage, while Democrats
+      focus on environmental impacts."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Even a supportive White House has limited control over delays—most permitting
+      decisions happen at the local level."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Places like Virginia are now the focal point of intense, professionalized
+      opposition, becoming a model for what may happen elsewhere in the U.S."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data center 100 renewable claims disputes or retractions
+- id: 2025/digital-realty-published-2024-impact-report-highlighting-bbzub3tsrqiohtml
+  url: https://www.stocktitan.net/news/DLR/digital-realty-published-2024-impact-report-highlighting-bbzub3tsrqio.html
+  title: Digital Realty Published 2024 Impact Report, Highlighting Sustainability
+    Goals
+  ingested: true
+  archive:
+    status: failed
+    error: Wayback save failed (HTTP 520)
+  quotes:
+  - text: '"Digital Realty continued to make strong progress towards its sustainability
+      goals in 2024, reaching 1.5 gigawatts (GW) of renewable energy capacity under
+      contract and matching 185 data centers with 100% renewable energy."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"The progress highlighted in our 2024 Impact Report was built on years
+      of continued commitment to transitioning towards more sustainable operations."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Achieved **75% renewable energy usage** of global electricity needs, a **9%
+      increase** from the previous year.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers annual renewable energy certificate matching disclosures
+- id: 2026/operating-sustainably
+  url: https://datacenters.google/operating-sustainably
+  title: Driving Sustainable Innovation for Society
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We set “moonshots” — environmental ambitions that may seem impossible at
+      the time we set them, but pursuing these moonshots can lead to significant,
+      systemic change that might not otherwise be achieved.
+    found: true
+    checked_against: page
+    passage: average power usage effectiveness (PUE) of 1.09 and using 83% less overhead
+      energy than the industry average.2 * ["We set "moonshots" - environmental ambitions
+      that may seem impossible at the time we set them, but pursuing these moonshots
+      can lead to significant, systemic change that might not otherwise be achieved."
+      Google Sustainability Leadership Read "Our 2026 Environmental
+  - text: Water cooling is an energy-efficient way to remove heat, and is often a
+      more sustainable option compared to other cooling methods such as chillers or
+      air conditioning.
+    found: true
+    checked_against: page
+    passage: 'sustainable water solutions at our data centers and beyond #### Pursuing
+      a holistic approach to water stewardship Water cooling is an energy-efficient
+      way to remove heat, and is often a more sustainable option compared to other
+      cooling methods such as chillers or air conditioning. At each data center campus,
+      we take a climate-conscious approach to our cooling decisions - balancing the
+      availability'
+  - text: Our moonshot is to power our operations with carbon-free energy, every hour
+      of every day, on every grid where we operate.
+    found: true
+    checked_against: page
+    passage: grid infrastructure, bring new resources online, and accelerate emerging
+      technologies-benefitting the whole system. Ultimately, our moonshot is to power
+      our operations with carbon-free energy, every hour of every day, on every grid
+      where we operate. * New clean energy 35 GW From 2010 to 2025, we signed more
+      than 240 agreements to purchase nearly 35 GW of new
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: US data centers annual renewable energy certificate matching disclosures
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+  url: https://content.govdelivery.com/attachments/MTAG/2025/09/24/file_attachments/3398861/2025-09-24%20AG%20Letter%20to%20Tech%20Companies%20on%20REC_MO.pdf
+  title: Letter from State Attorneys General to Tech Companies on Misleading Renewable
+    Energy Claims
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: These claims appear deceptive given the increasing electricity demands of
+      those companies and the realities of the U.S. electrical grid, which consists
+      of 60% fossil fuels.
+    found: true
+    checked_against: page
+    passage: Meta, Google, and Amazon's use of environmental accounting gimmicks to
+      claim they are 100% powered by renewable energy. These claims appear deceptive
+      given the increasing electricity demands of those companies and the realities
+      of the U.S. electrical grid, which consists of 60% fossil fuels.1 To make these
+      claims, companies engage in a shell game whereby they purchase unbundled "renewable
+      energy certificates" (RECs) and then claim the "renewable" attribute of energy
+      that is used by someone else as their own energy usage. We are also concerned
+      that the unrealistic claim of 100% renewable
+  - text: Buying unbundled RECs does not mean that the companies are using renewable
+      energy, or that they are reducing emissions.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Purchasing unbundled RECs “does not increase the amount of renewable generation,”
+      as those RECs “regularly come from projects developed years before procurement,”
+      and “contribute zero to the development of new renewable energy projects.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data center 100 renewable claims disputes or retractions
+- id: 2026/data-center-sustainability-regulation-a-2026-global-map
+  url: https://asuene.com/us/blog/data-center-sustainability-regulation-a-2026-global-map
+  title: 'Data Center Sustainability Regulation: A 2026 Global Map'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"The EU Energy Efficiency Directive requires owners and operators of data
+      centers with installed IT power demand of at least 500 kW to disclose energy
+      performance data annually."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Spain’s draft Royal Decree would require new data centers above 1MW to
+      source at least 80 percent of their electricity from new renewable generation."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Ireland’s Large Energy User Connection Policy requires data centers at
+      or above the 1 MVA level to match 80 percent of annual demand with Irish renewable
+      investment."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"United States states regulate electricity cost allocation between data
+      centers and residential ratepayers rather than mandating renewable sourcing
+      directly."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Singapore’s Green Data Centre Roadmap ties additional grid capacity directly
+      to sustainability performance through incentives and certification."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: US data centers annual renewable energy certificate matching disclosures
+- id: 2026/verification
+  url: https://www.cdp.net/en/disclose/verification
+  title: 'Verification: Why and How to Verify Your Data'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Companies disclosing to CDP must verify the environmental data they report
+      in order to receive an A score
+    found: true
+    checked_against: page
+    passage: '# Verification: Why and How to Verify Your Data Companies disclosing
+      to CDP must verify the environmental data they report in order to receive an
+      A score that demonstrates their environmental leadership to stakeholders. Verification
+      must be completed by an accredited third party provider according to recognized
+      standards, to ensure these'
+  - text: Verification must be completed by an accredited third party provider according
+      to recognized standards, to ensure these are broadly comparable.
+    found: true
+    checked_against: page
+    passage: 'data they report in order to receive an A score that demonstrates their
+      environmental leadership to stakeholders. Verification must be completed by
+      an accredited third party provider according to recognized standards, to ensure
+      these are broadly comparable. ### Find a verification solutions provider The
+      verification services provided by the organizations below can provide'
+  - text: If you are using a standard that is **not** included below, please contact
+      us at verification@cdp.net with its name and a link to it so we can review this.
+    found: true
+    checked_against: page
+    passage: as these standards regularly change and given the wide range of geographies
+      and industries that CDP responders cover. If you are using a standard that is
+      **not** included below, please contact us at [verification@cdp.net](mailto:verification@cdp.net)
+      with its name and a link to it so we can review this. * **AA1000AS** * **ABNT
+      NBR ISO 14064-3:2007 (Associação Brasileira de Normas Técnicas)** * **Advanced
+      technologies
+  - text: Only High levels of assurance are accepted, as Moderate is a 'review', rather
+      than a full verification process.
+    found: true
+    checked_against: page
+    passage: 'statement from within the three years prior to the current reporting
+      year. This guidance was updated in January 2013. * **Canadian Institute of Chartered
+      Accountants (CICA) Handbook: Assurance Section 5025** - Only High levels of
+      assurance are accepted, as Moderate is a ''review'', rather than a full verification
+      process. * **Carbon Trust Standard** - Companies should attach both the certification
+      letter and certificate. Verification of'
+  - text: Verification under the EU Emissions Trading Scheme (EU ETS) Directive and
+      EU ETS related national implementation laws
+    found: true
+    checked_against: page
+    passage: previous year. Companies who have third-party verification using CEMARS
+      should select this option in the questionnaire. * **Toitū climate positive**
+      * **Toitū net carbonzero** * **Tokyo Emissions Trading Scheme** * **Verification
+      under the EU Emissions Trading Scheme (EU ETS) Directive and EU ETS related
+      national implementation laws** * **Verification under the Korean Emissions Trading
+      System (K-ETS)** [**[3]**](#footnotes) Note, this includes climate reporting/environmental
+      management standards, verification services. * **Australian
+  acquisition:
+    stage: research
+    origin: tavily
+    query: CDP US data center renewable energy claim verification
+- id: 2026/data-centers
+  url: https://sustainability.atmeta.com/data-centers
+  title: Data Centers Sustainability at Meta
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: We approach data center sustainability from the ground up — from design
+      and construction to operations — by prioritizing energy efficiency, clean and
+      renewable energy, water stewardship and responsible management of equipment
+      across our global fleet at end-of-life.
+    found: true
+    checked_against: page
+    passage: 'Sustainability Report](https://sustainability.atmeta.com/2025-sustainability-report/)
+      [Search](#) # Data Centers We approach data center sustainability from the ground
+      up - from design and construction to operations - by prioritizing energy efficiency,
+      clean and renewable energy, water stewardship and responsible management of
+      equipment across our global fleet at end-of-life. ![](https://sustainability.atmeta.com/wp-content/uploads/2024/08/ATN-Exterior-resize.jpg)
+      ![Icon of two'
+  - text: 100% of our owned and operated data center and office electricity is matched
+      with clean and renewable energy.
+    found: true
+    checked_against: page
+    passage: '2024. ![Icon of checkmark inside circle](https://sustainability.atmeta.com/wp-content/uploads/2024/08/Group-8545.svg)
+      ### 100% of our owned and operated data center and office electricity is matched
+      with clean and renewable energy. ![Icon of checkmark inside circle](https://sustainability.atmeta.com/wp-content/uploads/2024/08/Group-8545.svg)
+      ###'
+  - text: Our next-generation data centers will support our current products while
+      enabling future generations of AI growth.
+    found: true
+    checked_against: page
+    passage: we design, build, and operate industry-leading infrastructure with innovation,
+      efficiency and flexibility in mind. Our next-generation data centers will support
+      our current products while enabling future generations of AI growth. Our vision
+      blends high-performance with a mix of custom solutions specific to our unique
+      needs. This design requires
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Sustainability reports data centers hourly renewable energy matching
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mostly-true
+  analyst_confidence: medium
+  auditor_confidence: low
+  verdict_agrees: false
+  confidence_agrees: false
+  needs_review: true
+  auditor_reasoning: Iron Mountain, Meta, and Digital Realty explicitly state that
+    their electricity is "matched" with renewable energy but give no detail on whether
+    this matching is annual or hourly. Google’s report expresses a goal of hour‑by‑hour
+    carbon‑free power, not an established practice. The state attorneys‑general letter
+    and the regulation‑focused blog both allege that firms rely on unbundled RECs,
+    which are typically used for annual matching, indicating that the common interpretation
+    of "100% renewable" is indeed annual certificate matching. Together, these sources
+    support the claim that such statements generally refer to annual certificate matching
+    rather than real‑time renewable consumption, though the evidence is limited to
+    self‑reported disclosures and a legal allegation, yielding low confidence.
+  evidence_gaps:
+  - No source provides a detailed methodology confirming that the 100% renewable claims
+    are based on annual certificate matching rather than hour‑by‑hour accounting.
+  - Absence of independent, third‑party verification of the temporal granularity of
+    renewable energy use for the data‑center operators.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: mostly-true
+  pipeline_confidence: low
+  rule_applied: tiebreaker-matched-evaluator
+  tiebreaker_verdict: mostly-true
+  tiebreaker_confidence: medium
+  tiebreaker_reasoning: Iron Mountain (Source 1) and Meta (Source 7) both describe
+    their 100% renewable claims as “matched” renewable energy, a phrasing that conventionally
+    refers to annual REC matching. The state‑attorney‑general letter (Source 5) explicitly
+    alleges that firms misuse RECs to claim 100% renewable, reinforcing the annual‑matching
+    interpretation, while the regulatory blog (Source 6) notes the US focus on cost
+    allocation rather than hour‑by‑hour granularity. Google’s statement (Source 4)
+    is a forward‑looking goal for hourly carbon‑free power, not evidence that its
+    current claim is hourly. Thus the preponderance of evidence supports that 100%
+    renewable claims are understood as annual certificate matching, not real‑time
+    renewable supply.
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: Data centers' "100% renewable" claims mean certificates matched to a year's
+    use, not renewable power hour by hour.
+  seo_title: US data centers' 100% renewable is annual
+  verdict: mostly-true
+  cap_rationale: null
+  uncited_by_title:
+  - 2026/ironmountain-sustainability
+  - 2025/sustainable-ai-achieving-net-zero-data-centers-renewable-energy
+  - 2025/digital-realty-published-2024-impact-report-highlighting-bbzub3tsrqiohtml
+  - 2026/operating-sustainably
+  - 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+  - 2026/data-center-sustainability-regulation-a-2026-global-map
+  - 2026/data-centers
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: tie-broken
+  original:
+    statement: Data centers' "100% renewable" claims mean certificates matched to
+      a year's use, not renewable power hour by hour.
+    verdict: mostly-true
+    confidence: low
+  pool:
+    consulted: 9
+    on_disk: 139
+    sent: 24
+  why_unverified: quantifier-unsupported
+  why_unverified_note: The claim asserts a specific methodology—annual certificate
+    matching versus hour‑by‑hour renewable power—without sources directly confirming
+    that methodology.
+  candidates:
+  - rank: 1
+    text: US Data Centers commit to hour‑by‑hour carbon‑free electricity, yet their
+      current 100% renewable claims rely on annual certificate matching.
+    frame: commitment
+    expected_verdict: mixed
+    expected_confidence: medium
+    verification_level_estimate: partially-verified
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2026/operating-sustainably
+      quote: '"Our moonshot is to power our operations with carbon‑free energy, every
+        hour of every day, on every grid where we operate."'
+      quote_verified: true
+      note: Google articulates a commitment to hour‑by‑hour carbon‑free power.
+    - source: 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+      quote: '"These claims appear deceptive ... misusing renewable energy certificates
+        (RECs) to deceptively claim 100% renewable energy use."'
+      quote_verified: false
+      note: Attorneys‑general letter suggests existing 100% renewable claims are based
+        on annual REC matching.
+    contradicting:
+    - source: 2026/ironmountain-sustainability
+      quote: '"Powering progress. Protecting the planet with 100% matched renewable
+        energy."'
+      quote_verified: true
+      note: Iron Mountain’s disclosure does not mention an hourly commitment, implying
+        reliance on certificate matching.
+    rationale: Google’s hourly goal and the attorneys‑general criticism together create
+      a mixed picture of commitment versus practice.
+  - rank: 2
+    text: US Data Centers obtain renewable energy certificates that cover their yearly
+      electricity consumption, not the real‑time power used.
+    frame: supplier
+    expected_verdict: mixed
+    expected_confidence: medium
+    verification_level_estimate: partially-verified
+    decisiveness: 2
+    needs_new_research: false
+    supporting:
+    - source: 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+      quote: '"These claims appear deceptive ... misusing renewable energy certificates
+        (RECs) to deceptively claim 100% renewable energy use."'
+      quote_verified: false
+      note: Letter indicates reliance on RECs that are typically allocated on an annual
+        basis.
+    - source: 2026/ironmountain-sustainability
+      quote: '"Powering progress. Protecting the planet with 100% matched renewable
+        energy."'
+      quote_verified: true
+      note: Iron Mountain’s 100% matched claim suggests procurement of RECs rather
+        than hour‑by‑hour sourcing.
+    contradicting:
+    - source: 2026/operating-sustainably
+      quote: '"Our moonshot is to power our operations with carbon‑free energy, every
+        hour of every day, on every grid where we operate."'
+      quote_verified: true
+      note: Google’s commitment to hourly carbon‑free power challenges the notion
+        that certificates alone define the supply.
+    rationale: Evidence shows use of RECs (annual) but also shows some operators pursuing
+      hourly carbon‑free power, leading to a mixed assessment.
+  - rank: 3
+    text: US Data Centers' 100% renewable energy claims are based on annual renewable
+      energy certificate matching rather than hour‑by‑hour renewable power.
+    frame: narrowed
+    expected_verdict: mixed
+    expected_confidence: medium
+    verification_level_estimate: partially-verified
+    decisiveness: 2
+    needs_new_research: false
+    supporting:
+    - source: 2026/ironmountain-sustainability
+      quote: '"Powering progress. Protecting the planet with 100% matched renewable
+        energy."'
+      quote_verified: true
+      note: Iron Mountain states it matches 100% renewable energy, implying use of
+        renewable certificates.
+    - source: 2025/2025-09-2420ag20letter20to20tech20companies20on20recmopdf
+      quote: '"These claims appear deceptive ... misusing renewable energy certificates
+        (RECs) to deceptively claim 100% renewable energy use."'
+      quote_verified: false
+      note: State attorneys general allege tech companies rely on RECs, suggesting
+        annual matching rather than real‑time sourcing.
+    contradicting:
+    - source: 2026/operating-sustainably
+      quote: '"Our moonshot is to power our operations with carbon‑free energy, every
+        hour of every day, on every grid where we operate."'
+      quote_verified: true
+      note: Google pledges hour‑by‑hour carbon‑free power, contradicting the idea
+        that claims rely solely on annual matching.
+    rationale: Mixed evidence from Iron Mountain and an attorneys‑general letter supports
+      annual REC matching, while Google’s hourly carbon‑free goal contradicts it.
+  - rank: 4
+    text: US Data Centers disclose that they match 100% of their annual electricity
+      consumption with renewable energy certificates.
+    frame: disclosure
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 1
+    needs_new_research: true
+    supporting:
+    - source: 2026/ironmountain-sustainability
+      quote: '"Powering progress. Protecting the planet with 100% matched renewable
+        energy."'
+      quote_verified: true
+      note: Iron Mountain publicly discloses a 100% matched renewable energy claim,
+        but does not specify an annual accounting period.
+    contradicting: []
+    rationale: No source explicitly states that the matching is calculated on an annual
+      basis, so the claim remains unverified.
+  dropped: []
+  picked: null

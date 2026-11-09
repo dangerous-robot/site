@@ -1,0 +1,722 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:16:48.964729+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - restater
+  run_id: 9d8c0802987d4f12bc81c42ad746eca4
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://finance.yahoo.com/news/google-saves-conversations-gemini-years-174957639.html
+    title: Google saves your conversations with Gemini for years by default
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/google-unveils-gemini-feature-uses-145731487.html
+    title: Google Unveils Gemini Feature That Uses User Data for Personalized AI
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://discuss.ai.google.dev/t/data-privacy-in-use-google-ai-studio/34455
+    title: Data privacy in use Google AI Studio - Google AI Studio - Google AI Developers
+      Forum
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://crfm.stanford.edu/fmti/December-2025/company-reports/Google_FinalReport_FMTI2025.html
+    title: Google Transparency Report
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://cloud.google.com/blog/products/identity-security/google-clouds-semi-annual-transparency-report-now-available
+    title: Google Cloud’s semi-annual transparency report now available | Google Cloud
+      Blog
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://cryptorank.io/news/feed/83fff-googles-ai-safety-promises-under-scrutiny-after-gemini-report
+    title: Google’s AI safety promises under scrutiny after Gemini report | Google
+      gemini | CryptoRank.io
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/Bard/comments/1ok7ls7/google_basically_dont_let_you_opt_out_of
+    title: 'Google basically don’t let you opt out of collecting your data and training
+      AI on it??? : r/Bard'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://spellbook.com/learn/is-gemini-private
+    title: Is Gemini Private? What Google Keeps, and Who Can See It - Spellbook
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://proton.me/lumo/ai/is-gemini-safe
+    title: Is Google Gemini safe? | Proton
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/top-content/artificial-intelligence/data-privacy-issues-with-ai/how-to-ensure-ai-providers-don-t-use-your-data-for-training
+    title: How to Ensure AI Providers Don't Use Your Data for Training
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://support.google.com/gemini/thread/395548332/google-one-ai-pro-gemini-company-confidential-data-used-for-ai-training?hl=en
+    title: 'Google One AI Pro Gemini: Company Confidential Data Used for AI Training?
+      - Gemini Apps Community'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://linustechtips.com/topic/1631131-google-gemini-does-not-allow-you-to-opt-out-of-data-usage-for-model-improvement-unless-you-turn-off-chat-history-entirely
+    title: Google Gemini does not allow you to opt out of data usage for model improvement
+      unless you turn off chat history entirely. - Programs, Apps and Websites - Linus
+      Tech Tips
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cloaked.com/post/how-to-opt-out-of-ai-training
+    title: 'How to Opt Out of AI Training: ChatGPT, Gemini, Claude'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://meprism.com/opt-out-guides/blog/gemini-google-ai-training-opt-out
+    title: How to Stop Google Gemini Using Your Data for AI Training — Priwall by
+      mePrism
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.linkedin.com/posts/markl_as-per-clara-hawking-by-default-google-activity-7369899796482072576-9MzF
+    title: Google Gemini uses user data for AI training, opt out not easy | Mark Lewis
+      posted on the topic | LinkedIn
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.engadget.com/2268598/how-to-stop-ai-companies-training-your-data
+    title: How To Stop AI Companies From Training On Your Data
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://discuss.google.dev/t/gemini-pro-1-5-data-used-for-training/151146
+    title: Gemini Pro 1.5 Data used for Training - Custom ML & MLOps - Google Developer
+      forums
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2023/12/08/google-faces-controversy-over-edited-gemini-ai-demo-video.html
+    title: Google faces controversy over edited Gemini AI demo video
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2023/12/08/google-faces-controversy-over-edited-gemini-ai-demo-video.html
+    title: Google faces controversy over edited Gemini AI demo video
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://finance.yahoo.com/news/google-woke-ai-image-controversy-182443539.html
+    title: What Google’s ‘woke’ AI image controversy says about AI—and about Google
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.niemanlab.org/2025/05/google-is-using-content-from-publishers-who-opt-out-of-other-ai-training-to-power-ai-overviews
+    title: Google is using content from publishers who “opt out” of other AI training
+      to power AI Overviews | Nieman Journalism Lab
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/2026/03/04/google-gemini-ai-told-user-stage-mass-casualty-attack-suit-claims.html
+    title: Google Gemini AI told user stage 'mass casualty attack,' suit claims
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.cnbc.com/amp/2026/03/04/google-gemini-ai-told-user-stage-mass-casualty-attack-suit-claims.html
+    title: Google Gemini AI told user stage 'mass casualty attack,' suit claims
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://news.ycombinator.com/item?id=43706530
+    title: 'Tell HN: Warning Google trains on your data when using aistudio.google.com
+      | Hacker News'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://cryptorank.io/news/feed/1a237-google-gemini-lawsuit-fatal-ai-psychosis
+    title: 'Google Gemini Lawsuit: Devastating Wrongful Death Case Alleges AI Chatbot
+      Fueled Fatal Psychosis | AI News Google | CryptoRank.io'
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - Google Gemini privacy policy user data training
+  - Google Gemini transparency report data collection
+  - third-party audit Gemini AI user data training
+  - Gemini Google technical data training exclusions
+  - Google Gemini user data commitments training pipeline
+  - controversy Gemini Google user data training
+  - retracted claims Gemini user data training Google
+  planner_rationale: The sub-questions collectively assess Google's transparency,
+    third-party validation, technical safeguards, public commitments, and counter-evidence
+    to comprehensively evaluate the claim.
+  candidates_seen: 42
+  urls_kept: 13
+  urls_dropped: 25
+  scorer_rationale: "-- **sq1 (Google's official transparency report/privacy policy)**\n\
+    \  Kept: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off\
+    \ (5), https://workspace.google.com/security/ai-privacy (5), https://docs.cloud.google.com/gemini/docs/discover/data-governance\
+    \ (5), https://support.google.com/gemini/answer/13594961?hl=en (4), https://transparency.google/intl/en_us/our-policies/privacy-policy-terms-of-service\
+    \ (4), https://knowledge.workspace.google.com/admin/generative-ai/generative-ai-in-google-workspace-privacy-hub\
+    \ (5), https://services.google.com/fh/files/misc/genai_privacy_google_cloud.pdf\
+    \ (5), https://support.google.com/docs/thread/323476233/is-gemini-using-the-content-within-a-document-to-put-toward-their-machine-learning-generative-ai?hl=en\
+    \ (3), https://ajaia.ai/ai-insights/does-gemini-train-on-your-data (4)\n  Dropped:\
+    \ All others lack explicitly first-party Google policies or unambiguous references\
+    \ to transparency reports/privacy policies for Gemini.\n\n-- **sq2 (Third-party\
+    \ audits/ESG reports measuring Gemini’s user data use)**\n  Kept: None qualify\
+    \ as third-party audits (e.g., no ESG reports, academic reviews, or independent\
+    \ audit mentions). All high-ranked candidates focus on Google’s own disclosures.\
+    \ Closest (but not third-party) are ambiguous Snippets like the **Stanford FMTI\
+    \ report (dropped; too vague about audits)**.\n  Dropped: Everything else, including\
+    \ forum posts (https://news.ycombinator.com/item?id=43706530) and news snippets.\n\
+    \n-- **sq3 (Technical mechanisms/data collection policies)**\n  Kept: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off\
+    \ (5), https://support.google.com/gemini/thread/440410885/overwhelmed-by-gemini-data-collection-can-i-use-it-without-giving-up-privacy?hl=en\
+    \ (3), https://support.google.com/gemini/answer/13594961?hl=en (4), https://workspace.google.com/security/ai-privacy\
+    \ (5), https://knowledge.workspace.google.com/admin/generative-ai/generative-ai-in-google-workspace-privacy-hub\
+    \ (5), https://docs.cloud.google.com/gemini/docs/discover/data-governance (5),\
+    \ https://workspace.google.com/blog/ai-and-machine-learning/enterprise-security-controls-google-workspace-gemini\
+    \ (5), https://support.google.com/docs/thread/323476233/is-gemini-using-the-content-within-a-document-to-put-toward-their-machine-learning-generative-ai?hl=en\
+    \ (3), https://services.google.com/fh/files/misc/genai_privacy_google_cloud.pdf\
+    \ (5), https://ajaia.ai/ai-insights/does-gemini-train-on-your-data (4)\n  These\
+    \ specify technical safeguards like opt-out mechanisms, Workspace exclusions,\
+    \ and DLP settings. Dropped: forum threads or Snippets lacking policy specifics.\
+    \ **Ignored sources: secondary claims (e.g., Proton, TechRepublic)**.\n\n-- **sq4\
+    \ (Public commitments)**\n  Kept: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off\
+    \ (5), https://transparency.google/intl/en_us/our-policies/privacy-policy-terms-of-service\
+    \ (4), https://workspace.google.com/security/ai-privacy (5), https://knowledge.workspace.google.com/admin/generative-ai/generative-ai-in-google-workspace-privacy-hub\
+    \ (5), https://workspace.google.com/blog/ai-and-machine-learning/enterprise-security-controls-google-workspace-gemini\
+    \ (5), https://docs.cloud.google.com/gemini/docs/discover/data-governance (5),\
+    \ https://services.google.com/fh/files/misc/genai_privacy_google_cloud.pdf (5).\n\
+    \  Snippets explicitly tie commitments to Gemini’s training policies or official\
+    \ blogs. Dropped: Ambiguous promises (e.g. LinkedIn or CNBC) or forum posts.\n\
+    \n-- **sq5 (Evidence/controversies countering the claim)**\n  Kept: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off\
+    \ (5, explicit policy **contradicting** the "
+  urls_after_blocklist: 13
+sub_questions:
+- id: sq1
+  question: What does Google's official transparency report or privacy policy state
+    about Gemini's use of user data for training?
+  rationale: First-party sources like Google's transparency reports or privacy policies
+    often outline data usage practices for Gemini, including training conditions.
+  kind: coverage
+  queries:
+  - Google Gemini privacy policy user data training
+  - Google Gemini transparency report data collection
+  citations:
+  - 2026/ai-privacy
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/generative-ai-in-google-workspace-privacy-hub
+  - 2026/data-governance
+  - 2024/genaiprivacygooglecloudpdf
+  - 2026/13594961
+  snippet_only: []
+- id: sq2
+  question: Are there third-party audits or ESG/tech ethics reports assessing whether
+    Gemini uses user data for training?
+  rationale: Third-party evaluations, such as those from ESG aggregators, tech ethics
+    organizations, or independent audits, can provide an external perspective on data
+    practices.
+  kind: coverage
+  queries:
+  - third-party audit Gemini AI user data training
+  citations: []
+  snippet_only: []
+- id: sq3
+  question: What technical mechanisms or data collection policies does Google disclose
+    about Gemini's training pipeline (e.g., opt-in/opt-out, data anonymization)?
+  rationale: Understanding the technical and procedural safeguards around data usage
+    can clarify whether user data is actually used for training.
+  kind: coverage
+  queries:
+  - Gemini Google technical data training exclusions
+  citations:
+  - 2026/ai-privacy
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/generative-ai-in-google-workspace-privacy-hub
+  - 2026/data-governance
+  - 2025/enterprise-security-controls-google-workspace-gemini
+  - 2024/genaiprivacygooglecloudpdf
+  - 2026/13594961
+  snippet_only: []
+- id: sq4
+  question: Has Google made any public commitments or pledges regarding user data
+    not being used for Gemini training?
+  rationale: Public commitments, such as those in blog posts or product announcements,
+    can explicitly state or imply stances on data usage for training purposes.
+  kind: coverage
+  queries:
+  - Google Gemini user data commitments training pipeline
+  citations:
+  - 2026/ai-privacy
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  - 2026/generative-ai-in-google-workspace-privacy-hub
+  - 2024/genaiprivacygooglecloudpdf
+  snippet_only:
+  - 2025/enterprise-security-controls-google-workspace-gemini
+- id: sq5
+  question: Is there any evidence, controversy, or retraction indicating that Gemini
+    has used user data for training despite claims to the contrary?
+  rationale: Identifying counter-evidence such as leaks, regulatory actions, or retracted
+    statements is critical to verifying the claim's validity.
+  kind: counter-evidence
+  queries:
+  - controversy Gemini Google user data training
+  - retracted claims Gemini user data training Google
+  citations:
+  - 2026/news-google-gemini-ai-training-publishers-lawsuit
+  snippet_only:
+  - 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+sources_consulted:
+- id: 2026/ai-privacy
+  url: https://workspace.google.com/security/ai-privacy
+  title: Secure AI and Privacy in Google Workspace with Gemini
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Generative AI has become an indispensable tool... Evaluating generative
+      AI’s infrastructure, data governance policies, and security controls to protect
+      sensitive data is a must."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: ellipsis fragments too far apart
+  - text: Gemini doesn’t train the model on our data, and features are enterprise-ready
+      as soon as they are released... administrators have confidence they can deploy
+      Gemini in a secure manner.
+    found: true
+    checked_against: page
+    passage: '> Gemini doesn''t change how we trust Workspace with our data. Gemini
+      doesn''t train the model on our data, and features are enterprise-ready as soon
+      as they are released, so our administrators have confidence they can deploy
+      Gemini in a secure manner. Tyler Predale, Director, IT Systems, Flashpoint >
+      The security benefits of this really cannot be overstated. It''s'
+  - text: The security benefits of this really cannot be overstated... Gemini has
+      the same security posture already built in that we have existing with Google
+      Workspace.
+    found: true
+    checked_against: page
+    passage: have confidence they can deploy Gemini in a secure manner. Tyler Predale,
+      Director, IT Systems, Flashpoint > The security benefits of this really cannot
+      be overstated. It's critical to be purposeful and find solutions from a vendor
+      that meets your needs without compromising your security. Gemini has the same
+      security posture already built in that we have existing with Google Workspace.
+      Forest Donovan, Senior Director of Strategic Alliances, Fullstory [Learn
+  shared_with:
+  - 2025/enterprise-security-controls-google-workspace-gemini
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini privacy policy user data training
+- id: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  url: https://ppc.land/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+  title: Google Gemini Now Learns From Your Chats Unless You Turn It Off
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Do you use the Gemini app? Better check your privacy settings. Google
+      is rolling out ''Personal Context'' which gives it the ability for it to train
+      on your chats by default."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: When this setting is on, Gemini remembers key details and preferences you've
+      shared, leading to more natural and relevant conversations, as if you're collaborating
+      with a partner who's already up to speed
+    found: true
+    checked_against: page
+    passage: grants Gemini access to analyze previous conversations to extract user
+      preferences, interests, and behavioral patterns. "When this setting is on, Gemini
+      remembers key details and preferences you've shared, leading to more natural
+      and relevant conversations, as if you're collaborating with a partner who's
+      already up to speed," according to Google's official announcement. The feature
+      requires users who prefer to maintain conversation privacy to manually disable
+      the functionality through
+  - text: The September 2, 2025 effective date for expanded data usage for AI training
+      represents a significant milestone in Google's data collection strategy.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini privacy policy user data training
+- id: 2026/generative-ai-in-google-workspace-privacy-hub
+  url: https://knowledge.workspace.google.com/admin/generative-ai/generative-ai-in-google-workspace-privacy-hub
+  title: Generative AI in Google Workspace Privacy Hub
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Generative AI doesn't change these commitments — it reaffirms their importance.
+    found: true
+    checked_against: page
+    passage: long shared robust [privacy commitments](https://cloud.google.com/privacy)
+      to protect user data and prioritize privacy. Generative AI doesn't change these
+      commitments - it reaffirms their importance. This article is intended to help
+      our business, education, and public sector customers understand how we use their
+      data
+  - text: Gemini does not share your content outside your organization without your
+      permission.
+    found: true
+    checked_against: page
+    passage: 'that give you choice and control over your data: * **Your interactions
+      with Gemini stay within your organization**. Gemini does not share your content
+      outside your organization without your permission. * **Your existing Google
+      Workspace protections are automatically applied.** Gemini brings the same enterprise-grade'
+  - text: Your content is not used for any other customers.
+    found: true
+    checked_against: page
+    passage: 'are automatically applied.** Gemini brings the same enterprise-grade
+      security as the rest of Google Workspace. * **Your content is not used for any
+      other customers.** Your content is not human reviewed or otherwise used for
+      Generative AI model training outside your domain without permission. ## Summary
+      of Gemini Privacy & Security Controls | Gemini DOES NOT | Gemini DOES | | ---
+      | --- | | Data access | ✖'
+  - text: '"Your prompts are not used for training generative AI models without your
+      permission."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini privacy policy user data training
+- id: 2026/news-google-gemini-ai-training-publishers-lawsuit
+  url: https://www.techrepublic.com/article/news-google-gemini-ai-training-publishers-lawsuit
+  title: Publishers and Author Sue Google Over Copyright Violations in Gemini AI Training
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: one of the most prolific infringements of copyrighted materials in history.
+    found: true
+    checked_against: page
+    passage: accusing Google of abandoning its once-famous "Don't be evil" philosophy
+      in its race to remain competitive in AI. It describes the company's alleged
+      actions as "one of the most prolific infringements of copyrighted materials
+      in history." The publishers argue [Gemini](https://www.techrepublic.com/article/news-google-ai-models-explained/)
+      could pose a
+  - text: '"The lawsuit claims Google used copyrighted works to train its Gemini AI
+      models beyond the permissions granted through Google Books and Google Play Books."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Blocks of copyright management information were allegedly 'removed or altered'
+      to obscure the source of the training material.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: retracted claims Gemini user data training Google
+- id: 2026/data-governance
+  url: https://docs.cloud.google.com/gemini/docs/discover/data-governance
+  title: Data Governance for Gemini Products in Google Cloud
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Gemini doesn't use your prompts or its responses as data to train its models.
+    found: true
+    checked_against: page
+    passage: complete, are called *prompts*. The answers or code completions that
+      you receive from Gemini are called *responses*. Gemini doesn't use your prompts
+      or its responses as data to train its models. Some features are only available
+      through the [Gemini for Google Cloud Trusted Tester
+  - text: Because Gemini is an evolving technology, it can generate output that's
+      plausible-sounding but factually incorrect.
+    found: true
+    checked_against: page
+    passage: see [Configure and use Gemini Code Assist code customization](/gemini/docs/codeassist/code-customization).
+      Because Gemini is an evolving technology, it can generate output that's plausible-sounding
+      but factually incorrect. We recommend that you validate all output from Gemini
+      before you use it. For more information, see [Gemini products in
+  - text: You're responsible for the security, testing, and effectiveness of your
+      code, including any code completion, generation, or analysis that Gemini offers
+      you.
+    found: true
+    checked_against: page
+    passage: data generated from Gemini Gemini is trained on first-party Google Cloud
+      code as well as selected third-party code. You're responsible for the security,
+      testing, and effectiveness of your code, including any code completion, generation,
+      or analysis that Gemini offers you. Gemini also provides source citations when
+      suggestions directly quote at length from a source to help you comply with
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini privacy policy user data training
+- id: 2025/enterprise-security-controls-google-workspace-gemini
+  url: https://workspace.google.com/blog/ai-and-machine-learning/enterprise-security-controls-google-workspace-gemini
+  title: Enterprise Security Controls for Google Workspace with Gemini
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Security was at the forefront of our enterprise’s most critical needs as
+      we looked to implement a generative AI solution. During our search, we ran a
+      platform ‘bake-off’ and found that Gemini met all our security needs.
+    found: true
+    checked_against: page
+    passage: trends, and product news. [SIGN UP](https://workspace.google.com/?source=gafb-blog_article-body-en#newsletter)
+      *"Security was at the forefront of our enterprise's most critical needs as we
+      looked to implement a generative AI solution. During our search, we ran a platform
+      'bake-off' and found that Gemini met all our security needs. The solution inherits
+      all our existing Workspace security settings to keep our data, prompts, and
+      work within the
+  - text: We became the first major financial institution in Canada to empower all
+      of our team members with Google AI in Workspace. In the pilot program, we saw
+      that Google AI offered significant time savings and productivity gains for team
+      members, allowing them to automate routine tasks, access information quickly,
+      and collaborate more effectively, all while ensuring data is secure and trustworthy.
+    found: true
+    checked_against: page
+    passage: and OS, restricting user access levels for the Gemini app to a specific
+      organizational unit. *"We became the first major financial institution in Canada
+      to empower all of our team members with Google AI in Workspace. In the pilot
+      program, we saw that Google AI offered significant time savings and productivity
+      gains for team members, allowing them to automate routine tasks, access information
+      quickly, and collaborate more effectively, all while ensuring data is secure
+      and trustworthy. Today, we're confident this technology will help all of our
+      team members succeed in their roles, while
+  shared_with:
+  - 2026/ai-privacy
+  acquisition:
+    stage: research
+    origin: tavily
+    query: third-party audit Gemini AI user data training
+- id: 2024/genaiprivacygooglecloudpdf
+  url: https://services.google.com/fh/files/misc/genai_privacy_google_cloud.pdf
+  title: Generative AI, Privacy, and Google Cloud
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: Your data is your data. The data or content generated by a Generative AI
+      Service is considered Customer Data that Google only processes according to
+      customer's instructions.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: We do not use data that you provide us to train our own models without your
+      permission.
+    found: true
+    checked_against: page
+    passage: customers want their data to be private and not be shared with the broader
+      Google or foundation model training corpus. We do not use data that you provide
+      us to train our own models without your permission. ●​ We provide enterprise-grade
+      privacy and security. We provide Cloud AI offerings such as Vertex AI and foundation
+  - text: Google Cloud does not use customer data for training models without customer’s
+      prior permission or instruction.
+    found: true
+    checked_against: page
+    passage: contribute to regulation development, and demonstrate compliance. Does
+      Google Cloud use customer data to train models? Google Cloud does not use customer
+      data for training models without customer's prior permission or instruction.
+      This commitment is outlined in the 'Training Restriction' sections of both the
+      Service Specific Terms for Google Cloud
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini user data commitments training pipeline
+- id: 2026/13594961
+  url: https://support.google.com/gemini/answer/13594961?hl=en
+  title: Gemini Apps Privacy Hub
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: '"Google uses this data [...] to provide our services, maintain and improve
+      our services, develop new services, personalize our services".'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Human reviewers review some of the data we collect [...] Please don’t
+      enter confidential information that you wouldn’t want a reviewer to see or Google
+      to use."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: '"Temporary chats and chats with Keep Activity off are retained for 72 hours
+      to respond to you and help protect our users."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Location data is always collected if you use Gemini Apps so that they can
+      provide you with a response that is relevant to your query.
+    found: true
+    checked_against: page
+    passage: 'Location & other permissions information What location information do
+      Gemini Apps collect, why, and how is it used? Location data is always collected
+      if you use Gemini Apps so that they can provide you with a response that is
+      relevant to your query. For example, to respond to prompts like "What''s the
+      weather?", Gemini Apps need to know your location. #### Where'
+  - text: '"You can manage your data and privacy in [Google Account settings](https://account.google.com/)
+      or in [Gemini Apps Activity](https://myactivity.google.com/product/gemini)."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: research
+    origin: tavily
+    query: Google Gemini privacy policy user data training
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mixed
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: true
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Google’s own documentation (Sources 1, 4, 5) states that Gemini
+    does not use prompts or responses for model training without user permission,
+    implying a default opt‑in model where training does not occur. However, a third‑party
+    report (Source 2) describes a consumer ‘Personal Context’ feature that by default
+    feeds chat content into training unless the user manually opts out, with regional
+    exclusions for the EU, UK, and Switzerland. Because the default differs between
+    enterprise and consumer accounts (and by region for consumers), the claim that
+    Gemini does not use user data for training is only partially correct, leading
+    to a mixed verdict.
+  evidence_gaps:
+  - The sources do not provide a comprehensive, official statement about the default
+    data‑training behavior for all consumer Gemini accounts worldwide; the consumer‑focused
+    evidence is limited to the ‘Personal Context’ feature reported by a third‑party
+    article.
+  - Google’s own documentation cited (Sources 1, 4, 5) addresses enterprise or cloud‑service
+    contexts and does not explicitly cover the default consumer setting.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: mixed
+  pipeline_confidence: medium
+  rule_applied: agreed
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: Gemini does not use user data for training
+  seo_title: Gemini does not use user data for training
+  verdict: mixed
+  cap_rationale: null
+  uncited_by_title: []
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: weak-verdict
+  original:
+    statement: Gemini does not use user data for training
+    verdict: mixed
+    confidence: medium
+  pool:
+    consulted: 8
+    on_disk: 158
+    sent: 24
+  why_unverified: term-mismatch
+  why_unverified_note: The claim does not specify whether it refers to enterprise
+    or consumer Gemini users, and sources address these contexts differently.
+  candidates:
+  - rank: 1
+    text: Google states that Gemini does not use customer data to train its models
+      without explicit permission.
+    frame: disclosure
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 4
+    needs_new_research: false
+    supporting:
+    - source: 2026/generative-ai-in-google-workspace-privacy-hub
+      quote: Gemini does not share your content outside your organization without
+        your permission.
+      quote_verified: true
+      note: Google Workspace privacy hub explicitly discloses non‑sharing for training.
+    - source: 2024/genaiprivacygooglecloudpdf
+      quote: We do not use data that you provide us to train our own models without
+        your permission.
+      quote_verified: true
+      note: Google Cloud whitepaper affirms the same commitment.
+    contradicting:
+    - source: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+      quote: Google’s Gemini AI assistant began using user conversation data for model
+        training by default... Users must manually disable this setting...
+      quote_verified: true
+      note: Shows actual default behavior contradicts the public statement.
+    rationale: The claim reflects Google’s publicly stated policy; first‑party documents
+      confirm the statement, while an independent source highlights a gap between
+      policy and default consumer settings.
+  - rank: 2
+    text: Gemini does not use user data for training in Google Workspace enterprise
+      deployments.
+    frame: narrowed
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: self-reported
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2026/data-governance
+      quote: Gemini doesn't use your prompts or its responses as data to train its
+        models.
+      quote_verified: true
+      note: Enterprise documentation explicitly says prompts are not used for model
+        training.
+    - source: 2026/ai-privacy
+      quote: Gemini doesn’t train the model on our data, and features are enterprise‑ready
+        as soon as they are released...
+      quote_verified: true
+      note: Google’s Workspace privacy page asserts no training on user data.
+    contradicting: []
+    rationale: Enterprise‑focused Google documents consistently state that Gemini
+      does not train on user data in Workspace, matching the narrowed scope.
+  - rank: 3
+    text: Gemini uses user conversation data for model training by default for consumer
+      accounts unless users turn off the Personal Context setting.
+    frame: supplier
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+      quote: Google’s Gemini AI assistant began using user conversation data for model
+        training by default on August 13, 2025, through its ‘Personal Context’ feature.
+        Users must manually disable this setting in their privacy options to prevent
+        their chats from being analyzed and stored.
+      quote_verified: true
+      note: Independent report describes the default training behavior for consumer
+        Gemini.
+    contradicting: []
+    rationale: The independent article provides a direct description of the default
+      consumer‑side data‑training feature.
+  - rank: 4
+    text: Gemini does not train on user data for any users worldwide.
+    frame: other
+    expected_verdict: 'false'
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 2
+    needs_new_research: false
+    supporting: []
+    contradicting:
+    - source: 2025/google-gemini-now-learns-from-your-chats-unless-you-turn-it-off
+      quote: Google’s Gemini AI assistant began using user conversation data for model
+        training by default... Users must manually disable this setting...
+      quote_verified: true
+      note: Demonstrates that some users’ data are used for training.
+    - source: 2026/data-governance
+      quote: Gemini doesn't use your prompts or its responses as data to train its
+        models.
+      quote_verified: true
+      note: Enterprise‑only statement; does not cover all global users.
+    rationale: No source supports a universal ban on training; the independent article
+      confirms training occurs for many consumers, making the universal‑no‑training
+      claim false.
+  dropped: []
+  picked: null

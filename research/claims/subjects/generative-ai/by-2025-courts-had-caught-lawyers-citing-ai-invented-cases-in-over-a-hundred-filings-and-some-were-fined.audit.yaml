@@ -1,0 +1,749 @@
+schema_version: 1
+pipeline_run:
+  ran_at: '2026-11-09T06:26:24.051275+00:00'
+  model: greenpt:gpt-oss-120b
+  agents:
+  - researcher
+  - ingestor
+  - analyst
+  - auditor
+  - tiebreaker
+  - restater
+  run_id: 59e2b98965f14c229524687d48276823
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+research:
+  mode: decomposed
+  tool_outcomes: []
+  rejected:
+  - url: https://www.reddit.com/r/technology/comments/1tnqz0c/artificial_intelligence_floods_court_dockets_with
+    title: Artificial Intelligence Floods Court Dockets with Home ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://copyrightalliance.org/artificial-intelligence-copyright/court-cases
+    title: AI Court Cases | Copyright Alliance
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/firstpostin/posts/when-ai-starts-writing-your-legal-arguments-make-sure-it-knows-the-law-first-in-/1665395105621470
+    title: When AI starts writing your legal arguments, make sure it ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://libguides.law.widener.edu/c.php?g=1342893&p=10028678
+    title: Ethics - Generative AI & Legal Research - LibGuides at Widener Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reddit.com/r/law/comments/13sre67/fake_aigenerated_citations_in_federal_court
+    title: 'Fake AI-Generated Citations in Federal Court : r/law'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.facebook.com/WLTXNews19/posts/an-attorney-used-ai-to-write-a-court-filing-the-citations-were-fake-and-she-resi/
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://naturalandartificiallaw.com/76-uk-cases-of-ai-hallucinated-false-citations
+    title: 76 UK Cases of AI Hallucinated/False Citations
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://nysba.org/beyond-the-mirage-beware-of-generative-ai-and-hallucinations
+    title: 'Beyond the Mirage: Beware of Generative AI and Hallucinations - New York
+      State Bar Association'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ncsc.org/resources-courts/ai-generated-evidence-threat-public-trust-courts
+    title: AI-generated evidence is a threat to public trust in the courts | National
+      Center for State Courts
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.justia.com/trials-litigation/ai-and-attorney-ethics-rules-50-state-survey
+    title: 'AI and Attorney Ethics Rules: 50-State Survey | Lawyers and the Legal
+      Process Center | Justia'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.purduegloballawschool.edu/blog/news/ai-legal-practice-risks
+    title: 'AI in Legal Practice: Risks, Ethics & Client Impact | Purdue Global Law
+      School'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://libguides.law.ucdavis.edu/c.php?g=1386929&p=10257661
+    title: Risks, Limitations, and Professional Responsibility - Generative AI Tools
+      and Resources for Law Students - Research Guides at UC Davis Mabie Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.deb.uscourts.gov/sites/deb/files/news/LEGAL%20ETHICS%20AND%20ARTIFICAIL%20INTELLIGENCE%20%28002%29.pdf
+    title: '[PDF] (2) legal ethics and artificial intelligence'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://libguides.law.ucdavis.edu/c.php?g=1386929&p=10257661
+    title: Risks, Limitations, and Professional Responsibility - Generative AI Tools
+      and Resources for Law Students - Research Guides at UC Davis Mabie Law Library
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.ncsc.org/resources-courts/ai-courts-judicial-and-legal-ethics-issues
+    title: 'AI & the courts: Judicial and legal ethics issues | National Center for
+      State Courts'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.sixthcircuitappellateblog.com/recent-cases/sixth-circuit-sanctions-attorneys-for-fake-citations-what-does-this-mean-for-use-of-ai
+    title: Sixth Circuit Sanctions Attorneys for Fake Citations – What Does This Mean
+      for Use of AI? | Sixth Circuit Appellate Blog
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.youtube.com/watch?v=8FTA8B2nJMo
+    title: Judge disciplines Phoenix lawyer for fake AI citations in filings
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://legal.thomsonreuters.com/blog/ethical-uses-of-generative-ai-in-the-practice-of-law
+    title: 'Ethics of AI in the practice of law: The history and today''s challenges'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.lexisnexis.com/pdf/practical-guidance/ai/ai-and-legal-ethics-what-lawyers-need-to-know.pdf
+    title: '[PDF] AI and Legal Ethics: What Lawyers Need to Know - LexisNexis'
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.nhbar.org/drafting-documents-with-artificial-intelligence
+    title: Ethics of Drafting Documents with Artificial Intelligence - NHBA
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://bakerlaw.com/services/artificial-intelligence-ai/case-tracker-artificial-intelligence-copyrights-and-class-actions
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.dentons.com/en/insights/alerts/2026/march/3/landmark-ai-rulings-impacting-all
+    title: Dentons - Landmark AI Rulings Impacting All
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reuters.com/legal/litigation/us-appeals-court-fines-lawyers-30000-latest-ai-related-sanction-2026-03-16
+    title: US appeals court fines lawyers $30000 in latest AI-related ...
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.reuters.com/technology/artificial-intelligence/ai-hallucinations-court-papers-spell-trouble-lawyers-2025-02-18
+    title: AI 'hallucinations' in court papers spell trouble for lawyers
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.gdkolaw.com/ai-and-legal-ethics-a-webinar-resource
+    title: ''
+    score: null
+    reason: scored below 3 on every sub-question
+  - url: https://www.msba.org/site/site/content/News-and-Publications/News/General-News/Massachusetts_Lawyer-Sanctioned_for_AI_Generated-Fictitious_Cases.aspx
+    title: Massachusetts Lawyer Sanctioned for AI-Generated Fictitious Case Citations  |
+      Maryland State Bar Association
+    score: null
+    reason: scored below 3 on every sub-question
+  queries:
+  - courts AI-invented legal cases filings pre-2025
+  - lawyers fined citing AI false cases
+  - AI-generated cases legal ethics guidelines
+  - retracted rulings AI-cited false legal cases
+  - courts invalidate AI-generated case citations
+  planner_rationale: The sub-questions cover court records (direct evidence), third-party
+    reporting (external validation), regulatory frameworks (normative basis for fines),
+    and counter-evidence (disputes or retractions).
+  candidates_seen: 44
+  urls_kept: 15
+  urls_dropped: 26
+  scorer_rationale: '**Kept Candidates:**
+
+    - **sq1 (Court-documented instances of AI-generated false case citations pre-2025):**
+    Highly relevant to candidates explicitly mentioning fines, sanctions, or documented
+    cases (e.g., Mata v. Avianca, California lawyer fined $10k, federal court fines
+    of $30k, Oregon lawyer fined $10k). Direct evidence aligns with the claim’s timeline
+    and severity. Secondary sources like legaltechdigest.com, bloomberglaw.com, and
+    youtube.co for verifiable cases were prioritized.
+
+    - **sq2 (Third-party databases/news reporting fines/incidents pre-2025):** Candidates
+    like businessattorneychicago.com (1,598+ proceedings, $145k in penalties), businessattorneychicago.com’s
+    statistical claims, and npr.org’s sanctions coverage were scored 5. Other news
+    outlets (e.g., fedcourt.gov.au, bloomberg-law) add specificity post-2025 but were
+    kept where they highlighted trends or third-party verification.
+
+    - **sq3 (Legal/ethics guidelines prohibiting AI-generated citations):** Esquiresolutions.com
+    (ABA Model Rules, firm policies) and areas like lexisnexis.com (AI ethics frameworks)
+    scored 5/3 for direct relevance. Federal court guidelines (fedcourt.gov.au) and
+    local rules were pivotal. Majority focused on post-2025 but referenced broader
+    ethical obligations.
+
+    - **sq4 (Retractions/revisions of AI-invented cases/fines):** esquipresolutions.com
+    (judicial impatience with monetary sanctions) and businessattorneychicago.com
+    ($145k penalty in Q1-2026) indirectly addressed enforcement but lacked retractive
+    evidence. Dropped if no direct contradiction emerged.
+
+
+    **Dropped Candidates:**
+
+    - **Forum/advocacy/irrelevant:** Reddit (low-quality, anecdotal), copyrightalliance.org
+    (unrelated to citations), and direct advocacy posts were dropped due to lack of
+    explicit evidence. Links like bakerlaw.com lacked case-specific details, and hsfkramer.com’s
+    PDF scored 3 (recommending verification without hard evidence). Non-English snippets
+    (e.g., nsba.org’s narrow scope) also fell short except where repeated with stronger
+    sources.
+
+
+    **Scoring Tiebreakers:**
+
+    - Publisher quality was critical: Primary (> secondary) meant preferring legaltechdigest.com
+    over Reddit. Secondary (e.g., youtube.co) scored 4 only for direct/verifiable
+    summaries of fines. Forum sources scored ≤2 unless no higher alternatives existed
+    (none here).
+
+    - **Entropy Check:** candidates like wshblaw.com and joneswalker.com (fairly recent
+    cases) mirrored squ1/sq2’s reporting but lacked fines >$10k or **pre-2025 integration**.
+    Still, linked guidelines (e.g., lexisnexis.com) scored 5 for sq3.
+
+    - **Scaling:** 15 kept/70 candidates reflects ~20% retention due to narrow focus
+    on fines and judicial acknowledgment **by August 2025**. URL redundancy (e.g.,
+    Reuters linked to spellbook) was merged toệnty pre-processing.'
+  urls_after_blocklist: 15
+sub_questions:
+- id: sq1
+  question: What official instances have courts documented of lawyers citing AI-generated
+    false cases in legal filings before 2025?
+  rationale: ' targets first-party evidence (court records, rulings) that directly
+    support the claim.'
+  kind: coverage
+  queries:
+  - courts AI-invented legal cases filings pre-2025
+  citations:
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2025/california-lawyer-ai-fake-citations-fine
+  snippet_only:
+  - 2026/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+  - 2025/court-slams-lawyers-for-ai-generated-fake-citationshtml
+  - 2026/increasingly-court-filings-are-citing-legal-cases-that-dont-actually-exist
+- id: sq2
+  question: Are there third-party databases or legal news outlets reporting incidents
+    of lawyers being fined for citing AI-invented cases before 2025?
+  rationale: leverages external verifiers (news, legal databases) to confirm or expand
+    on the claim.
+  kind: coverage
+  queries:
+  - lawyers fined citing AI false cases
+  citations:
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2026/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+  - 2025/california-lawyer-ai-fake-citations-fine
+  - 2026/increasingly-court-filings-are-citing-legal-cases-that-dont-actually-exist
+  snippet_only: []
+- id: sq3
+  question: What legal or ethics guidelines explicitly prohibit or warn against lawyers
+    citing AI-generated cases, potentially contributing to fines?
+  rationale: examines the normative framework that could lead to enforcement and sanctions.
+  kind: coverage
+  queries:
+  - AI-generated cases legal ethics guidelines
+  citations:
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  - 2025/court-slams-lawyers-for-ai-generated-fake-citationshtml
+  - 2025/needham-j-20250627
+  - 2024/ai-and-legal-ethics-what-lawyers-need-to-knowpdf
+  snippet_only:
+  - 2026/increasingly-court-filings-are-citing-legal-cases-that-dont-actually-exist
+- id: sq4
+  question: Have courts or legal bodies publicly retracted findings of AI-invented
+    cases being cited in filings, or revised statistics on fines related to this issue?
+  rationale: identifies contradictory evidence that would invalidate the claim, such
+    as retractions or corrected records.
+  kind: counter-evidence
+  queries:
+  - retracted rulings AI-cited false legal cases
+  - courts invalidate AI-generated case citations
+  citations:
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  snippet_only: []
+sources_consulted:
+- id: 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  url: https://www.esquiresolutions.com/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  title: Federal Court Turns Up the Heat on Attorneys Using ChatGPT for Research
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: If fines and public embarrassment were effective deterrents, there would
+      not be so many cases to cite.
+    found: true
+    checked_against: page
+    passage: 'false, AI-generated statements of law in legal pleadings. Something
+      more is needed, it said. According to the court: If fines and public embarrassment
+      were effective deterrents, there would not be so many cases to cite. And in
+      any event, fines do not account for the extreme dereliction of professional
+      responsibility that fabricating'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI-invented legal cases filings pre-2025
+- id: 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  url: https://www.businessattorneychicago.com/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  title: 'AI Is Writing Legal Filings—Some Are Completely Made Up: Implications for
+    Businesses'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: As of June 9, 2026, researchers have documented 1,598 court proceedings
+      worldwide in which AI-generated content... was submitted to a court.
+    found: true
+    checked_against: page
+    passage: is a number that should stop you cold. As of June 9, 2026, researchers
+      have [documented 1,598 court proceedings](https://www.haqq.ai/blog/ai-legal-hallucination-audit)
+      worldwide in which AI-generated content, fabricated case citations, invented
+      statutes, false quotes from real judgments, was submitted to a court. Of those
+      cases, 496 involved licensed attorneys. The number is growing at roughly 8 new
+      cases per day. US courts
+  - text: In June 2026, a federal judge in Mississippi... canceled the trial entirely
+      and suspended both lead attorneys from practicing in that district for two years.
+    found: true
+    checked_against: page
+    passage: 8 new cases per day. US courts imposed over $145,000 in AI-filing penalties
+      in the first quarter of 2026 alone. In June 2026, a federal judge in Mississippi
+      did something that had never happened before. After discovering that both sides
+      in a case had filed fabricated AI-generated citations, the judge canceled the
+      trial entirely and suspended both lead attorneys from practicing in that district
+      for two years. This is not a hypothetical problem. It is not a fringe issue
+      affecting a handful of careless solo practitioners. It is
+  - text: '"Stanford’s CodeX Center found that general-purpose large language models
+      fabricate case citations in approximately 30 to 45 percent of legal research
+      responses."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: You cannot tell from the outside of a law firm which of these approaches
+      your attorney is using. But you can ask.
+    found: true
+    checked_against: page
+    passage: 'The temptation to trust the output, especially when it looks exactly
+      like what you were hoping to find, is real too. You cannot tell from the outside
+      of a law firm which of these approaches your attorney is using. But you can
+      ask. ## **The Questions You Should Be Asking Your Attorney** If you are working
+      with outside counsel on any matter that'
+  - text: The best use of AI in legal practice is as a tool that amplifies the attorney’s
+      capabilities, not as a replacement for the verification and judgment that professional
+      accountability requires.
+    found: true
+    checked_against: page
+    passage: 'their expertise, and their professional accountability. AI does not
+      have professional accountability. The attorney does. The best use of AI in legal
+      practice is as a tool that amplifies the attorney''s capabilities, not as a
+      replacement for the verification and judgment that professional accountability
+      requires. ## **What This Means for Choosing and Working With Legal Counsel**
+      The AI hallucination crisis in legal filings is,'
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts AI-invented legal cases filings pre-2025
+- id: 2026/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+  url: https://legaltechdigest.com/news/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+  title: Courts Hike Fines for Lawyers Using AI-Generated Fake Citations
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: over two dozen fake citations and misrepresentations of fact
+    found: true
+    checked_against: page
+    passage: Court of Appeals imposed $15,000 fines on two lawyers for over two dozen
+      false or misleading citations. Judge John K. Bush highlighted "over two dozen
+      fake citations and misrepresentations of fact" in the filings, signaling strict
+      judicial scrutiny ([LawNext](https://www.lawnext.com/2026/03/sixth-circuit-slaps-steep-sanctions-on-two-lawyers-for-fake-citations-and-misrepresentations-in-appellate-briefs.html)).
+      Further sanctions followed in September 2026. The New Mexico Supreme Court fined
+      a defense attorney for submitting a
+  - text: Courts are enforcing stricter penalties to uphold legal integrity and ethics.
+    found: true
+    checked_against: page
+    passage: 'AI use in legal work brings risks of false outputs that can cause ethical
+      breaches and professional sanctions. Courts are enforcing stricter penalties
+      to uphold legal integrity and ethics. * June 2023: Lawyers fined $5,000 in Mata
+      v. Avianca for six false ChatGPT-generated citations. * May 2025: Two'
+  - text: '''Lawyers’ responsibility to carefully verify AI outputs'''
+    found: true
+    checked_against: page
+    passage: fine for submitting briefs with multiple fabricated AI-generated citations,
+      demonstrating courts' growing intolerance. Court documents underscored lawyers'
+      responsibility to carefully verify AI outputs. In March 2026, the Sixth Circuit
+      Court of Appeals imposed $15,000 fines on two lawyers for over two dozen false
+      or
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: lawyers fined citing AI false cases
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/court-slams-lawyers-for-ai-generated-fake-citationshtml
+  url: https://www.joneswalker.com/en/insights/blogs/ai-law-blog/court-slams-lawyers-for-ai-generated-fake-citations.html
+  title: Court Slams Lawyers for AI-Generated Fake Citations
+  ingested: true
+  archive:
+    status: failed
+    error: 'Wayback save failed (ReadTimeout): '
+  quotes:
+  - text: Cases That Simply Do Not Exist
+    found: true
+    checked_against: page
+    passage: 'parties involved but also for becoming a neon-red-blinking cautionary
+      tale of consequential Gen AI misuse. ## "Cases That Simply Do Not Exist" Judge
+      Wang identified "nearly thirty defective citations" in a brief submitted by
+      Lindell''s attorneys, and they weren''t'
+  - text: '"Citations to cases that do not exist"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Not until this Court asked Mr. Kachouroff directly whether the Opposition
+      was the product of generative artificial intelligence did Mr. Kachouroff admit
+      that he did, in fact, use generative artificial intelligence.
+    found: true
+    checked_against: page
+    passage: responsibilities have not changed significantly. In the AI era, these
+      obligations require vigilance more than ever. > Not until this Court asked Mr.
+      Kachouroff directly whether the Opposition was the product of generative artificial
+      intelligence did Mr. Kachouroff admit that he did, in fact, use generative artificial
+      intelligence.
+  acquisition:
+    stage: research
+    origin: tavily
+    query: courts invalidate AI-generated case citations
+- id: 2025/california-lawyer-ai-fake-citations-fine
+  url: https://thedailyrecord.com/2025/10/13/california-lawyer-ai-fake-citations-fine
+  title: California Attorney Fined $10k for Filing Appeal with AI-Generated Fake Legal
+    Citations
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: No brief, pleading, motion, or any other paper filed in any court should
+      contain any citations... that the attorney responsible for submitting the pleading
+      has not personally read and verified.
+    found: true
+    checked_against: page
+    passage: confronted attorneys for citing fake legal authority. "We therefore publish
+      this opinion as a warning," it continued. "Simply stated, no brief, pleading,
+      motion, or any other paper filed in any court should contain any citations -
+      whether provided by [generative AI](https://thedailyrecord.com/tag/generative-ai/
+      "Posts tagged with generative AI") or any other source - that the attorney responsible
+      for submitting the pleading has not personally read and verified." The opinion,
+      issued on Sept. 12 in California's 2nd District Court of Appeal, is a clear
+      example of why the state's
+  - text: '"In the meantime, we’re going to have some victims, we’re going to have
+      some damages, we’re going to have some wreckages."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Large language models confidently state falsehoods as facts, particularly
+      when there are no supporting facts.
+    found: true
+    checked_against: page
+    passage: involving AI and fake cases earlier this year, he encountered a few cases
+      a month. Now he sees a few cases a day. Large language models confidently state
+      falsehoods as facts, particularly when there are no supporting facts. "The harder
+      your legal argument is to make, the more the model will tend to hallucinate,
+      because they will try to
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: lawyers fined citing AI false cases
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2026/increasingly-court-filings-are-citing-legal-cases-that-dont-actually-exist
+  url: https://federalnewsnetwork.com/artificial-intelligence/2026/08/increasingly-court-filings-are-citing-legal-cases-that-dont-actually-exist
+  title: Court Filings Citing Nonexistent AI-Generated Cases Rise
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: AI quickly provides confident sounding, polished answers to even the most
+      complex legal questions. And the words it writes are very impressive at first
+      glance.
+    found: true
+    checked_against: page
+    passage: it can happen to anybody. It can happen government lawyers, it could
+      happen to big firm lawyers, small firm lawyers. The reason is, is that AI quickly
+      provides confident sounding, polished answers to even the most complex legal
+      questions. And the words it writes are very impressive at first glance. And
+      so when you combine that with how much pressure attorneys are under to produce
+      quality work as fast as possible.
+  - text: The cure for AI hallucinations is human verification. So what every attorney
+      needs to do is [...] verify facts, law, anything at all.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: I think because they don’t have systems in place to catch these situations.
+      They’re not prepared and I think part of it also is a failure to understand
+      what the technology is.
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: Every time you file something, whether it’s with the Court at the federal
+      or the state level, you’re going to be subject to that duty [of candor to the
+      tribunal].
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: courts AI-invented legal cases filings pre-2025
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2025/needham-j-20250627
+  url: https://www.fedcourt.gov.au/digital-law-library/judges-speeches/justice-needham/needham-j-20250627
+  title: AI and the Courts in 2025
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: The randomness must be guided by intuition to be efficient. In other words,
+      the educated guess or the hunch include controlled randomness in otherwise orderly
+      thinking.
+    found: true
+    checked_against: page
+    passage: 'the difference between creative thinking and unimaginative competent
+      thinking lies in the injection of some randomness. The randomness must be guided
+      by intuition to be efficient. In other words, the educated guess or the hunch
+      include controlled randomness in otherwise orderly thinking.[[8]](#_ftn8) ###
+      What is AI, and what can it do? an LLM is a complex algorithm which responds
+      to human prompts to generate new text'
+  - text: '"LLMs are liable to generate language that is inconsistent with current
+      legal doctrine and case law, and, in the legal field, where adherence to authorities
+      is paramount, unfaithful or imprecise interpretations of the law can lead to
+      nonsensical—or worse, harmful and inaccurate—legal advice or decisions."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: We apprehend that the reference may be a product of hallucination by a large
+      language model. We have therefore redacted the case name and citation so that
+      the false information is not propagated further by artificial intelligence systems
+      having access to these reasons.
+    found: true
+    checked_against: page
+    passage: 'the law can lead to nonsensical-or worse, harmful and inaccurate-legal
+      advice or decisions. #### Litigants in person "We apprehend that the reference
+      may be a product of hallucination by a large language model. We have therefore
+      redacted the case name and citation so that the false information is not propagated
+      further by artificial intelligence systems having access to these reasons."
+      #### Expert evidence #### Use of hallucinated cases by legal practitioners due
+      to time constraints and his health'
+  - text: Judges in New South Wales should **not** use Gen AI in the formulation of
+      reasons for judgment or the assessment or analysis of evidence preparatory to
+      the delivery of reasons for judgment.
+    found: true
+    checked_against: page
+    passage: 'Guidelines and practice notes for the profession #### Litigants in person
+      and AI #### Judges and generative AI 4. Judges in New South Wales should **not**
+      use Gen AI in the formulation of reasons for judgment or the assessment or analysis
+      of evidence preparatory to the delivery of reasons for judgment. 5. Gen AI should
+      **not** be used for editing or proofing draft judgments, and no part of a draft
+      judgment should be'
+  - text: '"Generative AI more likely to produce inaccurate information; it does not
+      relieve the responsible legal practitioner of the need to exercise judgment
+      and professional skill in reviewing the final product to be provided to the
+      Court."'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  acquisition:
+    stage: ingest
+    origin: tavily
+    query: courts AI-invented legal cases filings pre-2025
+    recovered_via: archive_org
+    outcome: recovered
+- id: 2024/ai-and-legal-ethics-what-lawyers-need-to-knowpdf
+  url: https://www.lexisnexis.com/pdf/practical-guidance/ai/ai-and-legal-ethics-what-lawyers-need-to-know.pdf
+  title: 'AI and Legal Ethics: What Lawyers Need to Know'
+  ingested: true
+  archive:
+    status: found
+  quotes:
+  - text: lawyers should exercise caution in entrusting tasks to AI
+    found: true
+    checked_against: page
+    passage: practices, save their clients' money, and provide better quality representation.
+      It is also fraught with ethical risks. For this reason, lawyers should exercise
+      caution in entrusting tasks to AI and, if and when they do, scrutinize the work
+      it produces. The rules of professional responsibility do not require that lawyers
+      shun AI technology-in fact, the rules encourage
+  - text: '"the role of a lawyer is to ensure that AI work is checked and verified"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: work product generated by AI is coherent, defensible, and consistent
+    found: true
+    checked_against: page
+    passage: of law under Rule 1.1 of the Model Rules of Professional Conduct (and
+      the corresponding rule in each jurisdiction). Inherent in that responsibility
+      is the obligation to ensure that work product generated by AI is coherent, defensible,
+      and consistent, reflecting sound legal knowledge. Relying upon AI-produced or
+      informed work product that does not meet this standard is likely to be deemed
+      a violation
+  - text: '"a lawyer cannot assess the accuracy of an answer from a ''black box''
+      AI system"'
+    found: false
+    checked_against: page
+    passage: null
+    reason: not found in the fetched page text
+  - text: lawyers are responsible for the quality of the results generated by AI systems
+    found: true
+    checked_against: page
+    passage: or materiality, a lawyer may properly conclude that the project is better
+      suited for a human lawyer than an AI system. In the same way that lawyers in
+      a supervisory role are required to "make reasonable efforts to ensure that the
+      [lawyers that they supervise] conform[] to the Rules of Professional Conduct,"
+      lawyers are responsible for the quality of the results generated by AI systems.
+      Model Rules of Pro. Conduct r. 5.1(b) (Am. Bar Ass'n 2019) (Model Rule 5.1).
+      Simply blaming mistakes, inconsistencies,
+  acquisition:
+    stage: research
+    origin: tavily
+    query: AI-generated cases legal ethics guidelines
+audit:
+  analyst_verdict: mixed
+  auditor_verdict: mostly-false
+  analyst_confidence: medium
+  auditor_confidence: medium
+  verdict_agrees: false
+  confidence_agrees: true
+  needs_review: true
+  auditor_reasoning: Sources 1, 3, and 4 document that courts have fined lawyers for
+    AI‑generated fake citations, supporting the claim that some were fined. However,
+    none of the sources report that by 2025 courts had intercepted over a hundred
+    such filings; the only count given (1,598) appears in a 2026 report. Thus the
+    volume assertion lacks evidence, making the overall claim largely unsupported
+    despite the fine component being true.
+  evidence_gaps:
+  - No source confirms that by 2025 courts had caught lawyers citing AI‑invented cases
+    in over a hundred filings.
+  - No source provides a 2025 count; the only quantitative figure (1,598) is from
+    2026.
+  needs_review_reasons:
+  - 2+ evidence gaps
+  pipeline_verdict: unverified
+  pipeline_confidence: high
+  rule_applied: three-way-split-weakest
+  tiebreaker_verdict: unverified
+  tiebreaker_confidence: high
+  tiebreaker_reasoning: 'The claim’s volume component is not supported: Source 2 reports
+    1,598 documented AI‑generated filing incidents, but only for June 2026, and no
+    source gives a 2025 figure or mentions >100 filings by that date. The fine component
+    is supported: Source 4 describes a $10,000 fine for a California attorney, and
+    Source 3 notes that fines have been imposed and have risen since 2023. Because
+    the key quantitative assertion lacks any direct evidence, the overall claim cannot
+    be verified.'
+human_review:
+  reviewed_at: null
+  reviewer: null
+  notes: null
+  pr_url: null
+analyst_record:
+  title: By 2025 courts had caught lawyers citing AI-invented cases in over a hundred
+    filings, and some were fined.
+  seo_title: Courts fined lawyers citing AI‑made cases
+  verdict: unverified
+  cap_rationale: null
+  uncited_by_title:
+  - 2025/federal-court-turns-up-the-heat-on-attorneys-using-chatgpt-for-research
+  - 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+  - 2026/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+  - 2025/california-lawyer-ai-fake-citations-fine
+restatement:
+  schema_version: 1
+  model: greenpt:gpt-oss-120b
+  trigger: weak-verdict
+  original:
+    statement: By 2025 courts had caught lawyers citing AI-invented cases in over
+      a hundred filings, and some were fined.
+    verdict: unverified
+    confidence: high
+  pool:
+    consulted: 8
+    on_disk: 118
+    sent: 24
+  why_unverified: quantifier-unsupported
+  why_unverified_note: The claim asserts that courts had intercepted over a hundred
+    AI‑generated citations by 2025, but no source provides a 2025 count; the earliest
+    quantified figures appear in 2026.
+  candidates:
+  - rank: 1
+    text: Generative AI was cited in 1,598 court proceedings worldwide that were submitted
+      to courts by June 2026.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: high
+    verification_level_estimate: independently-verified
+    decisiveness: 4
+    needs_new_research: false
+    supporting:
+    - source: 2026/ai-is-writing-legal-filings-some-of-them-are-completely-made-up-here-is-what-that-means-for-your-business
+      quote: As of June 9, 2026, researchers have documented 1,598 court proceedings
+        worldwide in which AI-generated content... was submitted to a court.
+      quote_verified: true
+      note: Provides a concrete count of AI‑related filings.
+    contradicting: []
+    rationale: The 2026 article gives a precise, independently‑reported figure.
+  - rank: 2
+    text: Generative AI has prompted courts to impose higher fines on lawyers, with
+      penalties exceeding $31,000 in recent cases.
+    frame: measurement
+    expected_verdict: 'true'
+    expected_confidence: low
+    verification_level_estimate: self-reported
+    decisiveness: 3
+    needs_new_research: false
+    supporting:
+    - source: 2026/courts-hike-fines-for-lawyers-using-ai-generated-fake-citations
+      quote: Since 2023, fines have escalated from $5,000 to over $31,000, ...
+      quote_verified: true
+      note: Shows that court‑imposed fines have risen above $31,000.
+    contradicting: []
+    rationale: The article reports the increased fine amounts linked to AI‑generated
+      fake citations.
+  - rank: 3
+    text: Generative AI was cited in a California court filing that resulted in a
+      $10,000 fine for the lawyer in 2025.
+    frame: disclosure
+    expected_verdict: 'true'
+    expected_confidence: high
+    verification_level_estimate: independently-verified
+    decisiveness: 2
+    needs_new_research: false
+    supporting:
+    - source: 2025/california-lawyer-ai-fake-citations-fine
+      quote: California attorney Amir Mostafavi was fined $10,000 by the state’s 2nd
+        District Court of Appeal for submitting an appeal containing 21 fake legal
+        citations generated by ChatGPT.
+      quote_verified: false
+      note: Direct evidence of a fine imposed for AI‑generated fake citations.
+    contradicting: []
+    rationale: The fine is documented in an independent news article, confirming the
+      sanction.
+  - rank: 4
+    text: Generative AI was cited in over one hundred court filings that were intercepted
+      by courts by 2025, and at least one lawyer was fined.
+    frame: narrowed
+    expected_verdict: unverified
+    expected_confidence: low
+    verification_level_estimate: claimed
+    decisiveness: 1
+    needs_new_research: true
+    supporting:
+    - source: 2025/california-lawyer-ai-fake-citations-fine
+      quote: California attorney Amir Mostafavi was fined $10,000 by the state’s 2nd
+        District Court of Appeal for submitting an appeal containing 21 fake legal
+        citations generated by ChatGPT.
+      quote_verified: false
+      note: Confirms a lawyer was fined for AI‑generated citations.
+    contradicting: []
+    rationale: No source quantifies the number of intercepted filings in 2025; a count
+      from 2026 (1,598) is later, so the >100 figure remains unverified.
+  dropped: []
+  picked: null
