@@ -4,6 +4,10 @@ Settled product decisions for dangerousrobot.org, newest first. Plans in `docs/p
 
 Decisions made before 2026-10-04 (mission, audience, positioning, trust model, content model, messaging, early roadmap) are in the private Drive discovery records and their Decisions Log, frozen on 2026-10-04 as history. The last Drive entries cover the version reset and the About and Values revision.
 
+## 2026-11-09
+
+- **Rank 8 of the first queue runs as a floor, not its top restatement.** The weak-verdict rule's "take the top restatement once" is skipped when that restatement is an exact count that grows daily (1,598 court proceedings by June 2026); the sentence is rewritten as a floor the record supports ("more than a thousand filings by mid-2026") and run once. One-off exception; the rule stands. *(Final)*
+
 ## 2026-11-08
 
 - **Research content is its own stream.** Status and planning keep three streams apart: site updates, research pipeline code, and research content (claims, sources, drafts, rechecks). The content stream's principles, candidate queue and scouting step live in [`research-content.md`](research-content.md). *(Final)*
