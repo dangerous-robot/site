@@ -1,0 +1,40 @@
+run_id: c38c6528d17a40abae560b0d3bdda737
+date: 2026-11-07
+command: dr recheck
+claim_spec:
+  statement: None of the major AI Model Producers score above D+ on existential safety
+    in the latest FLI AI Safety Index
+  entity: subjects/ai-model-producers
+  criteria_slug: ai-producers-existential-score
+  topics:
+  - ai-safety
+  - industry-analysis
+  grading_rule: null
+claim_ref: subjects/ai-model-producers/ai-producers-existential-score
+config:
+  max_sources: 8
+  candidate_pool_size: 32
+  max_initial_queries: 7
+  search_backend: tavily
+  research_origins:
+  - tavily
+  - arxiv
+  model: greenpt:gpt-oss-120b
+  skip_wayback: false
+models_used:
+  researcher: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  ingestor: infomaniak:mistralai/Ministral-3-14B-Instruct-2512
+  analyst: greenpt:gpt-oss-120b
+  auditor: greenpt:gpt-oss-120b
+  tiebreaker: greenpt:gpt-oss-120b
+  restater: greenpt:gpt-oss-120b
+step: tiebreak
+rule: tiebreaker
+error:
+  error_type: verdict_split
+  message: analyst true, evaluator unverified, tie-breaker true
+attempts: 1
+outcome: split
+retries: []
+replays: null
+closed: null
